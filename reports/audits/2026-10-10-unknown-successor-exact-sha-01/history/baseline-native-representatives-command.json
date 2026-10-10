@@ -1,0 +1,34 @@
+{
+  "sha": "4c0f8e9ea19221a19112070a4a0c57840a3da8b4",
+  "commands": [
+    "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/integration/test_author_reading_checkpoints_postgres.py::test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history",
+    "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_to_chapter_two_chapter_vertical_postgres",
+    "tests/integration/test_author_book_replacement_postgres.py::test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run",
+    "tests/integration/test_author_editor_postgres.py::AuthorEditorPostgresTests::test_authored_draft_flows_through_native_review_revision_canon_and_export",
+    "tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[current-production]",
+    "tests/integration/test_narrative_evaluation_durable_replay_postgres.py::test_verified_receipt_before_output_recovers_same_generation_without_replay",
+    "--junitxml=/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/baseline-native-representatives.xml"
+  ],
+  "categories": [
+    "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED",
+    "STYLE_PROJECTION_MIGRATION_REQUIRED",
+    "REALIZATION_SOURCE_BINDING_REQUIRED",
+    "PROTECTED_CONTEXT_BUDGET_EXCEEDED",
+    "PermissionError",
+    "NARRATIVE_SEMANTIC_PROFILE_DRIFT"
+  ],
+  "nodes": [
+    "tests/integration/test_author_reading_checkpoints_postgres.py::test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history",
+    "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_to_chapter_two_chapter_vertical_postgres",
+    "tests/integration/test_author_book_replacement_postgres.py::test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run",
+    "tests/integration/test_author_editor_postgres.py::AuthorEditorPostgresTests::test_authored_draft_flows_through_native_review_revision_canon_and_export",
+    "tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[current-production]",
+    "tests/integration/test_narrative_evaluation_durable_replay_postgres.py::test_verified_receipt_before_output_recovers_same_generation_without_replay"
+  ],
+  "database": "nf_wp_baseline_native_848aa181_test",
+  "exit_code": 1
+}

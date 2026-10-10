@@ -1,0 +1,1972 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="27" failures="0" skipped="0" tests="27" time="1.352" timestamp="2026-10-10T13:13:58.834909+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_original_api_receipt_records_and_settles_once_without_old_business_rights" time="1.038"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[project_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[book_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[operation_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[external_effect_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[dispatch_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[generation]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[request_hash]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[execution_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[attempt_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[fencing_token]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[input_manifest_hash]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[execution_request_hash]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[model_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[provider_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[provider_request_id]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_missing_usage_is_evidence_only_then_measured_version_settles" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_unsigned_receipt_and_reconciliation_cannot_update_isolated_effect" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_charge[GATEWAY]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[0.25-PRICED]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[1.50-PRICED]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_concurrent_original_receipt_resolutions_share_one_settlement" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_missing_paid_cost_keeps_exposure_until_matching_cost_version[PRICED]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[False-MULTI_ACCOUNT_ENTITLEMENT]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[False-MULTI_PRICED]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[True-MULTI_ACCOUNT_ENTITLEMENT]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[True-MULTI_PRICED]" time="0.000"><error message="failed on setup with &quot;psycopg.errors.DeadlockDetected: deadlock detected&#10;DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.&#10;Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.&#10;HINT:  See server log for query details.&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+        status = run_migrations(database_url)
+        if not status["ok"]:
+            raise AssertionError(f"PostgreSQL migrations are incomplete: {status}")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_database()")
+                row = cursor.fetchone()
+                database_name = require_disposable_test_database(
+                    None if row is None else row[0]
+                )
+                if database_name != preflight_database_name:
+                    raise AssertionError(
+                        "integration database identity changed after safety preflight; "
+                        f"refusing cleanup for {database_name!r}"
+                    )
+                cursor.execute(
+                    """
+                    SELECT tablename
+                    FROM pg_tables
+                    WHERE schemaname='public'
+                      AND tablename &lt;&gt; 'nf_schema_migrations'
+                    ORDER BY tablename
+                    """
+                )
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                if tables:
+&gt;                   cursor.execute(
+                        sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                            sql.SQL(", ").join(
+                                sql.Identifier("public", table) for table in tables
+                            )
+                        )
+                    )
+
+tests/integration/conftest.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;psycopg.Cursor [closed] [BAD] at 0x10bd67a10&gt;
+query = Composed([SQL('TRUNCATE TABLE '), Composed([Identifier('public', 'active_story_plan_version'), SQL(', '), Identifier('...c', 'story_production_cursor'), SQL(', '), Identifier('public', 'template_cards')]), SQL(' RESTART IDENTITY CASCADE')])
+params = None, prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -&gt; Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+&gt;           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 73445 waits for AccessExclusiveLock on relation 66163 of database 53086; blocked by process 73333.
+E           Process 73333 waits for AccessShareLock on relation 63239 of database 53086; blocked by process 73445.
+E           HINT:  See server log for query details.
+
+.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected</error></testcase></testsuite></testsuites>

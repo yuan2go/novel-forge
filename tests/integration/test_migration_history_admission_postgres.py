@@ -44,27 +44,47 @@ def _snapshot(url):
         )
 
 
-def test_fixed_main_upgrade_preserves_unknown_receipt_and_frozen_ledger(monkeypatch):
+@pytest.mark.parametrize("baseline", [MAIN_HEAD,
+    "20260928_0148_author_supervised_design", "20261009_0184_cli_original_reconciliation"])
+def test_fixed_main_upgrade_preserves_unknown_receipt_and_frozen_ledger(monkeypatch, baseline):
     from novel_forge.modules.command_kernel.budget_runtime import BudgetReservationRequest, reserve_provider_budget, resolve_provider_budget_failure
-    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, plan_external_effect
+    from novel_forge.modules.command_kernel.external_effect_runtime import _hash
+    from psycopg.types.json import Jsonb
 
-    with disposable_database_at_migration(support.DATABASE_URL, prefix="native_integrate", target_migration_id=MAIN_HEAD) as url:
+    with disposable_database_at_migration(support.DATABASE_URL, prefix="native_integrate", target_migration_id=baseline) as url:
         monkeypatch.setattr(support, "DATABASE_URL", url)
         support.seed_authority_project_book(project_id="upgrade-project", workspace_id="upgrade-workspace", book_id="upgrade-book")
         with support.transaction() as connection:
             support.insert_definition(connection.cursor(), "fixture.native.upgrade")
             support.insert_operation(connection.cursor(), operation_id="frozen-operation", definition_name="fixture.native.upgrade", project_id="upgrade-project", status="EXECUTING")
-        effect = plan_external_effect(url, EffectCommandContext("frozen-operation", "upgrade-project", "integration-operator", "upgrade-trace", "upgrade-book"),
-            effect_type="model.invoke", provider="deepseek", capability="model.fixture", stable_idempotency_key="frozen-effect",
-            request_payload={"stage": "draft", "_production_execution": {"book_id": "upgrade-book"}}, max_attempts=2, reversible=False, model_id="deepseek-chat")["external_effect_id"]
+        payload = {"stage":"draft", "_production_execution":{"book_id":"upgrade-book"}}
+        effect = "frozen-effect"
+        with psycopg.connect(url) as connection:
+            # WHY: Historical rows predate the current Kernel isolation guard and its table.
+            connection.execute("""INSERT INTO authority_external_effect
+                (external_effect_id,operation_id,project_id,effect_type,stable_idempotency_key,
+                 status,request_hash,request_payload,provider,capability,max_attempts,reversible,model_id)
+                VALUES(%s,'frozen-operation','upgrade-project','model.invoke','frozen-effect',
+                    'UNKNOWN',%s,%s,'deepseek','model.fixture',2,false,'deepseek-chat')""",
+                [effect,_hash(payload),Jsonb(payload)])
         reservation = reserve_provider_budget(url, BudgetReservationRequest("frozen-operation", effect, "upgrade-project", "frozen-reservation", "deepseek", "USD", "0.5", 1000,
             work_id="upgrade-book", model_id="deepseek-chat", accounting_basis="PRICED"))
         resolve_provider_budget_failure(url, project_id="upgrade-project", reservation_id=reservation["reservation_id"], external_state_unknown=True)
         before = _snapshot(url)
+        from novel_forge.storage.migrations import runner
+        audit_boundary = "20261009_0194_multi_model_generation_isolation"
+        prefix = MIGRATIONS[:next(i for i, migration in enumerate(MIGRATIONS) if migration.migration_id == audit_boundary) + 1]
+        with monkeypatch.context() as window:
+            pending = runner.pending_migrations
+            window.setattr(runner, "pending_migrations", lambda applied: pending(applied, prefix))
+            run_migrations(url)
+        with psycopg.connect(url) as connection:
+            applied = {row[0] for row in connection.execute("SELECT migration_id FROM nf_schema_migrations")}
+        assert applied == {migration.migration_id for migration in prefix}
         result = run_migrations(url)
         assert result["ok"] and result["current"] == LATEST_MIGRATION_ID
         after = _snapshot(url)
-        assert before[0] == [row for row in after[0] if row[0] <= MAIN_HEAD]
+        assert before[0] == [row for row in after[0] if row[0] in {old[0] for old in before[0]}]
         assert before[2:] == after[2:]
         assert run_migrations(url) == result
 

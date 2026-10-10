@@ -1,0 +1,17 @@
+{
+  "tested_sha": "c4af1e2d18e61eb7b9a72e08799b8f1f262dab09",
+  "command": [
+    "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/.venv/bin/python",
+    "scripts/qualify_authority_query_plans.py",
+    "--output",
+    "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/query-plan-final/query-plan.json",
+    "--commit-sha",
+    "c4af1e2d18e61eb7b9a72e08799b8f1f262dab09"
+  ],
+  "run_id": "848aa181-9f94-4f6a-a7e9-704a6c6c07a7",
+  "database": "nf_wp_unknown_848aa1819f944f6aa7e9704a6c6c07a7_test",
+  "classification": "EXACT_SHA_STANDALONE_CANONICAL_QUERY_PLAN_DIAGNOSTIC_NOT_P0_PASS",
+  "started_at": "2026-10-10T04:02:20.511520+00:00",
+  "exit_code": 1,
+  "completed_at": "2026-10-10T04:02:20.717329+00:00"
+}

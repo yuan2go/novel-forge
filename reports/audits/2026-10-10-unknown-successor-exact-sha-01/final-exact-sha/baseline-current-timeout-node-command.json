@@ -1,0 +1,18 @@
+{
+  "baseline_sha": "f067d189a63f644a3a49f78abda557035b5fa59a",
+  "affected_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "command": [
+    "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/integration/test_core_functional_loops_postgres.py::test_planning_repeated_provider_timeout_exhausts_one_bounded_effect",
+    "--junitxml=/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/baseline-current-timeout-node.xml"
+  ],
+  "database": "nf_wp_baseline197_848aa181_test",
+  "started_at": "2026-10-10T08:00:13.038710+00:00",
+  "classification": "CURRENT_MAIN_NEW_FAILED_NODE_BASELINE_NOT_QUALIFICATION",
+  "exit_code": 1,
+  "completed_at": "2026-10-10T08:00:24.911819+00:00",
+  "final_git_status": ""
+}

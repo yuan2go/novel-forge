@@ -870,7 +870,7 @@ class PostgresChapterExecutionContractBinder:
         "v9", "v10", "v11", "v12", "v13",
             },
             "prompt-template:agent-session-pack": {"v1"},
-            "prompt-template:story-planning-pack": {"v1", "v2"},
+            "prompt-template:story-planning-pack": {"v1", "v2", "v3"},
             "prompt-template:reader-outcome-pack": {"v2"},
             "prompt-template:longform-prose-review-pack": {"v2"},
             "prompt-template:narrative-semantic-evaluation-pack": {"v1"},
@@ -4486,6 +4486,9 @@ def _materialize_production_codex_prompt(
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
+    intent_boundary = (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3")
+    if intent_boundary and (system.get("ref"), system.get("version")) != ("prompt-system:story-planning-pack", "v12"):
+        raise KernelError("PLANNING_NARRATIVE_INTENT_BINDING_INVALID", "Narrative intent projection requires its frozen System binding")
     compact_contract = str(template.get("version") or "") in {
         "v3",
         "v4",
@@ -4535,8 +4538,8 @@ def _materialize_production_codex_prompt(
     method_source_text = skill_text
     skill_text = project_skill_method(skill_text, ref=str(skill.get("ref") or ""), version=str(skill.get("version") or ""), stage=stage, targeted=targeted_edits_only)
     calibrated_methods = skill_text != method_source_text
-    if system.get("ref") == "prompt-system:story-planning-pack" and system.get("version") == "v8":
-        system_text = project_planning_system(system_text, stage=stage)
+    if system.get("ref") == "prompt-system:story-planning-pack" and system.get("version") in {"v8", "v12"}:
+        system_text = project_planning_system(system_text, stage=stage, narrative_intent_boundary=intent_boundary)
         calibrated_methods = True
     task_view = build_provider_task_view(
         stage,
@@ -4586,6 +4589,11 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Provider Knowledge projection is empty",
         )
+    intent_projection = None
+    selection_explanation = context_view.get("selection_explanation")
+    if intent_boundary:
+        from .provider_views import project_planning_narrative_intent
+        task_view, context_view, intent_projection = project_planning_narrative_intent(task_view, context_view)
     exact_reference_proof = None
     reference_version = context_content.get("planning_exact_reference_projection_version")
     if reference_version not in (None, "planning-exact-value-reference.v1"):
@@ -4593,6 +4601,7 @@ def _materialize_production_codex_prompt(
     if (template.get("ref"), template.get("version")) in {
         ("prompt-template:chapter-generation-pack", "v13"),
         ("prompt-template:story-planning-pack", "v2"),
+        ("prompt-template:story-planning-pack", "v3"),
     }:
         from .provider_views import compile_exact_context_references
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view})
@@ -4751,7 +4760,8 @@ def _materialize_production_codex_prompt(
         + len("</governed_skill>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
         "required_reader_facing_language": required_language,
-        "provider_prompt_projection_version": "authority-projection-work-requirements.v1"
+        **({"narrative_intent_projection": intent_projection} if intent_projection else {}),
+        "provider_prompt_projection_version": "planning-narrative-intent-projection.v1" if intent_boundary else "authority-projection-work-requirements.v1"
         if template.get("ref") == "prompt-template:chapter-generation-pack"
         and template.get("version") in {"v8", "v9", "v10", "v11", "v12", "v13"}
         else "authority-projection-task-provider-v5"
@@ -4813,7 +4823,7 @@ def _materialize_production_codex_prompt(
             **({"exact_context_references": exact_reference_proof} if exact_reference_proof else {}),
             "task_contract_version": task_view["contract_version"],
             "context_contract_version": context_view["contract_version"],
-            "selection_explanation": context_view.get(
+            "selection_explanation": selection_explanation or context_view.get(
                 "selection_explanation",
                 {
                     "policy": "accepted-boundary-only",
@@ -5261,6 +5271,13 @@ class ProductionExecutionGatewayExternalEffectAdapter:
     def model_id_for_stage(self, stage: str) -> str:
         route = self.routes.get(stage)
         return "" if route is None else route.model_profile.model_id
+
+    def saved_result_evidence(self, request: ExecutionRequest, handle: ExecutionHandle, result: Any) -> dict[str, Any]:
+        session = self._session(request.project_id)
+        route = session.gateway.admission.resolve_route(request)
+        manifest = session.gateway.admission.contracts.input_manifest(request.input_manifest_ref)
+        return self._evidence(binding=ChapterExecutionBinding(request, route, manifest),
+            session=session, handle=handle, result=result)
 
     def session_for_project(self, project_id: str) -> ChapterExecutionGatewaySession:
 

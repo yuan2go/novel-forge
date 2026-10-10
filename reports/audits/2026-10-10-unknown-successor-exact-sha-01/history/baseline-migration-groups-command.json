@@ -1,0 +1,13 @@
+{
+  "sha": "4c0f8e9ea19221a19112070a4a0c57840a3da8b4",
+  "nodes": [
+    "tests/integration/test_corpus_migrations_postgres.py::test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data[20260907_0120_foundation_generation]",
+    "tests/integration/test_authority_migrations_postgres.py::AuthorityMigrationsPostgresTests::test_clean_database_applies_complete_migration_chain",
+    "tests/integration/test_authority_migrations_postgres.py::AuthorityMigrationsPostgresTests::test_policy_completion_index_upgrade_rolls_back_and_replays",
+    "tests/integration/test_narrative_craft_migration_upgrade_postgres.py::test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin",
+    "tests/integration/test_creative_resource_migration_postgres.py::test_previous_head_upgrade_retains_historical_unknown_reservation_and_frozen_intent",
+    "tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261009_0185_pure_generation_isolation]",
+    "tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261009_0186_generation_capacity_inheritance]",
+    "tests/integration/test_world_contract_migration_guards_postgres.py::test_world_contract_successor_preserves_scope_counters_and_lineage_guards[20261009_0184_cli_original_reconciliation]"
+  ]
+}

@@ -1,0 +1,2 @@
+PYTHONPATH=src .venv/bin/python scripts/run_p0_backend_qualification.py --profile local --output "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-5/p0-backend-qualification-$(git rev-parse HEAD).json"
+make: *** [p0-backend-qualification] Error 1

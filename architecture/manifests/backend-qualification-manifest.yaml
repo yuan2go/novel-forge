@@ -163,7 +163,7 @@
     "narrative_craft_engineering": [
       "tests/unit/test_narrative_craft_catalog.py",
       "tests/unit/test_craft_selection.py",
-        "tests/unit/test_craft_need_driven_selection.py",
+      "tests/unit/test_craft_need_driven_selection.py",
       "tests/unit/test_craft_execution.py",
       "tests/unit/test_craft_discovery.py",
       "tests/unit/test_narrative_craft_review.py",

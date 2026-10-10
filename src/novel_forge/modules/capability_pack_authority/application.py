@@ -444,9 +444,9 @@ def _select_capability_skill(
         else ""
     )
     calibrated = {str(item.get("skill_ref")): str(item.get("version")) for item in skills}
-    if capability_id == "reader.promise.generate" and calibrated.get("topic-development") == "topic-development-qualification-v2":
+    if capability_id == "reader.promise.generate" and calibrated.get("topic-development") in {"topic-development-qualification-v2", "topic-development-qualification-v4"}:
         preferred_skill = "topic-development"
-    if capability_id in {"planning.book.generate", "planning.volume.generate", "planning.arc.generate", "planning.chapter_group.generate"} and calibrated.get("long-outline") in {"long-outline-v2", "long-outline-v3"}:
+    if capability_id in {"planning.book.generate", "planning.volume.generate", "planning.arc.generate", "planning.chapter_group.generate"} and calibrated.get("long-outline") in {"long-outline-v2", "long-outline-v3", "long-outline-v4"}:
         preferred_skill = "long-outline"
     preferred = [
         dict(item)

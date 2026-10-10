@@ -49,8 +49,8 @@ def prepare_context_model_stages(transport, monkeypatch):
     monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
 
 
-@pytest.mark.parametrize("completed_sibling", [False, True], ids=["single-interruption", "completed-sibling-interruption"])
-def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling):
+@pytest.mark.parametrize("completed_sibling,recoverable_result", [(False, False), (True, False), (False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result"])
+def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
@@ -83,7 +83,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         if request.stage in {"context_compress", "context_fidelity"}:
             compression_calls.append((request.operation_id, request.stage))
         failure_stage = "context_fidelity" if completed_sibling else "memo"
-        if request.stage == failure_stage and not stream_failures:
+        if not recoverable_result and request.stage == failure_stage and not stream_failures:
             layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
             layout.result_path("interrupt-stream").write_text("controlled fault")
             stream_failures.append(request.operation_id)
@@ -91,6 +91,54 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
     if completed_sibling:
         prepare_context_model_stages(transport, monkeypatch)
+    if recoverable_result:
+        from dataclasses import replace
+        from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+        execute = ProductionExecutionGatewayExternalEffectAdapter.execute
+        def lose_completed_response(adapter, **options):
+            result = execute(adapter, **options)
+            payload = options["request_payload"]
+            if payload.get("stage") == "memo" and not stream_failures:
+                assert result.outcome == "success"
+                stream_failures.append(payload["operation_id"])
+                return replace(result, outcome="unknown")
+            return result
+        monkeypatch.setattr(ProductionExecutionGatewayExternalEffectAdapter, "execute", lose_completed_response)
+    if not completed_sibling and not recoverable_result:
+        from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
+        from concurrent.futures import ThreadPoolExecutor
+        native_recovery = generation_isolation.recover_chapter_generations
+        admission_checked = []
+        def verify_atomic_recovery(authority, **options):
+            if admission_checked:
+                return native_recovery(authority, **options)
+            book = authority.require(options["book_run_id"])
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+                    JOIN authority_external_effect e USING(operation_id)
+                    WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                original = uow.cursor.fetchone()
+            if original is None:
+                return native_recovery(authority, **options)
+            def interrupt_admission(*args, **kwargs):
+                raise RuntimeError("controlled successor admission interruption")
+            with monkeypatch.context() as fault:
+                fault.setattr(step_successor_v2, "replace_failed_step", interrupt_admission)
+                with pytest.raises(RuntimeError, match="controlled successor admission interruption"):
+                    native_recovery(authority, **options)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [original[0]["operation_id"]])
+                assert uow.cursor.fetchone() == original
+                uow.cursor.execute("SELECT count(*) FROM authority_generation_isolation WHERE operation_id=%s", [original[0]["operation_id"]])
+                assert uow.cursor.fetchone() == (0,)
+                uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [original[0]["operation_id"]])
+                assert uow.cursor.fetchone() == (0,)
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
+            assert sum(outcomes) == 1
+            admission_checked.append(True)
+            return True
+        monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
     env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
     env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
     for key, value in env.items():
@@ -98,7 +146,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
     transport.database_url = DATABASE_URL
-    inputs = {"version": "creation-request.v1", "title": "Author work", "target_chapters": 8,
+    inputs = {"version": "creation-request.v1", "title": f"Author work sibling={completed_sibling} recoverable={recoverable_result}", "target_chapters": 8,
         "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
         "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
@@ -126,10 +174,12 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     with pytest.raises(RuntimeError, match="controlled interruption"):
         started = run_creation_command(settings, args)
         raise AssertionError({key: started.get(key) for key in ("stop_reason", "reason_code", "reason")})
+    if not completed_sibling and not recoverable_result:
+        assert admission_checked == [True]
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
     principal = build_trusted_principal_resolver().resolve_api_principal()
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b")
+        uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE project_id=(SELECT project_id FROM authority_operation WHERE operation_id=%s)", [stream_failures[0]])
         stopped = uow.cursor.fetchone()[0]
         project = stopped["project_id"]
         args.project_id, args.workspace_id, args.book_id = project, stopped["workspace_id"], stopped["book_id"]
@@ -146,7 +196,16 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             JOIN authority_saga_step_successor successor ON successor.predecessor_operation_id=original.operation_id
             JOIN authority_operation child ON child.operation_id=successor.successor_operation_id
             WHERE original.operation_id=%s""", [stream_failures[0]])
-        assert uow.cursor.fetchone() == ("FAILED_FINAL", "UNKNOWN", "HELD_UNKNOWN", "SUCCEEDED", "PROVIDER_STREAM_INTERRUPTED")
+        if recoverable_result:
+            assert uow.cursor.fetchone() is None
+            uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [stream_failures[0]])
+            assert uow.cursor.fetchone() == ("SUCCEEDED",)
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id IN (SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s)", [stream_failures[0]])
+            assert uow.cursor.fetchone() == (1,)
+            uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [stream_failures[0]])
+            assert uow.cursor.fetchone() == (0,)
+        else:
+            assert uow.cursor.fetchone() == ("FAILED_FINAL", "UNKNOWN", "HELD_UNKNOWN", "SUCCEEDED", "PROVIDER_STREAM_INTERRUPTED")
     if completed_sibling:
         assert [stage for operation, stage in compression_calls] == ["context_compress", "context_fidelity", "context_fidelity"]
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -190,7 +249,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.api.authority_app import create_authority_app
     client = TestClient(create_authority_app(settings))
     extension = {"project_id": project, "book_run_id": book["book_run_id"],
-        "expected_version": book["version"], "stop_after_chapter": 8, "idempotency_key": "extend-native-to-eight"}
+        "expected_version": book["version"], "stop_after_chapter": 8, "idempotency_key": f"{project}:extend-native-to-eight"}
     outside = client.post("/product/editor/manuscripts/extend-delivery-window", json={**extension, "project_id": "another-project"})
     assert outside.status_code == 403
     extended = client.post("/product/editor/manuscripts/extend-delivery-window", json=extension)
@@ -221,7 +280,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     review_scope = dict(project_id=project, workspace_id=book["workspace_id"], book_run_id=book["book_run_id"], principal=principal)
     review = coordinator.start(**review_scope, policy={"policy_version": "author-prose-review.v1", "window_codepoints": 4000,
         "overlap_codepoints": 200, "context_token_budget": 16000, "maximum_windows": 8},
-        idempotency_key="optional-review", trace_id="trace-optional", correlation_id="correlation-optional")
+        idempotency_key=f"{project}:optional-review", trace_id="trace-optional", correlation_id="correlation-optional")
     report = coordinator.report(**review_scope, run_id=review["run_id"])
     assert report["source_current"] is True
     assert report["review_complete"] is False
@@ -232,7 +291,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         assert all(source["acceptance_id"] == "" for source in frozen_review["sources"])
     with pytest.raises(KernelError, match="CONTROLLED_OPTIONAL_SERVICE_UNAVAILABLE"):
         coordinator.advance(**review_scope, run_id=review["run_id"], expected_version=report["expected_version"],
-            idempotency_key="optional-outage", trace_id="trace-outage", correlation_id="correlation-outage")
+            idempotency_key=f"{project}:optional-outage", trace_id="trace-outage", correlation_id="correlation-outage")
     from novel_forge.modules.book_authority.manuscript import blocking_working_cli_outcomes
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT content->>'operation_id' FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED'", [review["run_id"]])
@@ -302,6 +361,13 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [project])
         assert uow.cursor.fetchone()[0] == 8
+    if not completed_sibling and not recoverable_result:
+        from tests.integration.migration_window_postgres_support import restored_generation_backup
+        with restored_generation_backup(DATABASE_URL, backup_root=tmp_path / "chapter-joint-backup",
+                execution_root=Path(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"])) as restored_url:
+            assert current_manuscript(restored_url, book=book, principal=principal) == current_manuscript(DATABASE_URL, book=book, principal=principal)
+            from novel_forge.storage.migrations import get_migration_status
+            assert get_migration_status(restored_url)["ok"]
 
 
 def test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint():
@@ -338,8 +404,8 @@ def test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint():
         case.doCleanups()
 
 
-@pytest.mark.parametrize("failure_stage, definition", [("memo", "chapter.memo.generate"), ("context_fidelity", "chapter.context.build")])
-def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch, failure_stage, definition):
+@pytest.mark.parametrize("failure_stage", ["memo", "context_compress", "context_fidelity"])
+def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch, failure_stage):
     harness = CapabilityPackPostgresHarness('bounded-generation-faults')
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
@@ -378,10 +444,10 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
             executions.add(request.execution_id)
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, 'resolve', interrupt_every_memo)
-    if failure_stage == 'context_fidelity':
+    if failure_stage.startswith('context_'):
         prepare_context_model_stages(transport, monkeypatch)
     source = tmp_path / 'request.json'
-    source.write_text(json.dumps({'version':'creation-request.v1','title':'Bounded generation ' + failure_stage,'target_chapters':1,
+    source.write_text(json.dumps({'version':'creation-request.v1','title':f'Bounded generation {failure_stage}','target_chapters':1,
         'language_contract':{'required_language':'zh-CN'},'chapter_length':{'minimum':800,'maximum':4000},
         'brief':{'creative_brief_contract_version':'creative-brief-v2','idea':'An archivist investigates a flood.',
             'genre':'social mystery','audience':'adult readers','constraints':['Original single chapter'],
@@ -396,9 +462,8 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
     from novel_forge.modules.command_kernel.generation_isolation import generation_retry_usage, require_generation_retry_budget, book_recovery_projection
     from novel_forge.modules.command_kernel.errors import KernelError
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute("SELECT effect.operation_id FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id) WHERE effect.project_id=%s AND effect.effect_type='model.invoke' AND operation.definition_name=%s ORDER BY effect.created_at", [result['project_id'], definition])
+        uow.cursor.execute("SELECT effect.operation_id FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id) WHERE effect.project_id=%s AND effect.effect_type='model.invoke' AND operation.definition_name=%s AND effect.request_payload->>'stage'=%s ORDER BY effect.created_at", [result['project_id'], 'chapter.context.build' if failure_stage.startswith('context_') else 'chapter.memo.generate', failure_stage])
         operations = [row[0] for row in uow.cursor.fetchall()]
-        operations = list(dict.fromkeys(operations))
         assert len(operations) == len(executions) == 2
         usage = generation_retry_usage(uow.cursor, operation_id=operations[-1])
         assert usage['failure_attempts'] == usage['maximum_failure_attempts'] == 2

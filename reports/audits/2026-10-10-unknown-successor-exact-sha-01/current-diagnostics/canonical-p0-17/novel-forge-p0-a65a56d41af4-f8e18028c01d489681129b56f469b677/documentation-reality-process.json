@@ -1,0 +1,4 @@
+{
+  "stderr": "",
+  "stdout": "{\n  \"canonical_document_count\": 5,\n  \"capability_count\": 26,\n  \"comment_ratchet\": {\n    \"base_script_comment_count\": 13,\n    \"base_sha\": \"f067d189a63f644a3a49f78abda557035b5fa59a\",\n    \"base_source_comment_count\": 515,\n    \"base_source_docstring_count\": 135,\n    \"base_web_comment_count\": 5,\n    \"status\": \"PASS\"\n  },\n  \"errors\": [],\n  \"evidence_class\": \"reality_inventory\",\n  \"inventory_sha256\": \"sha256:d65904f736a57c675b6d3b5cc84efc4638f1a2c8311531d312486b5342aa7d11\",\n  \"module_docstring_count\": 37,\n  \"schema_version\": \"novel-forge.documentation-reality-check.v1\",\n  \"script_comment_count\": 13,\n  \"source_comment_count\": 515,\n  \"source_docstring_count\": 135,\n  \"status\": \"PASS\",\n  \"tested_sha\": \"a65a56d41af4b090cd147db1c031cd4c7378160d\",\n  \"web_comment_count\": 5\n}\n"
+}

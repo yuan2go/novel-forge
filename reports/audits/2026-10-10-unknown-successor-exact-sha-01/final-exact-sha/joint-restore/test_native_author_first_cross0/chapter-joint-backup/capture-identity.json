@@ -1,0 +1,9 @@
+{
+  "tested_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "run_id": "p0-30862295395c4081aaa32c160d75b1e6",
+  "captured_at": "2026-10-10T06:38:40.015084+00:00",
+  "original_backup_path": "/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-225/test_native_author_first_cross0/chapter-joint-backup",
+  "retained_private_backup_path": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/private-backups-final-ea83597d/test_native_author_first_cross0/chapter-joint-backup",
+  "restore_evidence_sha256": "7971279c0ce4c37b0c089a9719b28b5f41d0455cd80fb67dca97cc2e669e3d26",
+  "private_dump_in_git": false
+}

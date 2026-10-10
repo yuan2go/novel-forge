@@ -24,7 +24,7 @@ def test_screenplay_sample_pack_preserves_formal_producer_and_versioned_ineligib
         definition = screenplay_sample_definition(application_build_id="test", commit_sha="a" * 40, stage=stage)
         formal = build_screenplay_pack_profile(root, stage=stage, operation_definition_hash="sha256:" + "1" * 64)
         sample = build_screenplay_sampling_profile(formal, stage=stage, operation_definition_hash=authorization_hash(definition))
-        assert sample.manifest["identity"]["version"] == formal.manifest["identity"]["version"] == "1.1.0"
+        assert sample.manifest["identity"]["version"] == formal.manifest["identity"]["version"] == ("1.2.0" if stage == "screenplay_review" else "1.1.0")
         assert sample.manifest["workflow_template"]["workflow_version"] == "1.0.0"
         for artifact in formal.artifact_catalog["artifacts"]:
             if artifact["kind"] != "CONTEXT_POLICY":

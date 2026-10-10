@@ -970,7 +970,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 **({"selection_policy": comparison_policy, "strategy_directives": [
                     "Explore the author's central promise through a coherent causal direction with room for later development",
                     "Explore a distinct direction through character motivations and relationships while respecting the author's constraints",
-                    "Explore a distinct conflict mechanism and differentiation suited to the intended length and reader experience",
+                    "Explore a distinct situation or observation suited to the author's intended length and reader experience",
                     "Explore a distinct pacing and information structure preserving the author's intended tone and future writability",
                 ][:candidate_count]} if automatic_comparison else {}),
                 **({"author_creative_foundation": author_direction} if author_direction else {}),

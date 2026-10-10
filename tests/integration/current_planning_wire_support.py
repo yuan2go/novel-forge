@@ -13,6 +13,11 @@ def current_planning_wire_result(result, inputs):
     if command.get("execution_contract_version") != "1.21.0":
         return result
     value = deepcopy(result)
+    story_state = (command.get("input_versions") or {}).get("story_state")
+    if story_state is not None and "entry_state_ref" in value:
+        value["entry_state_ref"] = story_state
+        for segment in value.get("narrative_segments", []):
+            segment["entry_state_ref"] = story_state
     if inputs.get("stage") in {"book_plan.generate", "arc_plan.generate"}:
         value.pop("parent_version_id", None)
     if inputs.get("stage") == "chapter_plan.generate":
@@ -31,13 +36,49 @@ def current_planning_wire_result(result, inputs):
             value[field] = deepcopy(row[field])
         for field in CHAPTER_READER_SCHEDULE_FIELDS:
             value["reader_experience"][field] = deepcopy(row["reader_experience"][field])
+    if inputs.get("stage") in {"chapter_group_plan.generate", "chapter_plan.generate"}:
+        casts = [inputs["controlled_frozen_cast"]] if "controlled_frozen_cast" in inputs else [segment["content"] for segment in inputs.get("controlled_frozen_segments", []) if segment.get("role") == "character_cast"]
+        if len(casts) == 1 and len(casts[0].get("characters", [])) == 1:
+            actor = casts[0]["characters"][0]["character_id"]
+            from novel_forge.modules.hierarchical_planning.domain import character_planning_locator
+
+            locator = character_planning_locator(actor)
+            def bind_fixture_actor(item):
+                if isinstance(item, dict):
+                    return {key: bind_fixture_actor(child) for key, child in item.items()}
+                if isinstance(item, list):
+                    return [bind_fixture_actor(child) for child in item]
+                if item == "protagonist":
+                    return locator
+                if item == "character:protagonist":
+                    return locator
+                return item
+            value = bind_fixture_actor(value)
     fields = {
         "world_realization": {"invariant_refs": "WORLD_INVARIANT", "structure_refs": "WORLD_STRUCTURE", "state_ref": "WORLD_STATE"},
         "character_realization": {"identity_ref": "CHARACTER_IDENTITY", "state_ref": "CHARACTER_STATE", "trajectory_ref": "CHARACTER_TRAJECTORY"},
     }
-    catalog = (inputs.get("realization_reference_contract") or {}).get("references_by_domain", {})
+    reference_contract = inputs.get("realization_reference_contract") or {}
+    cast = (reference_contract.get("character_references") or {}).get("bindings", [])
+    if len(cast) == 1:
+        character = cast[0]["character_id"]
+        for collection in ("character_realization", "character_participation"):
+            for entity in value.get(collection, []):
+                if entity.get("character_id") == "protagonist":
+                    entity["character_id"] = character
+        for scene in value.get("scene_plan", []):
+            if scene.get("pov_character_id") == "protagonist":
+                scene["pov_character_id"] = character
+            if isinstance(scene.get("participants"), list):
+                scene["participants"] = [character if item == "protagonist" else item for item in scene["participants"]]
+    catalog = reference_contract.get("references_by_domain", {})
     for manifest, domains in fields.items():
         for entity in value.get(manifest, []):
+            levels = ("ANCHOR", "DEFINED", "DETAILED", "ACTIVE")
+            old_level, required_level = entity.get("realization_level"), value.get("realization_level")
+            if (entity.get("narrative_relevance") == "CURRENT" and old_level in levels
+                    and required_level in levels and levels.index(old_level) < levels.index(required_level)):
+                entity["realization_level"] = required_level
             for field, domain in domains.items():
                 raw = entity[field]
                 selected = []
@@ -149,4 +190,21 @@ def current_planning_fixture_inputs(inputs, database_url):
 
     document = AuthorityAssetQuery(database_url).require(project_id=command["project_id"], logical_ref=f"planning/context_bundles/{command['generation_operation_id']}.json")
     view = document.content["context_manifest"]["provider_context_view"]["compiled_view"]
-    return {**inputs, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}
+    frozen_cast = {}
+    if inputs.get("stage") in {"chapter_group_plan.generate", "chapter_plan.generate"}:
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("SELECT s.foundation_set FROM authority_book_production b JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id WHERE b.project_id=%s AND b.book_id=%s", [command["project_id"], command["book_id"]])
+            snapshots = uow.cursor.fetchall()
+            if len(snapshots) != 1:
+                raise ValueError("Chapter fixture requires one exact active Book input snapshot")
+            bindings = [b for b in snapshots[0][0]["bindings"] if b["role"] == "CHARACTER_CAST"]
+            if len(bindings) != 1:
+                raise ValueError("Chapter fixture requires one exact frozen cast")
+            binding = bindings[0]
+            cast = uow.repositories.asset_documents.require(project_id=command["project_id"], asset_version_id=binding["asset_version_id"])
+            if cast.content_hash != binding["content_hash"]:
+                raise ValueError("Chapter fixture cast must match the frozen content hash")
+            frozen_cast = {"controlled_frozen_cast": deepcopy(cast.content)}
+    return {**inputs, **frozen_cast, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}

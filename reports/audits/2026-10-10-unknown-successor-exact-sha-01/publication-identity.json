@@ -1,0 +1,23 @@
+{
+  "schema_version": "unknown-successor-publication-identity.v1",
+  "tested_code_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "evidence_archive_sha": "b7354589035b1d8ee95cf6d6292c86fc31e0666e",
+  "implementation_tree_sha": "sha256:9bf26a9e8147e1afc03882524c56f0c9997cff61c5295b74f703615b77598b89",
+  "migration_head": "20261010_0198_recovery_reference_indexes",
+  "archive_commit_was_not_run_as_new_code_qualification": true,
+  "source_implementation_identical": true,
+  "canonical_p0": "FAIL",
+  "canonical_exit_code": 2,
+  "native_package_cases": 144,
+  "standalone_compose": "PASS_NOT_CANONICAL_P0_PASS",
+  "standalone_query": "PASS_NOT_CANONICAL_P0_PASS",
+  "failed_nodes": 233,
+  "baseline_same_category": 118,
+  "baseline_changed_category_root_unresolved": 115,
+  "same_sha_ci": "NOT_RUN",
+  "real_provider": "NOT_RUN",
+  "production": "NOT_RUN",
+  "literary_quality": "NOT_RUN",
+  "pull_request": "https://github.com/yuan2go/novel-forge/pull/152",
+  "generated_at": "2026-10-10T08:15:18.073645+00:00"
+}

@@ -1,0 +1,22 @@
+{
+  "baseline_sha": "f067d189a63f644a3a49f78abda557035b5fa59a",
+  "command": [
+    "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/unit/test_capability_pack_validator.py::CapabilityPackValidatorTests::test_valid_chapter_generation_pack_passes",
+    "tests/unit/test_coordinated_migration_identity.py::test_registered_forward_upgrade_uses_one_continuous_identity_chain",
+    "tests/unit/test_longform_capability_pack_profiles.py::test_creative_json_format_example_matches_native_schema_without_replacing_default",
+    "tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.17.0]",
+    "tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.18.0]",
+    "tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.19.0]",
+    "tests/unit/test_work_intent_residuals.py::test_current_chapter_manifest_binds_exact_definition_hashes",
+    "--junitxml=/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/baseline-current-backend-failed-set.xml"
+  ],
+  "cwd": "/tmp/nf-wp-unknown-baseline-f067-848aa181",
+  "missing_on_baseline": [],
+  "started_at": "2026-10-10T06:03:45.857873+00:00",
+  "exit_code": 1,
+  "completed_at": "2026-10-10T06:03:47.077146+00:00"
+}

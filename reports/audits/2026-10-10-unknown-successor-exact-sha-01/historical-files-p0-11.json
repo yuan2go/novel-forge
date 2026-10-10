@@ -1,0 +1,111 @@
+{
+  "records": [
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-11/p0-backend-qualification-c4af1e2d18e61eb7b9a72e08799b8f1f262dab09.json",
+      "archive": "history/canonical-p0-11__p0-backend-qualification-c4af1e2d18e61eb7b9a72e08799b8f1f262dab09.json",
+      "original_sha256": "a3346e253310e4ff78372db4eaa2247960aa080bd30ed85168a9563ba3fe6576",
+      "archive_sha256": "a3346e253310e4ff78372db4eaa2247960aa080bd30ed85168a9563ba3fe6576",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-11/novel-forge-p0-c4af1e2d18e6-7ea39b83265d4445a997d32990e8af09/documentation-reality.json",
+      "archive": "history/canonical-p0-11__novel-forge-p0-c4af1e2d18e6-7ea39b83265d4445a997d32990e8af09__documentation-reality.json",
+      "original_sha256": "b63c03ac793d0a1381f5011674505d9a18544b8795025af10c2799a2e818019b",
+      "archive_sha256": "b63c03ac793d0a1381f5011674505d9a18544b8795025af10c2799a2e818019b",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-11/novel-forge-p0-c4af1e2d18e6-7ea39b83265d4445a997d32990e8af09/static-and-manifests.json",
+      "archive": "history/canonical-p0-11__novel-forge-p0-c4af1e2d18e6-7ea39b83265d4445a997d32990e8af09__static-and-manifests.json.gz",
+      "original_sha256": "8c3b69dad7410c29a62ce3da81badeea8e1cc1fef36c866c24190cdcd535af7c",
+      "archive_sha256": "ba2014e5e59d7f9001b7283c5cb740fea1e77baa19df28870bd21a0b73ac22a1",
+      "compression": "gzip"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-11/novel-forge-p0-c4af1e2d18e6-7ea39b83265d4445a997d32990e8af09/documentation-reality-process.json",
+      "archive": "history/canonical-p0-11__novel-forge-p0-c4af1e2d18e6-7ea39b83265d4445a997d32990e8af09__documentation-reality-process.json",
+      "original_sha256": "1b0add63c351c0839d59f70db0a0cb93e71bafd8ca95dc68e78f373b30dcaa07",
+      "archive_sha256": "1b0add63c351c0839d59f70db0a0cb93e71bafd8ca95dc68e78f373b30dcaa07",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-11-command.json",
+      "archive": "history/canonical-p0-11-command.json",
+      "original_sha256": "b9f9754f59e9f5991ee605aece6fac0848a14368e4e13b489f0d0f56f20f4afd",
+      "archive_sha256": "b9f9754f59e9f5991ee605aece6fac0848a14368e4e13b489f0d0f56f20f4afd",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-11-launch.log",
+      "archive": "history/canonical-p0-11-launch.log",
+      "original_sha256": "82f3e1c24faf278207100ed1db388d4ef7ea838e9dfca32f53fa42f5f79aed4c",
+      "archive_sha256": "82f3e1c24faf278207100ed1db388d4ef7ea838e9dfca32f53fa42f5f79aed4c",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-3/compose-runtime.json",
+      "archive": "history/compose-final-3__compose-runtime.json",
+      "original_sha256": "008aa9ffe8a9a0d2d308a799c0dcee13419680398e57a62605822d4d6450564a",
+      "archive_sha256": "008aa9ffe8a9a0d2d308a799c0dcee13419680398e57a62605822d4d6450564a",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-3/command.json",
+      "archive": "history/compose-final-3__command.json",
+      "original_sha256": "a68874988dc83b0af2d1849a52d22aebaeacc7720c6e46080df491f43bbbc56c",
+      "archive_sha256": "a68874988dc83b0af2d1849a52d22aebaeacc7720c6e46080df491f43bbbc56c",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-3/compose-resource-ownership-nf-p0-6c5adbdf70a74b268493b6190be01cc5-runtime.json",
+      "archive": "history/compose-final-3__compose-resource-ownership-nf-p0-6c5adbdf70a74b268493b6190be01cc5-runtime.json",
+      "original_sha256": "a3d7fb8e6c2d6c47816afce0a300eef809d09ff97377c2ad057b8954e7727581",
+      "archive_sha256": "a3d7fb8e6c2d6c47816afce0a300eef809d09ff97377c2ad057b8954e7727581",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/query-plan-final-2/query-plan.json",
+      "archive": "history/query-plan-final-2__query-plan.json.gz",
+      "original_sha256": "7486304b41f327657cb9be5aa3d05b391dd3ae85c079c3ab062116aeb02f5dff",
+      "archive_sha256": "7540e84221db3e3293f089acbe19f7055baa68b283d018b97bdac43565617b10",
+      "compression": "gzip"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/query-plan-final-2/command.json",
+      "archive": "history/query-plan-final-2__command.json",
+      "original_sha256": "d46907211ce574690e21d276b7cdc5442431f1fed56667c50391d740b95b9969",
+      "archive_sha256": "d46907211ce574690e21d276b7cdc5442431f1fed56667c50391d740b95b9969",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/query-plan-final/development-database-migration-status.json",
+      "archive": "history/query-plan-final__development-database-migration-status.json",
+      "original_sha256": "aae252db1062b3b1a3eb911aa10a1ec57f0ca9eaa1a887eaaa8d61c2e67ea926",
+      "archive_sha256": "aae252db1062b3b1a3eb911aa10a1ec57f0ca9eaa1a887eaaa8d61c2e67ea926",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/query-plan-final/command.json",
+      "archive": "history/query-plan-final__command.json",
+      "original_sha256": "9a0764ce022597600371e44623ec1d69a6674544a6eacce3cacd6cc5ead85ee5",
+      "archive_sha256": "9a0764ce022597600371e44623ec1d69a6674544a6eacce3cacd6cc5ead85ee5",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/query-plan-final/isolated-query-database-migration.json",
+      "archive": "history/query-plan-final__isolated-query-database-migration.json",
+      "original_sha256": "1996b282ec0dc9618a64e2584cc6973e0a8eeaa0f3cfe33ab44cb40b3cb2e3ad",
+      "archive_sha256": "1996b282ec0dc9618a64e2584cc6973e0a8eeaa0f3cfe33ab44cb40b3cb2e3ad",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/query-plan-final/launch.log",
+      "archive": "history/query-plan-final__launch.log",
+      "original_sha256": "d48fb17cdd133d695529ec45f2f70f50381715fda5920db3a1f658605a37de17",
+      "archive_sha256": "d48fb17cdd133d695529ec45f2f70f50381715fda5920db3a1f658605a37de17",
+      "compression": "none"
+    }
+  ],
+  "disposition": "FAIL_PROPOSAL_BASELINE_SHA_DIGEST_MISMATCH_CORRECTED_METADATA_ONLY",
+  "canonical_tested_sha": "c4af1e2d18e61eb7b9a72e08799b8f1f262dab09"
+}

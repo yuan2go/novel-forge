@@ -154,7 +154,7 @@ def test_current_reader_activation_replays_exact_deployment_and_rejects_drift():
     )
     profile = SimpleNamespace(
         workflow_ref="book_followup_reader_outcome@1.4.0",
-        manifest={},
+        manifest={"identity":{"version":"1.6.0"}},
         artifact_catalog={
             "schema_version": "novelos.capability_pack.artifact_catalog.v1",
             "artifacts": [],
@@ -168,7 +168,7 @@ def test_current_reader_activation_replays_exact_deployment_and_rejects_drift():
         "1.6.0",
         "ACTIVE",
         "a" * 40,
-        canonical_hash({}),
+        canonical_hash(profile.manifest),
         canonical_hash(_normalized_artifact_catalog(profile.artifact_catalog)),
     )
     uow.cursor.fetchone.return_value = active
@@ -193,7 +193,7 @@ def test_current_reader_activation_replays_exact_deployment_and_rejects_drift():
         ) as install,
     ):
         result = ensure_creation_reader_pack(
-            SimpleNamespace(database_url="unused"),
+            SimpleNamespace(database_url="unused", environment="validation"),
             args,
             principal=MagicMock(),
             build_id="test",
@@ -205,7 +205,7 @@ def test_current_reader_activation_replays_exact_deployment_and_rejects_drift():
         uow.cursor.fetchone.return_value = active[:4] + ("b" * 40,) + active[5:]
         with pytest.raises(KernelError, match="match exact"):
             ensure_creation_reader_pack(
-                SimpleNamespace(database_url="unused"),
+                SimpleNamespace(database_url="unused", environment="validation"),
                 args,
                 principal=MagicMock(),
                 build_id="test",

@@ -1,0 +1,33 @@
+{
+  "baseline": "4c0f8e9ea19221a19112070a4a0c57840a3da8b4",
+  "entries": [
+    {
+      "source": "architecture/proposals/classical-corpus-codex-validation.md",
+      "archive": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/classical-corpus-codex-validation.md",
+      "sha256": "sha256:148b2b93605d00ae9fae4a98d7b5df738c0f8596315472f64fe4424a71c8073b",
+      "status": "ARCHIVED_NOT_RUNTIME_AUTHORITY",
+      "reason": "Frozen earlier design scopes include stale implementation baselines, delivery histories and superseded accepted-only production requirements. Unresolved decisions and unexecuted experiments remain unresolved; archive grants no new work."
+    },
+    {
+      "source": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "archive": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/industrial-novel-os-blueprint.md",
+      "sha256": "sha256:54ab10f49e28c1ed14db6096ddcbdf64c8d46e22b8369af773e4c4b6e57ddaae",
+      "status": "ARCHIVED_NOT_RUNTIME_AUTHORITY",
+      "reason": "Frozen earlier design scopes include stale implementation baselines, delivery histories and superseded accepted-only production requirements. Unresolved decisions and unexecuted experiments remain unresolved; archive grants no new work."
+    },
+    {
+      "source": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "archive": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/narrative-memory-context-lifecycle-closure.md",
+      "sha256": "sha256:e3f93369330d9f6b408f4f785a5dff3766cae3dc3235abcaa058210a18b817f0",
+      "status": "ARCHIVED_NOT_RUNTIME_AUTHORITY",
+      "reason": "Frozen earlier design scopes include stale implementation baselines, delivery histories and superseded accepted-only production requirements. Unresolved decisions and unexecuted experiments remain unresolved; archive grants no new work."
+    },
+    {
+      "source": "architecture/proposals/prompt-and-generation-contract-convergence-01.md",
+      "archive": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/prompt-and-generation-contract-convergence-01.md",
+      "sha256": "sha256:02a333118a507119f9553ae40419ba18c7f754949c9ebf205d0b674a553033ef",
+      "status": "ARCHIVED_NOT_RUNTIME_AUTHORITY",
+      "reason": "Frozen earlier design scopes include stale implementation baselines, delivery histories and superseded accepted-only production requirements. Unresolved decisions and unexecuted experiments remain unresolved; archive grants no new work."
+    }
+  ]
+}

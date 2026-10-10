@@ -25,6 +25,11 @@ class _Search:
         self.reconcile_uows: list[object] = []
         self.selected_options: list[dict[str, Any]] = []
 
+    def selected_branch_keys(self, search_id: str, *, expected_branch_keys):
+        assert search_id == "search:test"
+        assert tuple(expected_branch_keys) == ("future-1", "future-2", "future-3")
+        return tuple(expected_branch_keys)
+
     def require_qualified_branches(self, search_id: str, **_: Any):
         return tuple(
             SimpleNamespace(

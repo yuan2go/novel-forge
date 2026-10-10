@@ -5,10 +5,9 @@ from psycopg.types.json import Jsonb
 import pytest
 
 from novel_forge.modules.mkaos_authority.craft import craft_hash
-from novel_forge.modules.project_authority import ProjectAuthorityApplication, ProjectAuthorityCommand
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, run_migrations
 from tests.integration.authority_postgres_support import DATABASE_URL, insert_definition, insert_operation
-from tests.integration.migration_window_postgres_support import disposable_database_at_migration
+from tests.integration.migration_window_postgres_support import disposable_database_at_migration, seed_historical_scope
 
 
 BASELINE = "20260920_0137_opening_delete_fence"
@@ -17,7 +16,7 @@ MIGRATION = "20260920_0138_narrative_craft_origin"
 
 def _project(url):
     project_id, workspace_id = "craft-upgrade:" + uuid4().hex, "workspace:" + uuid4().hex
-    ProjectAuthorityApplication(url, application_build_id="craft-upgrade-test", commit_sha="c" * 40).execute(ProjectAuthorityCommand(definition_name="project_lifecycle.create", project_id=project_id, workspace_id=workspace_id, actor_id="migration-fixture", idempotency_key="project:create", trace_id="trace:upgrade", correlation_id="correlation:upgrade", payload={"title": "Craft migration compatibility fixture"}))
+    seed_historical_scope(url, project_id=project_id, workspace_id=workspace_id, book_id="craft-book:" + uuid4().hex)
     return project_id, workspace_id
 
 

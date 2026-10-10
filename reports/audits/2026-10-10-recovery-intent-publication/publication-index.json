@@ -1,0 +1,238 @@
+{
+  "schema": "combined-publication.v1",
+  "baseline_main": "f067d189a63f644a3a49f78abda557035b5fa59a",
+  "source_heads": [
+    "3997113f45cced1160306d2f65f434ac9a5ba154",
+    "c178ff39f4efc1612f1fb831f42a531443b5be37"
+  ],
+  "source_commits": 38,
+  "tests_this_publication": "NOT_RUN",
+  "hooks_this_publication": "NOT_RUN",
+  "new_provider_calls_this_publication": 0,
+  "deployment_and_migration_application_this_publication": "NOT_RUN",
+  "source_report_files": 350,
+  "historical_recovery_qualification": "NO-GO / 222 FAIL / 11 ERROR; 115 attribution changes unresolved",
+  "historical_narrative_integration": "Two failures retained; literary improvement NOT_PROVEN",
+  "combined_implementation_identity": "sha256:e3c0238a28101ab49f0a24781418ceaa8f24895ba7ae3e41f65af71a80a34877",
+  "redacted_files": [
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/baseline-current-native-failed-set.log.gz",
+      "source_sha256": "6db850dfcc2f5a83952c79d41756433aa1e41aba6cc6c2e41924bef81ecd8674",
+      "published_sha256": "8a8bc7284fb575e45ea85d4a3a5add9081c6cc94d79d3dbf17f817fdac7288a9",
+      "redactions": 2,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/baseline-current-native-failed-set.xml.gz",
+      "source_sha256": "dbd784a273930673d333653344a71c30be283694deadaeaf3193c9aedfe0d3d8",
+      "published_sha256": "a074374651386f3872b5769bb54650419d179ccb42284d133c4a5a5d06309073",
+      "redactions": 2,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/canonical-p0-12/novel-forge-p0-db3328dea933-8ed8554f8ed34f238a70a86418972440/backend-pytest-collection.json.gz",
+      "source_sha256": "15f68ced6b53868850b11c670f2669caacd9ea58688ed1891a46aeb268739ecf",
+      "published_sha256": "50e80a5f1efbc961f9fe530adbf34186f3c99215ab79ac9e572410d92f903f21",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/canonical-p0-12/novel-forge-p0-db3328dea933-8ed8554f8ed34f238a70a86418972440/backend-pytest.xml.gz",
+      "source_sha256": "9c673be94cf11b7487806570d5f0ac01ec63adf7352242abe9d27a25aa6a32e9",
+      "published_sha256": "bcedfcaf86b1e6671d868f824e8936f90619a0ae9199568c43405af1cd77f467",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/canonical-p0-12/novel-forge-p0-db3328dea933-8ed8554f8ed34f238a70a86418972440/postgresql-pytest.xml.gz",
+      "source_sha256": "81d69f07946ac0dc41daa4eaf0382f265ff60d0d7cf93f654e9f78546981699a",
+      "published_sha256": "0f17e398f90576cb060879d57900544c83039690d3b0532d4bc86edd8c4d5832",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/canonical-p0-16/novel-forge-p0-e6c97edd5419-6ac798e0919e44fcb730cfc3d1b20f35/backend-pytest-collection.json.gz",
+      "source_sha256": "815a5082940863b05782420bbe49c622552815ea59b53e600a0e76a4a781f867",
+      "published_sha256": "789ab272d70087abdebf6c31cf9a81493119cdcfc4bdcf0535d566e36d66a789",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/canonical-p0-16/novel-forge-p0-e6c97edd5419-6ac798e0919e44fcb730cfc3d1b20f35/backend-pytest.xml.gz",
+      "source_sha256": "dba1df7ce85e3f2a6a9d84f34a88effe9090f32a96889be26ae7eff0cf624cf8",
+      "published_sha256": "cf4358df5aca6e085856e97e645996ca4aaf7912bd312be7748c47a896c6f931",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/canonical-p0-17/novel-forge-p0-a65a56d41af4-f8e18028c01d489681129b56f469b677/backend-pytest-collection.json.gz",
+      "source_sha256": "85acbfaa30ce23fb9936580dbb0a715bc9130e5ee85972851926934592416348",
+      "published_sha256": "cc87460f7532fc7c0d768bc9a63cfa13b707d21f88118301f0b21c81f9480a7c",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/review-current-head-chapter-4.log",
+      "source_sha256": "7bb4568303bfece74f2afd65658195be15c9491bab887f3a720f8b62e37d110a",
+      "published_sha256": "a475838cd49a1ed9d7e66f6597f8e8cb6cbf89d476aa49ba111ded6514eefa61",
+      "redactions": 1,
+      "gzip": false
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/review-current-head-chapter-4.xml",
+      "source_sha256": "123d273b5b4eacc522375918468fac8a4fcaa6671b4f66b4b52d39fafd22f726",
+      "published_sha256": "502cf976c56a4d963907ee218f49a7e790b32c08807bee851c2604e5560fce6c",
+      "redactions": 1,
+      "gzip": false
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/review-current-head-chapter-5.log",
+      "source_sha256": "8ab8d826d89d0040b06d6fc317123b21c32a443534893560b04576db2dd09167",
+      "published_sha256": "aa2213f9110d1396aa140e46441ec6c8970c7d9833f76d4288f4859c8f9241c1",
+      "redactions": 1,
+      "gzip": false
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/current-diagnostics/review-current-head-chapter-5.xml",
+      "source_sha256": "6438270f396fd296261b16787c1a2605523e39061f9f45175079103cf8a9f9f6",
+      "published_sha256": "a9e917a2eb402a606118a006867bde463d36e63fdb62473aa80df6e84c121eec",
+      "redactions": 1,
+      "gzip": false
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/final-exact-sha/canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest-collection.json.gz",
+      "source_sha256": "bbaef68e929c51c7a1418e5cdca286f1efe5261e4d1e98498497b0e38021a9c3",
+      "published_sha256": "53ceeb310c281ca2c065509a84f6966cb55887ebacafa389f7c8271b0f96654e",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/final-exact-sha/canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest.xml.gz",
+      "source_sha256": "fe0a4d03c6ee1e3dbd472004aebf5e2f6bba39a4e6c6b88cefde933e43b23e89",
+      "published_sha256": "9f532506882c063efcd17b59189d960037ae16caa6a73de18237038595523b7c",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/final-exact-sha/canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/postgresql-pytest.xml.gz",
+      "source_sha256": "315c064f31075f856e0b043ed0725934e650e133b12d9fc44febe5c0ee0fb661",
+      "published_sha256": "5c5298fca9988214a606b12e6f6f121d416fed747d0eeb5cddbc2a57395de9cc",
+      "redactions": 4,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/final-exact-sha/completed-stage-snapshot/canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest-collection.json.gz",
+      "source_sha256": "bbaef68e929c51c7a1418e5cdca286f1efe5261e4d1e98498497b0e38021a9c3",
+      "published_sha256": "53ceeb310c281ca2c065509a84f6966cb55887ebacafa389f7c8271b0f96654e",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/final-exact-sha/completed-stage-snapshot/canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest.xml.gz",
+      "source_sha256": "fe0a4d03c6ee1e3dbd472004aebf5e2f6bba39a4e6c6b88cefde933e43b23e89",
+      "published_sha256": "9f532506882c063efcd17b59189d960037ae16caa6a73de18237038595523b7c",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/baseline-native-failed-set.log.gz",
+      "source_sha256": "185b95b33a0e1a406aea0cb76a582d7c1e0f432167443a5cd2095a8bf2cce3c5",
+      "published_sha256": "a9c9b19a66e12303d4c786f4f27ac09287dc85447a8018e079353c87c28f9000",
+      "redactions": 3,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/baseline-native-failed-set.xml.gz",
+      "source_sha256": "ea253257b8eb382088aca50fdc4f4e89cf7ea5762ac5fffcc67e168041d422bd",
+      "published_sha256": "5785a1fbf36ff58b87a71027719aec992ae8ae667ba83ba4cf78d258c6e4ab7d",
+      "redactions": 3,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-10__novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a__backend-pytest-collection.json.gz",
+      "source_sha256": "0468192e5dd2381ac36c654df8b3d536171836737c4b6f71d8fac1931c05ede7",
+      "published_sha256": "a996f9214758e55dd887782938635d8c7e6221cff00f349a0f66eaa41aa393d1",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/backend-pytest-collection.json.gz",
+      "source_sha256": "4d4f4b5e57955c0a2a09e21c55b21b7049426c70ba61204f88878e50f68b74ef",
+      "published_sha256": "b409188d84991a0a3463e1b6ccbaca151077ffc4e70052f7aa4b32216d8ae97b",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest-collection.json.gz",
+      "source_sha256": "6cc95bbe6804a10124f78be0e827449bfc70d1171371f7dc68670c27e596f190",
+      "published_sha256": "16a8c921593e525b2174cc267d85dab9391cf7c8e6131cecbfe84714701e27ad",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest.xml.gz",
+      "source_sha256": "cefdae8d5fe22153acbba7feb9543383b2567575be42f3f17184996be8507672",
+      "published_sha256": "3e82f9cb6010add590833027c227e7dfb683f0752b5b09985a65efbe47f1bf29",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/backend-pytest-collection.json.gz",
+      "source_sha256": "c62394d3adc6b2dd596aa09165f2927e1244afe5e42a06a79d0d859be9fe205c",
+      "published_sha256": "e5c80e4d3d2c7d9d6b7a87e0fed15341bb4957cdf6cd65b2a17064431cd15e75",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest-collection.json.gz",
+      "source_sha256": "76b4c1876c5d06e3bbe4a01d364540689186f77807512e12b10aec966f57cb11",
+      "published_sha256": "f6a13ebdae8ac8dac2b47f61b98c23f9c5175009f322683bac937239014769a6",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest.xml.gz",
+      "source_sha256": "4950009609d3bd5a6176efae33a238e8540f28651ea80813ff185d0b74f290fc",
+      "published_sha256": "ae74fd8e1055d3f5448640a66eb56c1d3cadbc6f9a8d4cbe40d20a31a10f2b68",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest-collection.json.gz",
+      "source_sha256": "692a49b09dab024932e15a8c27a815d468eb4bd9df7c368f34112acb97e4851a",
+      "published_sha256": "d664544602ad3a484eac2182a6cd41127c0a8ef1bf155d65e464af142697282a",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest.xml.gz",
+      "source_sha256": "e7876a64a934900d1a21167024f1b5be94215b02caa7b3ce6b348d647f0231aa",
+      "published_sha256": "a81ca78c9f07c43a34df4602ef7a1e59f9223ad30309d355cdf653c82aca3414",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-9__novel-forge-p0-e89aaf882d26-e005ff576e934213a8acbc0a700df021__backend-pytest-collection.json.gz",
+      "source_sha256": "8199e6ce1cad27940c8d1e5b7f1231b760d921fa58e3fde711d65658ef82f1e2",
+      "published_sha256": "7234979836db970c45543b499d059f364653d1cb89a8c1ff93190598f0a96084",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-9__novel-forge-p0-e89aaf882d26-e005ff576e934213a8acbc0a700df021__backend-pytest.xml.gz",
+      "source_sha256": "2cb2c82b2743804933ec5c11bf2422c1c7a1823f72ee84d32c37f3b1c0992caf",
+      "published_sha256": "b8247e8f45de8e0b8f0facca1f192038b7085f295c17978bccb5287d0a775804",
+      "redactions": 1,
+      "gzip": true
+    },
+    {
+      "path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/history/canonical-p0-9__novel-forge-p0-e89aaf882d26-e005ff576e934213a8acbc0a700df021__postgresql-pytest.xml.gz",
+      "source_sha256": "0e9e3f14e484d655f08c1bf5c685b958b90036ef2c88c9188ad378e4fb9fb182",
+      "published_sha256": "412ec0808165253b8e4a1b71afa9adc029b68b432bad36fb65885b4ea1b536aa",
+      "redactions": 3,
+      "gzip": true
+    }
+  ],
+  "compatibility": "Historical Planning methods and current narrative boundary coexist. Retired proposal copies retained in both task archives. Existing migration bodies unchanged; 0198 is appended. Original hashes inside historical evidence describe original source and may differ from sanitized public copies.",
+  "scope_excludes": "New active narrative closure worktree, private runtime configuration/databases and live generation; source worktrees restored/preserved at original clean HEADs."
+}

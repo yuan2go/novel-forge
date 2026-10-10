@@ -1,0 +1,20 @@
+{
+  "tested_sha": "c4af1e2d18e61eb7b9a72e08799b8f1f262dab09",
+  "command": [
+    "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/.venv/bin/python",
+    "scripts/verify_authority_compose.py",
+    "--project-name",
+    "nf-p0-6c5adbdf70a74b268493b6190be01cc5-runtime",
+    "--run-id",
+    "p0-6c5adbdf70a74b268493b6190be01cc5",
+    "--artifact-root",
+    "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-3",
+    "--output",
+    "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-3/compose-runtime.json"
+  ],
+  "run_id": "p0-6c5adbdf70a74b268493b6190be01cc5",
+  "started_at": "2026-10-10T03:59:15.099959+00:00",
+  "classification": "EXACT_SHA_STANDALONE_CANONICAL_COMPOSE_DIAGNOSTIC_NOT_P0_PASS",
+  "exit_code": 0,
+  "completed_at": "2026-10-10T04:00:43.397605+00:00"
+}

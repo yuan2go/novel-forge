@@ -149,8 +149,10 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
-The published chain through 0195 is immutable. The generation-recovery segment is
-0185–0197, ending at authorized native planning capacity. Resolve each full
+The published chain through 0197 is immutable. The original audit boundary is
+0194; published 0196 and 0197 retain stopped CLI isolation and authorized Planning capacity.
+The current head additionally includes 0198, which adds missing foreign-key reference indexes
+without rewriting facts or admission rules. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
@@ -164,7 +166,7 @@ Bind the release SHA/build, actual database/server and migration head, compiled/
 hashes, object store identity and original CLI execution root in the deployment record.
 0193 upgrade/restore evidence covers its frozen code and database only. The published 0194
 multi-generation and 0195 sidecar snapshots cover their own incremental heads; neither proves
-this release or a newer original ledger. Check only changed boundaries on disposable restores.
+this release or a newer original ledger. Check only changed boundaries on disposable restores. Historical migration fixtures seed the schema-supported scope and corpus facts directly; they do not run the current Kernel against an incomplete old schema. The upgrade then compares original rows, timestamps and ledger identities and checks the native current constraints.
 
 Recovery restores the database, referenced artifacts and original CLI execution directories
 from a mutually consistent snapshot under compatible code and Packs, with every writer stopped.
@@ -270,8 +272,12 @@ REVOKED commit/activation decisions remain unchanged. Missing measured usage or 
 a later matching measured version can settle once. Duplicate records replay, conflicting
 results or measurements reject replacement, and actual overruns retain the existing
 budget-breach hold. This does not create a primary output, candidate, author choice or
-acceptance. An API Effect with multiple original dispatch generations fails closed for
-explicit accounting reconciliation; one receipt cannot settle other unknown generations.
+acceptance. Each original API dispatch generation has an independent immutable receipt
+lineage. One receipt never settles another unknown generation: the original Effect
+reservation stays held until every isolated dispatch has measured usage and, for a priced
+call, trusted measured cost. Only then does the existing reservation settle the sum once.
+Chapter recovery checks the original saved API response or CLI directory before isolation;
+a complete trusted result resumes its original generation without a successor or resend.
 Ordinary reconciliation of isolated work reads confirmed evidence or requests this
 original-receipt path; it cannot acquire a replacement recovery Attempt or mutate history.
 
@@ -450,7 +456,7 @@ For future Chapter work, author `book-chapter-context.v1` with
 `world-production-policy.v4` with independently chosen Context allocation. The v4
 Context profile was introduced in Chapter Generation Pack `2.7.0`; new work must
 deploy and select the current `config/capability_packs/chapter_generation_pack.json`
-(Pack `3.0.0`, Chapter workflow `3.10.0`) through the existing Pack Authority;
+(candidate Pack `3.0.2`, Chapter workflow `3.10.0`) through the existing Pack Authority;
 then verify its compiled snapshot and the Chapter preparation report's
 `stage_context_profile_versions.draft`. Its frozen Context policy explicitly sets
 the Planning task target to 64,000 tokens; this does not increase the authorized
@@ -1358,7 +1364,9 @@ PRODUCTION and REPAIR. Retain old account lanes at their carried usage and bind 
 lane to the new authorization reference. New-window consumption has its own shared cap;
 settling or releasing old reservations cannot enlarge it. Use a new evidence hash and
 reference for the actual author approval. Expiry runs from that approval, not deployment.
-Old frozen reservations cannot borrow the new expiry. UNKNOWN still needs reconciliation.
+Old frozen reservations cannot borrow the new expiry. Original UNKNOWN accounting
+still needs reconciliation; authorized pure generation may isolate the old commit right
+and register a native successor without recovering the original receipt first.
 Do not substitute a new campaign, rename a reservation or release historical holds to
 configure a renewal. Separate model grants and Book review boundaries remain required.
 
@@ -2494,11 +2502,13 @@ configured capability profile disables callbacks.
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
-identities; current Chapter Pack 3.0.0 binds Chapter 3.10.0, Plan materialization 3.9.16 and
+identities; current candidate Chapter Pack 3.0.2 binds workflow and ordinary coordinated nodes 3.10.0, including Plan materialization, with
 Template v13 with lossless joint input transport. Frozen v12 Attempts retain their original manifests. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
-Current Planning Pack 2.12.0 binds Operation 1.20.0, System v10,
+Current Planning Pack 2.14.0 binds Operation 1.21.0, System v12 and Template v3
+with the narrative-intent boundary. Historical Planning Pack 2.13.0 retains
+Operation 1.21.0, System v11 and Template v2,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
-retaining qualification-v2 identities. Planning 1.20.0 requires Mission/Scene v4,
+retaining qualification-v2 identities. Planning 1.21.0 requires Mission/Scene v4,
 activated-chapter-plan.v3 and runtime projection 3.0.0; its Provider output uses
 work-v4. Current Chapter Plan materialization preserves that serialization through
 authoritative-chapter-plan-v5 and draft-plan-view-v4 in the ExecutionIntent.
@@ -2506,8 +2516,8 @@ Frozen Planning 1.19.0 retains Pack 2.11.0 and System v9 with its v4 schema hash
 Frozen Planning 1.18.0 retains Pack 2.10.0, System v8, Mission/Scene v3
 and work-v3. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
-legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Screenplay requires prose-generation-v4 or quality-review-v3
-and its separate adaptation schema. Historical artifacts remain available for recovery.
+legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Current Screenplay requires prose-generation-v4 or quality-review-v4
+and its separate adaptation schema. Historical artifacts remain available for recovery. Historical Planning catalogs retain the original v3 source identity and exclude later v4 entries; the resolver reads the preserved v3 bytes from its legacy snapshot, while current profiles resolve v4 from the current Skill.
 For current Chapter work, selected style must be foundation-style-projection.v4 with
 source-bound Book applicability. An explicit preparation asset override does not waive
 this requirement. STYLE_PROJECTION_MIGRATION_REQUIRED blocks legacy v2/v3 before Writer;
@@ -3293,7 +3303,7 @@ four across the immutable lineage. Runtime continuation, deferred World work and
 result admission retain the global repair counter. Historical branch repair evidence
 is readable but cannot independently override routing rejections.
 
-Current Planning 1.19 Foundation dispatch uses `foundation-generation.v4`,
+Frozen Planning 1.19 Foundation dispatch uses `foundation-generation.v4`,
 role-specific `schema:foundation-provider-output:<role>:v4` and the exact v4 task
 in materialization and rendered Provider inputs. RFC 6901 pointers are allowed only
 under this new identity; historical 1.17/v2 and 1.18/v3 keep all six role schemas
@@ -3907,6 +3917,21 @@ Control policy with `planning_selection_mode=AVAILABLE_QUALIFIED`. Opening then 
 selects an available qualified branch and retains the incomplete comparison evidence.
 This is an automatic Planning choice; it does not record an author decision or acceptance.
 
+Planning and Chapter recovery use the existing coordinated nested UoW so isolation,
+linked successor registration and native scheduling intent commit together. Planning
+retains its continuation command and registered outbox event; Chapter retains the
+admitted Operation/outbox and current Saga step reference. A failed
+registration rolls back isolation; an exhausted task records its immutable isolation
+and explicit stop checkpoint. Chapter Context dispatch and successor admission use the
+same persisted dispatch lineage as other generation nodes. The frozen retry policy is
+`CONFIGURABLE_POLICY`; retained recovery ordinal fields are diagnostics, not a second
+allowance. Restart, route changes and
+replay cannot reset that fault allowance.
+
+Historical Planning Pack builds retain their published Skill text, version and source
+reference through checked artifact snapshots; mutable current Skills cannot change a
+frozen historical contract. Current Planning keeps its current Skill bindings.
+
 Pure-generation recovery applies to both the admitted CLI and remote API transport.
 The frozen tool boundary must deny all external writes, and the native invocation,
 Book, inputs, dispatch hash and output contract must agree. An API invocation whose
@@ -3968,4 +3993,26 @@ The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 templ
 
 The unsent v12-to-v13 correction binds `kernel-unsent-transport-window.v1` to the exact compiled target deployment. Native StepSuccessor atomically retains exhausted failure history, extends only a derived Root window by its original bounded duration, aligns the Saga deadline projection and registers the successor. Explicit author/business deadlines, active leases, unsettled sibling Effects and irreversible work retain their existing guards. The single correction decision and shared fault counter do not reset on restart.
 
+Repeated calls of the same native CLI request retain the first actor/file/work identity
+while the native command still checks its frozen input. A restarted uncertain work uses
+its returned Project/Book/checkpoint through `continue`; changing a file is not recovery
+evidence. Existing Reader activation replay requires the exact active deployment release
+and manifest/catalog. A drifted activation is reconciled by its native owner; this does
+not impose a Reader or qualification requirement on author-first saved manuscript access.
+
 Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
+
+
+For a narrative-intent repair, compile and inspect the new Story Planning 2.14
+bindings through the existing Pack Authority before scoped use. System v12 and
+template v3 bind the narrative-intent projection and versioned sent Schema; historical
+recovery retains its exact old Pack. Inspect the projection receipt's source and
+projected hashes, omission pointers, stage methods and final rendered Prompt hash.
+Compare author-selected quiet, procedural and other narrative purposes through the
+real gateway assembler offline. A structural diagnosis returns to existing Plan
+Change and Book edition candidate owners with exact source plans/manuscript and any
+new approved input snapshot. Candidate saving, author selection and acceptance remain
+separate. Do not change a Book's length or delivery window for this repair.
+Only a separately authorized same-Book Provider experiment and subsequent literary
+review can establish prose improvement; offline assembly and scripted integration
+prove engineering execution only.

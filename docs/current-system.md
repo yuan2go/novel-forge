@@ -25,7 +25,9 @@ New Creation requests select `config/execution_templates/author_first.json` (v12
 The ordinary CLI starts from an input file without Project/Workspace/Book or operation keys.
 Its native scope binding hashes the authenticated author, optional Project/work key and
 canonicalized JSON input. Moving an unchanged input file preserves that identity. Changed
-input values derive a different ordinary CLI identity; after an uncertain response, continue
+input values in a new invocation derive a different ordinary CLI identity. Repeated calls
+within one native CLI request retain its first actor/file/work binding; that command identity
+does not replace PostgreSQL checkpoints or authorize changed input. After an uncertain response, continue
 or reconcile the returned original work handles before considering any new input.
 A current-manuscript command may resolve its Project from the selected Book run.
 At a settled idle author-first checkpoint, `authority-manuscript extend-delivery-window`
@@ -242,6 +244,9 @@ worker restart. Technical waits use the original frozen work; author and owner d
 stop polling until relevant persisted state changes. An active uncertain Effect requires native
 reconciliation or authorized pure-generation isolation. Isolation revokes its commit rights and
 permits one linked native successor without requiring a remote result or measured usage.
+Chapter recovery first reuses a complete trusted original API response or CLI result with
+its Gateway validation evidence. Isolated API receipts bind each original dispatch
+independently; missing measurements in any generation keep the original reservation held.
 A pre-send capacity checkpoint separately requires proof that no external intent exists. Cancellation is an immutable
 Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
@@ -266,7 +271,7 @@ commands and focused matrix in `docs/runtime-operations.md`.
 
 ### Bounded creative recovery contracts
 
-Creative template v11 is the current coordinated policy; v2–v10 remain explicit
+Creative template v12 is the current author-first policy; v2–v11 remain explicit
 historical contracts. They retain authenticated
 membership identity, independent-review requirements, source isolation and strict
 production gates. New Planning dispatch uses the single native `governed_repair`
@@ -310,9 +315,9 @@ the input evidence additionally retains the exact PASS result, native APPROVE re
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
 that chain.
 
-Current Chapter 3.10.0 and Pack 3.0.0/template v13 bind versioned scene-core,
+Current Chapter workflow 3.10.0 and candidate Pack 3.0.2/template v13 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
-corrections. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
+corrections. The Pack binds ordinary coordinated nodes to their exact 3.10.0 definition hashes. ExecutionIntent 3.10.1, Memo 3.10.1/3.10.2 and Draft 3.10.1 remain separately journal-bound recovery definitions. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
 projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native
 ExecutionIntent; frozen earlier projections, including 3.9.16, keep their original
 contracts. The Book-owned explicit-null Memo timeout reader remains compatibility
@@ -2089,7 +2094,12 @@ the current head; canonical prose intentionally does not duplicate its identity.
 
 Provider and MinIO-compatible object-store calls use durable ExternalEffect intent,
 dispatch generation and receipt records. A request that may have started is reconciled
-before resending the same Effect. Pure generation can instead isolate its old attempt and continue through a linked native successor. Authenticated late API receipts append only Kernel reconciliation evidence and original-reservation accounting. Historical UNKNOWN and revoked business rights remain immutable; neither late results nor accounting can activate an old candidate or advance acceptance. Idempotency keys bind the request digest;
+before resending the same Effect. Authorized pure generation can instead permanently isolate its old attempt and continue
+through a linked native successor. Original UNKNOWN facts and accounting remain separate
+from successor execution; recovering the original receipt is not a prerequisite for this
+continuation. Authenticated late API receipts append only Kernel reconciliation evidence and
+original-reservation accounting; old business and activation rights remain revoked.
+Irreversible effects and uncertain database commits still require reconciliation. Idempotency keys bind the request digest;
 Attempt leases and fencing reject stale workers. Safe database retries are restricted to
 classified SQL states, while an unknown commit result requires evidence-based
 reconciliation. Recovery appends attempt, receipt, checkpoint or replacement lineage and
@@ -2422,3 +2432,21 @@ exact native 1.21 ChapterGroup generation. It reuses the existing deterministic 
 chapter slice and retains every frozen event; historical single-slice contracts keep their guard.
 Membership retry compatibility excludes durably isolated historical execution rows while
 retaining current leases, cancellation, identity checks and paid accounting exposure.
+
+
+New Story Planning Pack 2.14 binds System v12, template v3 and stage-specific Skill
+versions to `planning-narrative-intent-projection.v1`. The existing generation
+preparer versions the sent output Schema instructions without changing the domain
+JSON shape or storage contract. The gateway first verifies the frozen Task/Context
+and source identities, then separates narrative direction from output protocol.
+Execution topology budgets, comparison weights, retry metadata and Context selection
+audits stay in durable source/projection receipts outside the narrative data.
+Exact matrix and literal pointers, accepted knowledge and working-manuscript
+continuity remain intact. Story constraints concern the author intent or selected
+fictional design; host approval and evidence status do not prescribe character action.
+Search defaults permit quiet or stable situations and author-selected procedural plots.
+An inherited structural conflict requires existing author/Plan Change and edition
+candidate decisions; this projection does not rewrite or activate old plans or prose.
+Historical Planning Packs keep their original bindings and rendering. Installing new
+code alone does not replace a Book's frozen Pack, grant a Provider task or prove
+literary improvement.

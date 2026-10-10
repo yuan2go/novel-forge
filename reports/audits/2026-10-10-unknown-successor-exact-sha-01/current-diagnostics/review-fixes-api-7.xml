@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="39" time="11.817" timestamp="2026-10-10T13:21:47.763649+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_original_api_receipt_records_and_settles_once_without_old_business_rights" time="4.214" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[project_id]" time="0.155" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[book_id]" time="0.134" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[operation_id]" time="0.125" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[external_effect_id]" time="0.123" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[dispatch_id]" time="0.134" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[generation]" time="0.122" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[request_hash]" time="0.126" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[execution_id]" time="0.125" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[attempt_id]" time="0.124" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[fencing_token]" time="0.135" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[input_manifest_hash]" time="0.127" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[execution_request_hash]" time="0.120" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[model_id]" time="0.121" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[provider_id]" time="0.128" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[provider_request_id]" time="0.135" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_missing_usage_is_evidence_only_then_measured_version_settles" time="0.174" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_unsigned_receipt_and_reconciliation_cannot_update_isolated_effect" time="0.127" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_charge[GATEWAY]" time="0.191" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_charge[MULTI_GATEWAY]" time="0.251" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[0.25-PRICED]" time="0.163" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[1.50-PRICED]" time="0.156" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_concurrent_original_receipt_resolutions_share_one_settlement" time="0.165" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_missing_paid_cost_keeps_exposure_until_matching_cost_version[PRICED]" time="0.177" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[False-MULTI_ACCOUNT_ENTITLEMENT]" time="0.327" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[False-MULTI_PRICED]" time="0.348" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[True-MULTI_ACCOUNT_ENTITLEMENT]" time="0.357" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[True-MULTI_PRICED]" time="0.338" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate[success-MARK_SUCCEEDED]" time="0.150" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate[final_failure-MARK_FAILED_FINAL]" time="0.149" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate[cancelled-MARK_CANCELLED]" time="0.163" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-ESTIMATED-provider_receipt]" time="0.218" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-UNKNOWN-provider_receipt]" time="0.216" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-PROVIDER_REPORTED-usage_pricing]" time="0.219" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-PROVIDER_REPORTED-usage_pricing_upper_bound]" time="0.227" /><testcase classname="tests.integration.test_provider_callback_authority_postgres.ProviderCallbackAuthorityPostgresTests" name="test_gateway_callback_is_deferred_to_frozen_execution_reconciliation" time="0.336" /><testcase classname="tests.integration.test_provider_callback_authority_postgres.ProviderCallbackAuthorityPostgresTests" name="test_invalid_signature_is_quarantined_without_touching_effect" time="0.062" /><testcase classname="tests.integration.test_provider_callback_authority_postgres.ProviderCallbackAuthorityPostgresTests" name="test_verified_callback_is_durable_replayable_and_resumes_unknown_effect" time="0.071" /><testcase classname="tests.integration.test_provider_callback_authority_postgres" name="test_native_gateway_callback_reuses_frozen_contract_after_local_failure" time="0.828"><failure message="novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-202/test_native_gateway_callback_r0')
+
+    def test_native_gateway_callback_reuses_frozen_contract_after_local_failure(tmp_path):
+        import base64
+        import json
+        import pytest
+        from unittest.mock import patch
+        from tests.integration import capability_pack_postgres_support as support
+        from tests.unit.test_production_execution_gateway import _remote_adapter
+        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+    
+        adapter, transport = _remote_adapter("unknown_after_send")
+        registry = ProviderAdapterRegistry()
+        registry.register(adapter)
+        registry.register(ScriptedProviderAdapterV2("success"))
+    
+        def verify(body, headers, *, secret):
+            assert headers["x-test-signature"] == secret
+            return ProviderReceipt(
+                provider_request_id=headers["x-provider-request-id"], receipt_id=headers["x-message-id"],
+                message_id=headers["x-message-id"], outcome="success",
+                payload_hash="sha256:" + hashlib.sha256(body).hexdigest(), evidence=json.loads(body),
+            )
+    
+        transport.verify_callback = verify
+    
+        def pending(request):
+            transport.query_calls += 1
+            return {"outcome": "unknown", "request_sent": True, "provider_request_id": request.provider_request_id,
+                    "completion_mode": "background", "evidence": {"fixture_protocol_only": True}}
+    
+        transport.query = pending
+        harness = support.CapabilityPackPostgresHarness("native-callback-contract")
+        approved = harness.register_compile_approve("1.0.0", generation=1)
+        harness.register_agents(approved.compiled)
+        harness.activate(harness.deploy(approved))
+        settings = support.IndustrialSettings(root=tmp_path, environment="development",
+            storage_authority="postgresql", database_url=DATABASE_URL)
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "development", "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha, "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": harness.pack_id,
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path),
+            "NOVEL_FORGE_DRAFT_PROVIDER": "openai", "NOVEL_FORGE_DRAFT_MODEL": "gpt-4o",
+            "NOVEL_FORGE_DRAFT_MODEL_CONTEXT_LIMIT": "100000",
+            "NOVEL_FORGE_DRAFT_TOKEN_ACCOUNTING_METHOD": "OPENAI_UTF8_BYTES_UPPER_BOUND_V1",
+            "NOVEL_FORGE_DRAFT_TOKEN_ACCOUNTING_EVIDENCE_REF": "fixture:openai-byte-upper-bound:v1",
+        }
+        execution = support.build_production_execution_composition(settings, provider_registry=registry, env=env)
+        chapter = support.build_chapter_authority_application(settings, execution=execution, env=env)
+        operator = harness.principal("chapter-operator", "chapter.authority.execute")
+        admitted = chapter.admit(support.SingleChapterRequest(
+            project_id=harness.project_id, workspace_id=harness.workspace_id, actor_id=operator.principal_id,
+            chapter=1, title="Frozen callback fixture", premise="A frozen choice must survive recovery.",
+            trace_id=identifier("trace"), correlation_id=identifier("correlation"),
+            application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
+            idempotency_key=harness.project_id + ":callback", preparation_report={"decision": "READY", "fixture": True},
+            context_candidates=(harness._chapter_plan_candidate(1),)), principal=operator)
+        worker = support.Principal(principal_id="chapter-worker:" + harness.project_id,
+            principal_type=support.PrincipalType.WORKER, permissions=frozenset({"chapter.authority.execute"}),
+            project_scope=frozenset({harness.project_id}), authentication_source="integration-fixture")
+        scheduler = chapter.scheduler(principal=worker)
+    
+        def tick():
+            return scheduler.tick(project_id=harness.project_id, root_operation_id=admitted.root_operation_id)
+    
+        try:
+            for node in ("plan", "execution_intent", "memo", "retrieval", "context"):
+&gt;               result = tick()
+                         ^^^^^^
+
+tests/integration/test_provider_callback_authority_postgres.py:378: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_provider_callback_authority_postgres.py:374: in tick
+    return scheduler.tick(project_id=harness.project_id, root_operation_id=admitted.root_operation_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = _ExecutionIntentHandler()
+request = ChapterHandlerRequest(operation_id='4c922a84-c024-45c6-afdb-ba623d290833', project_id='project-d885830f702c40049991419...l_forge@127.0.0.1:55003/nf_wp_receipt_review_848aa181_test', definition_version='3.10.0', source_definition_version='')
+
+    def execute(self, request: ChapterHandlerRequest) -&gt; ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        style_view = None
+        if request.work_requirements_enabled:
+            policies = [
+                item for item in request.inputs if item.asset_type == "style_policy"
+            ]
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
+                if len(policies) != 1 or (
+                    policies[0].content.get("contract_version") != "foundation-style-projection.v4"
+                    or not any(fact.get("key") == "work_applicability"
+                               for fact in policies[0].content.get("structured_facts", []))
+                ):
+&gt;                   raise KernelError(
+                        "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                        "Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly
+
+src/novel_forge/modules/chapter_authority/handlers.py:379: KernelError</failure></testcase></testsuite></testsuites>

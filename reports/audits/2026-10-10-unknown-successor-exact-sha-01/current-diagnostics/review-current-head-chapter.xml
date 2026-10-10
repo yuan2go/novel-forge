@@ -1,0 +1,1321 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="7" time="5.810" timestamp="2026-10-10T13:33:42.973029+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_native_author_first_cross_chapter_edit_and_export[single-interruption]" time="2.285"><failure message="novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-206/test_native_author_first_cross0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10c6c1fa0&gt;
+completed_sibling = False, recoverable_result = False
+
+    @pytest.mark.parametrize("completed_sibling,recoverable_result", [(False, False), (True, False), (False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result"])
+    def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result):
+        harness = CapabilityPackPostgresHarness("author-first")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
+        executable.write_text(executable.read_text().replace(
+            ' target.write_bytes(',
+            ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-interrupted-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        stream_failures = []
+        compression_calls = []
+        def interrupt_first_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage in {"context_compress", "context_fidelity"}:
+                compression_calls.append((request.operation_id, request.stage))
+            failure_stage = "context_fidelity" if completed_sibling else "memo"
+            if not recoverable_result and request.stage == failure_stage and not stream_failures:
+                layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+                layout.result_path("interrupt-stream").write_text("controlled fault")
+                stream_failures.append(request.operation_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+        if completed_sibling:
+            prepare_context_model_stages(transport, monkeypatch)
+        if recoverable_result:
+            from dataclasses import replace
+            from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+            execute = ProductionExecutionGatewayExternalEffectAdapter.execute
+            def lose_completed_response(adapter, **options):
+                result = execute(adapter, **options)
+                payload = options["request_payload"]
+                if payload.get("stage") == "memo" and not stream_failures:
+                    assert result.outcome == "success"
+                    stream_failures.append(payload["operation_id"])
+                    return replace(result, outcome="unknown")
+                return result
+            monkeypatch.setattr(ProductionExecutionGatewayExternalEffectAdapter, "execute", lose_completed_response)
+        if not completed_sibling and not recoverable_result:
+            from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
+            from concurrent.futures import ThreadPoolExecutor
+            native_recovery = generation_isolation.recover_chapter_generations
+            admission_checked = []
+            def verify_atomic_recovery(authority, **options):
+                if admission_checked:
+                    return native_recovery(authority, **options)
+                book = authority.require(options["book_run_id"])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+                        JOIN authority_external_effect e USING(operation_id)
+                        WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    original = uow.cursor.fetchone()
+                if original is None:
+                    return native_recovery(authority, **options)
+                def interrupt_admission(*args, **kwargs):
+                    raise RuntimeError("controlled successor admission interruption")
+                with monkeypatch.context() as fault:
+                    fault.setattr(step_successor_v2, "replace_failed_step", interrupt_admission)
+                    with pytest.raises(RuntimeError, match="controlled successor admission interruption"):
+                        native_recovery(authority, **options)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == original
+                    uow.cursor.execute("SELECT count(*) FROM authority_generation_isolation WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
+                assert sum(outcomes) == 1
+                admission_checked.append(True)
+                return True
+            monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
+        env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
+        env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
+        transport.database_url = DATABASE_URL
+        inputs = {"version": "creation-request.v1", "title": f"Author work sibling={completed_sibling} recoverable={recoverable_result}", "target_chapters": 8,
+            "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
+                "source_boundaries": ["Original work"]}}
+        source = tmp_path / "request.json"
+        source.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+            "--repository-root", str(root), "--maximum-ticks", "100",
+            "--foreground"])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+        from novel_forge.api import authority_dependencies
+        build_book = authority_dependencies.build_book_production_composition
+        interruptions = []
+        def fail_delivery_once(checkpoint):
+            if checkpoint == "after_manuscript_delivery" and not interruptions:
+                interruptions.append(checkpoint)
+                raise RuntimeError("controlled interruption after saved prose")
+        def with_interrupt(*values, **options):
+            composition = build_book(*values, **options)
+            composition.authority.failure_injector = fail_delivery_once
+            return composition
+        monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+&gt;           started = run_creation_command(settings, args)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:998: in execute_creation_command
+    install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
+src/novel_forge/modules/capability_packs/validation_deployment.py:205: in install_chapter_validation_pack
+    return _install_validation_manifest(
+src/novel_forge/modules/capability_packs/validation_deployment.py:498: in _install_validation_manifest
+    compilation = _pack_command(
+src/novel_forge/modules/capability_packs/validation_deployment.py:655: in _pack_command
+    return app.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:518: in execute
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:510: in handler
+    return self._execute_transaction(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.modules.capability_pack_authority.application.CapabilityPackAuthorityApplication object at 0x10c998f20&gt;
+uow = &lt;novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x10cbdd0a0&gt;
+operation_id = '048060a3-0df8-4b5f-ad23-7bae4e4f6152'
+command = CapabilityPackAuthorityCommand(definition_name='capability_pack.compile', project_id='project:author:f5e61cbd769730d47...reative.d51bd827887b4c00d33d5741:63a9003f5fc56915247a', deployment_id='', rollout_id='', expected_activation_version=0)
+prepared = {'version_identity': {'manifest_hash': 'sha256:8c0be5b67adbb1bf879db6eea7287ad254c33ad64be72fdcce88b02cb3acb695', 'art...1', 'manifest_hash': 'sha256:8c0be5b67adbb1bf879db6eea7287ad254c33ad64be72fdcce88b02cb3acb695', ...}, 'compiled': None}
+checkpoint = &lt;function _noop_checkpoint at 0x10aaee480&gt;
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        command: CapabilityPackAuthorityCommand,
+        prepared: Mapping[str, Any],
+        checkpoint: TransactionCheckpoint,
+    ) -&gt; dict[str, Any]:
+        action = command.definition_name
+        repository = uow.repositories.capability_packs
+        repository.lock_pack_authority(command.pack_id)
+        if action == "capability_pack.manifest.register":
+            manifest_payload = command.payload.get("manifest")
+            catalog_payload = command.payload.get("artifact_catalog")
+            if not isinstance(manifest_payload, Mapping) or not isinstance(
+                catalog_payload, Mapping
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_REGISTRATION_INPUT_INVALID",
+                    "registration requires Manifest and exact Artifact Catalog",
+                )
+            manifest = load_capability_pack_payload(manifest_payload)
+            if str(manifest.identity.pack_id) != command.pack_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_IDENTITY_CONFLICT",
+                    "route Pack identity differs from Manifest",
+                )
+            normalized_catalog = _normalized_artifact_catalog(catalog_payload)
+            result = repository.register_version(
+                project_id=command.project_id,
+                manifest=manifest.to_dict(),
+                manifest_hash=manifest.manifest_hash,
+                artifact_catalog=normalized_catalog,
+                artifact_catalog_hash=canonical_hash(normalized_catalog),
+                release_channel=str(
+                    command.payload.get("release_channel")
+                    or manifest.governance.release_channel
+                ),
+                owner_scope_type=str(
+                    command.payload.get("owner_scope_type") or "PROJECT"
+                ),
+                owner_project_id=str(
+                    command.payload.get("owner_project_id")
+                    or (
+                        command.project_id
+                        if str(
+                            command.payload.get("owner_scope_type") or "PROJECT"
+                        ).upper()
+                        == "PROJECT"
+                        else ""
+                    )
+                ),
+                dependencies=tuple(command.payload.get("dependencies") or ()),
+                registered_by=command.actor_id,
+                operation_id=operation_id,
+                checkpoint=checkpoint,
+            )
+            checkpoint("after_version_registry")
+        elif action == "capability_pack.manifest.validate":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            report = dict(prepared["report"])
+            result = repository.record_validation(
+                pack_id=command.pack_id,
+                pack_version=command.pack_version,
+                manifest_hash=str(version["manifest_hash"]),
+                validator_version=CAPABILITY_PACK_COMPILER_VERSION,
+                valid=bool(report["ok"]),
+                report=report,
+                validated_by=command.actor_id,
+                operation_id=operation_id,
+            )
+        elif action == "capability_pack.compile":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            if prepared.get("compiled") is None:
+&gt;               raise KernelError(
+                    "CAPABILITY_PACK_COMPILATION_REJECTED",
+                    "trusted compilation failed: "
+                    + ", ".join(
+                        f"{item.get('code')}@{item.get('path')}:{item.get('message')}"
+                        for item in prepared["report"].get("errors") or ()
+                    ),
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file
+
+src/novel_forge/modules/capability_pack_authority/application.py:789: KernelError</failure></testcase><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_native_author_first_cross_chapter_edit_and_export[completed-sibling-interruption]" time="0.491"><failure message="novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-206/test_native_author_first_cross1')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10c84bef0&gt;
+completed_sibling = True, recoverable_result = False
+
+    @pytest.mark.parametrize("completed_sibling,recoverable_result", [(False, False), (True, False), (False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result"])
+    def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result):
+        harness = CapabilityPackPostgresHarness("author-first")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
+        executable.write_text(executable.read_text().replace(
+            ' target.write_bytes(',
+            ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-interrupted-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        stream_failures = []
+        compression_calls = []
+        def interrupt_first_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage in {"context_compress", "context_fidelity"}:
+                compression_calls.append((request.operation_id, request.stage))
+            failure_stage = "context_fidelity" if completed_sibling else "memo"
+            if not recoverable_result and request.stage == failure_stage and not stream_failures:
+                layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+                layout.result_path("interrupt-stream").write_text("controlled fault")
+                stream_failures.append(request.operation_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+        if completed_sibling:
+            prepare_context_model_stages(transport, monkeypatch)
+        if recoverable_result:
+            from dataclasses import replace
+            from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+            execute = ProductionExecutionGatewayExternalEffectAdapter.execute
+            def lose_completed_response(adapter, **options):
+                result = execute(adapter, **options)
+                payload = options["request_payload"]
+                if payload.get("stage") == "memo" and not stream_failures:
+                    assert result.outcome == "success"
+                    stream_failures.append(payload["operation_id"])
+                    return replace(result, outcome="unknown")
+                return result
+            monkeypatch.setattr(ProductionExecutionGatewayExternalEffectAdapter, "execute", lose_completed_response)
+        if not completed_sibling and not recoverable_result:
+            from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
+            from concurrent.futures import ThreadPoolExecutor
+            native_recovery = generation_isolation.recover_chapter_generations
+            admission_checked = []
+            def verify_atomic_recovery(authority, **options):
+                if admission_checked:
+                    return native_recovery(authority, **options)
+                book = authority.require(options["book_run_id"])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+                        JOIN authority_external_effect e USING(operation_id)
+                        WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    original = uow.cursor.fetchone()
+                if original is None:
+                    return native_recovery(authority, **options)
+                def interrupt_admission(*args, **kwargs):
+                    raise RuntimeError("controlled successor admission interruption")
+                with monkeypatch.context() as fault:
+                    fault.setattr(step_successor_v2, "replace_failed_step", interrupt_admission)
+                    with pytest.raises(RuntimeError, match="controlled successor admission interruption"):
+                        native_recovery(authority, **options)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == original
+                    uow.cursor.execute("SELECT count(*) FROM authority_generation_isolation WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
+                assert sum(outcomes) == 1
+                admission_checked.append(True)
+                return True
+            monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
+        env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
+        env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
+        transport.database_url = DATABASE_URL
+        inputs = {"version": "creation-request.v1", "title": f"Author work sibling={completed_sibling} recoverable={recoverable_result}", "target_chapters": 8,
+            "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
+                "source_boundaries": ["Original work"]}}
+        source = tmp_path / "request.json"
+        source.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+            "--repository-root", str(root), "--maximum-ticks", "100",
+            "--foreground"])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+        from novel_forge.api import authority_dependencies
+        build_book = authority_dependencies.build_book_production_composition
+        interruptions = []
+        def fail_delivery_once(checkpoint):
+            if checkpoint == "after_manuscript_delivery" and not interruptions:
+                interruptions.append(checkpoint)
+                raise RuntimeError("controlled interruption after saved prose")
+        def with_interrupt(*values, **options):
+            composition = build_book(*values, **options)
+            composition.authority.failure_injector = fail_delivery_once
+            return composition
+        monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+&gt;           started = run_creation_command(settings, args)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:998: in execute_creation_command
+    install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
+src/novel_forge/modules/capability_packs/validation_deployment.py:205: in install_chapter_validation_pack
+    return _install_validation_manifest(
+src/novel_forge/modules/capability_packs/validation_deployment.py:498: in _install_validation_manifest
+    compilation = _pack_command(
+src/novel_forge/modules/capability_packs/validation_deployment.py:655: in _pack_command
+    return app.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:518: in execute
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:510: in handler
+    return self._execute_transaction(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.modules.capability_pack_authority.application.CapabilityPackAuthorityApplication object at 0x10cc4abd0&gt;
+uow = &lt;novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x10cc12660&gt;
+operation_id = 'e94ae9e0-ea64-466f-89f3-3292448c05e2'
+command = CapabilityPackAuthorityCommand(definition_name='capability_pack.compile', project_id='project:author:4e2d58d0e438dbb43...reative.5064ae578a9eb2c7a83fdc51:928f457de8961fe3b1aa', deployment_id='', rollout_id='', expected_activation_version=0)
+prepared = {'version_identity': {'manifest_hash': 'sha256:0abfd9243d2f05d81a78c9b48304fb94d05e62ab09ef7cf52e373f243ec49b83', 'art...1', 'manifest_hash': 'sha256:0abfd9243d2f05d81a78c9b48304fb94d05e62ab09ef7cf52e373f243ec49b83', ...}, 'compiled': None}
+checkpoint = &lt;function _noop_checkpoint at 0x10aaee480&gt;
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        command: CapabilityPackAuthorityCommand,
+        prepared: Mapping[str, Any],
+        checkpoint: TransactionCheckpoint,
+    ) -&gt; dict[str, Any]:
+        action = command.definition_name
+        repository = uow.repositories.capability_packs
+        repository.lock_pack_authority(command.pack_id)
+        if action == "capability_pack.manifest.register":
+            manifest_payload = command.payload.get("manifest")
+            catalog_payload = command.payload.get("artifact_catalog")
+            if not isinstance(manifest_payload, Mapping) or not isinstance(
+                catalog_payload, Mapping
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_REGISTRATION_INPUT_INVALID",
+                    "registration requires Manifest and exact Artifact Catalog",
+                )
+            manifest = load_capability_pack_payload(manifest_payload)
+            if str(manifest.identity.pack_id) != command.pack_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_IDENTITY_CONFLICT",
+                    "route Pack identity differs from Manifest",
+                )
+            normalized_catalog = _normalized_artifact_catalog(catalog_payload)
+            result = repository.register_version(
+                project_id=command.project_id,
+                manifest=manifest.to_dict(),
+                manifest_hash=manifest.manifest_hash,
+                artifact_catalog=normalized_catalog,
+                artifact_catalog_hash=canonical_hash(normalized_catalog),
+                release_channel=str(
+                    command.payload.get("release_channel")
+                    or manifest.governance.release_channel
+                ),
+                owner_scope_type=str(
+                    command.payload.get("owner_scope_type") or "PROJECT"
+                ),
+                owner_project_id=str(
+                    command.payload.get("owner_project_id")
+                    or (
+                        command.project_id
+                        if str(
+                            command.payload.get("owner_scope_type") or "PROJECT"
+                        ).upper()
+                        == "PROJECT"
+                        else ""
+                    )
+                ),
+                dependencies=tuple(command.payload.get("dependencies") or ()),
+                registered_by=command.actor_id,
+                operation_id=operation_id,
+                checkpoint=checkpoint,
+            )
+            checkpoint("after_version_registry")
+        elif action == "capability_pack.manifest.validate":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            report = dict(prepared["report"])
+            result = repository.record_validation(
+                pack_id=command.pack_id,
+                pack_version=command.pack_version,
+                manifest_hash=str(version["manifest_hash"]),
+                validator_version=CAPABILITY_PACK_COMPILER_VERSION,
+                valid=bool(report["ok"]),
+                report=report,
+                validated_by=command.actor_id,
+                operation_id=operation_id,
+            )
+        elif action == "capability_pack.compile":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            if prepared.get("compiled") is None:
+&gt;               raise KernelError(
+                    "CAPABILITY_PACK_COMPILATION_REJECTED",
+                    "trusted compilation failed: "
+                    + ", ".join(
+                        f"{item.get('code')}@{item.get('path')}:{item.get('message')}"
+                        for item in prepared["report"].get("errors") or ()
+                    ),
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file
+
+src/novel_forge/modules/capability_pack_authority/application.py:789: KernelError</failure></testcase><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_native_author_first_cross_chapter_edit_and_export[saved-complete-result]" time="0.494"><failure message="novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-206/test_native_author_first_cross2')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10c84bf50&gt;
+completed_sibling = False, recoverable_result = True
+
+    @pytest.mark.parametrize("completed_sibling,recoverable_result", [(False, False), (True, False), (False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result"])
+    def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result):
+        harness = CapabilityPackPostgresHarness("author-first")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
+        executable.write_text(executable.read_text().replace(
+            ' target.write_bytes(',
+            ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-interrupted-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        stream_failures = []
+        compression_calls = []
+        def interrupt_first_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage in {"context_compress", "context_fidelity"}:
+                compression_calls.append((request.operation_id, request.stage))
+            failure_stage = "context_fidelity" if completed_sibling else "memo"
+            if not recoverable_result and request.stage == failure_stage and not stream_failures:
+                layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+                layout.result_path("interrupt-stream").write_text("controlled fault")
+                stream_failures.append(request.operation_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+        if completed_sibling:
+            prepare_context_model_stages(transport, monkeypatch)
+        if recoverable_result:
+            from dataclasses import replace
+            from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+            execute = ProductionExecutionGatewayExternalEffectAdapter.execute
+            def lose_completed_response(adapter, **options):
+                result = execute(adapter, **options)
+                payload = options["request_payload"]
+                if payload.get("stage") == "memo" and not stream_failures:
+                    assert result.outcome == "success"
+                    stream_failures.append(payload["operation_id"])
+                    return replace(result, outcome="unknown")
+                return result
+            monkeypatch.setattr(ProductionExecutionGatewayExternalEffectAdapter, "execute", lose_completed_response)
+        if not completed_sibling and not recoverable_result:
+            from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
+            from concurrent.futures import ThreadPoolExecutor
+            native_recovery = generation_isolation.recover_chapter_generations
+            admission_checked = []
+            def verify_atomic_recovery(authority, **options):
+                if admission_checked:
+                    return native_recovery(authority, **options)
+                book = authority.require(options["book_run_id"])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+                        JOIN authority_external_effect e USING(operation_id)
+                        WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    original = uow.cursor.fetchone()
+                if original is None:
+                    return native_recovery(authority, **options)
+                def interrupt_admission(*args, **kwargs):
+                    raise RuntimeError("controlled successor admission interruption")
+                with monkeypatch.context() as fault:
+                    fault.setattr(step_successor_v2, "replace_failed_step", interrupt_admission)
+                    with pytest.raises(RuntimeError, match="controlled successor admission interruption"):
+                        native_recovery(authority, **options)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == original
+                    uow.cursor.execute("SELECT count(*) FROM authority_generation_isolation WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
+                assert sum(outcomes) == 1
+                admission_checked.append(True)
+                return True
+            monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
+        env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
+        env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
+        transport.database_url = DATABASE_URL
+        inputs = {"version": "creation-request.v1", "title": f"Author work sibling={completed_sibling} recoverable={recoverable_result}", "target_chapters": 8,
+            "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
+                "source_boundaries": ["Original work"]}}
+        source = tmp_path / "request.json"
+        source.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+            "--repository-root", str(root), "--maximum-ticks", "100",
+            "--foreground"])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+        from novel_forge.api import authority_dependencies
+        build_book = authority_dependencies.build_book_production_composition
+        interruptions = []
+        def fail_delivery_once(checkpoint):
+            if checkpoint == "after_manuscript_delivery" and not interruptions:
+                interruptions.append(checkpoint)
+                raise RuntimeError("controlled interruption after saved prose")
+        def with_interrupt(*values, **options):
+            composition = build_book(*values, **options)
+            composition.authority.failure_injector = fail_delivery_once
+            return composition
+        monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+&gt;           started = run_creation_command(settings, args)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:998: in execute_creation_command
+    install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
+src/novel_forge/modules/capability_packs/validation_deployment.py:205: in install_chapter_validation_pack
+    return _install_validation_manifest(
+src/novel_forge/modules/capability_packs/validation_deployment.py:498: in _install_validation_manifest
+    compilation = _pack_command(
+src/novel_forge/modules/capability_packs/validation_deployment.py:655: in _pack_command
+    return app.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:518: in execute
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:510: in handler
+    return self._execute_transaction(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.modules.capability_pack_authority.application.CapabilityPackAuthorityApplication object at 0x10cd0ed50&gt;
+uow = &lt;novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x10cdbd370&gt;
+operation_id = 'c584b147-03a8-440a-bff3-204c8d18e65b'
+command = CapabilityPackAuthorityCommand(definition_name='capability_pack.compile', project_id='project:author:1adfd7eb0f6160720...reative.5155a51a3bde87954a198b76:03e6202d9935b1f47b56', deployment_id='', rollout_id='', expected_activation_version=0)
+prepared = {'version_identity': {'manifest_hash': 'sha256:4c1d1a7aa93078bc7438683945f82cc9a30ca1d0fe1f77e35c8d3f9da33aabe1', 'art...1', 'manifest_hash': 'sha256:4c1d1a7aa93078bc7438683945f82cc9a30ca1d0fe1f77e35c8d3f9da33aabe1', ...}, 'compiled': None}
+checkpoint = &lt;function _noop_checkpoint at 0x10aaee480&gt;
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        command: CapabilityPackAuthorityCommand,
+        prepared: Mapping[str, Any],
+        checkpoint: TransactionCheckpoint,
+    ) -&gt; dict[str, Any]:
+        action = command.definition_name
+        repository = uow.repositories.capability_packs
+        repository.lock_pack_authority(command.pack_id)
+        if action == "capability_pack.manifest.register":
+            manifest_payload = command.payload.get("manifest")
+            catalog_payload = command.payload.get("artifact_catalog")
+            if not isinstance(manifest_payload, Mapping) or not isinstance(
+                catalog_payload, Mapping
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_REGISTRATION_INPUT_INVALID",
+                    "registration requires Manifest and exact Artifact Catalog",
+                )
+            manifest = load_capability_pack_payload(manifest_payload)
+            if str(manifest.identity.pack_id) != command.pack_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_IDENTITY_CONFLICT",
+                    "route Pack identity differs from Manifest",
+                )
+            normalized_catalog = _normalized_artifact_catalog(catalog_payload)
+            result = repository.register_version(
+                project_id=command.project_id,
+                manifest=manifest.to_dict(),
+                manifest_hash=manifest.manifest_hash,
+                artifact_catalog=normalized_catalog,
+                artifact_catalog_hash=canonical_hash(normalized_catalog),
+                release_channel=str(
+                    command.payload.get("release_channel")
+                    or manifest.governance.release_channel
+                ),
+                owner_scope_type=str(
+                    command.payload.get("owner_scope_type") or "PROJECT"
+                ),
+                owner_project_id=str(
+                    command.payload.get("owner_project_id")
+                    or (
+                        command.project_id
+                        if str(
+                            command.payload.get("owner_scope_type") or "PROJECT"
+                        ).upper()
+                        == "PROJECT"
+                        else ""
+                    )
+                ),
+                dependencies=tuple(command.payload.get("dependencies") or ()),
+                registered_by=command.actor_id,
+                operation_id=operation_id,
+                checkpoint=checkpoint,
+            )
+            checkpoint("after_version_registry")
+        elif action == "capability_pack.manifest.validate":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            report = dict(prepared["report"])
+            result = repository.record_validation(
+                pack_id=command.pack_id,
+                pack_version=command.pack_version,
+                manifest_hash=str(version["manifest_hash"]),
+                validator_version=CAPABILITY_PACK_COMPILER_VERSION,
+                valid=bool(report["ok"]),
+                report=report,
+                validated_by=command.actor_id,
+                operation_id=operation_id,
+            )
+        elif action == "capability_pack.compile":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            if prepared.get("compiled") is None:
+&gt;               raise KernelError(
+                    "CAPABILITY_PACK_COMPILATION_REJECTED",
+                    "trusted compilation failed: "
+                    + ", ".join(
+                        f"{item.get('code')}@{item.get('path')}:{item.get('message')}"
+                        for item in prepared["report"].get("errors") or ()
+                    ),
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file
+
+src/novel_forge/modules/capability_pack_authority/application.py:789: KernelError</failure></testcase><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint" time="0.171" /><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_native_generation_fault_allowance_survives_successors_and_stops_dispatch[memo]" time="0.482"><failure message="novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-206/test_native_generation_fault_a0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10cc7e210&gt;
+failure_stage = 'memo'
+
+    @pytest.mark.parametrize("failure_stage", ["memo", "context_compress", "context_fidelity"])
+    def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch, failure_stage):
+        harness = CapabilityPackPostgresHarness('bounded-generation-faults')
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            'NOVEL_FORGE_APPLICATION_BUILD_ID': harness.application_build_id,
+            'NOVEL_FORGE_COMMIT_SHA': harness.release_sha,
+            'NOVEL_FORGE_MODEL_PROVIDER': 'codex-cli', 'NOVEL_FORGE_MODEL': 'gpt-test',
+            'NOVEL_FORGE_PLANNING_PROVIDER': 'codex-cli', 'NOVEL_FORGE_PLANNING_MODEL': 'gpt-test',
+            'NOVEL_FORGE_STORAGE_AUTHORITY': 'postgresql', 'NOVEL_FORGE_DATABASE_URL': DATABASE_URL,
+            'NOVEL_FORGE_OPERATOR_PRINCIPAL_ID': 'bounded-fault-operator',
+        }, monkeypatch, transport)
+        env['NOVEL_FORGE_ENVIRONMENT'] = 'production'
+        executable = Path(env['NOVEL_FORGE_CODEX_EXECUTABLE'])
+        executable.write_text(executable.read_text().replace(' target.write_bytes(', ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-bounded-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env['NOVEL_FORGE_CODEX_EXECUTABLE_SHA256'] = 'sha256:' + hashlib.sha256(executable.read_bytes()).hexdigest()
+        env['NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID'] = 'bounded-fault-operator'
+        env['NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID'] = 'bounded-planning-evaluator'
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv('DEEPSEEK_API_KEY', raising=False)
+        monkeypatch.setenv('NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE', str(tmp_path / 'not-authorized.json'))
+        transport.database_url = DATABASE_URL
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        executions = set()
+        def interrupt_every_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage == failure_stage:
+                layout = PersistentExecutionDirectory(env['NOVEL_FORGE_CODEX_EXECUTION_ROOT']).prepare(request.execution_id)
+                layout.result_path('interrupt-stream').write_text('controlled persistent stream failure')
+                executions.add(request.execution_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, 'resolve', interrupt_every_memo)
+        if failure_stage.startswith('context_'):
+            prepare_context_model_stages(transport, monkeypatch)
+        source = tmp_path / 'request.json'
+        source.write_text(json.dumps({'version':'creation-request.v1','title':f'Bounded generation {failure_stage}','target_chapters':1,
+            'language_contract':{'required_language':'zh-CN'},'chapter_length':{'minimum':800,'maximum':4000},
+            'brief':{'creative_brief_contract_version':'creative-brief-v2','idea':'An archivist investigates a flood.',
+                'genre':'social mystery','audience':'adult readers','constraints':['Original single chapter'],
+                'source_boundaries':['Original work']}}))
+        args = _authority_parser().parse_args(['authority-creation','start','--input-file',str(source),
+            '--repository-root',str(root),'--maximum-ticks','100','--work-window-seconds','180','--foreground','--yield-after-window'])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment='production')
+&gt;       result = run_creation_command(settings, args)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:458: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:998: in execute_creation_command
+    install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
+src/novel_forge/modules/capability_packs/validation_deployment.py:205: in install_chapter_validation_pack
+    return _install_validation_manifest(
+src/novel_forge/modules/capability_packs/validation_deployment.py:498: in _install_validation_manifest
+    compilation = _pack_command(
+src/novel_forge/modules/capability_packs/validation_deployment.py:655: in _pack_command
+    return app.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:518: in execute
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:510: in handler
+    return self._execute_transaction(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.modules.capability_pack_authority.application.CapabilityPackAuthorityApplication object at 0x10cabe210&gt;
+uow = &lt;novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x10cdbd280&gt;
+operation_id = 'fa4e2eee-9397-40a1-8aca-f1149879e6fe'
+command = CapabilityPackAuthorityCommand(definition_name='capability_pack.compile', project_id='project:author:b01f75afad31b5f5e...reative.940d0107c6497b7c431436b4:721a5811c5d801b26061', deployment_id='', rollout_id='', expected_activation_version=0)
+prepared = {'version_identity': {'manifest_hash': 'sha256:386cacf4072bc42139a7a61f969cc63457fcb97bb5ea2ec9af312f4bcf7e7aaa', 'art...1', 'manifest_hash': 'sha256:386cacf4072bc42139a7a61f969cc63457fcb97bb5ea2ec9af312f4bcf7e7aaa', ...}, 'compiled': None}
+checkpoint = &lt;function _noop_checkpoint at 0x10aaee480&gt;
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        command: CapabilityPackAuthorityCommand,
+        prepared: Mapping[str, Any],
+        checkpoint: TransactionCheckpoint,
+    ) -&gt; dict[str, Any]:
+        action = command.definition_name
+        repository = uow.repositories.capability_packs
+        repository.lock_pack_authority(command.pack_id)
+        if action == "capability_pack.manifest.register":
+            manifest_payload = command.payload.get("manifest")
+            catalog_payload = command.payload.get("artifact_catalog")
+            if not isinstance(manifest_payload, Mapping) or not isinstance(
+                catalog_payload, Mapping
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_REGISTRATION_INPUT_INVALID",
+                    "registration requires Manifest and exact Artifact Catalog",
+                )
+            manifest = load_capability_pack_payload(manifest_payload)
+            if str(manifest.identity.pack_id) != command.pack_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_IDENTITY_CONFLICT",
+                    "route Pack identity differs from Manifest",
+                )
+            normalized_catalog = _normalized_artifact_catalog(catalog_payload)
+            result = repository.register_version(
+                project_id=command.project_id,
+                manifest=manifest.to_dict(),
+                manifest_hash=manifest.manifest_hash,
+                artifact_catalog=normalized_catalog,
+                artifact_catalog_hash=canonical_hash(normalized_catalog),
+                release_channel=str(
+                    command.payload.get("release_channel")
+                    or manifest.governance.release_channel
+                ),
+                owner_scope_type=str(
+                    command.payload.get("owner_scope_type") or "PROJECT"
+                ),
+                owner_project_id=str(
+                    command.payload.get("owner_project_id")
+                    or (
+                        command.project_id
+                        if str(
+                            command.payload.get("owner_scope_type") or "PROJECT"
+                        ).upper()
+                        == "PROJECT"
+                        else ""
+                    )
+                ),
+                dependencies=tuple(command.payload.get("dependencies") or ()),
+                registered_by=command.actor_id,
+                operation_id=operation_id,
+                checkpoint=checkpoint,
+            )
+            checkpoint("after_version_registry")
+        elif action == "capability_pack.manifest.validate":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            report = dict(prepared["report"])
+            result = repository.record_validation(
+                pack_id=command.pack_id,
+                pack_version=command.pack_version,
+                manifest_hash=str(version["manifest_hash"]),
+                validator_version=CAPABILITY_PACK_COMPILER_VERSION,
+                valid=bool(report["ok"]),
+                report=report,
+                validated_by=command.actor_id,
+                operation_id=operation_id,
+            )
+        elif action == "capability_pack.compile":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            if prepared.get("compiled") is None:
+&gt;               raise KernelError(
+                    "CAPABILITY_PACK_COMPILATION_REJECTED",
+                    "trusted compilation failed: "
+                    + ", ".join(
+                        f"{item.get('code')}@{item.get('path')}:{item.get('message')}"
+                        for item in prepared["report"].get("errors") or ()
+                    ),
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file
+
+src/novel_forge/modules/capability_pack_authority/application.py:789: KernelError</failure></testcase><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_native_generation_fault_allowance_survives_successors_and_stops_dispatch[context_compress]" time="0.476"><failure message="novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-206/test_native_generation_fault_a1')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10aa34e60&gt;
+failure_stage = 'context_compress'
+
+    @pytest.mark.parametrize("failure_stage", ["memo", "context_compress", "context_fidelity"])
+    def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch, failure_stage):
+        harness = CapabilityPackPostgresHarness('bounded-generation-faults')
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            'NOVEL_FORGE_APPLICATION_BUILD_ID': harness.application_build_id,
+            'NOVEL_FORGE_COMMIT_SHA': harness.release_sha,
+            'NOVEL_FORGE_MODEL_PROVIDER': 'codex-cli', 'NOVEL_FORGE_MODEL': 'gpt-test',
+            'NOVEL_FORGE_PLANNING_PROVIDER': 'codex-cli', 'NOVEL_FORGE_PLANNING_MODEL': 'gpt-test',
+            'NOVEL_FORGE_STORAGE_AUTHORITY': 'postgresql', 'NOVEL_FORGE_DATABASE_URL': DATABASE_URL,
+            'NOVEL_FORGE_OPERATOR_PRINCIPAL_ID': 'bounded-fault-operator',
+        }, monkeypatch, transport)
+        env['NOVEL_FORGE_ENVIRONMENT'] = 'production'
+        executable = Path(env['NOVEL_FORGE_CODEX_EXECUTABLE'])
+        executable.write_text(executable.read_text().replace(' target.write_bytes(', ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-bounded-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env['NOVEL_FORGE_CODEX_EXECUTABLE_SHA256'] = 'sha256:' + hashlib.sha256(executable.read_bytes()).hexdigest()
+        env['NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID'] = 'bounded-fault-operator'
+        env['NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID'] = 'bounded-planning-evaluator'
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv('DEEPSEEK_API_KEY', raising=False)
+        monkeypatch.setenv('NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE', str(tmp_path / 'not-authorized.json'))
+        transport.database_url = DATABASE_URL
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        executions = set()
+        def interrupt_every_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage == failure_stage:
+                layout = PersistentExecutionDirectory(env['NOVEL_FORGE_CODEX_EXECUTION_ROOT']).prepare(request.execution_id)
+                layout.result_path('interrupt-stream').write_text('controlled persistent stream failure')
+                executions.add(request.execution_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, 'resolve', interrupt_every_memo)
+        if failure_stage.startswith('context_'):
+            prepare_context_model_stages(transport, monkeypatch)
+        source = tmp_path / 'request.json'
+        source.write_text(json.dumps({'version':'creation-request.v1','title':f'Bounded generation {failure_stage}','target_chapters':1,
+            'language_contract':{'required_language':'zh-CN'},'chapter_length':{'minimum':800,'maximum':4000},
+            'brief':{'creative_brief_contract_version':'creative-brief-v2','idea':'An archivist investigates a flood.',
+                'genre':'social mystery','audience':'adult readers','constraints':['Original single chapter'],
+                'source_boundaries':['Original work']}}))
+        args = _authority_parser().parse_args(['authority-creation','start','--input-file',str(source),
+            '--repository-root',str(root),'--maximum-ticks','100','--work-window-seconds','180','--foreground','--yield-after-window'])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment='production')
+&gt;       result = run_creation_command(settings, args)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:458: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:998: in execute_creation_command
+    install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
+src/novel_forge/modules/capability_packs/validation_deployment.py:205: in install_chapter_validation_pack
+    return _install_validation_manifest(
+src/novel_forge/modules/capability_packs/validation_deployment.py:498: in _install_validation_manifest
+    compilation = _pack_command(
+src/novel_forge/modules/capability_packs/validation_deployment.py:655: in _pack_command
+    return app.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:518: in execute
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:510: in handler
+    return self._execute_transaction(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.modules.capability_pack_authority.application.CapabilityPackAuthorityApplication object at 0x10ccc3710&gt;
+uow = &lt;novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x10c7dcc80&gt;
+operation_id = '95e5c4e3-95ff-4192-818a-6a7aa25119f7'
+command = CapabilityPackAuthorityCommand(definition_name='capability_pack.compile', project_id='project:author:f6dde09c7b342ca89...reative.0787cbcb6cd7eb3ba868f69f:3945c4e745dcb07d9a9b', deployment_id='', rollout_id='', expected_activation_version=0)
+prepared = {'version_identity': {'manifest_hash': 'sha256:c01cc94859da1496dabcec90db8ee1de8ea655972b5190793d28f6156cb2ce13', 'art...1', 'manifest_hash': 'sha256:c01cc94859da1496dabcec90db8ee1de8ea655972b5190793d28f6156cb2ce13', ...}, 'compiled': None}
+checkpoint = &lt;function _noop_checkpoint at 0x10aaee480&gt;
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        command: CapabilityPackAuthorityCommand,
+        prepared: Mapping[str, Any],
+        checkpoint: TransactionCheckpoint,
+    ) -&gt; dict[str, Any]:
+        action = command.definition_name
+        repository = uow.repositories.capability_packs
+        repository.lock_pack_authority(command.pack_id)
+        if action == "capability_pack.manifest.register":
+            manifest_payload = command.payload.get("manifest")
+            catalog_payload = command.payload.get("artifact_catalog")
+            if not isinstance(manifest_payload, Mapping) or not isinstance(
+                catalog_payload, Mapping
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_REGISTRATION_INPUT_INVALID",
+                    "registration requires Manifest and exact Artifact Catalog",
+                )
+            manifest = load_capability_pack_payload(manifest_payload)
+            if str(manifest.identity.pack_id) != command.pack_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_IDENTITY_CONFLICT",
+                    "route Pack identity differs from Manifest",
+                )
+            normalized_catalog = _normalized_artifact_catalog(catalog_payload)
+            result = repository.register_version(
+                project_id=command.project_id,
+                manifest=manifest.to_dict(),
+                manifest_hash=manifest.manifest_hash,
+                artifact_catalog=normalized_catalog,
+                artifact_catalog_hash=canonical_hash(normalized_catalog),
+                release_channel=str(
+                    command.payload.get("release_channel")
+                    or manifest.governance.release_channel
+                ),
+                owner_scope_type=str(
+                    command.payload.get("owner_scope_type") or "PROJECT"
+                ),
+                owner_project_id=str(
+                    command.payload.get("owner_project_id")
+                    or (
+                        command.project_id
+                        if str(
+                            command.payload.get("owner_scope_type") or "PROJECT"
+                        ).upper()
+                        == "PROJECT"
+                        else ""
+                    )
+                ),
+                dependencies=tuple(command.payload.get("dependencies") or ()),
+                registered_by=command.actor_id,
+                operation_id=operation_id,
+                checkpoint=checkpoint,
+            )
+            checkpoint("after_version_registry")
+        elif action == "capability_pack.manifest.validate":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            report = dict(prepared["report"])
+            result = repository.record_validation(
+                pack_id=command.pack_id,
+                pack_version=command.pack_version,
+                manifest_hash=str(version["manifest_hash"]),
+                validator_version=CAPABILITY_PACK_COMPILER_VERSION,
+                valid=bool(report["ok"]),
+                report=report,
+                validated_by=command.actor_id,
+                operation_id=operation_id,
+            )
+        elif action == "capability_pack.compile":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            if prepared.get("compiled") is None:
+&gt;               raise KernelError(
+                    "CAPABILITY_PACK_COMPILATION_REJECTED",
+                    "trusted compilation failed: "
+                    + ", ".join(
+                        f"{item.get('code')}@{item.get('path')}:{item.get('message')}"
+                        for item in prepared["report"].get("errors") or ()
+                    ),
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file
+
+src/novel_forge/modules/capability_pack_authority/application.py:789: KernelError</failure></testcase><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_native_generation_fault_allowance_survives_successors_and_stops_dispatch[context_fidelity]" time="0.502"><failure message="novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-206/test_native_generation_fault_a2')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10d0e8f50&gt;
+failure_stage = 'context_fidelity'
+
+    @pytest.mark.parametrize("failure_stage", ["memo", "context_compress", "context_fidelity"])
+    def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch, failure_stage):
+        harness = CapabilityPackPostgresHarness('bounded-generation-faults')
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            'NOVEL_FORGE_APPLICATION_BUILD_ID': harness.application_build_id,
+            'NOVEL_FORGE_COMMIT_SHA': harness.release_sha,
+            'NOVEL_FORGE_MODEL_PROVIDER': 'codex-cli', 'NOVEL_FORGE_MODEL': 'gpt-test',
+            'NOVEL_FORGE_PLANNING_PROVIDER': 'codex-cli', 'NOVEL_FORGE_PLANNING_MODEL': 'gpt-test',
+            'NOVEL_FORGE_STORAGE_AUTHORITY': 'postgresql', 'NOVEL_FORGE_DATABASE_URL': DATABASE_URL,
+            'NOVEL_FORGE_OPERATOR_PRINCIPAL_ID': 'bounded-fault-operator',
+        }, monkeypatch, transport)
+        env['NOVEL_FORGE_ENVIRONMENT'] = 'production'
+        executable = Path(env['NOVEL_FORGE_CODEX_EXECUTABLE'])
+        executable.write_text(executable.read_text().replace(' target.write_bytes(', ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-bounded-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env['NOVEL_FORGE_CODEX_EXECUTABLE_SHA256'] = 'sha256:' + hashlib.sha256(executable.read_bytes()).hexdigest()
+        env['NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID'] = 'bounded-fault-operator'
+        env['NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID'] = 'bounded-planning-evaluator'
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv('DEEPSEEK_API_KEY', raising=False)
+        monkeypatch.setenv('NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE', str(tmp_path / 'not-authorized.json'))
+        transport.database_url = DATABASE_URL
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        executions = set()
+        def interrupt_every_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage == failure_stage:
+                layout = PersistentExecutionDirectory(env['NOVEL_FORGE_CODEX_EXECUTION_ROOT']).prepare(request.execution_id)
+                layout.result_path('interrupt-stream').write_text('controlled persistent stream failure')
+                executions.add(request.execution_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, 'resolve', interrupt_every_memo)
+        if failure_stage.startswith('context_'):
+            prepare_context_model_stages(transport, monkeypatch)
+        source = tmp_path / 'request.json'
+        source.write_text(json.dumps({'version':'creation-request.v1','title':f'Bounded generation {failure_stage}','target_chapters':1,
+            'language_contract':{'required_language':'zh-CN'},'chapter_length':{'minimum':800,'maximum':4000},
+            'brief':{'creative_brief_contract_version':'creative-brief-v2','idea':'An archivist investigates a flood.',
+                'genre':'social mystery','audience':'adult readers','constraints':['Original single chapter'],
+                'source_boundaries':['Original work']}}))
+        args = _authority_parser().parse_args(['authority-creation','start','--input-file',str(source),
+            '--repository-root',str(root),'--maximum-ticks','100','--work-window-seconds','180','--foreground','--yield-after-window'])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment='production')
+&gt;       result = run_creation_command(settings, args)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:458: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:998: in execute_creation_command
+    install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
+src/novel_forge/modules/capability_packs/validation_deployment.py:205: in install_chapter_validation_pack
+    return _install_validation_manifest(
+src/novel_forge/modules/capability_packs/validation_deployment.py:498: in _install_validation_manifest
+    compilation = _pack_command(
+src/novel_forge/modules/capability_packs/validation_deployment.py:655: in _pack_command
+    return app.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:518: in execute
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:510: in handler
+    return self._execute_transaction(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.modules.capability_pack_authority.application.CapabilityPackAuthorityApplication object at 0x10d429dc0&gt;
+uow = &lt;novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x10cad0ce0&gt;
+operation_id = '5e05547b-37a0-4923-9fe6-3ac229bcad87'
+command = CapabilityPackAuthorityCommand(definition_name='capability_pack.compile', project_id='project:author:9f31b334f7ef2b01d...reative.eef9976df9cdcaae861197ad:9a98a2723f62661dd1c4', deployment_id='', rollout_id='', expected_activation_version=0)
+prepared = {'version_identity': {'manifest_hash': 'sha256:674df04824ae62ee6ee67b2efb9f15248b38eb3fa290a09c4ae4e4ad76ab5c44', 'art...1', 'manifest_hash': 'sha256:674df04824ae62ee6ee67b2efb9f15248b38eb3fa290a09c4ae4e4ad76ab5c44', ...}, 'compiled': None}
+checkpoint = &lt;function _noop_checkpoint at 0x10aaee480&gt;
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        operation_id: str,
+        command: CapabilityPackAuthorityCommand,
+        prepared: Mapping[str, Any],
+        checkpoint: TransactionCheckpoint,
+    ) -&gt; dict[str, Any]:
+        action = command.definition_name
+        repository = uow.repositories.capability_packs
+        repository.lock_pack_authority(command.pack_id)
+        if action == "capability_pack.manifest.register":
+            manifest_payload = command.payload.get("manifest")
+            catalog_payload = command.payload.get("artifact_catalog")
+            if not isinstance(manifest_payload, Mapping) or not isinstance(
+                catalog_payload, Mapping
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_REGISTRATION_INPUT_INVALID",
+                    "registration requires Manifest and exact Artifact Catalog",
+                )
+            manifest = load_capability_pack_payload(manifest_payload)
+            if str(manifest.identity.pack_id) != command.pack_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_IDENTITY_CONFLICT",
+                    "route Pack identity differs from Manifest",
+                )
+            normalized_catalog = _normalized_artifact_catalog(catalog_payload)
+            result = repository.register_version(
+                project_id=command.project_id,
+                manifest=manifest.to_dict(),
+                manifest_hash=manifest.manifest_hash,
+                artifact_catalog=normalized_catalog,
+                artifact_catalog_hash=canonical_hash(normalized_catalog),
+                release_channel=str(
+                    command.payload.get("release_channel")
+                    or manifest.governance.release_channel
+                ),
+                owner_scope_type=str(
+                    command.payload.get("owner_scope_type") or "PROJECT"
+                ),
+                owner_project_id=str(
+                    command.payload.get("owner_project_id")
+                    or (
+                        command.project_id
+                        if str(
+                            command.payload.get("owner_scope_type") or "PROJECT"
+                        ).upper()
+                        == "PROJECT"
+                        else ""
+                    )
+                ),
+                dependencies=tuple(command.payload.get("dependencies") or ()),
+                registered_by=command.actor_id,
+                operation_id=operation_id,
+                checkpoint=checkpoint,
+            )
+            checkpoint("after_version_registry")
+        elif action == "capability_pack.manifest.validate":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            report = dict(prepared["report"])
+            result = repository.record_validation(
+                pack_id=command.pack_id,
+                pack_version=command.pack_version,
+                manifest_hash=str(version["manifest_hash"]),
+                validator_version=CAPABILITY_PACK_COMPILER_VERSION,
+                valid=bool(report["ok"]),
+                report=report,
+                validated_by=command.actor_id,
+                operation_id=operation_id,
+            )
+        elif action == "capability_pack.compile":
+            version = repository.require_version(
+                command.pack_id,
+                command.pack_version,
+                project_id=command.project_id,
+                for_update=True,
+            )
+            _verify_prepared_identity(version, prepared)
+            if prepared.get("compiled") is None:
+&gt;               raise KernelError(
+                    "CAPABILITY_PACK_COMPILATION_REJECTED",
+                    "trusted compilation failed: "
+                    + ", ".join(
+                        f"{item.get('code')}@{item.get('path')}:{item.get('message')}"
+                        for item in prepared["report"].get("errors") or ()
+                    ),
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: CAPABILITY_PACK_COMPILATION_REJECTED: trusted compilation failed: CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH@$.skill_binding.skills[3].content_hash:Skill content hash differs from the resolved repository file
+
+src/novel_forge/modules/capability_pack_authority/application.py:789: KernelError</failure></testcase></testsuite></testsuites>

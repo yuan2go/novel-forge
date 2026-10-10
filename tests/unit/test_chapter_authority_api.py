@@ -196,6 +196,8 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     "novel_forge.api.routers.chapter_authority.authority_release_identity",
                     return_value=("build-42", "a" * 40),
                 ),
+                patch("novel_forge.api.authority_app.build_chapter_authority_application", return_value=fake),
+                patch("novel_forge.api.authority_app.build_production_execution_composition", return_value=SimpleNamespace(close=lambda: None)),
                 TestClient(app) as client,
             ):
                 response = client.post(
@@ -210,7 +212,7 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     },
                 )
 
-        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.status_code, 202, response.text)
         self.assertEqual(response.json()["saga_id"], "saga-1")
         self.assertEqual(fake.requests[0].actor_id, "trusted-operator")
         self.assertNotEqual(fake.requests[0].actor_id, "untrusted-caller")
@@ -246,6 +248,8 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     "novel_forge.api.routers.chapter_authority.authority_release_identity",
                     return_value=("build-42", "a" * 40),
                 ),
+                patch("novel_forge.api.authority_app.build_chapter_authority_application", return_value=fake),
+                patch("novel_forge.api.authority_app.build_production_execution_composition", return_value=SimpleNamespace(close=lambda: None)),
                 TestClient(app) as client,
             ):
                 response = client.post(
@@ -271,7 +275,7 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     },
                 )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["root_operation_id"], "operation-1")
         self.assertEqual(listing.status_code, 200)
         self.assertEqual(listing.json()[0]["limit"], 12)

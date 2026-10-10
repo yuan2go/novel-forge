@@ -1,0 +1,9 @@
+[
+  "tests/unit/test_capability_pack_validator/CapabilityPackValidatorTests.py::test_valid_chapter_generation_pack_passes",
+  "tests/unit/test_coordinated_migration_identity.py::test_registered_forward_upgrade_uses_one_continuous_identity_chain",
+  "tests/unit/test_longform_capability_pack_profiles.py::test_creative_json_format_example_matches_native_schema_without_replacing_default",
+  "tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.17.0]",
+  "tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.18.0]",
+  "tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.19.0]",
+  "tests/unit/test_work_intent_residuals.py::test_current_chapter_manifest_binds_exact_definition_hashes"
+]

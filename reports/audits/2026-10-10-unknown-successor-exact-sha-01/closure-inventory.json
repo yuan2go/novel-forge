@@ -1,0 +1,218 @@
+{
+  "work_package": "WP-UNKNOWN-SUCCESSOR-0194-EXACT-SHA-01",
+  "baseline": "70ac89b1fedb304e10422d78e4bd231ebfc52831",
+  "historical_audit": {
+    "base": "f30abd74ffa5d321fe2e2b92ce510a045a523cd5",
+    "head": "247ccb33a13709d4e7b061cc596d4a1f3fde621e"
+  },
+  "items": [
+    {
+      "id": "original-commit-isolation",
+      "opening_classification": "ALREADY_IMPLEMENTED_NEEDS_CURRENT_EVIDENCE",
+      "owner": "COMMAND_KERNEL",
+      "change": "Retain existing immutable isolation and old primary-output/activation prohibitions.",
+      "verification_nodes": [
+        "test_isolated_api_receipt_postgres.py",
+        "test_author_first_manuscript_postgres.py"
+      ],
+      "final_status": "CLOSED_NATIVE_SCRIPTED_EVIDENCE",
+      "capability_evidence_state": "EXECUTABLE",
+      "evidence": "final-native-work-package-evidence.json"
+    },
+    {
+      "id": "complete-output-reuse",
+      "opening_classification": "CODE_EXISTS_BUT_CHAPTER_ENTRY_WAS_NOT_WIRED_FOR_COMPLETE_CLI_RESULT",
+      "owner": "PRODUCTION_EXECUTION_AND_CHAPTER",
+      "change": "Chapter recovery first invokes native saved-result owner; adapter reuses its canonical bound evidence/validation manifest and fixture classification; no-resend assertions remain.",
+      "verification_nodes": [
+        "test_author_first_manuscript_postgres.py"
+      ],
+      "final_status": "CLOSED_NATIVE_SCRIPTED_EVIDENCE",
+      "capability_evidence_state": "EXECUTABLE",
+      "evidence": "final-native-work-package-evidence.json"
+    },
+    {
+      "id": "shared-context-fault-budget",
+      "opening_classification": "MISSING_OR_INCONSISTENT",
+      "owner": "COMMAND_KERNEL",
+      "change": "Use persisted dispatch lineage at recovery, successor admission and dispatch. Remove separate fixed continuation quota; emit exhaustion checkpoint once.",
+      "verification_nodes": [
+        "test_author_first_manuscript_postgres.py::test_native_generation_fault_allowance_survives_successors_and_stops_dispatch"
+      ],
+      "final_status": "CLOSED_NATIVE_SCRIPTED_EVIDENCE",
+      "capability_evidence_state": "EXECUTABLE",
+      "evidence": "final-native-work-package-evidence.json"
+    },
+    {
+      "id": "atomic-native-successor",
+      "opening_classification": "MISSING_ATOMIC_BOUNDARY",
+      "owner": "PLANNING_AND_CHAPTER",
+      "change": "Use existing coordinated nested UoW to commit isolation and existing continuation/Saga admission intent together; admission failure rolls back; concurrent retries yield one direct successor.",
+      "verification_nodes": [
+        "test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export"
+      ],
+      "final_status": "CLOSED_NATIVE_SCRIPTED_EVIDENCE",
+      "capability_evidence_state": "EXECUTABLE",
+      "evidence": "final-native-work-package-evidence.json"
+    },
+    {
+      "id": "isolated-api-late-receipt",
+      "opening_classification": "MISSING",
+      "owner": "COMMAND_KERNEL",
+      "change": "Adopt upstream PR150 native owner; support every isolated dispatch generation, strict original trusted binding, per-generation journal idempotency/conflicts, shared old reservation aggregation only after complete measured evidence; successor accounting remains independent.",
+      "final_owner": "generation_receipt_reconciliation",
+      "verification_nodes": [
+        "test_isolated_api_receipt_postgres.py"
+      ],
+      "final_status": "CLOSED_NATIVE_SCRIPTED_EVIDENCE",
+      "capability_evidence_state": "EXECUTABLE",
+      "evidence": "final-native-work-package-evidence.json"
+    },
+    {
+      "id": "registry-migration-and-joint-restore",
+      "opening_classification": "ONLY_CURRENT_EVIDENCE_MISSING",
+      "owner": "STORAGE_MIGRATIONS_AND_NATIVE_ASSETS",
+      "change": "Full identity/parent chain; old-schema fixtures migrate through0194 toH; real pg_dump/pg_restore verifies populated database, all Authority Asset versions and exact original execution directory. Baseline FK coverage gaps repaired only by new forward0198; old-schema fixture initialization corrected without weakening assertions.",
+      "verification_nodes": [
+        "test_migration_history_admission_postgres.py",
+        "test_author_first_manuscript_postgres.py",
+        "test_isolated_api_receipt_postgres.py"
+      ],
+      "final_status": "CLOSED_NATIVE_SCRIPTED_EVIDENCE",
+      "capability_evidence_state": "EXECUTABLE",
+      "evidence": "final-native-work-package-evidence.json"
+    },
+    {
+      "id": "exact-sha-canonical-p0",
+      "opening_classification": "ONLY_CURRENT_EVIDENCE_MISSING",
+      "owner": "BACKEND_QUALIFICATION",
+      "change": "Clean committed exact SHA, independent run roots, manifest completeness and all declared Compose processes.",
+      "verification_nodes": [
+        "CANONICAL_P0_REQUIRED_GATES"
+      ],
+      "final_status": "FAIL_CANONICAL_P0",
+      "capability_evidence_state": "EXECUTABLE",
+      "evidence": "canonical-p0-18 final report"
+    }
+  ],
+  "unverified": [
+    "REAL_PROVIDER",
+    "PRODUCTION_DEPLOYMENT",
+    "LITERARY_QUALITY"
+  ],
+  "status": "NATIVE_RECOVERY_AND_MIGRATION_VERIFIED_CANONICAL_P0_FAIL",
+  "upstream_convergence": {
+    "original_start_main": "70ac89b1fedb304e10422d78e4bd231ebfc52831",
+    "subsequent_main": "4c0f8e9ea19221a19112070a4a0c57840a3da8b4",
+    "receipt_owner_pr": 150,
+    "receipt_contract": "isolated-api-receipt.v1",
+    "original_inline_implementation": "SUPERSEDED_BEFORE_FINAL_ACCEPTANCE",
+    "evidence_publication_pr": 151,
+    "migration_head_unchanged": false,
+    "forward_fix": "0198 indexes only, exact parent0197; every published migration body unchanged; earlier unpublished own0196 name retired without rewriting any database history",
+    "current_main_snapshot": "f067d189a63f644a3a49f78abda557035b5fa59a",
+    "current_main_pr": 153,
+    "current_main_head": "20261010_0197_authorized_planning_capacity"
+  },
+  "tested_candidate_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "migration_head": "20261010_0198_recovery_reference_indexes",
+  "constraints": [
+    {
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "constraint": "Immutable isolation revokes old commit and activation rights; direct successors are uniquely bound by native authority constraints",
+      "evidence": "Published immutable migration guards and same-SHA native work-package evidence; complete canonical qualification remains FAIL and production is NOT_RUN"
+    },
+    {
+      "classification": "CONFIGURABLE_POLICY",
+      "constraint": "Persisted dispatch failure allowance uses the minimum original frozen retry policy across the native recovery lineage; Provider entitlement and paid limits stay with original owners"
+    },
+    {
+      "classification": "CURRENT_RUNTIME_FACT",
+      "constraint": "An isolated original remote outcome and usage may remain unknown while a separately admitted successor executes"
+    },
+    {
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "constraint": "Frozen legacy Planning Skill and execution contract content retains original byte/hash identities"
+    },
+    {
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "constraint": "Existing narrative depth, segmentation and retention decisions are not promoted into permanent architecture by this package"
+    }
+  ],
+  "current_main_snapshot": "f067d189a63f644a3a49f78abda557035b5fa59a",
+  "current_pack_version": "3.0.2",
+  "ordinary_chapter_definition_version": "3.10.0",
+  "repair_definitions_remain_journal_bound": true,
+  "tested_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "capability_evidence_state": "EXECUTABLE",
+  "engineering_qualification": "FAIL",
+  "production_proven": false,
+  "results": {
+    "canonical_p0": "FAIL",
+    "canonical_exit_code": 2,
+    "backend": {
+      "collected_pass": 5294,
+      "subtests_pass": 1508,
+      "fail": 0,
+      "skip": 0
+    },
+    "migration_compatibility": {
+      "pass": 571,
+      "subtests_pass": 13,
+      "fail": 0,
+      "error": 0,
+      "skip": 0
+    },
+    "native_full": {
+      "collected_count": 1666,
+      "junit_case_count": 1781,
+      "fail": 222,
+      "error": 11,
+      "skip": 0
+    },
+    "native_selected_package": {
+      "pass": 144,
+      "fail": 0,
+      "error": 0
+    },
+    "standalone_compose": {
+      "status": "PASS",
+      "worker_count": 10,
+      "owned_cleanup_remaining": 0,
+      "counts_as_canonical_p0_pass": false
+    },
+    "standalone_query_plan": {
+      "status": "PASS",
+      "plan_count": 11,
+      "reality_access_paths": 3,
+      "counts_as_canonical_p0_pass": false
+    },
+    "joint_restore": {
+      "status": "PASS",
+      "chapter_tables": 337,
+      "chapter_execution_files": 600,
+      "api_tables": 339,
+      "api_execution_files": 0,
+      "original_is_populated_disposable_test_db": true,
+      "production_original_restore": "NOT_RUN"
+    },
+    "same_sha_remote_ci": "NOT_RUN"
+  },
+  "remaining": [
+    {
+      "scope": "GLOBAL_CANONICAL_P0",
+      "status": "FAIL",
+      "detail": "233 current failing nodes reproduced on current-main baseline;118 same error category,115 category changes with root equivalence unresolved. Existing realization binding/style projection/context capacity/repair authorization/fixture contract problems remain."
+    },
+    {
+      "scope": "CHANGED_FAILURE_ROOT_ATTRIBUTION",
+      "status": "UNRESOLVED",
+      "detail": "For115 category changes, compare first trusted gate/artifact and unchanged owner call path before changing fixtures; do not treat matching node id as same root cause."
+    },
+    {
+      "scope": "REMOTE_GOVERNANCE",
+      "status": "NOT_RUN",
+      "detail": "No CI checks were reported for source SHA; Draft PR remains open and unmerged."
+    }
+  ]
+}

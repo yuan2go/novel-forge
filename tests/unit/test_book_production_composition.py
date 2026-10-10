@@ -485,7 +485,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 ProductRouterContext(
                     app_settings=SimpleNamespace(),
                     models=product_model_map(),
-                    services=SimpleNamespace(book_production=composition),
+                    services=SimpleNamespace(book_production=composition, book_authority_application=composition.authority),
                 )
             )
         )

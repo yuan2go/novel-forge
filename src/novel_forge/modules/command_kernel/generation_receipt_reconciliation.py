@@ -12,12 +12,13 @@ def _invalid(message):
     raise KernelError("ISOLATED_API_RECEIPT_INVALID", message)
 
 
-def resolution(cursor, effect_id):
+def resolution(cursor, effect_id, dispatch_id=None):
     cursor.execute(
         """SELECT evidence FROM authority_effect_reconciliation_evidence
         WHERE external_effect_id=%s AND evidence->>'contract_version'=%s
+          AND (%s::text IS NULL OR evidence->>'dispatch_id'=%s)
         ORDER BY reconciled_at DESC,reconciliation_id DESC LIMIT 1""",
-        [effect_id, CONTRACT],
+        [effect_id, CONTRACT, dispatch_id, dispatch_id],
     )
     row = cursor.fetchone()
     return row[0] if row else None
@@ -30,7 +31,7 @@ def original_dispatch(uow, effect, dispatch_id=None):
     proof = isolation(uow.cursor, effect["external_effect_id"])
     if (
         not proof
-        or len(proof.get("dispatch_ids") or []) != 1
+        or not proof.get("dispatch_ids")
         or proof.get("business_commit_right") != "REVOKED"
         or proof.get("activation_right") != "REVOKED"
     ):
@@ -61,19 +62,19 @@ def original_dispatch(uow, effect, dispatch_id=None):
         or request.get("operation_id") != effect["operation_id"]
         or request.get("external_effect_id") != effect["external_effect_id"]
         or request.get("book_id") != proof["book_id"]
-        or any(
+        or (dispatch["dispatch_id"] == proof["dispatch_ids"][-1] and any(
             request.get(key) != original.get(key)
             for key in ("execution_id", "attempt_id", "fencing_token")
-        )
+        ))
     ):
         _invalid(
             "Original execution, Attempt, fence and Book must match the isolation proof"
         )
     uow.cursor.execute(
-        """SELECT EXISTS(SELECT 1 FROM authority_effect_dispatch_lease WHERE dispatch_id=%s AND status='HELD')
+        """SELECT EXISTS(SELECT 1 FROM authority_effect_dispatch_lease l JOIN authority_external_effect_dispatch d USING(dispatch_id) WHERE d.external_effect_id=%s AND l.status='HELD')
         OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
         WHERE a.operation_id=%s AND l.status='HELD')""",
-        [dispatch["dispatch_id"], effect["operation_id"]],
+        [effect["external_effect_id"], effect["operation_id"]],
     )
     if uow.cursor.fetchone()[0]:
         _invalid("Original writers must be stopped and their leases released")
@@ -137,9 +138,9 @@ def append_operator_resolution(uow, effect, command):
     }
     if any(receipt.get(key) != value for key, value in expected.items()):
         _invalid("Receipt differs from the original frozen call identity or inputs")
-    request_id = effect.get("provider_request_id") or production[
-        "execution_handle"
-    ].get("provider_request_id")
+    request_id = production["execution_handle"].get("provider_request_id")
+    if dispatch["dispatch_id"] == proof["dispatch_ids"][-1]:
+        request_id = request_id or effect.get("provider_request_id")
     if not receipt.get("provider_request_id") or (
         request_id and receipt["provider_request_id"] != request_id
     ):
@@ -180,7 +181,7 @@ def append_callback_receipt(
     outcome,
     evidence,
 ):
-    dispatch, _ = original_dispatch(uow, effect, dispatch_id)
+    dispatch, proof = original_dispatch(uow, effect, dispatch_id)
     uow.cursor.execute(
         """SELECT provider,provider_request_id,normalized_receipt FROM authority_provider_callback_receipt
         WHERE callback_receipt_id=%s AND project_id=%s AND external_effect_id=%s AND dispatch_id=%s
@@ -208,7 +209,8 @@ def append_callback_receipt(
             "model_provider"
         ]
         or row[1] != provider_request_id
-        or effect.get("provider_request_id") != provider_request_id
+        or (dispatch["evidence"]["production_execution"]["execution_handle"].get("provider_request_id")
+            or (effect.get("provider_request_id") if dispatch_id == proof["dispatch_ids"][-1] else None)) != provider_request_id
         or any(row[2].get(key) != value for key, value in expected.items())
         or generation != dispatch["generation"]
     ):
@@ -277,7 +279,7 @@ def append_receipt(
         or usage["total_tokens"] != 0
     ):
         _invalid("NOT_FOUND requires affirmative non-execution and measured zero usage")
-    existing = resolution(uow.cursor, effect["external_effect_id"])
+    existing = resolution(uow.cursor, effect["external_effect_id"], dispatch["dispatch_id"])
     digest = _hash(receipt)
     if existing:
         if existing["receipt_hash"] == digest:
@@ -318,6 +320,8 @@ def append_receipt(
         "activation_right": "REVOKED",
         "accounting": "HELD_UNKNOWN",
     }
+    accounting_receipt = _aggregate_accounting_receipts(uow, effect, dispatch, receipt)
+    usage = accounting_receipt.get("usage") if accounting_receipt else None
     if usage is not None:
         uow.cursor.execute(
             """SELECT reservation_id,reserved_amount,estimated_tokens,accounting_basis,currency FROM authority_budget_reservation
@@ -328,7 +332,7 @@ def append_receipt(
         if len(budgets) != 1:
             _invalid("Require the original reservation; never create another charge")
         rid, reserved, tokens, basis, currency = budgets[0]
-        cost = receipt.get("cost") or {}
+        cost = accounting_receipt.get("cost") or {}
         if basis != "ACCOUNT_ENTITLEMENT" and cost.get("availability") == "AVAILABLE":
             from decimal import Decimal, InvalidOperation
 
@@ -347,13 +351,15 @@ def append_receipt(
         amount, actual_tokens, settlement = successful_provider_budget_settlement(
             real_model_call=True,
             usage_tokens=usage["total_tokens"],
-            cost_amount=str((receipt.get("cost") or {}).get("amount") or "0"),
-            cost={**(receipt.get("cost") or {}), "accounting_basis": basis},
+            cost_amount=str(cost.get("amount") or "0"),
+            cost={**cost, "accounting_basis": basis},
             reserved_amount=None if basis == "ACCOUNT_ENTITLEMENT" else str(reserved),
             reserved_tokens=tokens,
             frozen_capability_profile=effect["provider_capability_profile"],
         )
-        if receipt["outcome"] == "not_found":
+        actual_tokens = usage["total_tokens"]
+        settlement["token_settlement_basis"] = "PROVIDER_USAGE_RECEIPT"
+        if accounting_receipt["outcome"] == "not_found":
             amount, actual_tokens = (None if basis == "ACCOUNT_ENTITLEMENT" else "0"), 0
             settlement = {
                 "token_settlement_basis": "ORIGINAL_NON_EXECUTION_RECEIPT",
@@ -371,7 +377,8 @@ def append_receipt(
                 actual_tokens=actual_tokens,
                 evidence={
                     "usage": usage,
-                    "cost": receipt.get("cost"),
+                    "cost": accounting_receipt.get("cost"),
+                    "isolated_dispatch_receipts": accounting_receipt.get("dispatch_receipts", []),
                     **settlement,
                     "isolated_original_receipt": verification,
                     "reconciled": True,
@@ -413,4 +420,54 @@ def _known_cost(cost):
         isinstance(cost, dict)
         and cost.get("availability") == "AVAILABLE"
         and cost.get("amount") is not None
+        and cost.get("provider_billed") is True
+        and cost.get("measurement") in {"MEASURED", "PROVIDER_REPORTED"}
+        and str(cost.get("source") or "").lower() not in {"not_provided", "usage_pricing", "usage_pricing_upper_bound"}
     )
+
+
+def _aggregate_accounting_receipts(uow, effect, dispatch, receipt):
+    from decimal import Decimal, InvalidOperation
+    from .generation_isolation import isolation
+    from .external_effect_runtime import _hash
+
+    ids = isolation(uow.cursor, effect["external_effect_id"])["dispatch_ids"]
+    uow.cursor.execute("SELECT accounting_basis,currency FROM authority_budget_reservation WHERE external_effect_id=%s AND project_id=%s", [effect["external_effect_id"], effect["project_id"]])
+    budgets = uow.cursor.fetchall()
+    if len(budgets) != 1:
+        _invalid("Require the original shared reservation")
+    basis, currency = budgets[0]
+    if len(ids) == 1:
+        return receipt if basis == "ACCOUNT_ENTITLEMENT" or _known_cost(receipt.get("cost")) or receipt["outcome"] == "not_found" else None
+    records = []
+    complete = True
+    total_cost = Decimal(0)
+    for identity in ids:
+        recorded = resolution(uow.cursor, effect["external_effect_id"], identity)
+        item = receipt if identity == dispatch["dispatch_id"] else recorded["receipt"] if recorded else None
+        if item is None:
+            complete = False
+            continue
+        if item.get("usage") is None:
+            complete = False
+        if basis != "ACCOUNT_ENTITLEMENT" and item["outcome"] != "not_found":
+            cost = item.get("cost")
+            if not _known_cost(cost):
+                complete = False
+            else:
+                try:
+                    amount = Decimal(str(cost["amount"]))
+                except InvalidOperation:
+                    _invalid("Every dispatch requires a finite measured cost")
+                if not amount.is_finite() or amount < 0 or cost.get("currency") != currency:
+                    _invalid("Every dispatch must retain its original reservation currency")
+                total_cost += amount
+        records.append((identity, item))
+    if not complete:
+        return None
+    return {"outcome": "not_found" if all(item["outcome"] == "not_found" for _, item in records) else "success",
+        "usage": {"measurement": "MEASURED", **{key: sum(item["usage"][key] for _, item in records)
+            for key in ("input_tokens", "output_tokens", "total_tokens")}},
+        "cost": {"availability": "AVAILABLE", "measurement": "MEASURED", "source": "isolated_original_provider_receipts", "provider_billed": True, "amount": str(total_cost), "currency": currency}
+            if basis != "ACCOUNT_ENTITLEMENT" else {"availability": "UNAVAILABLE", "amount": None},
+        "dispatch_receipts": [{"dispatch_id": identity, "receipt_hash": _hash(item)} for identity, item in records]}

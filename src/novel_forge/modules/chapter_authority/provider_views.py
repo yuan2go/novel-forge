@@ -2390,6 +2390,82 @@ def _build_planning_context_view(
     return view
 
 
+def project_planning_narrative_intent(
+    task: Mapping[str, Any], context: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    original_task, original_context = deepcopy(dict(task)), deepcopy(dict(context))
+    projected_task, projected_context = deepcopy(original_task), deepcopy(original_context)
+    omissions: list[dict[str, str]] = []
+
+    def omit(value: dict[str, Any], key: str, pointer: str) -> None:
+        if key in value:
+            removed = value.pop(key)
+            omissions.append({"source_pointer": pointer + "/" + key, "content_hash": _projection_hash(removed)})
+
+    command = projected_task.get("planning_command")
+    narrative_command: dict[str, Any] = {}
+    if isinstance(command, dict):
+        for key in ("repair_number", "repair_reason", "narrative_search_branch_key"):
+            omit(command, key, "/input_manifest/planning_command")
+        for key, host_key in (("narrative_search_planning_horizon", "opening_topology_budget"),
+                              ("narrative_search_desired_transformation", "selection_policy")):
+            if isinstance(command.get(key), dict):
+                omit(command[key], host_key, "/input_manifest/planning_command/" + key)
+        for key in ("narrative_search_planning_horizon", "narrative_search_desired_transformation",
+                    "narrative_search_strategy_directive", "narrative_search_hard_constraints",
+                    "narrative_realization", "edition_execution"):
+            if key in command:
+                narrative_command[key] = command.pop(key)
+    narrative_task = {key: projected_task.pop(key) for key in
+                      ("narrative_intelligence", "working_continuity", "world_preparation") if key in projected_task}
+    if narrative_command:
+        narrative_task["planning_direction"] = narrative_command
+    reading_contract = {key: projected_context.get("selection_explanation", {}).get(key)
+                        for key in ("literal_references", "role_reference_contract")
+                        if key in projected_context.get("selection_explanation", {})}
+    omit(projected_context, "selection_explanation", "/context_bundle")
+    if reading_contract:
+        projected_context["projection_reading_contract"] = reading_contract
+    result_task = {"contract_version": "provider-task-narrative-intent.v1", "stage": task.get("stage"),
+                   "narrative_inputs": narrative_task, "output_protocol": projected_task}
+    result_context = {**projected_context, "contract_version": "provider-context-narrative-intent.v1"}
+    receipt = {"contract_version": "planning-narrative-intent-projection.v1",
+               "source_task_hash": _projection_hash(original_task), "source_context_hash": _projection_hash(original_context),
+               "projected_task_hash": _projection_hash(result_task), "projected_context_hash": _projection_hash(result_context),
+               "omissions": omissions, "semantic_source_rewrite": False}
+    return result_task, result_context, receipt
+
+
+def bind_narrative_intent_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
+    result = deepcopy(dict(schema))
+    result["description"] = (str(result.get("description") or "") +
+        " Narrative intent v1: author intent, fictional rules and selected design supply story meaning. "
+        "Host identity, approval, validation, receipts, retries and evidence status are output protocol only. "
+        "Quiet or procedural narrative is valid when supported by this work. Do not invent a plot to enact host governance.")
+    meanings = {
+        "constraints": "Story constraints grounded in the author brief or selected fictional design; no host execution constraints.",
+        "book_invariants": "Invariants of this work's fictional design; no runtime acceptance, budget or delivery-window rules.",
+        "prohibited_outcomes": "Fictional outcomes forbidden by this work; candidate and Canon mutation restrictions belong to output protocol.",
+        "risk_register": "Risks to the selected narrative purpose; no Provider, retry, deployment or proof-status risks.",
+        "scene_plan": "Realize the selected chapter purpose through its people, situation and POV. Knowledge limits do not require verification scenes.",
+        "beats": "Scene-specific observation, action or experience; no mandatory conflict, reward, reversal or cost.",
+    }
+
+    def visit(node: Any) -> None:
+        if isinstance(node, dict):
+            for key, value in (node.get("properties") or {}).items():
+                if key in meanings and isinstance(value, dict):
+                    value["description"] = str(value.get("description") or "") + " " + meanings[key]
+            for value in node.values():
+                visit(value)
+        elif isinstance(node, list):
+            for value in node:
+                visit(value)
+
+    visit(result)
+    return result
+
+
 def _reference_planning_matrix_source(view: dict[str, Any], *, sources: list[Mapping[str, Any]], chapter: int) -> None:
     groups = [(index, source) for index, source in enumerate(sources) if source.get("role") == "chapter_group_plan"]
     if not chapter or len(groups) != 1:

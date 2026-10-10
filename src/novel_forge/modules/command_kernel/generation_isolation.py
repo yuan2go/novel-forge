@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from uuid import uuid4
 from time import sleep
+from uuid import uuid4
 
 from psycopg.types.json import Jsonb
 
@@ -42,7 +42,7 @@ def require_generation_retry_budget(cursor, *, operation_id):
 
 def require_native_api_isolation_record(content, *, project_id, book_id, operation_id, effect_id, capability):
     from novel_forge.modules.production_execution.contracts import ExecutionRequest
-    from novel_forge.modules.production_execution.backends import _sha256
+    from .external_effect_runtime import _hash
 
     record = content.get("record") or {}
     original = ExecutionRequest.from_dict(record.get("request") or {})
@@ -52,7 +52,7 @@ def require_native_api_isolation_record(content, *, project_id, book_id, operati
             or original.contract_hash != content.get("request_contract_hash")
             or frozen.get("execution_request_hash") != original.contract_hash
             or frozen.get("request_hash") != capability.get("provider_request_envelope_hash")
-            or frozen.get("contract_hash") != _sha256({key:value for key,value in frozen.items() if key != "contract_hash"})
+            or frozen.get("contract_hash") != _hash({key:value for key,value in frozen.items() if key != "contract_hash"})
             or (record.get("handle") or {}).get("transport") != "REMOTE_PROVIDER_API"):
         raise KernelError("GENERATION_ISOLATION_IDENTITY_CONFLICT", "Require the original admitted native API invocation, inputs and output contract")
     if ((record.get("result") or {}).get("normalized_output_ref")
@@ -185,73 +185,47 @@ def recover_book_generations(application, *, project_id, book_id, principal):
             expected_source_version=version,decision_evidence={"authorization_ref":"NATIVE_CONTINUOUS_CREATION_TEMPLATE",
                 "reason":"Allocate bounded native task capacity after a proven unsent failure while retaining original inputs and authorization"},
             trace_id="trace:generation-capacity:"+operation_id,correlation_id=book_id)
+    candidates = {effect["external_effect_id"]: (effect, operation) for effect, operation in pending}
     for item in rows:
         with AuthorityUnitOfWork(application.database_url) as uow:
-            effect = uow.repositories.external_effects.get_for_update(
-                item["external_effect_id"]
-            )
-            uow.cursor.execute(
-                "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
-                [effect["operation_id"]],
-            )
+            effect = uow.repositories.external_effects.get_for_update(item["external_effect_id"])
+            uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [effect["operation_id"]])
             operation = uow.cursor.fetchone()[0]
-        if operation["definition_name"] != "story_planning.generate":
-            continue
-        authorization = (
-            effect["request_payload"]
-            .get("_production_execution", {})
-            .get("capability_runtime", {})
-            .get("routing_decision", {})
-            .get("selected", {})
-            .get("candidate", {})
-            .get("authorization_ref")
-        )
-        if not authorization:
-            raise KernelError(
-                "GENERATION_ISOLATION_AUTHORIZATION_REQUIRED",
-                "The original authorized Provider identity is required",
-            )
-        resolve_external_effect_manually(
-            application.database_url,
-            ExternalEffectManualResolutionCommand(
-                effect["external_effect_id"],
-                operation["operation_id"],
-                project_id,
-                principal.principal_id,
-                "ISOLATE_PURE_GENERATION",
-                "Original stopped pure generation has no recoverable result; preserve remote facts and continue the same task",
-                {"authorization_ref": authorization},
-                "generation-isolation:" + effect["external_effect_id"],
-                operation["version"],
-                operation["trace_id"],
-                operation["correlation_id"],
-            ),
-        )
-        with AuthorityUnitOfWork(application.database_url) as uow:
-            uow.cursor.execute(
-                "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
-                [operation["operation_id"]],
-            )
-            operation = uow.cursor.fetchone()[0]
-        pending.append((effect, operation))
-    if pending:
-        sleep(30)
-    for effect, operation in pending:
-        with AuthorityUnitOfWork(application.database_url) as uow:
+        if operation["definition_name"] == "story_planning.generate":
+            candidates[effect["external_effect_id"]] = (effect, operation)
+    for effect, operation in candidates.values():
+        exhausted = None
+        with AuthorityUnitOfWork(application.database_url, coordinate_nested=True) as uow:
+            effect = uow.repositories.external_effects.get_for_update(effect["external_effect_id"])
+            authorization = effect["request_payload"].get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision", {}).get("selected", {}).get("candidate", {}).get("authorization_ref")
             proof = isolation(uow.cursor, effect["external_effect_id"])
-        application.register_runtime_continuation(
-            operation["operation_id"],
-            project_id=project_id,
-            principal=principal,
-            expected_source_version=operation["version"],
-            decision_evidence={
-                "authorization_ref": proof["authorization_ref"],
-                "reason": proof["reason"],
-            },
-            trace_id=operation["trace_id"],
-            correlation_id=operation["correlation_id"],
-        )
-    return bool(pending or capacities)
+            if not proof:
+                uow.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [operation["operation_id"]])
+                version = uow.cursor.fetchone()[0]
+                resolve_external_effect_manually(application.database_url, ExternalEffectManualResolutionCommand(
+                    effect["external_effect_id"], operation["operation_id"], project_id, principal.principal_id,
+                    "ISOLATE_PURE_GENERATION", "Original stopped pure generation has no recoverable result; preserve remote facts and continue the same task",
+                    {"authorization_ref": authorization}, "generation-isolation:" + effect["external_effect_id"],
+                    version, operation["trace_id"], operation["correlation_id"]))
+                proof = isolation(uow.cursor, effect["external_effect_id"])
+            uow.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [operation["operation_id"]])
+            version = uow.cursor.fetchone()[0]
+            try:
+                application.register_runtime_continuation(operation["operation_id"], project_id=project_id,
+                    principal=principal, expected_source_version=version,
+                    decision_evidence={"authorization_ref": proof["authorization_ref"], "reason": proof["reason"]},
+                    trace_id=operation["trace_id"], correlation_id=operation["correlation_id"])
+            except KernelError as error:
+                if error.code != "GENERATION_RECOVERY_EXHAUSTED":
+                    raise
+                exhausted = error
+                _record_exhaustion(uow, operation, error)
+            uow.commit()
+        if exhausted:
+            raise exhausted
+    if candidates:
+        sleep(30)
+    return bool(candidates or capacities)
 
 
 def append_isolation(uow, effect, command):
@@ -647,6 +621,10 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
         principal.require(permission, book["project_id"])
     request = authority.require_chapter_request(book["active_chapter_request_id"])
     root_id = request["chapter_root_operation_id"]
+    from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
+
+    recovered = recover_saved_local_results(authority.chapter_port.application._model_port.adapter,
+        database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal)
     with AuthorityUnitOfWork(authority.database_url) as uow:
         uow.cursor.execute(
             """SELECT to_jsonb(o) FROM authority_operation o
@@ -658,122 +636,67 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
             [root_id],
         )
         sources = [row[0] for row in uow.cursor.fetchall()]
-    changed = False
+    changed = recovered
     for source in sources:
-        with AuthorityUnitOfWork(authority.database_url) as uow:
-            uow.cursor.execute(
-                "SELECT to_jsonb(e) FROM authority_external_effect e WHERE operation_id=%s ORDER BY external_effect_id",
-                [source["operation_id"]],
-            )
-            effects = [row[0] for row in uow.cursor.fetchall()]
-        uncertain, completed = partition_generation_effects(effects)
-        for effect in uncertain:
-            with AuthorityUnitOfWork(authority.database_url) as uow:
-                retained = isolation(uow.cursor, effect["external_effect_id"])
-            if retained:
+        exhausted = None
+        with AuthorityUnitOfWork(authority.database_url, coordinate_nested=True) as uow:
+            uow.repositories.operation_graph.saga_for_update(source["saga_id"], book["project_id"])
+            uow.cursor.execute("SELECT successor_operation_id FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [source["operation_id"]])
+            if uow.cursor.fetchone():
                 continue
-            authorization = (
-                effect["request_payload"]
-                .get("_production_execution", {})
-                .get("capability_runtime", {})
-                .get("routing_decision", {})
-                .get("selected", {})
-                .get("candidate", {})
-                .get("authorization_ref")
-            )
-            for cas_attempt in range(3):
-                try:
-                    with AuthorityUnitOfWork(authority.database_url) as uow:
-                        uow.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [source["operation_id"]])
-                        source_version = uow.cursor.fetchone()[0]
-                    resolve_external_effect_manually(
-                        authority.database_url,
-                        ExternalEffectManualResolutionCommand(
-                            effect["external_effect_id"],
-                            source["operation_id"],
-                            book["project_id"],
-                            principal.principal_id,
-                            "ISOLATE_PURE_GENERATION",
-                            "Retire stopped pure generation and retain original unknown remote outcome and usage",
-                            {"authorization_ref": authorization},
-                            "generation-isolation:" + effect["external_effect_id"],
-                            source_version,
-                            source["trace_id"],
-                            source["correlation_id"],
-                        ),
-                    )
-                    break
-                except KernelError as error:
-                    if error.code != "OPERATION_VERSION_CONFLICT" or cas_attempt == 2:
-                        raise
-        with AuthorityUnitOfWork(authority.database_url) as uow:
-            proofs = [
-                isolation(uow.cursor, effect["external_effect_id"])
-                for effect in uncertain
-            ]
-            uow.cursor.execute(
-                """WITH RECURSIVE ancestors AS (
-                SELECT %s::text operation_id UNION ALL
-                SELECT journal.predecessor_operation_id FROM authority_saga_step_successor journal
-                  JOIN ancestors ON journal.successor_operation_id=ancestors.operation_id)
-                SELECT count(*) FROM authority_saga_step_successor journal JOIN ancestors
-                  ON ancestors.operation_id=journal.successor_operation_id
-                WHERE journal.policy_evidence->>'contract_version'='chapter-pure-generation-successor.v1'""",
-                [source["operation_id"]],
-            )
-            recovery_count = int(uow.cursor.fetchone()[0])
-            uow.cursor.execute(
-                "SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
-                [source["operation_id"]],
-            )
+            uow.cursor.execute("SELECT to_jsonb(e) FROM authority_external_effect e WHERE operation_id=%s ORDER BY external_effect_id FOR UPDATE", [source["operation_id"]])
+            effects = [row[0] for row in uow.cursor.fetchall()]
+            uncertain, completed = partition_generation_effects(effects)
+            for effect in uncertain:
+                if isolation(uow.cursor, effect["external_effect_id"]):
+                    continue
+                authorization = effect["request_payload"].get("_production_execution", {}).get("capability_runtime", {}).get("routing_decision", {}).get("selected", {}).get("candidate", {}).get("authorization_ref")
+                uow.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [source["operation_id"]])
+                version = uow.cursor.fetchone()[0]
+                resolve_external_effect_manually(authority.database_url, ExternalEffectManualResolutionCommand(
+                    effect["external_effect_id"], source["operation_id"], book["project_id"], principal.principal_id,
+                    "ISOLATE_PURE_GENERATION", "Retire stopped pure generation and retain original unknown remote outcome and usage",
+                    {"authorization_ref": authorization}, "generation-isolation:" + effect["external_effect_id"],
+                    version, source["trace_id"], source["correlation_id"]))
+            proofs = [isolation(uow.cursor, effect["external_effect_id"]) for effect in uncertain]
+            uow.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [source["operation_id"]])
             failure_code = uow.cursor.fetchone()[0]
-        if recovery_count >= 2:
-            raise KernelError(
-                "GENERATION_RECOVERY_EXHAUSTED",
-                "Two safe native successors exhausted this Chapter node; saved manuscript remains readable; inspect failed routes or configure an authorized backup",
-                details={
-                    "original_failures": proofs,
-                    "recovery_attempts": recovery_count,
-                    "scope": "CURRENT_CHAPTER_NODE",
-                    "recovery_action": "REPAIR_ROUTE_THEN_NATIVE_SUCCESSOR",
-                },
-            )
-        with AuthorityUnitOfWork(authority.database_url) as uow:
-            retry_usage=require_generation_retry_budget(uow.cursor,operation_id=source["operation_id"])
-        successor = replace_failed_step(
-            authority.database_url,
-            predecessor_id=source["operation_id"],
-            target_version=source["definition_version"],
-            context=AdmissionContext(
-                principal.principal_id,
-                principal.permissions,
-                authority.chapter_port.application.registry.available_handler_keys,
-                authority.application_build_id,
-                authority.commit_sha,
-            ),
-            policy_evidence={
-                "contract_version": "chapter-pure-generation-successor.v1",
-                "generation_isolations": proofs,
-                "completed_model_effects": [{"external_effect_id": e["external_effect_id"], "request_hash": e["request_hash"], "stage": e["request_payload"]["stage"]} for e in completed],
-                "book_run_id": book_run_id,
-                "chapter_request_id": request["chapter_request_id"],
-                "recovery_attempt_number": recovery_count + 1,
-                "failure_retry_counter": retry_usage,
-                "remote_outcome": "UNKNOWN",
-                "usage": "UNKNOWN",
-                "completion_checks": "UNCHANGED",
-            },
-            expected_failure_code=failure_code,
-            known_isolated_effects=tuple(
-                (effect["external_effect_id"], effect["request_hash"])
-                for effect in uncertain
-            ),
-            known_receipt_effects=tuple((effect["external_effect_id"], effect["request_hash"]) for effect in completed),
-        )
-        if not successor["replayed"]:
-            sleep(30)
+            try:
+                retry_usage = require_generation_retry_budget(uow.cursor, operation_id=source["operation_id"])
+                replace_failed_step(authority.database_url, predecessor_id=source["operation_id"],
+                    target_version=source["definition_version"],
+                    context=AdmissionContext(principal.principal_id, principal.permissions,
+                        authority.chapter_port.application.registry.available_handler_keys,
+                        authority.application_build_id, authority.commit_sha),
+                    policy_evidence={"contract_version": "chapter-pure-generation-successor.v1",
+                        "generation_isolations": proofs,
+                        "completed_model_effects": [{"external_effect_id": e["external_effect_id"], "request_hash": e["request_hash"], "stage": e["request_payload"]["stage"]} for e in completed],
+                        "book_run_id": book_run_id, "chapter_request_id": request["chapter_request_id"],
+                        "failure_retry_counter": retry_usage, "remote_outcome": "UNKNOWN", "usage": "UNKNOWN",
+                        "completion_checks": "UNCHANGED"}, expected_failure_code=failure_code,
+                    known_isolated_effects=tuple((e["external_effect_id"], e["request_hash"]) for e in uncertain),
+                    known_receipt_effects=tuple((e["external_effect_id"], e["request_hash"]) for e in completed))
+            except KernelError as error:
+                if error.code != "GENERATION_RECOVERY_EXHAUSTED":
+                    raise
+                exhausted = error
+                _record_exhaustion(uow, source, error)
+            uow.commit()
+        if exhausted:
+            raise exhausted
         changed = True
+        sleep(30)
     return changed
+
+
+def _record_exhaustion(uow, operation, error):
+    from .operation_graph import GraphCommandContext, _record
+    uow.cursor.execute("SELECT 1 FROM state_event WHERE aggregate_type='authority_operation' AND aggregate_id=%s AND event_type='authority.generation.recovery_exhausted'", [operation["operation_id"]])
+    if not uow.cursor.fetchone():
+        _record(uow.repositories.operation_graph,
+            GraphCommandContext(operation["project_id"], operation["actor_id"], operation["trace_id"], operation["correlation_id"]),
+            operation["operation_id"], "authority.generation.recovery_exhausted",
+            {"error_code": error.code, **error.details, "recovery_action": "STOP_AT_CHECKPOINT"})
 
 
 def partition_generation_effects(effects):

@@ -12,6 +12,10 @@ from novel_forge.api.authority_dependencies import (
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.content_authority import ContentOperationRequest
+from novel_forge.modules.book_design_authority import (
+    BookDesignAuthorityApplication,
+    BookDesignAuthorityCommand,
+)
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     acquire_attempt_lease,
@@ -74,6 +78,31 @@ def submit(settings: IndustrialSettings, suffix: str) -> dict[str, str]:
         ),
         principal=principal,
     )
+    book_id = f"compose-smoke-book:{token}"
+    book = BookDesignAuthorityApplication(
+        settings.database_url, application_build_id=build_id, commit_sha=commit_sha
+    )
+    book_result = book.execute(
+        BookDesignAuthorityCommand(
+            definition_name="book.create",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            service_identity="authority-api",
+            idempotency_key=f"compose-smoke:book:{token}",
+            trace_id=f"compose-smoke:trace:{token}",
+            correlation_id=f"compose-smoke:correlation:{token}",
+            payload={
+                "schema_version": "book-authority.v1",
+                "title": "Authority Compose Fixture",
+                "production_profile": {},
+                "runtime_policy": {"legacy_write": False, "silent_fallback": False},
+                "release_identity": f"{build_id}@{commit_sha}",
+            },
+        ),
+        principal=principal,
+    )
     content = build_content_authority_application(settings)
     admission = content.admit(
         ContentOperationRequest(
@@ -84,7 +113,7 @@ def submit(settings: IndustrialSettings, suffix: str) -> dict[str, str]:
             trace_id=f"compose-smoke:trace:{token}",
             correlation_id=f"compose-smoke:correlation:{token}",
             idempotency_key=f"compose-smoke:content:{token}",
-            payload={"brief": BRIEF, "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": f"compose-smoke-book:{token}", "source_kind": "HISTORICAL_TEST_SAMPLE", "purpose": "ENGINEERING_REGRESSION", "intent_ref": "explicit-test-case"}},
+            payload={"brief": BRIEF, "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": book_id, "source_kind": "HISTORICAL_TEST_SAMPLE", "purpose": "ENGINEERING_REGRESSION", "intent_ref": "explicit-test-case"}},
         ),
         principal=principal,
     )
@@ -92,6 +121,8 @@ def submit(settings: IndustrialSettings, suffix: str) -> dict[str, str]:
         "project_id": project_id,
         "workspace_id": workspace_id,
         "project_operation_id": str(project_result["operation_id"]),
+        "book_operation_id": str(book_result["operation_id"]),
+        "book_id": book_id,
         "operation_id": admission.operation_id,
         "evidence_level": "COMPOSE_SMOKE_PROVEN",
         "fixture": "true",

@@ -141,8 +141,6 @@ def require_source(
             SELECT count(DISTINCT i.operation_id) FROM authority_generation_isolation i
               JOIN ancestors USING(operation_id)""", [source_operation_id])
         recovery_number = int(uow.cursor.fetchone()[0])
-        if recovery_number > 2:
-            raise KernelError("GENERATION_RECOVERY_EXHAUSTED", "Two native continuations exhausted this logical generation; retain saved manuscript and inspect original path evidence", details=proof)
         return {"mode": "ISOLATED_PURE_GENERATION", "source_operation_id": source_operation_id,
             "command": frozen, "version": int(row[1]), "evidence_asset_version_id": proof["evidence_asset_version_id"],
             "evidence_hash": uow.repositories.asset_documents.require(project_id=project_id,
@@ -584,7 +582,7 @@ def _world_agency_pack_profile(version, operation_hash, *, repository_root):
                 f"{node['agent_definition_ref'].rpartition('@')[0]}@{generation}"
             )
     from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
-    current = build_story_planning_pack_profile(repository_root, operation_definition_hash=operation_hash, execution_contract_version="1.21.0")
+    current = build_story_planning_pack_profile(repository_root, operation_definition_hash=operation_hash, execution_contract_version="1.21.0", narrative_intent_boundary=False)
     manifest["prompt_binding"] = {**manifest["prompt_binding"], **{key: current.manifest["prompt_binding"][key] for key in ("system_instruction_ref", "system_instruction_version", "system_instruction_hash")}}
     catalog = deepcopy(version["artifact_catalog"])
     system = next(item for item in current.artifact_catalog["artifacts"] if item["ref"] == manifest["prompt_binding"]["system_instruction_ref"] and item["version"] == "v11")

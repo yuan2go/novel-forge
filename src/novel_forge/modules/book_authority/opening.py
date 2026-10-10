@@ -1599,7 +1599,7 @@ class PostgresBookOpeningApplication:
                 accepted_state=accepted_state,
                 horizon={"level": "ARC", "stability": "MEDIUM", "volume": 1},
                 transformation={
-                    "goal": "produce a causal transformation with closure criteria",
+                    "goal": "realize the selected Arc purpose, including intended continuity or change",
                     "arc_key": arc_key,
                 },
                 opening_run_id=opening_run_id,
@@ -1905,7 +1905,7 @@ class PostgresBookOpeningApplication:
                         "current_volume_plan_version_id": current_volume,
                     },
                     transformation={
-                        "goal": "produce a causal transformation with closure criteria",
+                        "goal": "realize the selected Arc purpose, including intended continuity or change",
                         "arc_key": arc_key,
                     },
                     arc_scope_volume_plan_version_ids=arc_scope,
@@ -5812,7 +5812,6 @@ class PostgresBookOpeningApplication:
             hard_constraints=(
                 "preserve the approved Creative Foundation",
                 "protect reader promise and ending direction",
-                "do not convert future intent into accepted reality",
             ),
             accepted_through_chapter=0,
             parent_state_asset_version_id=accepted_state,

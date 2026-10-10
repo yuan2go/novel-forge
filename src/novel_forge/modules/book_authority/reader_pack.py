@@ -80,7 +80,9 @@ def ensure_creation_reader_pack(
             ],
         )
         active = uow.cursor.fetchone()
-        if active and active[3] == "ACTIVE" and active[4] == sha:
+        if active and (active[3] != "ACTIVE" or active[4] != sha):
+            raise KernelError("READER_CURRENT_DEPLOYMENT_DRIFT", "Reader replay must match exact active deployment and release; reconcile its native activation first")
+        if active:
             profile.manifest["identity"]["version"] = active[2]
             if (active[5], active[6]) != (canonical_hash(profile.manifest), canonical_hash(_normalized_artifact_catalog(profile.artifact_catalog))):
                 raise KernelError("READER_CURRENT_DEPLOYMENT_DRIFT", "Current release Reader deployment differs from its frozen manifest/catalog")

@@ -1,0 +1,12 @@
+{
+  "type": "ARCHIVE_METADATA_VALIDATION_REPAIR",
+  "initial_status": "FAIL",
+  "final_status": "PASS",
+  "failed_field": "archive-integrity.implementation_tree_sha",
+  "rejected_projection": "sha256:9bf26a9e8147e1afc03882524c56f0c9997cff61c5295b77598b89",
+  "corrected_projection": "sha256:9bf26a9e8147e1afc03882524c56f0c9997cff61c5295b74f703615b77598b89",
+  "repair_basis": "Exact original source-identity.json; all implementation file records identical",
+  "runtime_evidence_modified": false,
+  "tested_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "timestamp": "2026-10-10T08:13:55.882795+00:00"
+}

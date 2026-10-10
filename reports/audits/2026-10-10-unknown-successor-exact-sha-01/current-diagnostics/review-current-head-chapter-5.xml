@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="64.546" timestamp="2026-10-10T13:46:11.842736+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_author_first_manuscript_postgres" name="test_native_author_first_cross_chapter_edit_and_export[single-interruption]" time="63.684"><failure message="novel_forge.modules.command_kernel.errors.KernelError: MODEL_EFFECT_FINAL_PLANNING: Planning provider outcome was final_failure; cause=OUTPUT_SCHEMA_FAILURE">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-214/test_native_author_first_cross0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10bd69fa0&gt;
+completed_sibling = False, recoverable_result = False
+
+    @pytest.mark.parametrize("completed_sibling,recoverable_result", [(False, False), (True, False), (False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result"])
+    def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result):
+        harness = CapabilityPackPostgresHarness("author-first")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
+        executable.write_text(executable.read_text().replace(
+            ' target.write_bytes(',
+            ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-interrupted-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        stream_failures = []
+        compression_calls = []
+        def interrupt_first_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage in {"context_compress", "context_fidelity"}:
+                compression_calls.append((request.operation_id, request.stage))
+            failure_stage = "context_fidelity" if completed_sibling else "memo"
+            if not recoverable_result and request.stage == failure_stage and not stream_failures:
+                layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+                layout.result_path("interrupt-stream").write_text("controlled fault")
+                stream_failures.append(request.operation_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+        if completed_sibling:
+            prepare_context_model_stages(transport, monkeypatch)
+        if recoverable_result:
+            from dataclasses import replace
+            from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+            execute = ProductionExecutionGatewayExternalEffectAdapter.execute
+            def lose_completed_response(adapter, **options):
+                result = execute(adapter, **options)
+                payload = options["request_payload"]
+                if payload.get("stage") == "memo" and not stream_failures:
+                    assert result.outcome == "success"
+                    stream_failures.append(payload["operation_id"])
+                    return replace(result, outcome="unknown")
+                return result
+            monkeypatch.setattr(ProductionExecutionGatewayExternalEffectAdapter, "execute", lose_completed_response)
+        if not completed_sibling and not recoverable_result:
+            from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
+            from concurrent.futures import ThreadPoolExecutor
+            native_recovery = generation_isolation.recover_chapter_generations
+            admission_checked = []
+            def verify_atomic_recovery(authority, **options):
+                if admission_checked:
+                    return native_recovery(authority, **options)
+                book = authority.require(options["book_run_id"])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+                        JOIN authority_external_effect e USING(operation_id)
+                        WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    original = uow.cursor.fetchone()
+                if original is None:
+                    return native_recovery(authority, **options)
+                def interrupt_admission(*args, **kwargs):
+                    raise RuntimeError("controlled successor admission interruption")
+                with monkeypatch.context() as fault:
+                    fault.setattr(step_successor_v2, "replace_failed_step", interrupt_admission)
+                    with pytest.raises(RuntimeError, match="controlled successor admission interruption"):
+                        native_recovery(authority, **options)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == original
+                    uow.cursor.execute("SELECT count(*) FROM authority_generation_isolation WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
+                assert sum(outcomes) == 1
+                admission_checked.append(True)
+                return True
+            monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
+        env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
+        env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
+        transport.database_url = DATABASE_URL
+        inputs = {"version": "creation-request.v1", "title": f"Author work sibling={completed_sibling} recoverable={recoverable_result}", "target_chapters": 8,
+            "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
+                "source_boundaries": ["Original work"]}}
+        source = tmp_path / "request.json"
+        source.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+            "--repository-root", str(root), "--maximum-ticks", "100",
+            "--foreground"])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+        from novel_forge.api import authority_dependencies
+        build_book = authority_dependencies.build_book_production_composition
+        interruptions = []
+        def fail_delivery_once(checkpoint):
+            if checkpoint == "after_manuscript_delivery" and not interruptions:
+                interruptions.append(checkpoint)
+                raise RuntimeError("controlled interruption after saved prose")
+        def with_interrupt(*values, **options):
+            composition = build_book(*values, **options)
+            composition.authority.failure_injector = fail_delivery_once
+            return composition
+        monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+&gt;           started = run_creation_command(settings, args)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:1078: in execute_creation_command
+    result = continue_creation(composition=composition, content=content, chapter=chapter, formation_run_id=formation_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:421: in continue_creation
+    stop = drive_book(composition=composition, chapter=chapter, book_run_id=existing[0], worker=book_worker,
+src/novel_forge/modules/book_authority/creation_runtime.py:43: in drive_book
+    return _drive_book(composition=composition, chapter=chapter, book_run_id=book_run_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:169: in _drive_book
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:184: in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/composition.py:77: in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:131: in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:352: in _tick
+    result = self._generate_plan(
+src/novel_forge/modules/book_authority/supervisor.py:989: in _generate_plan
+    search = self.narrative_search.explore(
+src/novel_forge/modules/story_planning_runtime/search_application.py:340: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:419: in execute
+    execution = bundle.execution_port.execute(
+src/novel_forge/logging/execution.py:120: in observed
+    result = function(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = _PlanningPepPort(database_url='postgresql://[REDACTED]@127.0.0.1:55003/nf_wp_saved198_848aa181_test', wor...b-a7dc-b58c64b94f63:story_planning.candidate:v1', 'frozen_by_operation_id': '378c911e-d132-4836-8346-542aa3f1dfe4'}]}})
+command = DomainExecutionCommand(capability='planning.chapter_group.generate', operation=&lt;DomainModelOperation.GENERATE: 'genera...-5c0f-ab09-12ba1e8365f5', 'logical_key': 'chapter-group:containing:1', 'planning_scope': 'CHAPTER_GROUP'}, review=None)
+
+    @execution_step("story_planning_runtime._PlanningPepPort.execute")
+    def execute(self, command: DomainExecutionCommand) -&gt; DomainExecutionCandidate:
+        if command.capability != self.binding.request.capability:
+            raise KernelError(
+                "PLANNING_PEP_CAPABILITY_DRIFT",
+                "Planning command differs from the frozen execution capability",
+            )
+        if self.recovered_completion and self.recovered_completion.get("budget_usage_correction"):
+            self.recovered_completion = self._verified_reconciled_completion()
+        try:
+            dispatched = self.recovered_completion or dispatch_external_effect(
+                self.database_url,
+                self.context,
+                effect_id=self.effect_id,
+                worker_id=self.worker_id,
+                lease_seconds=self.lease_seconds,
+                adapter=self.adapter,
+                budget_reservation_id=self.reservation_id,
+            )
+        except Exception as exc:
+            if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                )
+            raise
+        recovered_completion = self.recovered_completion is not None
+        if recovered_completion:
+            dispatched = {**dispatched, "outcome": "success"}
+        capability_profile = _planning_budget_capability_profile(
+            adapter=self.adapter,
+            recovered_completion=self.recovered_completion,
+        )
+        if dispatched["outcome"] != "success":
+            budget_decision = _planning_failed_provider_budget_decision(
+                dispatched=dispatched,
+                capability_profile=capability_profile,
+                reserved_amount=self.reserved_amount,
+                reserved_tokens=self.reserved_tokens,
+            )
+            outcome = str(dispatched.get("outcome") or "unknown")
+            disposition = str(budget_decision["disposition"])
+            if disposition == "RELEASE":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                )
+            elif disposition == "HOLD_UNKNOWN":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                    external_state_unknown=True,
+                )
+            elif disposition == "SETTLE":
+                settlement = dict(budget_decision["settlement"])
+                amount_value = settlement["amount"]
+                amount = str(amount_value) if amount_value is not None else None
+                total_tokens = int(settlement["total_tokens"])
+                usage = dict(settlement["usage"])
+                cost = dict(settlement["cost"])
+                evidence = dispatched.get("provider_evidence")
+                provider_evidence = evidence if isinstance(evidence, Mapping) else {}
+                settle_provider_budget(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                    actual_amount=amount,
+                    actual_tokens=total_tokens,
+                    evidence={
+                        "provider_id": str(provider_evidence.get("provider_id") or ""),
+                        "model_id": str(provider_evidence.get("model_id") or ""),
+                        "real_model_call": bool(
+                            provider_evidence.get("real_model_call")
+                        ),
+                        "fixture": bool(provider_evidence.get("fixture_protocol_only")),
+                        "execution_outcome": outcome.upper(),
+                        "accepted_candidate": False,
+                        "submission_state": str(budget_decision["submission_state"]),
+                        "measurement_available": bool(
+                            budget_decision["measurement_available"]
+                        ),
+                        "usage_settlement_basis": str(settlement["usage_basis"]),
+                        "cost_settlement_basis": str(settlement["cost_basis"]),
+                        "accounting_basis": str(
+                            settlement.get("accounting_basis") or "PRICED"
+                        ),
+                        "cost_status": str(settlement.get("cost_status") or "KNOWN"),
+                    },
+                )
+                self._record_model_evidence(
+                    evidence=provider_evidence,
+                    usage=usage,
+                    cost=cost,
+                    amount=amount,
+                    total_tokens=total_tokens,
+                    accepted_candidate=False,
+                    recovered_completion=False,
+                    failure={
+                        "code": "PLANNING_PROVIDER_NON_SUCCESS",
+                        "outcome": outcome,
+                        "submission_state": str(budget_decision["submission_state"]),
+                        "budget_disposition": "SETTLED",
+                    },
+                )
+            else:  # pragma: no cover - the pure decision contract is exhaustive
+                raise KernelError(
+                    "PLANNING_BUDGET_FAILURE_DISPOSITION_INVALID",
+                    "Planning Provider failure produced an unsupported budget action",
+                )
+            code = (
+                "MODEL_EFFECT_RETRYABLE_PLANNING"
+                if outcome in {"retryable_failure", "not_found"}
+                else "MODEL_EFFECT_FINAL_PLANNING"
+            )
+            production_failure = (dispatched.get("provider_evidence") or {}).get("production_execution") or {}
+            failure = (production_failure.get("execution_result") or {}).get("error") or (production_failure.get("process_evidence") or {}).get("failure") or {}
+            if outcome in {"unknown", "ambiguous"}:
+                code = "MODEL_EFFECT_OUTCOME_UNKNOWN_" + str(failure.get("cause_code") or failure.get("error_code") or "ORIGINAL_RESULT_UNRECOVERABLE")
+&gt;           raise KernelError(code, f"Planning provider outcome was {outcome}; cause={failure.get('error_code', 'UNCLASSIFIED_PROVIDER_FAILURE')}", details=failure)
+E           novel_forge.modules.command_kernel.errors.KernelError: MODEL_EFFECT_FINAL_PLANNING: Planning provider outcome was final_failure; cause=OUTPUT_SCHEMA_FAILURE
+
+src/novel_forge/modules/story_planning_runtime/execution.py:3872: KernelError</failure></testcase></testsuite></testsuites>

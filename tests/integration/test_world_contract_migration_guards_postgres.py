@@ -19,14 +19,21 @@ def _schema(connection):
     connection.execute("CREATE TEMP TABLE authority_attempt(attempt_id text,operation_id text,attempt_number int,status text,result jsonb,error jsonb)")
     connection.execute("CREATE TEMP TABLE authority_operation_output_asset(operation_id text,asset_version_id text)")
     connection.execute("CREATE TEMP TABLE authority_asset_version(asset_version_id text,content jsonb)")
-    connection.execute("""CREATE TEMP TABLE authority_external_effect(operation_id text,status text,request_payload jsonb DEFAULT '{"stage":"world_candidates.generate"}',external_effect_id text DEFAULT 'source-effect',project_id text DEFAULT 'project')""")
+    connection.execute("""CREATE TEMP TABLE authority_external_effect(operation_id text,status text,request_payload jsonb DEFAULT '{"stage":"world_candidates.generate"}',external_effect_id text DEFAULT 'source-effect',project_id text DEFAULT 'project',request_hash text DEFAULT 'sha256:frozen')""")
     connection.execute("CREATE TEMP TABLE authority_budget_reservation(operation_id text,status text,external_effect_id text DEFAULT 'source-effect',project_id text DEFAULT 'project',evidence jsonb DEFAULT '{}')")
-    connection.execute("CREATE TEMP TABLE authority_external_effect_dispatch(external_effect_id text,generation int,evidence jsonb,finished_at timestamptz,updated_at timestamptz DEFAULT NOW(),created_at timestamptz DEFAULT NOW())")
+    connection.execute("CREATE TEMP TABLE authority_external_effect_dispatch(external_effect_id text,generation int,evidence jsonb,finished_at timestamptz,updated_at timestamptz DEFAULT NOW(),created_at timestamptz DEFAULT NOW(),dispatch_id text DEFAULT gen_random_uuid()::text)")
     connection.execute("CREATE TEMP TABLE authority_effect_manual_resolution(external_effect_id text,project_id text,operation_id text,created_at timestamptz)")
     connection.execute("CREATE TEMP TABLE authority_lease_acquisition(attempt_id text,status text)")
     connection.execute("CREATE TEMP TABLE authority_book_production(project_id text,book_id text,state text,stable_idempotency_key text,root_operation_id text,book_run_id text,workspace_id text DEFAULT 'workspace')")
     connection.execute("CREATE TEMP TABLE authority_book_chapter_request(project_id text,book_run_id text,chapter_root_operation_id text)")
     connection.execute("CREATE TEMP TABLE authority_story_creation_cancellation(project_id text,formation_run_id text)")
+
+    connection.execute("CREATE TEMP TABLE authority_effect_reconciliation_evidence(external_effect_id text,evidence jsonb)")
+
+
+def _original_reconciliation(connection, effect, operation):
+    dispatch = connection.execute("SELECT dispatch_id FROM authority_external_effect_dispatch WHERE external_effect_id=%s AND generation=1", [effect]).fetchone()[0]
+    connection.execute("INSERT INTO authority_effect_reconciliation_evidence VALUES (%s,%s)", [effect, Jsonb({"contract_version": "cli-original-reconciliation.v1", "project_id": "project", "operation_id": operation, "request_hash": "sha256:frozen", "dispatch_id": dispatch, "generation": "1"})])
 
 
 def _seed(connection):
@@ -204,6 +211,14 @@ def test_settled_old_effect_cannot_mask_unreconciled_cli_dispatch(head, outcome,
                 connection.execute("ROLLBACK TO SAVEPOINT reconciliation_guard")
                 connection.execute("RELEASE SAVEPOINT reconciliation_guard")
             connection.execute("INSERT INTO authority_effect_manual_resolution VALUES('source-effect','project','source',NOW())")
+            _original_reconciliation(connection, "source-effect", "source")
+            if head >= "20261009_0184_cli_original_reconciliation":
+                for key in ("project_id", "operation_id", "request_hash", "dispatch_id", "generation"):
+                    connection.execute("SAVEPOINT original_binding")
+                    connection.execute("UPDATE authority_effect_reconciliation_evidence SET evidence=jsonb_set(evidence,ARRAY[%s],%s)", [key, Jsonb("foreign")])
+                    assert not _admitted(connection, generation), key
+                    connection.execute("ROLLBACK TO SAVEPOINT original_binding")
+                    connection.execute("RELEASE SAVEPOINT original_binding")
             assert _admitted(connection, generation)
             assert connection.execute("SELECT status FROM authority_external_effect").fetchall() == [("SUCCEEDED",)]
             assert connection.execute("SELECT status FROM authority_budget_reservation").fetchall() == [("SETTLED",)]
@@ -231,6 +246,7 @@ def test_canonical_book_binding_blocks_other_root_cli_unknown_without_payload_bo
             connection.execute("INSERT INTO authority_external_effect_dispatch(external_effect_id,generation,evidence,finished_at) VALUES('other-effect',1,%s,NOW())", [Jsonb(receipt)])
             assert not _admitted(connection, generation)
             connection.execute("INSERT INTO authority_effect_manual_resolution VALUES('other-effect','project','other',NOW())")
+            _original_reconciliation(connection, "other-effect", "other")
             assert _admitted(connection, generation)
             assert connection.execute("SELECT status FROM authority_operation WHERE operation_id='other'").fetchone() == ("FAILED_FINAL",)
 
