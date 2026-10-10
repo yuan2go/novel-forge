@@ -4041,3 +4041,20 @@ separate. Do not change a Book's length or delivery window for this repair.
 Only a separately authorized same-Book Provider experiment and subsequent literary
 review can establish prose improvement; offline assembly and scripted integration
 prove engineering execution only.
+
+Before a structural working-manuscript continuation, reread the actual selected prefix,
+current plan bindings, service release, original database identity and dispatch policy.
+Historical report cursors and capacity failures are not current runtime facts. Compare
+generated restrictions with the exact author Brief and Foundation before retaining them as
+story requirements. Preserve selected past prose and correct affected future parent scopes
+through native Plan Change, then bind the new input snapshot before Chapter admission.
+An original instance with dispatch disabled or no write grant stays unchanged; a disposable
+restore can validate prospective decisions and writing, explicitly marked as an isolated
+operator result awaiting original adoption. It cannot supply a human author approval.
+The checked Chapter Pack currently binds prose-generation-v4 even though the root Skill is
+v5. A prospective v5 selection requires a new exact Pack binding and admission, with the
+actual rendered Skill/hash retained in Provider evidence. Keep frozen v4 requests recoverable.
+Budget the final complete rendered request rather than summing stored Context assets.
+Optional older prose may be reallocated prospectively with explicit omissions, while required
+recent prose and causal dependencies remain intact. A pre-send failure uses its owning
+bounded continuation; it does not authorize a replacement request identity or a larger cap.
