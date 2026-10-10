@@ -1,0 +1,13 @@
+{
+  "error_code": "PLAN_CHANGE_CANDIDATE_SCOPE_MISMATCH",
+  "original_logical_key": "chapter-group:containing:24",
+  "unactivated_candidate": "authority-output:cf56b92d-9e1b-4c27-9a51-968b01e91ee8:story_planning.candidate:v1",
+  "unactivated_logical_key": "chapter-group:containing:25",
+  "replacement_range": [
+    25,
+    27
+  ],
+  "history_edited": false,
+  "provider_outcome": "SUCCEEDED_SETTLED",
+  "correction": "Native new generation retaining target logical identity and same operator proposal; not retry of unknown external outcome"
+}

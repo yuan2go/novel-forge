@@ -18,7 +18,9 @@
     19,
     20,
     21,
-    22
+    22,
+    23,
+    24
   ],
   "author_pending_form": "reader-packet/连续阅读/作者待填写答卷.json",
   "independent_reader_pending_form": "reader-packet/连续阅读/独立目标读者待填写答卷.json"

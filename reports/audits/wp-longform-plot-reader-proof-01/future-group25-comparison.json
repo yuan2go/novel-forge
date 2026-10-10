@@ -1,0 +1,161 @@
+{
+  "schema_version": "future-plan-comparison.v1",
+  "scope": "ISOLATED_OPERATOR_PROPOSAL",
+  "original_author_adoption": "NOT_GRANTED",
+  "human_reading": "NOT_RUN",
+  "past24": "SAVED_READ_BACK_EXPORTED_PRESERVED",
+  "strategic_target": 240,
+  "delivery_target": 40,
+  "semantic_review": "25 actual use instead of future-only scheduling;26 teaching and practice-supported limited repetition;27 actual new practice; still modest, no literary/market claim",
+  "constraint_classification": {
+    "author_240_and_40": "CURRENT_RUNTIME_FACT",
+    "no_unearned_realm_or_swordflight": "CONFIGURABLE_POLICY",
+    "old25_future_work_only_and26_27_repeated_comparison": "CONFIGURABLE_POLICY",
+    "finite_repetition_not_universal_magic": "CONFIGURABLE_POLICY"
+  },
+  "records": [
+    {
+      "label": "CURRENT_OLD_GROUP",
+      "asset_version_id": "authority-output:ec53f418-9484-4e0e-bb96-d24f230b3eed:story_planning.candidate:v1",
+      "full_native_content_hash": "sha256:ad1b648357e882454b8943bf1c5c385c00ca4abeee92e587576983fa6398cb41",
+      "chapter_range": [
+        24,
+        27
+      ],
+      "objective": "在第24至27章承接已选工作稿的近山试走与既有交付，以有边界的教学、日程协商和多次木片实践，使沈砚获得可继续检验的有限进步。",
+      "chapters": [
+        {
+          "chapter_number": 24,
+          "primary_function": "兑现许庭在第23章提出的课堂观察问题，让沈砚亲自比较木片前的动作先后。",
+          "required_state_delta": {
+            "status": "CHANGED",
+            "summary": "沈砚从只记木片结果，转为能够记录脚、手与亮纹发生的先后；灵气运用尚未据此判为稳定。"
+          },
+          "prohibited_outcomes": [
+            "以一次亮纹或许庭的评价宣布沈砚已稳定掌握灵气运用。",
+            "让许庭凭这次答疑授予正式课程资格或延长自己没有答应的教学时段。"
+          ]
+        },
+        {
+          "chapter_number": 25,
+          "primary_function": "让已完成的三筐细土交付成为协商下一项工作的依据，同时为连续课堂练习留出真实时间。",
+          "required_state_delta": {
+            "status": "CHANGED",
+            "summary": "沈砚与程观形成下一项工作须先对照实际要求和练习日程商量的安排；没有预占任务或收益。"
+          },
+          "prohibited_outcomes": [
+            "把第21章工作稿已呈现的三筐交付重新悬置或要求重复验收。",
+            "把程观写成课程、库存或器具的批准者。",
+            "让练习与新工作重复占用同一时段。"
+          ]
+        },
+        {
+          "chapter_number": 26,
+          "primary_function": "在可用的课堂时段内，以同一木片和相近动作进行多次尝试，让有限成功有实际观察支持。",
+          "required_state_delta": {
+            "status": "CHANGED",
+            "summary": "沈砚在同一课堂条件下取得两次相近的木片响应，形成初步可重复的迹象；条件变化后的表现仍待试验。"
+          },
+          "prohibited_outcomes": [
+            "用两次成功推定各种条件下都能稳定运用灵气。",
+            "让许庭代替沈砚完成动作，或无限延长她的教学时间。"
+          ]
+        },
+        {
+          "chapter_number": 27,
+          "primary_function": "由沈砚自行比较、修正并重复，让许庭的有限指导开始成为他能使用的方法。",
+          "required_state_delta": {
+            "status": "CHANGED",
+            "summary": "沈砚能在已知木片、站位和练习时段内，通过自查动作重现有限响应；这一能力不自动涵盖其他器物、持续时间或任务现场。"
+          },
+          "prohibited_outcomes": [
+            "宣告沈砚已能在山林任务中稳定施术或获得新境界。",
+            "以许庭一句天赋评价代替重复动作。",
+            "把尚未验证的复杂条件写成已经掌握。"
+          ]
+        }
+      ],
+      "required_events": [
+        "第24章沈砚在木片课上落实第23章许庭提出的动作先后观察。",
+        "第25章沈砚与程观依据已完成交付和真实日程协商未来工作的范围。",
+        "第26章沈砚在相近条件下经多次练习得到两次可比较的木片响应。",
+        "第27章沈砚自行修正手位并数次重现有限响应，提出下一次检验问题。"
+      ],
+      "hard_constraints": [
+        "章节范围严格为第24至27章，逐章覆盖；本组仅为未来规划候选。",
+        "正式Story State与Canon均只接受至第0章；第20至23章材料作为同一所选工作稿的经历承接。",
+        "承接第23章许庭提出的木片课问题：比较站定、举手、手位前探的先后，并保留未走山路的未知。",
+        "许庭为女性，只依据亲眼所见与沈砚实际讲述行动，答疑和自身修炼均有时间边界。",
+        "正式课程资格、任务资源和库存各有来源与权限；任何反馈或好感都不自动满足条件。",
+        "日程按同一单位容纳劳作、课堂、往返、休息与已有承诺，不让互斥事项重叠。",
+        "采用沈砚为主的第三人称限知视角；人物不得知道私下动机或未公布条件。",
+        "同时活跃Arc不超过3，单章主要状态变化不超过8，新增概念不超过4，开放义务不超过12，逾期义务为0，同章到期兑现不超过3。"
+      ]
+    },
+    {
+      "label": "PROPOSED_SUCCESSOR",
+      "asset_version_id": "authority-output:7b8b3945-594f-4e22-b637-7985059c3ff8:story_planning.candidate:v1",
+      "full_native_content_hash": "sha256:787e0272f83bc82463eb44d66594def59804d520a9cee85a5582d86c4eb60473",
+      "chapter_range": [
+        25,
+        27
+      ],
+      "objective": "在第25—27章完成共同任务结果的生活化承接，并让第24章木片练习的问题进入有来源的教学、多次实践与一次自行运用。",
+      "chapters": [
+        {
+          "chapter_number": 25,
+          "primary_function": "收束第20—25章共同任务：让已交付的细土在修盘现场显出用途，并由沈砚立即完成一件有限的帮手行动。",
+          "required_state_delta": {
+            "status": "CHANGED",
+            "summary": "沈砚从只知道细土验收合用，变为亲眼看见其修盘用途，并完成一盂净水的现场交付；唐穗也看见她关心的薄边如何处理。"
+          },
+          "prohibited_outcomes": [
+            "把第21章已经验收的三筐细土重新写成待交任务。",
+            "把临时帮手行动写成新增报酬、课位或修盘资格。"
+          ]
+        },
+        {
+          "chapter_number": 26,
+          "primary_function": "许庭在已有基础教学时段解释木片的意义、用途和限度，并以具体纠正支持沈砚形成固定条件下可重复的短时基础流转。",
+          "required_state_delta": {
+            "status": "CHANGED",
+            "summary": "沈砚由能辨认两次动作差别但不知亮纹用途，推进为理解木片是基础流转的练习反馈，并在已验证条件下可主动重复短时起收。"
+          },
+          "prohibited_outcomes": [
+            "仅让木片再次偶然出现淡纹，却仍不说明它为何而设。",
+            "由旁白无来源地把亮纹升级为通用法术或稳定境界。",
+            "凭一次成功授予正式课程资格。"
+          ]
+        },
+        {
+          "chapter_number": 27,
+          "primary_function": "让第26章所得在真实选择中发挥作用：沈砚用木片作短时起收练习的自检，完成当日基础练习；与唐穗相处时能具体说出自己会做什么、尚不会做什么。",
+          "required_state_delta": {
+            "status": "CHANGED",
+            "summary": "沈砚不再只等许庭指出动作；他能自行使用固定条件下的短时起收完成当日练习，并清楚说明该能力的范围。"
+          },
+          "prohibited_outcomes": [
+            "第三次只重放同样的手脚与亮纹比较。",
+            "将木片反馈说成能够辨药、修盘或在任何场合施术。",
+            "让同伴的不同兴趣变成无因果冲突。"
+          ]
+        }
+      ],
+      "required_events": [
+        "第25章承接已验收细土及已领热饭的工作经历，现场完成一件有用途的有限帮手行动。",
+        "第26章由许庭在基础教学范围内说明木片浅纹的用途和限度，沈砚经修正与多次成功形成固定条件下可重复的短时起收。",
+        "第27章沈砚自行使用所得完成练习，并让这项进步影响他与唐穗交流及下一步选择。"
+      ],
+      "hard_constraints": [
+        "第25—27章承接第24章已交付的木片练习；第25章须完成有用途的有限行动，第26章须产生教学与实践支持的具体进步，第27章须让所得改变行动或相处。",
+        "三筐细黏土在第21章工作正文中已验收，三人已各领一份当晚热饭；后续只能承接该结果。",
+        "许庭为女性，只依据实际见到的练习表现和她有权说明的基础材料指导，保留自己的修炼安排。",
+        "木片的意义、用途和限度须从有权的基础教学说明进入沈砚所知；短时重复与跨情境稳定分开。",
+        "正式课程录入与基础指导分开，课位及其他条件仍须由有权者核实。",
+        "程观只处理自己所知、所负责的事项；修盘具体操作由现场修盘者决定。",
+        "人物所知受实际接触限制；任务、物料、时间和任何承诺均按明确来源与用途处理。",
+        "使用以沈砚为主的第三人称限知视角，后续正文保持每章2500—3500中文字、段落不超过500中文字。"
+      ]
+    }
+  ]
+}

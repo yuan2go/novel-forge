@@ -57,6 +57,24 @@
       "export_text_digest": "sha256:aacec2b42c8ccd7ef31a1d656ed8e900cf1e17508b5bd75217e4a1781131b22f",
       "file_sha256": "aacec2b42c8ccd7ef31a1d656ed8e900cf1e17508b5bd75217e4a1781131b22f",
       "file": "reader-packet/连续阅读/第22章.txt"
+    },
+    {
+      "chapter": 23,
+      "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea",
+      "content_hash": "sha256:092474b4c0d920f09a17edb828cad01feb5a9bb29c1fee0a07063cefd4c6f423",
+      "text_hash": "sha256:77399407ebe4d4a58b4f7a564f072c89360b72e5a277ff8082ff3837a8e4a587",
+      "export_text_digest": "sha256:65497815291da3bd37a567ec543f9a8f3b10b374cf9e8332519713ebea160eaa",
+      "file_sha256": "65497815291da3bd37a567ec543f9a8f3b10b374cf9e8332519713ebea160eaa",
+      "file": "reader-packet/连续阅读/第23章.txt"
+    },
+    {
+      "chapter": 24,
+      "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+      "content_hash": "sha256:c39326a0de6dc95ed2ab12058d174e530e33cbc98132204a105bdac8da04c963",
+      "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+      "export_text_digest": "sha256:5d4380834dbc997302d80f336c7ccace50d6949447c13e2e6f6102a639b55c33",
+      "file_sha256": "5d4380834dbc997302d80f336c7ccace50d6949447c13e2e6f6102a639b55c33",
+      "file": "reader-packet/连续阅读/第24章.txt"
     }
   ],
   "background": "Existing exact original selected chapters1–16",

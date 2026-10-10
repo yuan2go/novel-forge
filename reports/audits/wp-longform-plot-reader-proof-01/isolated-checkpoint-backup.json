@@ -1,0 +1,24 @@
+{
+  "scope": "ISOLATED_ONLY",
+  "database_oid": 318939,
+  "filename": "isolated-checkpoint-20261010T201332Z.dump",
+  "sha256": "6a76634074bba3bacf94482a4a7c7f995b6fdbbab2fb88093ca8c2ed3beec324",
+  "bytes": 386847642,
+  "book_before": {
+    "state": "READY",
+    "version": 177,
+    "current_chapter": 24,
+    "accepted_through_chapter": 0
+  },
+  "book_after": {
+    "state": "READY",
+    "version": 177,
+    "current_chapter": 24,
+    "accepted_through_chapter": 0
+  },
+  "postgres_consistent_snapshot": true,
+  "restore_proof": "NOT_RUN",
+  "private_directory": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01",
+  "external_object_store": "RETAINED_PRIVATE_ORIGINAL_RESTORE_AND_NEW_EXECUTION_ASSETS_NOT_EMBEDDED_IN_PG_DUMP",
+  "original_mutations": 0
+}

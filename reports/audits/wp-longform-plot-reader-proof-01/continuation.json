@@ -9,46 +9,58 @@
   "events": [
     {
       "phase": "BOOK_TICK",
-      "target": 23,
+      "target": 25,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "QUALIFY_NARRATIVE_REALIZATION",
+        "operation_id": "522cda88-4bda-4493-9aef-669eeee5cdd6",
+        "evidence_ref": "narrative-realization:736e319b4531ae9cf211c64b3614b3f918a447bee4c70238317296b93061daed"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 25,
       "result": {
         "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
         "previous_state": "READY",
         "state": "READY",
         "action": "GENERATE_CHAPTER_PLAN",
-        "operation_id": "3f4fe5f7-0ac2-479e-afaf-00cf16b93fc7",
-        "evidence_ref": "authority-output:3f4fe5f7-0ac2-479e-afaf-00cf16b93fc7:story_planning.candidate:v1"
+        "operation_id": "f832134b-abf6-4ecb-8124-f16283a34c6a",
+        "evidence_ref": "authority-output:f832134b-abf6-4ecb-8124-f16283a34c6a:story_planning.candidate:v1"
       }
     },
     {
       "phase": "BOOK_TICK",
-      "target": 23,
+      "target": 25,
       "result": {
         "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
         "previous_state": "READY",
         "state": "READY",
         "action": "FREEZE_CHAPTER_PLAN",
-        "operation_id": "d9fce69d-d664-4b85-9c4d-11b08909fd2c",
-        "evidence_ref": "authority-output:3f4fe5f7-0ac2-479e-afaf-00cf16b93fc7:story_planning.candidate:v1"
+        "operation_id": "2a5365d0-8a10-4e38-a0e0-de37abc3e1ff",
+        "evidence_ref": "authority-output:f832134b-abf6-4ecb-8124-f16283a34c6a:story_planning.candidate:v1"
       }
     },
     {
       "phase": "BOOK_TICK",
-      "target": 23,
+      "target": 25,
       "result": {
         "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
         "previous_state": "READY",
         "state": "CHAPTER_SUBMITTED",
         "action": "DISPATCH_CHAPTER",
-        "operation_id": "d6df8e99-8327-40ed-9055-5ac0c6a7f14a",
-        "evidence_ref": "chapter-request:06622cdeb7ed9da6c90b4577f770dabff872213f9506981d011906a178ccb66c"
+        "operation_id": "e67c5898-5903-4475-b11f-af56c0284c73",
+        "evidence_ref": "chapter-request:02b4fb3307cea294b938ea955255600c898877899b4a54e3219648af0c8cb5a7"
       }
     },
     {
       "phase": "FROZEN_REQUEST",
-      "target": 23,
-      "request_id": "chapter-request:06622cdeb7ed9da6c90b4577f770dabff872213f9506981d011906a178ccb66c",
-      "root": "d6df8e99-8327-40ed-9055-5ac0c6a7f14a",
-      "plan_version_id": "authority-output:3f4fe5f7-0ac2-479e-afaf-00cf16b93fc7:story_planning.candidate:v1",
+      "target": 25,
+      "request_id": "chapter-request:02b4fb3307cea294b938ea955255600c898877899b4a54e3219648af0c8cb5a7",
+      "root": "e67c5898-5903-4475-b11f-af56c0284c73",
+      "plan_version_id": "authority-output:f832134b-abf6-4ecb-8124-f16283a34c6a:story_planning.candidate:v1",
       "working_snapshot": {
         "book_id": "book:qinglan-wendao-20261008",
         "version": "working-manuscript-context.v1",
@@ -56,13 +68,13 @@
         "project_id": "qid-learning-prose-01",
         "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
         "instruction": "Continue only these exact selected working versions. Each passage is an attributed excerpt with Unicode positions; omitted ranges are unknown here, not evidence of absence. Distinguish what occurred in this working story, what an individual witnessed or was told, that individual's inference or belief, attributed rumor, reader-only disclosure and future plan intent. A true world event does not grant every character knowledge; a character's belief or statement need not be true. Discarded or unselected versions supply no experience. Carry realized experiences, practical progress and relationship aftermath into the next situation without reenacting them merely for formal acceptance. Unresolved dependency changes retain uncertainty. These passages grant no accepted fact IDs or Canon mutation. Let perception, goals, prior experience and the current situation motivate action, dialogue and subtext. Planned emotions and optional consequences are directions, not forced performances; distinguish binding fictional constraints from conditional possibilities. Important actions affect later choices when the story supports that effect; quiet scenes and unchanged positions are valid. Do not force conflict, reward, reversal or cost. Realize the chapter's intended movement without repeating settled progress. If a frozen plan requires repetition or contradicts the sources, retain that conflict for author/Plan Change rather than silently altering it. Use this information to write natural prose, without explaining these categories or a state checklist to the reader.Working observations are fallible source-bound navigation, never Canon or verified knowledge. Use their exact historical passages to assess current character states, attributed knowledge, relationships, actions, consequences and outstanding promises. Latest means latest observed statement, not proven truth. Missing or stale memory remains unknown; retain subjective and reader scopes. If the declared output schema permits working_memory_json, you may return a separate JSON-string array of observations grounded only in the prose you just wrote; omission must not impair prose. Each object has kind (CHARACTER_STATE, KNOWLEDGE, RELATIONSHIP, EVENT, CONSEQUENCE, PROMISE), subject, state_key, claim, perspective (OBSERVED, BELIEF, HEARSAY, READER_ONLY), knowledge_owner (empty for unattributed world observations or reader-only disclosures), an unambiguous literal quote, and causes (only observation_ids present in the frozen working memory, or []). Do not turn future plans into past events or return this metadata inside Scene prose. ",
-        "snapshot_hash": "sha256:d09956c5b3f236c9567e219c5f9acf402a2440b9d73a930e431c5f069bceffb9",
-        "target_chapter": 23,
+        "snapshot_hash": "sha256:043d5eccc52cbd99a29f043f707410dd885fc9c2e82b2f80bd9dda9861347f95",
+        "target_chapter": 25,
         "working_memory": {
           "entries": [],
           "version": "working-observations.v1",
           "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
-          "packet_hash": "sha256:d8ed20549062ee19112dc2e88cf0e24a86573e3f7d3843395ce99775b5eb615a",
+          "packet_hash": "sha256:56795ee6e96ffe254873f06fde76120f0929e747e930d0d520f35c403582f690",
           "candidate_count": 0,
           "source_coverage": [
             {
@@ -174,6 +186,16 @@
               "status": "WORKING_MEMORY_STALE",
               "chapter": 22,
               "asset_version_id": "772490bd-d5aa-4ecd-b0e2-7ee2f935fb45"
+            },
+            {
+              "status": "UNAVAILABLE",
+              "chapter": 23,
+              "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 24,
+              "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25"
             }
           ],
           "semantic_support": "NOT_VERIFIED",
@@ -473,160 +495,13 @@
         {
           "status": "UNREVIEWED_WORKING_PROSE",
           "chapter": 18,
-          "passages": [
-            {
-              "end": 97,
-              "text": "下一堂木片课开始前，沈砚先到了练习场。木架旁那张矮案还在他上回放定的位置。教习搬来木片，先请人把场内的几张案摆开，自己走到架脚与车辙之间，扶着这张案向里挪了半掌。四只脚一同落下，案面没有晃。\n\n",
-              "start": 0,
-              "text_hash": "sha256:2799e87ec2746ed436baad8d2835f88d912aea80f31e4688e45cccf833dae765"
-            },
-            {
-              "end": 197,
-              "text": "沈砚站到案前，鞋尖正好落在他先前修平的土面上。他还记得那粒垫在案脚下的小土块，眼下不必再俯身去找；退半步，脚跟也碰不到枯枝。场边仍有没清的地方，但这一小段足以让他站稳，眼睛和手都能朝着案上的木片。\n\n",
-              "start": 97,
-              "text_hash": "sha256:3dcb275e615a5b6c8b3962020ff783deb9bb2bdcb754137f94be4dd21f92948c"
-            },
-            {
-              "end": 319,
-              "text": "教习把薄木片逐一放好。沈砚认出近掌那道浅纹，却没有急着伸手。上次它亮了半息，他等光自己暗去才放下手；第二回想把暖意找回来，手反而向前挪了。后来没有木片，他只能对着土缝旁的小石练举手和落手。如今木片就在面前，究竟能不能守住位置，才有东西可看。\n\n",
-              "start": 197,
-              "text_hash": "sha256:8a9fd01fed96b8e023fe2070f6d76f075383dd76f68f672f2f583c50488140d8"
-            },
-            {
-              "end": 410,
-              "text": "“先看我这一回。”教习在众人前方的案旁站定，掌心悬在木片上方，留着一段空处。他等手臂停稳，呼吸慢下来，木片近掌的一道纹先透出光。沈砚本想顺着光往下一道找，教习却没有等它继续延长。\n\n",
-              "start": 319,
-              "text_hash": "sha256:b62defc9603acaaed13da72c45ba0f26f22a6563728dc13a6b89c8a84fa98c59"
-            },
-            {
-              "end": 512,
-              "text": "那只手在空中缓缓往回退，掌面仍朝下，手指也没有猛地蜷起。沈砚看见浅纹的光跟着淡下去，等教习的手落到身侧，木片上只剩原来的刻痕。教习又抬手，比了比刚才停住的位置，让他们看清起手和收手之间隔着怎样一段路。\n\n",
-              "start": 410,
-              "text_hash": "sha256:b3be8ee765c43d8ab85c9daeaded47d2f05db4f92fa6bb1a1103a4a65858c9b1"
-            },
-            {
-              "end": 609,
-              "text": "“今天练亮起以后怎样结束。”教习说，“能见到亮纹，就趁手臂还稳，缓缓收手，看看木片怎么变。不要只顾盼它亮久些，等胳膊撑不住了才一下缩回来。那样手位乱了，你说不清自己是在收，还是已经守不住。”\n\n",
-              "start": 512,
-              "text_hash": "sha256:c9c06caa03a1d5fe5445b69d9e74726e50a3c34c4ed8eaf3b5d393fd2f0e5091"
-            },
-            {
-              "end": 716,
-              "text": "沈砚望着教习落在身侧的手。方才的光没有延长到末端，教习却仍有余力把动作做完。上次他的木片先暗，手才放下；两回在眼前看似都有一个终点，先后却不同。若轮到自己，亮纹未必肯再来。即使来了，留给他收手的工夫恐怕也很短。\n\n",
-              "start": 609,
-              "text_hash": "sha256:691469c7180414bd22a5ce7efedf7bf61699743c1652b1084036543f0822cbd1"
-            },
-            {
-              "end": 851,
-              "text": "教习让学员各自试，先把手和木片的距离放妥。沈砚走回那张矮案前，袖口擦过案沿。他伸手比了一下位置，还没举起，许庭已走到旁边。她看了看他的脚和案角，说：“上回你第二次找那点暖，手往前去了，又急着拉回来。今天先守住原处。手若已经酸得要探出去，就先落下，别拿那一下当收势。”\n\n",
-              "start": 716,
-              "text_hash": "sha256:02b2f41998a9aeca2e05626d76b312deb4141d71ff7aad6d182d6474026c32d7"
-            },
-            {
-              "end": 902,
-              "text": "“我在没有木片时试过，”沈砚说，“悬久了，肘后先酸，指尖才往前。短短举一回，倒能看清它停在哪儿。”\n\n",
-              "start": 851,
-              "text_hash": "sha256:fba9b48990980c2b3067ec82cfe37ddc2e07dcc1d7a86f66315410b0159f45a6"
-            },
-            {
-              "end": 1023,
-              "text": "许庭听完，只朝木片近端示意：“那就照你看清的做。亮不亮，等手放稳再看。”她没有替他规定要撑到哪一口气。沈砚把袖子向上理了理，免得布边垂在浅纹上方。他打算只试一小段：先站稳、举手，若光出现，趁肩臂还松便收；若一直暗着，也不靠多悬一阵去硬等。\n\n",
-              "start": 902,
-              "text_hash": "sha256:f5fb470e50ac35ea133bc2451426e08814cb3733350e4c238cdf886c4227062d"
-            },
-            {
-              "end": 1117,
-              "text": "教习在另一张案前回答学员的问题，声音传到这边时已轻了。沈砚把两脚放在刚才认过的平地上。案脚没有随他的站位挪动。他低头记住近掌浅纹与案沿的距离，然后让手臂自然垂着，等呼吸回到平常的快慢。\n\n",
-              "start": 1023,
-              "text_hash": "sha256:098eac80d9a41bffb25fefbb9ec58142a40a5a0a5ab66f8544a223523e030742"
-            },
-            {
-              "end": 1212,
-              "text": "沈砚抬起右手，掌心朝下，停在木片近端上方。手肘没有伸得笔直，肩头也没有跟着提起来。他看见指尖与案沿之间还留着原先比好的空处，便不再往前找。第一口气出去，胸前慢慢落下，木片的浅纹没有变化。\n\n",
-              "start": 1117,
-              "text_hash": "sha256:b1bdb4f22ab4b3d2332af216d6d04979c3a86ae86e45694db8175518650b4fa9"
-            },
-            {
-              "end": 1346,
-              "text": "他没有立刻接一口更深的气。上次一心等着掌中发暖，手便先动了；此刻案上仍暗，他要看的先是手有没有留在原处。又一口气缓缓进出，指尖轻轻颤了一下，仍对着原来的位置。肘后尚不酸，只是悬着的重量渐渐能感觉到了。他心里已有了落手的界限：再等下去，若肩臂开始绷紧，就收了这一回。\n\n",
-              "start": 1212,
-              "text_hash": "sha256:e1fb276900af9ff63ff972d277bb2ec40627c792a29d3aa55ab396992d055927"
-            },
-            {
-              "end": 1459,
-              "text": "掌纹间忽然透出一点暖意。沈砚的视线原本落在近端的刻痕上，便看见那道浅纹亮起一线。它没有立刻延到第二道，细光只贴着靠掌的一小段。那一瞬，他很想把手稍稍压低，看看能不能让它多走些；指尖才起了这个念头，肘后还稳，掌面也仍在原处。\n\n",
-              "start": 1346,
-              "text_hash": "sha256:96c35fa40c67e887e1e8b13c8a0cf30221e18ff1323c9f64ae8c2b586d9ca0af"
-            },
-            {
-              "end": 1567,
-              "text": "他记起教习方才缓缓退手的样子。亮纹已经在眼前，若继续等，等到臂膀酸了再撤，这一次又会和上回混在一起。沈砚没有去追第二道。他让这一口气照原来的快慢过去，右手从悬停的位置一点点向后收，手指保持舒展，肩头没有猛地抬起。\n\n",
-              "start": 1459,
-              "text_hash": "sha256:bd387893e100af5ffaf32ddeea0aecd2de4f979a2f8a36decd3dd2c057e405cb"
-            },
-            {
-              "end": 1704,
-              "text": "近掌那一线光随着手退开而淡了。沈砚看得分明：他开始收手时，浅纹尚亮；手退到半途，亮处已薄得几乎只剩刻痕边上一点；等掌心离开木片上方，它完全暗下去。他把手落到身侧，仍盯着那道纹看了片刻。木面上的灰没有动，日光也仍照在案角。刚才的明暗先后，不必靠掌心那点转眼就散的暖意去猜。\n\n",
-              "start": 1567,
-              "text_hash": "sha256:0616d3cfd2b9a8eb923edde72c2c58ca0e72904181704642b6e96ff0d798d916"
-            },
-            {
-              "end": 1774,
-              "text": "“我是在它还亮着时收的。”他说。话说出口，才觉出手指微微发热。他把手翻过来看了一眼，掌纹和平常一样，又将手放回身侧，没有急着重新悬上去。\n\n",
-              "start": 1704,
-              "text_hash": "sha256:37f067b4b97ff42a67d4eba1796c68d56fc86e36b81601fce36d7dd486078daa"
-            },
-            {
-              "end": 1888,
-              "text": "许庭站在案侧，目光从他的手移到木片。“我看见你起手后没往前探。浅纹亮着，你才开始往回收；它暗下去时，你的手还在退。”她抬手比了一小段距离，“以前那回手臂发酸，你是先往前挪，又急着拉回来。刚才这一回，肩和肘都没有那样抢着动。”\n\n",
-              "start": 1774,
-              "text_hash": "sha256:a8a2a62ef5aab6df41bc3c187924c3e12662f8a387992696bcfb72490eda1bd7"
-            },
-            {
-              "end": 2014,
-              "text": "“能算我收住了一回么？”他问。\n\n",
-              "start": 1997,
-              "text_hash": "sha256:6cb097f33177426111c55fc16d5640106d29cfe8cdd22c823c8d74e5224679c2"
-            },
-            {
-              "end": 2027,
-              "text": "“算。”许庭答得很快。\n\n",
-              "start": 2014,
-              "text_hash": "sha256:0fc789a6061e70eeea11b2b092f578d1cbb3031121b3741a2bf8a59f293655fa"
-            },
-            {
-              "end": 2125,
-              "text": "“我怕下一回没了。”\n\n",
-              "start": 2113,
-              "text_hash": "sha256:314f635a7eb6902944d32ba56ad93599ed75706a151f7591770ef590155ba440"
-            },
-            {
-              "end": 2166,
-              "text": "“那是下一回。”她把手放下，“你方才是想让它再往前亮，还是想按教习说的收手？”\n\n",
-              "start": 2125,
-              "text_hash": "sha256:b0c64463583ea21e50a0baee3a77a38fe74add02fb0364d24d79bfdd7374a4db"
-            },
-            {
-              "end": 2183,
-              "text": "沈砚有些不好意思：“想往前。”\n\n",
-              "start": 2166,
-              "text_hash": "sha256:242de5b809422075f2d8a4c329ce254b7c2f97ad1dc3538c9550f4ad37cbcb6e"
-            }
-          ],
+          "passages": [],
           "text_hash": "sha256:a167d08118833e58fdc71a49288fddc2f9ac69e1b511c9de8d79398ee5bc1028",
           "content_hash": "sha256:f582e697859bff80d0d1f3363e27c90ea7c8b499806af8fec0a9d55263f6773d",
           "omitted_ranges": [
             {
-              "end": 1997,
-              "start": 1888
-            },
-            {
-              "end": 2113,
-              "start": 2027
-            },
-            {
               "end": 2969,
-              "start": 2183
+              "start": 0
             }
           ],
           "asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374",
@@ -643,167 +518,15 @@
         {
           "status": "UNREVIEWED_WORKING_PROSE",
           "chapter": 19,
-          "passages": [
-            {
-              "end": 79,
-              "text": "离开木片课堂后，沈砚到练习场边的任务处找程观。案前那一次亮纹还留在记忆里，第二次木片却始终暗着。眼下他要做的是另一件事：把接下的落枝差事问清，再往山边走。\n\n",
-              "start": 0,
-              "text_hash": "sha256:eeee9f086767768190d6fc10b52a0a6a4f9e40fba4209188c431954ef94f7a66"
-            },
-            {
-              "end": 213,
-              "text": "程观正在收理案上的东西，听他说起落枝，便指向靠在一旁的旧矮案。案面朝外，底下的横档露了出来。“要的是能给这种案子做支木的枝，”他说，“挑落在地上的。中间得有一段直实的，不能一握就觉得里头朽了；粗细要能抵住横档，太细的受力会弯。旁边生满长杈的，带回来也难往案下放。”\n\n",
-              "start": 79,
-              "text_hash": "sha256:5f0c93289ed32a19bf6fed69f0d29e5bdef2b9ff5cc1c42be29d9fcf86b7f674"
-            },
-            {
-              "end": 350,
-              "text": "沈砚蹲下，看了看横档离地的空处，又看案脚之间留出的宽窄。程观把手里一截旧枝斜放在案旁，比给他看能用的那一段。枝身不必从头到尾笔直，抵在横档下的地方却不能向外弯得太厉害；落地的一端也得结实。程观松开那截枝，把它放回原处：“照这个用途找。回来放到案旁这块空地，我在这里看。”\n\n",
-              "start": 213,
-              "text_hash": "sha256:2e9727bebca4b73e640364a9891ce3b0bf9f4bd66171d1e424b5bc2d00318d88"
-            },
-            {
-              "end": 368,
-              "text": "“带回多少才算这一趟？”沈砚问。\n\n",
-              "start": 350,
-              "text_hash": "sha256:aea6710011271e0154e8a1c2ac910d456be60c7477b9ca5feb298fa9423bae0d"
-            },
-            {
-              "end": 431,
-              "text": "“先把合用的带回来。”程观看了他一眼，“山路潮，别为了凑一大抱，连站都站不稳。你交到这里，我按枝条看，不按山上有多少看。”\n\n",
-              "start": 368,
-              "text_hash": "sha256:f83565fa073d474cb1dd6dd6a4983eb51f25e6a0ae6687e80c259ce35d6590ec"
-            },
-            {
-              "end": 573,
-              "text": "沈砚站起来，往练习场外望。近山的路从场边过去，昨夜留下的湿气还压在草叶上。他在村里拾柴时也知道，空手看着不重的一堆，抱起走一段便是另一回事。今天独自去、独自回，他先记下案底那段高度和横档的宽窄，打算找到合适的再估量手上能带多少。木片上那道光不能替他托住枝条；这件差事得从脚下走起。\n\n",
-              "start": 431,
-              "text_hash": "sha256:199f817219c66c3c223c003b8f90053b304ea908707098d196ffe15f3ada2e24"
-            },
-            {
-              "end": 689,
-              "text": "出了练习场，路边的干土还能留下清楚的鞋印。再往近山走，树影遮住日光，土色便深了一层。沈砚先空手走过一段窄路，记住哪里有露出的石面，哪里被落叶盖着。山风吹过，叶面翻起，底下的泥仍湿着。他没有因此绕远，只把步子收短，踩稳了才往前看。\n\n",
-              "start": 573,
-              "text_hash": "sha256:0724483b21453f4a039347cd2095b5fcb90096ddd2a16fa49ce8ece5cbe33dd9"
-            },
-            {
-              "end": 840,
-              "text": "落枝散在坡边，远看粗细相近，拾起来却各有毛病。第一根主干够长，一端裂了口，裂纹顺着木纹伸进去。他握住两头轻轻一压，缝隙便张开，遂把它放回原处。另一根摸着坚硬，弯处却靠近正中。沈砚想着旧案下那条横档，把枝条竖在身侧比了比；若取其中直的一段，余下的长度又不够。他仍放下，免得走完湿路才发现只能拿去当柴。\n\n",
-              "start": 689,
-              "text_hash": "sha256:907c2174bf91ba5f3074f67fb8d791091eec121b1e45afe7a040d16645c54b94"
-            },
-            {
-              "end": 1041,
-              "text": "林边倒着一截较大的枯木，旁边压着几根枝。有一根露出半截，外皮被雨水泡得颜色发暗。沈砚先拨去浮叶，握住干净的一处，把枝慢慢抽出来。它一头稍粗，往上有一段平顺的枝身，旁杈只在更高处伸开。他用手掌逐段摸过去，没有摸到松软的朽处，又将枝的粗端抵在实土上，压了压另一端。枝身随手劲微微动，却没有在中段折下去。若把旁杈留在案外，这一段大概能派上用场。他把它横放在路旁显眼的石边，继续往近处找，不急着抱在臂弯里。\n\n",
-              "start": 840,
-              "text_hash": "sha256:90680f7cef3ef05e9b5f4f4be5afdeb6dcc6db5cca7b9fc3850f43535a7f41f5"
-            },
-            {
-              "end": 1235,
-              "text": "第二根藏在草下，粗细比第一根略匀，表面有一道旧疤。沈砚剥开疤旁的泥，看见木色仍紧实，便把枝翻过来，检查与地面接触的一侧。那一侧没有烂口，弯曲也只在末端。他把两根并在一处，较直的部分长度相近，粗端却不齐。若一手握住两根细端，粗端会在行路时一前一后地晃。他试着换到靠近中间的地方握，枝头便少扫到地面，手臂也不必总向外张着。沈砚把两根都拾起来，先走到干些的路面试了几步，才回头看剩下的落枝。\n\n",
-              "start": 1041,
-              "text_hash": "sha256:a9ffd122db0b07b4127d95709b3ac14030dd5656d548b0b5eef1dc3cdfeb0c48"
-            },
-            {
-              "end": 1443,
-              "text": "坡上还有一根枝形也合适，比手里的两根长出许多。他走近看了一眼，确实找得出可用的一段。他一度想把它也带上；可三根并在臂弯里，长出的那头会越过肩侧，转身时不是碰树，就是拖着地。他把手里的两根稍稍抬起，试着腾出一只手去够第三根，身体随即朝持枝的一侧偏了偏。此处脚下尚干，他还能站住；来时那段湿路却没有这样宽的落脚处。他松开伸出去的手，记住这根枝的位置，仍只带原先选好的两根。这趟先把能交的送回去，不必在坡边把臂弯塞满。\n\n",
-              "start": 1235,
-              "text_hash": "sha256:46b38fb4bd4354ee26b7a0c7d227f872df70b32e9740f22bd00d72111525f436"
-            },
-            {
-              "end": 1586,
-              "text": "回程开始时，两根枝的重量尚算轻。走到树荫下，粗端渐渐往下坠，牵着他的右臂朝外转。沈砚用左手托了一下，想把枝头拉回身侧，鞋底却在一片贴地的湿叶上向前滑了小半步。他立即止住脚，先让两只脚各自落稳。湿叶底下露出一角石面，上面覆着薄泥；方才若一边急着换手一边往前迈，脚掌正会踩在石面的斜处。\n\n",
-              "start": 1443,
-              "text_hash": "sha256:3a13d01fa1f80bd85f4172f6ad7ec9abe943625f31bb20cd5becd3db29207802"
-            },
-            {
-              "end": 1754,
-              "text": "他站着没有动，把两根枝的粗端抵到路旁一处实土上，让地面暂且承住那头的分量。手指松开，又从较平顺的中段合拢；左手不再只在下面托，而是扶住向外散开的枝头。等枝条贴近身侧，他才用鞋尖轻轻碰了碰前面的土。鞋尖把湿叶推开一小片，露出旁边较粗的砂粒。他先踏到砂上，确认鞋底没有继续滑，再把另一只脚带过来。几步路走得慢，枝头却不再拉着他抢先转身。\n\n",
-              "start": 1586,
-              "text_hash": "sha256:380db892dbd39f85bac01835b642c77efdeb2f13fb9858a27716b1f7294e167c"
-            },
-            {
-              "end": 1933,
-              "text": "走过石面后，他没有马上加快。右臂仍有刚才被扯开的酸意，若等它发紧才换握，脚下又要跟着手忙。沈砚想起许庭让他看清手位和动作先后；在木片前，他曾趁手还稳时收过一回，第二回却没等来亮纹。此刻手中是实实在在的木枝，没有什么光可等。他能辨的是枝头何时开始下坠、右臂何时被带开、鞋底何时失了力。再往前遇见湿处，他便先停，放稳枝端，换好握法，挑能落脚的地方一步步过去。\n\n",
-              "start": 1754,
-              "text_hash": "sha256:d4171228e324047868477c5feb0f2347e6453251f11ca6756d51d8be97404f89"
-            },
-            {
-              "end": 2074,
-              "text": "路渐渐开阔，山风能吹到鞋面，地上的泥也浅了。沈砚回头望了一眼那片树荫，只看见来路在枝叶间转了个弯。刚才停下的地方已被遮住，脚底却还记得那一下滑动。他将两根枝重新抱好，留出手肘活动的余地，朝练习场走去。枝条还在手里，分量没有少；走过湿路以后，他至少知道下次该在手臂被牵歪以前停步。\n\n",
-              "start": 1933,
-              "text_hash": "sha256:019624d9b8166063c8e793f3dd2c61cdc75b4e5f8281f0ffc3335dfdc6b9d3e4"
-            },
-            {
-              "end": 2172,
-              "text": "练习场边的任务处露出来时，沈砚先看见那张靠在一旁的旧矮案。程观仍在案前办事，他便把枝条抱到先前指定的空地，屈膝放下。两根粗端碰到地面，发出两声闷响。他没有任枝头散开，伸手将它们并好，才直起腰。\n\n",
-              "start": 2074,
-              "text_hash": "sha256:e8e8b8f9eb6e3025a3cafd79251ee898b6899960aaa2031f26f3d964366d46dd"
-            },
-            {
-              "end": 2291,
-              "text": "“我只带回这两根。”沈砚指着第一根从粗端往上的平顺处，“这一段够直，旁杈在上头，做支木时能避开案底。”他又指向第二根的旧疤，“这里有疤，我翻过来摸了，没见里面朽。长出的末端弯些，中间这段可以用。再多一根，我过湿路就不容易腾手换握了。”\n\n",
-              "start": 2172,
-              "text_hash": "sha256:14beb61b14a3909522ea466af37b554fc7dfcd3c0b5a5ee069e42b05ed917346"
-            },
-            {
-              "end": 2392,
-              "text": "程观放下手边的纸，先看两根枝的粗端，再用手按了按沈砚指出的地方。他拿起有旧疤的那根，在案底横档旁比了比，弯处没有抵到该受力的位置；另一根的长杈也在案框外。他把枝放回交付处，问：“两根都从地上拾的？”\n\n",
-              "start": 2291,
-              "text_hash": "sha256:f25cd4ac3337e16837026548142532547a2248d6f003fb239a24300fcb3317dd"
-            },
-            {
-              "end": 2414,
-              "text": "“是。裂的、软的我留在山边了。”沈砚答。\n\n",
-              "start": 2392,
-              "text_hash": "sha256:92937d8a21c97233165037e87ea9f7ee4a7700bb7ba163c2f5b979005c1dcc1f"
-            },
-            {
-              "end": 2500,
-              "text": "程观点头，将两根枝移到案旁收放枝材的位置，与杂物隔开。“成，这两根用得上。”程观将有旧疤的那根转了半圈，把直的一面留在外侧，“你过那段湿路，没把自己也当木头扛回来吧？”\n\n",
-              "start": 2414,
-              "text_hash": "sha256:40fa02954a3ad721a64f42cc0002ca7a7752a14797daca51168200c239ef4ccb"
-            },
-            {
-              "end": 2529,
-              "text": "沈砚听得笑了：“差一点。后来把枝头放地上，先换了手。”\n\n",
-              "start": 2500,
-              "text_hash": "sha256:372a9694f923c21986389003963be85a1c93ea28548e8002220466101e8c94b3"
-            },
-            {
-              "end": 2574,
-              "text": "“下次也这样。东西放一放，坏不了。”程观取过纸，记下两根枝已经收来，随即去忙案上的事。\n\n",
-              "start": 2529,
-              "text_hash": "sha256:0509fa5fc50ca418eb8bdbcc3e96dfb3f2670486fd0bd990f0e156ee5b7db182"
-            },
-            {
-              "end": 2741,
-              "text": "沈砚听清那句收下，才松开一直微蜷的右手。掌心有两道枝皮压出的浅痕，指根沾着一点泥。他用拇指搓去泥，见枝条留在程观收放的位置，自己手里已空了。湿路上停的几次、坡边舍下的那一根，都落到了眼前这两根实物上；他往案旁又看了一眼。那张旧案修好后，站在案前的人不必知道这两根枝从哪里来；自己却会记得那段湿路。他向程观说了一声，沿场边的路离开。\n\n",
-              "start": 2574,
-              "text_hash": "sha256:adb2667e04886cee47c371c302c2233a680101def3ee818f24907adc6a235e8e"
-            },
-            {
-              "end": 2841,
-              "text": "空手走路，沈砚的步子自然轻了些。到了场外的岔口，他却仍照回程时的习惯，看清地面才转身。通向住处的这一支，他走过多回，路旁有块低石，雨后石边常积一小洼水。他沿着低石认出了方向，目光又落到另一支路上。\n\n",
-              "start": 2741,
-              "text_hash": "sha256:19cace3610bfa5a3ed2326afbc27cce673f9faac0436b09235ab1623a9c37cc4"
-            },
-            {
-              "end": 2972,
-              "text": "那条路从岔口向山里抬高，近处能见两道被人踩出的浅痕，再往前便没入树影。沈砚站了片刻，只能看见这些。今日去拾枝的湿路已让他明白，隔一段树影，脚下就可能换一种样子；更远处怎样，他还没有走过。他记下岔口旁那块低石，也记下另一支路从它哪一侧分出去，然后转回熟悉的路。\n\n",
-              "start": 2841,
-              "text_hash": "sha256:bd0d22c55144de8f753966238c75f80918c5c8b6d27c401b2f287e11206355da"
-            },
-            {
-              "end": 3034,
-              "text": "右手空着，指根的压痕还在。他活动了一下手指，继续往前走。案旁的两根枝已经交回；山里的那一段路，等真要走时，再从这处岔口看起。",
-              "start": 2972,
-              "text_hash": "sha256:3413adae199919ff470009d9c8c8cb1e5165f1aa5c9f463c771ecb4fcb22fa4c"
-            }
-          ],
+          "passages": [],
           "text_hash": "sha256:6b777ba2a22a58d8970b2afa2044956f91a449c7469193c45bc63bc34f73dbf3",
           "content_hash": "sha256:722fb76830d42fd6356ba88c5e405b87dc737ddf469cc0f3bd768648b90c21b6",
-          "omitted_ranges": [],
+          "omitted_ranges": [
+            {
+              "end": 3034,
+              "start": 0
+            }
+          ],
           "asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7",
           "source_characters": 3034,
           "dependency_changes": [
@@ -949,59 +672,16 @@
               "text": "陆衡在旁边抬起手，指肚也沾着土：“那要等交回了。现在谁先把这一团从我手里弄下来？”\n\n",
               "start": 2080,
               "text_hash": "sha256:314166e5ccadabd4ca016af8abc28c313a45394e27719053a0f6d609462bdb24"
-            },
-            {
-              "end": 2157,
-              "text": "唐穗将一角干净的布递过去：“先擦。别在筐带上擦，你明天还要握。”\n\n",
-              "start": 2123,
-              "text_hash": "sha256:6c0d76fe3d49aa53633fa652e99f8f4f92e18d976229955ab9b16e59561f6e40"
-            },
-            {
-              "end": 2203,
-              "text": "“明天握的是杆。”陆衡把手擦净，低头看了看掌心，又把布角叠好还给她，“筐还是得握一段。”\n\n",
-              "start": 2157,
-              "text_hash": "sha256:7f0eeaf7685c6ea3b2ab393a11c0941ed03b61c7c36795e817fcf37bfab99e01"
-            },
-            {
-              "end": 2277,
-              "text": "沈砚笑着搓去指纹里的砂，先清出一块平地放筐，又用鞋尖试了试坎下的落脚处。那里靠近土，却比上方的斜面稳；陆衡可以蹲下装筐，不必一手撑坡、一手提土。\n\n",
-              "start": 2203,
-              "text_hash": "sha256:93aa48c0b25a5a8bced9cf375d3017ba6995df687a2786561738f845fd31fdc4"
-            },
-            {
-              "end": 2387,
-              "text": "唐穗沿着浅坎又摸了几处。有一处土在表层下稍干，她揉散一小块，指间没有硬砂，合拢时却能黏成团；松开手，团边也不立刻碎掉。她把土递给沈砚和陆衡各捏了一回。“这一处更像程观说的。”“先从这里取，夹着别种手感的，就放旁边。”\n\n",
-              "start": 2277,
-              "text_hash": "sha256:4f08f0a5ffdf239874a1a28d4cff4b161904f182cfc1570e5593e5ec3f7f7b27"
-            },
-            {
-              "end": 2541,
-              "text": "陆衡把第一只筐摆到平地，先将筐带理直，免得装到一半才发现带子压在底下。他用手掌从唐穗指出的地方一块块掰下土，递给沈砚。沈砚掰碎较大的块，挑开眼前看见的根须，再照唐穗示意把细土落进筐里。筐底渐渐被盖住，陆衡试提一次，筐身还轻；又装了一层，重量便拽住了他的腕。他没把土压到筐沿，只用掌心轻轻理平，让沈砚试背。\n\n",
-              "start": 2387,
-              "text_hash": "sha256:18be90e478a2022258f66e56f68e535d93465a2b64ee5f03fd0d82c8f0d61c9e"
-            },
-            {
-              "end": 2666,
-              "text": "沈砚屈膝，让陆衡扶着筐带把筐送上肩。刚才空筐贴着腿侧晃，他只需收一收手；如今土的分量压下来，身子若照原先的步幅向前，筐便往一旁带。他站稳，把带子往肩内挪了少许，再走到坎外那块平地。几步之后，他放下筐歇一口气，问唐穗：“这一筐里有你拿不准的没有？”\n\n",
-              "start": 2541,
-              "text_hash": "sha256:c4e4197171c502cd7093e15d8f3db1892a6dfd0b0934a9195c0d7d333effb021"
-            },
-            {
-              "end": 2804,
-              "text": "唐穗看了看筐面，摇头：“拿不准的还在旁边。先前那两样，我各留一点，交时说得出摸到什么；别的湿土和砂土不往筐里加。”她将两份样土分别包好，隔开放进布里。第一筐因此没有装得鼓出筐口，却是他们逐把挑出的细土。沈砚再提起时，能看见筐沿下整齐的土面，也能看见旁边两只空筐仍叠在一起。\n\n",
-              "start": 2666,
-              "text_hash": "sha256:bd361a191bb97730505df5d870f83324e677c54c653367671f4f7fac4bd37133"
-            },
-            {
-              "end": 2977,
-              "text": "陆衡把空筐提上，先去看出坎的那一步。他替沈砚扶住满筐的下沿，等沈砚的前脚落到实土，才松手跟上。唐穗带着分开的样土走在后面，路过那片盛过含砂土的叶子，还回头认了一眼取土的位置。三人沿来时看过的坡脚走出取土处。沈砚肩上已有第一筐，筐带压出的重量清清楚楚；另两只空筐在陆衡手里轻碰，提醒着他，明日约定的工夫还得用在这条路上，三筐交齐才有程观所说的回报。",
-              "start": 2804,
-              "text_hash": "sha256:5bd9759d3f794ff813dc6ebc7eff3f7a65518a21c5f9be98cc5706de137c827d"
             }
           ],
           "text_hash": "sha256:48e50b9bec30c72e0dd554739a0d14a8153389ff0c551681acd61ab4733eb151",
           "content_hash": "sha256:795fe1638d19316c34f1729b655fa5c43b6ef8ec5831f62f8305bc7300b7cc41",
-          "omitted_ranges": [],
+          "omitted_ranges": [
+            {
+              "end": 2977,
+              "start": 2123
+            }
+          ],
           "asset_version_id": "0d8cd54d-1a52-4df9-aa98-5d1b3ba81a82",
           "source_characters": 2977,
           "dependency_changes": [
@@ -1471,18 +1151,399 @@
             }
           ],
           "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 23,
+          "passages": [
+            {
+              "end": 155,
+              "text": "纸还夹在沈砚昨夜放它的地方。他先照纸上记的，做完今日已经应下的事，回住处坐着歇了一阵，才把它取出来。右肩抬动时仍有一点酸，却不再像背筐那日，空着手也总想往一旁靠。他试着拎起半满的小水囊，走了几步，肩臂没有被牵得发紧，便把水囊、折好的纸和一截炭带上。昨日划给试走的工夫还在；他留出的回程时间，也一并算在里头。\n\n",
+              "start": 0,
+              "text_hash": "sha256:e8018b6ab09ea1d68292b03b002a5af91592784920c1f653e51fe031d5519b77"
+            },
+            {
+              "end": 248,
+              "text": "练习场外的岔口仍是那块低石最容易认。石边的小洼里只剩一点水，通住处的路从它一侧过去；另一侧的两道浅痕向山里抬起。沈砚在石旁停下，回头看了一眼来路，才踏进自己昨日只在纸上划过的那一支。\n\n",
+              "start": 155,
+              "text_hash": "sha256:f20c63e7cae803301bebe91ecbd8eaad63d26ba2093356ff8acfaffe64a02b86"
+            },
+            {
+              "end": 382,
+              "text": "起初的土路与岔口相差不多。鞋印留得浅，路旁的草尖却还挂着水。沈砚把水囊拎在右手，走过几处看得清的实地。山村里走坡路，他惯于看下一步能不能落稳；如今他还留意手中的水囊怎样跟着脚摆。囊里水不多，右臂稍向外甩，肩头那处酸意便跟着露出来。他收了收手臂，没有因此把步子赶快。\n\n",
+              "start": 248,
+              "text_hash": "sha256:b962b436d243d116ae9749528e1577b79b5f7ae0e32ead4aa07954d35e2d4027"
+            },
+            {
+              "end": 559,
+              "text": "路绕过一丛矮木，湿气压在树荫下。两块石头露出土面，一块顶上平，靠近他的边却斜着向下；另一块低些，石面有粗细不匀的纹。落叶贴在石旁，遮住了两块石之间的土。沈砚的前脚已到斜边附近，便先停在原来的实土上。他没有一面迈步一面把水囊换手，而是站定了，先将它交到左手，贴近腰侧。右臂松下来，他用鞋尖轻轻拨开叶子，看见斜边下的土泛着湿亮，才把脚转向低石露出的粗纹。\n\n",
+              "start": 382,
+              "text_hash": "sha256:809f1b1252a70b8fea33b093df8dec3f1b14f01c17a18eefa855d8f563042e32"
+            },
+            {
+              "end": 775,
+              "text": "鞋底刚压上去，粗纹上仍有一点滑。他没有把身子立刻送过去，只让重心慢慢移到前脚，等鞋底不再往外蹭，后脚才离开实土。水囊贴在腰边，水在囊中晃了一下，没有把他的手带向石外。跨过第二块石时，他照样先看脚下，挑石面较平的一角踩定。到了对面的土上，沈砚抬起头。刚才眼里只剩两块石头，越过它们，路旁的矮木忽然高到肩侧，叶面接着漏下来的日光，一边明，一边暗。草尖上的水被袖口拂落，凉意从手背上滑过去。他停了一停，把水囊在左手里提稳，自己先笑了。\n\n",
+              "start": 559,
+              "text_hash": "sha256:6a1d0160e16a04709b30e4ae00c21f2a32ef85c8a6aa74225171fca9933cbb54"
+            },
+            {
+              "end": 909,
+              "text": "上回两根枝抵在臂弯里，他望一眼前面，便要想回程怎么转身；昨日背筐，听见后面陆衡说话，还得先让筐别牵着肩。这会儿身后只有自己走过的那两块石头，水囊低低贴着腰，能往哪个方向看，眼睛就自己过去了。他本可以绕完这一步便急着往前，脚下站稳后，却舍不得立即把这片叶光抛在后头。\n\n",
+              "start": 775,
+              "text_hash": "sha256:e9c02de72cd8580cfed3d0d79851ff6691889c226987ce6fa910d43d4e7f8e14"
+            },
+            {
+              "end": 1039,
+              "text": "沈砚伸手摸了一下袖里折纸的边。昨夜划那段空白时，他想的是该怎样走，如今鞋底已经落到这里，才发现想看的远不止路面。风从叶缝里过，叶子翻到暗的一侧，光又从另一处露出来。过去的山路也有树，也有光，他走着走着，总在惦记手中要带回的东西，少有这样两手只带自己的时候。\n\n",
+              "start": 909,
+              "text_hash": "sha256:d53c3ead1167bb7c17d0c79f8f43ae7062a404cd7c81a3d7d9b44032b281696b"
+            },
+            {
+              "end": 1077,
+              "text": "他回望来时那一步：若在斜边上才想换手，右脚还没找着地方，肩与腰已先转了。\n\n",
+              "start": 1039,
+              "text_hash": "sha256:ff59a84dc1b60b852cd5f58f00244b72dbb7971893a3eb66c028197a192a01c7"
+            },
+            {
+              "end": 1207,
+              "text": "他退到一旁能站稳的地方，把纸摊在膝上，用炭头记下第一处：湿石前停在实土；水囊由右手换到左手，收近腰边；拨叶看石，前脚踩粗纹，稳住才移后脚。他写得慢，末尾又添上“石上仍滑”。纸上的次序得与脚底刚才走过的一样，回去说起时才不会把“先停”和“先换手”混成一件事。\n\n",
+              "start": 1077,
+              "text_hash": "sha256:0f93d3f05dd6c743b52bb1d5d4adf05af3480ee7d9a52f53e08a923c8e1c6f9b"
+            },
+            {
+              "end": 1390,
+              "text": "再往前，树影渐薄，脚下换成一段干土。土面有被人踩实的浅痕，边上散着细碎的硬块。沈砚先照过石头时的短步走了几步，水囊一直贴在左腰，脚与手都拘着。这里的前脚落下时，鞋底能压进浅痕，不必等着石面那点滑意退去。他试着把水囊放低，仍拎在左手，让手臂随着脚自然摆动；步幅放长一点，肩头没有被拽偏。到了几粒松碎的土块前，他先踩在浅痕里，再收住脚，把水囊提回身侧，从土块旁绕过。\n\n",
+              "start": 1207,
+              "text_hash": "sha256:a8e25757ab64ba48ae40ff32cd6b6fa8d8c7200ba4c47c75df86cd2c49e8e9fb"
+            },
+            {
+              "end": 1516,
+              "text": "这回停步是在前脚踩实之后。沈砚又走一小段，照着刚才的做法过了一处同样平实的土面。前脚先落，水囊可以低拎；要避开松土，他再停、再收近手。他找了块干净的平地写第二处，把“干土浅痕”和“湿石粗纹”分作两行，免得日后只记得自己都曾缩过步子，却忘了为什么缩。\n\n",
+              "start": 1390,
+              "text_hash": "sha256:4893a9432e9856783a4c06fd8ce8c22607481710f0c4a4fc977304233f23d567"
+            },
+            {
+              "end": 1621,
+              "text": "写完抬头，前面的路又没入较密的树影。沈砚看看纸上昨日划出的回程余地，再看看日影，到了该折返的时候。他在干土边认清一块露根的地方，记作这回走到的尽头，便把纸折好。他抬头望了一眼，树叶叠得深，路仍在脚下向前伸。\n\n",
+              "start": 1516,
+              "text_hash": "sha256:fc20c2ac10174b98bbda93e8f2c63102b5ca54729823bddc849f83c9a77b4db7"
+            },
+            {
+              "end": 1773,
+              "text": "回程经过干土，他能认出自己刚才踩过的浅痕；到湿石前，仍停下来换好手，再逐步踏过。直到低石重新出现在岔口，他才松开一直提着水囊的手。留给回程的工夫没有被用尽，肩臂也还容得他舒展一下。他确实走完了昨日为自己划出的这一段，手里有两处鞋底和水囊一道试出来的记录。沈砚沿练习场边往回走，想把这两行先给许庭看看。\n\n",
+              "start": 1621,
+              "text_hash": "sha256:8b33f408ac1aa292b6c488f76f356fbc6689725962b4973a45f5e968835aa140"
+            },
+            {
+              "end": 1847,
+              "text": "许庭在练习场边，正把手边的东西收拢。沈砚走近时，她抬头看见他手里的纸。他说：“昨日写的近山一段，我刚走回来。记了两处动作。你现在方便看一眼么？”\n\n",
+              "start": 1773,
+              "text_hash": "sha256:b7565d07ae074444aac31e2727abc51abbaad6a4726ecf5422730dbc2692ed7a"
+            },
+            {
+              "end": 1881,
+              "text": "许庭看了看尚未收完的东西：“说短些。我待会儿要去做自己的练习。”\n\n",
+              "start": 1847,
+              "text_hash": "sha256:ce9f682402d355d51fd729d9029f97dea61b84427a96ad965573d5aca3ceb12f"
+            },
+            {
+              "end": 2023,
+              "text": "沈砚把纸展开，手指先落在上面一行。“这里是湿石。到石前我停在实土上，先把水囊从右手换到左手，贴近腰边，拨开叶子才看清落脚处。前脚踩上去还有些滑，等它稳住，后脚才跟过去。”他把指尖移到下一行，“这里是干土，有踩实的浅痕。我先落前脚，水囊低拎着走；碰到旁边的松土，才停下来把手收近。”\n\n",
+              "start": 1881,
+              "text_hash": "sha256:e5eba8f34e15b16041838f6932960ecc59b8140bad2d39b91f167af887b227cb"
+            },
+            {
+              "end": 2064,
+              "text": "许庭接过纸，没有立刻答话。她看了一遍湿石那行，问：“换手时，你的脚还在原处？”\n\n",
+              "start": 2023,
+              "text_hash": "sha256:a2196087ddb87530fc9ae5945277b17fdc4b9b11160c3939011020ca76631570"
+            },
+            {
+              "end": 2115,
+              "text": "“在石前的土上。”沈砚用空着的手比了比两脚的位置，“我先停住，才换手。若写成换过手再停，就错了。”\n\n",
+              "start": 2064,
+              "text_hash": "sha256:ac7ba249bedbceced139b76a1f5a8731ed40029d9d86bd322d13121220dc6eb6"
+            },
+            {
+              "end": 2141,
+              "text": "许庭指着干土一行：“这处是前脚落稳后，才收手？”\n\n",
+              "start": 2115,
+              "text_hash": "sha256:40f22e5f99c1d84728d3c6d283616314eae17f6b95a64797bf6c05ced13d10ff"
+            },
+            {
+              "end": 2240,
+              "text": "“是。平实的地方，手低些也走得稳。到松土边，我不敢边跨边提。”沈砚看她的指尖停在纸上，才发觉自己写的“停”字两处都有，停在何时却不同。他从她手里接回炭头，在干土那行后面补了几个字：前脚落定后停。\n\n",
+              "start": 2141,
+              "text_hash": "sha256:a170f39c46f24309b9953d0751d7730dcbd47ac987b94552671e26bd8d74b60d"
+            },
+            {
+              "end": 2368,
+              "text": "许庭把纸还给他：“这样我能看明白你说的是哪两步。山路是你走的，我只能照你记下、说清的部分问。到下次木片课，你可以留意一件相近的事：脚在案前站定以后，手是不是才举到你要守的位置；手停住以后，又有没有自己往前找。把手位和停步的先后记清，别只记木片亮没亮。”\n\n",
+              "start": 2240,
+              "text_hash": "sha256:814f90331defb8959500bbd6a43968818ce5a429e6a5573a39ab0db0eaca0e96"
+            },
+            {
+              "end": 2471,
+              "text": "沈砚望着纸上的两行。湿石前，他若一边挪水囊一边跨步，就分不清鞋底打滑是从哪一下开始；案前若脚还在调整，手已伸出去，木片有无变化，他也未必说得清那一回手停在何处。“若下回我站稳了，木片还是暗的呢？”他问。\n\n",
+              "start": 2368,
+              "text_hash": "sha256:d8daf1668483f48dc4ba7b9e980041c68ee9a39211638019b9f774beeee5224e"
+            },
+            {
+              "end": 2538,
+              "text": "“那也能记下手守住了多久、从哪一刻开始往前探。”许庭说，“到时候再看。”许庭把手中的纸递回去，“下回你说哪一步，我也容易看明白。”\n\n",
+              "start": 2471,
+              "text_hash": "sha256:ce9dd42b06dcf17de133cdc5904a5baf3033eaed7f0c4d9cbb15f6261ca6cc70"
+            },
+            {
+              "end": 2559,
+              "text": "“那我下回先站好。”沈砚将纸折回原样。\n\n",
+              "start": 2538,
+              "text_hash": "sha256:f1b8ae7cf1704977022ceb52dada5933975984a484fdeacab8a28f321baedf38"
+            },
+            {
+              "end": 2629,
+              "text": "许庭点点头，收好她方才整理的东西。“我得走了。下次课上有木片，再照当时的动作看。”她说完便沿练习场另一侧离开，脚步没有因为这场答疑改向。\n\n",
+              "start": 2559,
+              "text_hash": "sha256:07a1b35879a5fffa0c293922d93d7b4abce65a07a0a4d2f598a1cffea26f246a"
+            },
+            {
+              "end": 2799,
+              "text": "沈砚站在场边，等炭字不再沾手，才把纸收入袖中。昨日留出的那段时间已经用在路上，湿石与干土也各有一行亲自走出的记载。许庭说完便回到自己的练习里，听他讲的那两步却留在这张纸上。沈砚用拇指压了压折角。他原怕湿石和木片是两件隔得很远的事，走完一趟，也只会添两行字；如今下次站到案前，他有一件自己想看清的事，而不是等着别人从头告诉他手该放在哪里。\n\n",
+              "start": 2629,
+              "text_hash": "sha256:75be6b23d73f8e9ebd9f5416e0b4ba6b26a189fbb55615362b2ba3a5d9f5896b"
+            },
+            {
+              "end": 2961,
+              "text": "那道亮纹仍是他想看的。只要想到它曾顺着浅痕往前亮，他心里便又热一点，和走进叶光里时一样，会忍不住先往前望。他把折纸放妥，抬起刚才拎过水囊的左手，轻轻转了一下手腕。手掌上没有光，握过的重量和站住的那一步却都留得清楚。他要把这份清楚带到案前去。沈砚抬手在空中比了一下原先悬掌的大致位置，随即放下。真正要看的那一回，还得等到课堂。",
+              "start": 2799,
+              "text_hash": "sha256:0eb9c9de50083dd1c6b384d4e7e2932241eafe59684e53221411d65b6e33a606"
+            }
+          ],
+          "text_hash": "sha256:77399407ebe4d4a58b4f7a564f072c89360b72e5a277ff8082ff3837a8e4a587",
+          "content_hash": "sha256:092474b4c0d920f09a17edb828cad01feb5a9bb29c1fee0a07063cefd4c6f423",
+          "omitted_ranges": [],
+          "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea",
+          "source_characters": 2961,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 24,
+          "passages": [
+            {
+              "end": 114,
+              "text": "沈砚把折过的纸摊在木片旁，先压平写着“湿石”和“干土”的那一角。炭字已不沾手，折痕却正从两行之间穿过。他用指腹沿着字往下摸，湿石前停在实土、换好手才踩上去；干土那处则是前脚落稳后，才把低拎的水囊收近。同是停步，先后并不一样。\n\n",
+              "start": 0,
+              "text_hash": "sha256:de7285975029c39e9bff9b5368b407e2576699c304d26cdd2fce8dbb187bbcd3"
+            },
+            {
+              "end": 236,
+              "text": "上回把这张纸给许庭看，她问的也正是这个：脚在案前站定以后，手是不是才举起来；手停住以后，有没有不觉往前找。他记得木片曾现过一道亮纹，也记得自己收手时那道光退下去。可那一次两脚怎样放、手在哪一刻停过，他当时没记。如今一想起来，眼前还是那点光。\n\n",
+              "start": 114,
+              "text_hash": "sha256:5523ef18fdb46f9f1d3361d0be04889d730039efc1c4d038b0ff283be6da7be4"
+            },
+            {
+              "end": 353,
+              "text": "他将纸上尚空的一边转向自己，先写“案前”。笔尖停了停，又在下面隔开四处，写上“脚定”“手举”“手停”“前探”，末尾留给木片。湿石、干土两行写的是走过以后能重新踏到脚下的地方；木片前没有斜石催他迈步，他仍得把容易连在一处的动作拆开。\n\n",
+              "start": 236,
+              "text_hash": "sha256:a28e14ff433a4534c6698ba646b5598227275a69ed6d2125256718e04f9093cf"
+            },
+            {
+              "end": 475,
+              "text": "案脚边有一道浅浅的木纹，他把鞋尖停在木纹外，不让脚背贴住案脚。两脚之间留着寻常站立的宽窄，身子微微前倾便能看清木片，不必举手时再挤上半步。他退开又走回这一处，低头认了一遍鞋尖所对的纹路。这不是规定的站法，只是他给自己找的一处容易认回的位置。\n\n",
+              "start": 353,
+              "text_hash": "sha256:d8421412aeb3176148f627aca3b606513474c8ea0f49b6610b468d0b36241cf5"
+            },
+            {
+              "end": 613,
+              "text": "木片的一角有块浅色木节。他把那一角朝向自己，记下它离案边大致一掌的位置，没有急着伸手去碰。手抬到哪里，他也先在空中比了一回：掌心朝着木片，指尖不探过那块木节，手腕能停住，眼睛又能越过手背看见木面。空手比画时，他发觉肩一抬高，腰也跟着往前送；便把肩放松，让手臂自己举到那处。\n\n",
+              "start": 475,
+              "text_hash": "sha256:50b49ede5b63ccf6056c852fc892f4d7d352897ac61b55eda097ee6ba80ca088"
+            },
+            {
+              "end": 878,
+              "text": "纸上的“脚定”和“手举”隔着一小段空白。他原想给它们各添一个记号，笔尖却停在纸边。若等木片前有了动静才回头想，先后又会混成一团。他将炭笔放到顺手能取的地方，打算每试完一回便落笔；拿不准的地方照实留着，不用亮暗替自己填。沈砚重新望向鞋尖和木节，先让两只脚安静下来，才准备举手。他把炭笔横过来，停在纸边。袖里这张纸跟着他走过湿石，也曾搁在饭碗旁，如今折角磨软了，展开时总要用指腹多压一回。他忽然想起昨日那片叶光：叶子被风翻过去，明亮处也跟着换到另一边。他当时两脚站定，抬头便能看见。木片上的那道光，却好像总在他要看清时退回木头里。\n\n",
+              "start": 613,
+              "text_hash": "sha256:868063f6f8b84e226313bca831400b99f2802e6f4c1f8b716363c750f80f9055"
+            },
+            {
+              "end": 1003,
+              "text": "沈砚将手掌翻向自己。掌心没有哪一处与先前不同，手指弯下去，仍是摸过湿石、提过筐沿的那几根。他很想有一天，伸出这只手时，能让木片照着自己的意思亮起来。别人往前学，他也想往前；可比起听见一句自己做得对，他更想在光出现的时候，知道是自己的哪一下让它来。\n\n",
+              "start": 878,
+              "text_hash": "sha256:1da043c1e9722e99e35fc73f12f15d3009a91fb0d3bb3ea0876ca4706c898093"
+            },
+            {
+              "end": 1113,
+              "text": "这念头叫他忍不住把木片拉近一点。他摸到木片边，随即停住，笑着将它推回刚才一掌的位置。若只为了离那线光近些，下一回他又得四处找原因。沈砚重新揉平折角，不再把袖口挤在案边。他想看光，这一次也想记住自己是怎样走到它面前的。\n\n",
+              "start": 1003,
+              "text_hash": "sha256:736841249506d657b86113be9e46829d399e99ce3c812eec0460d7a83b56236d"
+            },
+            {
+              "end": 1195,
+              "text": "许庭走到案侧时，沈砚还没有抬手。她看见摊开的纸，也看了看木片，站在一旁，没有替他挪鞋或摆正手腕。沈砚垂眼确认鞋尖仍在那道木纹外，膝盖不再找地方，才慢慢把手举起。\n\n",
+              "start": 1113,
+              "text_hash": "sha256:51f7795361ec0d47d5d34ea06dfc0ff5884c94a5bfeb657e046bfdf7f6a7bd6b"
+            },
+            {
+              "end": 1338,
+              "text": "手掌到了先前比过的高度，他让指尖停在木节这一侧。起初手腕还想往前带，他便将指节轻轻收住，等它不再晃，才顺着一次缓下来的呼吸，将手向木片前探了一小段。木节仍露在指尖下方。木面没有出现亮纹，浅色的一角也还是原来的颜色。他没有为了等光再把身子送近，只把手收回，先看一眼自己的脚，随后取笔。\n\n",
+              "start": 1195,
+              "text_hash": "sha256:a1945dde54bc7146ef8dbb942c5b7e80e526fd1e8ff5faa973e33767384cac01"
+            },
+            {
+              "end": 1467,
+              "text": "“脚先定，手后举。”他在第一处空白里写下，又补了“停一息，再前探；木片暗”。写到“停”字时，他抬手重试了一下方才的高度。若只写停过，他过后仍未必记得是举到木节前停，还是已经探出去才停；于是他把“木节前”添在旁边。许庭看着他落笔，没有说这一回算成还是没成。\n\n",
+              "start": 1338,
+              "text_hash": "sha256:11b3de8dec95e1fe8cfeafb7b2042bcd2299ec94a4d7fe91edfd5162c39445f3"
+            },
+            {
+              "end": 1610,
+              "text": "第二回开始前，沈砚把手放下，让呼吸缓了缓。他照着纸上认过的地方重新站到案前，鞋尖仍朝着那道木纹，木片也没有动。脚看似回了原位，重心却偏在后脚。他正要举手，才觉出前脚落得轻了些；手已经往上抬，他又把前脚向前送了半寸，鞋底压实地面。两件事挤在同一口气里，他没能像头一回那样先站定再举手。\n\n",
+              "start": 1467,
+              "text_hash": "sha256:b5e33661eccd529127e9f5942e41a7501c05fb50e1614ee914f913654993649c"
+            },
+            {
+              "end": 1789,
+              "text": "手抬到木节前方时，他停住，指尖比头一回略高。沈砚瞥见这点差别，仍照眼下的位置守住手腕，没有临时压低手去追第一回的样子。再往前探时，木片近指尖的一侧忽然浮出一线很淡的亮色，短得像从木纹里漏出的一点天光。他屏住想继续伸手的劲，亮色已经退了。木片仍平放在原处，他的前脚也已踩实；可那道线是在手前探后才看见的，还是早一点就有了，他只能确定自己抬眼看见它的那一刻。\n\n",
+              "start": 1610,
+              "text_hash": "sha256:2fa7bffbb55ea81e9e835c30544206c4f3a61403e511a94f9742024a0851f2db"
+            },
+            {
+              "end": 1943,
+              "text": "先前那一次亮纹让他高兴过。这回他也想多看一眼，手却没有因此停在空中等第二道。若赶紧再探，脚和手又会多出新的变化。他将手放下，按自己还能记清的先后写第二行：“手起时脚未定；前脚前送、踩实；手停木节前，略高；前探后见淡纹，随即退。”末尾的“见”字写得比前面小。他没有写亮纹从哪一下动作开始，只写自己何时看见。\n\n",
+              "start": 1789,
+              "text_hash": "sha256:10208e4f9fa7ae3e3236b30e3e537579089f20abce5693af2219c9d680cd203b"
+            },
+            {
+              "end": 1981,
+              "text": "许庭等他搁笔，才把目光从木片移到两行字上。“第一回举手时，前脚动了吗？”\n\n",
+              "start": 1943,
+              "text_hash": "sha256:63e2cbe46b103754e52c991afc836106199f27e4fea7a9e27ca753b6c9692d4a"
+            },
+            {
+              "end": 2048,
+              "text": "“没动。我先站住，手举起来停了一息，才往前探。”沈砚指着第一行，随即指向第二行，“这一回我以为站回去了，举手时又把前脚送了一点。”\n\n",
+              "start": 1981,
+              "text_hash": "sha256:68c195a7e41715b18781679cf66be7884c5024b37cc6b41edf099cc033cf90fc"
+            },
+            {
+              "end": 2137,
+              "text": "“我看见你前脚还在往前压，手已经起来了。”许庭点在“脚未定”三个字旁边，“两回这里不是一个先后。你写的第二回手也高些。那道淡纹在第二回出现，凭这两行，能说是哪一下带来的吗？”\n\n",
+              "start": 2048,
+              "text_hash": "sha256:c9bf04b51c523c7650af830d7753f11f30ad8b230615974b4d7360c23b27cf1c"
+            },
+            {
+              "end": 2254,
+              "text": "沈砚望着纸。第一回木片暗，他的脚先定，手停得低些；第二回见了亮，脚却在举手时才压实，手也停得高。若只把“暗”和“亮”圈出来，至少两处动作差别会被遮住。他摇头：“说不出。脚换了先后，手也没守在同一处。我连亮纹刚起的那一刻都没看准。”\n\n",
+              "start": 2137,
+              "text_hash": "sha256:3f380b2b09e20a52fe23033d9d88091897d3c136a4bba36a856743bc1233d8d1"
+            },
+            {
+              "end": 2272,
+              "text": "许庭问：“那下回你先留住什么？”\n\n",
+              "start": 2254,
+              "text_hash": "sha256:6f515a62a46a2ff693e37d81f3ef08bff9258da9b2586a140612e13726d7a40e"
+            },
+            {
+              "end": 2467,
+              "text": "他看向木片的浅色木节，又看鞋尖外那道案脚木纹。“先把脚站在这道纹外，站定了再举手。木片仍让木节朝我，放在案边这个位置。”他用手指在纸上把两处点明，“这些先照这一回记着，不随着手改。我要比手位，就一回停在木节前这一处，另一回只改手停的位置；各自前探时再记木片怎样反应。”说到这里，他又把“停多久”写在两行旁边。他先前只用一息记第一回，第二回却没有记得同样清楚，下回若忘了，纸上仍会缺一块。\n\n",
+              "start": 2272,
+              "text_hash": "sha256:002c1c6441d00611769266ce8e22c763684a1690bcfbc34631b4abd4f629d0a0"
+            },
+            {
+              "end": 2671,
+              "text": "许庭看完他补的字，说：“先把能守住的守住。若下回手和脚又一齐动，就照实记，别算作只改了手。”她看了一眼外头的日影，将纸推回他面前，“这段答疑到这里。你自己把两行收好，下一次见了动作再问。”她沿案边离开，沈砚向她道了声谢。许庭回头点了点纸，便走回自己的练习处。他没有再追问；刚才她看见的那一步，已经替他省下不少回忆时的猜想。他低头把自己写得挤在一处的字分开些，旁边有一句实实在在听来的话，纸忽然也容易看了。\n\n",
+              "start": 2467,
+              "text_hash": "sha256:c5e625647f25e49d3733519cd5dc53902214933b751faf2c6f95a106eec26afc"
+            },
+            {
+              "end": 2797,
+              "text": "沈砚把炭笔搁在纸上，等笔迹干了，才将“湿石”“干土”两行连同新写的课堂两行折在一起。先前在湿石前，他知道先停脚再换手；干土上，却是前脚落定后才收手。今日站在木片前，他也终于能把脚、手与木面的反应分开说出先后，只是木片上那一线淡光仍不能替他指出缘由。\n\n",
+              "start": 2671,
+              "text_hash": "sha256:88ac8f1ea50a3901cc9c1329c27c8f37f6938b40cc02c91b720c3e12b05eedb1"
+            },
+            {
+              "end": 2914,
+              "text": "他再次看向第二行“手停木节前”几个字，想起自己那时的指尖比第一回高了一点。下一次若鞋尖对准同一道纹，木节也朝向自己，手停的位置只改一处，他能不能看清那一点差别与木片的反应究竟怎样相随？沈砚把纸收入袖中，离开案前时先收了手，脚才迈出去。",
+              "start": 2797,
+              "text_hash": "sha256:cccb0d1946af11eadbd9772bd112d2d32cb6914af9531c2eee61d7ca5cbd2620"
+            }
+          ],
+          "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+          "content_hash": "sha256:c39326a0de6dc95ed2ab12058d174e530e33cbc98132204a105bdac8da04c963",
+          "omitted_ranges": [],
+          "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+          "source_characters": 2914,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
         }
       ]
     },
     {
       "phase": "CHAPTER_TICK",
-      "target": 23,
+      "target": 25,
       "turn": 0,
       "result": {
-        "root_operation_id": "d6df8e99-8327-40ed-9055-5ac0c6a7f14a",
-        "saga_id": "b69a44be-410c-4d40-ae1d-5c1485e3ba4d",
+        "root_operation_id": "e67c5898-5903-4475-b11f-af56c0284c73",
+        "saga_id": "b2035474-5e62-4c29-b440-2bf07d3331a8",
         "saga_status": "RUNNING",
-        "operation_id": "44d05563-53f5-44da-9b73-80ebbce47366",
+        "operation_id": "82f402f4-7042-46aa-af9b-6e331ebcdb21",
         "node": "plan",
         "operation_status": "SUCCEEDED",
         "recovery_mode": "fresh_attempt"
@@ -1490,14 +1551,56 @@
     },
     {
       "phase": "CHAPTER_TICK",
-      "target": 23,
+      "target": 25,
       "turn": 1,
       "result": {
-        "root_operation_id": "d6df8e99-8327-40ed-9055-5ac0c6a7f14a",
-        "saga_id": "b69a44be-410c-4d40-ae1d-5c1485e3ba4d",
+        "root_operation_id": "e67c5898-5903-4475-b11f-af56c0284c73",
+        "saga_id": "b2035474-5e62-4c29-b440-2bf07d3331a8",
         "saga_status": "RUNNING",
-        "operation_id": "be6619e2-635f-48e5-8a8a-ba00cb11fcd8",
+        "operation_id": "f16a76f9-2eba-4aa2-95ed-933fccabb12b",
         "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 25,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "e67c5898-5903-4475-b11f-af56c0284c73",
+        "saga_id": "b2035474-5e62-4c29-b440-2bf07d3331a8",
+        "saga_status": "RUNNING",
+        "operation_id": "57b1d9f3-a8b5-4b00-bf85-da9fd5224290",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 25,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "e67c5898-5903-4475-b11f-af56c0284c73",
+        "saga_id": "b2035474-5e62-4c29-b440-2bf07d3331a8",
+        "saga_status": "RUNNING",
+        "operation_id": "7f447e22-cdf6-40d4-8255-e42e97bb7abe",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 25,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "e67c5898-5903-4475-b11f-af56c0284c73",
+        "saga_id": "b2035474-5e62-4c29-b440-2bf07d3331a8",
+        "saga_status": "RUNNING",
+        "operation_id": "faea8590-fc74-4a35-a4db-87f4120a8680",
+        "node": "context",
         "operation_status": "SUCCEEDED",
         "recovery_mode": "fresh_attempt"
       }

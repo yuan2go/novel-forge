@@ -45,5 +45,13 @@
     "source_docs_tests_architecture": "PASS",
     "raw_evidence": "RAW_TRAILING_WHITESPACE_RETAINED",
     "reason": "Exact original chapter exports and raw failure/warning logs are not normalized"
+  },
+  "installed_wheel_cli": {
+    "status": "PASS",
+    "wheel_sha256": "5e74b85f453d25005bf0e49432e4f6fec7a86c841ba4182595588130ad8f14fd",
+    "help": "PASS",
+    "exact_recovery_journal_replay": "PASS",
+    "original_recovery_operation_id": "a3faead0-28b3-482e-ac75-34af3515f436",
+    "new_provider_dispatch": false
   }
 }
