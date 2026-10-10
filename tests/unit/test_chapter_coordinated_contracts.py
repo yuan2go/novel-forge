@@ -15,7 +15,7 @@ def test_coordinated_contract_has_explicit_root_and_exact_node_versions():
         node.definition_name: "3.10.0"
         for node in ChapterNode
     }
-    for old, new in zip(legacy, current, strict=True):
+    for old, new in zip(legacy, [d for d in current if d["definition_version"] == "3.10.0"], strict=True):
         if old["name"] == ChapterNode.PLAN.definition_name:
             assert new["definition_version"] == "3.10.0"
             assert new["policy"]["chapter_plan_book_scope"] == "host-book-plan.v1"
@@ -46,7 +46,8 @@ def test_coordinated_work_gate_does_not_enable_unknown_adjacent_contract():
             trace_id="trace", correlation_id="correlation", command={}, inputs=(), definition_version=version)
     assert request("3.10.0").work_requirements_enabled
     assert request("3.10.0-author-input.v3").work_requirements_enabled
-    assert not request("3.10.1").work_requirements_enabled
+    assert request("3.10.1").work_requirements_enabled
+    assert not request("3.10.9").work_requirements_enabled
 
 
 def test_published_main_definition_hashes_remain_exact():
@@ -61,3 +62,29 @@ def test_published_main_definition_hashes_remain_exact():
     for reference in (False, True):
         rows += chapter_provider_sample_definitions(**identity, reference_samples=reference, definition_version="2.5.0" if reference else "2.4.0")
     assert {row["name"] + "@" + row["definition_version"]: definition_hash(row) for row in rows} == frozen["definitions"]
+
+
+def test_receipt_draft_successor_preserves_current_contract_and_bounded_retry():
+    rows = chapter_operation_definitions(**IDENTITY, coordinated_contract=True)
+    base = next(d for d in rows if d["name"] == "chapter.draft.generate" and d["definition_version"] == "3.10.0")
+    repair = next(d for d in rows if d["name"] == "chapter.draft.generate" and d["definition_version"] == "3.10.1")
+    assert repair["completion_contract"] == base["completion_contract"]
+    assert repair["retry_policy"] == base["retry_policy"]
+    assert repair["policy"]["scene_core_projection"] == "continuous-scene.v1"
+    assert repair["policy"]["scene_information_flow"] == "actor-source-scope.v1"
+    assert repair["policy"]["scene_evidence_union_revalidation"] == "scene-evidence-union.v1"
+
+
+def test_runtime_codec_selects_registered_receipt_draft_version(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.chapter_authority import runtime
+    uow = MagicMock()
+    uow.__enter__.return_value.cursor.fetchone.return_value = ("3.10.1",)
+    monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda _: uow)
+    command = SimpleNamespace(attempt_id="attempt", project_id="project")
+    registry = SimpleNamespace(model_effects_required=True)
+    assert runtime._handler_definition_version("unused", command=command, node=ChapterNode.DRAFT,
+        registry=registry, author_input=False) == "3.10.1"
+    assert runtime._handler_definition_version("unused", command=command, node=ChapterNode.CANON_EXTRACTION,
+        registry=registry, author_input=False) == "3.9.7"

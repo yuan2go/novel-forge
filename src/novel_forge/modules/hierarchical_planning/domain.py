@@ -10,6 +10,12 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+def character_planning_locator(character_id: str) -> str:
+    if not isinstance(character_id, str) or not character_id:
+        raise KernelError("PLAN_CHARACTER_ID_INVALID", "Require an explicit stable character identity")
+    return "character:" + character_id
+
+
 class PlanContractType(StrEnum):
     BOOK = "BOOK"
     VOLUME = "VOLUME"

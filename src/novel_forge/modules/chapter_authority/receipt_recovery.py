@@ -197,7 +197,7 @@ def _require_current_receipt_family(source):
 
 
 def _consume_known_draft_receipt(request):
-    if request.definition_version != "3.10.0" or not request.database_url:
+    if request.definition_version not in {"3.10.0", "3.10.1", "3.10.2"} or not request.database_url:
         return None
     with AuthorityUnitOfWork(request.database_url) as u:
         u.cursor.execute(
@@ -209,6 +209,9 @@ def _consume_known_draft_receipt(request):
             return None
         policy, failure = row
         source = failure["operation"]
+        if request.definition_version == "3.10.2":
+            from .memo_recovery import original_memo_source
+            source = original_memo_source(u.cursor, source, policy)
         _require_current_receipt_family(source)
         u.cursor.execute(
             "SELECT command_payload,input_asset_snapshot,actor_id FROM authority_operation WHERE operation_id=%s AND project_id=%s",
@@ -262,7 +265,7 @@ def _cancelled(cursor, book):
 
 def is_known_receipt_revalidation(database_url, operation_id):
     with AuthorityUnitOfWork(database_url) as u:
-        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version='3.10.0' AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
+        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version IN ('3.10.0','3.10.1') AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
         return u.cursor.fetchone()[0]
 
 

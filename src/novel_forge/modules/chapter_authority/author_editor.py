@@ -339,12 +339,18 @@ class ChapterAuthorEditingApplication:
                                     "authority": "AUTHOR_CANDIDATE_SELECTION", "book_acceptance": "NOT_GRANTED"})
             decision_id = decision.asset_version_id
         checkpoint("after_asset_version_insert")
+        selected_id = source.asset_version_id
+        if session and session.content.get("selected_asset_version_id"):
+            from novel_forge.modules.book_authority.manuscript import edit_selection_matches_source
+            previous_selected = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=session.content["selected_asset_version_id"])
+            if edit_selection_matches_source(previous_selected, source):
+                selected_id = previous_selected.asset_version_id
         state_doc = self._write(uow, operation, "author_edit_session", _session_ref(scope),
                                 {**scope, "contract_version": EDITOR_CONTRACT, "status": state,
                                  "base_asset_version_id": source.asset_version_id, "base_text_hash": text_hash(before),
                                  "candidate_asset_version_id": candidate_id, "decision_asset_version_id": decision_id,
                                  "actor_id": actor,
-                                 "selected_asset_version_id": candidate_id if action == "accept" else (session.content.get("selected_asset_version_id", source.asset_version_id) if session else source.asset_version_id)}, previous=session)
+                                 "selected_asset_version_id": candidate_id if action == "accept" else selected_id}, previous=session)
         result = {**scope, "version": state_doc.version_number, "asset_version_id": state_doc.asset_version_id,
                   "candidate_asset_version_id": candidate_id, "decision_asset_version_id": decision_id, "editor_status": state}
         uow.repositories.operation_graph.record_event({

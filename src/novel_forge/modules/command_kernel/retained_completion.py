@@ -18,6 +18,7 @@ KNOWN_RECEIPT = "chapter-known-receipt.v2"
 GRAPH = "kernel-retained-graph-continuation.v2"
 REFERENCE = "chapter-canon-reference-resolution-revalidation.v1"
 NODES = {
+    "chapter.memo.generate": "model.memo",
     "chapter.draft.generate": "model.draft",
     "chapter.review.evaluate": "model.review",
     "chapter.canon.extract": "model.canon_extraction",
@@ -46,7 +47,7 @@ def _validate_proof(proof, output_proof, source, current):
 def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effects):
     definition = operation.get("definition_snapshot") or {}
     policy = definition.get("policy") or {}
-    if (definition.get("definition_version") != "3.10.0"
+    if (definition.get("definition_version") not in {"3.10.0", "3.10.1", "3.10.2"}
         or operation.get("definition_name") not in NODES or own_effects
         or (policy.get("known_receipt_recovery") != KNOWN_RECEIPT
             and policy.get("retained_result_derivation") != GRAPH)):
@@ -58,7 +59,7 @@ def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effect
     if not row:
         raise _invalid()
     current = row[0]
-    if current["definition_snapshot"] != definition or current["definition_version"] != "3.10.0":
+    if current["definition_snapshot"] != definition or current["definition_version"] != definition["definition_version"]:
         raise _invalid()
     cursor.execute("""SELECT j.policy_evidence,j.source_failure_snapshot,j.predecessor_operation_id,
         j.actor_id,j.saga_id FROM authority_saga_step_successor j
@@ -71,10 +72,13 @@ def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effect
         if proof.get("contract_version") != KNOWN_RECEIPT:
             return []
         frozen_source = failure["operation"]
-        source_id = predecessor
+        if current["definition_version"] == "3.10.2":
+            from novel_forge.modules.chapter_authority.memo_recovery import original_memo_source
+            frozen_source = original_memo_source(cursor, frozen_source, proof)
+        source_id = frozen_source["operation_id"]
         if (policy.get("known_receipt_recovery") != KNOWN_RECEIPT
             or source_id != proof.get("source_operation_id") or actor != current["actor_id"]
-            or saga_id != current["saga_id"] or current["causation_operation_id"] != source_id
+            or saga_id != current["saga_id"] or current["causation_operation_id"] != predecessor
             or current["root_operation_id"] != frozen_source["root_operation_id"]
             or current["command_payload"] != frozen_source["command_payload"]
             or current["input_asset_snapshot"] != frozen_source["input_asset_snapshot"]

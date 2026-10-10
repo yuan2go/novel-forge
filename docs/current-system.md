@@ -55,8 +55,22 @@ fails the applicable integrity boundary.
 
 Ordinary continuation freezes exact currently selected manuscript versions in the existing
 input snapshot and Arc Working Set. A bounded recent-source projection carries actual
-prose excerpts separately from formal State/Canon and future plan intent. It grants no
-verified facts or character knowledge. Native realization contract v3 retains this working
+prose excerpts separately from formal State/Canon and future plan intent. They supply
+continuity within the exact selected working version: direct actions and witnessed responses
+may be carried into its next scene without repeating them for formal acceptance. They grant
+no accepted fact IDs or verified Character Knowledge; inferred beliefs, reader-only disclosures,
+future plans and unresolved dependency changes retain their own uncertainty. New Planning
+contexts explicitly freeze this distinction; older contexts keep their original projection.
+The selected working experiences belong in scene entry, action and causal descriptions;
+they are not strings or invented IDs in `known_fact_ids` or `accessible_knowledge`.
+Those fields retain accepted knowledge and explicitly disclosed earlier-scene gains.
+New Planning schemas bind CURRENT realization to the scope's owned realization level
+and describe timeline relations relative to scenes in the returned plan. Establishing
+its first scene's timeline does not repeat an earlier chapter's events.
+Formal entry-state references in new Planning schemas with a Story State input are bound to the
+exact frozen Story State input, including segment entries. Working prose is described
+in its separate continuity input; a prose AssetVersion is not a formal State reference.
+Native realization contract v3 retains this working
 snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups without
 inventing accepted history. The source window is a bounded implementation policy; it does
 not prove long-form continuity or replace formal Canon. Author adoption uses the existing
@@ -284,7 +298,13 @@ the frozen template. Governed optional deferral records `DEFER` / `NOT_RUN`; it 
 no accepted World fact. Strict production, accepted preparation commitments and
 independent actor experiments retain their required dependencies. Typed transitions,
 exact Arc/obligation references, causal rejection reproduction, settled Director
-receipts and reuse of the original selected action remain mandatory. Longform Quality
+receipts and reuse of the original selected action remain mandatory. A new planning
+revision may also reuse an exact settled `DEFER` action when it contains no selected
+future, candidate futures, preparation schedule, causal debts or actor proposals, and
+its source has no accepted preparation commitments or independent actor experiment.
+The unchanged deferral remains a proposal and supplies no story fact; the source,
+frontier, owner, receipts and deterministic compilation are revalidated on every reuse.
+Longform Quality
 binds the frozen World Foundation. When its qualification is an independent evaluation,
 the input evidence additionally retains the exact PASS result, native APPROVE receipt
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
@@ -1141,6 +1161,15 @@ Provider execution receipts remain on the immutable Memo for audit. Its governed
 writing projection excludes those receipts; they are not narrative material and do
 not consume the chapter's writing Context budget.
 
+Native Book planning and Memo share `frozen-character-references.v1`, compiled from
+the exact Book input snapshot's cast, version and hash. Current planning contexts bind
+the legal stable IDs and typed locators in their realization catalogue; the generated
+schema constrains Scene participants, POV and character realization/participation to them.
+Names and unique aliases remain display and compatibility bindings. Anonymous background
+appearances do not create typed character identities. Adding a named recurring character
+uses Story Design and a new scoped input version. Historical contexts without this binding
+retain their original contract; Memo still checks their exact frozen participants.
+
 Current Provider reviews return located diagnoses, constraints, repair goals, preservation
 requirements and acceptance criteria. Revision consumes these diagnoses. Re-review records
 explicit checks; omission of an issue or a higher score does not establish resolution.
@@ -1233,6 +1262,12 @@ Selection edits use Unicode code-point ranges, and scene artifacts must reconstr
 candidate exactly. The backend permits explicit mappings across existing Scene slots,
 including whitespace separators or an empty separator for paragraph joins. Slot identity,
 order and knowledge scope remain frozen; structural edits require native Plan Change.
+Expression candidates cannot resolve an event, motivation or pacing diagnosis that
+requires changed Scene commitments. The existing planning and edition owners must retain
+that diagnosis and revised plan lineage before rewriting the affected work. Operational
+receipt, permission and timing evidence belongs to the execution record; it is not a
+requirement to make characters explain those boundaries in dialogue. Characters may
+misunderstand or speculate within their accessible knowledge.
 Automatic edits cannot delete a slot. Repeated author candidates retain the originating
 draft and realization contract, and Revision/Craft use the same exact Unicode mapping.
 Saving, adopting, submitting native review, chapter acceptance and Book completion are

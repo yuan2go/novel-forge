@@ -245,6 +245,20 @@ def chapter_operation_definitions(
                     "selector": "revision_execution_decision", "output_key": node.output_key + ".execution_decision",
                     "role": "completion_evidence", "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR",
                 })
+    if model_effects_required and coordinated_contract:
+        memo_repair = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.MEMO.definition_name))
+        memo_repair["definition_version"] = "3.10.1"
+        memo_repair["policy"].update(known_receipt_recovery="chapter-known-receipt.v2", memo_reference_contract="frozen-character-references.v1")
+        memo_completion = deepcopy(memo_repair)
+        memo_completion["definition_version"] = "3.10.2"
+        memo_completion["policy"]["memo_completion_revalidation"] = "settled-memo-completion.v1"
+        intent_repair = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.EXECUTION_INTENT.definition_name))
+        intent_repair["definition_version"] = "3.10.1"
+        intent_repair["policy"]["character_reference_contract_revalidation"] = "planning-character-locator.v1"
+        draft_repair = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.DRAFT.definition_name))
+        draft_repair["definition_version"] = "3.10.1"
+        draft_repair["policy"].update(known_receipt_recovery="chapter-known-receipt.v2", scene_evidence_union_revalidation="scene-evidence-union.v1")
+        definitions = (*definitions, memo_repair, memo_completion, intent_repair, draft_repair)
     if not author_input:
         return definitions
     from copy import deepcopy

@@ -1313,7 +1313,7 @@ def test_overdue_identity_requires_action_even_within_numeric_allowance() -> Non
     )
 
 
-def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> None:
+def test_chapter_provider_contract_schedules_only_frozen_required_contributions() -> None:
     schema = planning_provider_output_schema(
         PlanContractType.CHAPTER,
         parent_version_id="group:v1",
@@ -1323,14 +1323,14 @@ def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> No
         chapter_schedule_row=_chapter_schedule_row(),
     )
 
-    assert schema["properties"]["arc_schedule"]["maxItems"] == 3
+    assert schema["properties"]["arc_schedule"]["maxItems"] == 1
     assert schema["properties"]["arc_schedule"]["items"]["properties"][
         "arc_plan_version_id"
-    ]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
-    assert schema["properties"]["required_arc_contributions"]["maxItems"] == 3
+    ]["const"] == "arc:v1"
+    assert schema["properties"]["required_arc_contributions"]["maxItems"] == 1
     assert schema["properties"]["scene_plan"]["items"]["properties"]["arc_progress"][
         "items"
-    ]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
+    ]["const"] == "arc:v1"
 
 
 def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:

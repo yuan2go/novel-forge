@@ -197,14 +197,19 @@ def project_current_plan_cursor(
     volumes: list[dict[str, Any]],
     arcs: list[dict[str, Any]],
     chapter_cursor: int,
+    volume_version_lineage: Mapping[str, str] | None = None,
 ) -> tuple[dict[str, Any], tuple[str, ...]]:
 
     current = _select_current_volume_from_portfolio(
         volumes, chapter_cursor=chapter_cursor
     )
     volume_ids = [str(item["asset_version_id"]) for item in volumes]
+    lineage = volume_version_lineage or {}
     for arc in arcs:
-        scope = [str(item) for item in arc["content"].get("cross_volume_scope") or ()]
+        scope = [
+            lineage.get(str(item), str(item))
+            for item in arc["content"].get("cross_volume_scope") or ()
+        ]
         if (
             not scope
             or len(scope) != len(set(scope))
@@ -220,7 +225,10 @@ def project_current_plan_cursor(
         str(arc["asset_version_id"])
         for arc in arcs
         if current_id
-        in {str(item) for item in arc["content"].get("cross_volume_scope") or ()}
+        in {
+            lineage.get(str(item), str(item))
+            for item in arc["content"].get("cross_volume_scope") or ()
+        }
     )
     if not relevant:
         raise KernelError(

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261009_0195_prose_review_generation_isolation",
+  "migration_head": "20261010_0197_authorized_planning_capacity",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9775,6 +9775,16 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261009_0195_prose_review_generation_isolation.py",
           "id": "20261009_0195_prose_review_generation_isolation",
           "locator": "MIGRATION_ID = '20261009_0195_prose_review_generation_isolation'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261010_0196_stopped_cli_timeout_isolation.py",
+          "id": "20261010_0196_stopped_cli_timeout_isolation",
+          "locator": "MIGRATION_ID = \"20261010_0196_stopped_cli_timeout_isolation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261010_0197_authorized_planning_capacity.py",
+          "id": "20261010_0197_authorized_planning_capacity",
+          "locator": "MIGRATION_ID = \"20261010_0197_authorized_planning_capacity\""
         }
       ],
       "external_effects": {
@@ -10061,7 +10071,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:baa7bd78433271752b3e33ebbbfc13d9b818173cb6de061e0eeb3f95d1ae5f28"
+    "implementation_tree_sha": "sha256:e6288a90d109d35dfb86ea4c3d76d1f0744af89aae3d5b650753907ffb4fd2e0"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

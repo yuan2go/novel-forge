@@ -884,6 +884,7 @@ def _realization_reference_contract(
     frozen_by_operation_id: str,
     inputs: tuple[FrozenPlanningInput, ...],
     selectors_only: bool = False,
+    character_references=None,
 ) -> dict[str, Any]:
 
     references: dict[str, list[dict[str, str]]] = {}
@@ -915,7 +916,8 @@ def _realization_reference_contract(
             )
         references[domain_type] = eligible
     return {
-        "contract_version": "planning-realization-reference-contract-v1",
+        "contract_version": "planning-realization-reference-contract-v2" if character_references is not None else "planning-realization-reference-contract-v1",
+        **({"character_references": character_references} if character_references is not None else {}),
         "instruction": "Select only asset_version_id from the matching frozen domain list; host binds scope, type, hash and Operation identity." if selectors_only else (
             "Copy one complete reference object from the matching domain list; "
             "never invent or reinterpret authority_role, asset_type, identity, "
@@ -2562,6 +2564,7 @@ def planning_provider_output_schema(
     narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
+    arc_working_set: Mapping[str, Any] | None = None,
     work_requirements: bool = False,
     aligned_methods: bool = False,
     serialization_contract: bool = False,
@@ -3034,6 +3037,34 @@ def planning_provider_output_schema(
             properties[field] = _frozen_provider_value_schema(
                 [schedule_row[field]], work_requirements=work_requirements
             )
+        scheduled_arc_ids = sorted({item["arc_plan_version_id"] for item in (arc_working_set or {}).get("selected_contributions", ())}) if arc_working_set else sorted({item["arc_plan_version_id"] for item in schedule_row["required_arc_contributions"]})
+        scheduled_arc_reference = {"type": "string", **({"const": scheduled_arc_ids[0]} if len(scheduled_arc_ids) == 1 else {"enum": scheduled_arc_ids} if scheduled_arc_ids else {})}
+        schedule_schema = properties["arc_schedule"]
+        schedule_schema["minItems"] = len(scheduled_arc_ids) if arc_working_set else 1 if scheduled_arc_ids else 0
+        schedule_schema["maxItems"] = len(scheduled_arc_ids)
+        schedule_schema["items"]["properties"]["arc_plan_version_id"] = {
+            **scheduled_arc_reference,
+            "description": "Cover each selected frozen Working Set Arc once when supplied; otherwise use only the Chapter row's required contributions. Unselected related context does not require scheduling or movement.",
+        }
+        schedule_schema["items"]["properties"]["role"]["description"] = "Preserve each selected Working Set Arc's frozen role exactly; otherwise choose one dominant role per Chapter row contribution; never repeat one Arc or promote unselected related context."
+        if arc_working_set:
+            selected = arc_working_set["selected_contributions"]
+            if not scheduled_arc_ids or not set(scheduled_arc_ids) <= set(arc_plan_version_ids) or len(selected) != len(scheduled_arc_ids):
+                raise KernelError("CHAPTER_ARC_WORKING_SET_SCOPE_INVALID", "Provider Arc scope must retain the selected unique frozen portfolio")
+            alternatives = []
+            for item in selected:
+                alternative = json.loads(json.dumps(schedule_schema["items"]))
+                alternative["properties"]["arc_plan_version_id"] = {"type": "string", "const": item["arc_plan_version_id"]}
+                alternative["properties"]["role"] = {"type": "string", "const": item["role"]}
+                alternatives.append(alternative)
+            schedule_schema["items"] = {"anyOf": alternatives}
+        contributions = properties["required_arc_contributions"]
+        contributions["minItems"] = len(scheduled_arc_ids) if arc_working_set else 1 if scheduled_arc_ids else 0
+        contributions["maxItems"] = len(scheduled_arc_ids)
+        contributions["items"]["properties"]["arc_plan_version_id"] = dict(scheduled_arc_reference)
+        progress = properties["scene_plan"]["items"]["properties"]["arc_progress"]
+        progress["items"] = dict(scheduled_arc_reference)
+        progress["maxItems"] = len(scheduled_arc_ids)
         scheduled_reader = dict(schedule_row["reader_experience"])
         reader_schema = dict(properties["reader_experience"])
         reader_properties = dict(reader_schema["properties"])
@@ -3323,7 +3354,7 @@ class _PlanningGatewayEffectAdapter:
         outcome = {
             ExecutionOutcome.SUCCEEDED: "success",
             ExecutionOutcome.RETRYABLE_FAILURE: "retryable_failure",
-            ExecutionOutcome.TIMED_OUT: "retryable_failure",
+            ExecutionOutcome.TIMED_OUT: "unknown",
             ExecutionOutcome.CORRUPT_RESULT: "retryable_failure",
             ExecutionOutcome.FINAL_FAILURE: "final_failure",
             ExecutionOutcome.CANCELLED: "cancelled",
@@ -4334,6 +4365,7 @@ class PostgresPlanningExecutionPreparer:
                 narrative_search_horizon=(command.narrative_search_planning_horizon),
                 narrative_realization=command.narrative_realization,
                 chapter_schedule_row=chapter_schedule_row,
+                arc_working_set=command.arc_working_set,
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
                 serialization_contract=command.execution_contract_version in {"1.19.0", "1.21.0"},
@@ -4387,6 +4419,14 @@ class PostgresPlanningExecutionPreparer:
                 related_arc_ids=command.related_arc_plan_version_ids,
             )
             output_schema_ref += ":host-selectors-v2"
+            if context_document.content["realization_reference_contract"].get("character_references") is not None:
+                output_schema_ref += ":frozen-character-references-v1"
+            if context_document.content.get("planning_semantic_fields_version") in {"planning-semantic-fields.v1", "planning-semantic-fields.v2"}:
+                from .semantic_fields import bind_semantic_fields
+                version = context_document.content["planning_semantic_fields_version"]
+                output_schema = bind_semantic_fields(output_schema, command.planning_scope,
+                    story_state_version=command.input_versions.get("story_state") if version == "planning-semantic-fields.v2" else None)
+                output_schema_ref += ":" + version.replace(".", "-")
         if provider_stage is None and command.repair_of_candidate_id and command.planning_scope.value == PlanContractType.CHAPTER.value:
             output_schema_ref += ":operational-commitments-v1"
         if provider_stage is not None:
@@ -4404,6 +4444,11 @@ class PostgresPlanningExecutionPreparer:
             output_schema = add_author_decision_contract(output_schema, context_document.content.get("author_design_projection") or {})
             if (context_document.content.get("author_design_projection") or {}).get("fragments"):
                 output_schema_ref += ":author-input-v1"
+            if command.execution_contract_version == "1.21.0" and command.planning_scope.value == PlanContractType.CHAPTER.value:
+                from novel_forge.modules.hierarchical_planning.epistemic_validation import bind_planned_knowledge_schema
+
+                output_schema = bind_planned_knowledge_schema(output_schema, by_role["story_state"].content)
+                output_schema_ref += ":accepted-knowledge-v1"
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",
@@ -4639,6 +4684,8 @@ class PostgresPlanningExecutionPreparer:
                 ),
                 "arc_working_set": dict(command.arc_working_set or {}),
                 "narrative_search": command.narrative_search_snapshot,
+                **({"working_continuity_projection_version": context_document.content["working_continuity_projection_version"]}
+                    if context_document.content.get("working_continuity_projection_version") else {}),
                 **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
@@ -5539,6 +5586,7 @@ class PostgresPlanningExecutionPreparer:
         planning_task_token_budget: int | None = None,
         preflight_only: bool = False,
     ) -> tuple[Any, tuple[AuthorityAssetDocument, ...]]:
+        from .character_references import require_planning_character_references
         documents: list[AuthorityAssetDocument] = []
         selected: list[dict[str, Any]] = []
         for item in inputs:
@@ -5872,6 +5920,12 @@ class PostgresPlanningExecutionPreparer:
                 if command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} else {}),
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
+            **({"planning_semantic_fields_version": "planning-semantic-fields.v2"}
+                if command.execution_contract_version == "1.21.0"
+                and command.generator_operation_name not in FOUNDATION_GENERATORS else {}),
+            **({"working_continuity_projection_version": "planning-working-continuity.v2"}
+                if command.execution_contract_version == "1.21.0"
+                and (command.arc_working_set or {}).get("working_manuscript") is not None else {}),
             **(
                 {"edition_execution": dict(command.edition_execution)}
                 if command.edition_execution
@@ -5914,6 +5968,10 @@ class PostgresPlanningExecutionPreparer:
                         frozen_by_operation_id=operation_id,
                         inputs=inputs,
                         selectors_only=command.execution_contract_version == "1.21.0",
+                        character_references=(
+                            require_planning_character_references(self.database_url, command)
+                            if command.execution_contract_version == "1.21.0" else None
+                        ),
                     )
                 }
             ),
@@ -6906,6 +6964,8 @@ def bind_realization_selector_schema(
     from copy import deepcopy
 
     value = deepcopy(schema)
+    from .character_references import bind_character_schema
+    bind_character_schema(value, catalog.get("character_references"))
     fields = {
         "world_realization": {
             "invariant_refs": "WORLD_INVARIANT",
