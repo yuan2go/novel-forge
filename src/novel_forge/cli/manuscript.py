@@ -7,7 +7,7 @@ from typing import Any
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "use-working-candidate", "recover-plan-references", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "use-working-candidate", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -15,6 +15,7 @@ def add_manuscript_parser(subparsers: Any) -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--candidate-version", default="")
     parser.add_argument("--proposal-id", default="")
+    parser.add_argument("--corrected-plan-version", default="")
     parser.add_argument("--versions", nargs="+")
     parser.add_argument("--chapters", nargs="+", type=int)
     parser.add_argument("--reason", default="")
@@ -40,17 +41,21 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         args = SimpleNamespace(**vars(args))
         args.project_id = owned[0]
 
-    if args.action == "recover-plan-references":
+    if args.action in {"recover-plan-references", "recover-upstream-plan"}:
         if not args.proposal_id:
             raise ValueError("Require the active Chapter PlanChange --proposal-id")
         from novel_forge.api.authority_dependencies import build_book_production_composition, build_production_execution_composition, build_chapter_authority_application
-        from novel_forge.modules.book_authority.plan_recovery import retire_reference_failed_chapter
+        from novel_forge.modules.book_authority.plan_recovery import retire_reference_failed_chapter, retire_upstream_stale_chapter
         execution = build_production_execution_composition(settings)
         try:
             chapter = build_chapter_authority_application(settings,execution=execution)
             composition = build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter)
             if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
                 raise PermissionError("Work is outside this Project")
+            if args.action == "recover-upstream-plan":
+                if not args.corrected_plan_version:
+                    raise ValueError("Require exact current --corrected-plan-version")
+                return retire_upstream_stale_chapter(composition.authority,book_run_id=args.book_run_id,proposal_id=args.proposal_id,corrected_plan_version_id=args.corrected_plan_version,plan_change=composition.plan_change,principal=principal)
             return retire_reference_failed_chapter(composition.authority,book_run_id=args.book_run_id,proposal_id=args.proposal_id,plan_change=composition.plan_change,principal=principal)
         finally:
             execution.close()

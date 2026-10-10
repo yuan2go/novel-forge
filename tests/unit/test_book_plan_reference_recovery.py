@@ -88,3 +88,48 @@ def test_recovery_cli_requires_exact_proposal():
     from novel_forge.cli.authority import _authority_parser
     args = _authority_parser().parse_args(["authority-manuscript","recover-plan-references","--book-run-id","run","--proposal-id","change"])
     assert args.proposal_id == "change"
+
+
+def upstream_source():
+    book, request, root, failures = source()
+    root.update(definition_name="chapter.slice.run", definition_version="3.10.0-author-first.v1")
+    failures[0][2]["error_code"] = "AUTHORITY_INPUT_SEMANTICALLY_STALE"
+    proposal = {"proposal_id":"change", "target_asset_version_id":"old-volume"}
+    return book, request, root, failures, proposal
+
+
+def test_upstream_replacement_retains_settled_memo_and_exact_failure():
+    from novel_forge.modules.book_authority.plan_recovery import require_upstream_stale_failure
+    book, request, root, failures, proposal = upstream_source()
+    original = deepcopy((book, request, root, failures, proposal))
+    proof = require_upstream_stale_failure(Cursor([(root,), failures, [("intent",)], (False,)*5]),
+        book=book, request=request, actor_id="actor", proposal=proposal)
+    assert proof["invalidated_input_versions"] == ["intent"]
+    assert (book, request, root, failures, proposal) == original
+
+
+@pytest.mark.parametrize("position", range(5))
+def test_upstream_replacement_rejects_writer_unsettled_effect_output_lease_or_acceptance(position):
+    from novel_forge.modules.book_authority.plan_recovery import require_upstream_stale_failure
+    book, request, root, failures, proposal = upstream_source()
+    blocked = [False]*5
+    blocked[position] = True
+    with pytest.raises(KernelError, match="unsettled effects"):
+        require_upstream_stale_failure(Cursor([(root,), failures, [("intent",)], tuple(blocked)]),
+            book=book, request=request, actor_id="actor", proposal=proposal)
+
+
+@pytest.mark.parametrize("failures,invalidated", [([], [("intent",)]), ([("context",1,{})], [])])
+def test_upstream_replacement_needs_failed_input_and_exact_invalidation_source(failures, invalidated):
+    from novel_forge.modules.book_authority.plan_recovery import require_upstream_stale_failure
+    book, request, root, _, proposal = upstream_source()
+    with pytest.raises(KernelError, match="this active upstream PlanChange"):
+        require_upstream_stale_failure(Cursor([(root,), failures, invalidated]),
+            book=book, request=request, actor_id="actor", proposal=proposal)
+
+
+def test_upstream_recovery_cli_requires_current_corrected_plan_identity():
+    from novel_forge.cli.authority import _authority_parser
+    args = _authority_parser().parse_args(["authority-manuscript","recover-upstream-plan","--book-run-id","run",
+        "--proposal-id","change","--corrected-plan-version","plan"])
+    assert args.proposal_id == "change" and args.corrected_plan_version == "plan"
