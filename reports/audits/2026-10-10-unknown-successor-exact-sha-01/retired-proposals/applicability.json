@@ -1,0 +1,29 @@
+{
+  "work_package": "WP-UNKNOWN-SUCCESSOR-0194-EXACT-SHA-01",
+  "records": [
+    {
+      "original_path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "archived_path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/retired-proposals/classical-corpus-codex-validation.md",
+      "sha256": "148b2b93605d00ae9fae4a98d7b5df738c0f8596315472f64fe4424a71c8073b",
+      "applicable_source_sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "superseded_by": [
+        "docs/current-system.md",
+        "docs/runtime-operations.md"
+      ],
+      "disposition": "No unresolved design decisions; remaining real-Provider/editorial campaigns remain unverified and require their own authorization. Original text and failures are preserved; this snapshot grants no runtime permission."
+    },
+    {
+      "original_path": "architecture/proposals/prompt-and-generation-contract-convergence-01.md",
+      "archived_path": "reports/audits/2026-10-10-unknown-successor-exact-sha-01/retired-proposals/prompt-and-generation-contract-convergence-01.md",
+      "sha256": "02a333118a507119f9553ae40419ba18c7f754949c9ebf205d0b674a553033ef",
+      "applicable_source_sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "superseded_by": [
+        "docs/current-system.md",
+        "docs/runtime-operations.md"
+      ],
+      "disposition": "No unresolved design decisions; remaining real-Provider/editorial campaigns remain unverified and require their own authorization. Original text and failures are preserved; this snapshot grants no runtime permission."
+    }
+  ]
+}

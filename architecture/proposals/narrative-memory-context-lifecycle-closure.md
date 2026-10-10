@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42`
+Reality baseline: `6aaff6bbb279d22ee50dbeb67f1749f4e2300c21`
 Baseline implementation identity:
-`sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87`
+`sha256:8e38004becdff6abfd8a545248447ebcde6d5044bf2a12702695878e09071852`
 
 2026-10-07 scope review: Task Context and Provider recovery retain exact frozen identities and fail closed on unknown outcomes. New recovery journals preserve protected evidence; they do not implement Digest freshness, diagnostic GC, active read generations or destructive representation cutover. Gates B–E remain unresolved.
 This checkpoint review is implementation evidence, not final backend qualification,
@@ -19,15 +19,17 @@ real-Provider qualification or literary quality.
 
 Source baseline refreshed for the coordinated forward-contract integration. Tests, hooks, builds, PostgreSQL, full qualification and merged-SHA validation are NOT_RUN by explicit user instruction; this baseline grants no runtime or production qualification.
 
+2026-10-10 scope review: Native pure-generation recovery separates permanently revoked original commit rights, native successors and original accounting. Frozen retry policy and dispatch lineage govern faults; old UNKNOWN remains evidence. Remaining Digest, retention, narrative segmentation and human/reader policy decisions are unresolved design constraints. Prior checkpoint statements below are historical and do not describe qualification of this source baseline. This review establishes source applicability only; final exact-SHA qualification is reported separately.
+
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-07",
+  "reviewed_on": "2026-10-10",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
-    "implementation_tree_sha": "sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87"
+    "sha": "6aaff6bbb279d22ee50dbeb67f1749f4e2300c21",
+    "implementation_tree_sha": "sha256:8e38004becdff6abfd8a545248447ebcde6d5044bf2a12702695878e09071852"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
