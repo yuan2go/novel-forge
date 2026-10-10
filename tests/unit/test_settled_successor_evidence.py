@@ -63,3 +63,14 @@ def test_nonproducing_acknowledgement_rejects_foreign_process_owner():
     receipt[1]['payload']['operation_id'] = 'foreign'
     with pytest.raises(KernelError, match='SETTLED_SUCCESSOR_REJECTION_DRIFT'):
         _require_rejection(effect, budget, proof, receipt)
+
+
+def test_draft_revalidation_version_requires_its_exact_contract_family():
+    source, current, frozen, policy = binding()
+    for row in (source, current, frozen):
+        row["definition_name"] = "chapter.draft.generate"
+    current["definition_version"] = "3.10.1"
+    with pytest.raises(KernelError, match="SETTLED_SUCCESSOR_EVIDENCE_DRIFT"):
+        _require_binding(source, current, frozen, policy)
+    policy["scene_evidence_union_revalidation"] = "scene-evidence-union.v1"
+    _require_binding(source, current, frozen, policy)

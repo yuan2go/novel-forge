@@ -1,0 +1,36 @@
+[
+  [
+    {
+      "status": "FAIL",
+      "message": "Chapter participation cannot promote objective, reader, suspected or believed information to accepted Character Knowledge",
+      "error_code": "SCENE_ACCEPTED_KNOWLEDGE_MISMATCH",
+      "validation_kind": "STRUCTURAL",
+      "directed_rejection": {
+        "repair_number": 0,
+        "restart_scope": "REJECTED_CANDIDATE_AND_DEPENDENT_UNEXECUTED_NODES",
+        "maximum_repairs": 2,
+        "source_boundary": "SCENE_REALIZATION_CONTRACT",
+        "contract_version": "planning-directed-rejection.v1",
+        "target_generator": "chapter_plan.generate",
+        "frozen_input_versions": {
+          "arc_plans": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "story_state": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "reader_state": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+          "quality_trend": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+          "related_arc:1": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "related_arc:2": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "canon_snapshot": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+          "chapter_group_plan": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+          "previous_chapter_outcome": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+          "chapter_function_matrix_row": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1"
+        },
+        "target_candidate_version_id": "authority-output:99583564-f754-4642-8c1f-2d81f8f442fe:story_planning.candidate:v1",
+        "accepted_history_mutation_allowed": false
+      },
+      "candidate_asset_version_id": "authority-output:99583564-f754-4642-8c1f-2d81f8f442fe:story_planning.candidate:v1"
+    },
+    "FAIL"
+  ]
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "error": {},
+    "result": {
+      "error_code": "CHAPTER_MEMO_CHARACTER_DRIFT",
+      "error_message": "CHAPTER_MEMO_CHARACTER_DRIFT: creative choices require an exact frozen Scene participant",
+      "failure_class": "retryable",
+      "failure_details": {}
+    },
+    "status": "FAILED_RETRYABLE",
+    "queued_at": "2026-10-10T00:02:25.911957+08:00",
+    "worker_id": "book-authority-wp02-9c8b2b091cb1",
+    "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+    "checkpoint": {},
+    "started_at": "2026-10-10T00:02:25.916187+08:00",
+    "finished_at": "2026-10-10T00:04:37.788702+08:00",
+    "max_attempts": 2,
+    "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+    "attempt_number": 1,
+    "checkpointed_at": null,
+    "result_submitted_at": "2026-10-10T00:04:37.788702+08:00",
+    "business_deadline_at": "2026-10-10T00:12:25.893097+08:00"
+  },
+  {
+    "error": {},
+    "result": {
+      "error_code": "CHAPTER_MEMO_CHARACTER_DRIFT",
+      "error_message": "CHAPTER_MEMO_CHARACTER_DRIFT: creative choices require an exact frozen Scene participant",
+      "failure_class": "retryable",
+      "failure_details": {}
+    },
+    "status": "FAILED_RETRYABLE",
+    "queued_at": "2026-10-10T00:04:39.412166+08:00",
+    "worker_id": "book-authority-wp02-9c8b2b091cb1",
+    "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+    "checkpoint": {},
+    "started_at": "2026-10-10T00:04:39.417961+08:00",
+    "finished_at": "2026-10-10T00:07:31.659775+08:00",
+    "max_attempts": 2,
+    "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+    "attempt_number": 2,
+    "checkpointed_at": null,
+    "result_submitted_at": "2026-10-10T00:07:31.659775+08:00",
+    "business_deadline_at": "2026-10-10T00:12:25.893097+08:00"
+  }
+]

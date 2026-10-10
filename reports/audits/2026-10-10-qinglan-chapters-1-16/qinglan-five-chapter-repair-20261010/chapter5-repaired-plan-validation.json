@@ -1,0 +1,12 @@
+[
+  [
+    "FAIL",
+    {
+      "status": "FAIL",
+      "message": "Chapter state transitions must be unique, causal state changes",
+      "error_code": "CHAPTER_STATE_TRANSITION_IDENTITY_INVALID",
+      "validation_kind": "STRUCTURAL",
+      "candidate_asset_version_id": "authority-output:4da0e539-ba48-4dde-b341-6ceb501fe844:story_planning.candidate:v1"
+    }
+  ]
+]

@@ -1,0 +1,10 @@
+{
+  "operation_id": "2bfe7bc4-6877-4717-a11f-308c15ba2c04",
+  "status": "SUCCEEDED",
+  "continuation_id": "planning-runtime-continuation:f493920f-59b9-4819-9b66-f9bfa10e3083",
+  "asset_version_id": "3a46bf6a-3c3a-401a-a93e-f69d85a827f8",
+  "content_hash": "sha256:861cf6266851da781be95d45e424ed4dbb2d97249b39cc30c75be8d9fa2aea96",
+  "source_operation_id": "f493920f-59b9-4819-9b66-f9bfa10e3083",
+  "target_release_sha": "650e44a748f498f5cb36fbcda1cb9783eccf4045",
+  "replayed": false
+}

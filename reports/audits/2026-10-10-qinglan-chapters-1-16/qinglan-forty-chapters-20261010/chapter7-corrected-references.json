@@ -1,0 +1,23 @@
+{
+  "contract_version": "frozen-character-references.v1",
+  "project_id": "qid-learning-prose-01",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008",
+  "input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+  "cast_asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+  "cast_content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+  "bindings": [
+    {
+      "character_id": "character:shen-yan",
+      "display_name": "沈砚",
+      "aliases": []
+    }
+  ],
+  "participant_bindings": {
+    "character:shen-yan": "character:shen-yan"
+  },
+  "token_bindings": {
+    "character:shen-yan": "character:shen-yan",
+    "沈砚": "character:shen-yan"
+  }
+}

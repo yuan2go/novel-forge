@@ -223,11 +223,13 @@ def planning_validation_failures(
              AND effect.project_id=validation.project_id
              AND effect.operation_id=validation.generation_operation_id
              AND effect.status='SUCCEEDED'
-           JOIN authority_asset model_asset ON model_asset.project_id=validation.project_id
-             AND model_asset.asset_type='model_call_log'
-           JOIN authority_asset_version model ON model.asset_id=model_asset.asset_id
+           JOIN authority_operation_output_asset model_output
+             ON model_output.operation_id=effect.operation_id
+           JOIN authority_asset_version model ON model.asset_version_id=model_output.asset_version_id
              AND COALESCE(model.content->'provider_evidence',model.content)
                  #>> '{production_execution,execution_request,external_effect_id}'=effect.external_effect_id
+           JOIN authority_asset model_asset ON model_asset.asset_id=model.asset_id
+             AND model_asset.project_id=validation.project_id AND model_asset.asset_type='model_call_log'
            WHERE validation.project_id=%s AND effect.external_effect_id=ANY(%s)
              AND validation.status='FAIL'
              AND validation.validation_kind IN ('STRUCTURAL','SEMANTIC')

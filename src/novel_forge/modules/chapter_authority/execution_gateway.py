@@ -870,7 +870,7 @@ class PostgresChapterExecutionContractBinder:
         "v9", "v10", "v11", "v12", "v13",
             },
             "prompt-template:agent-session-pack": {"v1"},
-            "prompt-template:story-planning-pack": {"v1"},
+            "prompt-template:story-planning-pack": {"v1", "v2"},
             "prompt-template:reader-outcome-pack": {"v2"},
             "prompt-template:longform-prose-review-pack": {"v2"},
             "prompt-template:narrative-semantic-evaluation-pack": {"v1"},
@@ -1265,6 +1265,7 @@ class PostgresChapterExecutionContractBinder:
         )
         schema = chapter_provider_output_schema(
             stage,
+            character_references=(inputs.get("execution_intent") or {}).get("character_reference_contract") if stage == "memo" else None,
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,
@@ -1273,6 +1274,7 @@ class PostgresChapterExecutionContractBinder:
         )
         schema_ref = chapter_provider_output_schema_ref(
             stage,
+            character_references=(inputs.get("execution_intent") or {}).get("character_reference_contract") if stage == "memo" else None,
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,
@@ -4588,7 +4590,10 @@ def _materialize_production_codex_prompt(
     reference_version = context_content.get("planning_exact_reference_projection_version")
     if reference_version not in (None, "planning-exact-value-reference.v1"):
         raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact reference compilation requires its frozen Planning contract")
-    if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v13":
+    if (template.get("ref"), template.get("version")) in {
+        ("prompt-template:chapter-generation-pack", "v13"),
+        ("prompt-template:story-planning-pack", "v2"),
+    }:
         from .provider_views import compile_exact_context_references
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view})
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]

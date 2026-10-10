@@ -314,7 +314,7 @@ class ChapterHandlerRequest:
         version = self.source_definition_version if self.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0"} else self.definition_version
         if self.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0"}:
             return version
-        if version in {"3.10.0", "3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15", "3.9.16"}:
+        if version in {"3.10.2", "3.10.1", "3.10.0", "3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15", "3.9.16"}:
             return "3.9.0"
         if version == "3.10.0-author-input.v3":
             return "3.9.0-author-input.v2"

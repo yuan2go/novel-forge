@@ -1,0 +1,42 @@
+{
+  "mode": "CREATIVE_VALIDATION",
+  "book_id": "book:qinglan-wendao-20261008",
+  "version": "creative-execution-template.v12",
+  "deepseek": null,
+  "repair_routing": {
+    "version": "native-repair-routing.v2",
+    "max_same_route_repairs": 2
+  },
+  "author_workflow": {
+    "mode": "AUTHOR_FIRST",
+    "version": "author-workflow.v1",
+    "deep_review": false
+  },
+  "allowed_candidates": [
+    "codex-cli:gpt-6-sol:high"
+  ],
+  "quality_corrections": {
+    "version": "quality-correction-control.v1",
+    "maximum_passes": 4,
+    "maximum_unchanged_candidates": 2
+  },
+  "optional_enhancements": [
+    "review",
+    "rereview",
+    "canon_extraction",
+    "canon_support",
+    "quality_structural",
+    "quality_commercial",
+    "quality_source_originality",
+    "quality_longform",
+    "quality_platform"
+  ],
+  "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+  "member_authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+  "world_future_preparation": "DISABLED",
+  "canon_validation_contract": "grounded-canon-validation.v2",
+  "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+  "require_independent_review": false,
+  "require_pack_human_approval": false,
+  "require_literary_qualification": false
+}

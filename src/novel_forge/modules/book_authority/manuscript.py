@@ -201,6 +201,74 @@ def validate_complete_prose(content: dict[str, Any]) -> None:
         raise KernelError("MANUSCRIPT_BODY_INCOMPLETE", "Truncated or cancelled output cannot be a complete manuscript")
 
 
+def edit_selection_matches_source(candidate: Any, source: Any) -> bool:
+    return candidate.asset_version_id == source.asset_version_id or (
+        candidate.asset_type == "author_edit_candidate" and source.asset_version_id in {
+            candidate.content.get("originating_draft_asset_version_id"), candidate.content.get("base_asset_version_id")})
+
+
+def _working_selection_ref(book, chapter):
+    return f"book-working-manuscript/{book['book_run_id']}/{chapter}"
+
+
+def _optional_document(uow, project_id, logical_ref):
+    try:
+        return uow.repositories.asset_documents.require(project_id=project_id, logical_ref=logical_ref)
+    except KernelError as error:
+        if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+            raise
+        return None
+
+
+def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset_version_id,
+                             expected_version, idempotency_key, reason, principal):
+    from novel_forge.modules.chapter_authority.author_editor import require_source
+    from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+    book = authority.require(book_run_id)
+    principal.require("book.authority.execute", book["project_id"])
+    principal.require("chapter.authority.execute", book["project_id"])
+    if not reason.strip() or type(chapter) is not int or chapter < 1:
+        raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Require an exact chapter and work revision reason")
+    def commit(uow, operation_id, checkpoint):
+        current = _require_workflow_checkpoint(uow, book, expected_version)
+        if effective_workflow(uow.cursor, current) != AUTHOR_WORKFLOW or chapter <= current["accepted_through_chapter"] or chapter > current["current_chapter"]:
+            raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Work selection requires a delivered unaccepted chapter in this author-first run")
+        source = selected_source(uow, current, chapter)
+        scope = {key: current[key] for key in ("project_id", "workspace_id", "book_id")}
+        scope["chapter"] = chapter
+        candidate = require_source(uow, scope, candidate_asset_version_id)
+        if candidate.asset_type != "author_edit_candidate" or candidate.content.get("base_asset_version_id") != source.asset_version_id or candidate.content.get("base_asset_hash") != source.content_hash:
+            raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Working candidate must revise this exact current source")
+        if candidate.content.get("source_provenance", {}).get("kind") != "ASSISTANT_REVISION_PROPOSAL":
+            raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Human author input uses its separate author choice")
+        validate_complete_prose(source_draft_content(candidate))
+        session = _optional_document(uow, current["project_id"], _session_ref(scope))
+        if session and session.content.get("status") == "ADOPTED_PENDING_REVIEW" and session.content.get("selected_asset_version_id") == source.asset_version_id:
+            raise KernelError("MANUSCRIPT_AUTHOR_SELECTION_PRESENT", "An author-selected version requires an explicit author decision before replacement")
+        previous = _optional_document(uow, current["project_id"], _working_selection_ref(current, chapter))
+        native_origin = previous.content["native_source_asset_version_id"] if previous and previous.content.get("selected_asset_version_id") == source.asset_version_id else source.asset_version_id
+        content = {**scope, "version": "book-working-manuscript-selection.v1", "book_run_id": book_run_id,
+            "native_source_asset_version_id": native_origin, "source_asset_version_id": source.asset_version_id,
+            "source_content_hash": source.content_hash, "selected_asset_version_id": candidate.asset_version_id,
+            "selected_content_hash": candidate.content_hash, "actor_id": principal.principal_id, "reason": reason,
+            "authority": "AUTHORIZED_WORK_VERSION_USAGE", "author_selection": "NOT_GRANTED", "formal_acceptance": "NOT_GRANTED"}
+        selection = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
+            operation_id=operation_id, project_id=current["project_id"], asset_id=previous.asset_id if previous else "book-work-selection:" + operation_id,
+            asset_type="book_working_manuscript_selection", schema_version=content["version"], logical_ref=_working_selection_ref(current, chapter),
+            category="working-manuscript", output_key="book.working_manuscript.selection", role="primary", content=content,
+            qualification_policy="authenticated-work-version-only.v1", trace_id=operation_id, correlation_id=book["root_operation_id"],
+            expected_current_asset_version_id=previous.asset_version_id if previous else None))
+        uow.cursor.execute("UPDATE authority_book_production SET version=version+1,updated_at=NOW() WHERE book_run_id=%s", [book_run_id])
+        checkpoint("after_working_manuscript_selection")
+        return {"book_run_id": book_run_id, "chapter": chapter, "selection_asset_version_id": selection.asset_version_id,
+            "source_asset_version_id": candidate.asset_version_id, "author_selection": "NOT_GRANTED", "formal_acceptance": "NOT_GRANTED"}
+    return authority._execute_mutation(book=book, action="working_manuscript_select", event_type="book.working_manuscript.selected",
+        idempotency_key=idempotency_key, actor_id=principal.principal_id, trace_id=idempotency_key, correlation_id=book["root_operation_id"],
+        causation_id=book["root_operation_id"], payload={"chapter": chapter, "candidate_asset_version_id": candidate_asset_version_id,
+            "expected_version": expected_version, "reason": reason}, handler=commit,
+        input_assets=authority.resolve_asset_refs(project_id=book["project_id"], asset_version_ids=(candidate_asset_version_id,)))
+
+
 def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
     uow.cursor.execute("""SELECT source_asset_version_id FROM authority_book_manuscript_delivery
         WHERE book_run_id=%s AND chapter_number=%s""", [book["book_run_id"], chapter])
@@ -223,6 +291,12 @@ def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
         if row is None:
             raise KernelError("MANUSCRIPT_CHAPTER_MISSING", "No complete native manuscript exists at this chapter")
     source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=row[0])
+    working = _optional_document(uow, book["project_id"], _working_selection_ref(book, chapter))
+    if working and working.content.get("native_source_asset_version_id") == source.asset_version_id:
+        selected = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=working.content["selected_asset_version_id"])
+        if (working.content.get("book_run_id") != book["book_run_id"] or selected.content_hash != working.content.get("selected_content_hash")):
+            raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Working selection must retain exact run and source hash")
+        source = selected
     scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
     scope["chapter"] = chapter
     try:
@@ -232,7 +306,9 @@ def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
             raise
         session = None
     if session and session.content.get("selected_asset_version_id"):
-        source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=session.content["selected_asset_version_id"])
+        selected = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=session.content["selected_asset_version_id"])
+        if edit_selection_matches_source(selected, source):
+            source = selected
     if source.governance != "CLEAR" or source.eligibility != "ELIGIBLE":
         raise KernelError("MANUSCRIPT_SOURCE_BLOCKED", "Selected manuscript is not governed for use")
     validate_complete_prose(source_draft_content(source))
@@ -250,18 +326,7 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
               AND output.output_key='chapter.draft' AND output.role='primary'
             ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
     deliveries = uow.cursor.fetchall()
-    selected = {number: version for number, version, _ in deliveries}
-    uow.cursor.execute("""SELECT l.logical_ref,v.content->>'chapter',v.content->>'selected_asset_version_id'
-        FROM authority_asset_locator l JOIN authority_asset_version v ON v.asset_version_id=l.current_asset_version_id
-        JOIN authority_asset a ON a.asset_id=v.asset_id
-        WHERE l.project_id=%s AND a.asset_type='author_edit_session' AND v.governance='CLEAR' AND v.eligibility='ELIGIBLE'
-          AND v.content->>'workspace_id'=%s AND v.content->>'book_id'=%s""",
-        [book["project_id"], book["workspace_id"], book["book_id"]])
-    for logical_ref, number, version in uow.cursor.fetchall():
-        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
-        scope["chapter"] = int(number)
-        if version and logical_ref == _session_ref(scope):
-            selected[int(number)] = version
+    selected = {number: selected_source(uow, book, number).asset_version_id for number, _, _ in deliveries}
     changes = {}
     for number, _, dependencies in deliveries:
         affected = {}
@@ -399,12 +464,16 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
             length = requirements.get("chapter_length")
             length_status = "NOT_EVALUATED" if not length else "PARTIALLY_CHECKED" if length["minimum"] <= actual_length <= length["maximum"] else "LENGTH_TARGET_UNMET"
             impacted = changes[number]
+            author_selection = "GENERATED_CURRENT"
+            if source.asset_type == "author_edit_candidate":
+                uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='author_edit_decision' AND v.content->>'candidate_asset_version_id'=%s AND v.content->>'decision'='ACCEPT')", [book["project_id"], source.asset_version_id])
+                author_selection = "ADOPTED" if uow.cursor.fetchone()[0] else "WORKING_SELECTED"
             units.append({"chapter": number, "asset_version_id": source.asset_version_id,
                 "content_hash": source.content_hash, "text_hash": text_hash(content["text"]),
                 "title": content.get("title", ""), "text": content["text"],
                 "manuscript_status": "SAVED", **_review_status(uow, book, source), "quality_status": "NOT_VERIFIED",
                 "requirements_status": length_status, "voice_observations": content.get("voice_evidence", []), "length": {"unit": "HAN_CHARACTERS_V1", "actual": actual_length, "target": length}, "dependency_changes": impacted,
-                "author_selection": "ADOPTED" if source.asset_type == "author_edit_candidate" else "GENERATED_CURRENT"})
+                "author_selection": author_selection})
         if version_ids is not None and version_ids != [item["asset_version_id"] for item in units]:
             raise KernelError("MANUSCRIPT_EXPORT_VERSION_CONFLICT", "Export must match the exact selected version list; reload after a concurrent author change")
     manifest = {"version": "current-manuscript-export.v1", "book_run_id": book["book_run_id"],

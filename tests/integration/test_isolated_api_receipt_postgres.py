@@ -829,19 +829,21 @@ def test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate(iso
 
 
 @pytest.mark.parametrize("measurement,source", [("ESTIMATED", "provider_receipt"), ("UNKNOWN", "provider_receipt"), ("PROVIDER_REPORTED", "usage_pricing"), ("PROVIDER_REPORTED", "usage_pricing_upper_bound")])
-@pytest.mark.parametrize("isolated_api", ["MULTI_PRICED"], indirect=True)
+@pytest.mark.parametrize("isolated_api", ["PRICED", "MULTI_PRICED"], indirect=True)
 def test_dispatch_cost_estimates_cannot_become_measured_by_aggregation(isolated_api, measurement, source):
     _, effect, _, receipt, _ = isolated_api
     with transaction() as c:
-        prior = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation LIMIT 1", [effect]).fetchone()[0]
-    production = prior["evidence"]["production_execution"]
-    earlier = {**receipt, "dispatch_id": prior["dispatch_id"], "generation": prior["generation"],
-        "execution_request_hash": _hash(production["execution_request"]),
-        "provider_request_id": production["execution_handle"]["provider_request_id"],
-        "outcome": "final_failure", "result": None,
-        "cost": {"availability": "AVAILABLE", "provider_billed": True, "measurement": "PROVIDER_REPORTED", "source": "provider_receipt", "amount": "0.10", "currency": "USD"},
-        **{key: production["execution_request"][key] for key in ("execution_id", "attempt_id", "fencing_token")}}
-    resolve_external_effect_manually(DATABASE_URL, replace(command_for(isolated_api, earlier), decision="MARK_FAILED_FINAL"))
+        originals = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation", [effect]).fetchall()
+    prior = originals[0][0]
+    if len(originals) > 1:
+        production = prior["evidence"]["production_execution"]
+        earlier = {**receipt, "dispatch_id": prior["dispatch_id"], "generation": prior["generation"],
+            "execution_request_hash": _hash(production["execution_request"]),
+            "provider_request_id": production["execution_handle"]["provider_request_id"],
+            "outcome": "final_failure", "result": None,
+            "cost": {"availability": "AVAILABLE", "provider_billed": True, "measurement": "PROVIDER_REPORTED", "source": "provider_receipt", "amount": "0.10", "currency": "USD"},
+            **{key: production["execution_request"][key] for key in ("execution_id", "attempt_id", "fencing_token")}}
+        resolve_external_effect_manually(DATABASE_URL, replace(command_for(isolated_api, earlier), decision="MARK_FAILED_FINAL"))
     changed = {**receipt, "cost": {"availability": "AVAILABLE", "provider_billed": True, "measurement": measurement, "source": source, "amount": "0.10", "currency": "USD"}}
     resolve_external_effect_manually(DATABASE_URL, command_for(isolated_api, changed))
     with transaction() as c:
@@ -849,4 +851,26 @@ def test_dispatch_cost_estimates_cannot_become_measured_by_aggregation(isolated_
     measured = {**changed, "cost": {**changed["cost"], "measurement": "PROVIDER_REPORTED", "source": "provider_receipt"}}
     resolve_external_effect_manually(DATABASE_URL, command_for(isolated_api, measured))
     with transaction() as c:
-        assert c.execute("SELECT status,actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 300)
+        assert c.execute("SELECT status,actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 150 * len(originals))
+
+
+@pytest.mark.parametrize("isolated_api", ["ACCOUNT_ENTITLEMENT", "PRICED", "MULTI_ACCOUNT_ENTITLEMENT", "MULTI_PRICED"], indirect=True)
+def test_affirmative_original_nonexecution_can_settle_without_fabricating_billing(isolated_api):
+    _, effect, _, receipt, _ = isolated_api
+    before = history(isolated_api)
+    with transaction() as c:
+        originals = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation", [effect]).fetchall()
+        basis = c.execute("SELECT accounting_basis FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone()[0]
+    for (dispatch,) in originals:
+        production = dispatch["evidence"]["production_execution"]
+        nonexecution = {**receipt, "dispatch_id": dispatch["dispatch_id"], "generation": dispatch["generation"],
+            "execution_request_hash": _hash(production["execution_request"]),
+            "provider_request_id": production["execution_handle"]["provider_request_id"],
+            "outcome": "not_found", "provider_not_executed": True, "result": None,
+            "usage": {"measurement": "PROVIDER_REPORTED", "input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+            **{key: production["execution_request"][key] for key in ("execution_id", "attempt_id", "fencing_token")}}
+        resolve_external_effect_manually(DATABASE_URL, replace(command_for(isolated_api, nonexecution), decision="MARK_NOT_FOUND"))
+    with transaction() as c:
+        from decimal import Decimal
+        assert c.execute("SELECT status,actual_tokens,settled_amount,evidence->>'cost_settlement_basis' FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 0, None if basis == "ACCOUNT_ENTITLEMENT" else Decimal(0), "ORIGINAL_NON_EXECUTION_RECEIPT")
+    assert history(isolated_api) == before

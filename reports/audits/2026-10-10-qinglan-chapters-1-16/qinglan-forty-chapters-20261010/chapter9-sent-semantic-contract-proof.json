@@ -1,0 +1,40 @@
+{
+  "source_sha": "960e8ee4ab9622339639792eee2605e95f5d3264",
+  "operation_id": "1731ce8e-768e-4e59-885a-0f83762ff9b2",
+  "external_effect_id": "c9b89795-28d7-4781-84ad-8f7d1129f492",
+  "provider_status": "SUCCEEDED",
+  "materialization_id": "600c8559-b8d5-405e-92c5-f56c4902b521",
+  "materialization_hash": "sha256:f54021b1f6f39f8d4398edc6d5e72a9121e3e30320e9fa32b40801490e3ef941",
+  "working_boundary": [
+    {
+      "version": "planning-working-continuity.v2",
+      "authority": "SELECTED_WORKING_VERSION_CONTINUITY_ONLY",
+      "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "instruction": "Continue this exact selected working version. Carry forward actions, witnessed responses and experiences actually realized in these source excerpts within that working story; lack of formal acceptance alone does not require characters to reapply, reverify, reperform or forget them. Preserve source uncertainty, unresolved dependency changes and POV restrictions: claims and beliefs need not be true, reader-only information is not character knowledge, and plans are not past events. Introduce subsequent events that use the progress already realized. This projection grants no accepted fact IDs, verified Character Knowledge, Canon mutation, author choice or formal acceptance. Keep accepted-state fields unchanged. Describe selected working experiences in entry_state, causal_trigger, beats and actions. Do not turn their prose summaries into known_fact_ids or accessible_knowledge: those fields accept only eligible fact IDs under the unchanged accepted and earlier-scene disclosure rules.",
+      "snapshot_hash": "sha256:619b5866d441502934faad8fd27277fb32e9e9d61d068e12540afc471769f301",
+      "target_chapter": 9,
+      "source_location": "/arc_working_set/working_manuscript",
+      "accepted_through_chapter": 0
+    }
+  ],
+  "current_entity_schema_branches": 2,
+  "world_preparation_reused": true,
+  "source_history": [
+    [
+      "acb5d207-c71a-44a3-be5e-0400c46bbfab",
+      "REPAIR_REQUIRED"
+    ],
+    [
+      "a445eafa-3ec8-416e-89b2-e3adef821149",
+      "REPAIR_REQUIRED"
+    ],
+    [
+      "8c524dc2-6dc0-4c10-b77b-acde27bbf89c",
+      "REJECTED"
+    ]
+  ],
+  "source_repair_number": 2,
+  "new_work": "scoped author change request; no original attempt reset",
+  "formal_acceptance": 0,
+  "human_prose_choice": "NOT_GRANTED"
+}

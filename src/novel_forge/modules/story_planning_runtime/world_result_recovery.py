@@ -18,6 +18,7 @@ WORLD_GENERATION_CONTRACT_ERRORS = frozenset({
     "WORLD_GENERATION_IDENTITY_UNKNOWN", "WORLD_GENERATION_BOUND_EXCEEDED",
     "WORLD_GENERATION_DISPOSITION_INVALID", "WORLD_INFORMATION_SCOPE_INVALID",
     "WORLD_GENERATION_IDENTITY_COLLISION", "WORLD_PREPARATION_WINDOW_INVALID",
+    "WORLD_AGENCY_CLASSIFICATION_REJECTED",
 })
 WORLD_CHECKPOINT_ERRORS = frozenset({
     "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN", "WORLD_GENERATION_IDENTITY_UNKNOWN",
@@ -84,6 +85,10 @@ def require_world_result_repair_source(database_url, *, command, operation_id, s
             raise KernelError("WORLD_RESULT_REPAIR_RECONCILIATION_REQUIRED", "All original calls and usage must be resolved before a successor")
     try:
         validate_world_generation_result(raw, source.content["contract"], command)
+        from .world_preparation import PlanningWorldPreparation
+        PlanningWorldPreparation.validate_retained_generation(
+            database_url, command=command, generation=document
+        )
     except KernelError as error:
         if error.code not in WORLD_GENERATION_CONTRACT_ERRORS:
             raise

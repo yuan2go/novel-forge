@@ -8,7 +8,7 @@ from novel_forge.modules.production_execution.cost_routing import snapshot_hash
 from novel_forge.storage.external_effect_repositories import ExternalEffectRepository
 
 CONTRACTS = {
-    'chapter-known-receipt.v2': {'chapter.draft.generate', 'chapter.review.evaluate', 'chapter.canon.extract'},
+    'chapter-known-receipt.v2': {'chapter.memo.generate', 'chapter.draft.generate', 'chapter.review.evaluate', 'chapter.canon.extract'},
     'chapter-canon-span-successor.v2': {'chapter.canon.extract'},
     'chapter-canon-support-contract-successor.v1': {'chapter.canon.propose_changes'},
 }
@@ -16,11 +16,18 @@ PROOF_KEYS = ('contract_version', 'source_operation_id', 'source_effect_id', 'so
               'source_output_hash', 'source_request_hash', 'provider_invoked', 'strict_certification_eligible')
 
 
-def _require_binding(source, current, frozen, policy):
+def _require_binding(source, current, frozen, policy, *, predecessor_id=None):
+    allowed_versions = {"3.10.0"}
+    if source["definition_name"] == "chapter.memo.generate" and policy.get("character_reference_contract", {}).get("contract_version") == "frozen-character-references.v1":
+        allowed_versions.add("3.10.1")
+        if policy.get("completion_revalidation") == "settled-memo-completion.v1":
+            allowed_versions.add("3.10.2")
+    if source["definition_name"] == "chapter.draft.generate" and policy.get("scene_evidence_union_revalidation") == "scene-evidence-union.v1":
+        allowed_versions.add("3.10.1")
     if (source != frozen or source['status'] not in {'FAILED_FINAL', 'DEAD_LETTER'}
-        or current['status'] != 'SUCCEEDED' or current['definition_version'] != '3.10.0'
+        or current['status'] != 'SUCCEEDED' or current['definition_version'] not in allowed_versions
         or source['definition_name'] not in CONTRACTS.get(policy.get('contract_version'), set())
-        or current['causation_operation_id'] != source['operation_id']
+        or current['causation_operation_id'] != (predecessor_id or source['operation_id'])
         or any(current.get(k) != source.get(k) for k in ('project_id', 'workspace_id', 'actor_id',
             'root_operation_id', 'saga_id', 'step_key', 'definition_name', 'command_payload', 'input_asset_snapshot'))):
         raise KernelError('SETTLED_SUCCESSOR_EVIDENCE_DRIFT', 'Require exact immutable source and completed current native successor')
@@ -53,12 +60,33 @@ def verified_successor_effects(cursor, operation_ids):
         JOIN authority_saga_step active ON active.operation_id=current.operation_id AND active.saga_id=j.saga_id
         WHERE source.operation_id=ANY(%s) AND j.contract_version='kernel-failed-step-successor.v2'
         AND j.project_id=source.project_id AND j.actor_id=source.actor_id AND j.saga_id=source.saga_id
-        AND current.status='SUCCEEDED' AND current.definition_version='3.10.0'
+        AND current.status='SUCCEEDED' AND current.definition_version IN ('3.10.0','3.10.1')
         AND j.policy_evidence->>'contract_version'=ANY(%s)''', [operation_ids, list(CONTRACTS)])
-    journals = cursor.fetchall()
+    journals = [(source, current, frozen, policy, None) for source, current, frozen, policy in cursor.fetchall()]
+    cursor.execute("""SELECT to_jsonb(source),to_jsonb(current),first.source_failure_snapshot,last.policy_evidence,
+        to_jsonb(predecessor),last.source_failure_snapshot
+        FROM authority_saga_step_successor first
+        JOIN authority_operation source ON source.operation_id=first.predecessor_operation_id
+        JOIN authority_operation predecessor ON predecessor.operation_id=first.successor_operation_id
+        JOIN authority_saga_step_successor last ON last.predecessor_operation_id=predecessor.operation_id
+        JOIN authority_operation current ON current.operation_id=last.successor_operation_id
+        JOIN authority_saga_step active ON active.operation_id=current.operation_id AND active.saga_id=last.saga_id
+        WHERE source.operation_id=ANY(%s) AND source.definition_name='chapter.memo.generate'
+          AND source.definition_version='3.10.0' AND predecessor.definition_version='3.10.1'
+          AND current.definition_version='3.10.2' AND current.status='SUCCEEDED'
+          AND first.contract_version='kernel-failed-step-successor.v2'
+          AND last.contract_version='kernel-failed-step-successor.v2'""", [operation_ids])
+    for source, current, frozen, policy, predecessor, last_frozen in cursor.fetchall():
+        from novel_forge.modules.chapter_authority.memo_recovery import original_memo_source
+        if (last_frozen["operation"] != predecessor
+            or original_memo_source(cursor, predecessor, policy) != frozen["operation"]
+            or policy.get("completion_revalidation") != "settled-memo-completion.v1"
+            or any(predecessor[k] != current[k] for k in ("project_id", "workspace_id", "actor_id", "saga_id"))):
+            raise KernelError('SETTLED_SUCCESSOR_EVIDENCE_DRIFT', 'Require both exact immutable Memo repair generations')
+        journals.append((source, current, frozen, policy, predecessor["operation_id"]))
     authorized = {}
-    for source, current, frozen, policy in journals:
-        _require_binding(source, current, frozen['operation'], policy)
+    for source, current, frozen, policy, predecessor_id in journals:
+        _require_binding(source, current, frozen['operation'], policy, predecessor_id=predecessor_id)
         cursor.execute('''SELECT v.content FROM authority_operation_output_asset output
             JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a ON a.asset_id=v.asset_id
             WHERE output.operation_id=%s AND output.role='primary' AND a.project_id=%s
@@ -89,9 +117,15 @@ def verified_successor_effects(cursor, operation_ids):
                     raise KernelError('SETTLED_SUCCESSOR_EVIDENCE_DRIFT', 'Original receipt must remain Kernel verified')
                 if policy['contract_version'] == 'chapter-known-receipt.v2':
                     cursor.execute('SELECT dispatch_id FROM authority_external_effect_dispatch WHERE external_effect_id=%s AND generation=%s AND status=\'SUCCEEDED\'', [effect['external_effect_id'], verified['generation']])
-                    if (effect['external_effect_id'] != policy['source_effect_id'] or effect['request_hash'] != policy['source_request_hash']
-                        or snapshot_hash(verified['provider_evidence'].get('result')) != policy['source_output_hash']
-                        or cursor.fetchone() != (policy['source_dispatch_id'],)):
+                    expected = policy
+                    if source['definition_name'] == 'chapter.memo.generate':
+                        matches = [r for r in policy.get('settled_memo_receipts', []) if r.get('source_effect_id') == effect['external_effect_id']]
+                        if len(matches) != 1:
+                            raise KernelError('SETTLED_SUCCESSOR_EVIDENCE_DRIFT', 'Require an exact proof for every original Memo receipt')
+                        expected = matches[0]
+                    if (effect['external_effect_id'] != expected['source_effect_id'] or effect['request_hash'] != expected['source_request_hash']
+                        or snapshot_hash(verified['provider_evidence'].get('result')) != expected['source_output_hash']
+                        or cursor.fetchone() != (expected['source_dispatch_id'],)):
                         raise KernelError('SETTLED_SUCCESSOR_EVIDENCE_DRIFT', 'Original dispatch, output and request remain exact')
             else:
                 proof = proofs.get(effect['external_effect_id']) or {}

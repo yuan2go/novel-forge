@@ -291,6 +291,43 @@ def derive_targeted_revision_slots(
     return copied
 
 
+def normalize_scene_source_union(contract, artifacts):
+    if contract.get("contract_version") != "scene-realization-composition.v3":
+        return artifacts, []
+    result = deepcopy(artifacts)
+    slots = contract.get("slots", [])
+    if not isinstance(result, list) or len(result) != len(slots):
+        return artifacts, []
+    changes = []
+    for slot, artifact in zip(slots, result, strict=True):
+        if not isinstance(artifact, dict) or artifact.get("slot_id") != slot["slot_id"]:
+            return artifacts, []
+        facts, uses = artifact.get("used_fact_ids"), artifact.get("character_source_uses")
+        allowed = set(slot["accessible_knowledge"])
+        if (not isinstance(facts, list) or any(not isinstance(ref, str) for ref in facts)
+                or len(set(facts)) != len(facts) or not set(facts).issubset(allowed)
+                or not isinstance(uses, list)):
+            return artifacts, []
+        declared, seen = set(), set()
+        for use in uses:
+            if not isinstance(use, dict) or set(use) != {"character_id", "used_fact_ids"}:
+                return artifacts, []
+            actor, refs = use["character_id"], use["used_fact_ids"]
+            scopes = slot["character_source_scopes"]
+            if (not isinstance(actor, str) or actor not in scopes or actor in seen
+                    or not isinstance(refs, list) or any(not isinstance(ref, str) for ref in refs)
+                    or len(set(refs)) != len(refs)
+                    or not set(refs).issubset(set(scopes[actor]["source_refs"]) & allowed)):
+                return artifacts, []
+            seen.add(actor)
+            declared.update(refs)
+        missing = sorted(declared - set(facts))
+        if missing:
+            artifact["used_fact_ids"] = facts + missing
+            changes.append({"slot_id": slot["slot_id"], "added_scene_refs": missing})
+    return result, changes
+
+
 def integrate_realization(
     *, contract: Mapping[str, Any], artifacts: Any, text: str, separators: Any = None, enforce_voice_contract: bool = True
 ) -> dict[str, Any]:
@@ -298,6 +335,7 @@ def integrate_realization(
         raise KernelError(
             "REALIZATION_ARTIFACT_INVALID", "Realization requires structured slots"
         )
+    artifacts, source_union_changes = normalize_scene_source_union(contract, artifacts)
     expected = list(contract["slots"])
     if not expected:
         if artifacts:
@@ -350,7 +388,7 @@ def integrate_realization(
                     if (actor not in slot["character_source_scopes"] or actor in seen or not isinstance(refs, list)
                         or any(not isinstance(ref, str) for ref in refs) or len(set(refs)) != len(refs)
                         or not set(refs).issubset(set(allowed) & set(facts)) or set(use) != {"character_id", "used_fact_ids"}):
-                        diagnostics.append({"slot_id": slot["slot_id"], "defect": "CHARACTER_SOURCE_SCOPE", "character_id": actor, "allowed_refs": allowed})
+                        diagnostics.append({"slot_id": slot["slot_id"], "defect": "CHARACTER_SOURCE_SCOPE", "character_id": actor, "allowed_refs": allowed, "invalid_actor_refs": sorted(set(refs or []) - set(allowed)) if isinstance(refs, list) and all(isinstance(ref, str) for ref in refs) else [], "missing_scene_use_refs": sorted(set(refs or []) - set(facts)) if isinstance(refs, list) and all(isinstance(ref, str) for ref in refs) else []})
                     seen.add(actor)
         if diagnostics:
             code = "REALIZATION_EPISTEMIC_SCOPE_VIOLATION"
@@ -445,6 +483,7 @@ def integrate_realization(
     return {
         "realization_contract": dict(contract),
         "scene_artifacts": artifacts,
+        **({"source_declaration_normalization": {"contract_version": "scene-evidence-union.v1", "changes": source_union_changes, "fact_mutation_allowed": False}} if source_union_changes else {}),
         **({"scene_separators": realization_separators(artifacts, separators)} if separators is not None else {}),
         "composition_digest": narrative_hash(
             {"contract": contract["contract_digest"], "artifacts": artifacts,

@@ -107,3 +107,54 @@ def test_exact_accepted_source_binding_fails_closed(monkeypatch, change):
         asset.lifecycle = "REVOKED"
     with pytest.raises(KernelError):
         resolve_accepted_realization_sources(request)
+
+
+def test_scene_evidence_union_uses_only_declared_legal_actor_refs():
+    from novel_forge.modules.chapter_authority.realization_composition import normalize_scene_source_union
+    c, rows = contract(), artifacts(contract())
+    rows[0]["character_source_uses"] = [{"character_id": "a", "used_fact_ids": ["accepted:observation"]}]
+    original = deepcopy(rows)
+    normalized, changes = normalize_scene_source_union(c, rows)
+    assert rows == original
+    assert normalized[0]["used_fact_ids"] == ["accepted:observation"]
+    assert normalized[0]["text"] == rows[0]["text"]
+    assert changes == [{"slot_id": "one:skeleton", "added_scene_refs": ["accepted:observation"]}]
+    proof = integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+    assert proof["scene_artifacts"] == normalized
+    assert proof["source_declaration_normalization"]["fact_mutation_allowed"] is False
+    assert normalize_scene_source_union(c, normalized) == (normalized, [])
+
+
+@pytest.mark.parametrize("change", ["actor", "private", "future", "duplicate_ref", "duplicate_actor", "illegal_scene", "slot_order"])
+def test_union_never_repairs_illegal_or_ambiguous_identity_or_evidence(change):
+    from novel_forge.modules.chapter_authority.realization_composition import normalize_scene_source_union
+    c, rows = contract(), artifacts(contract())
+    use = {"character_id": "a", "used_fact_ids": ["accepted:observation"]}
+    rows[0]["character_source_uses"] = [use]
+    if change == "actor":
+        use["character_id"] = "foreign-book:a"
+    elif change == "private":
+        use["character_id"] = "b"
+    elif change == "future":
+        use["used_fact_ids"] = ["local:future"]
+    elif change == "duplicate_ref":
+        use["used_fact_ids"] *= 2
+    elif change == "duplicate_actor":
+        rows[0]["character_source_uses"].append(deepcopy(use))
+    elif change == "illegal_scene":
+        rows[0]["used_fact_ids"] = ["invented:fact"]
+    else:
+        rows.reverse()
+    assert normalize_scene_source_union(c, rows) == (rows, [])
+    with pytest.raises(KernelError):
+        integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+
+
+def test_receipt_only_draft_definition_cannot_dispatch_without_journal(monkeypatch):
+    from novel_forge.modules.chapter_authority.handlers import _invoke_with_known_receipt
+    from novel_forge.modules.chapter_authority import receipt_recovery
+    monkeypatch.setattr(receipt_recovery, "consume_known_draft_receipt", lambda request: None)
+    provider = SimpleNamespace(invoke=lambda *a, **k: pytest.fail("fresh dispatch from receipt-only successor"))
+    request = SimpleNamespace(effective_definition_version="3.10.1", database_url="unused")
+    with pytest.raises(KernelError, match="DRAFT_RECOVERY_JOURNAL_REQUIRED"):
+        _invoke_with_known_receipt(provider, request, stage="draft", payload={})

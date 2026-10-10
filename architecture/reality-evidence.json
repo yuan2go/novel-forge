@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261010_0196_recovery_reference_indexes",
+  "migration_head": "20261010_0198_recovery_reference_indexes",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9777,9 +9777,19 @@
           "locator": "MIGRATION_ID = '20261009_0195_prose_review_generation_isolation'"
         },
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20261010_0196_recovery_reference_indexes.py",
-          "id": "20261010_0196_recovery_reference_indexes",
-          "locator": "MIGRATION_ID = '20261010_0196_recovery_reference_indexes'"
+          "path": "src/novel_forge/storage/migrations/versions/v20261010_0196_stopped_cli_timeout_isolation.py",
+          "id": "20261010_0196_stopped_cli_timeout_isolation",
+          "locator": "MIGRATION_ID = \"20261010_0196_stopped_cli_timeout_isolation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261010_0197_authorized_planning_capacity.py",
+          "id": "20261010_0197_authorized_planning_capacity",
+          "locator": "MIGRATION_ID = \"20261010_0197_authorized_planning_capacity\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261010_0198_recovery_reference_indexes.py",
+          "id": "20261010_0198_recovery_reference_indexes",
+          "locator": "MIGRATION_ID = '20261010_0198_recovery_reference_indexes'"
         }
       ],
       "external_effects": {
@@ -10066,7 +10076,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:171a15884733578f9231b1ed876379160a448e4730291da35e8fab5e174ff95a"
+    "implementation_tree_sha": "sha256:ae2f06f95d93c9c7f55aeead019ff6c3c0329d7aec309536d5de44d6a04e109f"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

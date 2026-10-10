@@ -198,7 +198,74 @@ class PlanningProviderStage:
         object.__setattr__(self, "task", projected["world_preparation"])
 
 
+def require_selected_world_action(query: Any, *, command: Any) -> Any:
+    selected = []
+    for asset_id in getattr(command, "governance_action_version_ids", ()):
+        document = query.require(project_id=command.project_id, asset_version_id=asset_id)
+        contract = document.content.get("contract", {})
+        if contract.get("contract_version") in {"world-production-action.v1", "world-production-action.v2"}:
+            selected.append(document)
+    if not selected:
+        return None
+    if len(selected) != 1 or not command.world_preparation_request:
+        raise KernelError("WORLD_SELECTED_ACTION_AMBIGUOUS", "Select one exact World action for a frozen preparation request")
+    action = selected[0]
+    bound = action.content["contract"]
+    if (
+        (bound.get("project_id"), bound.get("book_id"), bound.get("actor_id"))
+        != (command.project_id, command.book_id, command.actor_id)
+        or bound.get("fact_mutation_allowed") is not False
+        or bound.get("authority") != "PLANNING_PROPOSAL"
+        or bound["world_plan"]["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED", "DEFER"}
+    ):
+        raise KernelError("WORLD_SELECTED_ACTION_SCOPE_INVALID", "Reuse requires the same Book and actor and an eligible proposal; it cannot create facts")
+    owner = PlanningWorldPreparation._source_operation(query.database_url, command.project_id, action.asset_version_id)
+    with AuthorityUnitOfWork(query.database_url) as uow:
+        uow.cursor.execute("SELECT workspace_id,actor_id,command_payload #>> '{payload,book_id}' FROM authority_operation WHERE operation_id=%s AND project_id=%s", [owner, command.project_id])
+        if uow.cursor.fetchone() != (command.workspace_id, command.actor_id, command.book_id):
+            raise KernelError("WORLD_SELECTED_ACTION_SCOPE_INVALID", "World action must retain its original workspace, Book and actor owner")
+    documents = {key: query.require(project_id=command.project_id, asset_version_id=bound[key]["asset_version_id"]) for key in ("source", "generation", "evaluation")}
+    source, generation, evaluation = (documents[key].content["contract"] for key in ("source", "generation", "evaluation"))
+    if bound["world_plan"]["disposition"] == "DEFER":
+        from .world_optional import require_optional_source
+        require_optional_source(source)
+        plan = bound["world_plan"]
+        if (any(plan.get(key) for key in ("selected_candidate_id", "selected_path_id", "candidate_futures", "preparation_schedule", "causal_debts"))
+                or bound.get("actor_proposals") or plan.get("fact_mutation_allowed") is not False):
+            raise KernelError("WORLD_SELECTED_ACTION_SCOPE_INVALID", "Deferred reuse cannot select futures, discard dependencies or supply facts")
+    if any(documents[key].content_hash != bound[key]["content_hash"] for key in documents) or evaluation["generation"] != bound["generation"] or evaluation["source"] != bound["source"]:
+        raise KernelError("WORLD_SELECTED_ACTION_DRIFT", "Source, generation and Director bindings must retain their exact hashes")
+    if source["request"] != dict(command.world_preparation_request):
+        raise KernelError("WORLD_REPAIR_SOURCE_DRIFT", "Selected action belongs to another frozen frontier or planning input set")
+    with AuthorityUnitOfWork(query.database_url) as uow:
+        WorldPreparationRepository(uow.cursor).assert_source_current(project_id=command.project_id, book_id=command.book_id, frozen=source)
+    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_completed_operation_success, read_retained_generation_stage_success
+    for key in ("generation", "evaluation"):
+        producer = PlanningWorldPreparation._source_operation(query.database_url, command.project_id, documents[key].asset_version_id)
+        with AuthorityUnitOfWork(query.database_url) as uow:
+            uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [producer, command.project_id])
+            row = uow.cursor.fetchone()
+        reader = read_completed_operation_success if row and row[0] == "SUCCEEDED" else read_retained_generation_stage_success
+        output = documents[key].content["contract"]
+        receipt = reader(query.database_url, EffectCommandContext(operation_id=producer, project_id=command.project_id, actor_id=command.actor_id, trace_id=command.trace_id, correlation_id=command.correlation_id), effect_id=output["evidence"]["external_receipt_ref"])
+        if receipt is None or receipt["budget_reservation_status"] != "SETTLED" or receipt["provider_evidence"].get("result") != output["output"]:
+            raise KernelError("WORLD_SELECTED_ACTION_RECEIPT_INVALID", "Reuse requires both exact succeeded Provider outputs and settled usage")
+    PlanningWorldPreparation.validate_retained_generation(query.database_url, command=command, generation=documents["generation"])
+    decoded = decode_world_generation({key: value for key, value in generation["output"].items() if key not in {"knowledge_translations", "actor_adjudications"}}, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
+    plan = compile_world_plan(reality=source["reality"], generated=decoded, evaluation=evaluation["output"], policy=WorldProductionPolicy(**source["policy"]), chapter_number=int(source["request"]["accepted_through_chapter"]) + 1, intent_version_id=source["intent_version_id"])
+    if source["contract_version"] == "world-preparation-source.v2":
+        from novel_forge.modules.worldbuilding.continuation import decide_preparation, apply_preparation_decisions
+        decisions = [decide_preparation(reality=source["reality"], origin=item["origin"], accepted_steps=item["accepted_steps"], chapter_number=int(source["request"]["accepted_through_chapter"]) + 1, intent_version_id=source["intent_version_id"]) for item in source.get("preparation_sources", [])]
+        plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
+    if json.loads(json.dumps(plan, ensure_ascii=False)) != bound["world_plan"]:
+        raise KernelError("WORLD_SELECTED_ACTION_DRIFT", "Retained Director result no longer compiles to the selected proposal")
+    return action
+
+
 def require_world_action(query: Any, *, command: Any, operation_id: str) -> Any:
+    retained = require_selected_world_action(query, command=command)
+    if retained is not None:
+        return retained
     if command.repair_of_candidate_id:
         parent = query.require(
             project_id=command.project_id,
@@ -306,6 +373,9 @@ class PlanningWorldPreparation:
                 actor_id=command.actor_id,
             )
             uow.commit()
+        selected = require_selected_world_action(self.preparer.query, command=command)
+        if selected is not None:
+            return selected
         reuse_prefixes = self._isolated_world_prefixes(command)
         if reuse_prefixes:
             from .schema_recovery import retained_world_action
@@ -876,14 +946,19 @@ class PlanningWorldPreparation:
         except KernelError as error:
             if error.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
+            action = None
+        binding = action.content["contract"] if action else None
+        if binding and binding["world_plan"]["disposition"] != "BLOCKED":
             return
-        binding = action.content["contract"]
-        if binding["world_plan"]["disposition"] != "BLOCKED":
+        try:
+            evaluation = query.require(
+                project_id=command.project_id,
+                logical_ref=f"world_preparation/{owner}/evaluation",
+            )
+        except KernelError as error:
+            if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
             return
-        evaluation = query.require(
-            project_id=command.project_id,
-            logical_ref=f"world_preparation/{owner}/evaluation",
-        )
         expected_source = {
             "asset_version_id": source.asset_version_id,
             "content_hash": source.content_hash,
@@ -898,9 +973,11 @@ class PlanningWorldPreparation:
         }
         retained = evaluation.content["contract"]
         if (
-            binding["source"] != expected_source
-            or binding["generation"] != expected_generation
-            or binding["evaluation"] != expected_evaluation
+            (binding is not None and (
+                binding["source"] != expected_source
+                or binding["generation"] != expected_generation
+                or binding["evaluation"] != expected_evaluation
+            ))
             or retained["source"] != expected_source
             or retained["generation"] != expected_generation
         ):
@@ -950,6 +1027,8 @@ class PlanningWorldPreparation:
                 for item in frozen.get("preparation_sources", [])
             ]
             plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
+        if binding is None:
+            return
         require_exact_blocked_plan(plan, binding["world_plan"])
         diagnostic = {
             "action": {

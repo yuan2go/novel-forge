@@ -1,0 +1,477 @@
+{
+  "type": "PlanningGenerationCandidate",
+  "genre": "传统修仙",
+  "book_id": "book:qinglan-wendao-20261008",
+  "subgenre": "宗门成长与任务历练",
+  "core_fear": "候选内在担忧：他怕自己忙了很久仍只能沿着别人分派的路做事，始终没有独自出发的本领。这种担忧通过对时间和任务的选择呈现，不扩写为羞辱身世或必须证明天命的执念。",
+  "objective": "提出一部以沈砚主动争取修行道路为中心的传统修仙成长故事：十六岁的山村少年进入青岚宗，从引气、劳作和第一次结伴采药起步，在有限时间与资源中选择适合自己的修行任务，逐渐取得独自御剑远行的本领。让近期每一步都有明确目标与可见结果，让长期愿望能支撑240章视野并获得兑现。",
+  "project_id": "qid-learning-prose-01",
+  "constraints": [
+    "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+    "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+    "每章2500—3500中文字，写完整场景，章际动作与人物承诺有承接。",
+    "姓名、地点、功法、冲突与事件原创形成；悬念和伏笔按本书需要设置。",
+    "保留十六岁普通山村少年沈砚主动争取青岚宗外门入门机会、凭扎实练习学会引气的起点。",
+    "近期故事单元依次围绕入门、初次引气、与同门结伴完成第一次山谷采药任务、争取进入正式外门修炼课展开。",
+    "以240章作为本方向的篇幅适配视野，具体阶段长度与境界设置留待后续规划。",
+    "全部新增人物动机、修行机制与发展结果均为候选设计，不构成已接受事件或人物知识。"
+  ],
+  "core_desire": "沈砚想凭自己的修为和判断，独自御剑走出熟悉的山路，亲眼看看山外。近期，他要学会引气，完成第一次结伴采药，并争取进入正式外门修炼课，让每天的劳动真正通向修行。",
+  "logical_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:CREATIVE_FOUNDATION:comparison",
+  "applicability": [
+    {
+      "status": "APPLICABLE",
+      "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+      "field_path": "$.subgenre"
+    },
+    {
+      "status": "APPLICABLE",
+      "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+      "field_path": "$.core_desire"
+    },
+    {
+      "status": "APPLICABLE",
+      "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+      "field_path": "$.core_fear"
+    },
+    {
+      "status": "APPLICABLE",
+      "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+      "field_path": "$.core_conflict"
+    },
+    {
+      "status": "APPLICABLE",
+      "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+      "field_path": "$.serialization_potential"
+    }
+  ],
+  "core_conflict": "沈砚需要用宗门劳作换取修炼条件，却不能把所有时间都耗在眼前报酬上；适合他练习的任务又需要资格、同伴与承担责任的能力。他必须在收入、练习和任务风险之间作出选择，并与各有打算的同门协商。阻力随成长从能否获得一次机会，转为能否胜任自己争取来的职责，最终落实到能否独立判断路线、使用飞剑并承担远行所需的准备。",
+  "frozen_inputs": [
+    {
+      "role": "creative_brief",
+      "asset_type": "creative_brief",
+      "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+      "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+    }
+  ],
+  "style_profile": {
+    "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+    "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+    "constraints": [
+      "正文主要使用简体中文，单章2500—3500中文字。",
+      "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+      "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+      "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+      "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+      "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+      "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+      "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+    ],
+    "genre_conventions": [
+      "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+      "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+      "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+      "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+      "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+    ],
+    "original_examples": [
+      {
+        "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+        "purpose": "呈现扎实练习中的可见变化。",
+        "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+      },
+      {
+        "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+        "purpose": "让同门利益参与任务选择。",
+        "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+      },
+      {
+        "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+        "purpose": "通过具体取舍表现主角主动性。",
+        "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+      },
+      {
+        "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+        "purpose": "建立章际承接与节奏变化。",
+        "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+      }
+    ]
+  },
+  "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+  "planning_scope": "NOT_APPLICABLE",
+  "schema_version": "story_design.authority.v1",
+  "differentiation": "把自主选择任务作为成长的关键动作：沈砚会逐渐学会辨别一项差事究竟能换来多少资源、练到什么本领、需要谁的帮助。第一次采药的吸引力来自山路、药材采收时限和同行者的不同诉求；后续任务再改变技术与合作条件。修炼成果能回到生活中使用，例如引气稳定后更能控制采收力度，身法进步后能承担探路职责。御剑远行因而有一条读者看得见的准备过程。",
+  "narrative_engine": "采用愿望推动的连续成长循环：沈砚发现当前能力不足，选择一项能补足缺口的练习或任务，争取资源与合作条件，在完整场景中尝试，承接结果，再调整下一步。近期以正式外门修炼课为清晰目标，入门、引气和首次山谷采药分别提供资格、基础能力与实践经验。中后期可由课程、宗门职责及山外历练扩大行动范围，逐步把修为、飞剑操控、路线判断和独立准备汇合到御剑远行。单元之间沿用尚未完成的动作、约定与资源安排；不同单元改变难题类型，避免只重复领取任务和兑换奖励。",
+  "candidate_payload": {
+    "genre": "传统修仙",
+    "subgenre": "宗门成长与任务历练",
+    "core_fear": "候选内在担忧：他怕自己忙了很久仍只能沿着别人分派的路做事，始终没有独自出发的本领。这种担忧通过对时间和任务的选择呈现，不扩写为羞辱身世或必须证明天命的执念。",
+    "objective": "提出一部以沈砚主动争取修行道路为中心的传统修仙成长故事：十六岁的山村少年进入青岚宗，从引气、劳作和第一次结伴采药起步，在有限时间与资源中选择适合自己的修行任务，逐渐取得独自御剑远行的本领。让近期每一步都有明确目标与可见结果，让长期愿望能支撑240章视野并获得兑现。",
+    "constraints": [
+      "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+      "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+      "每章2500—3500中文字，写完整场景，章际动作与人物承诺有承接。",
+      "姓名、地点、功法、冲突与事件原创形成；悬念和伏笔按本书需要设置。",
+      "保留十六岁普通山村少年沈砚主动争取青岚宗外门入门机会、凭扎实练习学会引气的起点。",
+      "近期故事单元依次围绕入门、初次引气、与同门结伴完成第一次山谷采药任务、争取进入正式外门修炼课展开。",
+      "以240章作为本方向的篇幅适配视野，具体阶段长度与境界设置留待后续规划。",
+      "全部新增人物动机、修行机制与发展结果均为候选设计，不构成已接受事件或人物知识。"
+    ],
+    "core_desire": "沈砚想凭自己的修为和判断，独自御剑走出熟悉的山路，亲眼看看山外。近期，他要学会引气，完成第一次结伴采药，并争取进入正式外门修炼课，让每天的劳动真正通向修行。",
+    "applicability": [
+      {
+        "status": "APPLICABLE",
+        "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+        "field_path": "$.subgenre"
+      },
+      {
+        "status": "APPLICABLE",
+        "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+        "field_path": "$.core_desire"
+      },
+      {
+        "status": "APPLICABLE",
+        "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+        "field_path": "$.core_fear"
+      },
+      {
+        "status": "APPLICABLE",
+        "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+        "field_path": "$.core_conflict"
+      },
+      {
+        "status": "APPLICABLE",
+        "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+        "field_path": "$.serialization_potential"
+      }
+    ],
+    "core_conflict": "沈砚需要用宗门劳作换取修炼条件，却不能把所有时间都耗在眼前报酬上；适合他练习的任务又需要资格、同伴与承担责任的能力。他必须在收入、练习和任务风险之间作出选择，并与各有打算的同门协商。阻力随成长从能否获得一次机会，转为能否胜任自己争取来的职责，最终落实到能否独立判断路线、使用飞剑并承担远行所需的准备。",
+    "style_profile": {
+      "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+      "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+      "constraints": [
+        "正文主要使用简体中文，单章2500—3500中文字。",
+        "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+        "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+        "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+        "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+        "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+        "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+        "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+      ],
+      "genre_conventions": [
+        "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+        "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+        "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+        "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+        "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+      ],
+      "original_examples": [
+        {
+          "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+          "purpose": "呈现扎实练习中的可见变化。",
+          "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+        },
+        {
+          "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+          "purpose": "让同门利益参与任务选择。",
+          "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+        },
+        {
+          "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+          "purpose": "通过具体取舍表现主角主动性。",
+          "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+        },
+        {
+          "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+          "purpose": "建立章际承接与节奏变化。",
+          "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+        }
+      ]
+    },
+    "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+    "differentiation": "把自主选择任务作为成长的关键动作：沈砚会逐渐学会辨别一项差事究竟能换来多少资源、练到什么本领、需要谁的帮助。第一次采药的吸引力来自山路、药材采收时限和同行者的不同诉求；后续任务再改变技术与合作条件。修炼成果能回到生活中使用，例如引气稳定后更能控制采收力度，身法进步后能承担探路职责。御剑远行因而有一条读者看得见的准备过程。",
+    "narrative_engine": "采用愿望推动的连续成长循环：沈砚发现当前能力不足，选择一项能补足缺口的练习或任务，争取资源与合作条件，在完整场景中尝试，承接结果，再调整下一步。近期以正式外门修炼课为清晰目标，入门、引气和首次山谷采药分别提供资格、基础能力与实践经验。中后期可由课程、宗门职责及山外历练扩大行动范围，逐步把修为、飞剑操控、路线判断和独立准备汇合到御剑远行。单元之间沿用尚未完成的动作、约定与资源安排；不同单元改变难题类型，避免只重复领取任务和兑换奖励。",
+    "why_worth_writing": "御剑远行是一个清楚而有吸引力的愿望，沈砚获得这一能力的过程能容纳学习、劳动、友情和独立判断。把第一次引气、一次合理分工和一次自己争取来的课程机会写得扎实，就能让成长具有生活分量。同门也有要完成的事，宗门因此成为多人共同生活的地方，为持续历练和关系变化提供空间。",
+    "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。",
+    "constraint_envelope": {
+      "role": "CREATIVE_FOUNDATION",
+      "creative_brief": {
+        "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+        "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+      },
+      "contract_version": "foundation-generation.v5",
+      "narrative_search": {
+        "search_id": "narrative-search:1c3236d22fa8cba3890a8ebe95ee82a96ad925f421c43436b2e0cd6bc1c29f35",
+        "branch_key": "future-1",
+        "hard_constraints": [
+          "Preserve the exact author brief and source boundaries",
+          "Candidates are hypothetical; no accepted history or Canon mutation"
+        ],
+        "planning_horizon": {
+          "level": "CREATIVE_FOUNDATION",
+          "target_chapters": 240
+        },
+        "strategy_directive": "Explore the author's central promise through a coherent causal direction with room for later development",
+        "desired_transformation": {
+          "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+          "author_brief": {
+            "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+            "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+          },
+          "selection_policy": {
+            "tie_break": "STABLE_ID",
+            "contract_version": "narrative-search-comparison.v2",
+            "dimension_weights": {
+              "arc_momentum": 1,
+              "setup_payoff": 1,
+              "reader_promise": 1,
+              "reversal_reveal": 1,
+              "character_agency": 1,
+              "pacing_variation": 1,
+              "pattern_diversity": 1,
+              "world_consequence": 1,
+              "future_optionality": 1,
+              "conflict_escalation": 1,
+              "emotional_progression": 1,
+              "relationship_evolution": 1,
+              "choice_cost_consequence": 1
+            },
+            "uncertainty_margin": 0.05
+          }
+        },
+        "accepted_through_chapter": 0,
+        "parent_state_asset_version_id": ""
+      },
+      "foundation_parent_bindings": {}
+    },
+    "prohibited_outcomes": [
+      "把候选发展写成已发生的章节事件、已接受的知识或已批准的世界事实。",
+      "导入既有作品的世界、角色、正文、特色组合或场景序列。",
+      "把榜单、实验标记、工程操作或检查答案转成剧情要求。",
+      "取消或替换作者指定的入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+      "以隐藏血统、自动灌顶或无条件资源赠予代替本方向中的练习、选择与实际成长。",
+      "使沈砚长期只能等待别人安排，或把同门写成只负责训诫和纠错的工具人物。",
+      "在没有相应事件因果时强加不可逆损失、死亡或背叛来制造分量。",
+      "反复重置沈砚已经掌握的能力或已经完成的承诺，以拖延长期愿望的兑现。"
+    ],
+    "serialization_potential": "可在240章视野内形成有终点的连载。近期用入门、引气、首次结伴采药和争取正式课程建立成长尺度；后续围绕新的技术要求、合作关系和行动范围组织连续单元，最终汇合为独自御剑远行。修炼、宗门日常、资源协商和野外历练交替安排，每章以完整场景承担一个主要变化。章末可以留下尚未完成的动作、下一次尝试或人物约定，阶段末兑现具体进步；无需每章强制危机或反转。具体章节分配与境界跨度留待后续规划。",
+    "foundation_parent_bindings": {},
+    "narrative_search_projection": {
+      "assumptions": [
+        "本结果对应冻结分支future-1，只提出一种连贯的未来方向；accepted_through_chapter为0，文中发展均未被接受为历史。",
+        "以冻结creative_brief中的御剑远行愿望和四项近期故事内容为主要依据，不引入既有作品或未准入的研究材料。",
+        "240章是篇幅适配视野；按作者单章字数要求，总体约60万—84万中文字，允许多个有承接的成长单元。",
+        "宗门资源、课程资格和任务报酬能够采用少量直观规则组织；具体制度尚待后续世界设计，不视为冻结事实。",
+        "核心恐惧与同门利益差异属于本候选的创作推演，可以在保持作者愿望与近期单元的前提下进一步细化。"
+      ],
+      "future_options": [
+        "围绕飞剑操控深化课程与练习，让沈砚在数种适合自身条件的修行方式之间作出选择。",
+        "围绕固定同行者发展合作关系，使同门因目标变化而重新协商分工、报酬和共同承诺。",
+        "围绕山外历练扩大地理范围，用补给、地形和陌生环境检验独立行动能力。",
+        "围绕宗门职责引入带队或指导新人的机会，检验沈砚能否把已掌握的本领转化为可信的判断。"
+      ],
+      "narrative_risks": [
+        "劳作与资源交换容易变成流水账；后续规划应只保留会影响选择、关系或能力的关键过程。",
+        "引气和基础练习若反复使用同一种成功模式，可能拖慢阅读；应改变技术难点、场景压力与回报形式。",
+        "240章视野可能诱发过早添加大量境界和人物；应让新范围随当前目标的需要逐步展开。",
+        "自主选择若总被证明正确，同门会失去独立性；应允许合理建议被采纳，也允许沈砚根据结果修正判断。",
+        "本方向主要依靠成长与关系吸引读者，反转和宏观世界影响较弱；需要具体任务差异支撑后续变化，不能用临时身世秘密替代。"
+      ],
+      "repetition_keys": [
+        "future-1:自主选择修行任务",
+        "future-1:练习成果用于历练",
+        "future-1:同门利益协商",
+        "future-1:御剑远行能力积累"
+      ],
+      "contract_version": "narrative-search-projection.v1",
+      "selection_summary": "本方向紧扣冻结简报中普通少年、主动选择、可见进步与近期四项内容，以任务选择连接资源、修炼和同门关系，适合继续展开。各维度数值是基于这一机制的比较估计：人物主动性和读者承诺支持较强，反转与宏观后果支持较弱；具体章节、修炼制度和完整关系线尚未形成，估计不确定性可能超过比较政策的0.05边际。这里不作跨候选排名，也不构成文学资格、批准或激活结论。",
+      "strategy_fingerprint": "future-1|普通少年主动择业修行|练习到任务应用|同门利益协商|御剑远行有界兑现",
+      "creative_intelligence": {
+        "arc_momentum": 0.84,
+        "setup_payoff": 0.83,
+        "reader_promise": 0.9,
+        "reversal_reveal": 0.63,
+        "character_agency": 0.9,
+        "pacing_variation": 0.8,
+        "pattern_diversity": 0.77,
+        "world_consequence": 0.72,
+        "future_optionality": 0.87,
+        "conflict_escalation": 0.75,
+        "emotional_progression": 0.84,
+        "relationship_evolution": 0.83,
+        "choice_cost_consequence": 0.8
+      },
+      "irreversible_decisions": [],
+      "projected_consequences": [
+        "若采用劳动、练习与任务之间的时间取舍，沈砚的选择会影响近期资源和进度，形成可追踪的因果承接。",
+        "若同门具有不同收益目标，首次采药的合作方式会影响后续是否再次结伴以及愿意托付何种职责。",
+        "若基础功夫能在历练中派上用场，早期练习可以产生延后回报，增强读者对成长过程的信任。",
+        "若课程资格来自明确条件，进入正式外门修炼课能成为阶段完成，同时开启更高要求。",
+        "若最终独自御剑远行由此前能力和准备共同支持，长期愿望可以得到完整兑现，并保留山外新生活的开放感。"
+      ],
+      "narrative_opportunities": [
+        "作者指定的初次引气可以通过多次尝试中的具体差别呈现，为可见进步建立可信尺度。",
+        "第一次结伴采药能同时承载练习成果、有限资源和同门各自的利益，无需额外加入宏大阴谋。",
+        "正式外门修炼课提供近期目标与阶段回报，御剑远行提供跨单元的长期方向。",
+        "任务选择可以让沈砚主动发现自己需要什么，并使前一单元获得的能力在后一单元得到实际应用。",
+        "同门可以在某项本领上胜过沈砚，也可以需要他的帮助，形成双向变化的关系。"
+      ]
+    }
+  },
+  "why_worth_writing": "御剑远行是一个清楚而有吸引力的愿望，沈砚获得这一能力的过程能容纳学习、劳动、友情和独立判断。把第一次引气、一次合理分工和一次自己争取来的课程机会写得扎实，就能让成长具有生活分量。同门也有要完成的事，宗门因此成为多人共同生活的地方，为持续历练和关系变化提供空间。",
+  "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。",
+  "execution_evidence": {
+    "attempt_id": "706eb6dd-0cd4-4540-abfd-a7eda7a580d6",
+    "operation_id": "528eabd8-ae1b-4629-8137-b1b86a11bf8c",
+    "fencing_token": 1,
+    "commit_authority": "STORY_DESIGN_AUTHORITY",
+    "cost_receipt_ref": "authority-asset-version:1512861f-5a1b-4299-baef-049c37f4414c",
+    "route_snapshot_id": "production_execution/routes/f9e965eb7a2c71f89756",
+    "usage_receipt_ref": "authority-asset-version:5412eba8-a22c-4135-ae0f-8ea581dab0ef",
+    "input_manifest_ref": "production_execution/inputs/f9e965eb7a2c71f89756",
+    "context_bundle_hash": "sha256:50b34e51324a286bc8dd8f6405f6d7bd7feac072b14ddab97ea6dc4ed86c21ba",
+    "output_manifest_ref": "authority-asset-version:d5e082b9-fc0a-4673-95a5-d44a34e39e63",
+    "production_verified": false,
+    "external_receipt_ref": "8513b687-1335-4756-9e63-fe833cf6a438",
+    "real_provider_proven": true,
+    "fixture_protocol_only": false,
+    "external_effect_backed": true,
+    "validation_manifest_ref": "authority-asset-version:d4faa1d8-38fa-4a9b-809d-516772905081",
+    "capability_execution_ref": "e38d5321-bfb0-542f-a736-a574be918ffb",
+    "capability_execution_hash": "sha256:6b532a1fc080e9c8d36b37eca8a75a0b8cec3576c7cf028d7c6a23f187fd31d5",
+    "capability_runtime_binding_ref": "sha256:4f048b773daf6cf79ef396c536be154670599f347bbd5ee70475d82586f944d6",
+    "capability_runtime_binding_hash": "sha256:9a13530d71c8f34540acba41b3182ab72e1e93d67905f4b6a1d5ea8143a872b9",
+    "context_bundle_asset_version_id": "be199a88-2240-4f43-a665-3a03e9707c3c",
+    "capability_pack_attempt_snapshot_id": "sha256:4f048b773daf6cf79ef396c536be154670599f347bbd5ee70475d82586f944d6",
+    "production_execution_gateway_backed": true,
+    "capability_pack_attempt_snapshot_hash": "sha256:9a13530d71c8f34540acba41b3182ab72e1e93d67905f4b6a1d5ea8143a872b9",
+    "narrative_intelligence_selection_digest": "sha256:416db88834ba0a7cc85ac3915edf4568d07271d96646b4a035ef491d346b2aec"
+  },
+  "constraint_envelope": {
+    "role": "CREATIVE_FOUNDATION",
+    "creative_brief": {
+      "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+      "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+    },
+    "contract_version": "foundation-generation.v5",
+    "narrative_search": {
+      "search_id": "narrative-search:1c3236d22fa8cba3890a8ebe95ee82a96ad925f421c43436b2e0cd6bc1c29f35",
+      "branch_key": "future-1",
+      "hard_constraints": [
+        "Preserve the exact author brief and source boundaries",
+        "Candidates are hypothetical; no accepted history or Canon mutation"
+      ],
+      "planning_horizon": {
+        "level": "CREATIVE_FOUNDATION",
+        "target_chapters": 240
+      },
+      "strategy_directive": "Explore the author's central promise through a coherent causal direction with room for later development",
+      "desired_transformation": {
+        "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+        "author_brief": {
+          "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+          "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+        },
+        "selection_policy": {
+          "tie_break": "STABLE_ID",
+          "contract_version": "narrative-search-comparison.v2",
+          "dimension_weights": {
+            "arc_momentum": 1,
+            "setup_payoff": 1,
+            "reader_promise": 1,
+            "reversal_reveal": 1,
+            "character_agency": 1,
+            "pacing_variation": 1,
+            "pattern_diversity": 1,
+            "world_consequence": 1,
+            "future_optionality": 1,
+            "conflict_escalation": 1,
+            "emotional_progression": 1,
+            "relationship_evolution": 1,
+            "choice_cost_consequence": 1
+          },
+          "uncertainty_margin": 0.05
+        }
+      },
+      "accepted_through_chapter": 0,
+      "parent_state_asset_version_id": ""
+    },
+    "foundation_parent_bindings": {}
+  },
+  "prohibited_outcomes": [
+    "把候选发展写成已发生的章节事件、已接受的知识或已批准的世界事实。",
+    "导入既有作品的世界、角色、正文、特色组合或场景序列。",
+    "把榜单、实验标记、工程操作或检查答案转成剧情要求。",
+    "取消或替换作者指定的入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+    "以隐藏血统、自动灌顶或无条件资源赠予代替本方向中的练习、选择与实际成长。",
+    "使沈砚长期只能等待别人安排，或把同门写成只负责训诫和纠错的工具人物。",
+    "在没有相应事件因果时强加不可逆损失、死亡或背叛来制造分量。",
+    "反复重置沈砚已经掌握的能力或已经完成的承诺，以拖延长期愿望的兑现。"
+  ],
+  "serialization_potential": "可在240章视野内形成有终点的连载。近期用入门、引气、首次结伴采药和争取正式课程建立成长尺度；后续围绕新的技术要求、合作关系和行动范围组织连续单元，最终汇合为独自御剑远行。修炼、宗门日常、资源协商和野外历练交替安排，每章以完整场景承担一个主要变化。章末可以留下尚未完成的动作、下一次尝试或人物约定，阶段末兑现具体进步；无需每章强制危机或反转。具体章节分配与境界跨度留待后续规划。",
+  "generator_operation_name": "creative.candidates.generate",
+  "foundation_parent_bindings": {},
+  "narrative_search_projection": {
+    "assumptions": [
+      "本结果对应冻结分支future-1，只提出一种连贯的未来方向；accepted_through_chapter为0，文中发展均未被接受为历史。",
+      "以冻结creative_brief中的御剑远行愿望和四项近期故事内容为主要依据，不引入既有作品或未准入的研究材料。",
+      "240章是篇幅适配视野；按作者单章字数要求，总体约60万—84万中文字，允许多个有承接的成长单元。",
+      "宗门资源、课程资格和任务报酬能够采用少量直观规则组织；具体制度尚待后续世界设计，不视为冻结事实。",
+      "核心恐惧与同门利益差异属于本候选的创作推演，可以在保持作者愿望与近期单元的前提下进一步细化。"
+    ],
+    "future_options": [
+      "围绕飞剑操控深化课程与练习，让沈砚在数种适合自身条件的修行方式之间作出选择。",
+      "围绕固定同行者发展合作关系，使同门因目标变化而重新协商分工、报酬和共同承诺。",
+      "围绕山外历练扩大地理范围，用补给、地形和陌生环境检验独立行动能力。",
+      "围绕宗门职责引入带队或指导新人的机会，检验沈砚能否把已掌握的本领转化为可信的判断。"
+    ],
+    "narrative_risks": [
+      "劳作与资源交换容易变成流水账；后续规划应只保留会影响选择、关系或能力的关键过程。",
+      "引气和基础练习若反复使用同一种成功模式，可能拖慢阅读；应改变技术难点、场景压力与回报形式。",
+      "240章视野可能诱发过早添加大量境界和人物；应让新范围随当前目标的需要逐步展开。",
+      "自主选择若总被证明正确，同门会失去独立性；应允许合理建议被采纳，也允许沈砚根据结果修正判断。",
+      "本方向主要依靠成长与关系吸引读者，反转和宏观世界影响较弱；需要具体任务差异支撑后续变化，不能用临时身世秘密替代。"
+    ],
+    "repetition_keys": [
+      "future-1:自主选择修行任务",
+      "future-1:练习成果用于历练",
+      "future-1:同门利益协商",
+      "future-1:御剑远行能力积累"
+    ],
+    "contract_version": "narrative-search-projection.v1",
+    "selection_summary": "本方向紧扣冻结简报中普通少年、主动选择、可见进步与近期四项内容，以任务选择连接资源、修炼和同门关系，适合继续展开。各维度数值是基于这一机制的比较估计：人物主动性和读者承诺支持较强，反转与宏观后果支持较弱；具体章节、修炼制度和完整关系线尚未形成，估计不确定性可能超过比较政策的0.05边际。这里不作跨候选排名，也不构成文学资格、批准或激活结论。",
+    "strategy_fingerprint": "future-1|普通少年主动择业修行|练习到任务应用|同门利益协商|御剑远行有界兑现",
+    "creative_intelligence": {
+      "arc_momentum": 0.84,
+      "setup_payoff": 0.83,
+      "reader_promise": 0.9,
+      "reversal_reveal": 0.63,
+      "character_agency": 0.9,
+      "pacing_variation": 0.8,
+      "pattern_diversity": 0.77,
+      "world_consequence": 0.72,
+      "future_optionality": 0.87,
+      "conflict_escalation": 0.75,
+      "emotional_progression": 0.84,
+      "relationship_evolution": 0.83,
+      "choice_cost_consequence": 0.8
+    },
+    "irreversible_decisions": [],
+    "projected_consequences": [
+      "若采用劳动、练习与任务之间的时间取舍，沈砚的选择会影响近期资源和进度，形成可追踪的因果承接。",
+      "若同门具有不同收益目标，首次采药的合作方式会影响后续是否再次结伴以及愿意托付何种职责。",
+      "若基础功夫能在历练中派上用场，早期练习可以产生延后回报，增强读者对成长过程的信任。",
+      "若课程资格来自明确条件，进入正式外门修炼课能成为阶段完成，同时开启更高要求。",
+      "若最终独自御剑远行由此前能力和准备共同支持，长期愿望可以得到完整兑现，并保留山外新生活的开放感。"
+    ],
+    "narrative_opportunities": [
+      "作者指定的初次引气可以通过多次尝试中的具体差别呈现，为可见进步建立可信尺度。",
+      "第一次结伴采药能同时承载练习成果、有限资源和同门各自的利益，无需额外加入宏大阴谋。",
+      "正式外门修炼课提供近期目标与阶段回报，御剑远行提供跨单元的长期方向。",
+      "任务选择可以让沈砚主动发现自己需要什么，并使前一单元获得的能力在后一单元得到实际应用。",
+      "同门可以在某项本领上胜过沈砚，也可以需要他的帮助，形成双向变化的关系。"
+    ]
+  },
+  "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+}

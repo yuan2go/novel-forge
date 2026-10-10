@@ -1,0 +1,13 @@
+{
+  "source_operation_id": "8ec8249d-5b76-4c84-a6c6-bf0ac2f49c8e",
+  "effects_attempts": [
+    0,
+    0
+  ],
+  "result": {
+    "operation_id": "8ec8249d-5b76-4c84-a6c6-bf0ac2f49c8e",
+    "status": "CANCELLED",
+    "version": 2,
+    "replayed": false
+  }
+}

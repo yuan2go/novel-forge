@@ -1,0 +1,8 @@
+{
+  "path": "/Users/yuan/.codex/tmp/qinglan-native-validation-20261010/before-authorized-capacity-0197-v2.dump",
+  "bytes": 228734607,
+  "sha256": "3933f7e75fa041424606a7ce4b0b66e5ee8ae87650a594fa2659856f071b977b",
+  "archive_directory_readback": "PASS",
+  "restore_test": "NOT_RUN",
+  "purpose": "pre-forward-migration0197; original immutable history"
+}

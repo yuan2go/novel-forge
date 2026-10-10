@@ -1,0 +1,237 @@
+{
+  "type": "PlanningGenerationCandidate",
+  "book_id": "book:qinglan-wendao-20261008",
+  "objective": "围绕沈砚从普通山村少年成长为能够独自御剑远行的修士，探索一个人如何在学习、劳作与合作中逐渐取得选择自己道路的本领。让主题依托近期四项成长单元和长期能力积累展开，以可见进步、判断修正和具体承诺形成生活分量；愿望获得兑现，对未来道路的认识仍可保持开放。",
+  "project_id": "qid-learning-prose-01",
+  "constraints": [
+    "以冻结creative_brief和creative_foundation为依据，仅提出主题及其探索方式，不改变上游条件。",
+    "保留十六岁普通山村少年沈砚主动争取青岚宗外门入门机会、凭扎实练习学会引气的起点。",
+    "近期故事单元依次围绕入门、初次引气、与同门结伴完成第一次山谷采药任务、争取进入正式外门修炼课展开。",
+    "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+    "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+    "以240章作为篇幅适配视野，具体阶段长度、课程条件与境界设置留待后续规划。",
+    "长期愿望须由持续积累的能力与准备支持，并获得独自御剑远行的具体兑现；山外生活可以保持开放。",
+    "主题可通过观察、练习差别、任务结果、协商和简短反思呈现，不要求每个场景都设置对立答案或重大取舍。",
+    "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲；后果的分量依据具体行动及其因果确定。",
+    "以沈砚为主的第三人称限知视角呈现主题，同门未说明的动机只通过可见行为留下判断空间。",
+    "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺，不用重复归零延长成长。",
+    "正文主要使用简体中文，每章2500—3500中文字；主题表达服从完整场景与朴素、清楚、有分寸的叙述。",
+    "姓名、地点、功法、冲突与事件原创形成；不使用既有作品或未准入研究材料作为故事事实。",
+    "全部新增动机、机制、取舍与结果均为候选设计，不构成已接受事件、人物知识或世界事实。"
+  ],
+  "logical_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:THEME_CONTRACT:0",
+  "choice_tests": [
+    {
+      "cost": null,
+      "choice": "拟在初次引气单元中，让沈砚观察不同尝试的实际差别，必要时请教，再亲自验证适合自己的练习方式。",
+      "thematic_pressure": "通过细小而可见的进步探索：接受指导与形成自己的判断能否同时发生？自主性可以从理解正在做的事开始，无需先与他人对立。"
+    },
+    {
+      "cost": "不同安排可能减少眼前收入，或压缩练习时间；具体影响由后续任务条件确定，并承接到下一步行动。",
+      "choice": "拟让沈砚比较劳作的报酬、占用时间与自身修炼需要，主动争取能使劳动通向修行的安排。",
+      "thematic_pressure": "眼前最划算的差事是否也最适合自己的长远目标？检验沈砚能否辨别实际需要，而不是仅凭报酬高低或一时喜欢作决定。"
+    },
+    {
+      "cost": "协商可能使他放弃部分原定采收目标或调整练习机会；同门也保留拒绝安排的权利，后果须由具体协商与行动支持。",
+      "choice": "拟在首次结伴山谷采药中，让沈砚说明自己的目标，听取同门的时间安排与收益诉求，共同商定路线和分工。",
+      "thematic_pressure": "自己的路能否容纳同行者的路？通过准备、执行和结果承接，探索自主选择与共同承诺如何相互约束，也如何扩大双方能做的事。"
+    },
+    {
+      "cost": "补足不足可能需要重新分配劳作与练习时间，推迟另一项较次要的打算；不预设羞辱、惩罚或不可逆损失。",
+      "choice": "拟让沈砚依据此前练习和采药的实际结果，检查自己的不足，争取正式外门修炼课，并在有用的建议面前调整原先安排。",
+      "thematic_pressure": "修正自己是否意味着失去自主？检验他能否把改变计划理解为对目标负责，使主动性体现为争取、核实与调整，而非每次都坚持原案。"
+    },
+    {
+      "cost": "独行需要投入准备时间并安排必要补给；具体资源需求留待世界与任务设计，不以强制失去同伴或宗门归属作为出发条件。",
+      "choice": "拟在长期成长中，让沈砚根据已积累的修为、飞剑使用能力和路线判断，完成独行准备，再亲自选择远行的方向。",
+      "thematic_pressure": "当他终于能够独自出发，何种判断使远行成为自己的选择？兑现御剑远行愿望，同时保留山外生活仍需学习与选择的开放感。"
+    }
+  ],
+  "applicability": [
+    {
+      "status": "NOT_APPLICABLE",
+      "rationale": "初次引气可通过观察、尝试和理解探索主题；本测试不设置额外损失或重大牺牲，练习投入本身不必被包装成代价。",
+      "field_path": "$.choice_tests[0].cost"
+    }
+  ],
+  "frozen_inputs": [
+    {
+      "role": "creative_brief",
+      "asset_type": "creative_brief",
+      "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+      "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+    },
+    {
+      "role": "creative_foundation",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+      "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "NOT_APPLICABLE",
+  "schema_version": "story_design.authority.v1",
+  "opposing_answers": [
+    "先把可靠的安排做好，得到资源与信任，再谈自己的方向。拟通过沈砚接受有用指导、完成必要劳作来表现这一答案的价值，也通过时间被差事占满的可能处境检验它的限度：稳妥安排能够帮助成长，却不能代替他辨认自己的需要。",
+    "只有每一步都由自己决定，才算走自己的路。拟通过沈砚主动选择任务、表达意见来表现这一答案的吸引力，同时允许他的判断不完整、同门的建议更合适；探索坚持原案与守住目标之间的差别，不把一次错误写成对主动性的否定。",
+    "自己的路来自逐渐练成的本领、对需要的判断，以及对所作选择的负责；借助他人也可以是自主选择的一部分。拟以练习成果进入任务、合作条件经过协商、结果促成调整来积累这一答案的支持，并最终以独自御剑远行兑现核心愿望，而不宣称沈砚从此不再需要别人或不会再犯错。"
+  ],
+  "candidate_payload": {
+    "objective": "围绕沈砚从普通山村少年成长为能够独自御剑远行的修士，探索一个人如何在学习、劳作与合作中逐渐取得选择自己道路的本领。让主题依托近期四项成长单元和长期能力积累展开，以可见进步、判断修正和具体承诺形成生活分量；愿望获得兑现，对未来道路的认识仍可保持开放。",
+    "constraints": [
+      "以冻结creative_brief和creative_foundation为依据，仅提出主题及其探索方式，不改变上游条件。",
+      "保留十六岁普通山村少年沈砚主动争取青岚宗外门入门机会、凭扎实练习学会引气的起点。",
+      "近期故事单元依次围绕入门、初次引气、与同门结伴完成第一次山谷采药任务、争取进入正式外门修炼课展开。",
+      "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+      "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+      "以240章作为篇幅适配视野，具体阶段长度、课程条件与境界设置留待后续规划。",
+      "长期愿望须由持续积累的能力与准备支持，并获得独自御剑远行的具体兑现；山外生活可以保持开放。",
+      "主题可通过观察、练习差别、任务结果、协商和简短反思呈现，不要求每个场景都设置对立答案或重大取舍。",
+      "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲；后果的分量依据具体行动及其因果确定。",
+      "以沈砚为主的第三人称限知视角呈现主题，同门未说明的动机只通过可见行为留下判断空间。",
+      "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺，不用重复归零延长成长。",
+      "正文主要使用简体中文，每章2500—3500中文字；主题表达服从完整场景与朴素、清楚、有分寸的叙述。",
+      "姓名、地点、功法、冲突与事件原创形成；不使用既有作品或未准入研究材料作为故事事实。",
+      "全部新增动机、机制、取舍与结果均为候选设计，不构成已接受事件、人物知识或世界事实。"
+    ],
+    "choice_tests": [
+      {
+        "cost": null,
+        "choice": "拟在初次引气单元中，让沈砚观察不同尝试的实际差别，必要时请教，再亲自验证适合自己的练习方式。",
+        "thematic_pressure": "通过细小而可见的进步探索：接受指导与形成自己的判断能否同时发生？自主性可以从理解正在做的事开始，无需先与他人对立。"
+      },
+      {
+        "cost": "不同安排可能减少眼前收入，或压缩练习时间；具体影响由后续任务条件确定，并承接到下一步行动。",
+        "choice": "拟让沈砚比较劳作的报酬、占用时间与自身修炼需要，主动争取能使劳动通向修行的安排。",
+        "thematic_pressure": "眼前最划算的差事是否也最适合自己的长远目标？检验沈砚能否辨别实际需要，而不是仅凭报酬高低或一时喜欢作决定。"
+      },
+      {
+        "cost": "协商可能使他放弃部分原定采收目标或调整练习机会；同门也保留拒绝安排的权利，后果须由具体协商与行动支持。",
+        "choice": "拟在首次结伴山谷采药中，让沈砚说明自己的目标，听取同门的时间安排与收益诉求，共同商定路线和分工。",
+        "thematic_pressure": "自己的路能否容纳同行者的路？通过准备、执行和结果承接，探索自主选择与共同承诺如何相互约束，也如何扩大双方能做的事。"
+      },
+      {
+        "cost": "补足不足可能需要重新分配劳作与练习时间，推迟另一项较次要的打算；不预设羞辱、惩罚或不可逆损失。",
+        "choice": "拟让沈砚依据此前练习和采药的实际结果，检查自己的不足，争取正式外门修炼课，并在有用的建议面前调整原先安排。",
+        "thematic_pressure": "修正自己是否意味着失去自主？检验他能否把改变计划理解为对目标负责，使主动性体现为争取、核实与调整，而非每次都坚持原案。"
+      },
+      {
+        "cost": "独行需要投入准备时间并安排必要补给；具体资源需求留待世界与任务设计，不以强制失去同伴或宗门归属作为出发条件。",
+        "choice": "拟在长期成长中，让沈砚根据已积累的修为、飞剑使用能力和路线判断，完成独行准备，再亲自选择远行的方向。",
+        "thematic_pressure": "当他终于能够独自出发，何种判断使远行成为自己的选择？兑现御剑远行愿望，同时保留山外生活仍需学习与选择的开放感。"
+      }
+    ],
+    "applicability": [
+      {
+        "status": "NOT_APPLICABLE",
+        "rationale": "初次引气可通过观察、尝试和理解探索主题；本测试不设置额外损失或重大牺牲，练习投入本身不必被包装成代价。",
+        "field_path": "$.choice_tests[0].cost"
+      }
+    ],
+    "opposing_answers": [
+      "先把可靠的安排做好，得到资源与信任，再谈自己的方向。拟通过沈砚接受有用指导、完成必要劳作来表现这一答案的价值，也通过时间被差事占满的可能处境检验它的限度：稳妥安排能够帮助成长，却不能代替他辨认自己的需要。",
+      "只有每一步都由自己决定，才算走自己的路。拟通过沈砚主动选择任务、表达意见来表现这一答案的吸引力，同时允许他的判断不完整、同门的建议更合适；探索坚持原案与守住目标之间的差别，不把一次错误写成对主动性的否定。",
+      "自己的路来自逐渐练成的本领、对需要的判断，以及对所作选择的负责；借助他人也可以是自主选择的一部分。拟以练习成果进入任务、合作条件经过协商、结果促成调整来积累这一答案的支持，并最终以独自御剑远行兑现核心愿望，而不宣称沈砚从此不再需要别人或不会再犯错。"
+    ],
+    "thematic_question": "一个尚无独行本领的普通少年，怎样在借助宗门与同伴的同时，逐渐把修行的路走成自己的路？",
+    "constraint_envelope": {
+      "role": "THEME_CONTRACT",
+      "creative_brief": {
+        "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+        "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+      },
+      "contract_version": "foundation-generation.v4",
+      "foundation_parent_bindings": {
+        "CREATIVE_FOUNDATION": {
+          "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+          "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+        }
+      }
+    },
+    "prohibited_outcomes": [
+      "把候选发展写成已发生的章节事件、已接受的知识或已批准的世界事实。",
+      "导入既有作品的世界、角色、正文、特色组合或场景序列。",
+      "把榜单、实验标记、工程操作或检查答案转成剧情要求。",
+      "取消或替换作者指定的入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+      "以隐藏血统、自动灌顶或无条件资源赠予代替本方向中的练习、选择与实际成长。",
+      "使沈砚长期只能等待别人安排，或把同门写成只负责训诫和纠错的工具人物。",
+      "在没有相应事件因果时强加不可逆损失、死亡或背叛来制造分量。",
+      "反复重置沈砚已经掌握的能力或已经完成的承诺，以拖延长期愿望的兑现。",
+      "将自主等同于拒绝一切指导、合作与责任，或将接受合理建议一律判作软弱。",
+      "让沈砚的自主选择永远正确，以同门的失误或无条件退让替他证明主题。",
+      "把资源多少、境界高低或旁人的赞叹直接当作拥有自己道路的充分证据。",
+      "以空泛说教代替练习、协商与结果，或强制每个场景承担同一种道德考验。",
+      "将御剑远行始终停留在象征与口号，取消长期愿望的实际兑现。"
+    ],
+    "foundation_parent_bindings": {
+      "CREATIVE_FOUNDATION": {
+        "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+        "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+      }
+    }
+  },
+  "thematic_question": "一个尚无独行本领的普通少年，怎样在借助宗门与同伴的同时，逐渐把修行的路走成自己的路？",
+  "execution_evidence": {
+    "attempt_id": "3b0a1753-b380-41bd-aead-24df01ecc5fb",
+    "operation_id": "01d50954-728c-47bb-85fb-06fd785130e0",
+    "fencing_token": 1,
+    "commit_authority": "STORY_DESIGN_AUTHORITY",
+    "cost_receipt_ref": "authority-asset-version:30ff1e9f-70e7-4a90-b28d-40d3c21a2b62",
+    "route_snapshot_id": "production_execution/routes/660ddadcabb862d46dbc",
+    "usage_receipt_ref": "authority-asset-version:c2d47624-9ee6-48d6-bfea-e15ec8ada277",
+    "input_manifest_ref": "production_execution/inputs/660ddadcabb862d46dbc",
+    "context_bundle_hash": "sha256:7d613e06fe212bc1428048bacc31963184dc890a8e1a22034ff8ef5a572aad40",
+    "output_manifest_ref": "authority-asset-version:cb961905-6c86-4638-b6ba-8cbbb3ca9962",
+    "production_verified": false,
+    "external_receipt_ref": "07c829e7-20cc-4d88-b1ef-e9a1fc4ad9b1",
+    "real_provider_proven": true,
+    "fixture_protocol_only": false,
+    "external_effect_backed": true,
+    "validation_manifest_ref": "authority-asset-version:2aca9de0-317c-40e1-9743-d474b0a5c21a",
+    "capability_execution_ref": "42197e71-6e0e-5435-bb4e-85e06b578bbf",
+    "capability_execution_hash": "sha256:db8206f1c6a90f4e80b6da70b7d945d10739c445f73782756733766f6c48650e",
+    "capability_runtime_binding_ref": "sha256:45cd25019e7869a6c1cf852135969e4249a48e846ca1ca9b6bc92fe652ae9ec8",
+    "capability_runtime_binding_hash": "sha256:f153b03cc07e68aa600316a4c737741ae2457fce2efd085f3c2d23dff9234fae",
+    "context_bundle_asset_version_id": "d94896fa-2608-417f-a476-f6f7aa2f6c05",
+    "capability_pack_attempt_snapshot_id": "sha256:45cd25019e7869a6c1cf852135969e4249a48e846ca1ca9b6bc92fe652ae9ec8",
+    "production_execution_gateway_backed": true,
+    "capability_pack_attempt_snapshot_hash": "sha256:f153b03cc07e68aa600316a4c737741ae2457fce2efd085f3c2d23dff9234fae",
+    "narrative_intelligence_selection_digest": "sha256:ed1673f7639c33eac2af961da2d0c45e39fa75e754084b37a0569d5c0ad2a7f3"
+  },
+  "constraint_envelope": {
+    "role": "THEME_CONTRACT",
+    "creative_brief": {
+      "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+      "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+    },
+    "contract_version": "foundation-generation.v4",
+    "foundation_parent_bindings": {
+      "CREATIVE_FOUNDATION": {
+        "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+        "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+      }
+    }
+  },
+  "prohibited_outcomes": [
+    "把候选发展写成已发生的章节事件、已接受的知识或已批准的世界事实。",
+    "导入既有作品的世界、角色、正文、特色组合或场景序列。",
+    "把榜单、实验标记、工程操作或检查答案转成剧情要求。",
+    "取消或替换作者指定的入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+    "以隐藏血统、自动灌顶或无条件资源赠予代替本方向中的练习、选择与实际成长。",
+    "使沈砚长期只能等待别人安排，或把同门写成只负责训诫和纠错的工具人物。",
+    "在没有相应事件因果时强加不可逆损失、死亡或背叛来制造分量。",
+    "反复重置沈砚已经掌握的能力或已经完成的承诺，以拖延长期愿望的兑现。",
+    "将自主等同于拒绝一切指导、合作与责任，或将接受合理建议一律判作软弱。",
+    "让沈砚的自主选择永远正确，以同门的失误或无条件退让替他证明主题。",
+    "把资源多少、境界高低或旁人的赞叹直接当作拥有自己道路的充分证据。",
+    "以空泛说教代替练习、协商与结果，或强制每个场景承担同一种道德考验。",
+    "将御剑远行始终停留在象征与口号，取消长期愿望的实际兑现。"
+  ],
+  "generator_operation_name": "theme.candidates.generate",
+  "foundation_parent_bindings": {
+    "CREATIVE_FOUNDATION": {
+      "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+      "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+    }
+  },
+  "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+}

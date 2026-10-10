@@ -1,0 +1,199 @@
+{
+  "type": "PlanningGenerationCandidate",
+  "book_id": "book:qinglan-wendao-20261008",
+  "objective": "为沈砚的修炼成长设计一个与冻结作者愿望及创作基础一致的终点：在240章篇幅适配视野内，通过持续练习、任务选择和实际历练，兑现独自御剑远行、亲眼看看山外的长期愿望，并保留愿望实现之后生活继续展开的空间。",
+  "project_id": "qid-learning-prose-01",
+  "constraints": [
+    "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+    "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+    "每章2500—3500中文字，写完整场景，章际动作与人物承诺有承接。",
+    "姓名、地点、功法、冲突与事件原创形成；悬念和伏笔按本书需要设置。",
+    "保留十六岁普通山村少年沈砚主动争取青岚宗外门入门机会、凭扎实练习学会引气的起点。",
+    "近期故事单元依次围绕入门、初次引气、与同门结伴完成第一次山谷采药任务、争取进入正式外门修炼课展开。",
+    "以240章作为本方向的篇幅适配视野，具体阶段长度与境界设置留待后续规划。",
+    "全部新增人物动机、修行机制与发展结果均为候选设计，不构成已接受事件或人物知识。",
+    "结局延续以沈砚为主的第三人称限知视角，以他能够观察和理解的行动结果呈现成长。",
+    "时间投入、资源消耗及合作变化的分量由具体选择决定，不把每次练习写成痛苦硬撑，也不把远行强制写成重大牺牲。",
+    "终局所用能力须由前文积累支持，独立行动仍须尊重能力限度；接受合理建议与帮助不削弱沈砚的自主判断。",
+    "开放部分限于愿望兑现之后仍可继续的生活，不以新增危机或续作桥段代替本书长期目标的完成。"
+  ],
+  "logical_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:ENDING_INTENT:0",
+  "applicability": [
+    {
+      "status": "NOT_APPLICABLE",
+      "rationale": "冻结作者简报与创作基础要求承接时间、资源和合作选择的实际后果，但没有要求结局设置一项专门的牺牲或不可逆代价。独立的终局代价不适用；已有行动产生的消耗、返工与承诺仍须按因果处理。",
+      "field_path": "$.protagonist_cost"
+    }
+  ],
+  "frozen_inputs": [
+    {
+      "role": "creative_brief",
+      "asset_type": "creative_brief",
+      "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+      "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+    },
+    {
+      "role": "creative_foundation",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+      "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "NOT_APPLICABLE",
+  "schema_version": "story_design.authority.v1",
+  "ending_direction": "拟采用长期愿望得到兑现、山外生活保持开放的结局。沈砚从需要争取入门与课程机会的普通少年，逐步成长为能判断自己需要什么、选择合适任务并承担准备责任的修士。终局拟让他处理好此次出行涉及的安排与承诺，选择一条能力足以应对的路线，实际独自御剑走出熟悉的山路，并在途中完成一次自主判断与落脚，使读者看见早期练习、任务经验和同门合作如何共同支持这一刻。他仍珍惜宗门与同门关系，也仍有尚未学会的本领；山外还有什么、更高修行能走多远可以留白。本书以他已经能够亲自出发的踏实喜悦收束，不要求飞升、称霸或斩断旧生活。",
+  "protagonist_cost": null,
+  "candidate_payload": {
+    "objective": "为沈砚的修炼成长设计一个与冻结作者愿望及创作基础一致的终点：在240章篇幅适配视野内，通过持续练习、任务选择和实际历练，兑现独自御剑远行、亲眼看看山外的长期愿望，并保留愿望实现之后生活继续展开的空间。",
+    "constraints": [
+      "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+      "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+      "每章2500—3500中文字，写完整场景，章际动作与人物承诺有承接。",
+      "姓名、地点、功法、冲突与事件原创形成；悬念和伏笔按本书需要设置。",
+      "保留十六岁普通山村少年沈砚主动争取青岚宗外门入门机会、凭扎实练习学会引气的起点。",
+      "近期故事单元依次围绕入门、初次引气、与同门结伴完成第一次山谷采药任务、争取进入正式外门修炼课展开。",
+      "以240章作为本方向的篇幅适配视野，具体阶段长度与境界设置留待后续规划。",
+      "全部新增人物动机、修行机制与发展结果均为候选设计，不构成已接受事件或人物知识。",
+      "结局延续以沈砚为主的第三人称限知视角，以他能够观察和理解的行动结果呈现成长。",
+      "时间投入、资源消耗及合作变化的分量由具体选择决定，不把每次练习写成痛苦硬撑，也不把远行强制写成重大牺牲。",
+      "终局所用能力须由前文积累支持，独立行动仍须尊重能力限度；接受合理建议与帮助不削弱沈砚的自主判断。",
+      "开放部分限于愿望兑现之后仍可继续的生活，不以新增危机或续作桥段代替本书长期目标的完成。"
+    ],
+    "applicability": [
+      {
+        "status": "NOT_APPLICABLE",
+        "rationale": "冻结作者简报与创作基础要求承接时间、资源和合作选择的实际后果，但没有要求结局设置一项专门的牺牲或不可逆代价。独立的终局代价不适用；已有行动产生的消耗、返工与承诺仍须按因果处理。",
+        "field_path": "$.protagonist_cost"
+      }
+    ],
+    "ending_direction": "拟采用长期愿望得到兑现、山外生活保持开放的结局。沈砚从需要争取入门与课程机会的普通少年，逐步成长为能判断自己需要什么、选择合适任务并承担准备责任的修士。终局拟让他处理好此次出行涉及的安排与承诺，选择一条能力足以应对的路线，实际独自御剑走出熟悉的山路，并在途中完成一次自主判断与落脚，使读者看见早期练习、任务经验和同门合作如何共同支持这一刻。他仍珍惜宗门与同门关系，也仍有尚未学会的本领；山外还有什么、更高修行能走多远可以留白。本书以他已经能够亲自出发的踏实喜悦收束，不要求飞升、称霸或斩断旧生活。",
+    "protagonist_cost": null,
+    "closure_conditions": [
+      "保留并完成入门、初次引气、首次结伴山谷采药及争取进入正式外门修炼课的近期成长单元，使其所得能力与经验进入后续成长。",
+      "御剑远行所需的修为、飞剑操控、路线判断与独立准备须在此前逐步建立，并有实际运用的结果支撑。",
+      "结尾安排沈砚凭自己的判断选择一次与能力相称的山外行程，完成准备，并实际独自御剑越过熟悉山路的范围；不能仅停在获得资格、宣布出发或想象远方。",
+      "这次远行须呈现他对行程、补给和自身能力限度的判断，并以一段完整行动及其结果证明独立能力，而非仅由境界名称或旁人赞叹确认。",
+      "离开前处理会影响此次远行的既有任务、资源安排与明确承诺；同门可以继续自己的生活，不要求所有关系同时结束。",
+      "明确兑现普通少年通过练习、选择与合作取得真实进步的读者承诺，同时允许更远的山外生活与更高修行保持开放。"
+    ],
+    "constraint_envelope": {
+      "role": "ENDING_INTENT",
+      "creative_brief": {
+        "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+        "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+      },
+      "contract_version": "foundation-generation.v4",
+      "foundation_parent_bindings": {
+        "CREATIVE_FOUNDATION": {
+          "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+          "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+        }
+      }
+    },
+    "prohibited_outcomes": [
+      "把候选发展写成已发生的章节事件、已接受的知识或已批准的世界事实。",
+      "导入既有作品的世界、角色、正文、特色组合或场景序列。",
+      "把榜单、实验标记、工程操作或检查答案转成剧情要求。",
+      "取消或替换作者指定的入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+      "以隐藏血统、自动灌顶或无条件资源赠予代替本方向中的练习、选择与实际成长。",
+      "使沈砚长期只能等待别人安排，或把同门写成只负责训诫和纠错的工具人物。",
+      "在没有相应事件因果时强加不可逆损失、死亡或背叛来制造分量。",
+      "反复重置沈砚已经掌握的能力或已经完成的承诺，以拖延长期愿望的兑现。",
+      "以开放结局为由，直到收束仍不兑现独自御剑远行的长期愿望。"
+    ],
+    "unacceptable_shortcuts": [
+      "在结尾突然赐予飞剑操控、路线判断或修为，跳过此前应有的练习与实际运用。",
+      "用他人代为决定行程、完成准备或承担全部关键判断，制造沈砚已经独立的表象。",
+      "仅用境界晋升、旁人赞叹或一句远行宣言交代长期愿望的兑现。",
+      "临近结尾临时添加身世秘密、宏大阴谋或更高目标，转移原有成长主线的收束责任。",
+      "把未处理的任务与承诺直接遗忘，使远行无需承接此前选择的结果。",
+      "为突出独立而贬低合作，或强行让全部同门失去自己的目标。",
+      "以没有前因的死亡、背叛、废功或永久失去关系制造结局分量。",
+      "通过重复失去既有能力、重新争取已获资格或拖延出发，为续作保留本应在本书兑现的愿望。"
+    ],
+    "foundation_parent_bindings": {
+      "CREATIVE_FOUNDATION": {
+        "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+        "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+      }
+    }
+  },
+  "closure_conditions": [
+    "保留并完成入门、初次引气、首次结伴山谷采药及争取进入正式外门修炼课的近期成长单元，使其所得能力与经验进入后续成长。",
+    "御剑远行所需的修为、飞剑操控、路线判断与独立准备须在此前逐步建立，并有实际运用的结果支撑。",
+    "结尾安排沈砚凭自己的判断选择一次与能力相称的山外行程，完成准备，并实际独自御剑越过熟悉山路的范围；不能仅停在获得资格、宣布出发或想象远方。",
+    "这次远行须呈现他对行程、补给和自身能力限度的判断，并以一段完整行动及其结果证明独立能力，而非仅由境界名称或旁人赞叹确认。",
+    "离开前处理会影响此次远行的既有任务、资源安排与明确承诺；同门可以继续自己的生活，不要求所有关系同时结束。",
+    "明确兑现普通少年通过练习、选择与合作取得真实进步的读者承诺，同时允许更远的山外生活与更高修行保持开放。"
+  ],
+  "execution_evidence": {
+    "attempt_id": "2da1366c-8d1e-4fff-9c73-83a207586033",
+    "operation_id": "847cd4f1-7763-473d-8c46-0785ffa7b1f3",
+    "fencing_token": 1,
+    "commit_authority": "STORY_DESIGN_AUTHORITY",
+    "cost_receipt_ref": "authority-asset-version:1fbc0d3d-7efc-4df2-86c7-3de641f62992",
+    "route_snapshot_id": "production_execution/routes/bb9bec377568a45b94eb",
+    "usage_receipt_ref": "authority-asset-version:98356e62-16ef-42c8-8099-659404857673",
+    "input_manifest_ref": "production_execution/inputs/bb9bec377568a45b94eb",
+    "context_bundle_hash": "sha256:9192357178e3bf31ef2a77f55a35d3e70db19aceee9e02613e95f29beec6c655",
+    "output_manifest_ref": "authority-asset-version:3913f893-2bf4-454b-8943-006a212dd1a6",
+    "production_verified": false,
+    "external_receipt_ref": "efc1d4a3-7409-40f0-a5b5-798fb9cd0c11",
+    "real_provider_proven": true,
+    "fixture_protocol_only": false,
+    "external_effect_backed": true,
+    "validation_manifest_ref": "authority-asset-version:fac6e743-a49c-402f-8da8-44929bfc564d",
+    "capability_execution_ref": "b9c24439-0161-541f-87ef-e1e1724ad104",
+    "capability_execution_hash": "sha256:7ca0ea4ecf61dec57b435c9f4f322158faf0f6cc9fbb5bb5c53f60d993df38d1",
+    "capability_runtime_binding_ref": "sha256:d6627ac1f3748e61e687174623b70f81052e177f5a7731394029569f867f19c6",
+    "capability_runtime_binding_hash": "sha256:0aeff71dbc892ca712b58c6de7b063a5df9425431805544f88097a1a77ee40db",
+    "context_bundle_asset_version_id": "93040544-8d60-40c5-80d2-396522df4be1",
+    "capability_pack_attempt_snapshot_id": "sha256:d6627ac1f3748e61e687174623b70f81052e177f5a7731394029569f867f19c6",
+    "production_execution_gateway_backed": true,
+    "capability_pack_attempt_snapshot_hash": "sha256:0aeff71dbc892ca712b58c6de7b063a5df9425431805544f88097a1a77ee40db",
+    "narrative_intelligence_selection_digest": "sha256:e1fee801bbfdcae6990b603695440d5648150cf2b12ad78e5daeffcab56bf872"
+  },
+  "constraint_envelope": {
+    "role": "ENDING_INTENT",
+    "creative_brief": {
+      "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+      "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1"
+    },
+    "contract_version": "foundation-generation.v4",
+    "foundation_parent_bindings": {
+      "CREATIVE_FOUNDATION": {
+        "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+        "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+      }
+    }
+  },
+  "prohibited_outcomes": [
+    "把候选发展写成已发生的章节事件、已接受的知识或已批准的世界事实。",
+    "导入既有作品的世界、角色、正文、特色组合或场景序列。",
+    "把榜单、实验标记、工程操作或检查答案转成剧情要求。",
+    "取消或替换作者指定的入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+    "以隐藏血统、自动灌顶或无条件资源赠予代替本方向中的练习、选择与实际成长。",
+    "使沈砚长期只能等待别人安排，或把同门写成只负责训诫和纠错的工具人物。",
+    "在没有相应事件因果时强加不可逆损失、死亡或背叛来制造分量。",
+    "反复重置沈砚已经掌握的能力或已经完成的承诺，以拖延长期愿望的兑现。",
+    "以开放结局为由，直到收束仍不兑现独自御剑远行的长期愿望。"
+  ],
+  "unacceptable_shortcuts": [
+    "在结尾突然赐予飞剑操控、路线判断或修为，跳过此前应有的练习与实际运用。",
+    "用他人代为决定行程、完成准备或承担全部关键判断，制造沈砚已经独立的表象。",
+    "仅用境界晋升、旁人赞叹或一句远行宣言交代长期愿望的兑现。",
+    "临近结尾临时添加身世秘密、宏大阴谋或更高目标，转移原有成长主线的收束责任。",
+    "把未处理的任务与承诺直接遗忘，使远行无需承接此前选择的结果。",
+    "为突出独立而贬低合作，或强行让全部同门失去自己的目标。",
+    "以没有前因的死亡、背叛、废功或永久失去关系制造结局分量。",
+    "通过重复失去既有能力、重新争取已获资格或拖延出发，为续作保留本应在本书兑现的愿望。"
+  ],
+  "generator_operation_name": "ending.intent.generate",
+  "foundation_parent_bindings": {
+    "CREATIVE_FOUNDATION": {
+      "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+      "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+    }
+  },
+  "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+}

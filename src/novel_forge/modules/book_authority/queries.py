@@ -1518,6 +1518,46 @@ class PostgresBookProductionQuery:
         arc_ids = tuple(str(item) for item in snapshot["arc_portfolio_plan_versions"])
         portfolio_ids = (*volume_ids, *arc_ids)
         with AuthorityUnitOfWork(self.database_url) as uow:
+            from .plan_portfolio import resolve_portfolio_lineage
+
+            uow.cursor.execute(
+                "SELECT project_id,book_id FROM authority_book_production_input_snapshot WHERE snapshot_id=%s",
+                [snapshot_id],
+            )
+            scope = uow.cursor.fetchone()
+            if scope is None:
+                raise KernelError("BOOK_INPUT_SNAPSHOT_MISSING", "Book input snapshot vanished")
+            project_id, book_id = scope
+            uow.cursor.execute(
+                """
+                SELECT change.target_asset_version_id, change.proposed_asset_version_id
+                FROM authority_plan_change_proposal AS change
+                JOIN story_plan_binding AS source
+                  ON source.asset_version_id=change.target_asset_version_id
+                 AND source.project_id=change.project_id AND source.book_id=change.book_id
+                JOIN story_plan_binding AS replacement
+                  ON replacement.asset_version_id=change.proposed_asset_version_id
+                 AND replacement.project_id=source.project_id
+                 AND replacement.book_id=source.book_id
+                 AND replacement.logical_key=source.logical_key
+                 AND replacement.contract_type=source.contract_type
+                WHERE change.project_id=%s AND change.book_id=%s
+                  AND change.status='ACTIVE'
+                  AND change.approval_operation_id IS NOT NULL
+                  AND change.activation_operation_id IS NOT NULL
+                  AND source.contract_type IN ('VOLUME','ARC')
+                """,
+                [project_id, book_id],
+            )
+            lineage = resolve_portfolio_lineage(
+                portfolio_ids,
+                tuple(uow.cursor.fetchall()) + self._approved_downstream_plan_replacements(
+                    uow, project_id=project_id, book_id=book_id
+                ),
+            )
+            volume_ids = tuple(lineage[item] for item in volume_ids)
+            arc_ids = tuple(lineage[item] for item in arc_ids)
+            portfolio_ids = (*volume_ids, *arc_ids)
             uow.cursor.execute(
                 """
                 SELECT binding.asset_version_id, binding.contract_type,
@@ -1528,11 +1568,12 @@ class PostgresBookProductionQuery:
                 JOIN authority_asset_version AS version
                   ON version.asset_version_id=binding.asset_version_id
                 WHERE binding.asset_version_id=ANY(%s)
+                  AND binding.project_id=%s AND binding.book_id=%s
                   AND version.lifecycle='ACTIVE'
                   AND version.eligibility='ELIGIBLE'
                   AND version.governance='CLEAR'
                 """,
-                [list(portfolio_ids)],
+                [list(portfolio_ids), project_id, book_id],
             )
             rows = uow.cursor.fetchall()
         by_id = {str(row[0]): row for row in rows}
@@ -1562,6 +1603,7 @@ class PostgresBookProductionQuery:
             volumes=volumes,
             arcs=arcs,
             chapter_cursor=chapter_cursor,
+            volume_version_lineage=lineage,
         )
         return {
             "chapter_cursor": chapter_cursor,
@@ -1570,7 +1612,48 @@ class PostgresBookProductionQuery:
                 int(item) for item in volume["content"]["chapter_range"]
             ),
             "arc_plan_versions": relevant_arcs,
+            "portfolio_version_lineage": lineage,
         }
+
+    @staticmethod
+    def _approved_downstream_plan_replacements(
+        uow: AuthorityUnitOfWork, *, project_id: str, book_id: str
+    ) -> tuple[tuple[str, str], ...]:
+        uow.cursor.execute(
+            """
+            SELECT source.asset_version_id, replacement.asset_version_id
+            FROM story_plan_binding AS replacement
+            JOIN authority_operation AS binding
+              ON binding.operation_id=replacement.created_by_operation_id
+             AND binding.project_id=replacement.project_id
+             AND binding.status='SUCCEEDED'
+             AND binding.definition_name='planning.binding.activate'
+            JOIN authority_plan_change_proposal AS change
+              ON change.proposal_id=binding.command_payload #>> '{decision_evidence,plan_change_proposal_id}'
+             AND change.project_id=replacement.project_id
+             AND change.book_id=replacement.book_id
+             AND change.status='ACTIVE'
+             AND change.approval_operation_id IS NOT NULL
+             AND change.activation_operation_id IS NOT NULL
+            JOIN authority_plan_change_impact AS impact
+              ON impact.proposal_id=change.proposal_id
+             AND impact.project_id=change.project_id
+             AND impact.impacted_asset_version_id=binding.command_payload #>> '{decision_evidence,invalidated_source_asset_version_id}'
+             AND impact.target_freshness IN ('IMPACTED','STALE')
+            JOIN story_plan_binding AS source
+              ON source.asset_version_id=impact.impacted_asset_version_id
+             AND source.project_id=replacement.project_id
+             AND source.book_id=replacement.book_id
+             AND source.logical_key=replacement.logical_key
+             AND source.contract_type=replacement.contract_type
+            WHERE replacement.project_id=%s AND replacement.book_id=%s
+              AND replacement.contract_type IN ('VOLUME','ARC')
+              AND binding.command_payload->>'replacement_approved'='true'
+              AND binding.command_payload #>> '{decision_evidence,downstream_requalification}'='true'
+            """,
+            [project_id, book_id],
+        )
+        return tuple(uow.cursor.fetchall())
 
     def require_arc_working_set(
         self,
@@ -1880,14 +1963,23 @@ class PostgresBookProductionQuery:
                 )
             supervised = str(snapshot[3]) == "AUTHOR_SUPERVISED_DESIGN"
             creative = str(snapshot[3]) == "CREATIVE_VALIDATION_DESIGN"
+            from .plan_portfolio import validate_projected_design_receipt
+
+            receipt_lineage = cursor_projection.get("portfolio_version_lineage") or {}
+            global_replacement_receipts = []
             if creative:
                 from novel_forge.modules.book_design_authority.creative_validation import approved_validation_book
                 from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
                 for receipt in global_receipts:
                     resolver = approved_validation_book if receipt["design_layer"] == "book_design.propose" else approved_validation_design
-                    current = resolver(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=receipt["asset_version_id"])
-                    if current is None or {**current, "design_layer": receipt["design_layer"]} != receipt:
-                        raise KernelError("CREATIVE_DESIGN_RECEIPT_STALE", receipt["asset_version_id"])
+                    effective = receipt_lineage.get(receipt["asset_version_id"], receipt["asset_version_id"])
+                    current = resolver(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=effective)
+                    projected = validate_projected_design_receipt(
+                        receipt, {**current, "design_layer": receipt["design_layer"]} if current else None,
+                        effective_asset_version_id=effective, error_code="CREATIVE_DESIGN_RECEIPT_STALE",
+                    )
+                    if effective != receipt["asset_version_id"]:
+                        global_replacement_receipts.append({"source_asset_version_id": receipt["asset_version_id"], "receipt": projected})
             elif supervised:
                 from novel_forge.modules.book_design_authority.author_supervision import (
                     approved_book_design_receipt,
@@ -1906,19 +1998,18 @@ class PostgresBookProductionQuery:
                         uow.cursor, global_qualification["book_authorization"]
                     )
                 for receipt in global_receipts:
+                    effective = receipt_lineage.get(receipt["asset_version_id"], receipt["asset_version_id"])
                     if receipt.get("mode") == "STRICT_QUALIFIED":
                         current = reusable_qualified_design_receipt(
                             uow.cursor,
                             project_id=str(snapshot[0]),
                             book_id=str(snapshot[1]),
-                            asset_version_id=receipt["asset_version_id"],
+                            asset_version_id=effective,
                             generator=receipt["design_layer"],
                         )
-                        if current != receipt:
-                            raise KernelError(
-                                "LONGFORM_DESIGN_QUALIFICATION_STALE",
-                                "Reused strict design receipt changed",
-                            )
+                        projected = validate_projected_design_receipt(receipt, current, effective_asset_version_id=effective, error_code="LONGFORM_DESIGN_QUALIFICATION_STALE")
+                        if effective != receipt["asset_version_id"]:
+                            global_replacement_receipts.append({"source_asset_version_id": receipt["asset_version_id"], "receipt": projected})
                         continue
                     resolver = (
                         approved_book_design_receipt
@@ -1929,17 +2020,11 @@ class PostgresBookProductionQuery:
                         uow.cursor,
                         project_id=str(snapshot[0]),
                         book_id=str(snapshot[1]),
-                        asset_version_id=receipt["asset_version_id"],
+                        asset_version_id=effective,
                     )
-                    if (
-                        current is None
-                        or {**current, "design_layer": receipt["design_layer"]}
-                        != receipt
-                    ):
-                        raise KernelError(
-                            "AUTHOR_SUPERVISION_APPROVAL_STALE",
-                            "Frozen author decision differs from current design",
-                        )
+                    projected = validate_projected_design_receipt(receipt, {**current, "design_layer": receipt["design_layer"]} if current else None, effective_asset_version_id=effective, error_code="AUTHOR_SUPERVISION_APPROVAL_STALE")
+                    if effective != receipt["asset_version_id"]:
+                        global_replacement_receipts.append({"source_asset_version_id": receipt["asset_version_id"], "receipt": projected})
             else:
                 uow.cursor.execute(
                     """
@@ -1953,23 +2038,26 @@ class PostgresBookProductionQuery:
                       AND qualification.freshness='CURRENT'
                       AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
                     """,
-                    [str(snapshot[0]), str(snapshot[1]), global_version_ids],
+                    [str(snapshot[0]), str(snapshot[1]), sorted({receipt_lineage.get(item, item) for item in global_version_ids})],
                 )
                 current_global = {
                     (str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
                     for row in uow.cursor.fetchall()
                 }
-                expected_global = {
-                    (
-                        str(item.get("asset_version_id") or ""),
-                        str(item.get("design_layer") or ""),
-                        str(item.get("profile_hash") or ""),
-                        str(item.get("evaluation_hash") or ""),
-                        str(item.get("qualification_hash") or ""),
-                    )
-                    for item in global_receipts
-                    if isinstance(item, dict)
-                }
+                expected_global = set()
+                for receipt in global_receipts:
+                    source = str(receipt.get("asset_version_id") or "")
+                    effective = receipt_lineage.get(source, source)
+                    original = (source, str(receipt.get("design_layer") or ""), str(receipt.get("profile_hash") or ""), str(receipt.get("evaluation_hash") or ""), str(receipt.get("qualification_hash") or ""))
+                    if effective == source:
+                        expected_global.add(original)
+                        continue
+                    matches = [row for row in current_global if row[:3] == (effective, original[1], original[2])]
+                    if len(matches) != 1:
+                        raise KernelError("LONGFORM_DESIGN_QUALIFICATION_STALE", "replacement requires one current qualification under the frozen design policy")
+                    selected = matches[0]
+                    expected_global.add(selected)
+                    global_replacement_receipts.append({"source_asset_version_id": source, "receipt": dict(zip(("asset_version_id", "design_layer", "profile_hash", "evaluation_hash", "qualification_hash"), selected, strict=True))})
                 if current_global != expected_global:
                     raise KernelError(
                         "LONGFORM_DESIGN_QUALIFICATION_STALE",
@@ -2288,6 +2376,7 @@ class PostgresBookProductionQuery:
             **({"execution_mode": "AUTHOR_SUPERVISED", "literary_qualification": "NOT_PROVEN"} if supervised else {}),
             "snapshot_id": snapshot_id,
             "longform_design_qualification_hash": str(snapshot[5]),
+            **({"global_design_replacement_receipts": global_replacement_receipts} if global_replacement_receipts else {}),
             "book_version": int(snapshot[2]),
             "chapter_number": chapter_number,
             "accepted_through_chapter": accepted_through_chapter,

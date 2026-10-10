@@ -1,0 +1,444 @@
+{
+  "approved": {
+    "project_id": "qid-learning-prose-01",
+    "asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+    "logical_key": "character:character:tang-sui",
+    "generator_operation_name": "arc_plan.generate",
+    "generator_definition_version": "2.0.0",
+    "candidate_type": "arc_plan_candidate",
+    "lifecycle": "MATERIALIZED",
+    "qualification": "STRUCTURALLY_VALID",
+    "approval": "APPROVED",
+    "freshness": "CURRENT",
+    "planning_scope": "ARC",
+    "design_scope": "ARC_PLAN",
+    "source_kind": "GENERATED",
+    "execution_evidence": {
+      "attempt_id": "89545fa1-bc46-4cf8-ad92-5283decb2945",
+      "operation_id": "dffdf02c-42e5-4c20-803b-ba0ad4dab5a8",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:27beec17-b766-40db-a087-8d1c3cb97a44",
+      "route_snapshot_id": "production_execution/routes/be3e34a8c3c408aa2820",
+      "usage_receipt_ref": "authority-asset-version:28660489-efe0-46f8-b619-1d0d8b5b7dbb",
+      "input_manifest_ref": "production_execution/inputs/be3e34a8c3c408aa2820",
+      "context_bundle_hash": "sha256:34e358f71f57ce48758ccd023fbea220b680600281c04a2163b5cd6f1f8aaf57",
+      "creative_validation": {
+        "mode": "CREATIVE_VALIDATION",
+        "checks": {
+          "literary_qualification": {
+            "reason": "creative validation template",
+            "status": "NOT_RUN"
+          }
+        },
+        "book_id": "book:qinglan-wendao-20261008",
+        "version": "creative-design-admission.v1",
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:d44b22af43d6a098a619a8e6317da99ff46e21c31cc6a3a380677420d76ae532",
+        "policy_snapshot": {
+          "policy": {
+            "reason": "native creation template; paid channel: PAID_TEMPLATE_UNAVAILABLE_OR_INVALID",
+            "policy_version": "qinglan-forty-existing-member-sol-20261010-v1",
+            "task_overrides": [],
+            "execution_templates": [
+              {
+                "mode": "CREATIVE_VALIDATION",
+                "book_id": "book:qinglan-wendao-20261008",
+                "version": "creative-execution-template.v12",
+                "deepseek": null,
+                "repair_routing": {
+                  "version": "native-repair-routing.v2",
+                  "max_same_route_repairs": 2
+                },
+                "author_workflow": {
+                  "mode": "AUTHOR_FIRST",
+                  "version": "author-workflow.v1",
+                  "deep_review": false
+                },
+                "allowed_candidates": [
+                  "codex-cli:gpt-6-sol:high"
+                ],
+                "quality_corrections": {
+                  "version": "quality-correction-control.v1",
+                  "maximum_passes": 4,
+                  "maximum_unchanged_candidates": 2
+                },
+                "optional_enhancements": [
+                  "review",
+                  "rereview",
+                  "canon_extraction",
+                  "canon_support",
+                  "quality_structural",
+                  "quality_commercial",
+                  "quality_source_originality",
+                  "quality_longform",
+                  "quality_platform"
+                ],
+                "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+                "member_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+                "world_future_preparation": "DISABLED",
+                "canon_validation_contract": "grounded-canon-validation.v2",
+                "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+                "require_independent_review": false,
+                "require_pack_human_approval": false,
+                "require_literary_qualification": false
+              }
+            ],
+            "author_supervised_books": [
+              {
+                "reason": "Native Source corpus work scope; this identifier is not a story Book.",
+                "book_id": "source-corpus:qid-learning-prose-01",
+                "author_id": "author-first-native-operator"
+              }
+            ],
+            "author_supervised_authorizations": [
+              {
+                "reason": "Current user authorizes original-note Source analysis; quality remains unproven; no paid channel.",
+                "book_id": "source-corpus:qid-learning-prose-01",
+                "author_id": "author-first-native-operator",
+                "task_type": "source.content.classify",
+                "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 258400,
+                "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                "authorization_id": "qid-learning:source-classify:01",
+                "producer_contract_hash": "sha256:4c74c679beddd04aa6bf80720fcc1f6fdcc9576a162c11f18c862fe7b342d4e9"
+              },
+              {
+                "reason": "Current user authorizes actual read Gou 1-4 abstraction through original notes, original examples only; no quality claim or paid expansion",
+                "book_id": "source-corpus:qid-learning-prose-01",
+                "author_id": "author-first-native-operator",
+                "task_type": "source.deconstruction.observe",
+                "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 258400,
+                "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                "authorization_id": "qid-learning:preferred-source-observe:02",
+                "producer_contract_hash": "sha256:5f2a84bc62c9e2e2777c065f1567e4154a1f0f5d9d4c23079c4dea3278e93ef7"
+              },
+              {
+                "reason": "Current user authorized Source review of original notes derived from Gou 1-4; model editorial opinion only; no human or quality proof",
+                "book_id": "source-corpus:qid-learning-prose-01",
+                "author_id": "author-first-native-operator",
+                "task_type": "source.deconstruction.observe",
+                "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 258400,
+                "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                "authorization_id": "qid-learning:preferred-source-review:03",
+                "producer_contract_hash": "sha256:41478d69d32e301dae9966581a5438758965f77d935210fbd8dc72e76d9cde85"
+              },
+              {
+                "reason": "Current user authorized Source analysis; successor prompt clarifies research evidence vs abstract output; preserve past empty observations and all previous grants",
+                "book_id": "source-corpus:qid-learning-prose-01",
+                "author_id": "author-first-native-operator",
+                "task_type": "source.content.classify",
+                "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 258400,
+                "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                "authorization_id": "qid-learning:preferred-source-classify-contract11:04",
+                "producer_contract_hash": "sha256:8f47fc57403e658b6ec12bad73b62f7877c4518fb6729d97d4dc53c4164fe371"
+              },
+              {
+                "reason": "Current authorized Gou 1-4 original-note observation with bounded research support excerpts; no raw source draft inputs, paid route or quality claim",
+                "book_id": "source-corpus:qid-learning-prose-01",
+                "author_id": "author-first-native-operator",
+                "task_type": "source.deconstruction.observe",
+                "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 258400,
+                "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                "authorization_id": "qid-learning:preferred-source-observe-contract11:05",
+                "producer_contract_hash": "sha256:4477566125cba08c6e84cb224defcc23633562e4ac65fd290f0a7552a74c349b"
+              },
+              {
+                "reason": "Current WP authorizes native review of original reading observations; original text restricted to research; model opinion is not reader or market proof.",
+                "book_id": "source-corpus:qid-learning-prose-01",
+                "author_id": "author-first-native-operator",
+                "task_type": "source.deconstruction.observe",
+                "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                "maximum_amount": "0",
+                "maximum_tokens": 258400,
+                "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                "authorization_id": "qid-learning:preferred-source-review:06",
+                "producer_contract_hash": "sha256:0d7cbfaa6bf58180a4a39ef5918df23d9c51ba6f9c3ac219d204d7e7f5d2e664"
+              }
+            ]
+          },
+          "actor_id": "author-first-native-operator",
+          "policy_hash": "56f4a8aff936045f4c3bbf28746ad647b15d7bf74af22a2a45561239c83f3a9a",
+          "operation_id": "3603436a-cd6e-4e1c-b435-6b40ffc56d1b"
+        },
+        "asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+        "external_effect_id": "cbb4c6ab-34dc-45c0-89ef-432a3034bb20",
+        "routing_decision_id": "routing-decision:ceda9191258af51e273afadbad486ab16a5d93aeb01447ff58d1f69c6f2c54e2",
+        "literary_qualification": "NOT_RUN",
+        "generation_operation_id": "dffdf02c-42e5-4c20-803b-ba0ad4dab5a8"
+      },
+      "output_manifest_ref": "authority-asset-version:acd0629e-7c9f-45d3-886c-dd3718630028",
+      "production_verified": false,
+      "external_receipt_ref": "cbb4c6ab-34dc-45c0-89ef-432a3034bb20",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:8fbc242f-576e-45f0-9233-37794f65e0d5",
+      "capability_execution_ref": "77583ab5-c040-5d67-9e26-ce4d48375dad",
+      "capability_execution_hash": "sha256:184861ed4e1afa7871362c798775b87eb84e9a1bf45cb54e23ae14a20e076063",
+      "capability_runtime_binding_ref": "sha256:e808b3ca4b6d433d95979185265f925ecafefa00887929f2d872990f3fdc7f90",
+      "capability_runtime_binding_hash": "sha256:82a8dbb01b4f13b719b24fe9e125a6f761976ea8b3b6475592e08bb94d604dd7",
+      "context_bundle_asset_version_id": "09ed3f82-10ed-441b-b410-e3674b02a910",
+      "capability_pack_attempt_snapshot_id": "sha256:e808b3ca4b6d433d95979185265f925ecafefa00887929f2d872990f3fdc7f90",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:82a8dbb01b4f13b719b24fe9e125a6f761976ea8b3b6475592e08bb94d604dd7",
+      "narrative_intelligence_selection_digest": "sha256:969c068757047b15ca190d320b92f6bb9c863bbbc14e89ac9308e3bd8feacb98"
+    },
+    "semantic_repair_count": 0,
+    "structural_regeneration_count": 0,
+    "created_by_operation_id": "e8536cc2-e028-4b2d-a2a7-47cb34593669",
+    "updated_by_operation_id": "dc10499f-533f-431c-8892-b48ecc43b2a2",
+    "version": 4
+  },
+  "active": {
+    "story_design": {
+      "project_id": "qid-learning-prose-01",
+      "asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+      "logical_key": "character:character:tang-sui",
+      "generator_operation_name": "arc_plan.generate",
+      "generator_definition_version": "2.0.0",
+      "candidate_type": "arc_plan_candidate",
+      "lifecycle": "ACTIVE",
+      "qualification": "STRUCTURALLY_VALID",
+      "approval": "APPROVED",
+      "freshness": "CURRENT",
+      "planning_scope": "ARC",
+      "design_scope": "ARC_PLAN",
+      "source_kind": "GENERATED",
+      "execution_evidence": {
+        "attempt_id": "89545fa1-bc46-4cf8-ad92-5283decb2945",
+        "operation_id": "dffdf02c-42e5-4c20-803b-ba0ad4dab5a8",
+        "fencing_token": 1,
+        "commit_authority": "STORY_DESIGN_AUTHORITY",
+        "cost_receipt_ref": "authority-asset-version:27beec17-b766-40db-a087-8d1c3cb97a44",
+        "route_snapshot_id": "production_execution/routes/be3e34a8c3c408aa2820",
+        "usage_receipt_ref": "authority-asset-version:28660489-efe0-46f8-b619-1d0d8b5b7dbb",
+        "input_manifest_ref": "production_execution/inputs/be3e34a8c3c408aa2820",
+        "context_bundle_hash": "sha256:34e358f71f57ce48758ccd023fbea220b680600281c04a2163b5cd6f1f8aaf57",
+        "creative_validation": {
+          "mode": "CREATIVE_VALIDATION",
+          "checks": {
+            "literary_qualification": {
+              "reason": "creative validation template",
+              "status": "NOT_RUN"
+            }
+          },
+          "book_id": "book:qinglan-wendao-20261008",
+          "version": "creative-design-admission.v1",
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d44b22af43d6a098a619a8e6317da99ff46e21c31cc6a3a380677420d76ae532",
+          "policy_snapshot": {
+            "policy": {
+              "reason": "native creation template; paid channel: PAID_TEMPLATE_UNAVAILABLE_OR_INVALID",
+              "policy_version": "qinglan-forty-existing-member-sol-20261010-v1",
+              "task_overrides": [],
+              "execution_templates": [
+                {
+                  "mode": "CREATIVE_VALIDATION",
+                  "book_id": "book:qinglan-wendao-20261008",
+                  "version": "creative-execution-template.v12",
+                  "deepseek": null,
+                  "repair_routing": {
+                    "version": "native-repair-routing.v2",
+                    "max_same_route_repairs": 2
+                  },
+                  "author_workflow": {
+                    "mode": "AUTHOR_FIRST",
+                    "version": "author-workflow.v1",
+                    "deep_review": false
+                  },
+                  "allowed_candidates": [
+                    "codex-cli:gpt-6-sol:high"
+                  ],
+                  "quality_corrections": {
+                    "version": "quality-correction-control.v1",
+                    "maximum_passes": 4,
+                    "maximum_unchanged_candidates": 2
+                  },
+                  "optional_enhancements": [
+                    "review",
+                    "rereview",
+                    "canon_extraction",
+                    "canon_support",
+                    "quality_structural",
+                    "quality_commercial",
+                    "quality_source_originality",
+                    "quality_longform",
+                    "quality_platform"
+                  ],
+                  "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+                  "member_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+                  "world_future_preparation": "DISABLED",
+                  "canon_validation_contract": "grounded-canon-validation.v2",
+                  "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+                  "require_independent_review": false,
+                  "require_pack_human_approval": false,
+                  "require_literary_qualification": false
+                }
+              ],
+              "author_supervised_books": [
+                {
+                  "reason": "Native Source corpus work scope; this identifier is not a story Book.",
+                  "book_id": "source-corpus:qid-learning-prose-01",
+                  "author_id": "author-first-native-operator"
+                }
+              ],
+              "author_supervised_authorizations": [
+                {
+                  "reason": "Current user authorizes original-note Source analysis; quality remains unproven; no paid channel.",
+                  "book_id": "source-corpus:qid-learning-prose-01",
+                  "author_id": "author-first-native-operator",
+                  "task_type": "source.content.classify",
+                  "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                  "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                  "maximum_amount": "0",
+                  "maximum_tokens": 258400,
+                  "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                  "authorization_id": "qid-learning:source-classify:01",
+                  "producer_contract_hash": "sha256:4c74c679beddd04aa6bf80720fcc1f6fdcc9576a162c11f18c862fe7b342d4e9"
+                },
+                {
+                  "reason": "Current user authorizes actual read Gou 1-4 abstraction through original notes, original examples only; no quality claim or paid expansion",
+                  "book_id": "source-corpus:qid-learning-prose-01",
+                  "author_id": "author-first-native-operator",
+                  "task_type": "source.deconstruction.observe",
+                  "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                  "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                  "maximum_amount": "0",
+                  "maximum_tokens": 258400,
+                  "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                  "authorization_id": "qid-learning:preferred-source-observe:02",
+                  "producer_contract_hash": "sha256:5f2a84bc62c9e2e2777c065f1567e4154a1f0f5d9d4c23079c4dea3278e93ef7"
+                },
+                {
+                  "reason": "Current user authorized Source review of original notes derived from Gou 1-4; model editorial opinion only; no human or quality proof",
+                  "book_id": "source-corpus:qid-learning-prose-01",
+                  "author_id": "author-first-native-operator",
+                  "task_type": "source.deconstruction.observe",
+                  "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                  "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                  "maximum_amount": "0",
+                  "maximum_tokens": 258400,
+                  "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                  "authorization_id": "qid-learning:preferred-source-review:03",
+                  "producer_contract_hash": "sha256:41478d69d32e301dae9966581a5438758965f77d935210fbd8dc72e76d9cde85"
+                },
+                {
+                  "reason": "Current user authorized Source analysis; successor prompt clarifies research evidence vs abstract output; preserve past empty observations and all previous grants",
+                  "book_id": "source-corpus:qid-learning-prose-01",
+                  "author_id": "author-first-native-operator",
+                  "task_type": "source.content.classify",
+                  "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                  "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                  "maximum_amount": "0",
+                  "maximum_tokens": 258400,
+                  "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                  "authorization_id": "qid-learning:preferred-source-classify-contract11:04",
+                  "producer_contract_hash": "sha256:8f47fc57403e658b6ec12bad73b62f7877c4518fb6729d97d4dc53c4164fe371"
+                },
+                {
+                  "reason": "Current authorized Gou 1-4 original-note observation with bounded research support excerpts; no raw source draft inputs, paid route or quality claim",
+                  "book_id": "source-corpus:qid-learning-prose-01",
+                  "author_id": "author-first-native-operator",
+                  "task_type": "source.deconstruction.observe",
+                  "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                  "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                  "maximum_amount": "0",
+                  "maximum_tokens": 258400,
+                  "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                  "authorization_id": "qid-learning:preferred-source-observe-contract11:05",
+                  "producer_contract_hash": "sha256:4477566125cba08c6e84cb224defcc23633562e4ac65fd290f0a7552a74c349b"
+                },
+                {
+                  "reason": "Current WP authorizes native review of original reading observations; original text restricted to research; model opinion is not reader or market proof.",
+                  "book_id": "source-corpus:qid-learning-prose-01",
+                  "author_id": "author-first-native-operator",
+                  "task_type": "source.deconstruction.observe",
+                  "expires_at": "2026-10-10T09:54:40.807345+00:00",
+                  "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                  "maximum_amount": "0",
+                  "maximum_tokens": 258400,
+                  "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+                  "authorization_id": "qid-learning:preferred-source-review:06",
+                  "producer_contract_hash": "sha256:0d7cbfaa6bf58180a4a39ef5918df23d9c51ba6f9c3ac219d204d7e7f5d2e664"
+                }
+              ]
+            },
+            "actor_id": "author-first-native-operator",
+            "policy_hash": "56f4a8aff936045f4c3bbf28746ad647b15d7bf74af22a2a45561239c83f3a9a",
+            "operation_id": "3603436a-cd6e-4e1c-b435-6b40ffc56d1b"
+          },
+          "asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+          "external_effect_id": "cbb4c6ab-34dc-45c0-89ef-432a3034bb20",
+          "routing_decision_id": "routing-decision:ceda9191258af51e273afadbad486ab16a5d93aeb01447ff58d1f69c6f2c54e2",
+          "literary_qualification": "NOT_RUN",
+          "generation_operation_id": "dffdf02c-42e5-4c20-803b-ba0ad4dab5a8"
+        },
+        "output_manifest_ref": "authority-asset-version:acd0629e-7c9f-45d3-886c-dd3718630028",
+        "production_verified": false,
+        "external_receipt_ref": "cbb4c6ab-34dc-45c0-89ef-432a3034bb20",
+        "real_provider_proven": true,
+        "fixture_protocol_only": false,
+        "external_effect_backed": true,
+        "validation_manifest_ref": "authority-asset-version:8fbc242f-576e-45f0-9233-37794f65e0d5",
+        "capability_execution_ref": "77583ab5-c040-5d67-9e26-ce4d48375dad",
+        "capability_execution_hash": "sha256:184861ed4e1afa7871362c798775b87eb84e9a1bf45cb54e23ae14a20e076063",
+        "capability_runtime_binding_ref": "sha256:e808b3ca4b6d433d95979185265f925ecafefa00887929f2d872990f3fdc7f90",
+        "capability_runtime_binding_hash": "sha256:82a8dbb01b4f13b719b24fe9e125a6f761976ea8b3b6475592e08bb94d604dd7",
+        "context_bundle_asset_version_id": "09ed3f82-10ed-441b-b410-e3674b02a910",
+        "capability_pack_attempt_snapshot_id": "sha256:e808b3ca4b6d433d95979185265f925ecafefa00887929f2d872990f3fdc7f90",
+        "production_execution_gateway_backed": true,
+        "capability_pack_attempt_snapshot_hash": "sha256:82a8dbb01b4f13b719b24fe9e125a6f761976ea8b3b6475592e08bb94d604dd7",
+        "narrative_intelligence_selection_digest": "sha256:969c068757047b15ca190d320b92f6bb9c863bbbc14e89ac9308e3bd8feacb98"
+      },
+      "semantic_repair_count": 0,
+      "structural_regeneration_count": 0,
+      "created_by_operation_id": "e8536cc2-e028-4b2d-a2a7-47cb34593669",
+      "updated_by_operation_id": "a6fa515b-9a14-457f-9065-11fc5d455098",
+      "version": 5
+    },
+    "planning_binding": {
+      "binding_id": "plan-binding:qid-learning-prose-01:authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+      "project_id": "qid-learning-prose-01",
+      "book_id": "book:qinglan-wendao-20261008",
+      "contract_type": "ARC",
+      "logical_key": "character:character:tang-sui",
+      "asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+      "parent_version_id": null,
+      "execution_scope": "PLANNED",
+      "freshness": "CURRENT",
+      "created_by_operation_id": "07a87156-dbc6-4f57-a2dd-d9d16bc90ad3",
+      "version": 0,
+      "operation_id": "07a87156-dbc6-4f57-a2dd-d9d16bc90ad3",
+      "replayed": false
+    },
+    "chapter_plan_projection": null
+  },
+  "delegated_review": {
+    "authority_type": "LOCAL_OPERATOR_DELEGATED_WORK_REVISION",
+    "work_authorization": "Direct current user instruction: same original Book40 working chapters with authorized structural revision.",
+    "semantic_review": "Tang line read: her observation, quality goals and own work must inform actual choices and mutual cooperation, with new Volume learning and finite tasks; no automatic omniscience, quality authority or unlimited correction role.",
+    "plan_change_proposal_id": "plan-change:cabeb88e-c55f-458c-892b-a24f0f4d387e",
+    "activation_operation_id": "28787cd0-812d-460f-a9c9-7020e9f96866",
+    "invalidated_source_asset_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+    "downstream_requalification": true,
+    "approved_scope": "VOLUME",
+    "author_prose_selection": "NOT_GRANTED",
+    "formal_acceptance": "NOT_GRANTED"
+  }
+}

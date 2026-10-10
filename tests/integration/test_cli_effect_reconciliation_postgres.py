@@ -339,7 +339,7 @@ def test_cli_journal_forward_migration_preserves_previous_head(baseline):
 
 
 @pytest.mark.parametrize('change', [
-    {'outcome': 'TIMED_OUT'}, {'started_at': None}, {'usage_receipt_ref': 'existing-usage'},
+    {'outcome': 'SUCCEEDED'}, {'started_at': None}, {'usage_receipt_ref': 'existing-usage'},
 ])
 def test_historical_exception_does_not_admit_adjacent_failure_generations(change):
     from novel_forge.modules.command_kernel.errors import KernelError
@@ -474,3 +474,16 @@ def test_database_lineage_guard_requires_verified_original_resolution():
     resolve_external_effect_manually(DATABASE_URL, confirmation(*seeded))
     with transaction() as c:
         assert c.execute('SELECT authority_planning_cli_lineage_reconciled(%s)', [context.operation_id]).fetchone()[0] is True
+
+
+@pytest.mark.parametrize("outcome", ["TIMED_OUT", "UNKNOWN", "ORPHANED"])
+def test_legacy_retryable_cli_uncertainty_queries_original_identity(outcome):
+    context, effect, dispatch, *_ = seed()
+    with transaction() as connection:
+        connection.execute("UPDATE authority_external_effect_dispatch SET evidence=jsonb_set(evidence,'{production_execution,execution_result,outcome}',%s) WHERE dispatch_id=%s", [Jsonb(outcome), dispatch["dispatch_id"]])
+        before = connection.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE dispatch_id=%s", [dispatch["dispatch_id"]]).fetchone()[0]
+    result = reconcile_external_effect(DATABASE_URL, context, effect_id=effect, adapter=QueryOnly("success"))
+    assert result["recovery_state"] == "RECONCILIATION_REQUIRED"
+    with transaction() as connection:
+        assert connection.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE dispatch_id=%s", [dispatch["dispatch_id"]]).fetchone()[0] == before
+        assert connection.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect]).fetchone()[0] == 1

@@ -432,13 +432,13 @@ def _aggregate_accounting_receipts(uow, effect, dispatch, receipt):
     from .external_effect_runtime import _hash
 
     ids = isolation(uow.cursor, effect["external_effect_id"])["dispatch_ids"]
-    if len(ids) == 1:
-        return receipt
     uow.cursor.execute("SELECT accounting_basis,currency FROM authority_budget_reservation WHERE external_effect_id=%s AND project_id=%s", [effect["external_effect_id"], effect["project_id"]])
     budgets = uow.cursor.fetchall()
     if len(budgets) != 1:
         _invalid("Require the original shared reservation")
     basis, currency = budgets[0]
+    if len(ids) == 1:
+        return receipt if basis == "ACCOUNT_ENTITLEMENT" or _known_cost(receipt.get("cost")) or receipt["outcome"] == "not_found" else None
     records = []
     complete = True
     total_cost = Decimal(0)
@@ -450,7 +450,7 @@ def _aggregate_accounting_receipts(uow, effect, dispatch, receipt):
             continue
         if item.get("usage") is None:
             complete = False
-        if basis != "ACCOUNT_ENTITLEMENT":
+        if basis != "ACCOUNT_ENTITLEMENT" and item["outcome"] != "not_found":
             cost = item.get("cost")
             if not _known_cost(cost):
                 complete = False

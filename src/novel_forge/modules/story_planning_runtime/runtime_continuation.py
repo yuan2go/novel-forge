@@ -694,6 +694,21 @@ def _ensure_world_agency_pack(application, source, original, successor, principa
 
 
 
+def require_capacity_route_candidates(decision, *, frozen, source_operation_id):
+    candidates = decision.get("candidates", [])
+    eligible_scope = [item for item in candidates
+        if "TEMPLATE_MODEL_UNAUTHORIZED" not in item.get("rejected_reasons", [])]
+    task = decision.get("task", {})
+    if (decision.get("status") != "BLOCKED" or not eligible_scope
+        or task.get("project_id") != frozen["project_id"]
+        or task.get("work_id") != frozen["book_id"]
+        or task.get("operation_id") != source_operation_id
+        or any("CONTEXT_CAPACITY_EXCEEDED" not in item.get("rejected_reasons", [])
+            or set(item["rejected_reasons"]) - {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
+            for item in eligible_scope)):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing failure is not solely a proven request capacity failure for an authorized candidate")
+
+
 def _pre_send_capacity_source(
     uow: Any,
     *,
@@ -711,15 +726,9 @@ def _pre_send_capacity_source(
             JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
             WHERE output.operation_id=%s AND asset.asset_type='routing_decision' ORDER BY version.created_at DESC LIMIT 1""", [source_operation_id])
         decision = uow.cursor.fetchone()
-        candidates = decision[0].get("candidates", []) if decision else []
-        if not decision or decision[0].get("status") != "BLOCKED" or not candidates or (
-            decision[0].get("task", {}).get("project_id") != frozen["project_id"]
-            or decision[0].get("task", {}).get("work_id") != frozen["book_id"]
-            or decision[0].get("task", {}).get("operation_id") != source_operation_id) or any(
-            "CONTEXT_CAPACITY_EXCEEDED" not in candidate.get("rejected_reasons", [])
-            or set(candidate["rejected_reasons"]) - {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
-            for candidate in candidates):
-            raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing failure is not solely a proven request capacity failure")
+        if not decision:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing decision is absent")
+        require_capacity_route_candidates(decision[0], frozen=frozen, source_operation_id=source_operation_id)
         group = frozen.get("generator_operation_name") == "chapter_group_plan.generate"
         projection_revalidation = {"contract_version": "planning-exact-value-reference.v1" if frozen.get("generator_operation_name") == "chapter_plan.generate" else "typed-planning-window-projection.v1" if group else "typed-volume-context-projection.v1",
             "blocked_decision_id": decision[0]["decision_id"], "source_operation_status": str(row[0]),

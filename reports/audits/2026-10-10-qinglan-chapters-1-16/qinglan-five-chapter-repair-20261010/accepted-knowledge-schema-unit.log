@@ -1,0 +1,468 @@
+FFFFF.....                                                               [100%]
+=================================== FAILURES ===================================
+___ test_unaccepted_working_experience_cannot_be_invented_as_entry_knowledge ___
+
+    def test_unaccepted_working_experience_cannot_be_invented_as_entry_knowledge():
+        state = {"current_state": {}, "working_observations": [{"fact_id": "fact:observed"}]}
+        bound = bind_planned_knowledge_schema(schema(), state)
+        _validate(bound, participation([]), path="$")
+        validate_planned_character_knowledge(participation([]), state)
+        with pytest.raises(KernelError):
+>           _validate(bound, participation(["fact:observed"]), path="$")
+
+tests/unit/test_planning_accepted_knowledge_schema.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1467: in _validate
+    _validate(item_schema, item, path=f"{path}[{index}]")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+schema = {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0, 'description': 'Only frozen accepted Character Knowledge...fact IDs. When none are supplied, use []. Continue working experiences in prose without inventing accepted knowledge.'}
+value = ['fact:observed'], path = '$.character_participation[0].known_fact_ids'
+enforce_dialect = False
+
+    def _validate(
+        schema: dict[str, Any],
+        value: object,
+        *,
+        path: str,
+        enforce_dialect: bool = False,
+    ) -> None:
+        if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
+            raise ValueError("unsupported JSON Schema dialect")
+        if "anyOf" in schema:
+            for choice in schema["anyOf"]:
+                try:
+                    _validate(choice, value, path=path)
+                    break
+                except ValueError:
+                    continue
+            else:
+                raise ValueError(f"{path} violates every allowed structural combination")
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            allowed = tuple(str(item) for item in expected)
+            if value is None and "null" in allowed:
+                _validate({**schema, "type": "null"}, value, path=path)
+                return
+            concrete = tuple(item for item in allowed if item != "null")
+            if len(concrete) != 1:
+                raise ValueError(f"{path} uses unsupported schema type union {expected}")
+            _validate({**schema, "type": concrete[0]}, value, path=path)
+            return
+        if expected == "object":
+            if not isinstance(value, dict):
+                raise ValueError(f"{path} must be an object")
+            minimum = schema.get("minProperties")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} properties")
+            required = schema.get("required", [])
+            for key in required:
+                if key not in value:
+                    raise ValueError(f"{path}.{key} is required")
+            properties = schema.get("properties", {})
+            if schema.get("additionalProperties") is False:
+                unexpected = sorted(set(value) - set(properties))
+                if unexpected:
+                    raise ValueError(f"{path}.{unexpected[0]} is not allowed")
+            for key, child in properties.items():
+                if key in value:
+                    _validate(child, value[key], path=f"{path}.{key}")
+        elif expected == "array":
+            if not isinstance(value, list):
+                raise ValueError(f"{path} must be an array")
+            minimum = schema.get("minItems")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} items")
+            maximum = schema.get("maxItems")
+            if isinstance(maximum, int) and len(value) > maximum:
+>               raise ValueError(f"{path} must contain at most {maximum} items")
+E               ValueError: $.character_participation[0].known_fact_ids must contain at most 0 items
+
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1463: ValueError
+___ test_schema_and_validator_exclude_unaccepted_epistemic_states[BELIEVED] ____
+
+status = 'BELIEVED'
+
+    @pytest.mark.parametrize("status", ["BELIEVED", "SUSPECTED", "UNKNOWN"])
+    def test_schema_and_validator_exclude_unaccepted_epistemic_states(status):
+        state = knowledge(status)
+        with pytest.raises(KernelError):
+>           _validate(bind_planned_knowledge_schema(schema(), state), participation(["fact:observed"]), path="$")
+
+tests/unit/test_planning_accepted_knowledge_schema.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1467: in _validate
+    _validate(item_schema, item, path=f"{path}[{index}]")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+schema = {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0, 'description': 'Only frozen accepted Character Knowledge...fact IDs. When none are supplied, use []. Continue working experiences in prose without inventing accepted knowledge.'}
+value = ['fact:observed'], path = '$.character_participation[0].known_fact_ids'
+enforce_dialect = False
+
+    def _validate(
+        schema: dict[str, Any],
+        value: object,
+        *,
+        path: str,
+        enforce_dialect: bool = False,
+    ) -> None:
+        if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
+            raise ValueError("unsupported JSON Schema dialect")
+        if "anyOf" in schema:
+            for choice in schema["anyOf"]:
+                try:
+                    _validate(choice, value, path=path)
+                    break
+                except ValueError:
+                    continue
+            else:
+                raise ValueError(f"{path} violates every allowed structural combination")
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            allowed = tuple(str(item) for item in expected)
+            if value is None and "null" in allowed:
+                _validate({**schema, "type": "null"}, value, path=path)
+                return
+            concrete = tuple(item for item in allowed if item != "null")
+            if len(concrete) != 1:
+                raise ValueError(f"{path} uses unsupported schema type union {expected}")
+            _validate({**schema, "type": concrete[0]}, value, path=path)
+            return
+        if expected == "object":
+            if not isinstance(value, dict):
+                raise ValueError(f"{path} must be an object")
+            minimum = schema.get("minProperties")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} properties")
+            required = schema.get("required", [])
+            for key in required:
+                if key not in value:
+                    raise ValueError(f"{path}.{key} is required")
+            properties = schema.get("properties", {})
+            if schema.get("additionalProperties") is False:
+                unexpected = sorted(set(value) - set(properties))
+                if unexpected:
+                    raise ValueError(f"{path}.{unexpected[0]} is not allowed")
+            for key, child in properties.items():
+                if key in value:
+                    _validate(child, value[key], path=f"{path}.{key}")
+        elif expected == "array":
+            if not isinstance(value, list):
+                raise ValueError(f"{path} must be an array")
+            minimum = schema.get("minItems")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} items")
+            maximum = schema.get("maxItems")
+            if isinstance(maximum, int) and len(value) > maximum:
+>               raise ValueError(f"{path} must contain at most {maximum} items")
+E               ValueError: $.character_participation[0].known_fact_ids must contain at most 0 items
+
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1463: ValueError
+___ test_schema_and_validator_exclude_unaccepted_epistemic_states[SUSPECTED] ___
+
+status = 'SUSPECTED'
+
+    @pytest.mark.parametrize("status", ["BELIEVED", "SUSPECTED", "UNKNOWN"])
+    def test_schema_and_validator_exclude_unaccepted_epistemic_states(status):
+        state = knowledge(status)
+        with pytest.raises(KernelError):
+>           _validate(bind_planned_knowledge_schema(schema(), state), participation(["fact:observed"]), path="$")
+
+tests/unit/test_planning_accepted_knowledge_schema.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1467: in _validate
+    _validate(item_schema, item, path=f"{path}[{index}]")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+schema = {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0, 'description': 'Only frozen accepted Character Knowledge...fact IDs. When none are supplied, use []. Continue working experiences in prose without inventing accepted knowledge.'}
+value = ['fact:observed'], path = '$.character_participation[0].known_fact_ids'
+enforce_dialect = False
+
+    def _validate(
+        schema: dict[str, Any],
+        value: object,
+        *,
+        path: str,
+        enforce_dialect: bool = False,
+    ) -> None:
+        if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
+            raise ValueError("unsupported JSON Schema dialect")
+        if "anyOf" in schema:
+            for choice in schema["anyOf"]:
+                try:
+                    _validate(choice, value, path=path)
+                    break
+                except ValueError:
+                    continue
+            else:
+                raise ValueError(f"{path} violates every allowed structural combination")
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            allowed = tuple(str(item) for item in expected)
+            if value is None and "null" in allowed:
+                _validate({**schema, "type": "null"}, value, path=path)
+                return
+            concrete = tuple(item for item in allowed if item != "null")
+            if len(concrete) != 1:
+                raise ValueError(f"{path} uses unsupported schema type union {expected}")
+            _validate({**schema, "type": concrete[0]}, value, path=path)
+            return
+        if expected == "object":
+            if not isinstance(value, dict):
+                raise ValueError(f"{path} must be an object")
+            minimum = schema.get("minProperties")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} properties")
+            required = schema.get("required", [])
+            for key in required:
+                if key not in value:
+                    raise ValueError(f"{path}.{key} is required")
+            properties = schema.get("properties", {})
+            if schema.get("additionalProperties") is False:
+                unexpected = sorted(set(value) - set(properties))
+                if unexpected:
+                    raise ValueError(f"{path}.{unexpected[0]} is not allowed")
+            for key, child in properties.items():
+                if key in value:
+                    _validate(child, value[key], path=f"{path}.{key}")
+        elif expected == "array":
+            if not isinstance(value, list):
+                raise ValueError(f"{path} must be an array")
+            minimum = schema.get("minItems")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} items")
+            maximum = schema.get("maxItems")
+            if isinstance(maximum, int) and len(value) > maximum:
+>               raise ValueError(f"{path} must contain at most {maximum} items")
+E               ValueError: $.character_participation[0].known_fact_ids must contain at most 0 items
+
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1463: ValueError
+____ test_schema_and_validator_exclude_unaccepted_epistemic_states[UNKNOWN] ____
+
+status = 'UNKNOWN'
+
+    @pytest.mark.parametrize("status", ["BELIEVED", "SUSPECTED", "UNKNOWN"])
+    def test_schema_and_validator_exclude_unaccepted_epistemic_states(status):
+        state = knowledge(status)
+        with pytest.raises(KernelError):
+>           _validate(bind_planned_knowledge_schema(schema(), state), participation(["fact:observed"]), path="$")
+
+tests/unit/test_planning_accepted_knowledge_schema.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1467: in _validate
+    _validate(item_schema, item, path=f"{path}[{index}]")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+schema = {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 0, 'description': 'Only frozen accepted Character Knowledge...fact IDs. When none are supplied, use []. Continue working experiences in prose without inventing accepted knowledge.'}
+value = ['fact:observed'], path = '$.character_participation[0].known_fact_ids'
+enforce_dialect = False
+
+    def _validate(
+        schema: dict[str, Any],
+        value: object,
+        *,
+        path: str,
+        enforce_dialect: bool = False,
+    ) -> None:
+        if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
+            raise ValueError("unsupported JSON Schema dialect")
+        if "anyOf" in schema:
+            for choice in schema["anyOf"]:
+                try:
+                    _validate(choice, value, path=path)
+                    break
+                except ValueError:
+                    continue
+            else:
+                raise ValueError(f"{path} violates every allowed structural combination")
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            allowed = tuple(str(item) for item in expected)
+            if value is None and "null" in allowed:
+                _validate({**schema, "type": "null"}, value, path=path)
+                return
+            concrete = tuple(item for item in allowed if item != "null")
+            if len(concrete) != 1:
+                raise ValueError(f"{path} uses unsupported schema type union {expected}")
+            _validate({**schema, "type": concrete[0]}, value, path=path)
+            return
+        if expected == "object":
+            if not isinstance(value, dict):
+                raise ValueError(f"{path} must be an object")
+            minimum = schema.get("minProperties")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} properties")
+            required = schema.get("required", [])
+            for key in required:
+                if key not in value:
+                    raise ValueError(f"{path}.{key} is required")
+            properties = schema.get("properties", {})
+            if schema.get("additionalProperties") is False:
+                unexpected = sorted(set(value) - set(properties))
+                if unexpected:
+                    raise ValueError(f"{path}.{unexpected[0]} is not allowed")
+            for key, child in properties.items():
+                if key in value:
+                    _validate(child, value[key], path=f"{path}.{key}")
+        elif expected == "array":
+            if not isinstance(value, list):
+                raise ValueError(f"{path} must be an array")
+            minimum = schema.get("minItems")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} items")
+            maximum = schema.get("maxItems")
+            if isinstance(maximum, int) and len(value) > maximum:
+>               raise ValueError(f"{path} must contain at most {maximum} items")
+E               ValueError: $.character_participation[0].known_fact_ids must contain at most 0 items
+
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1463: ValueError
+______ test_exact_frozen_accepted_fact_survives_and_foreign_fact_does_not ______
+
+    def test_exact_frozen_accepted_fact_survives_and_foreign_fact_does_not():
+        state = knowledge()
+        original = schema()
+        frozen = deepcopy(original)
+        bound = bind_planned_knowledge_schema(original, state)
+        _validate(bound, participation(["fact:observed"]), path="$")
+        validate_planned_character_knowledge(participation(["fact:observed"]), state)
+        with pytest.raises(KernelError):
+>           _validate(bound, participation(["fact:another-book"]), path="$")
+
+tests/unit/test_planning_accepted_knowledge_schema.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1467: in _validate
+    _validate(item_schema, item, path=f"{path}[{index}]")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1454: in _validate
+    _validate(child, value[key], path=f"{path}.{key}")
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1467: in _validate
+    _validate(item_schema, item, path=f"{path}[{index}]")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+schema = {'type': 'string', 'enum': ['fact:observed']}
+value = 'fact:another-book'
+path = '$.character_participation[0].known_fact_ids[0]', enforce_dialect = False
+
+    def _validate(
+        schema: dict[str, Any],
+        value: object,
+        *,
+        path: str,
+        enforce_dialect: bool = False,
+    ) -> None:
+        if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
+            raise ValueError("unsupported JSON Schema dialect")
+        if "anyOf" in schema:
+            for choice in schema["anyOf"]:
+                try:
+                    _validate(choice, value, path=path)
+                    break
+                except ValueError:
+                    continue
+            else:
+                raise ValueError(f"{path} violates every allowed structural combination")
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            allowed = tuple(str(item) for item in expected)
+            if value is None and "null" in allowed:
+                _validate({**schema, "type": "null"}, value, path=path)
+                return
+            concrete = tuple(item for item in allowed if item != "null")
+            if len(concrete) != 1:
+                raise ValueError(f"{path} uses unsupported schema type union {expected}")
+            _validate({**schema, "type": concrete[0]}, value, path=path)
+            return
+        if expected == "object":
+            if not isinstance(value, dict):
+                raise ValueError(f"{path} must be an object")
+            minimum = schema.get("minProperties")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} properties")
+            required = schema.get("required", [])
+            for key in required:
+                if key not in value:
+                    raise ValueError(f"{path}.{key} is required")
+            properties = schema.get("properties", {})
+            if schema.get("additionalProperties") is False:
+                unexpected = sorted(set(value) - set(properties))
+                if unexpected:
+                    raise ValueError(f"{path}.{unexpected[0]} is not allowed")
+            for key, child in properties.items():
+                if key in value:
+                    _validate(child, value[key], path=f"{path}.{key}")
+        elif expected == "array":
+            if not isinstance(value, list):
+                raise ValueError(f"{path} must be an array")
+            minimum = schema.get("minItems")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} items")
+            maximum = schema.get("maxItems")
+            if isinstance(maximum, int) and len(value) > maximum:
+                raise ValueError(f"{path} must contain at most {maximum} items")
+            item_schema = schema.get("items")
+            if isinstance(item_schema, dict):
+                for index, item in enumerate(value):
+                    _validate(item_schema, item, path=f"{path}[{index}]")
+        elif expected == "string":
+            if not isinstance(value, str):
+                raise ValueError(f"{path} must be a string")
+            minimum = schema.get("minLength")
+            if isinstance(minimum, int) and len(value) < minimum:
+                raise ValueError(f"{path} must contain at least {minimum} characters")
+            if "pattern" in schema and re.search(schema["pattern"], value) is None:
+                raise ValueError(f"{path} does not match the permitted pattern")
+        elif expected == "number":
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"{path} must be a number")
+            minimum = schema.get("minimum")
+            maximum = schema.get("maximum")
+            if minimum is not None and value < minimum:
+                raise ValueError(f"{path} must be at least {minimum}")
+            if maximum is not None and value > maximum:
+                raise ValueError(f"{path} must be at most {maximum}")
+        elif expected == "integer":
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValueError(f"{path} must be an integer")
+            minimum = schema.get("minimum")
+            maximum = schema.get("maximum")
+            if minimum is not None and value < minimum:
+                raise ValueError(f"{path} must be at least {minimum}")
+            if maximum is not None and value > maximum:
+                raise ValueError(f"{path} must be at most {maximum}")
+        elif expected == "null":
+            if value is not None:
+                raise ValueError(f"{path} must be null")
+        elif expected == "boolean":
+            if not isinstance(value, bool):
+                raise ValueError(f"{path} must be a boolean")
+        elif expected is not None:
+            raise ValueError(f"{path} uses unsupported schema type {expected}")
+        if "enum" in schema and value not in schema["enum"]:
+>           raise ValueError(f"{path} is not one of the allowed values")
+E           ValueError: $.character_participation[0].known_fact_ids[0] is not one of the allowed values
+
+src/novel_forge/modules/chapter_authority/provider_output_contracts.py:1503: ValueError
+=========================== short test summary info ============================
+FAILED tests/unit/test_planning_accepted_knowledge_schema.py::test_unaccepted_working_experience_cannot_be_invented_as_entry_knowledge
+FAILED tests/unit/test_planning_accepted_knowledge_schema.py::test_schema_and_validator_exclude_unaccepted_epistemic_states[BELIEVED]
+FAILED tests/unit/test_planning_accepted_knowledge_schema.py::test_schema_and_validator_exclude_unaccepted_epistemic_states[SUSPECTED]
+FAILED tests/unit/test_planning_accepted_knowledge_schema.py::test_schema_and_validator_exclude_unaccepted_epistemic_states[UNKNOWN]
+FAILED tests/unit/test_planning_accepted_knowledge_schema.py::test_exact_frozen_accepted_fact_survives_and_foreign_fact_does_not
+5 failed, 5 passed, 24 deselected in 0.51s

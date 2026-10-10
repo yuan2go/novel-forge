@@ -1,0 +1,91 @@
+{
+  "payload": {
+    "book_id": "book:qinglan-wendao-20261008",
+    "actor_id": "author-first-native-operator",
+    "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+    "project_id": "qid-learning-prose-01",
+    "logical_key": "volume:1",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "repair_number": 0,
+    "repair_reason": "",
+    "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+    "input_versions": {
+      "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "story_state": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "arc_portfolio": "authority-output:67b73c55-47de-44e1-8f5d-dc77de89073a:book.bootstrap.arc_portfolio:v1",
+      "canon_snapshot": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "ending_reachability": "authority-output:50bb9143-40b6-43bc-9683-f80585be8aa4:book.bootstrap.ending_reachability:v1",
+      "previous_volume_outcome": "authority-output:d741dfe5-0119-4801-a447-78409f291161:book.bootstrap.previous_volume_outcome:v1"
+    },
+    "arc_working_set": {},
+    "idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:volume_plan.generate:volume:1:narrative-search:future-1",
+    "parent_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "narrative_search_id": "narrative-search:2339acc7aed49f40a9fe9ee00c0fb92f461799e39a5398a98774866e0bced795",
+    "auto_approve_low_risk": false,
+    "narrative_realization": {},
+    "repair_of_candidate_id": "",
+    "generator_operation_name": "volume_plan.generate",
+    "opening_execution_binding": {
+      "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+      "runtime_job_id": "runtime-job:b87c14dd836182c0b62971bb27af56d03e4d1c000e47b188fb499e6c3d13e029",
+      "runtime_lease_id": "runtime-lease:2f50fd25-3c59-4eb7-99af-3a2c3ff554c5",
+      "runtime_worker_id": "creation-book",
+      "runtime_attempt_id": "runtime-attempt:fef1f5e3-11d4-4758-8b32-5a12adeacda1",
+      "opening_execution_id": "book-opening-execution:480ad4a9a6389694024c5fab2296fe6a41d60ddf96965feb79a376ca619154e4",
+      "runtime_fencing_token": 1,
+      "opening_execution_generation": 5
+    },
+    "execution_contract_version": "1.21.0",
+    "change_evidence_version_ids": [],
+    "narrative_search_branch_key": "future-1",
+    "related_arc_plan_version_ids": [],
+    "governance_action_version_ids": [],
+    "dependent_arc_plan_version_ids": [],
+    "arc_scope_volume_plan_version_ids": [],
+    "narrative_search_hard_constraints": [
+      "preserve the approved Creative Foundation",
+      "protect reader promise and ending direction",
+      "do not convert future intent into accepted reality"
+    ],
+    "narrative_search_planning_horizon": {
+      "level": "VOLUME",
+      "ordinal": 1,
+      "stability": "MEDIUM_HIGH",
+      "chapter_range": [
+        1,
+        48
+      ],
+      "ends_at_chapter": 48,
+      "starts_at_chapter": 1
+    },
+    "parent_agent_session_operation_id": "",
+    "narrative_search_strategy_directive": "maximize costly character agency while preserving future options",
+    "narrative_search_desired_transformation": {
+      "goal": "realize one ordered Book volume transformation",
+      "volume_ordinal": 1,
+      "volume_skeleton_entry": {
+        "volume": 1,
+        "function": "确立成长尺度。依次展开主动争取入门、初次引气、首次结伴石湾谷采药和争取正式外门修炼课；基础指导与正式课程分开处理。以实际交付、合作反馈和权限内的课程回应承接近期目标。节奏从陌生生活的观察转入练习，再转入结伴执行与结果协商；不固定章数和课程制度。",
+        "chapter_range": [
+          1,
+          48
+        ]
+      },
+      "required_chapter_range": [
+        1,
+        48
+      ]
+    },
+    "narrative_search_accepted_through_chapter": 0,
+    "narrative_search_parent_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+  },
+  "project_id": "qid-learning-prose-01",
+  "input_asset_version_ids": [
+    "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "authority-output:d741dfe5-0119-4801-a447-78409f291161:book.bootstrap.previous_volume_outcome:v1",
+    "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+    "authority-output:67b73c55-47de-44e1-8f5d-dc77de89073a:book.bootstrap.arc_portfolio:v1",
+    "authority-output:50bb9143-40b6-43bc-9683-f80585be8aa4:book.bootstrap.ending_reachability:v1"
+  ]
+}

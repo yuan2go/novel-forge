@@ -1,0 +1,14 @@
+F401 [*] `novel_forge.modules.command_kernel.errors.KernelError` imported but unused
+ --> src/novel_forge/modules/chapter_authority/creative_memo.py:5:55
+  |
+3 | from typing import Any, Mapping
+4 |
+5 | from novel_forge.modules.command_kernel.errors import KernelError
+  |                                                       ^^^^^^^^^^^
+6 |
+7 | from .execution_artifacts import qualify_chapter_memo
+  |
+help: Remove unused import: `novel_forge.modules.command_kernel.errors.KernelError`
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.

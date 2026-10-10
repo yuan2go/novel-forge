@@ -340,6 +340,7 @@ def resolve_cancellation(
     trace_id: str,
     correlation_id: str,
     require_no_active_attempt: bool = False,
+    require_terminal_children_without_effects: bool = False,
 ) -> dict[str, Any]:
     target = {
         "no_external_effect": "CANCELLED",
@@ -369,6 +370,20 @@ def resolve_cancellation(
         operation = uow.cursor.fetchone()
         if operation is None:
             raise KernelError("OPERATION_NOT_FOUND", "operation does not exist")
+        if require_terminal_children_without_effects:
+            if resolution != "no_external_effect":
+                raise KernelError("CANCELLATION_RESOLUTION_INVALID", "Closed graph proof requires no external effects")
+            uow.cursor.execute("SELECT operation_id,status FROM authority_operation WHERE root_operation_id=%s AND project_id=%s AND operation_id<>%s ORDER BY operation_id FOR UPDATE", [operation_id,project_id,operation_id])
+            descendants = uow.cursor.fetchall()
+            if any(status not in {"SUCCEEDED","FAILED_FINAL","DEAD_LETTER","CANCELLED","COMPENSATED"} for _,status in descendants):
+                raise KernelError("CANCELLATION_CHILDREN_UNSETTLED", "Every existing child must be terminal before closing its cancelled root")
+            uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
+                WHERE o.root_operation_id=%s AND o.project_id=%s),
+                EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+                JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
+                AND l.released_at IS NULL AND l.expires_at>NOW())""", [operation_id,project_id,operation_id,project_id])
+            if any(uow.cursor.fetchone()):
+                raise KernelError("CANCELLATION_CHILDREN_UNSETTLED", "A cancelled graph with effects or live leases requires its existing settlement path")
         if require_no_active_attempt and uow.repositories.cancellations.active_attempt(operation_id) is not None:
             raise KernelError("CANCELLATION_ACTIVE_ATTEMPT", "active attempt must acknowledge cancellation first")
         if resolution == "no_external_effect":

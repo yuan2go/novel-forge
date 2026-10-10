@@ -1,0 +1,332 @@
+[
+  [
+    "narrative_governance_action",
+    "f6a815f2-e74e-426e-a4ef-ea786dec0096",
+    "sha256:f0842e345a7dff5870f4963ed70720032cf31a2185e479c61b75b806f96168ba",
+    {
+      "contract": {
+        "source": {
+          "content_hash": "sha256:8c20fa62e4c4d6efd68a8ed4e056474cd9459365b5865d8a62768b762702698f",
+          "asset_version_id": "b5193706-513f-4e11-b897-56b17ddd7b65"
+        },
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "authority": "PLANNING_PROPOSAL",
+        "evaluation": {
+          "content_hash": "sha256:b3afdf197859fc9c1d8b8f535bcaf79fb1e2d0c8b6ea5581a1a4079543294f2e",
+          "asset_version_id": "03bae2a5-677b-417e-9b93-3d0380d0a46f"
+        },
+        "generation": {
+          "content_hash": "sha256:6a7839a104bf3d08fde326c0fe33adb6be39ccdb939866758f77e21449e9d562",
+          "asset_version_id": "be1e512a-1150-4a8d-a762-d269c10234b3"
+        },
+        "project_id": "qid-learning-prose-01",
+        "world_plan": {
+          "policy": {
+            "version": "world-production-policy.v4",
+            "max_candidates": 4,
+            "max_provider_stages": 2,
+            "context_token_budget": 226400,
+            "max_preparation_steps": 4,
+            "max_world_time_advance": 1000,
+            "max_paths_per_candidate": 3,
+            "planning_window_chapters": 4
+          },
+          "reason": "将原准备步骤中的药房公布行为作为唯一候选变化，移除缺少人物自身知识或信念支持的主动查阅及获知转移。",
+          "authority": "PLANNING_PROPOSAL",
+          "baseline_id": "foundation:sha256:18e8d6bbd381ef25647ed8d271d0fce54e7b030fa1fa46981ca4cc4f67dd0ed8",
+          "disposition": "ELIGIBLE",
+          "plan_digest": "sha256:36857a6897b94fb6dda6291cd99043ca5f09f9c5e93fbfd0c0a50802de23815e",
+          "causal_debts": [],
+          "chapter_number": 1,
+          "rejected_paths": [],
+          "contract_version": "world-production-plan.v1",
+          "selected_path_id": "",
+          "alternative_paths": [],
+          "candidate_futures": [
+            {
+              "risks": [
+                "公布说明不证明三人已取得同行任务、同意分工或读过说明。",
+                "采收前仍须核实选定地点当前至少有一份成熟可采外叶；本候选不设初始数量。",
+                "交回质量、验收所得、日程余额和课程条件均尚未核实。"
+              ],
+              "arc_refs": [
+                "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+              ],
+              "eligible": true,
+              "authority": "PLANNING_CANDIDATE",
+              "rationale": "第5章拟进行首次折露草采收；药房公开“只采成熟外叶并保留中心芽与根”，为后续查阅和现场核实提供明确来源，也符合药房管理采收说明的冻结职能。该变化有助于以具体操作体现学习和负责的主题，但单独公布的情绪、冲突与即时回报有限。候选没有准备路径可比较。即使公布获接受，沈砚是否读到说明、选定地点是否有成熟份额，以及采收、交付和验收结果仍须分别获得因果支持；上述分数不替代这些硬条件。",
+              "dimensions": {
+                "theme": 0.69,
+                "pacing": 0.72,
+                "payoff": 0.46,
+                "emotion": 0.38,
+                "novelty": 0.42,
+                "conflict": 0.45,
+                "curiosity": 0.55,
+                "arc_progression": 0.57,
+                "causal_plausibility": 0.88,
+                "obligation_pressure": 0.48,
+                "character_consistency": 0.78
+              },
+              "hypotheses": [
+                "药房可在第5章将其负责的折露草采收要求公开供任务参与者查阅；该公布仍须经过未来独立评估。"
+              ],
+              "rank_value": 0.58,
+              "transition": {
+                "action": "公布折露草采收说明中关于成熟外叶与芽根的要求",
+                "camera": "ON_CAMERA",
+                "changes": {
+                  "world_state_id": "unit:herb-store",
+                  "public_harvest_rule": "只采成熟外叶并保留中心芽与根"
+                },
+                "actor_id": "unit:herb-store",
+                "cause_refs": [
+                  "foundation:authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+                  "foundation:authority-output:01d50954-728c-47bb-85fb-06fd785130e0:story_planning.candidate:v1",
+                  "foundation:authority-output:847cd4f1-7763-473d-8c46-0785ffa7b1f3:story_planning.candidate:v1",
+                  "foundation:authority-output:6b3fab3d-e978-45b0-a1d6-97df7254d134:story_planning.candidate:v1",
+                  "foundation:authority-output:bd11fa76-a76e-4b65-8e32-093f8f6e6bac:story_planning.candidate:v1",
+                  "foundation:authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                ],
+                "entity_key": "world_state_id=unit:herb-store",
+                "state_kind": "world_state",
+                "story_time": {
+                  "label": "第5章采收说明可供查阅",
+                  "precision": "ORDERED",
+                  "end_ordinal": 1,
+                  "timeline_id": "chapter:5",
+                  "start_ordinal": 1
+                },
+                "action_mode": "ROUTINE",
+                "requirements": [],
+                "transition_id": "publishHarvestRule",
+                "epistemic_basis": []
+              },
+              "candidate_id": "candidate-future:sha256:30a116773501909d06d226dcc873fa6a435dfe211b32bcac5ccd3c27d0465e38",
+              "requirements": [],
+              "obligation_refs": [],
+              "contract_version": "world-transition-candidate.v1",
+              "affected_entities": [
+                "unit:herb-store",
+                "character:shen-yan",
+                "resource:zhelu-grass"
+              ],
+              "information_scope": {
+                "disclosures": [
+                  {
+                    "mode": "CONFIRM",
+                    "fields": [
+                      "public_harvest_rule"
+                    ],
+                    "audience": "READER",
+                    "event_id": "local:publishHarvestRule",
+                    "claim_kind": "CURRENT_ASSERTION",
+                    "disclosure_id": "reader-harvest-rule",
+                    "presentation_channel": "ON_CAMERA:采收说明"
+                  }
+                ]
+              },
+              "preparation_paths": [],
+              "world_consequences": [
+                "若公布获得接受，采收要求成为可供查阅的客观来源；沈砚是否接触并获知仍需另有支持。",
+                "公开要求不证明石湾谷当前有成熟可采份额，也不完成采收或交付。"
+              ],
+              "reality_revision_id": "foundation:sha256:18e8d6bbd381ef25647ed8d271d0fce54e7b030fa1fa46981ca4cc4f67dd0ed8",
+              "fact_mutation_allowed": false,
+              "narrative_preferences": [
+                "让采收要求成为可观察的公开信息，为沈砚日后实际查阅与现场核实提供来源。",
+                "保留陆衡的回程时间和唐穗的质量要求，待实际协商后再确定分工。"
+              ]
+            }
+          ],
+          "intent_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+          "preparation_schedule": [],
+          "disclosure_projection": [
+            {
+              "mode": "CONFIRM",
+              "source": {
+                "state": {
+                  "public_harvest_rule": "只采成熟外叶并保留中心芽与根"
+                },
+                "evidence_role": "PLANNED_LOCAL_OCCURRENCE",
+                "source_event_id": "local:publishHarvestRule"
+              },
+              "fact_id": "local:publishHarvestRule",
+              "audience": "READER",
+              "claim_kind": "CURRENT_ASSERTION",
+              "disclosure_id": "reader-harvest-rule",
+              "permitted_fields": [
+                "public_harvest_rule"
+              ],
+              "presentation_channel": "ON_CAMERA:采收说明"
+            }
+          ],
+          "fact_mutation_allowed": false,
+          "selected_candidate_id": "candidate-future:sha256:30a116773501909d06d226dcc873fa6a435dfe211b32bcac5ccd3c27d0465e38",
+          "continuation_decisions": [],
+          "accepted_through_chapter": 0
+        },
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "contract_version": "world-production-action.v2",
+        "fact_mutation_allowed": false,
+        "preserve_accepted_history": true
+      }
+    }
+  ],
+  [
+    "world_preparation_evaluation",
+    "03bae2a5-677b-417e-9b93-3d0380d0a46f",
+    "sha256:b3afdf197859fc9c1d8b8f535bcaf79fb1e2d0c8b6ea5581a1a4079543294f2e",
+    {
+      "contract": {
+        "output": {
+          "evaluations": [
+            {
+              "rationale": "第5章拟进行首次折露草采收；药房公开“只采成熟外叶并保留中心芽与根”，为后续查阅和现场核实提供明确来源，也符合药房管理采收说明的冻结职能。该变化有助于以具体操作体现学习和负责的主题，但单独公布的情绪、冲突与即时回报有限。候选没有准备路径可比较。即使公布获接受，沈砚是否读到说明、选定地点是否有成熟份额，以及采收、交付和验收结果仍须分别获得因果支持；上述分数不替代这些硬条件。",
+              "dimensions": {
+                "theme": 0.69,
+                "pacing": 0.72,
+                "payoff": 0.46,
+                "emotion": 0.38,
+                "novelty": 0.42,
+                "conflict": 0.45,
+                "curiosity": 0.55,
+                "arc_progression": 0.57,
+                "causal_plausibility": 0.88,
+                "obligation_pressure": 0.48,
+                "character_consistency": 0.78
+              },
+              "transition_id": "publishHarvestRule",
+              "preferred_path_id": ""
+            }
+          ],
+          "action_classifications": [
+            {
+              "rationale": "药房是冻结世界设定中采收说明的管理单位；本变化仅由药房公开其负责的采收要求，未声称沈砚或同伴已经查阅、理解或作出决定。公开说明可作为读者在场获知规则的来源。空白接受史不支持任何人物已获知该规则，但不妨碍将药房公布行为作为待评估的单位例行行动。",
+              "supported": true,
+              "field_path": "$.candidates[0].transition"
+            }
+          ]
+        },
+        "source": {
+          "content_hash": "sha256:8c20fa62e4c4d6efd68a8ed4e056474cd9459365b5865d8a62768b762702698f",
+          "asset_version_id": "b5193706-513f-4e11-b897-56b17ddd7b65"
+        },
+        "evidence": {
+          "model_id": "gpt-6-sol",
+          "attempt_id": "88a43ad1-d8b7-42f0-9156-4c798ae54ec2",
+          "backend_id": "codex-cli",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "codex-cli",
+          "execution_id": "planning-execution:cf9172ae-f8bc-4e58-b34d-827ed5578102:88a43ad1-d8b7-42f0-9156-4c798ae54ec2",
+          "operation_id": "4da0e539-ba48-4dde-b341-6ceb501fe844",
+          "fencing_token": 1,
+          "real_model_call": true,
+          "cost_receipt_ref": "authority-asset-version:5450dfad-b31d-4d5d-94bd-cf0699e4b501",
+          "route_snapshot_id": "production_execution/routes/f400d855309a245e2d8e",
+          "usage_receipt_ref": "authority-asset-version:03adcf74-8272-47a6-9181-f0791a404ccc",
+          "input_manifest_ref": "production_execution/inputs/f400d855309a245e2d8e",
+          "output_manifest_ref": "authority-asset-version:0bd7acdd-27b5-41ad-a4df-84765d0ded9f",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "cf9172ae-f8bc-4e58-b34d-827ed5578102",
+          "fixture_protocol_only": false,
+          "validation_manifest_ref": "authority-asset-version:a447ae80-697c-497d-8f9a-6c6aa09ae4d1"
+        },
+        "generation": {
+          "content_hash": "sha256:6a7839a104bf3d08fde326c0fe33adb6be39ccdb939866758f77e21449e9d562",
+          "asset_version_id": "be1e512a-1150-4a8d-a762-d269c10234b3"
+        }
+      }
+    }
+  ],
+  [
+    "world_preparation_generation",
+    "be1e512a-1150-4a8d-a762-d269c10234b3",
+    "sha256:6a7839a104bf3d08fde326c0fe33adb6be39ccdb939866758f77e21449e9d562",
+    {
+      "contract": {
+        "output": {
+          "reason": "将原准备步骤中的药房公布行为作为唯一候选变化，移除缺少人物自身知识或信念支持的主动查阅及获知转移。",
+          "candidates": [
+            {
+              "risks": [
+                "公布说明不证明三人已取得同行任务、同意分工或读过说明。",
+                "采收前仍须核实选定地点当前至少有一份成熟可采外叶；本候选不设初始数量。",
+                "交回质量、验收所得、日程余额和课程条件均尚未核实。"
+              ],
+              "arc_refs": [
+                "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+              ],
+              "rationale": "药房负责采收说明，可以在第5章提出公开要求的候选变化。空白接受史尚不支持沈砚主动查阅或已经获知说明；本候选仅使说明可供未来接触，不预写采收或交付。",
+              "transition": {
+                "payload_json": "{\"transition_id\":\"publishHarvestRule\",\"actor_id\":\"unit:herb-store\",\"camera\":\"ON_CAMERA\",\"story_time\":{\"timeline_id\":\"chapter:5\",\"start_ordinal\":1,\"end_ordinal\":1,\"precision\":\"ORDERED\",\"label\":\"第5章采收说明可供查阅\"},\"action\":\"公布折露草采收说明中关于成熟外叶与芽根的要求\",\"action_mode\":\"ROUTINE\",\"state_kind\":\"world_state\",\"entity_key\":\"unit:herb-store\",\"changes\":{\"public_harvest_rule\":\"只采成熟外叶并保留中心芽与根\"},\"requirements\":[],\"cause_refs\":[\"foundation:authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1\",\"foundation:authority-output:01d50954-728c-47bb-85fb-06fd785130e0:story_planning.candidate:v1\",\"foundation:authority-output:847cd4f1-7763-473d-8c46-0785ffa7b1f3:story_planning.candidate:v1\",\"foundation:authority-output:6b3fab3d-e978-45b0-a1d6-97df7254d134:story_planning.candidate:v1\",\"foundation:authority-output:bd11fa76-a76e-4b65-8e32-093f8f6e6bac:story_planning.candidate:v1\",\"foundation:authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1\"],\"epistemic_basis\":[]}"
+              },
+              "obligation_refs": [],
+              "soft_assumptions": [
+                "药房可在第5章将其负责的折露草采收要求公开供任务参与者查阅；该公布仍须经过未来独立评估。"
+              ],
+              "affected_entities": [
+                "unit:herb-store",
+                "character:shen-yan",
+                "resource:zhelu-grass"
+              ],
+              "information_scope": {
+                "disclosures": [
+                  {
+                    "mode": "CONFIRM",
+                    "fields": [
+                      "public_harvest_rule"
+                    ],
+                    "audience": "READER",
+                    "event_id": "local:publishHarvestRule",
+                    "claim_kind": "CURRENT_ASSERTION",
+                    "disclosure_id": "reader-harvest-rule",
+                    "presentation_channel": "ON_CAMERA:采收说明"
+                  }
+                ]
+              },
+              "preparation_paths": [],
+              "world_consequences": [
+                "若公布获得接受，采收要求成为可供查阅的客观来源；沈砚是否接触并获知仍需另有支持。",
+                "公开要求不证明石湾谷当前有成熟可采份额，也不完成采收或交付。"
+              ],
+              "narrative_preferences": [
+                "让采收要求成为可观察的公开信息，为沈砚日后实际查阅与现场核实提供来源。",
+                "保留陆衡的回程时间和唐穗的质量要求，待实际协商后再确定分工。"
+              ]
+            }
+          ],
+          "disposition": "CANDIDATES"
+        },
+        "source": {
+          "content_hash": "sha256:8c20fa62e4c4d6efd68a8ed4e056474cd9459365b5865d8a62768b762702698f",
+          "asset_version_id": "b5193706-513f-4e11-b897-56b17ddd7b65"
+        },
+        "evidence": {
+          "model_id": "gpt-6-sol",
+          "attempt_id": "88a43ad1-d8b7-42f0-9156-4c798ae54ec2",
+          "backend_id": "codex-cli",
+          "capability": "planning.story_chapter.generate",
+          "provider_id": "codex-cli",
+          "execution_id": "planning-execution:40700af1-b8f6-45bd-a64b-8ecdf3990cdc:88a43ad1-d8b7-42f0-9156-4c798ae54ec2",
+          "operation_id": "4da0e539-ba48-4dde-b341-6ceb501fe844",
+          "fencing_token": 1,
+          "real_model_call": true,
+          "cost_receipt_ref": "authority-asset-version:50c879b1-42ea-4a28-b4fe-54f689facf52",
+          "route_snapshot_id": "production_execution/routes/19ac64a7e4edf8e3b7ed",
+          "usage_receipt_ref": "authority-asset-version:db525cf8-670d-41fa-8ad2-5f6957d3ce88",
+          "input_manifest_ref": "production_execution/inputs/19ac64a7e4edf8e3b7ed",
+          "output_manifest_ref": "authority-asset-version:4e5a45b7-0d5a-4040-8e84-61a01154afed",
+          "production_verified": false,
+          "provider_request_id": "",
+          "external_receipt_ref": "40700af1-b8f6-45bd-a64b-8ecdf3990cdc",
+          "fixture_protocol_only": false,
+          "validation_manifest_ref": "authority-asset-version:371686e1-769f-42b6-9092-188704d0c601"
+        },
+        "knowledge_selection_digest": "sha256:a39d82b9e3bed5a0c027b863f60f1e67af4bd5bd32c772b7feea0fc4e000c7db"
+      }
+    }
+  ]
+]

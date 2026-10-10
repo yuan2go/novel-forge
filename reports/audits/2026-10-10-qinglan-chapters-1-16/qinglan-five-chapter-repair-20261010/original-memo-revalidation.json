@@ -1,0 +1,2438 @@
+[
+  {
+    "effect_id": "79e0710c-57eb-4540-be0a-b4c5bad67611",
+    "references": {
+      "contract_version": "frozen-character-references.v1",
+      "project_id": "qid-learning-prose-01",
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "book_id": "book:qinglan-wendao-20261008",
+      "input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+      "cast_asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+      "cast_content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+      "bindings": [
+        {
+          "character_id": "character:shen-yan",
+          "display_name": "沈砚",
+          "aliases": []
+        }
+      ],
+      "participant_bindings": {
+        "沈砚": "character:shen-yan"
+      },
+      "token_bindings": {
+        "character:shen-yan": "character:shen-yan",
+        "沈砚": "character:shen-yan"
+      }
+    },
+    "result": {
+      "type": "ChapterMemo",
+      "contract_version": "chapter-memo-v2",
+      "chapter": 5,
+      "source_chapter_execution_intent_asset_version_id": "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+      "source_chapter_plan": {
+        "locked": true,
+        "content_hash": "sha256:bd17deb9c5fdeb5a43af5c638c3acf894d4b56a77bcc529dac5a9384bbbfcb59",
+        "asset_version_id": "authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1"
+      },
+      "accepted_boundary": {
+        "accepted_through_chapter": 0,
+        "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      "mission_fingerprint": "sha256:75b66f374e696200960cebebf786a6069c4ab1e034c9b27d15aaea1938417a66",
+      "execution_strategy": "先守住事实取得顺序，再组织细节：读核说明和时间表，按原说明尝试，察觉追等及动作变化，到时停止，分列记录，保留空白，完成休息。说明只在准备使用或面对限制时解释。将本章的可见回报放在观察与记录的可靠性上；所有拟议结果保持计划身份，备忘不宣称结果已发生，也不改变冻结Plan。",
+      "tension_strategy": "张力集中在注意力与证据的有限性：想等到感觉，会漏看动作；想写出原因，会诱使他把后来察觉换成实际起点。让读者先跟随期待，再通过停止与留白看到他守住可确认的部分。续读动力来自一个已经定位却尚未补齐的缺口，无需新危机、反转或虚假突破。",
+      "composition_strategy": "保留两场的因果接续：第一场让期待挤占观察，并取得有限的本人察觉；第二场让落笔检验这些察觉的依据，使缺口显形。用同一张本次记录纸连接练习、回想、留白和休息，避免把观察心得拆成反复说理。正文篇幅主要用于注意力变化、落笔取舍与实际时间承接，不靠新增练习或插入旁人对话扩充。",
+      "event_directives": [
+        {
+          "event_id": "chapter:5:scene:1",
+          "arc_contributions": [
+            "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          ],
+          "narrative_functions": [
+            "CHARACTER",
+            "MYSTERY_DISCLOSURE",
+            "PLOT",
+            "READER_EXPERIENCE"
+          ],
+          "causal_intent": {
+            "goal": "现场读核既有说明和纸上的时间安排，按说明完成五分钟尝试，留意本人动作与开始追等结果的察觉，保住未得到预期感觉时仍可取得的信息。",
+            "conflict": "感觉没有按期待重现，等待结果容易挤走动作观察；他能发现自己在追等，却不能因此补出此前没有持续观察的提肩起点。",
+            "exit_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。",
+            "entry_state": "条件性承接第4章：沈砚在桌边完成既定整理，既有说明与分栏纸在手边；程观、许庭均已离开。以程观离开为相对零点，第12分钟的五分钟独立练习即将开始，本次结果未知。已接受入口没有人物知识事实，本章尚未通过本人现场读核取得说明和时间安排。"
+          }
+        },
+        {
+          "event_id": "chapter:5:scene:2",
+          "arc_contributions": [
+            "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          ],
+          "narrative_functions": [
+            "CHARACTER",
+            "MYSTERY_DISCLOSURE",
+            "PLOT",
+            "READER_EXPERIENCE"
+          ],
+          "causal_intent": {
+            "goal": "在预留三分钟内将本次观察分列落字，留下提肩起点的证据缺口，再完整保留五分钟休息。",
+            "conflict": "他希望记录能解释变化，现有证据却只能支持部分察觉；把空白留下会显得不完整，也最能暴露下一次真正需要核对的地方。",
+            "exit_state": "相对第25分钟，三分钟记录和五分钟休息均已结束。沈砚的纸页分列本次未辨清气机、开始追等结果的察觉及能够确认的动作，提肩实际起点仍留空；他准备携记录进入待作外部观察，观察尚未开始，稳定流转及内在因果仍未获证明。",
+            "entry_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。"
+          }
+        }
+      ],
+      "narrative_realization": {
+        "events": [
+          {
+            "action": "沈砚按已知说明独自完成一次有时限的尝试，同时留意肩背、呼吸与自己开始等待结果的时刻。",
+            "causes": [
+              "group4-e3"
+            ],
+            "decision": "按既有说明完成尝试，不临时增添动作来追求感觉。",
+            "event_id": "group4-e4",
+            "required": true,
+            "slice_id": "chapter-5",
+            "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "motivation": "检验自己能否在没有即时反馈时持续观察。",
+            "resistance": "未得到期待的感觉，容易诱使他把动作观察丢掉。",
+            "consequence": "即使未再次辨清气机，他仍获得自己动作变化的可复查记录。",
+            "disclosures": [
+              "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+            ],
+            "state_deltas": [
+              {
+                "to_state": "有一次标明未再次辨清气机的独立比较",
+                "entity_id": "thread:qinglan-wendao:future-1:own-road",
+                "from_state": "尚无本组独立比较记录",
+                "state_kind": "practice_evidence"
+              }
+            ],
+            "preconditions": [
+              "有可用且不与已确认事务重叠的练习时段。",
+              "既有说明的适用范围已在候选连续性中明确。"
+            ],
+            "chapter_number": 5,
+            "feature_status": {
+              "decision": {
+                "status": "APPLICABLE",
+                "rationale": "沈砚自主选择遵守已知说明和时间边界。"
+              },
+              "resistance": {
+                "status": "APPLICABLE",
+                "rationale": "气机不按期待重现，观察欲望又容易使呼吸变急。"
+              },
+              "irreversible_change": {
+                "status": "APPLICABLE",
+                "rationale": "本次练习实际耗时，不要求额外伤害或重大牺牲。"
+              }
+            },
+            "next_event_ids": [
+              "group4-e5"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "knowledge_boundary": {
+              "actor_knows": [
+                "沈砚知道本次自己遵循的说明。",
+                "沈砚可报告本次亲自察觉的肩背与呼吸变化。"
+              ],
+              "reader_may_learn": [
+                "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+              ],
+              "forbidden_disclosures": [
+                "许庭或程观未在场时的私下判断。",
+                "没有再次感知就证明此前从未感知。"
+              ]
+            },
+            "obligation_actions": [],
+            "irreversible_change": "本次有时限练习所用时间已耗去。"
+          },
+          {
+            "action": "沈砚写下本次能确认的动作和不能确认的内在先后，把空白留在记录中。",
+            "causes": [
+              "group4-e4"
+            ],
+            "decision": "不把没有观察到的变化补写为已知原因。",
+            "event_id": "group4-e5",
+            "required": true,
+            "slice_id": "chapter-5",
+            "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "motivation": "让下一次求助建立在真实记录上。",
+            "resistance": "把空白写明会使记录看起来不够完整。",
+            "consequence": "下一次核对可以针对证据空白，而不必重演整次练习。",
+            "disclosures": [
+              "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+            ],
+            "state_deltas": [
+              {
+                "to_state": "本次观察已分列确知与未知",
+                "entity_id": "thread:qinglan-wendao:future-1:own-road",
+                "from_state": "本次观察仍在回忆中",
+                "state_kind": "practice_record"
+              }
+            ],
+            "preconditions": [
+              "本次独立尝试已完成。"
+            ],
+            "chapter_number": 5,
+            "feature_status": {
+              "decision": {
+                "status": "APPLICABLE",
+                "rationale": "主动留下空白是一项影响后续核对方式的判断。"
+              },
+              "resistance": {
+                "status": "APPLICABLE",
+                "rationale": "沈砚希望得到原因，但现有观察不足。"
+              },
+              "irreversible_change": {
+                "status": "NOT_APPLICABLE",
+                "rationale": "记录可修改，不能据此强行制造不可逆代价。"
+              }
+            },
+            "next_event_ids": [
+              "group4-e6"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "knowledge_boundary": {
+              "actor_knows": [
+                "沈砚知道自己本次实际察觉到的动作变化。",
+                "沈砚知道哪些时刻自己没有持续留意。"
+              ],
+              "reader_may_learn": [
+                "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+              ],
+              "forbidden_disclosures": [
+                "提肩已被证明是气机消失的原因。"
+              ]
+            },
+            "obligation_actions": [],
+            "irreversible_change": null
+          }
+        ],
+        "slice_id": "chapter-5",
+        "event_ids": [
+          "group4-e4",
+          "group4-e5"
+        ],
+        "proof_hash": "sha256:99fb8eeb1f94c2f6bd05e9184b32385892cbcd5a19e8b8d46e73902f5f2267fb",
+        "chapter_number": 5,
+        "realization_id": "narrative-realization:d901739991ade7b9cf438aa795bf182c0ae72bfd9df1fef7d533d5a9be05087e",
+        "contract_digest": "sha256:859156e794d36f7738dacbaf2a8d54d83d28ecada77c827aca7990f93b2b77a0",
+        "foundation_set_digest": "sha256:00e78821a055e905a55475313f3209cc1eb5d0af07dfef25ca87249946c92b37",
+        "arc_working_set_digest": "sha256:d657cbed7d45b88424c15404d2940bcee31f85231aac1231afbd31cd9fa182af",
+        "proof_asset_version_id": "authority-output:b1af1e58-1939-4c2e-9a6a-d4929c61cb60:story_design.transition.receipt:v1",
+        "accepted_through_chapter": 0,
+        "chapter_group_content_hash": "sha256:050928f617302350954c01bb753c104ffea9622380939a56eaeeb95e5c28fd7a",
+        "chapter_group_plan_version_id": "authority-output:a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3:story_planning.candidate:v1"
+      },
+      "scene_directives": [
+        {
+          "scene_id": "chapter:5:scene:1",
+          "directive": "从桌边手头的说明与分栏纸切入，让沈砚实际读核后启动尝试。通过本人能察觉的肩背、呼吸和注意力去向，写出期待如何逐渐占据观察；具体变化可在冻结范围内实现，不预设精确发生分钟。他发现自己开始追等时，既要让这一察觉清楚，也要保留肩背已提起而起点未看清的限制。第17分钟到达便停止，不以补试兑现期待。",
+          "transition": "以停止尝试、转向纸页连接第二场：第17分钟练习结束，观察尚未落字，随即进入预留三分钟记录。",
+          "emotional_change": "由安静的期待转为略有失落，同时获得一件可以带入记录的具体察觉；不立即总结自己已经成熟或掌握方法。",
+          "information_release": "通过现场阅读取得既有说明与纸上时间边界；通过本次过程披露未再次辨清气机，以及本人开始追等的察觉和可报告的肩背、呼吸变化。不提供气机中断原因或旁人的判断。",
+          "conflict_progression": "由希望感觉重现推进到注意力开始催等，再推进到察觉自己正在催等；这项察觉只能收回当下观察，不能补回此前漏看的提肩起点。终点的阻力是仍想多试片刻，却按时间边界停下。"
+        },
+        {
+          "scene_id": "chapter:5:scene:2",
+          "directive": "先写本次未再次辨清气机，再分别写追等的察觉和本人确认的动作。让提肩起点成为一次短而具体的落笔取舍：他试着回想，发现没有持续观察，便保留空格并注明缺失。用已写条目与空格的并置呈现完成感，不反复宣讲诚实。第20分钟收笔，承接完整五分钟休息；休息可写普通等待与目光落在记录上，不转成另一轮练习。第25分钟后只准备携记录进入待作核对。",
+          "transition": "章末将视线留在已写条目与起点空格之间，使沈砚面临下一次有限观察该先核对哪一段的具体问题；不替他完成取舍，不让旁人到场作答。",
+          "emotional_change": "由想把记录写完整的急切，转为接受一处确实无法填写的空白；踏实来自完成有依据的工作，疑问仍然存在。",
+          "information_release": "让读者通过实际落字与留白确认本次记录分列了确知与未知，提肩实际起点尚不能确认。不添加提肩与气机变化的因果结论，不预告外部观察结果。",
+          "conflict_progression": "先让能确认的条目顺利落字，再让笔停在最想解释的提肩起点。回想只能找到后来察觉提肩的片段，完整解释的愿望因此遇到证据限制；选择留空后，问题由求一个原因收束为寻找下一次核对范围。"
+        }
+      ],
+      "retrieval_queries": [
+        "在截至第0章的已接受初始Canon与Story State中，检索沈砚可用的既有练习说明：是否有明确原文、适用范围及允许动作？若未收录，返回缺失，不以第1—4章候选或风格示例补成已接受知识。",
+        "在同一已接受边界内，检索现场分栏纸、旧记录及时间安排的已确认事实：有无纸面字段、待作配合起止和已有计时方式？区分已接受内容与本章冻结Plan的条件性入口，不补定未供应细节。"
+      ],
+      "obligation_actions": [],
+      "arc_actions": [
+        {
+          "action": "按冻结安排推进：建议以无人代判时仍能完成观察、区分确知与未知的选择，承载沈砚自主修行道路的局部成长；不将计划中的比较记录表述为已接受事实。",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "forbidden_changes": {
+        "forbidden_events": [],
+        "hard_constraints": [],
+        "forbidden_payoffs": [],
+        "prohibited_outcomes": [
+          "以没有再次感知为由撤销先前候选中的观察能力。",
+          "增加未经说明的新修炼动作。",
+          "把一次比较失败写成确定的中断原因。"
+        ]
+      },
+      "reader_effect": {
+        "reward_mode": "看见沈砚独立完成可复查的记录",
+        "exit_question": "提肩起点没有看清，下一次有限的外部观察该先核对哪一段，才能真正补到缺口？",
+        "entry_question": "没有人在旁提醒，沈砚能否一边期待感觉重现，一边留住自己的动作观察？",
+        "target_emotion": "安静而踏实"
+      },
+      "hook_intent": {
+        "ending_hook": "",
+        "unresolved_exit_question": "提肩起点没有看清，下一次有限的外部观察该先核对哪一段，才能真正补到缺口？"
+      },
+      "stop_conditions": [
+        "备忘覆盖两场执行与章末承接后结束，不新增场景、改写冻结事件或宣布Plan已变更。",
+        "后续正文止于第25分钟休息结束后的准备状态；外部观察尚未执行，稳定流转和提肩因果尚未获证明。",
+        "若具体说明、待作配合起止或计时细节无授权依据，保持该细节缺口，不用候选历史、示例或修仙惯例补成已接受事实。"
+      ],
+      "execution_evidence": {
+        "input_manifest": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "read_set": [
+            "asset-version:authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+            "asset-version:authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+            "asset-version:7aa3ae4f-2b82-4f12-879b-8971146f39d4",
+            "asset-version:6b8a0885-1e42-4cbb-acbc-0390968f2078"
+          ],
+          "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+          "project_id": "qid-learning-prose-01",
+          "manifest_id": "production_execution/inputs/1cc31c7678bcb6ff914a",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:5",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 5
+          },
+          "fencing_token": 1,
+          "input_artifacts": [
+            {
+              "artifact_ref": "asset-version:authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+              "content_hash": "sha256:bd17deb9c5fdeb5a43af5c638c3acf894d4b56a77bcc529dac5a9384bbbfcb59",
+              "artifact_type": "chapter_plan",
+              "schema_version": "authoritative-chapter-plan-v5",
+              "asset_version_id": "authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+              "content_hash": "sha256:98d8f711a229e34fb135bb273c056e509eb37fd46a02da440b99118d297ab5d6",
+              "artifact_type": "chapter_execution_intent",
+              "schema_version": "chapter-execution-intent-v4",
+              "asset_version_id": "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:7aa3ae4f-2b82-4f12-879b-8971146f39d4",
+              "content_hash": "sha256:89e41684901dd7405a89d95e2e794962c09f25c5a98b915c6b5f202e69a1808d",
+              "artifact_type": "capability_materialization_manifest",
+              "schema_version": "novelos.chapter_capability_materialization.v1",
+              "asset_version_id": "7aa3ae4f-2b82-4f12-879b-8971146f39d4",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            },
+            {
+              "artifact_ref": "asset-version:6b8a0885-1e42-4cbb-acbc-0390968f2078",
+              "content_hash": "sha256:1d548b6fb27f3e82abc17713f5e07c5edb30b0f32ffda53ac61d0ebc45364519",
+              "artifact_type": "provider_request_admission_manifest",
+              "schema_version": "novelos.provider_request_admission.v1",
+              "asset_version_id": "6b8a0885-1e42-4cbb-acbc-0390968f2078",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            }
+          ],
+          "arc_version_refs": [],
+          "planning_version": "authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+          "skill_bundle_ref": "production_execution/skill_bundles/1cc31c7678bcb6ff914a",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/1cc31c7678bcb6ff914a",
+          "source_policy_ref": "source:planning-chapter-memo:v1",
+          "canon_version_refs": [],
+          "context_bundle_ref": "context:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "source_eligibility": "PRODUCTION_ELIGIBLE",
+          "story_state_version": "story-state:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "skill_bundle_version": "chapter-plan-skill-v3",
+          "prompt_bundle_version": "prompt-system:chapter-generation-pack@v3",
+          "canon_snapshot_version": "canon:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "context_bundle_version": "context:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "quality_profile_version": "quality-profile:none:34330928-4f50-4ca8-8f9a-6125f15bef89"
+        },
+        "route_snapshot": {
+          "model_id": "gpt-6.1-sol",
+          "policy_id": "chapter.memo.route.f447652da57a5bd80fdc",
+          "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+          "backend_id": "codex-cli",
+          "release_sha": "9c8b2b091cb1dcc30ffffebe8d3946bccaf1fa38",
+          "approval_ref": "",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "model_provider": "codex-cli",
+          "policy_version": 1,
+          "backend_version": "1.0.0",
+          "runtime_host_id": "host:author-first-live-isolated",
+          "auth_profile_ref": "auth:current-chatgpt-member:codex:ac313a67364269b8e4a28d1192c2b375a8df36901ca1c20528bb6279a3a9a7cc",
+          "credential_scope": "",
+          "fallback_trigger": "",
+          "model_profile_id": "chapter.memo.default.f447652da57a5bd80fdc",
+          "reasoning_effort": "high",
+          "route_generation": 1,
+          "skill_bundle_ref": "production_execution/skill_bundles/1cc31c7678bcb6ff914a",
+          "output_schema_ref": "schema:chapter-provider-output:memo:v2",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/1cc31c7678bcb6ff914a",
+          "route_decision_id": "routing-decision:d46bbe2d8041df8de111c3c905cb47199ac6fcd4f051ada858458306889a7854",
+          "route_policy_hash": "99c1f4c0b33b2a7fe7b193faf14e9a29e0dffc8bc80a9ee026dbf786f231e4d1",
+          "route_snapshot_id": "production_execution/routes/1cc31c7678bcb6ff914a",
+          "context_bundle_ref": "context:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "model_profile_hash": "684ec5283fd57b05ba06b283b2b8def989d6e98c1c7ca935fba563f943543ff8",
+          "route_change_index": 0,
+          "secret_version_ref": "",
+          "fallback_policy_ref": "chapter.memo.fail-closed",
+          "model_profile_version": 2,
+          "fallback_policy_version": 1,
+          "parent_route_snapshot_id": "",
+          "quality_revalidation_ref": "",
+          "requested_reasoning_effort": "high"
+        },
+        "output_manifest": {
+          "files": [],
+          "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+          "stderr_ref": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/chapter-execution-79e0710c-57eb-4540-be0a-b4c5ba-540b4380986c7516/stderr.log",
+          "stdout_ref": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/chapter-execution-79e0710c-57eb-4540-be0a-b4c5ba-540b4380986c7516/stdout.log",
+          "manifest_id": "output-manifest:chapter-execution:79e0710c-57eb-4540-be0a-b4c5bad67611",
+          "output_hash": "sha256:11603f64cff4857b91af2179880ba7832b7eb8b0ccffbc79f1833c3077f9b745",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:ceb2f4dd-2ec1-4a59-b8d9-d55a0e7ff09a",
+          "schema_version": "schema:chapter-provider-output:memo:v2",
+          "normalized_output_ref": "authority-asset-version:779b28b8-ac0f-4b69-b15b-62316b347c8f"
+        },
+        "execution_handle": {
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+          "backend_id": "codex-cli",
+          "execution_id": "chapter-execution:79e0710c-57eb-4540-be0a-b4c5bad67611",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "completion_mode": "PROCESS_EXIT",
+          "local_process_id": 45482,
+          "query_capability": "SUPPORTED",
+          "cancel_capability": "SUPPORTED",
+          "callback_capability": "UNSUPPORTED",
+          "external_request_id": null,
+          "provider_request_id": null,
+          "backend_execution_id": "process-receipt:03f3e7176ffa18ddf815ec52",
+          "local_process_group_id": 45482,
+          "local_process_start_time": "Sat Oct 10 00:02:44 2026",
+          "local_execution_receipt_id": "process-receipt:03f3e7176ffa18ddf815ec52"
+        },
+        "execution_result": {
+          "error": null,
+          "outcome": "SUCCEEDED",
+          "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+          "started_at": "2026-10-09T16:02:44.965370Z",
+          "completed_at": "2026-10-09T16:04:37.440491Z",
+          "execution_id": "chapter-execution:79e0710c-57eb-4540-be0a-b4c5bad67611",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:ceb2f4dd-2ec1-4a59-b8d9-d55a0e7ff09a",
+          "cost_receipt_ref": "authority-asset-version:e086c58b-aae9-45d8-ba59-4d151bac5c4f",
+          "usage_receipt_ref": "authority-asset-version:8cd0aa3b-8b1b-4685-ab31-9400864ee7db",
+          "output_manifest_ref": "authority-asset-version:1162489d-48b1-446e-8223-f72a79ab6e57",
+          "process_receipt_ref": "authority-asset-version:0cf4db2b-83f0-43a5-a19d-10aa59fc432a",
+          "external_receipt_ref": null,
+          "provider_receipt_ref": null,
+          "normalized_output_ref": "authority-asset-version:779b28b8-ac0f-4b69-b15b-62316b347c8f",
+          "validation_report_ref": "authority-asset-version:81ce2e5e-e5d7-4726-83a8-8e9cdc1efeea"
+        },
+        "process_evidence": {
+          "cost": {
+            "model": "gpt-6.1-sol",
+            "reason": "monetary_cost_not_observable",
+            "currency": "UNKNOWN",
+            "measurement": "UNKNOWN",
+            "availability": "UNAVAILABLE",
+            "provider_billed": "UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+            "entitlement_snapshot": {
+              "cli_version": "codex-cli 0.159.2",
+              "billing_identity": {
+                "version": "codex-membership-identity.v1",
+                "auth_mode": "chatgpt",
+                "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+                "billing_channel": "ACCOUNT_ENTITLEMENT"
+              },
+              "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+              "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+              "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+              "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+            },
+            "entitlement_snapshot_hash": "sha256:11fd8cd1ab78162fb9963e1535887111e06611960e8cad9f34fe3ae6ceb9e9ae"
+          },
+          "stage": "memo",
+          "tools": {
+            "denied": [
+              "storage.object.put"
+            ],
+            "policy": "DEFAULT_DENY",
+            "allowed": [
+              "model.provider.invoke"
+            ],
+            "invoked": [
+              "model.provider.invoke"
+            ],
+            "invocations": [
+              {
+                "event": "provider_execution",
+                "status": "completed",
+                "call_id": "",
+                "tool_ref": "model.provider.invoke"
+              }
+            ]
+          },
+          "usage": {
+            "model": "gpt-6.1-sol",
+            "measurement": "MEASURED",
+            "availability": "AVAILABLE",
+            "input_tokens": 26042,
+            "total_tokens": 28782,
+            "output_tokens": 2740,
+            "cached_input_tokens": 0,
+            "uncached_input_tokens": 26042,
+            "reasoning_output_tokens": 190
+          },
+          "result": {
+            "arc_actions": [
+              {
+                "action": "按冻结安排推进：建议以无人代判时仍能完成观察、区分确知与未知的选择，承载沈砚自主修行道路的局部成长；不将计划中的比较记录表述为已接受事实。",
+                "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+              }
+            ],
+            "stop_conditions": [
+              "备忘覆盖两场执行与章末承接后结束，不新增场景、改写冻结事件或宣布Plan已变更。",
+              "后续正文止于第25分钟休息结束后的准备状态；外部观察尚未执行，稳定流转和提肩因果尚未获证明。",
+              "若具体说明、待作配合起止或计时细节无授权依据，保持该细节缺口，不用候选历史、示例或修仙惯例补成已接受事实。"
+            ],
+            "scene_directives": [
+              {
+                "scene_id": "chapter:5:scene:1",
+                "directive": "从桌边手头的说明与分栏纸切入，让沈砚实际读核后启动尝试。通过本人能察觉的肩背、呼吸和注意力去向，写出期待如何逐渐占据观察；具体变化可在冻结范围内实现，不预设精确发生分钟。他发现自己开始追等时，既要让这一察觉清楚，也要保留肩背已提起而起点未看清的限制。第17分钟到达便停止，不以补试兑现期待。",
+                "transition": "以停止尝试、转向纸页连接第二场：第17分钟练习结束，观察尚未落字，随即进入预留三分钟记录。",
+                "emotional_change": "由安静的期待转为略有失落，同时获得一件可以带入记录的具体察觉；不立即总结自己已经成熟或掌握方法。",
+                "information_release": "通过现场阅读取得既有说明与纸上时间边界；通过本次过程披露未再次辨清气机，以及本人开始追等的察觉和可报告的肩背、呼吸变化。不提供气机中断原因或旁人的判断。",
+                "conflict_progression": "由希望感觉重现推进到注意力开始催等，再推进到察觉自己正在催等；这项察觉只能收回当下观察，不能补回此前漏看的提肩起点。终点的阻力是仍想多试片刻，却按时间边界停下。"
+              },
+              {
+                "scene_id": "chapter:5:scene:2",
+                "directive": "先写本次未再次辨清气机，再分别写追等的察觉和本人确认的动作。让提肩起点成为一次短而具体的落笔取舍：他试着回想，发现没有持续观察，便保留空格并注明缺失。用已写条目与空格的并置呈现完成感，不反复宣讲诚实。第20分钟收笔，承接完整五分钟休息；休息可写普通等待与目光落在记录上，不转成另一轮练习。第25分钟后只准备携记录进入待作核对。",
+                "transition": "章末将视线留在已写条目与起点空格之间，使沈砚面临下一次有限观察该先核对哪一段的具体问题；不替他完成取舍，不让旁人到场作答。",
+                "emotional_change": "由想把记录写完整的急切，转为接受一处确实无法填写的空白；踏实来自完成有依据的工作，疑问仍然存在。",
+                "information_release": "让读者通过实际落字与留白确认本次记录分列了确知与未知，提肩实际起点尚不能确认。不添加提肩与气机变化的因果结论，不预告外部观察结果。",
+                "conflict_progression": "先让能确认的条目顺利落字，再让笔停在最想解释的提肩起点。回想只能找到后来察觉提肩的片段，完整解释的愿望因此遇到证据限制；选择留空后，问题由求一个原因收束为寻找下一次核对范围。"
+              }
+            ],
+            "tension_strategy": "张力集中在注意力与证据的有限性：想等到感觉，会漏看动作；想写出原因，会诱使他把后来察觉换成实际起点。让读者先跟随期待，再通过停止与留白看到他守住可确认的部分。续读动力来自一个已经定位却尚未补齐的缺口，无需新危机、反转或虚假突破。",
+            "creative_guidance": {
+              "pov": "以沈砚为主的第三人称限知视角。叙述跟随他现场读到、身体察觉和落笔核对的内容，不越过他的观察替他判定内在因果。",
+              "voice": "朴素、清楚、有分寸。用目光从纸面移开、注意力落到等待、笔尖停在空格等当下动作承载心理，内心句简短。肩背与呼吸的差别须写成本人可察觉的经验，不替换为抽象境界结论；少用比喻，必要时取自少年可接触的日常经验。",
+              "constraints": [
+                "正文主要使用简体中文，单章2500—3500中文字；篇幅要求作用于后续正文。",
+                "采用沈砚的第三人称限知视角；程观、许庭均不在本章两场现场，不写他们未表达的判断。",
+                "第4章承接只作条件性入口。接受边界截至第0章，不追认前章候选事件、协商或人物知识已经获接受。",
+                "第一场须让沈砚实际阅读既有说明与纸上时间安排，现场取得行动依据；读核包含在第12—17分钟的启动与尝试中，不另加时段。",
+                "相对时间以程观离开为零点：第12—17分钟尝试，第17—20分钟记录，第20—25分钟休息；待作配合起止按纸上已供应内容读核，不自行补定。",
+                "不增加未经说明的修炼动作、功法规则或计时器具；未供应的具体说明不能凭类型惯例补写。",
+                "本次未再次辨清气机，不因此撤销先前候选中的观察能力，也不证明先前感觉虚假或稳定流转成立。",
+                "区分开始追等结果的察觉、察觉肩背提起的时刻与提肩实际起点；后二者不能互换，未观察的先后不能倒推。",
+                "本次记录与旧纸分开，不补内在因果箭头，不预填外部观察报告，不将提肩认定为气机变化的原因。",
+                "休息完整保留，不借休息再试，不请求旁人提前到场；章末外部观察仍未开始。",
+                "用具体动作、感官差别和纸上结果呈现成长；不套用风格示例中的凉意、掌热等细节为本次事实，不强加突破或重大代价。"
+              ],
+              "chapter_goal": "引导沈砚在无人即时提醒的情况下，现场读核既有说明与时间安排，完成一次有时限的独立比较；本次即使未再次辨清气机，也能留下本人实际察觉的动作信息，并准确保留提肩起点的证据空白。",
+              "ending_change": "拟将入口的未完成尝试推进为一份可供后续核对的独立比较记录；最想解释的提肩起点仍空着，续读问题落在有限外部观察应先核对哪一段，答案留待后续。",
+              "emotional_turn": "建议由独自等待感觉重现的期待，经过未能辨清的轻微失落，转向能够把确知部分写清的踏实；留白仍有遗憾，但不需要把遗憾放大成自我否定。",
+              "reader_promise": "让独自练习产生可用信息，使读者看见进步也可以体现为守住观察、写清事实与定位缺口；以具体可继续的工作承接成长期待。",
+              "character_choices": [
+                {
+                  "cost": "本次五分钟练习时段用尽，期待的感觉仍未得到；无需附加伤害、资源损失或重大牺牲。",
+                  "choice": "感觉没有重现时继续遵守原说明，并在五分钟边界停止，不临时添动作或追加一轮。",
+                  "motivation": "想检验自己没有即时反馈时能否继续观察，也要让预留的记录和休息真正得到执行。",
+                  "character_id": "character:shen-yan"
+                },
+                {
+                  "cost": null,
+                  "choice": "将后来察觉到提肩与提肩实际开始分开，留下起点空格并标明未持续观察。",
+                  "motivation": "他希望解释变化，却也希望下一次求助有真实依据；补出一个顺畅答案会遮住需要核对的地方。",
+                  "character_id": "character:shen-yan"
+                }
+              ]
+            },
+            "retrieval_queries": [
+              "在截至第0章的已接受初始Canon与Story State中，检索沈砚可用的既有练习说明：是否有明确原文、适用范围及允许动作？若未收录，返回缺失，不以第1—4章候选或风格示例补成已接受知识。",
+              "在同一已接受边界内，检索现场分栏纸、旧记录及时间安排的已确认事实：有无纸面字段、待作配合起止和已有计时方式？区分已接受内容与本章冻结Plan的条件性入口，不补定未供应细节。"
+            ],
+            "execution_strategy": "先守住事实取得顺序，再组织细节：读核说明和时间表，按原说明尝试，察觉追等及动作变化，到时停止，分列记录，保留空白，完成休息。说明只在准备使用或面对限制时解释。将本章的可见回报放在观察与记录的可靠性上；所有拟议结果保持计划身份，备忘不宣称结果已发生，也不改变冻结Plan。",
+            "obligation_actions": [],
+            "composition_strategy": "保留两场的因果接续：第一场让期待挤占观察，并取得有限的本人察觉；第二场让落笔检验这些察觉的依据，使缺口显形。用同一张本次记录纸连接练习、回想、留白和休息，避免把观察心得拆成反复说理。正文篇幅主要用于注意力变化、落笔取舍与实际时间承接，不靠新增练习或插入旁人对话扩充。"
+          },
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "event_count": 7,
+          "denied_tools": [
+            "storage.object.put"
+          ],
+          "allowed_tools": [
+            "model.provider.invoke"
+          ],
+          "output_schema": {
+            "type": "object",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "required": [
+              "execution_strategy",
+              "tension_strategy",
+              "composition_strategy",
+              "creative_guidance",
+              "scene_directives",
+              "retrieval_queries",
+              "obligation_actions",
+              "arc_actions",
+              "stop_conditions"
+            ],
+            "properties": {
+              "arc_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "arc_plan_version_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "arc_plan_version_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "stop_conditions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 16
+              },
+              "scene_directives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "scene_id",
+                    "directive",
+                    "conflict_progression",
+                    "information_release",
+                    "emotional_change",
+                    "transition"
+                  ],
+                  "properties": {
+                    "scene_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "directive": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "transition": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "emotional_change": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "information_release": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "conflict_progression": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "tension_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "creative_guidance": {
+                "type": "object",
+                "required": [
+                  "chapter_goal",
+                  "pov",
+                  "voice",
+                  "emotional_turn",
+                  "reader_promise",
+                  "ending_change",
+                  "character_choices",
+                  "constraints"
+                ],
+                "properties": {
+                  "pov": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "voice": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "constraints": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "maxItems": 32
+                  },
+                  "chapter_goal": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "ending_change": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "emotional_turn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reader_promise": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "character_choices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "character_id",
+                        "choice",
+                        "motivation",
+                        "cost"
+                      ],
+                      "properties": {
+                        "cost": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "choice": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "motivation": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "character_id": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 32
+                  }
+                },
+                "additionalProperties": false
+              },
+              "retrieval_queries": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 8,
+                "minItems": 1
+              },
+              "execution_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "obligation_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "obligation_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "obligation_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "composition_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "model_authority": {
+            "schema_version": "novelos.model_authority_evidence.v1",
+            "route_policy_id": "chapter.memo.route.f447652da57a5bd80fdc",
+            "invocation_model": "gpt-6.1-sol",
+            "model_profile_id": "chapter.memo.default.f447652da57a5bd80fdc",
+            "route_policy_hash": "99c1f4c0b33b2a7fe7b193faf14e9a29e0dffc8bc80a9ee026dbf786f231e4d1",
+            "route_snapshot_id": "production_execution/routes/1cc31c7678bcb6ff914a",
+            "frozen_route_model": "gpt-6.1-sol",
+            "model_profile_hash": "684ec5283fd57b05ba06b283b2b8def989d6e98c1c7ca935fba563f943543ff8",
+            "route_snapshot_hash": "41fb04f704c78a4ed7260bf56001bc8079046682fe280357dc2f11c761affca2",
+            "route_policy_version": 1,
+            "model_profile_version": 2,
+            "policy_requested_model": "gpt-6.1-sol",
+            "invocation_command_hash": "sha256:461f7cac36b2178e8974a37b7c662886405106537e7778980c40e616cb8b429c",
+            "provider_observed_model": "unavailable",
+            "session_recovery_policy": "codex-local-session-evidence.v1",
+            "local_session_persistence": "DURABLE",
+            "local_user_config_ignored": true,
+            "invocation_reasoning_effort": "high",
+            "frozen_route_reasoning_effort": "high",
+            "policy_requested_reasoning_effort": "high",
+            "provider_observed_reasoning_effort": "unavailable",
+            "local_user_config_is_model_authority": false
+          },
+          "submission_phase": "PROCESS_RESULT_RECORDED",
+          "validation_checks": {
+            "tool_policy": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7",
+            "output_schema": "schema:chapter-provider-output:memo:v2",
+            "stage_semantics": "chapter-stage:memo:semantic-validation",
+            "capability_materialization": "sha256:b446ea804542d2d3f672aecf2b4bbb18c8e22b1833d0ce370de5472cff3aee64"
+          },
+          "stream_diagnostics": {
+            "version": "codex-stream-diagnostics.v1",
+            "event_counts": {
+              "turn.started": 1,
+              "item.completed": 4,
+              "thread.started": 1,
+              "turn.completed": 1
+            },
+            "stdout_bytes": 10781,
+            "stdout_sha256": "f545083ab3d7ecdc6b10b9cdfdcca27fc1eee18b2ff632a8eae8b006cee374b7",
+            "usage_present": true,
+            "remote_outcome": "UNESTABLISHED",
+            "scan_truncated": false,
+            "turn_completed": true,
+            "local_thread_id": "01a12167-116b-7590-81a2-dc062ec540b3",
+            "stream_disconnected": false,
+            "response_body_decode_failed": false
+          },
+          "unauthorized_tools": [],
+          "capability_evidence": {
+            "skill": {
+              "ref": "chapter-outline",
+              "version": "chapter-plan-skill-v3",
+              "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+            },
+            "allowed_tools": [
+              "model.provider.invoke"
+            ],
+            "provider_view": {
+              "component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:39a55462aa32bfb0491f2abd49525cd528e587e86174091efbb064c94192ad8d",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:b1b2e0ec35cc93a69adccf88362500ae1f2abdcc2ad3f88ee214511c45565e93",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+              "component_characters": {
+                "tool_policy": 0,
+                "output_schema": 2909,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 25916,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 35287,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "representation_policy": "authority-projection-task-provider-v2",
+              "selection_explanation": {
+                "policy": "accepted-boundary-only",
+                "omitted_count": 0,
+                "selected_count": 1
+              },
+              "task_contract_version": "provider-task-view-v1",
+              "context_contract_version": "provider-context-view-v2",
+              "context_projection_ratio": 139.0,
+              "exact_context_references": {
+                "source_scope": "provider_data_envelope",
+                "decoded_equal": true,
+                "reference_count": 10,
+                "contract_version": "provider-context-exact-value-reference.v1",
+                "source_context_hash": "sha256:5e1b6a2944945468813b29fcd491713ce033a9793f73032381e6acfe0b7ecb99",
+                "encoded_context_hash": "sha256:6216107d59caa35dc8c23431f2907bd99dfdc574e4e6827b0c437056cfad934e"
+              },
+              "component_estimated_tokens": {
+                "tool_policy": 0,
+                "output_schema": 970,
+                "governed_skill": 298,
+                "provider_knowledge": 187,
+                "provider_task_view": 13250,
+                "system_instruction": 207,
+                "fully_rendered_prompt": 16374,
+                "provider_context_view": 139,
+                "stage_semantic_contract": 300
+              },
+              "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+              "component_utf8_byte_upper_bounds": {
+                "tool_policy": 0,
+                "output_schema": 2909,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 39750,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 49121,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "provider_context_estimated_tokens": 139,
+              "authority_context_estimated_tokens": 0,
+              "rendered_prompt_to_semantic_input_ratio": 1.206099,
+              "provider_admission_uses_component_estimates": false
+            },
+            "prompt_template": {
+              "ref": "prompt-template:chapter-generation-pack",
+              "version": "v13",
+              "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+            },
+            "method_selection": {
+              "skill_sections": [
+                "Shared rules",
+                "Memo"
+              ],
+              "system_sections": [],
+              "contract_version": "production-stage-methods.v1"
+            },
+            "output_schema_ref": "schema:chapter-provider-output:memo:v2",
+            "output_schema_hash": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+            "provider_admission": {
+              "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+              "status": "ADMITTED",
+              "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+              "envelope_hash": "sha256:2ce715b97e357be21fc1b7bbfce0964362611aafedcbbb658c21bc07a32d3e84",
+              "total_reserved": 81393,
+              "component_usage": {
+                "safety_margin": 256,
+                "output_reserve": 32000,
+                "provider_input": 49121,
+                "request_framing": 16
+              },
+              "applicable_limit": 258400,
+              "contract_version": "provider-token-admission-v1",
+              "accounting_contract": {
+                "model": "gpt-6.1-sol",
+                "provider": "codex-cli",
+                "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+                "meter_version": "v1",
+                "safety_margin": 256,
+                "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                "output_reserve": 32000,
+                "route_identity": "routing-decision:d46bbe2d8041df8de111c3c905cb47199ac6fcd4f051ada858458306889a7854",
+                "contract_version": "provider-token-accounting-v3",
+                "framing_overhead": 16,
+                "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                "model_context_limit": 258400,
+                "execution_token_limit": 258400,
+                "serialization_contract": "codex-cli-application-stdin-v1"
+              },
+              "context_bundle_status": "VALID",
+              "context_bundle_tokens": 0,
+              "input_component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:39a55462aa32bfb0491f2abd49525cd528e587e86174091efbb064c94192ad8d",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:b1b2e0ec35cc93a69adccf88362500ae1f2abdcc2ad3f88ee214511c45565e93",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "complete_request_coverage": [
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "knowledge_inputs",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin"
+              ]
+            },
+            "system_instruction": {
+              "ref": "prompt-system:chapter-generation-pack",
+              "version": "v3",
+              "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+            },
+            "materialization_hash": "sha256:b446ea804542d2d3f672aecf2b4bbb18c8e22b1833d0ce370de5472cff3aee64",
+            "rendered_prompt_bytes": 49121,
+            "reusable_prefix_bytes": 1593,
+            "knowledge_content_hashes": [
+              "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+            ],
+            "context_asset_version_ids": [
+              "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1"
+            ],
+            "embedding_output_contract": null,
+            "fully_rendered_prompt_hash": "sha256:b1b2e0ec35cc93a69adccf88362500ae1f2abdcc2ad3f88ee214511c45565e93",
+            "provider_request_envelope_hash": "sha256:2ce715b97e357be21fc1b7bbfce0964362611aafedcbbb658c21bc07a32d3e84",
+            "required_reader_facing_language": null,
+            "rendered_prompt_estimated_tokens": 16374,
+            "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+            "provider_admission_asset_version_id": "6b8a0885-1e42-4cbb-acbc-0390968f2078"
+          },
+          "provider_request_id": null,
+          "output_schema_version": "schema:chapter-provider-output:memo:v2",
+          "transport_retry_policy": {
+            "version": "codex-no-transport-retry.v1",
+            "stream_max_retries": 0,
+            "request_max_retries": 0,
+            "invocation_overrides": [
+              "model_provider=\"novel_forge_openai_no_retry\"",
+              "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+              "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+              "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+              "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+              "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+            ]
+          },
+          "terminal_event_observed": true,
+          "provider_schema_contract": {
+            "version": "codex-structured-schema.v5",
+            "provider_hash": "sha256:f19b893d95ff565b00486aa41c07c00e6b6196830dc240bb2bfa7652c7b5b8f0",
+            "canonical_hash": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+            "equivalent_projection": "codex-nullable-shared-types.v3",
+            "local_constraints_retained": [
+              "uniqueItems"
+            ]
+          },
+          "local_execution_receipt_id": "process-receipt:03f3e7176ffa18ddf815ec52",
+          "reconciliation_fingerprint": "sha256:ceed71acefb96a7e0d2f19214c05fe8db135c1faca4aec5a413326439c9dc10e"
+        },
+        "execution_request": {
+          "stage": "memo",
+          "domain": "planning",
+          "book_id": "book:qinglan-wendao-20261008",
+          "saga_id": "51a215bf-7684-4a32-bc89-e9f36b678a45",
+          "trace_id": "2bf458df-d6ab-441a-abc5-419eb00bb5bc:chapter:5",
+          "task_kind": "chapter.memo.generate",
+          "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+          "capability": "planning.chapter.memo",
+          "project_id": "qid-learning-prose-01",
+          "risk_class": "high",
+          "execution_id": "chapter-execution:79e0710c-57eb-4540-be0a-b4c5bad67611",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "origin_chain": [
+            "chapter.slice.run",
+            "chapter.memo.generate"
+          ],
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:5",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 5
+          },
+          "workspace_id": "workspace:qid-learning-prose-01",
+          "fencing_token": 1,
+          "correlation_id": "2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+          "agent_hop_count": 0,
+          "resource_claims": [
+            "chapter:5",
+            "stage:memo"
+          ],
+          "importance_class": "HIGH",
+          "budget_policy_ref": "budget:planning-chapter-memo:v1",
+          "commit_policy_ref": "commit:planning-chapter-memo:v1",
+          "root_operation_id": "915771af-85c8-446e-9ef4-d4af77f7c25d",
+          "route_snapshot_id": "production_execution/routes/1cc31c7678bcb6ff914a",
+          "external_effect_id": "79e0710c-57eb-4540-be0a-b4c5bad67611",
+          "input_manifest_ref": "production_execution/inputs/1cc31c7678bcb6ff914a",
+          "timeout_policy_ref": "timeout:planning-chapter-memo:v1",
+          "budget_reservation_id": "8b1a06a8-5b7f-41fc-a0f7-ca76361b5f1d",
+          "permission_policy_ref": "permission:planning-chapter-memo:v1",
+          "validation_policy_ref": "validation:planning-chapter-memo:v1",
+          "stable_idempotency_key": "34330928-4f50-4ca8-8f9a-6125f15bef89:8e4b253c-6c43-46c8-b460-8cf2ada52fe1:memo:attempt-v1",
+          "workspace_snapshot_ref": "workspace:qid-learning-prose-01"
+        },
+        "validation_manifest": {
+          "checks": [
+            {
+              "status": "PASSED",
+              "check_kind": "structured_object",
+              "evidence_ref": "authority-asset-version:779b28b8-ac0f-4b69-b15b-62316b347c8f"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "fencing",
+              "evidence_ref": "authority-attempt:8e4b253c-6c43-46c8-b460-8cf2ada52fe1:fence:1"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "route_snapshot",
+              "evidence_ref": "production_execution/routes/1cc31c7678bcb6ff914a"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "capability_materialization",
+              "evidence_ref": "sha256:b446ea804542d2d3f672aecf2b4bbb18c8e22b1833d0ce370de5472cff3aee64"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "output_schema",
+              "evidence_ref": "schema:chapter-provider-output:memo:v2"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "stage_semantics",
+              "evidence_ref": "chapter-stage:memo:semantic-validation"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "tool_policy",
+              "evidence_ref": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7"
+            }
+          ],
+          "decision": "ACCEPTED",
+          "attempt_id": "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+          "manifest_id": "validation-manifest:chapter-execution:79e0710c-57eb-4540-be0a-b4c5bad67611",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "output_manifest_ref": "authority-asset-version:1162489d-48b1-446e-8223-f72a79ab6e57",
+          "required_check_kinds": [
+            "structured_object",
+            "fencing",
+            "route_snapshot",
+            "capability_materialization",
+            "output_schema",
+            "stage_semantics",
+            "tool_policy"
+          ],
+          "validation_policy_ref": "validation:planning-chapter-memo:v1"
+        },
+        "validation_manifest_ref": "authority-asset-version:81ce2e5e-e5d7-4726-83a8-8e9cdc1efeea",
+        "commit_manifest_required": true
+      },
+      "qualification": "QUALIFIED",
+      "creative_guidance": {
+        "pov": "以沈砚为主的第三人称限知视角。叙述跟随他现场读到、身体察觉和落笔核对的内容，不越过他的观察替他判定内在因果。",
+        "voice": "朴素、清楚、有分寸。用目光从纸面移开、注意力落到等待、笔尖停在空格等当下动作承载心理，内心句简短。肩背与呼吸的差别须写成本人可察觉的经验，不替换为抽象境界结论；少用比喻，必要时取自少年可接触的日常经验。",
+        "constraints": [
+          "正文主要使用简体中文，单章2500—3500中文字；篇幅要求作用于后续正文。",
+          "采用沈砚的第三人称限知视角；程观、许庭均不在本章两场现场，不写他们未表达的判断。",
+          "第4章承接只作条件性入口。接受边界截至第0章，不追认前章候选事件、协商或人物知识已经获接受。",
+          "第一场须让沈砚实际阅读既有说明与纸上时间安排，现场取得行动依据；读核包含在第12—17分钟的启动与尝试中，不另加时段。",
+          "相对时间以程观离开为零点：第12—17分钟尝试，第17—20分钟记录，第20—25分钟休息；待作配合起止按纸上已供应内容读核，不自行补定。",
+          "不增加未经说明的修炼动作、功法规则或计时器具；未供应的具体说明不能凭类型惯例补写。",
+          "本次未再次辨清气机，不因此撤销先前候选中的观察能力，也不证明先前感觉虚假或稳定流转成立。",
+          "区分开始追等结果的察觉、察觉肩背提起的时刻与提肩实际起点；后二者不能互换，未观察的先后不能倒推。",
+          "本次记录与旧纸分开，不补内在因果箭头，不预填外部观察报告，不将提肩认定为气机变化的原因。",
+          "休息完整保留，不借休息再试，不请求旁人提前到场；章末外部观察仍未开始。",
+          "用具体动作、感官差别和纸上结果呈现成长；不套用风格示例中的凉意、掌热等细节为本次事实，不强加突破或重大代价。"
+        ],
+        "chapter_goal": "引导沈砚在无人即时提醒的情况下，现场读核既有说明与时间安排，完成一次有时限的独立比较；本次即使未再次辨清气机，也能留下本人实际察觉的动作信息，并准确保留提肩起点的证据空白。",
+        "ending_change": "拟将入口的未完成尝试推进为一份可供后续核对的独立比较记录；最想解释的提肩起点仍空着，续读问题落在有限外部观察应先核对哪一段，答案留待后续。",
+        "emotional_turn": "建议由独自等待感觉重现的期待，经过未能辨清的轻微失落，转向能够把确知部分写清的踏实；留白仍有遗憾，但不需要把遗憾放大成自我否定。",
+        "reader_promise": "让独自练习产生可用信息，使读者看见进步也可以体现为守住观察、写清事实与定位缺口；以具体可继续的工作承接成长期待。",
+        "character_choices": [
+          {
+            "cost": "本次五分钟练习时段用尽，期待的感觉仍未得到；无需附加伤害、资源损失或重大牺牲。",
+            "choice": "感觉没有重现时继续遵守原说明，并在五分钟边界停止，不临时添动作或追加一轮。",
+            "motivation": "想检验自己没有即时反馈时能否继续观察，也要让预留的记录和休息真正得到执行。",
+            "character_id": "character:shen-yan"
+          },
+          {
+            "cost": null,
+            "choice": "将后来察觉到提肩与提肩实际开始分开，留下起点空格并标明未持续观察。",
+            "motivation": "他希望解释变化，却也希望下一次求助有真实依据；补出一个顺畅答案会遮住需要核对的地方。",
+            "character_id": "character:shen-yan"
+          }
+        ]
+      },
+      "creative_contract_version": "creative-memo.v1",
+      "memo_fingerprint": "sha256:2d1af49a37a010e91574eba17a72e8452d1f598a5841e4e1b9417026df9267f2"
+    },
+    "provider_invoked": false
+  },
+  {
+    "effect_id": "2e140437-5c4b-4764-ac2b-410a1a1feb62",
+    "references": {
+      "contract_version": "frozen-character-references.v1",
+      "project_id": "qid-learning-prose-01",
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "book_id": "book:qinglan-wendao-20261008",
+      "input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+      "cast_asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+      "cast_content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+      "bindings": [
+        {
+          "character_id": "character:shen-yan",
+          "display_name": "沈砚",
+          "aliases": []
+        }
+      ],
+      "participant_bindings": {
+        "沈砚": "character:shen-yan"
+      },
+      "token_bindings": {
+        "character:shen-yan": "character:shen-yan",
+        "沈砚": "character:shen-yan"
+      }
+    },
+    "result": {
+      "type": "ChapterMemo",
+      "contract_version": "chapter-memo-v2",
+      "chapter": 5,
+      "source_chapter_execution_intent_asset_version_id": "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+      "source_chapter_plan": {
+        "locked": true,
+        "content_hash": "sha256:bd17deb9c5fdeb5a43af5c638c3acf894d4b56a77bcc529dac5a9384bbbfcb59",
+        "asset_version_id": "authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1"
+      },
+      "accepted_boundary": {
+        "accepted_through_chapter": 0,
+        "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      "mission_fingerprint": "sha256:75b66f374e696200960cebebf786a6069c4ab1e034c9b27d15aaea1938417a66",
+      "execution_strategy": "按冻结场序提供写作落点，不改动Plan。开场尽快让沈砚现场读核说明和纸上时间边界，再进入原范围内的尝试。练习段跟随他的注意力由动作转向等待，再回到能够察觉的肩背与呼吸；记录段让每项落字都对应刚才确有依据的观察。用收笔和完整休息落实时间承接，最终停在尚待取舍的外部核对问题。",
+      "tension_strategy": "以注意力和证据的有限性维持安静张力：读者跟随沈砚期待感觉重现，同时看见期待正在影响观察。局部回报来自他发现追等、按时停下和完成记录；续读动力来自提肩起点这一具体空白。无需强加危机、反转、旁人赞叹或每场不可逆代价。",
+      "composition_strategy": "沿用两场因果结构：第一场以限时尝试产生局部观察和证据缺口，第二场以落笔检验这些观察能支持什么。让同一动作兼顾人物、信息与推进：读纸取得行动依据，察觉追等呈现有限进步，停笔留白定位后续问题。篇幅用于展开注意力变化、落字取舍与休息承接，避免反复解释诚实记录的道理。",
+      "event_directives": [
+        {
+          "event_id": "chapter:5:scene:1",
+          "arc_contributions": [
+            "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          ],
+          "narrative_functions": [
+            "CHARACTER",
+            "MYSTERY_DISCLOSURE",
+            "PLOT",
+            "READER_EXPERIENCE"
+          ],
+          "causal_intent": {
+            "goal": "现场读核既有说明和纸上的时间安排，按说明完成五分钟尝试，留意本人动作与开始追等结果的察觉，保住未得到预期感觉时仍可取得的信息。",
+            "conflict": "感觉没有按期待重现，等待结果容易挤走动作观察；他能发现自己在追等，却不能因此补出此前没有持续观察的提肩起点。",
+            "exit_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。",
+            "entry_state": "条件性承接第4章：沈砚在桌边完成既定整理，既有说明与分栏纸在手边；程观、许庭均已离开。以程观离开为相对零点，第12分钟的五分钟独立练习即将开始，本次结果未知。已接受入口没有人物知识事实，本章尚未通过本人现场读核取得说明和时间安排。"
+          }
+        },
+        {
+          "event_id": "chapter:5:scene:2",
+          "arc_contributions": [
+            "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          ],
+          "narrative_functions": [
+            "CHARACTER",
+            "MYSTERY_DISCLOSURE",
+            "PLOT",
+            "READER_EXPERIENCE"
+          ],
+          "causal_intent": {
+            "goal": "在预留三分钟内将本次观察分列落字，留下提肩起点的证据缺口，再完整保留五分钟休息。",
+            "conflict": "他希望记录能解释变化，现有证据却只能支持部分察觉；把空白留下会显得不完整，也最能暴露下一次真正需要核对的地方。",
+            "exit_state": "相对第25分钟，三分钟记录和五分钟休息均已结束。沈砚的纸页分列本次未辨清气机、开始追等结果的察觉及能够确认的动作，提肩实际起点仍留空；他准备携记录进入待作外部观察，观察尚未开始，稳定流转及内在因果仍未获证明。",
+            "entry_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。"
+          }
+        }
+      ],
+      "narrative_realization": {
+        "events": [
+          {
+            "action": "沈砚按已知说明独自完成一次有时限的尝试，同时留意肩背、呼吸与自己开始等待结果的时刻。",
+            "causes": [
+              "group4-e3"
+            ],
+            "decision": "按既有说明完成尝试，不临时增添动作来追求感觉。",
+            "event_id": "group4-e4",
+            "required": true,
+            "slice_id": "chapter-5",
+            "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "motivation": "检验自己能否在没有即时反馈时持续观察。",
+            "resistance": "未得到期待的感觉，容易诱使他把动作观察丢掉。",
+            "consequence": "即使未再次辨清气机，他仍获得自己动作变化的可复查记录。",
+            "disclosures": [
+              "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+            ],
+            "state_deltas": [
+              {
+                "to_state": "有一次标明未再次辨清气机的独立比较",
+                "entity_id": "thread:qinglan-wendao:future-1:own-road",
+                "from_state": "尚无本组独立比较记录",
+                "state_kind": "practice_evidence"
+              }
+            ],
+            "preconditions": [
+              "有可用且不与已确认事务重叠的练习时段。",
+              "既有说明的适用范围已在候选连续性中明确。"
+            ],
+            "chapter_number": 5,
+            "feature_status": {
+              "decision": {
+                "status": "APPLICABLE",
+                "rationale": "沈砚自主选择遵守已知说明和时间边界。"
+              },
+              "resistance": {
+                "status": "APPLICABLE",
+                "rationale": "气机不按期待重现，观察欲望又容易使呼吸变急。"
+              },
+              "irreversible_change": {
+                "status": "APPLICABLE",
+                "rationale": "本次练习实际耗时，不要求额外伤害或重大牺牲。"
+              }
+            },
+            "next_event_ids": [
+              "group4-e5"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "knowledge_boundary": {
+              "actor_knows": [
+                "沈砚知道本次自己遵循的说明。",
+                "沈砚可报告本次亲自察觉的肩背与呼吸变化。"
+              ],
+              "reader_may_learn": [
+                "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+              ],
+              "forbidden_disclosures": [
+                "许庭或程观未在场时的私下判断。",
+                "没有再次感知就证明此前从未感知。"
+              ]
+            },
+            "obligation_actions": [],
+            "irreversible_change": "本次有时限练习所用时间已耗去。"
+          },
+          {
+            "action": "沈砚写下本次能确认的动作和不能确认的内在先后，把空白留在记录中。",
+            "causes": [
+              "group4-e4"
+            ],
+            "decision": "不把没有观察到的变化补写为已知原因。",
+            "event_id": "group4-e5",
+            "required": true,
+            "slice_id": "chapter-5",
+            "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "motivation": "让下一次求助建立在真实记录上。",
+            "resistance": "把空白写明会使记录看起来不够完整。",
+            "consequence": "下一次核对可以针对证据空白，而不必重演整次练习。",
+            "disclosures": [
+              "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+            ],
+            "state_deltas": [
+              {
+                "to_state": "本次观察已分列确知与未知",
+                "entity_id": "thread:qinglan-wendao:future-1:own-road",
+                "from_state": "本次观察仍在回忆中",
+                "state_kind": "practice_record"
+              }
+            ],
+            "preconditions": [
+              "本次独立尝试已完成。"
+            ],
+            "chapter_number": 5,
+            "feature_status": {
+              "decision": {
+                "status": "APPLICABLE",
+                "rationale": "主动留下空白是一项影响后续核对方式的判断。"
+              },
+              "resistance": {
+                "status": "APPLICABLE",
+                "rationale": "沈砚希望得到原因，但现有观察不足。"
+              },
+              "irreversible_change": {
+                "status": "NOT_APPLICABLE",
+                "rationale": "记录可修改，不能据此强行制造不可逆代价。"
+              }
+            },
+            "next_event_ids": [
+              "group4-e6"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "knowledge_boundary": {
+              "actor_knows": [
+                "沈砚知道自己本次实际察觉到的动作变化。",
+                "沈砚知道哪些时刻自己没有持续留意。"
+              ],
+              "reader_may_learn": [
+                "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+              ],
+              "forbidden_disclosures": [
+                "提肩已被证明是气机消失的原因。"
+              ]
+            },
+            "obligation_actions": [],
+            "irreversible_change": null
+          }
+        ],
+        "slice_id": "chapter-5",
+        "event_ids": [
+          "group4-e4",
+          "group4-e5"
+        ],
+        "proof_hash": "sha256:99fb8eeb1f94c2f6bd05e9184b32385892cbcd5a19e8b8d46e73902f5f2267fb",
+        "chapter_number": 5,
+        "realization_id": "narrative-realization:d901739991ade7b9cf438aa795bf182c0ae72bfd9df1fef7d533d5a9be05087e",
+        "contract_digest": "sha256:859156e794d36f7738dacbaf2a8d54d83d28ecada77c827aca7990f93b2b77a0",
+        "foundation_set_digest": "sha256:00e78821a055e905a55475313f3209cc1eb5d0af07dfef25ca87249946c92b37",
+        "arc_working_set_digest": "sha256:d657cbed7d45b88424c15404d2940bcee31f85231aac1231afbd31cd9fa182af",
+        "proof_asset_version_id": "authority-output:b1af1e58-1939-4c2e-9a6a-d4929c61cb60:story_design.transition.receipt:v1",
+        "accepted_through_chapter": 0,
+        "chapter_group_content_hash": "sha256:050928f617302350954c01bb753c104ffea9622380939a56eaeeb95e5c28fd7a",
+        "chapter_group_plan_version_id": "authority-output:a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3:story_planning.candidate:v1"
+      },
+      "scene_directives": [
+        {
+          "scene_id": "chapter:5:scene:1",
+          "directive": "在五分钟启动步骤中实际呈现沈砚读核既有说明与纸上安排，让行动依据在现场取得。尝试过程可选取少量本人能察觉的肩背、呼吸差别，写清注意力怎样偏向下一点感觉，再写他发现自己已在催等。察觉提肩时保留回溯的不确定；不以叙述者视角替他补出起点。到相对第17分钟停止，不追加一轮。",
+          "transition": "以停止尝试后转向手边分栏纸承接三分钟记录，让尚未落字的观察成为下一场必须处理的材料。",
+          "emotional_change": "由期待转为落空，再因抓住一次注意力偏移而稍有把握；失落仍在，不夸大成挫败或自我否定。",
+          "information_release": "拟通过现场阅读建立沈砚对原说明与时间边界的知识，通过限知练习确认本次未再次辨清气机及他能够报告的察觉；不释放提肩与气机变化的确定因果。",
+          "conflict_progression": "先有重复辨清气机的期待，随后等待结果逐渐挤占动作观察；察觉自己开始追等带来有限回报，却无法补回漏看的提肩起点。边界到达时，以停止尝试完成这一场的选择。"
+        },
+        {
+          "scene_id": "chapter:5:scene:2",
+          "directive": "按本次结果、追等结果的察觉、可确认动作分别落字，不套用旧记录。笔移到提肩起点时，让沈砚核对自己究竟记得什么：后来察觉到肩背提起，并不能说明它从何时开始。空格保留，注明未持续观察。第20分钟收笔，完整承接至第25分钟的休息，不借休息重试或提前召人。章末可用已写条目与空格的并置承载疑问，不选定下一次观察的答案。",
+          "transition": "结束于完整休息之后、外部观察之前。沈砚准备携记录继续核对，续读问题落在有限观察应先核对哪一段。",
+          "emotional_change": "由想把原因写完整的迟疑，转为把已有材料整理清楚的踏实；未解决处仍具体可见。",
+          "information_release": "拟通过纸页实际落字与留白确认本次记录已区分确知和未知，提肩实际起点仍无法确认；外部判断、稳定流转和内在因果继续保留。",
+          "conflict_progression": "先把能够确认的内容写下，笔到提肩起点一栏时才暴露证据不足。回想不能使缺失变成已知，留下空格完成取舍；随后按时收笔休息，把求解愿望留给下一次核对。"
+        }
+      ],
+      "retrieval_queries": [
+        "在接受边界第0章的初始canon与story_state中，沈砚已有的修炼知识、可用说明及其适用范围有哪些明确事实？核对可用原文，避免把冻结候选中的既有说明追认为此前人物知识；若无明确内容，不补造口诀或修炼动作。",
+        "在接受边界第0章的已接受事实中，是否明确提供了本场可用的计时或报时方式、纸笔条件及相关限制？仅提取可支持限时尝试和记录的事实，不读取未接受章节结果或质量开发记录。"
+      ],
+      "obligation_actions": [],
+      "arc_actions": [
+        {
+          "action": "围绕无人代判时的自主观察推进本章：拟让沈砚按原说明完成尝试，把亲自察觉的动作与未能确认的先后分开，以可复查记录承接后续核对，不宣告修炼能力已经稳定。",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "forbidden_changes": {
+        "forbidden_events": [],
+        "hard_constraints": [],
+        "forbidden_payoffs": [],
+        "prohibited_outcomes": [
+          "以没有再次感知为由撤销先前候选中的观察能力。",
+          "增加未经说明的新修炼动作。",
+          "把一次比较失败写成确定的中断原因。"
+        ]
+      },
+      "reader_effect": {
+        "reward_mode": "看见沈砚独立完成可复查的记录",
+        "exit_question": "提肩起点没有看清，下一次有限的外部观察该先核对哪一段，才能真正补到缺口？",
+        "entry_question": "没有人在旁提醒，沈砚能否一边期待感觉重现，一边留住自己的动作观察？",
+        "target_emotion": "安静而踏实"
+      },
+      "hook_intent": {
+        "ending_hook": "",
+        "unresolved_exit_question": "提肩起点没有看清，下一次有限的外部观察该先核对哪一段，才能真正补到缺口？"
+      },
+      "stop_conditions": [
+        "两场拟实现五分钟尝试、三分钟记录和五分钟休息后即止，不延伸至下一次外部观察。",
+        "提肩实际起点仍留空；不得以回忆补写、叙述者说明或旁人报告填补。",
+        "不宣布气机中断原因、稳定流转或此前感知无效。",
+        "不新增修炼动作、场外人物判断、额外练习时段或重大代价。",
+        "Memo仅提供创作建议，不将拟定结果登记为已发生事实，也不声称改变了活动Plan。"
+      ],
+      "execution_evidence": {
+        "input_manifest": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "read_set": [
+            "asset-version:authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+            "asset-version:authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+            "asset-version:0fcc85fc-27b3-40a5-9fe1-67a9481c3c0d",
+            "asset-version:3794ea52-516b-4ee2-9ae9-44c3f33b366c"
+          ],
+          "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+          "project_id": "qid-learning-prose-01",
+          "manifest_id": "production_execution/inputs/85467c03d374a3e8d9a6",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:5",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 5
+          },
+          "fencing_token": 1,
+          "input_artifacts": [
+            {
+              "artifact_ref": "asset-version:authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+              "content_hash": "sha256:bd17deb9c5fdeb5a43af5c638c3acf894d4b56a77bcc529dac5a9384bbbfcb59",
+              "artifact_type": "chapter_plan",
+              "schema_version": "authoritative-chapter-plan-v5",
+              "asset_version_id": "authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+              "content_hash": "sha256:98d8f711a229e34fb135bb273c056e509eb37fd46a02da440b99118d297ab5d6",
+              "artifact_type": "chapter_execution_intent",
+              "schema_version": "chapter-execution-intent-v4",
+              "asset_version_id": "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:0fcc85fc-27b3-40a5-9fe1-67a9481c3c0d",
+              "content_hash": "sha256:1dd127524f93755c374b945d3ac112fc3fe81b5bae27ae65242c21119b8084a9",
+              "artifact_type": "capability_materialization_manifest",
+              "schema_version": "novelos.chapter_capability_materialization.v1",
+              "asset_version_id": "0fcc85fc-27b3-40a5-9fe1-67a9481c3c0d",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            },
+            {
+              "artifact_ref": "asset-version:3794ea52-516b-4ee2-9ae9-44c3f33b366c",
+              "content_hash": "sha256:566c2c18a29ca3d48d52521eb421fc0a1302adaeec77a536357e9abbfad5d885",
+              "artifact_type": "provider_request_admission_manifest",
+              "schema_version": "novelos.provider_request_admission.v1",
+              "asset_version_id": "3794ea52-516b-4ee2-9ae9-44c3f33b366c",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            }
+          ],
+          "arc_version_refs": [],
+          "planning_version": "authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1",
+          "skill_bundle_ref": "production_execution/skill_bundles/85467c03d374a3e8d9a6",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/85467c03d374a3e8d9a6",
+          "source_policy_ref": "source:planning-chapter-memo:v1",
+          "canon_version_refs": [],
+          "context_bundle_ref": "context:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "source_eligibility": "PRODUCTION_ELIGIBLE",
+          "story_state_version": "story-state:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "skill_bundle_version": "chapter-plan-skill-v3",
+          "prompt_bundle_version": "prompt-system:chapter-generation-pack@v3",
+          "canon_snapshot_version": "canon:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "context_bundle_version": "context:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "quality_profile_version": "quality-profile:none:34330928-4f50-4ca8-8f9a-6125f15bef89"
+        },
+        "route_snapshot": {
+          "model_id": "gpt-6.1-sol",
+          "policy_id": "chapter.memo.route.f447652da57a5bd80fdc",
+          "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+          "backend_id": "codex-cli",
+          "release_sha": "9c8b2b091cb1dcc30ffffebe8d3946bccaf1fa38",
+          "approval_ref": "",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "model_provider": "codex-cli",
+          "policy_version": 1,
+          "backend_version": "1.0.0",
+          "runtime_host_id": "host:author-first-live-isolated",
+          "auth_profile_ref": "auth:current-chatgpt-member:codex:ac313a67364269b8e4a28d1192c2b375a8df36901ca1c20528bb6279a3a9a7cc",
+          "credential_scope": "",
+          "fallback_trigger": "",
+          "model_profile_id": "chapter.memo.default.f447652da57a5bd80fdc",
+          "reasoning_effort": "high",
+          "route_generation": 1,
+          "skill_bundle_ref": "production_execution/skill_bundles/85467c03d374a3e8d9a6",
+          "output_schema_ref": "schema:chapter-provider-output:memo:v2",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/85467c03d374a3e8d9a6",
+          "route_decision_id": "routing-decision:660d92b99234469bfdf0975e1e9c376871622706e2f9e3e259e2286abeb89bf5",
+          "route_policy_hash": "99c1f4c0b33b2a7fe7b193faf14e9a29e0dffc8bc80a9ee026dbf786f231e4d1",
+          "route_snapshot_id": "production_execution/routes/85467c03d374a3e8d9a6",
+          "context_bundle_ref": "context:none:34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "model_profile_hash": "684ec5283fd57b05ba06b283b2b8def989d6e98c1c7ca935fba563f943543ff8",
+          "route_change_index": 0,
+          "secret_version_ref": "",
+          "fallback_policy_ref": "chapter.memo.fail-closed",
+          "model_profile_version": 2,
+          "fallback_policy_version": 1,
+          "parent_route_snapshot_id": "",
+          "quality_revalidation_ref": "",
+          "requested_reasoning_effort": "high"
+        },
+        "output_manifest": {
+          "files": [],
+          "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+          "stderr_ref": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/chapter-execution-2e140437-5c4b-4764-ac2b-410a1a-43cb496da9f6c3d0/stderr.log",
+          "stdout_ref": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/chapter-execution-2e140437-5c4b-4764-ac2b-410a1a-43cb496da9f6c3d0/stdout.log",
+          "manifest_id": "output-manifest:chapter-execution:2e140437-5c4b-4764-ac2b-410a1a1feb62",
+          "output_hash": "sha256:0b5e8ed077f7a54889f94c6beb8572d8a945901c21274ce64635dedc4a0398a3",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:a880d51b-7949-49ae-b18a-db0b273e1199",
+          "schema_version": "schema:chapter-provider-output:memo:v2",
+          "normalized_output_ref": "authority-asset-version:a273c64e-ec4f-456f-be80-6676c92d9989"
+        },
+        "execution_handle": {
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+          "backend_id": "codex-cli",
+          "execution_id": "chapter-execution:2e140437-5c4b-4764-ac2b-410a1a1feb62",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "completion_mode": "PROCESS_EXIT",
+          "local_process_id": 51988,
+          "query_capability": "SUPPORTED",
+          "cancel_capability": "SUPPORTED",
+          "callback_capability": "UNSUPPORTED",
+          "external_request_id": null,
+          "provider_request_id": null,
+          "backend_execution_id": "process-receipt:969c347c10d70b6f29f2f547",
+          "local_process_group_id": 51988,
+          "local_process_start_time": "Sat Oct 10 00:05:16 2026",
+          "local_execution_receipt_id": "process-receipt:969c347c10d70b6f29f2f547"
+        },
+        "execution_result": {
+          "error": null,
+          "outcome": "SUCCEEDED",
+          "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+          "started_at": "2026-10-09T16:05:16.879570Z",
+          "completed_at": "2026-10-09T16:07:31.343304Z",
+          "execution_id": "chapter-execution:2e140437-5c4b-4764-ac2b-410a1a1feb62",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:a880d51b-7949-49ae-b18a-db0b273e1199",
+          "cost_receipt_ref": "authority-asset-version:7d370718-9662-4587-a88c-f3027694d7c6",
+          "usage_receipt_ref": "authority-asset-version:89b73fb0-7337-41cd-b479-ef3ae4b84cbb",
+          "output_manifest_ref": "authority-asset-version:af2efecf-3866-4b18-bf33-51e86a732635",
+          "process_receipt_ref": "authority-asset-version:725cb439-f3e1-4056-a0a4-a51e05028999",
+          "external_receipt_ref": null,
+          "provider_receipt_ref": null,
+          "normalized_output_ref": "authority-asset-version:a273c64e-ec4f-456f-be80-6676c92d9989",
+          "validation_report_ref": "authority-asset-version:ca88bf8d-88b3-4d20-92da-000a20b46dae"
+        },
+        "process_evidence": {
+          "cost": {
+            "model": "gpt-6.1-sol",
+            "reason": "monetary_cost_not_observable",
+            "currency": "UNKNOWN",
+            "measurement": "UNKNOWN",
+            "availability": "UNAVAILABLE",
+            "provider_billed": "UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+            "entitlement_snapshot": {
+              "cli_version": "codex-cli 0.159.2",
+              "billing_identity": {
+                "version": "codex-membership-identity.v1",
+                "auth_mode": "chatgpt",
+                "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+                "billing_channel": "ACCOUNT_ENTITLEMENT"
+              },
+              "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+              "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+              "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+              "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+            },
+            "entitlement_snapshot_hash": "sha256:11fd8cd1ab78162fb9963e1535887111e06611960e8cad9f34fe3ae6ceb9e9ae"
+          },
+          "stage": "memo",
+          "tools": {
+            "denied": [
+              "storage.object.put"
+            ],
+            "policy": "DEFAULT_DENY",
+            "allowed": [
+              "model.provider.invoke"
+            ],
+            "invoked": [
+              "model.provider.invoke"
+            ],
+            "invocations": [
+              {
+                "event": "provider_execution",
+                "status": "completed",
+                "call_id": "",
+                "tool_ref": "model.provider.invoke"
+              }
+            ]
+          },
+          "usage": {
+            "model": "gpt-6.1-sol",
+            "measurement": "MEASURED",
+            "availability": "AVAILABLE",
+            "input_tokens": 26042,
+            "total_tokens": 29073,
+            "output_tokens": 3031,
+            "cached_input_tokens": 0,
+            "uncached_input_tokens": 26042,
+            "reasoning_output_tokens": 663
+          },
+          "result": {
+            "arc_actions": [
+              {
+                "action": "围绕无人代判时的自主观察推进本章：拟让沈砚按原说明完成尝试，把亲自察觉的动作与未能确认的先后分开，以可复查记录承接后续核对，不宣告修炼能力已经稳定。",
+                "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+              }
+            ],
+            "stop_conditions": [
+              "两场拟实现五分钟尝试、三分钟记录和五分钟休息后即止，不延伸至下一次外部观察。",
+              "提肩实际起点仍留空；不得以回忆补写、叙述者说明或旁人报告填补。",
+              "不宣布气机中断原因、稳定流转或此前感知无效。",
+              "不新增修炼动作、场外人物判断、额外练习时段或重大代价。",
+              "Memo仅提供创作建议，不将拟定结果登记为已发生事实，也不声称改变了活动Plan。"
+            ],
+            "scene_directives": [
+              {
+                "scene_id": "chapter:5:scene:1",
+                "directive": "在五分钟启动步骤中实际呈现沈砚读核既有说明与纸上安排，让行动依据在现场取得。尝试过程可选取少量本人能察觉的肩背、呼吸差别，写清注意力怎样偏向下一点感觉，再写他发现自己已在催等。察觉提肩时保留回溯的不确定；不以叙述者视角替他补出起点。到相对第17分钟停止，不追加一轮。",
+                "transition": "以停止尝试后转向手边分栏纸承接三分钟记录，让尚未落字的观察成为下一场必须处理的材料。",
+                "emotional_change": "由期待转为落空，再因抓住一次注意力偏移而稍有把握；失落仍在，不夸大成挫败或自我否定。",
+                "information_release": "拟通过现场阅读建立沈砚对原说明与时间边界的知识，通过限知练习确认本次未再次辨清气机及他能够报告的察觉；不释放提肩与气机变化的确定因果。",
+                "conflict_progression": "先有重复辨清气机的期待，随后等待结果逐渐挤占动作观察；察觉自己开始追等带来有限回报，却无法补回漏看的提肩起点。边界到达时，以停止尝试完成这一场的选择。"
+              },
+              {
+                "scene_id": "chapter:5:scene:2",
+                "directive": "按本次结果、追等结果的察觉、可确认动作分别落字，不套用旧记录。笔移到提肩起点时，让沈砚核对自己究竟记得什么：后来察觉到肩背提起，并不能说明它从何时开始。空格保留，注明未持续观察。第20分钟收笔，完整承接至第25分钟的休息，不借休息重试或提前召人。章末可用已写条目与空格的并置承载疑问，不选定下一次观察的答案。",
+                "transition": "结束于完整休息之后、外部观察之前。沈砚准备携记录继续核对，续读问题落在有限观察应先核对哪一段。",
+                "emotional_change": "由想把原因写完整的迟疑，转为把已有材料整理清楚的踏实；未解决处仍具体可见。",
+                "information_release": "拟通过纸页实际落字与留白确认本次记录已区分确知和未知，提肩实际起点仍无法确认；外部判断、稳定流转和内在因果继续保留。",
+                "conflict_progression": "先把能够确认的内容写下，笔到提肩起点一栏时才暴露证据不足。回想不能使缺失变成已知，留下空格完成取舍；随后按时收笔休息，把求解愿望留给下一次核对。"
+              }
+            ],
+            "tension_strategy": "以注意力和证据的有限性维持安静张力：读者跟随沈砚期待感觉重现，同时看见期待正在影响观察。局部回报来自他发现追等、按时停下和完成记录；续读动力来自提肩起点这一具体空白。无需强加危机、反转、旁人赞叹或每场不可逆代价。",
+            "creative_guidance": {
+              "pov": "以沈砚为中心的第三人称限知视角。只写他现场读到、亲自察觉、回想能够确认的内容，叙述者不补出他漏看的变化。",
+              "voice": "朴素、清楚、有分寸。用读纸、注意力偏移、落笔与收笔承载情绪，内心只点出当下想解决的问题。术语随使用需要出现；若使用比喻，取自沈砚可接触的山村生活与宗门经验。",
+              "constraints": [
+                "接受边界仅到第0章；第4章承接为冻结计划的条件性入口，不将此前协商、说明或练习结果追认为已接受历史。",
+                "既有说明与时间安排须由沈砚在第一场现场实际读核取得；读核属于第12—17分钟五分钟尝试的启动步骤，不另加准备时段。",
+                "时间顺序保持第12—17分钟尝试、第17—20分钟记录、第20—25分钟休息；待作外部配合的起止只按现场纸上已有内容呈现，不补造未提供的时刻。",
+                "只使用已供应说明范围内的修炼动作；不虚构口诀、运气路线或为追求感觉新增操作。",
+                "本次未再次辨清气机不等于此前候选中的感知被否定，也不等于气机已被证明消失或中断。",
+                "严格区分本人察觉到提肩的时刻与提肩实际起点；不确立提肩、呼吸变化、追等结果与气机变化之间的因果关系。",
+                "程观、许庭本章两场均不在场；不提供他们的私下判断，不预填外部报告，不提前执行下一次观察。",
+                "本次记录与旧纸内容分开，提肩起点空格保留并注明未持续观察，不添加内在因果箭头。",
+                "未来正文主要使用简体中文，单章2500—3500中文字；以行动、感官差别和实际结果展开，不用新危机或虚假突破填充篇幅。"
+              ],
+              "chapter_goal": "拟让沈砚独立完成一次有界比较：即使本次未再次辨清气机，也能取得本人可报告的动作观察，并将提肩实际起点的缺口保留在记录中。",
+              "ending_change": "拟使本次观察从回忆变成分列确知与未知的纸页，休息也得到完整承接；下一次核对获得具体缺口，但观察尚未开始，核对哪一段仍待决定。",
+              "emotional_turn": "从盼望感觉重现，到察觉自己在追等时的轻微失落，再转为完成一份有依据记录的踏实；保留尚未解释清楚的不满足。",
+              "reader_promise": "独自练习也能产生可用信息；成长可以落实为更清楚的观察和更可靠的记录，而不只依赖一次感觉重现。",
+              "character_choices": [
+                {
+                  "cost": "本轮五分钟实际耗去，停止时仍未得到期待的感觉；无需另设伤害或重大牺牲。",
+                  "choice": "未得到期待的感觉时仍遵守原说明，到五分钟边界便停止，不增加动作或追加一轮。",
+                  "motivation": "检验自己能否在无人提醒、没有即时反馈时持续观察，并守住后续记录与休息的时间。",
+                  "character_id": "character:shen-yan"
+                },
+                {
+                  "cost": null,
+                  "choice": "将提肩实际起点留空，标明未持续观察，不以后来察觉到提肩的时刻代填。",
+                  "motivation": "希望下一次求助有真实依据，让有限的外部观察能补到本次缺口。",
+                  "character_id": "character:shen-yan"
+                }
+              ]
+            },
+            "retrieval_queries": [
+              "在接受边界第0章的初始canon与story_state中，沈砚已有的修炼知识、可用说明及其适用范围有哪些明确事实？核对可用原文，避免把冻结候选中的既有说明追认为此前人物知识；若无明确内容，不补造口诀或修炼动作。",
+              "在接受边界第0章的已接受事实中，是否明确提供了本场可用的计时或报时方式、纸笔条件及相关限制？仅提取可支持限时尝试和记录的事实，不读取未接受章节结果或质量开发记录。"
+            ],
+            "execution_strategy": "按冻结场序提供写作落点，不改动Plan。开场尽快让沈砚现场读核说明和纸上时间边界，再进入原范围内的尝试。练习段跟随他的注意力由动作转向等待，再回到能够察觉的肩背与呼吸；记录段让每项落字都对应刚才确有依据的观察。用收笔和完整休息落实时间承接，最终停在尚待取舍的外部核对问题。",
+            "obligation_actions": [],
+            "composition_strategy": "沿用两场因果结构：第一场以限时尝试产生局部观察和证据缺口，第二场以落笔检验这些观察能支持什么。让同一动作兼顾人物、信息与推进：读纸取得行动依据，察觉追等呈现有限进步，停笔留白定位后续问题。篇幅用于展开注意力变化、落字取舍与休息承接，避免反复解释诚实记录的道理。"
+          },
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "event_count": 7,
+          "denied_tools": [
+            "storage.object.put"
+          ],
+          "allowed_tools": [
+            "model.provider.invoke"
+          ],
+          "output_schema": {
+            "type": "object",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "required": [
+              "execution_strategy",
+              "tension_strategy",
+              "composition_strategy",
+              "creative_guidance",
+              "scene_directives",
+              "retrieval_queries",
+              "obligation_actions",
+              "arc_actions",
+              "stop_conditions"
+            ],
+            "properties": {
+              "arc_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "arc_plan_version_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "arc_plan_version_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "stop_conditions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 16
+              },
+              "scene_directives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "scene_id",
+                    "directive",
+                    "conflict_progression",
+                    "information_release",
+                    "emotional_change",
+                    "transition"
+                  ],
+                  "properties": {
+                    "scene_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "directive": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "transition": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "emotional_change": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "information_release": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "conflict_progression": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "tension_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "creative_guidance": {
+                "type": "object",
+                "required": [
+                  "chapter_goal",
+                  "pov",
+                  "voice",
+                  "emotional_turn",
+                  "reader_promise",
+                  "ending_change",
+                  "character_choices",
+                  "constraints"
+                ],
+                "properties": {
+                  "pov": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "voice": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "constraints": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "maxItems": 32
+                  },
+                  "chapter_goal": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "ending_change": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "emotional_turn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reader_promise": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "character_choices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "character_id",
+                        "choice",
+                        "motivation",
+                        "cost"
+                      ],
+                      "properties": {
+                        "cost": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "choice": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "motivation": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "character_id": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 32
+                  }
+                },
+                "additionalProperties": false
+              },
+              "retrieval_queries": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 8,
+                "minItems": 1
+              },
+              "execution_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "obligation_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "obligation_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "obligation_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "composition_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "model_authority": {
+            "schema_version": "novelos.model_authority_evidence.v1",
+            "route_policy_id": "chapter.memo.route.f447652da57a5bd80fdc",
+            "invocation_model": "gpt-6.1-sol",
+            "model_profile_id": "chapter.memo.default.f447652da57a5bd80fdc",
+            "route_policy_hash": "99c1f4c0b33b2a7fe7b193faf14e9a29e0dffc8bc80a9ee026dbf786f231e4d1",
+            "route_snapshot_id": "production_execution/routes/85467c03d374a3e8d9a6",
+            "frozen_route_model": "gpt-6.1-sol",
+            "model_profile_hash": "684ec5283fd57b05ba06b283b2b8def989d6e98c1c7ca935fba563f943543ff8",
+            "route_snapshot_hash": "2ae94d85fe9311d239ec2dfa156dab3252d88af78ce22de203c7a8219e4d24ed",
+            "route_policy_version": 1,
+            "model_profile_version": 2,
+            "policy_requested_model": "gpt-6.1-sol",
+            "invocation_command_hash": "sha256:ef7bb1fdaf709caf842ca7954895de11c4fd23bb9ac065721c1f74801a60edb5",
+            "provider_observed_model": "unavailable",
+            "session_recovery_policy": "codex-local-session-evidence.v1",
+            "local_session_persistence": "DURABLE",
+            "local_user_config_ignored": true,
+            "invocation_reasoning_effort": "high",
+            "frozen_route_reasoning_effort": "high",
+            "policy_requested_reasoning_effort": "high",
+            "provider_observed_reasoning_effort": "unavailable",
+            "local_user_config_is_model_authority": false
+          },
+          "submission_phase": "PROCESS_RESULT_RECORDED",
+          "validation_checks": {
+            "tool_policy": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7",
+            "output_schema": "schema:chapter-provider-output:memo:v2",
+            "stage_semantics": "chapter-stage:memo:semantic-validation",
+            "capability_materialization": "sha256:44aa8066cd33fdfc095fafaa2e6fea72b9f28ec521eae5a934dd9813c50a1566"
+          },
+          "stream_diagnostics": {
+            "version": "codex-stream-diagnostics.v1",
+            "event_counts": {
+              "turn.started": 1,
+              "item.completed": 4,
+              "thread.started": 1,
+              "turn.completed": 1
+            },
+            "stdout_bytes": 10079,
+            "stdout_sha256": "c95600dff1cafb4a1900bf9578138a1a3485d89ed71db3b5ce3b745f600054d8",
+            "usage_present": true,
+            "remote_outcome": "UNESTABLISHED",
+            "scan_truncated": false,
+            "turn_completed": true,
+            "local_thread_id": "01a12169-64b6-74f1-af47-2c80e36c2e2f",
+            "stream_disconnected": false,
+            "response_body_decode_failed": false
+          },
+          "unauthorized_tools": [],
+          "capability_evidence": {
+            "skill": {
+              "ref": "chapter-outline",
+              "version": "chapter-plan-skill-v3",
+              "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+            },
+            "allowed_tools": [
+              "model.provider.invoke"
+            ],
+            "provider_view": {
+              "component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:39a55462aa32bfb0491f2abd49525cd528e587e86174091efbb064c94192ad8d",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:b1b2e0ec35cc93a69adccf88362500ae1f2abdcc2ad3f88ee214511c45565e93",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+              "component_characters": {
+                "tool_policy": 0,
+                "output_schema": 2909,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 25916,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 35287,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "representation_policy": "authority-projection-task-provider-v2",
+              "selection_explanation": {
+                "policy": "accepted-boundary-only",
+                "omitted_count": 0,
+                "selected_count": 1
+              },
+              "task_contract_version": "provider-task-view-v1",
+              "context_contract_version": "provider-context-view-v2",
+              "context_projection_ratio": 139.0,
+              "exact_context_references": {
+                "source_scope": "provider_data_envelope",
+                "decoded_equal": true,
+                "reference_count": 10,
+                "contract_version": "provider-context-exact-value-reference.v1",
+                "source_context_hash": "sha256:5e1b6a2944945468813b29fcd491713ce033a9793f73032381e6acfe0b7ecb99",
+                "encoded_context_hash": "sha256:6216107d59caa35dc8c23431f2907bd99dfdc574e4e6827b0c437056cfad934e"
+              },
+              "component_estimated_tokens": {
+                "tool_policy": 0,
+                "output_schema": 970,
+                "governed_skill": 298,
+                "provider_knowledge": 187,
+                "provider_task_view": 13250,
+                "system_instruction": 207,
+                "fully_rendered_prompt": 16374,
+                "provider_context_view": 139,
+                "stage_semantic_contract": 300
+              },
+              "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+              "component_utf8_byte_upper_bounds": {
+                "tool_policy": 0,
+                "output_schema": 2909,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 39750,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 49121,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "provider_context_estimated_tokens": 139,
+              "authority_context_estimated_tokens": 0,
+              "rendered_prompt_to_semantic_input_ratio": 1.206099,
+              "provider_admission_uses_component_estimates": false
+            },
+            "prompt_template": {
+              "ref": "prompt-template:chapter-generation-pack",
+              "version": "v13",
+              "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+            },
+            "method_selection": {
+              "skill_sections": [
+                "Shared rules",
+                "Memo"
+              ],
+              "system_sections": [],
+              "contract_version": "production-stage-methods.v1"
+            },
+            "output_schema_ref": "schema:chapter-provider-output:memo:v2",
+            "output_schema_hash": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+            "provider_admission": {
+              "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+              "status": "ADMITTED",
+              "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+              "envelope_hash": "sha256:ea4b5ac7cc751ca409f25d0e5783443cf01eb96a441f2b974ffe3e877d8cadb8",
+              "total_reserved": 81393,
+              "component_usage": {
+                "safety_margin": 256,
+                "output_reserve": 32000,
+                "provider_input": 49121,
+                "request_framing": 16
+              },
+              "applicable_limit": 258400,
+              "contract_version": "provider-token-admission-v1",
+              "accounting_contract": {
+                "model": "gpt-6.1-sol",
+                "provider": "codex-cli",
+                "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+                "meter_version": "v1",
+                "safety_margin": 256,
+                "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                "output_reserve": 32000,
+                "route_identity": "routing-decision:660d92b99234469bfdf0975e1e9c376871622706e2f9e3e259e2286abeb89bf5",
+                "contract_version": "provider-token-accounting-v3",
+                "framing_overhead": 16,
+                "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                "model_context_limit": 258400,
+                "execution_token_limit": 258400,
+                "serialization_contract": "codex-cli-application-stdin-v1"
+              },
+              "context_bundle_status": "VALID",
+              "context_bundle_tokens": 0,
+              "input_component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:39a55462aa32bfb0491f2abd49525cd528e587e86174091efbb064c94192ad8d",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:b1b2e0ec35cc93a69adccf88362500ae1f2abdcc2ad3f88ee214511c45565e93",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "complete_request_coverage": [
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "knowledge_inputs",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin"
+              ]
+            },
+            "system_instruction": {
+              "ref": "prompt-system:chapter-generation-pack",
+              "version": "v3",
+              "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+            },
+            "materialization_hash": "sha256:44aa8066cd33fdfc095fafaa2e6fea72b9f28ec521eae5a934dd9813c50a1566",
+            "rendered_prompt_bytes": 49121,
+            "reusable_prefix_bytes": 1593,
+            "knowledge_content_hashes": [
+              "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+            ],
+            "context_asset_version_ids": [
+              "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1"
+            ],
+            "embedding_output_contract": null,
+            "fully_rendered_prompt_hash": "sha256:b1b2e0ec35cc93a69adccf88362500ae1f2abdcc2ad3f88ee214511c45565e93",
+            "provider_request_envelope_hash": "sha256:ea4b5ac7cc751ca409f25d0e5783443cf01eb96a441f2b974ffe3e877d8cadb8",
+            "required_reader_facing_language": null,
+            "rendered_prompt_estimated_tokens": 16374,
+            "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+            "provider_admission_asset_version_id": "3794ea52-516b-4ee2-9ae9-44c3f33b366c"
+          },
+          "provider_request_id": null,
+          "output_schema_version": "schema:chapter-provider-output:memo:v2",
+          "transport_retry_policy": {
+            "version": "codex-no-transport-retry.v1",
+            "stream_max_retries": 0,
+            "request_max_retries": 0,
+            "invocation_overrides": [
+              "model_provider=\"novel_forge_openai_no_retry\"",
+              "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+              "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+              "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+              "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+              "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+            ]
+          },
+          "terminal_event_observed": true,
+          "provider_schema_contract": {
+            "version": "codex-structured-schema.v5",
+            "provider_hash": "sha256:f19b893d95ff565b00486aa41c07c00e6b6196830dc240bb2bfa7652c7b5b8f0",
+            "canonical_hash": "sha256:68a3b6481aaabdea430d5a2519c2fb91715f43f056bec1e568893c07268f0141",
+            "equivalent_projection": "codex-nullable-shared-types.v3",
+            "local_constraints_retained": [
+              "uniqueItems"
+            ]
+          },
+          "local_execution_receipt_id": "process-receipt:969c347c10d70b6f29f2f547",
+          "reconciliation_fingerprint": "sha256:fd44a86a130cab49e12f59c2bade21141a1907de4804298f12fb7e9095d4b288"
+        },
+        "execution_request": {
+          "stage": "memo",
+          "domain": "planning",
+          "book_id": "book:qinglan-wendao-20261008",
+          "saga_id": "51a215bf-7684-4a32-bc89-e9f36b678a45",
+          "trace_id": "2bf458df-d6ab-441a-abc5-419eb00bb5bc:chapter:5",
+          "task_kind": "chapter.memo.generate",
+          "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+          "capability": "planning.chapter.memo",
+          "project_id": "qid-learning-prose-01",
+          "risk_class": "high",
+          "execution_id": "chapter-execution:2e140437-5c4b-4764-ac2b-410a1a1feb62",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "origin_chain": [
+            "chapter.slice.run",
+            "chapter.memo.generate"
+          ],
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:5",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 5
+          },
+          "workspace_id": "workspace:qid-learning-prose-01",
+          "fencing_token": 1,
+          "correlation_id": "2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+          "agent_hop_count": 0,
+          "resource_claims": [
+            "chapter:5",
+            "stage:memo"
+          ],
+          "importance_class": "HIGH",
+          "budget_policy_ref": "budget:planning-chapter-memo:v1",
+          "commit_policy_ref": "commit:planning-chapter-memo:v1",
+          "root_operation_id": "915771af-85c8-446e-9ef4-d4af77f7c25d",
+          "route_snapshot_id": "production_execution/routes/85467c03d374a3e8d9a6",
+          "external_effect_id": "2e140437-5c4b-4764-ac2b-410a1a1feb62",
+          "input_manifest_ref": "production_execution/inputs/85467c03d374a3e8d9a6",
+          "timeout_policy_ref": "timeout:planning-chapter-memo:v1",
+          "budget_reservation_id": "a5d0b19e-7f35-4ac6-b161-edaa70ac765a",
+          "permission_policy_ref": "permission:planning-chapter-memo:v1",
+          "validation_policy_ref": "validation:planning-chapter-memo:v1",
+          "stable_idempotency_key": "34330928-4f50-4ca8-8f9a-6125f15bef89:069b8bfd-bafc-49ee-af48-e746280fba2d:memo:attempt-v1",
+          "workspace_snapshot_ref": "workspace:qid-learning-prose-01"
+        },
+        "validation_manifest": {
+          "checks": [
+            {
+              "status": "PASSED",
+              "check_kind": "structured_object",
+              "evidence_ref": "authority-asset-version:a273c64e-ec4f-456f-be80-6676c92d9989"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "fencing",
+              "evidence_ref": "authority-attempt:069b8bfd-bafc-49ee-af48-e746280fba2d:fence:1"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "route_snapshot",
+              "evidence_ref": "production_execution/routes/85467c03d374a3e8d9a6"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "capability_materialization",
+              "evidence_ref": "sha256:44aa8066cd33fdfc095fafaa2e6fea72b9f28ec521eae5a934dd9813c50a1566"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "output_schema",
+              "evidence_ref": "schema:chapter-provider-output:memo:v2"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "stage_semantics",
+              "evidence_ref": "chapter-stage:memo:semantic-validation"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "tool_policy",
+              "evidence_ref": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7"
+            }
+          ],
+          "decision": "ACCEPTED",
+          "attempt_id": "069b8bfd-bafc-49ee-af48-e746280fba2d",
+          "manifest_id": "validation-manifest:chapter-execution:2e140437-5c4b-4764-ac2b-410a1a1feb62",
+          "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+          "fencing_token": 1,
+          "output_manifest_ref": "authority-asset-version:af2efecf-3866-4b18-bf33-51e86a732635",
+          "required_check_kinds": [
+            "structured_object",
+            "fencing",
+            "route_snapshot",
+            "capability_materialization",
+            "output_schema",
+            "stage_semantics",
+            "tool_policy"
+          ],
+          "validation_policy_ref": "validation:planning-chapter-memo:v1"
+        },
+        "validation_manifest_ref": "authority-asset-version:ca88bf8d-88b3-4d20-92da-000a20b46dae",
+        "commit_manifest_required": true
+      },
+      "qualification": "QUALIFIED",
+      "creative_guidance": {
+        "pov": "以沈砚为中心的第三人称限知视角。只写他现场读到、亲自察觉、回想能够确认的内容，叙述者不补出他漏看的变化。",
+        "voice": "朴素、清楚、有分寸。用读纸、注意力偏移、落笔与收笔承载情绪，内心只点出当下想解决的问题。术语随使用需要出现；若使用比喻，取自沈砚可接触的山村生活与宗门经验。",
+        "constraints": [
+          "接受边界仅到第0章；第4章承接为冻结计划的条件性入口，不将此前协商、说明或练习结果追认为已接受历史。",
+          "既有说明与时间安排须由沈砚在第一场现场实际读核取得；读核属于第12—17分钟五分钟尝试的启动步骤，不另加准备时段。",
+          "时间顺序保持第12—17分钟尝试、第17—20分钟记录、第20—25分钟休息；待作外部配合的起止只按现场纸上已有内容呈现，不补造未提供的时刻。",
+          "只使用已供应说明范围内的修炼动作；不虚构口诀、运气路线或为追求感觉新增操作。",
+          "本次未再次辨清气机不等于此前候选中的感知被否定，也不等于气机已被证明消失或中断。",
+          "严格区分本人察觉到提肩的时刻与提肩实际起点；不确立提肩、呼吸变化、追等结果与气机变化之间的因果关系。",
+          "程观、许庭本章两场均不在场；不提供他们的私下判断，不预填外部报告，不提前执行下一次观察。",
+          "本次记录与旧纸内容分开，提肩起点空格保留并注明未持续观察，不添加内在因果箭头。",
+          "未来正文主要使用简体中文，单章2500—3500中文字；以行动、感官差别和实际结果展开，不用新危机或虚假突破填充篇幅。"
+        ],
+        "chapter_goal": "拟让沈砚独立完成一次有界比较：即使本次未再次辨清气机，也能取得本人可报告的动作观察，并将提肩实际起点的缺口保留在记录中。",
+        "ending_change": "拟使本次观察从回忆变成分列确知与未知的纸页，休息也得到完整承接；下一次核对获得具体缺口，但观察尚未开始，核对哪一段仍待决定。",
+        "emotional_turn": "从盼望感觉重现，到察觉自己在追等时的轻微失落，再转为完成一份有依据记录的踏实；保留尚未解释清楚的不满足。",
+        "reader_promise": "独自练习也能产生可用信息；成长可以落实为更清楚的观察和更可靠的记录，而不只依赖一次感觉重现。",
+        "character_choices": [
+          {
+            "cost": "本轮五分钟实际耗去，停止时仍未得到期待的感觉；无需另设伤害或重大牺牲。",
+            "choice": "未得到期待的感觉时仍遵守原说明，到五分钟边界便停止，不增加动作或追加一轮。",
+            "motivation": "检验自己能否在无人提醒、没有即时反馈时持续观察，并守住后续记录与休息的时间。",
+            "character_id": "character:shen-yan"
+          },
+          {
+            "cost": null,
+            "choice": "将提肩实际起点留空，标明未持续观察，不以后来察觉到提肩的时刻代填。",
+            "motivation": "希望下一次求助有真实依据，让有限的外部观察能补到本次缺口。",
+            "character_id": "character:shen-yan"
+          }
+        ]
+      },
+      "creative_contract_version": "creative-memo.v1",
+      "memo_fingerprint": "sha256:1c681fdfe650a0bbe9620673740beae915dcc32c6b710d9e3ba19d8b65135aea"
+    },
+    "provider_invoked": false
+  }
+]

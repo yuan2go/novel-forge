@@ -17,7 +17,7 @@ _VERSIONS = {
     "reader-feedback": "reader-feedback-v2",
     "prose-generation": "prose-generation-v4",
     "chapter-outline": "chapter-plan-skill-v3",
-    "quality-review": "quality-review-v3",
+    "quality-review": "quality-review-v4",
     "context-builder-source-isolation": "context-builder-source-isolation-v2",
     "long-outline": "long-outline-v2",
 }
@@ -37,6 +37,7 @@ def project_sections(text: str, *headings: str) -> str:
 
 def project_skill_method(text: str, *, ref: str, version: str, stage: str, targeted: bool) -> str:
     calibrated = version == _VERSIONS.get(ref) or (ref == "long-outline" and version == "long-outline-v3") or (ref == "narrative-beat-design" and version == "narrative-beat-design-qualification-v3") or (ref in _METHODS and version == ref + "-qualification-v2")
+    calibrated = calibrated or (ref == "quality-review" and version == "quality-review-v3")
     if not calibrated:
         return text
     method = "Quality dimension" if ref == "quality-review" and stage.startswith("quality_") else _METHODS[ref].get(stage)

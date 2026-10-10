@@ -1218,6 +1218,13 @@ class PostgresBookProductionSupervisor:
         plan: dict[str, Any],
         contract_type: PlanContractType,
     ) -> str:
+        if contract_type is PlanContractType.CHAPTER:
+            from types import SimpleNamespace
+            from novel_forge.modules.chapter_authority.character_references import frozen_character_references
+            frozen_character_references(SimpleNamespace(database_url=self.authority.database_url,
+                project_id=book["project_id"],workspace_id=book["workspace_id"],
+                command={"book_id":book["book_id"],"context_version_refs":{"book_production_input_snapshot_id":book["input_snapshot_id"]}}),
+                scenes=plan["content"]["scene_plan"])
         frozen = self.planning.planning.bind_active_contract(
             project_id=str(book["project_id"]),
             book_id=str(book["book_id"]),

@@ -1,0 +1,16 @@
+{
+  "error": "BOOK_OPENING_EXECUTION_NOT_LIVE",
+  "source_operations": [
+    [
+      "1fbfe9c2-ec3e-41d7-a93e-d2003ced428a",
+      "FAILED_FINAL",
+      "1.21.0",
+      0,
+      0
+    ]
+  ],
+  "effects": 0,
+  "budget_reservations": 0,
+  "reason": "Copied historical Opening fence cannot authorize a current ordinary Book planning revision",
+  "next_scope": "current same-Book delegated work; existing member authorization; no Opening lifecycle or budgets changed"
+}

@@ -1,0 +1,49 @@
+{
+  "book_id": "book:qinglan-wendao-20261008",
+  "actor_id": "author-first-native-operator",
+  "trace_id": "qinglan-forty:dependent-arc:0",
+  "project_id": "qid-learning-prose-01",
+  "logical_key": "book:book:qinglan-wendao-20261008",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "repair_number": 0,
+  "repair_reason": "",
+  "correlation_id": "c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "input_versions": {
+    "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "volume_plan": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+    "conflict_state": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+    "promise_ledger": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+    "foreshadowing_ledger": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+    "character_arc_portfolio": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+  },
+  "arc_working_set": {},
+  "idempotency_key": "qinglan-forty:dependent-arc:0:generate:v1",
+  "parent_version_id": "",
+  "narrative_search_id": "",
+  "auto_approve_low_risk": false,
+  "narrative_realization": {},
+  "repair_of_candidate_id": "",
+  "generator_operation_name": "arc_plan.generate",
+  "opening_execution_binding": {},
+  "execution_contract_version": "1.21.0",
+  "change_evidence_version_ids": [
+    "authority-output:72657607-4807-4178-84ff-e0eba4e3efbb:planning.change_request:v1"
+  ],
+  "narrative_search_branch_key": "",
+  "related_arc_plan_version_ids": [],
+  "governance_action_version_ids": [],
+  "dependent_arc_plan_version_ids": [],
+  "arc_scope_volume_plan_version_ids": [
+    "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+    "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+    "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+    "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+  ],
+  "narrative_search_hard_constraints": [],
+  "narrative_search_planning_horizon": {},
+  "parent_agent_session_operation_id": "",
+  "narrative_search_strategy_directive": "",
+  "narrative_search_desired_transformation": {},
+  "narrative_search_accepted_through_chapter": 0,
+  "narrative_search_parent_state_asset_version_id": ""
+}

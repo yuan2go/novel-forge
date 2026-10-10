@@ -1,0 +1,568 @@
+[
+  {
+    "status": "FAILED_RETRYABLE",
+    "saga_id": "52bb9866-ab0a-430c-bce7-c5f66f7e94bb",
+    "span_id": "75c9b87f-1431-40a4-a537-8dd5a5ebcee1",
+    "version": 3,
+    "actor_id": "author-first-native-operator",
+    "metadata": {},
+    "step_key": "",
+    "trace_id": "qinglan-five:group1",
+    "created_at": "2026-10-09T17:31:21.676924+00:00",
+    "project_id": "qid-learning-prose-01",
+    "updated_at": "2026-10-09T17:40:56.199998+00:00",
+    "workflow_id": "",
+    "causation_id": "",
+    "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "correlation_id": "qinglan-five-work-v1",
+    "request_digest": "7c2f97bf908754801daf0d2938a062d9e61b222699654115e79e6a60a4cc0aff",
+    "command_payload": {
+      "payload": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "qinglan-five:group1",
+        "project_id": "qid-learning-prose-01",
+        "logical_key": "chapter-group:containing:1",
+        "workspace_id": "workspace:qid-learning-prose-01",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "qinglan-five-work-v1",
+        "input_versions": {
+          "arc_plans": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "story_state": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "reader_state": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+          "quality_trend": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+          "canon_snapshot": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+          "previous_chapter_group_outcome": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+        },
+        "arc_working_set": {
+          "type": "ArcWorkingSet",
+          "book_id": "book:qinglan-wendao-20261008",
+          "capacity": {
+            "source": "POLICY_DEFAULT",
+            "maximum_active_arcs": 3,
+            "narrative_load_policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+          },
+          "candidates": [
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 8,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 8,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 8,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 9,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 7,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 8,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            }
+          ],
+          "project_id": "qid-learning-prose-01",
+          "reader_intent": {},
+          "policy_version": "accepted-reality-arc-working-set-v1",
+          "target_chapter": 1,
+          "accepted_reality": {
+            "actual_only": true,
+            "narrative_state": {
+              "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+              "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+              "state_kind_counts": {},
+              "accepted_through_chapter": 0
+            },
+            "projection_hash": "",
+            "projection_set_id": "",
+            "accepted_through_chapter": 0,
+            "source_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+          },
+          "contract_version": "arc-working-set-v1",
+          "planning_horizon": {
+            "scope": "CHAPTER",
+            "chapter": 1
+          },
+          "authority_boundary": {
+            "selection_is_future_intent": true,
+            "actual_progress_requires_accepted_chapter_outcome": true
+          },
+          "working_manuscript": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "sources": [],
+            "version": "working-manuscript-context.v1",
+            "authority": "AUTHOR_WORKING_PROSE_ONLY",
+            "project_id": "qid-learning-prose-01",
+            "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+            "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+            "snapshot_hash": "sha256:a41200b3fff715471d0cd45a81d6d062af275cd63458f3e06a653d8354b32bb4",
+            "target_chapter": 1,
+            "structured_facts": [],
+            "accepted_through_chapter": 0
+          },
+          "working_set_digest": "sha256:22bbfd9e16d2b998d3ef17b876af1da3a59dca964eb77338e15e955b2219b668",
+          "schedule_correction": {
+            "status": "NO_GROUP_CADENCE",
+            "added_arc_plan_version_ids": [
+              "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+              "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "removed_arc_plan_version_ids": []
+          },
+          "selected_contributions": [
+            {
+              "role": "PRIMARY",
+              "score": 0,
+              "action": "ADVANCE",
+              "reason_codes": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+            },
+            {
+              "role": "SECONDARY",
+              "score": 0,
+              "action": "ADVANCE",
+              "reason_codes": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+            },
+            {
+              "role": "TOUCH",
+              "score": 0,
+              "action": "ADVANCE",
+              "reason_codes": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            }
+          ],
+          "deferred_arc_plan_version_ids": [
+            "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+            "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+            "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1"
+          ]
+        },
+        "idempotency_key": "qinglan-five-20261010:group1:structural-generate:runtime-continuation:1",
+        "parent_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "narrative_search_id": "",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "runtime_continuation_id": "planning-runtime-continuation:0f4d4d1f-af2b-428a-98c4-396c2a92bd72",
+        "generator_operation_name": "chapter_group_plan.generate",
+        "opening_execution_binding": {},
+        "execution_contract_version": "1.21.0",
+        "change_evidence_version_ids": [
+          "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1"
+        ],
+        "narrative_search_branch_key": "",
+        "related_arc_plan_version_ids": [
+          "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "arc_scope_volume_plan_version_ids": [],
+        "narrative_search_hard_constraints": [],
+        "narrative_search_planning_horizon": {},
+        "parent_agent_session_operation_id": "",
+        "narrative_search_strategy_directive": "",
+        "narrative_search_desired_transformation": {},
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": ""
+      },
+      "project_id": "qid-learning-prose-01",
+      "input_asset_version_ids": [
+        "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+        "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+        "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+        "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1",
+        "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1"
+      ]
+    },
+    "concurrency_key": "book:book:qinglan-wendao-20261008:planning:chapter-group:containing:1",
+    "definition_name": "story_planning.generate",
+    "idempotency_key": "qinglan-five-20261010:group1:structural-generate:runtime-continuation:1",
+    "policy_snapshot": {
+      "candidate_only": true,
+      "high_risk_auto_approval": false,
+      "foundation_direction_search": "foundation-generation.v5",
+      "realization_source_selectors": "planning-host-source-selectors.v2",
+      "typed_arc_context_projection": "typed-arc-context-projection.v2",
+      "agent_runtime_binding_required": false,
+      "story_design_activation_separate": true,
+      "typed_capability_binding_required": true,
+      "repair_candidate_asset_input_allowed": true,
+      "repair_result_evidence_input_allowed": true,
+      "production_execution_gateway_required": true,
+      "semantic_evaluation_operation_separate": true,
+      "capability_pack_attempt_snapshot_required": true
+    },
+    "idempotency_scope": "book:story-planning-generation",
+    "root_operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+    "definition_version": "1.21.0",
+    "definition_snapshot": {
+      "name": "story_planning.generate",
+      "family": "story_planning_runtime",
+      "policy": {
+        "candidate_only": true,
+        "high_risk_auto_approval": false,
+        "foundation_direction_search": "foundation-generation.v5",
+        "realization_source_selectors": "planning-host-source-selectors.v2",
+        "typed_arc_context_projection": "typed-arc-context-projection.v2",
+        "agent_runtime_binding_required": false,
+        "story_design_activation_separate": true,
+        "typed_capability_binding_required": true,
+        "repair_candidate_asset_input_allowed": true,
+        "repair_result_evidence_input_allowed": true,
+        "production_execution_gateway_required": true,
+        "semantic_evaluation_operation_separate": true,
+        "capability_pack_attempt_snapshot_required": true
+      },
+      "enabled": true,
+      "commit_sha": "06f1a77931dd5795cf94653d71bc09abf131579f",
+      "handler_key": "novel_forge.story_planning.generate",
+      "permissions": [
+        "story_planning.authority.execute"
+      ],
+      "retry_policy": {
+        "max_attempts": 3,
+        "dead_letter_on_exhausted": true
+      },
+      "result_schema": {
+        "type": "object"
+      },
+      "command_schema": {
+        "type": "object",
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "properties": {
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "input_asset_version_ids": {
+            "type": "array",
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "execution_mode": "worker",
+      "timeout_policy": {
+        "operation_timeout_seconds": 1800
+      },
+      "approval_policy": {
+        "required": false
+      },
+      "definition_hash": "sha256:d718641608c969fb4386268a9e96fc6c8f1bb2c6af2f0ce6903fb15ca85e96fe",
+      "idempotency_scope": "book:story-planning-generation",
+      "definition_version": "1.21.0",
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "compensation_policy": {
+        "reason": "append-only candidates and validation evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "version": "story-planning-generation-completion-v1",
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_outbox_events": [
+          "story_planning.candidate.materialized"
+        ],
+        "required_asset_selectors": [
+          {
+            "role": "primary",
+            "selector": "planning_generation_candidate",
+            "lifecycle": "CANDIDATE",
+            "governance": "CLEAR",
+            "output_key": "story_planning.candidate",
+            "eligibility": "INELIGIBLE"
+          }
+        ]
+      },
+      "application_build_id": "generation-recovery-prose-02-06f1a77931dd",
+      "external_capabilities": [
+        "model.planning"
+      ],
+      "concurrency_key_template": "book:{book_id}:planning:{logical_key}",
+      "handler_contract_version": "story-planning-generation-handler-v1",
+      "irreversible_effect_policy": {
+        "allowed": false
+      }
+    },
+    "parent_operation_id": null,
+    "business_deadline_at": "2026-10-09T18:01:21.676924+00:00",
+    "input_asset_snapshot": [
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+        "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+        "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+        "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+        "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+        "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+        "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+        "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+        "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:9a2acc547f943848977a7c30b7bb8c938bd49a0fdb7a66183048b4ad143dc8bb",
+        "asset_version_id": "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1"
+      }
+    ],
+    "causation_operation_id": "0f4d4d1f-af2b-428a-98c4-396c2a92bd72",
+    "completion_contract_snapshot": {
+      "version": "story-planning-generation-completion-v1",
+      "required_evidence": [
+        "trace",
+        "audit",
+        "cost_when_provider_used"
+      ],
+      "required_outbox_events": [
+        "story_planning.candidate.materialized"
+      ],
+      "required_asset_selectors": [
+        {
+          "role": "primary",
+          "selector": "planning_generation_candidate",
+          "lifecycle": "CANDIDATE",
+          "governance": "CLEAR",
+          "output_key": "story_planning.candidate",
+          "eligibility": "INELIGIBLE"
+        }
+      ]
+    },
+    "approval_requirement_snapshot": {
+      "policy": {
+        "required": false
+      },
+      "evidence": {}
+    }
+  }
+]

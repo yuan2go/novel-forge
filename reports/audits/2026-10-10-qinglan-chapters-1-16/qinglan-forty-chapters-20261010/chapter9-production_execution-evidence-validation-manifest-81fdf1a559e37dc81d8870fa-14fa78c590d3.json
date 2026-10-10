@@ -1,0 +1,61 @@
+{
+  "kind": "validation-manifest",
+  "payload": {
+    "checks": [
+      {
+        "status": "PASSED",
+        "check_kind": "structured_object",
+        "evidence_ref": "authority-asset-version:08ca0fc0-1e1f-4651-b99b-20d48da5f261"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "fencing",
+        "evidence_ref": "authority-attempt:b05cb527-30ff-4a6e-b648-7affc29ded39:fence:1"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "route_snapshot",
+        "evidence_ref": "production_execution/routes/022be71a7d28c1a80505"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "capability_materialization",
+        "evidence_ref": "sha256:4e2933e30d8b9bdfbdf8b1cd326426fc5f2f284e74f9c4afbe574dce4dfa532c"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "output_schema",
+        "evidence_ref": "schema:planning-provider-output:chapter:v5:work-v4:host-selectors-v2:frozen-character-references-v1:operational-commitments-v1:accepted-knowledge-v1"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "stage_semantics",
+        "evidence_ref": "chapter-stage:chapter_plan.generate:semantic-validation"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "tool_policy",
+        "evidence_ref": "tool-policy:sha256:fc1887030896cf96eb10fd22ab968efc6575033ebead938c975fb6e617f1d9c1"
+      }
+    ],
+    "decision": "ACCEPTED",
+    "attempt_id": "b05cb527-30ff-4a6e-b648-7affc29ded39",
+    "manifest_id": "validation-manifest:planning-execution:51f34efa-b857-4563-86ce-bae786b91c55:b05cb527-30ff-4a6e-b648-7affc29ded39",
+    "operation_id": "8c524dc2-6dc0-4c10-b77b-acde27bbf89c",
+    "fencing_token": 1,
+    "output_manifest_ref": "authority-asset-version:e211036d-ba81-4e20-9e5f-e84651aa3a02",
+    "required_check_kinds": [
+      "structured_object",
+      "fencing",
+      "route_snapshot",
+      "capability_materialization",
+      "output_schema",
+      "stage_semantics",
+      "tool_policy"
+    ],
+    "validation_policy_ref": "validation:planning-story_chapter-generate:v1"
+  },
+  "execution_id": "planning-execution:51f34efa-b857-4563-86ce-bae786b91c55:b05cb527-30ff-4a6e-b648-7affc29ded39",
+  "payload_hash": "14fa78c590d302d4d232b928dee9dc8adf1761bd49c15675938cedb686e1b65c",
+  "contract_version": "authority-execution-evidence.v1"
+}

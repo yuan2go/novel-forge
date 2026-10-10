@@ -1,0 +1,12 @@
+[
+  [
+    {
+      "status": "FAIL",
+      "message": "Chapter Arc schedule must uniquely reference frozen required Arc contributions",
+      "error_code": "CHAPTER_ARC_REFERENCE_INVALID",
+      "validation_kind": "STRUCTURAL",
+      "candidate_asset_version_id": "authority-output:ee7b1df0-2506-4fdf-bb47-9f48b876367b:story_planning.candidate:v1"
+    },
+    "FAIL"
+  ]
+]

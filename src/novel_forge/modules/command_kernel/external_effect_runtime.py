@@ -1212,7 +1212,6 @@ def accept_external_effect_receipt(
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _validate_effect_context(context)
-        # WHY: Operator reconciliation locks the Effect before its original dispatches.
         uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect_dispatch WHERE dispatch_id=%s", [dispatch_id])
         original = uow.cursor.fetchone()
         if original is None:

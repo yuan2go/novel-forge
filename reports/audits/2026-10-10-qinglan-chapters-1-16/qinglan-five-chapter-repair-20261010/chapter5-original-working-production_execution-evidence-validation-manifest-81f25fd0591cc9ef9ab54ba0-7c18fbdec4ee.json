@@ -1,0 +1,61 @@
+{
+  "kind": "validation-manifest",
+  "payload": {
+    "checks": [
+      {
+        "status": "PASSED",
+        "check_kind": "structured_object",
+        "evidence_ref": "authority-asset-version:ef2957a7-0a1e-4967-8200-56cabb469e86"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "fencing",
+        "evidence_ref": "authority-attempt:eadeae5a-2d60-4137-86d4-34e670f1e9f9:fence:1"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "route_snapshot",
+        "evidence_ref": "production_execution/routes/6a232cc02e990f836a9e"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "capability_materialization",
+        "evidence_ref": "sha256:ce550e7b6140a33914a6a3b03ead761fa0784644d94a3f8a4477a865ba96bc30"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "output_schema",
+        "evidence_ref": "schema:world_candidates.evaluate:v2"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "stage_semantics",
+        "evidence_ref": "chapter-stage:world_candidates.evaluate:semantic-validation"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "tool_policy",
+        "evidence_ref": "tool-policy:sha256:fc1887030896cf96eb10fd22ab968efc6575033ebead938c975fb6e617f1d9c1"
+      }
+    ],
+    "decision": "ACCEPTED",
+    "attempt_id": "eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+    "manifest_id": "validation-manifest:planning-execution:b76711f0-42af-4c51-87ae-479e567bb365:eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+    "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+    "fencing_token": 1,
+    "output_manifest_ref": "authority-asset-version:39890146-34bb-4ac8-849f-98b35efb2594",
+    "required_check_kinds": [
+      "structured_object",
+      "fencing",
+      "route_snapshot",
+      "capability_materialization",
+      "output_schema",
+      "stage_semantics",
+      "tool_policy"
+    ],
+    "validation_policy_ref": "validation:planning-story_chapter-generate:v1"
+  },
+  "execution_id": "planning-execution:b76711f0-42af-4c51-87ae-479e567bb365:eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+  "payload_hash": "7c18fbdec4ee3aabc608d98576c5eb0f986d7055e561c30f95a80d2d320dbac9",
+  "contract_version": "authority-execution-evidence.v1"
+}

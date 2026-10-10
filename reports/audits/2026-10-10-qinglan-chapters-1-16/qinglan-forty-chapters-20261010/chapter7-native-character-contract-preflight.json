@@ -1,0 +1,82 @@
+{
+  "source_sha": "8d56e553c610a6919751ae7db1a9d3170478fb2f",
+  "frozen_contract": {
+    "contract_version": "frozen-character-references.v1",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+    "cast_asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+    "cast_content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+    "bindings": [
+      {
+        "character_id": "character:cheng-guan",
+        "display_name": "程观",
+        "aliases": []
+      },
+      {
+        "character_id": "character:lu-heng",
+        "display_name": "陆衡",
+        "aliases": []
+      },
+      {
+        "character_id": "character:shen-yan",
+        "display_name": "沈砚",
+        "aliases": []
+      },
+      {
+        "character_id": "character:tang-sui",
+        "display_name": "唐穗",
+        "aliases": []
+      },
+      {
+        "character_id": "character:xu-ting",
+        "display_name": "许庭",
+        "aliases": []
+      }
+    ],
+    "participant_bindings": {
+      "character:character:shen-yan": "character:shen-yan",
+      "character:character:lu-heng": "character:lu-heng",
+      "character:character:tang-sui": "character:tang-sui",
+      "character:character:xu-ting": "character:xu-ting",
+      "character:character:cheng-guan": "character:cheng-guan"
+    },
+    "token_bindings": {
+      "character:shen-yan": "character:shen-yan",
+      "沈砚": "character:shen-yan",
+      "character:lu-heng": "character:lu-heng",
+      "陆衡": "character:lu-heng",
+      "character:tang-sui": "character:tang-sui",
+      "唐穗": "character:tang-sui",
+      "character:xu-ting": "character:xu-ting",
+      "许庭": "character:xu-ting",
+      "character:cheng-guan": "character:cheng-guan",
+      "程观": "character:cheng-guan",
+      "character:character:shen-yan": "character:shen-yan",
+      "character:character:lu-heng": "character:lu-heng",
+      "character:character:tang-sui": "character:tang-sui",
+      "character:character:xu-ting": "character:xu-ting",
+      "character:character:cheng-guan": "character:cheng-guan"
+    }
+  },
+  "legal_id_schema": {
+    "type": "string",
+    "enum": [
+      "character:character:cheng-guan",
+      "character:character:lu-heng",
+      "character:character:shen-yan",
+      "character:character:tang-sui",
+      "character:character:xu-ting",
+      "character:cheng-guan",
+      "character:lu-heng",
+      "character:shen-yan",
+      "character:tang-sui",
+      "character:xu-ting"
+    ],
+    "description": "Select an exact frozen character locator. Unnamed background appearances do not create typed participants or character identities."
+  },
+  "original_bad_reference": "character:course-authorized-handler",
+  "original_bad_reference_rejected": true,
+  "provider_dispatches": 0
+}

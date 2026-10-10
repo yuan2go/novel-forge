@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-MIGRATION_ID = '20261010_0196_recovery_reference_indexes'
-DOWN_REVISION = "20261009_0195_prose_review_generation_isolation"
+MIGRATION_ID = '20261010_0198_recovery_reference_indexes'
+DOWN_REVISION = "20261010_0197_authorized_planning_capacity"
 FORWARD_ONLY = True
 BACKUP_REQUIRED = True
 FORWARD_FIX = "Index recovery and source-market foreign-key references without changing historical facts or admission rules."

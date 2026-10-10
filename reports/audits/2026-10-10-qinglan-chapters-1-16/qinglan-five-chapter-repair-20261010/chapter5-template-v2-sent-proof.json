@@ -1,0 +1,22 @@
+{
+  "operation_id": "064d728e-b796-49a2-8643-a735d6435da2",
+  "external_effect_id": "14284f03-5dcd-4c88-aee1-b6dadeef2fb2",
+  "materialization_asset_id": "e541bed6-7a70-486c-91bf-4a463f23ab48",
+  "materialization_hash": "sha256:6ed3146f5f33933f34289a479ca9de76c7836acab82d4653640793193c70d9fa",
+  "lossless_roundtrip_proofs": [],
+  "producer_contracts": [],
+  "prompt_template": {
+    "ref": "prompt-template:story-planning-pack",
+    "version": "v2",
+    "content_hash": "sha256:2785acd8703d1fff8ca65d92c887dd7a87610f0a112785b0611d6e83548455a5"
+  },
+  "pack_identity": {
+    "pack_id": "story_planning_pack.creative.a7bb62b2dbf2852b445326aa",
+    "pack_version": "2.13.116600346",
+    "manifest_hash": "sha256:697af2fd227dc895e68eb2df54af3c4ddcee0164575065914e12b96e2c985bcf",
+    "binding_set_id": "cddbf3dd-4f3c-4edd-b73b-f5abfde7436c",
+    "binding_set_hash": "sha256:6340d271b9597b8ff2ed20b4172f8cc138224f56b5efa03fa811c0f6e40a5e33",
+    "compilation_hash": "sha256:2b0e730ea1a7a92256d0d47102bf6d4da4013352ac053bf0e4415ae9ca1f3e80",
+    "catalog_snapshot_hash": "sha256:bc4061385b5a3fdbf5f198ae4d9c5b2e9fca4c27724e83531ca87d04f57bb95b"
+  }
+}

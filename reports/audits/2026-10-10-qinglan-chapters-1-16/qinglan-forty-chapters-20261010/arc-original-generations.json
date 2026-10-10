@@ -1,0 +1,530 @@
+[
+  [
+    "book:book:qinglan-wendao-20261008",
+    "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+    {
+      "payload": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+        "project_id": "qid-learning-prose-01",
+        "logical_key": "book:book:qinglan-wendao-20261008",
+        "workspace_id": "workspace:qid-learning-prose-01",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+        "input_versions": {
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "conflict_state": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+          "promise_ledger": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+          "foreshadowing_ledger": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+          "character_arc_portfolio": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        "arc_working_set": {},
+        "idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:arc_plan.generate:book:book:qinglan-wendao-20261008:narrative-search:future-1:runtime-continuation:1:runtime-continuation:2",
+        "parent_version_id": "",
+        "narrative_search_id": "narrative-search:8a671cc9a41ed166b7dcc5671f9049031b4d04cadc98135cd5cdd2fc566b8604",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "runtime_continuation_id": "planning-runtime-continuation:4c0d97c0-299f-4480-8f93-00ca34185362",
+        "generator_operation_name": "arc_plan.generate",
+        "opening_execution_binding": {
+          "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+          "runtime_job_id": "runtime-job:ef4aa6d962abfeb8d9be18d4531ba60fe24dc2034dfc3691d3fdc48668d40b5e",
+          "runtime_lease_id": "runtime-lease:eea00cc2-7eda-4bc5-bfbb-5728d9e1da52",
+          "runtime_worker_id": "creation-book",
+          "runtime_attempt_id": "runtime-attempt:224209c4-d3fd-4619-88f6-1f4dabd273ba",
+          "opening_execution_id": "book-opening-execution:caf147d6e55e83d7f94c552d9e721af88839869fa07c94cca1cbb2e10e73500d",
+          "runtime_fencing_token": 1,
+          "opening_execution_generation": 15
+        },
+        "execution_contract_version": "1.21.0",
+        "change_evidence_version_ids": [],
+        "narrative_search_branch_key": "future-1",
+        "related_arc_plan_version_ids": [],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "arc_scope_volume_plan_version_ids": [
+          "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+          "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+          "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+          "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        ],
+        "narrative_search_hard_constraints": [
+          "preserve the approved Creative Foundation",
+          "protect reader promise and ending direction",
+          "do not convert future intent into accepted reality"
+        ],
+        "narrative_search_planning_horizon": {
+          "level": "ARC",
+          "stability": "MEDIUM",
+          "current_volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        },
+        "parent_agent_session_operation_id": "",
+        "narrative_search_strategy_directive": "maximize costly character agency while preserving future options",
+        "narrative_search_desired_transformation": {
+          "goal": "produce a causal transformation with closure criteria",
+          "arc_key": "book:book:qinglan-wendao-20261008"
+        },
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "project_id": "qid-learning-prose-01",
+      "input_asset_version_ids": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      ]
+    }
+  ],
+  [
+    "character:character:cheng-guan",
+    "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+    {
+      "payload": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+        "project_id": "qid-learning-prose-01",
+        "logical_key": "character:character:cheng-guan",
+        "workspace_id": "workspace:qid-learning-prose-01",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+        "input_versions": {
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "conflict_state": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+          "promise_ledger": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+          "foreshadowing_ledger": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+          "character_arc_portfolio": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        "arc_working_set": {},
+        "idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:arc_plan.generate:character:character:cheng-guan:narrative-search:future-1:runtime-continuation:1:runtime-continuation:2",
+        "parent_version_id": "",
+        "narrative_search_id": "narrative-search:6438813ce3ed61fd0221030a964a04a9d9b53f8ffc90e6ee305652c41dee63e7",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "runtime_continuation_id": "planning-runtime-continuation:4cbd6634-3761-46cf-96cc-760a0f8550ea",
+        "generator_operation_name": "arc_plan.generate",
+        "opening_execution_binding": {
+          "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+          "runtime_job_id": "runtime-job:21ea6f24ea934432fc158be18ea8571a8c362d3d811716b3eb2c4632213a49e1",
+          "runtime_lease_id": "runtime-lease:84b4c881-7628-429a-b4f9-5e79408c894b",
+          "runtime_worker_id": "creation-book",
+          "runtime_attempt_id": "runtime-attempt:09cf190a-44d7-4e97-ac21-51c7e74f3b01",
+          "opening_execution_id": "book-opening-execution:a13dd543a932244bf041ece5b6a95c9e3ef9d62e47d4e10bb137a6693ac6f026",
+          "runtime_fencing_token": 1,
+          "opening_execution_generation": 18
+        },
+        "execution_contract_version": "1.21.0",
+        "change_evidence_version_ids": [],
+        "narrative_search_branch_key": "future-1",
+        "related_arc_plan_version_ids": [],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "arc_scope_volume_plan_version_ids": [
+          "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+          "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+          "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+          "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        ],
+        "narrative_search_hard_constraints": [
+          "preserve the approved Creative Foundation",
+          "protect reader promise and ending direction",
+          "do not convert future intent into accepted reality"
+        ],
+        "narrative_search_planning_horizon": {
+          "level": "ARC",
+          "stability": "MEDIUM",
+          "current_volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        },
+        "parent_agent_session_operation_id": "",
+        "narrative_search_strategy_directive": "maximize costly character agency while preserving future options",
+        "narrative_search_desired_transformation": {
+          "goal": "produce a causal transformation with closure criteria",
+          "arc_key": "character:character:cheng-guan"
+        },
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "project_id": "qid-learning-prose-01",
+      "input_asset_version_ids": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      ]
+    }
+  ],
+  [
+    "character:character:lu-heng",
+    "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+    {
+      "payload": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+        "project_id": "qid-learning-prose-01",
+        "logical_key": "character:character:lu-heng",
+        "workspace_id": "workspace:qid-learning-prose-01",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+        "input_versions": {
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "conflict_state": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+          "promise_ledger": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+          "foreshadowing_ledger": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+          "character_arc_portfolio": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        "arc_working_set": {},
+        "idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:arc_plan.generate:character:character:lu-heng:narrative-search:future-1:runtime-continuation:1",
+        "parent_version_id": "",
+        "narrative_search_id": "narrative-search:a51b6466a92de3514307975239041f59cc0ba8783c5c2ce86529d5644285a64f",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "runtime_continuation_id": "planning-runtime-continuation:e99d3a50-d0dd-412d-89d0-834d885f4aad",
+        "generator_operation_name": "arc_plan.generate",
+        "opening_execution_binding": {
+          "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+          "runtime_job_id": "runtime-job:21ea6f24ea934432fc158be18ea8571a8c362d3d811716b3eb2c4632213a49e1",
+          "runtime_lease_id": "runtime-lease:84b4c881-7628-429a-b4f9-5e79408c894b",
+          "runtime_worker_id": "creation-book",
+          "runtime_attempt_id": "runtime-attempt:09cf190a-44d7-4e97-ac21-51c7e74f3b01",
+          "opening_execution_id": "book-opening-execution:a13dd543a932244bf041ece5b6a95c9e3ef9d62e47d4e10bb137a6693ac6f026",
+          "runtime_fencing_token": 1,
+          "opening_execution_generation": 18
+        },
+        "execution_contract_version": "1.21.0",
+        "change_evidence_version_ids": [],
+        "narrative_search_branch_key": "future-1",
+        "related_arc_plan_version_ids": [],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "arc_scope_volume_plan_version_ids": [
+          "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+          "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+          "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+          "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        ],
+        "narrative_search_hard_constraints": [
+          "preserve the approved Creative Foundation",
+          "protect reader promise and ending direction",
+          "do not convert future intent into accepted reality"
+        ],
+        "narrative_search_planning_horizon": {
+          "level": "ARC",
+          "stability": "MEDIUM",
+          "current_volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        },
+        "parent_agent_session_operation_id": "",
+        "narrative_search_strategy_directive": "maximize costly character agency while preserving future options",
+        "narrative_search_desired_transformation": {
+          "goal": "produce a causal transformation with closure criteria",
+          "arc_key": "character:character:lu-heng"
+        },
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "project_id": "qid-learning-prose-01",
+      "input_asset_version_ids": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      ]
+    }
+  ],
+  [
+    "character:character:shen-yan",
+    "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+    {
+      "payload": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+        "project_id": "qid-learning-prose-01",
+        "logical_key": "character:character:shen-yan",
+        "workspace_id": "workspace:qid-learning-prose-01",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+        "input_versions": {
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "conflict_state": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+          "promise_ledger": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+          "foreshadowing_ledger": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+          "character_arc_portfolio": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        "arc_working_set": {},
+        "idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:arc_plan.generate:character:character:shen-yan:narrative-search:future-1:runtime-continuation:1",
+        "parent_version_id": "",
+        "narrative_search_id": "narrative-search:a412e69157db39309a5cb2377fcd6b56e3db08296e896cc84f0a781cd92bf89e",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "runtime_continuation_id": "planning-runtime-continuation:a3ced0b0-0df6-4289-b81b-42db7c3a3738",
+        "generator_operation_name": "arc_plan.generate",
+        "opening_execution_binding": {
+          "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+          "runtime_job_id": "runtime-job:21ea6f24ea934432fc158be18ea8571a8c362d3d811716b3eb2c4632213a49e1",
+          "runtime_lease_id": "runtime-lease:84b4c881-7628-429a-b4f9-5e79408c894b",
+          "runtime_worker_id": "creation-book",
+          "runtime_attempt_id": "runtime-attempt:09cf190a-44d7-4e97-ac21-51c7e74f3b01",
+          "opening_execution_id": "book-opening-execution:a13dd543a932244bf041ece5b6a95c9e3ef9d62e47d4e10bb137a6693ac6f026",
+          "runtime_fencing_token": 1,
+          "opening_execution_generation": 18
+        },
+        "execution_contract_version": "1.21.0",
+        "change_evidence_version_ids": [],
+        "narrative_search_branch_key": "future-1",
+        "related_arc_plan_version_ids": [],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "arc_scope_volume_plan_version_ids": [
+          "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+          "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+          "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+          "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        ],
+        "narrative_search_hard_constraints": [
+          "preserve the approved Creative Foundation",
+          "protect reader promise and ending direction",
+          "do not convert future intent into accepted reality"
+        ],
+        "narrative_search_planning_horizon": {
+          "level": "ARC",
+          "stability": "MEDIUM",
+          "current_volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        },
+        "parent_agent_session_operation_id": "",
+        "narrative_search_strategy_directive": "maximize costly character agency while preserving future options",
+        "narrative_search_desired_transformation": {
+          "goal": "produce a causal transformation with closure criteria",
+          "arc_key": "character:character:shen-yan"
+        },
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "project_id": "qid-learning-prose-01",
+      "input_asset_version_ids": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      ]
+    }
+  ],
+  [
+    "character:character:tang-sui",
+    "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+    {
+      "payload": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+        "project_id": "qid-learning-prose-01",
+        "logical_key": "character:character:tang-sui",
+        "workspace_id": "workspace:qid-learning-prose-01",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+        "input_versions": {
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "conflict_state": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+          "promise_ledger": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+          "foreshadowing_ledger": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+          "character_arc_portfolio": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        "arc_working_set": {},
+        "idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:arc_plan.generate:character:character:tang-sui:narrative-search:future-1:runtime-continuation:1",
+        "parent_version_id": "",
+        "narrative_search_id": "narrative-search:a882d690e3e73acbc5f6690fd21dc1e282b66efbfd5cc2957debb50dbe45b034",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "runtime_continuation_id": "planning-runtime-continuation:c043b099-d55c-4265-99f6-1cf3d7c6069c",
+        "generator_operation_name": "arc_plan.generate",
+        "opening_execution_binding": {
+          "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+          "runtime_job_id": "runtime-job:21ea6f24ea934432fc158be18ea8571a8c362d3d811716b3eb2c4632213a49e1",
+          "runtime_lease_id": "runtime-lease:84b4c881-7628-429a-b4f9-5e79408c894b",
+          "runtime_worker_id": "creation-book",
+          "runtime_attempt_id": "runtime-attempt:09cf190a-44d7-4e97-ac21-51c7e74f3b01",
+          "opening_execution_id": "book-opening-execution:a13dd543a932244bf041ece5b6a95c9e3ef9d62e47d4e10bb137a6693ac6f026",
+          "runtime_fencing_token": 1,
+          "opening_execution_generation": 18
+        },
+        "execution_contract_version": "1.21.0",
+        "change_evidence_version_ids": [],
+        "narrative_search_branch_key": "future-1",
+        "related_arc_plan_version_ids": [],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "arc_scope_volume_plan_version_ids": [
+          "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+          "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+          "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+          "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        ],
+        "narrative_search_hard_constraints": [
+          "preserve the approved Creative Foundation",
+          "protect reader promise and ending direction",
+          "do not convert future intent into accepted reality"
+        ],
+        "narrative_search_planning_horizon": {
+          "level": "ARC",
+          "stability": "MEDIUM",
+          "current_volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        },
+        "parent_agent_session_operation_id": "",
+        "narrative_search_strategy_directive": "maximize costly character agency while preserving future options",
+        "narrative_search_desired_transformation": {
+          "goal": "produce a causal transformation with closure criteria",
+          "arc_key": "character:character:tang-sui"
+        },
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "project_id": "qid-learning-prose-01",
+      "input_asset_version_ids": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      ]
+    }
+  ],
+  [
+    "character:character:xu-ting",
+    "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+    {
+      "payload": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+        "project_id": "qid-learning-prose-01",
+        "logical_key": "character:character:xu-ting",
+        "workspace_id": "workspace:qid-learning-prose-01",
+        "repair_number": 0,
+        "repair_reason": "",
+        "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+        "input_versions": {
+          "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "conflict_state": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+          "promise_ledger": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+          "foreshadowing_ledger": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+          "character_arc_portfolio": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        "arc_working_set": {},
+        "idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:arc_plan.generate:character:character:xu-ting:narrative-search:future-1:runtime-continuation:1",
+        "parent_version_id": "",
+        "narrative_search_id": "narrative-search:0929190472ed61d5eb528617789835f08962ba906ecc17b46d533245cbafe12c",
+        "auto_approve_low_risk": false,
+        "narrative_realization": {},
+        "repair_of_candidate_id": "",
+        "runtime_continuation_id": "planning-runtime-continuation:394b8295-db9f-4bf7-b061-416fe81fd285",
+        "generator_operation_name": "arc_plan.generate",
+        "opening_execution_binding": {
+          "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+          "runtime_job_id": "runtime-job:21ea6f24ea934432fc158be18ea8571a8c362d3d811716b3eb2c4632213a49e1",
+          "runtime_lease_id": "runtime-lease:84b4c881-7628-429a-b4f9-5e79408c894b",
+          "runtime_worker_id": "creation-book",
+          "runtime_attempt_id": "runtime-attempt:09cf190a-44d7-4e97-ac21-51c7e74f3b01",
+          "opening_execution_id": "book-opening-execution:a13dd543a932244bf041ece5b6a95c9e3ef9d62e47d4e10bb137a6693ac6f026",
+          "runtime_fencing_token": 1,
+          "opening_execution_generation": 18
+        },
+        "execution_contract_version": "1.21.0",
+        "change_evidence_version_ids": [],
+        "narrative_search_branch_key": "future-1",
+        "related_arc_plan_version_ids": [],
+        "governance_action_version_ids": [],
+        "dependent_arc_plan_version_ids": [],
+        "arc_scope_volume_plan_version_ids": [
+          "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+          "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+          "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+          "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        ],
+        "narrative_search_hard_constraints": [
+          "preserve the approved Creative Foundation",
+          "protect reader promise and ending direction",
+          "do not convert future intent into accepted reality"
+        ],
+        "narrative_search_planning_horizon": {
+          "level": "ARC",
+          "stability": "MEDIUM",
+          "current_volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        },
+        "parent_agent_session_operation_id": "",
+        "narrative_search_strategy_directive": "maximize costly character agency while preserving future options",
+        "narrative_search_desired_transformation": {
+          "goal": "produce a causal transformation with closure criteria",
+          "arc_key": "character:character:xu-ting"
+        },
+        "narrative_search_accepted_through_chapter": 0,
+        "narrative_search_parent_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "project_id": "qid-learning-prose-01",
+      "input_asset_version_ids": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      ]
+    }
+  ]
+]
