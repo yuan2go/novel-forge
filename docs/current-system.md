@@ -77,10 +77,23 @@ snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups
 inventing accepted history. The source window is a bounded implementation policy; it does
 not prove long-form continuity or replace formal Canon. The current default selects only
 the last four chapters' tails; earlier experience and an action's preceding cause can be
-absent even when their exact selected source remains saved. Memo receives the compiled
+absent even when their exact selected source remains saved. The default Memo receives the compiled
 ExecutionIntent before the later Draft Context and has no independent working-prose
-evidence at that boundary. These coverage limits do not require characters to repeat
-earlier actions or forget experiences in the selected working version.
+input. Optional `working_prose_policy` (`working-prose-projection.v2`) in the frozen
+production profile, or explicitly selected by the authenticated local author/operator
+in a new Chapter request's preparation report, freezes a bounded source window with
+complete recent chapters, attributed earlier paragraphs, Unicode locations and explicit
+omissions. That same snapshot enters Planning continuity v3, ExecutionIntent/Memo and
+Draft Context. Its literal hashes and selected versions are checked before use; lexical
+ranking establishes neither facts nor character knowledge. Guidance can select continuity,
+character reaction, action consequences or their combination without prescribing genre,
+emotional endpoints or mandatory costs. These inputs cannot advance Canon or the accepted
+cursor. Absent policy retains v1 tails; frozen v1 requests reconstruct exactly, independently
+of later policy choices. Overflow of required recent prose closes admission rather than
+silently truncating it. The enhancement remains opt-in; literary rollout is NOT_READY until
+independent human feedback. Profile selection affects future work; it does not upgrade an
+existing frozen run. These coverage limits do not require characters to repeat earlier
+actions or forget experiences in the selected working version.
 Author adoption uses the existing
 editor candidate/session mechanism. Book locking and source/hash checks prevent stale edits,
 late extraction or late review from replacing a newer selection. Later chapters retain

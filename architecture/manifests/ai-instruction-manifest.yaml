@@ -67,7 +67,9 @@
         "skills/narrative-beat-design/legacy-narrative-intent-20261010.md",
         "skills/topic-development/legacy-narrative-intent-20261010.md",
         "skills/worldbuilding/legacy-narrative-intent-20261010.md",
-        "skills/quality-review/legacy-v3.md"
+        "skills/quality-review/legacy-v3.md",
+        "skills/prose-generation/legacy-v4.md",
+        "skills/quality-review/legacy-v4.md"
       ],
       "kind": "RUNTIME_SKILL_SOURCE",
       "owner": "skill-governance",

@@ -49,8 +49,8 @@ def prepare_context_model_stages(transport, monkeypatch):
     monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
 
 
-@pytest.mark.parametrize("completed_sibling,recoverable_result", [(False, False), (True, False), (False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result"])
-def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result):
+@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption"])
+def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result, enhanced_working):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
@@ -146,7 +146,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
     transport.database_url = DATABASE_URL
-    inputs = {"version": "creation-request.v1", "title": f"Author work sibling={completed_sibling} recoverable={recoverable_result}", "target_chapters": 8,
+    inputs = {"version": "creation-request.v1", "title": f"Author work {harness.project_id} sibling={completed_sibling} recoverable={recoverable_result} enhanced={enhanced_working}", "target_chapters": 8,
         "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
         "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
@@ -158,6 +158,14 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
         "--repository-root", str(root), "--maximum-ticks", "100",
         "--foreground"])
+    if enhanced_working:
+        creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
+        creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
+            "version": "working-prose-projection.v2", "history_chapters": 8,
+            "recent_complete_chapters": 2, "max_characters": 32000,
+            "queries": ["flood"], "guidance_mode": "COMBINED"}
+        args.creation_policy_file = tmp_path / "working-creation-policy.json"
+        args.creation_policy_file.write_text(json.dumps(creation_policy))
     settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
     from novel_forge.api import authority_dependencies
     build_book = authority_dependencies.build_book_production_composition
@@ -265,7 +273,18 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert [unit["asset_version_id"] for unit in manifest["units"][:6]] == prefix_versions
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=7", [book["book_run_id"]])
-        sources = uow.cursor.fetchone()[0]["sources"]
+        frozen_working = uow.cursor.fetchone()[0]
+        sources = frozen_working["sources"]
+        if enhanced_working:
+            assert frozen_working["projection_policy"]["version"] == "working-prose-projection.v2"
+            assert len(sources) == 6 and sources[-1]["omitted_ranges"] == []
+            uow.cursor.execute("""SELECT content FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+                WHERE a.project_id=%s AND a.asset_type='chapter_execution_intent'
+                AND (content->>'chapter')::integer=7 ORDER BY v.created_at DESC LIMIT 1""", [project])
+            frozen_intent = uow.cursor.fetchone()[0]
+            assert frozen_intent["working_manuscript"] == frozen_working
+            assert frozen_intent["accepted_boundary"]["accepted_through_chapter"] == 0
+            assert frozen_intent["working_manuscript"]["structured_facts"] == []
         assert any(source["chapter"] == 6 and source["asset_version_id"] == prefix_versions[5] for source in sources)
     from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
     from novel_forge.modules.book_followup_authority.prose_coordinator import BookProseReviewCoordinator
@@ -337,7 +356,8 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert updated["units"][0]["text"].endswith(" 作者增补。")
     assert updated["units"][1]["asset_version_id"] == manifest["units"][1]["asset_version_id"]
     assert updated["units"][1]["dependency_changes"]
-    assert any(change["chapter"] == 1 and "via_chapter" in change for change in updated["units"][5]["dependency_changes"])
+    assert any(change["chapter"] == 1 and (enhanced_working or "via_chapter" in change)
+        for change in updated["units"][5]["dependency_changes"])
     from novel_forge.modules.command_kernel.errors import KernelError
     with pytest.raises(KernelError, match="Export must match"):
         current_manuscript(DATABASE_URL, book=book, principal=principal, version_ids=[u["asset_version_id"] for u in manifest["units"]])

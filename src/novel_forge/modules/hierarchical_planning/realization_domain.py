@@ -649,6 +649,10 @@ class NarrativeRealizationContract:
         if value["schema_version"] == "narrative-realization-contract.v3" and working is None:
             raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "The working contract requires its exact source snapshot")
         if working is not None:
+            if isinstance(working, dict) and working.get("projection_policy") is not None:
+                from novel_forge.modules.book_authority.working_prose import validate_working_projection
+                validate_working_projection(working, project_id=value["project_id"], book_id=value["book_id"],
+                    target_chapter=start, accepted_through_chapter=accepted_boundary.accepted_through_chapter)
             if (not isinstance(working, dict) or working.get("version") != "working-manuscript-context.v1"
                     or working.get("target_chapter") != start
                     or any(working.get(key) != value[key] for key in ("project_id", "book_id"))

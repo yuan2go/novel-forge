@@ -5928,7 +5928,7 @@ class PostgresPlanningExecutionPreparer:
             **({"planning_semantic_fields_version": "planning-semantic-fields.v2"}
                 if command.execution_contract_version == "1.21.0"
                 and command.generator_operation_name not in FOUNDATION_GENERATORS else {}),
-            **({"working_continuity_projection_version": "planning-working-continuity.v2"}
+            **({"working_continuity_projection_version": "planning-working-continuity.v3" if ((command.arc_working_set or {}).get("working_manuscript") or {}).get("projection_policy") else "planning-working-continuity.v2"}
                 if command.execution_contract_version == "1.21.0"
                 and (command.arc_working_set or {}).get("working_manuscript") is not None else {}),
             **(

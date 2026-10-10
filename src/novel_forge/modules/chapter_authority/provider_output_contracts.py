@@ -1119,6 +1119,8 @@ def validate_native_world_schema_fragment(
         actor_field = "actor_adjudications" if stage == "world_candidates.generate" else "action_classifications"
         if actor_field in schema.get("properties", {}) and actor_field in schema.get("required", ()):
             allowed_refs.add(f"schema:{stage}:v2:actor-isolation-v1")
+    if "Narrative intent v1:" in str(schema.get("description") or ""):
+        allowed_refs.update(ref + ":narrative-intent-v1" for ref in tuple(allowed_refs))
     if (stage not in WORLD_SAMPLE_TASKS or output_schema_ref not in allowed_refs
             or "$schema" in schema or schema.get("type") != "object"
             or schema.get("additionalProperties") is not False or not schema.get("required")):

@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "working-prose-source-projection",
+      "patterns": [
+        "tests/unit/test_working_prose_projection.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/working_prose.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
       "id": "cli-original-recovery-unit",
       "patterns": [
         "tests/unit/test_codex_original_recovery.py",

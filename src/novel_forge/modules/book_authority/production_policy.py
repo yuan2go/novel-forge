@@ -35,6 +35,10 @@ def validate_author_configuration(content: dict[str, Any]) -> dict[str, Any]:
     if context is None:
         raise KernelError("BOOK_CONTEXT_POLICY_INVALID", "Author configuration must explicitly choose Chapter Context")
     result["chapter_context_policy"] = context
+    from .working_prose import working_prose_policy
+    working = working_prose_policy(result)
+    if working is not None:
+        result["working_prose_policy"] = working
     result["craft_budget_policy"] = validate_craft_policy(result.get("craft_budget_policy"))
     if result.get("cross_chapter_review_policy") is not None:
         result["cross_chapter_review_policy"] = window_policy(result["cross_chapter_review_policy"])

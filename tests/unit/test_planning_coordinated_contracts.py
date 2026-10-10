@@ -120,6 +120,13 @@ def test_native_world_current_schema_identity_keeps_exact_stage_and_historical_r
     schema = world_generation_schema(WorldProductionPolicy(), audience_scoped=True, agency=True)
     validated = validate_production_structured_result("world_candidates.generate", schema, raw, output_schema_ref="schema:world_candidates.generate:v2")
     assert decode_world_generation(validated, agency=True)["candidates"][0]["transition"]["action_mode"] == "INFORMATION_DEPENDENT"
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+    annotated = bind_narrative_intent_schema(schema)
+    assert validate_native_world_schema_fragment("world_candidates.generate", annotated, raw,
+        output_schema_ref="schema:world_candidates.generate:v2:narrative-intent-v1") == validated
+    with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED"):
+        validate_native_world_schema_fragment("world_candidates.generate", schema, raw,
+            output_schema_ref="schema:world_candidates.generate:v2:narrative-intent-v1")
     for ref in ("schema:world_candidates.generate:v3", "schema:world_candidates.evaluate:v2", "schema:world_candidates.generate:v2:actor-isolation-v1"):
         with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED"):
             validate_native_world_schema_fragment("world_candidates.generate", schema, raw, output_schema_ref=ref)

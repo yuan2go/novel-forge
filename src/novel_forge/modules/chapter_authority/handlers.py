@@ -424,6 +424,7 @@ class _ExecutionIntentHandler:
             accepted_inputs=accepted_inputs, work_requirements=request.work_requirements_enabled,
             style_view=style_view,
             accepted_through_chapter=working["accepted_through_chapter"] if working else None,
+            working_manuscript=working if working and working.get("projection_policy") else None,
         )
         from .character_references import frozen_character_references
         references = frozen_character_references(request, scenes=content["scene_plans"])
