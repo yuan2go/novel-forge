@@ -41,10 +41,17 @@
       "function": "主动选择后续山林任务，完成有用实物准备"
     }
   ],
-  "literary_review": "NOT_YET_PROVEN_REQUIRES_ACTUAL_PROSE",
+  "literary_review": "ASSISTANT_REVIEW_CH29_CUMULATIVE_LIMITED_ABILITY; HUMAN_NOT_RUN; FUTURE_RESULTS_PENDING",
   "world_boundary": "No heat on external objects, quality detection, healing, new realm or course entitlement",
   "author_adoption": "NOT_GRANTED",
   "strategic_chapters": 240,
   "delivery_window": 40,
-  "human_evidence": "NOT_RUN"
+  "human_evidence": "NOT_RUN",
+  "actual_consumption": {
+    "chapter_29_plan": "authority-output:1597477c-0e20-4ac5-9c62-a98deb99202b:story_planning.candidate:v1",
+    "chapter_29_predecessor": "651c5a5d-41df-4bb7-a949-3698f627490c",
+    "chapter_29_writer": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+    "chapter_30_plan": "authority-output:32149f21-398a-4057-a473-19b03cbb04a6:story_planning.candidate:v1",
+    "historical_snapshot_rewrite": false
+  }
 }

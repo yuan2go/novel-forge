@@ -1,0 +1,8 @@
+{
+  "error_code": "AUTHOR_BASE_TYPE_INVALID",
+  "cause": "Operator used edit result asset_version_id instead of candidate_asset_version_id",
+  "committed_invalid_selection": [],
+  "external_io": false,
+  "old_log_retained": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/queued-selection-after-030.private.log",
+  "correction": "Read exact native saved candidate IDs; same transaction key after verified rollback; no external dispatch or history mutation"
+}

@@ -1,0 +1,146 @@
+{
+  "asset_version_id": "authority-output:32149f21-398a-4057-a473-19b03cbb04a6:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:2a8123cfa4f48b02bbe1588dbcae813fa4e183a9d591f1c3b54165dcf8badb3e",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:30"
+  },
+  "expected_group": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:375830403b25c476075937be2f73e8c7991dcbee107ac71c1ecda076bbc41758",
+  "chapter_root_operation_id": "55fe9150-997c-4013-b864-bdd89f41a427",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 29,
+      "asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+      "content_hash": "sha256:8c00175c0e810c57f79398c4372e2bdc66cf645d6db1c6de70362d09f5020851",
+      "text_hash": "sha256:aa9439c381628178cb9c3bc9f0212a4d969988a35af4837cf953118af9de04a1",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 30,
+    "chapter_intent": "让沈砚在修盘处完成指定陶盘的搬放，亲身发现掌中短时细暖能帮助他留意自己的手，却仍须靠稳托、换手和休息保护陶盘。",
+    "scene_plan": [
+      {
+        "goal": "把修盘者指定的陶盘稳妥搬到所指位置。",
+        "beats": [
+          {
+            "beat_id": "chapter30-beat1",
+            "ordinal": 1,
+            "function": "修盘者现场指出可移动的晾定陶盘及放置处；盘边状况仍由修盘者负责。",
+            "expected_reader_effect": "明白这项劳作的具体范围。"
+          },
+          {
+            "beat_id": "chapter30-beat2",
+            "ordinal": 2,
+            "function": "沈砚洗去细砂，按说明托稳盘底、避开盘边；凉水使手指略紧。",
+            "expected_reader_effect": "感到搬放需要细心，却仍是普通人手可做的事。"
+          },
+          {
+            "beat_id": "chapter30-beat3",
+            "ordinal": 3,
+            "function": "沈砚短时引出熟悉的掌中细暖，觉出右手握得过紧，及时收住。",
+            "expected_reader_effect": "看见第29章的小本领在现场产生具体用途。"
+          },
+          {
+            "beat_id": "chapter30-beat4",
+            "ordinal": 4,
+            "function": "他松开多余的劲，换手托盘；需要时停下歇息，再靠双手继续搬放。",
+            "expected_reader_effect": "看清本领与普通动作各自承担的部分。"
+          },
+          {
+            "beat_id": "chapter30-beat5",
+            "ordinal": 5,
+            "function": "指定陶盘全部放到所指位置，修盘者现场确认，沈砚结束这项工作。",
+            "expected_reader_effect": "得到完整而安稳的小事完成感。"
+          }
+        ],
+        "conflict": "盘边需要避碰，洗手后的手指略紧；沈砚须在搬放过程中及时调整握持和换手。",
+        "scene_id": "chapter30-scene1",
+        "exit_state": "指定陶盘已由沈砚按现场说明放到指定处，修盘者确认位置并继续负责盘的状况。沈砚通过短时掌中细暖察觉自己的握持过紧，随后靠放松、换手、歇息和稳托完成搬放。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter30-main",
+          "start_ordinal": 1
+        },
+        "entry_state": "第29章的工作经历已让沈砚能无木片短时起收掌中细暖，并明白它只帮助辨认自己的手和气息。修盘处的指定陶盘尚在原处；沈砚尚未听到修盘者对本次可搬范围与放置处的现场说明。",
+        "location_id": "修盘处",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan"
+        ],
+        "reader_effect": "读者看见一项有限工作完整结束，也看见沈砚把练成的小本领用在自身动作选择上。",
+        "scene_version": 1,
+        "scene_group_id": "chapter30-plate-work",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:chapter30:movable-plates-and-destination",
+          "fact:chapter30:own-hand-adjustment",
+          "fact:chapter30:plates-placed-and-confirmed"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "e30"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "DIALOGUE",
+          "ACTION",
+          "INTERIOR",
+          "DESCRIPTION",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "e30：修盘者指明可搬的盘与放置处；沈砚调整握持、换手和休息，搬完全部指定陶盘并获得现场确认。"
+    ],
+    "forbidden_events": [
+      "把指定陶盘的搬放留到第31章。",
+      "让掌中细暖作用于陶盘，或让沈砚凭它判断盘边是否牢固。",
+      "让修盘者承诺新工钱、库存权益或长期工作。",
+      "让唐穗未经亲眼观察便说出晾定盘边的实际情形。"
+    ],
+    "hard_constraints": [
+      "保持第26—29章工作稿中沈砚已经练出的起收经验，第30章承接无木片短时自身用途。",
+      "修盘者在现场说明可搬的陶盘及放置处，搬完后确认位置；物件质量由负责者判断。",
+      "掌中细暖只用于沈砚辨认自己的手和气息，不能托盘、护盘或判断盘边质量。",
+      "搬放依靠稳托盘底、避开盘边、换手与适时休息，在本章完成。",
+      "保持沈砚为主的第三人称限知视角；不预设唐穗已看见盘边，也不虚构报酬或长期承诺。"
+    ],
+    "reader_experience": {
+      "reward_mode": "完整完成一件小事，并看见沈砚因自身感受及时调整握持与换手。",
+      "exit_question": "这次稳妥完成的小事，会怎样进入沈砚与唐穗接下来的交流？",
+      "entry_question": "离开练习场后，沈砚刚学会的小用途能怎样帮他完成眼前的搬盘活？",
+      "target_emotion": "有用而安稳的满足"
+    },
+    "ending_hook": "盘已按修盘者指出的位置放妥；沈砚看见自己的手仍能做普通劳作，也更清楚何时短短用上那点本领。",
+    "canon_dependencies": [
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-030-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}
