@@ -328,8 +328,24 @@ of `test_author_first_manuscript_postgres.py`. Record source coverage separately
 Writer semantic attribution. An offline located-case PASS, a scripted PostgreSQL execution
 or model evaluation cannot establish literary improvement or independent human validation.
 Per-Chapter opt-in requires the local author/operator and freezes policy plus exact sources
-in the native request; omitted policy keeps the profile/default path. Original suspended
-Provider work and UNKNOWN histories must not be resumed to perform a literary comparison.
+in the native request; omitted policy keeps the profile/default path. A literary comparison requires its own scoped input and existing runtime authorization.
+Do not resume paused original work or unresolved UNKNOWN effects as a comparison shortcut.
+
+For working memory, also run `test_working_memory.py`, `test_prose_repair_scope.py` and the
+`working-memory-interruption` native PostgreSQL variant. It checks eight chapter deliveries,
+interruption reconciliation, exact annotation replay, checkpoint rejection, historical
+selection invalidation and export; its Provider is scripted. Retain any failed attempts.
+The native editor API exposes GET/POST `/product/editor/manuscripts/memory`. GET takes
+`project_id`, `book_run_id` and a bounded `max_characters` and reads the current selected
+packet without Provider calls. POST binds `chapter`, `source_asset_version_id`, exact
+`expected_version`, a replay-safe `idempotency_key`, `source_kind` and located observations.
+Allowed annotation source kinds are AUTHOR_ANNOTATION and ASSISTANT_ANALYSIS. A new version
+is required after manuscript changes; do not annotate discarded sources or label analysis
+as a model receipt. Enable v3 only prospectively in an authorized profile/request and
+budget the entire rendered Provider input. A readback packet does not prove dispatch.
+Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy to enable
+root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
+proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
 A focused pass does not substitute for release qualification below. Before rollout of
 work contracts, run migration clean-install/upgrade and the applicable same-release

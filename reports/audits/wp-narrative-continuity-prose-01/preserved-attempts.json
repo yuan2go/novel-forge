@@ -1,0 +1,98 @@
+{
+  "authority": "EVIDENCE_ONLY",
+  "private_artifact_root": "/Volumes/DevSSD/Development/Workspace/evidence/wp-narrative-continuity-prose-01",
+  "raw_logs": [
+    {
+      "file": "nf-continuity-unit.log",
+      "sha256": "sha256:daf853c80e5b60bd2f3fcf2c17a762c41f1a7bdfac617884b2372f570006cdcd",
+      "bytes": 1037
+    },
+    {
+      "file": "nf-continuity-unit-final2.log",
+      "sha256": "sha256:fdcb3aa0e6fcfb61e3734838d199f7f09f0bfae7a8e87e5eaa7ac468d1389bf4",
+      "bytes": 340
+    },
+    {
+      "file": "nf-continuity-checks.log",
+      "sha256": "sha256:68dd2dd3af670795a46c6ef97abd3d01be22415f47e2bad763fa66229b36f277",
+      "bytes": 100
+    },
+    {
+      "file": "nf-continuity-static.log",
+      "sha256": "sha256:281ab44087dc7fb41ce46bbde2df6b34dc7129d40c7a27ac118860a5a828ed53",
+      "bytes": 113
+    },
+    {
+      "file": "nf-continuity-integration.log",
+      "sha256": "sha256:d2a0131bd28831c4ef54455c70c568193846d4d0dde44b7cc9dc48df8d876b62",
+      "bytes": 1664
+    },
+    {
+      "file": "nf-continuity-integration2.log",
+      "sha256": "sha256:72ba68ee087e9f9f5c25b8de864359aabc37f477b9cd2888b1cb1c514bdd1ac9",
+      "bytes": 9824
+    },
+    {
+      "file": "nf-continuity-integration3.log",
+      "sha256": "sha256:ef1fdf50d76e63fcd7d251926d95c7dc5c264a47d9c526b49137a1d35655ab17",
+      "bytes": 2156
+    },
+    {
+      "file": "nf-continuity-integration4.log",
+      "sha256": "sha256:c5f6edfca01c207a1cbb49fc99c117607a2351be837544f0bab69681e09cdc65",
+      "bytes": 2049
+    },
+    {
+      "file": "nf-continuity-review-integration.log",
+      "sha256": "sha256:65199d51fe21119a32c21412ad8d03c7752930899a842d8b0ae611a21efba703",
+      "bytes": 2441
+    },
+    {
+      "file": "nf-continuity-review-legacy.log",
+      "sha256": "sha256:e1d0fee903a4537d30e30c6f73af2d9c81da2268910ac86f2ab0497cea82153d",
+      "bytes": 2433
+    },
+    {
+      "file": "nf-continuity-regression.log",
+      "sha256": "sha256:b8fe34092e45d36db168e90e194988ba5154a2c5770e0d9640cfedc4760f0026",
+      "bytes": 942
+    },
+    {
+      "file": "nf-continuity-regression2.log",
+      "sha256": "sha256:85df9af284d8022fdc806018cfcefc06d6e4396450a105e7ffc9f5772c4be9ee",
+      "bytes": 116
+    },
+    {
+      "file": "nf-continuity-regression3.log",
+      "sha256": "sha256:85df9af284d8022fdc806018cfcefc06d6e4396450a105e7ffc9f5772c4be9ee",
+      "bytes": 116
+    }
+  ],
+  "failures": [
+    {
+      "code": "WORKING_MEMORY_PACKET_INVALID",
+      "cause": "Retrieval omissions were initially erased on repeat binding; fixed and regressed."
+    },
+    {
+      "code": "UNDEFINED_COLUMN",
+      "cause": "Offline harness used an unjoined AssetVersion query; fixed through the native active-plan/execution-projection owner query; existing native annotation receipts were read back, not resent."
+    },
+    {
+      "code": "REALIZATION_SOURCE_BINDING_REQUIRED",
+      "cause": "Existing strict-acceptance fixture fails identically with and without the new diagnosis contract; preserved, not bypassed. No unrelated fixture repair."
+    },
+    {
+      "code": "OPERATION_NOT_FOUND_AND_RUNTIME_JOB_FENCE_STALE",
+      "cause": "Parallel shared-test-database run failed; specific cause not established. No claim of a proven cleanup or product concurrency defect. Subsequent isolated serial attempts reached the new memory/review assertions."
+    },
+    {
+      "code": "CONFLICT_REQUIRES_REVIEW",
+      "cause": "Fixture reused one lineage for disconnected window evidence; corrected fixture identities, retained real conflict behavior."
+    },
+    {
+      "code": "LATEST_REVIEW_STATUS",
+      "cause": "A newly completed optional review supersedes the earlier failed review; assertion corrected to inspect latest state without erasing failure evidence."
+    }
+  ],
+  "original_database_mutations": 0
+}

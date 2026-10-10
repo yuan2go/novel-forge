@@ -264,6 +264,12 @@ def evaluate_rereview_result(
             {**check, "evidence": validate_location(dict(check.get("evidence") or {}), str(revision.get("text") or ""))}
             for check in result["preservation_checks"]
         ]} if initial_review.get("cross_chapter_window") else {}),
+        "resolution_summary": {
+            "denominator_issue_codes": sorted(code for code, issue in initial_by_code.items() if issue.get("status", "OPEN") != "RESOLVED"),
+            "resolved_issue_codes": sorted(code for code in resolved if initial_by_code[code].get("status", "OPEN") != "RESOLVED"),
+            "unresolved_issue_codes": sorted(remaining), "new_regression_issue_codes": sorted(regressions),
+            "evidence_class": "MODEL_REREVIEW", "human_preference": "NOT_VERIFIED",
+        },
         "resolved_issue_codes": sorted(resolved),
         "remaining_issue_codes": sorted(remaining),
         "unresolved_issues": [

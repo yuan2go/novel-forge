@@ -36,7 +36,7 @@ def text_digest(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def prose_review_output_schema() -> dict[str, Any]:
+def prose_review_output_schema(*, root_cause: bool = False) -> dict[str, Any]:
     text = {"type": "string", "minLength": 1}
 
     def obj(properties: dict[str, Any]) -> dict[str, Any]:
@@ -74,6 +74,10 @@ def prose_review_output_schema() -> dict[str, Any]:
             "evidence": {"type": "array", "items": citation, "minItems": 1},
         }
     )
+    if root_cause:
+        from novel_forge.modules.review.repair_scope import repair_schema
+        finding["properties"]["repair"] = repair_schema()
+        finding["required"].append("repair")
     issue = deepcopy(finding)
     issue["properties"]["judgment"]["enum"] = ["ISSUE"]
     issue["properties"]["severity"]["enum"] = ["BLOCKING", "MAJOR", "MINOR"]
@@ -86,7 +90,7 @@ def prose_review_output_schema() -> dict[str, Any]:
     finding = {"anyOf": [issue, observation]}
     return obj(
         {
-            "schema_version": {"type": "string", "enum": [PROSE_REVIEW_SCHEMA]},
+            "schema_version": {"type": "string", "enum": ["longform-prose-review.v2" if root_cause else PROSE_REVIEW_SCHEMA]},
             "manifest_digest": text,
             "window_id": text,
             "reviewed_dimensions": {
@@ -111,11 +115,14 @@ def normalize_prose_review_output(raw: Mapping[str, Any]) -> dict[str, Any]:
         "longform_prose_review",
         {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
-            **prose_review_output_schema(),
+            **prose_review_output_schema(root_cause=result.get("schema_version") == "longform-prose-review.v2"),
         },
         result,
     )
     for finding in result["findings"]:
+        if "repair" in finding:
+            from novel_forge.modules.review.repair_scope import validate_repair
+            validate_repair(finding["repair"])
         if (finding["judgment"] == "ISSUE") != (finding["severity"] != "NONE"):
             raise KernelError(
                 "LONGFORM_PROSE_JUDGMENT_INVALID",
@@ -140,7 +147,7 @@ def freeze_manifest(
         "context_token_budget",
         "maximum_windows",
     }
-    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection"}
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract"}
     if (
         not required <= set(policy)
         or set(policy) - required - optional
@@ -187,6 +194,8 @@ def freeze_manifest(
     if (any(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
             and policy.get("relation_retrieval_version") == "accepted-state-relations.v2"):
         raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")
+    if policy.get("diagnosis_contract") not in {None, "prose-root-cause.v1"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown root-cause diagnosis contract")
     records, windows = [], []
     previous_tail = None
     for source in sources:
@@ -285,6 +294,9 @@ def validate_window_report(
     report: Mapping[str, Any], *, manifest: Mapping[str, Any], window: Mapping[str, Any]
 ) -> dict[str, Any]:
     report = normalize_prose_review_output(report)
+    expected_schema = "longform-prose-review.v2" if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else PROSE_REVIEW_SCHEMA
+    if report["schema_version"] != expected_schema:
+        raise KernelError("LONGFORM_PROSE_REPORT_CONTRACT_DRIFT", "Report must retain its frozen diagnosis contract")
     if (
         report["manifest_digest"] != manifest["manifest_digest"]
         or report["window_id"] != window["window_id"]
@@ -418,6 +430,10 @@ def aggregate_reports(
                 "required_consumer": "VERSION_BOUND_EDITORIAL_PENDING",
             }
         )
+    if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1":
+        from novel_forge.modules.review.repair_scope import finding_repair_route
+        for finding in findings:
+            finding["repair_route"] = finding_repair_route(finding)
     return {
         "manifest_digest": manifest["manifest_digest"],
         "completed_window_ids": sorted(completed),

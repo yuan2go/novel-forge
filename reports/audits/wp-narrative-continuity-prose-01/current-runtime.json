@@ -1,0 +1,43 @@
+{
+  "database": "nf_qidian_learning_20261008_test",
+  "oid": 16384,
+  "cluster": "7694308142111706022",
+  "observed_at": "2026-10-10 23:29:17.925212+08:00",
+  "book": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "current_chapter": 16,
+    "accepted_through_chapter": 0,
+    "state": "PAUSED",
+    "version": 114,
+    "active_chapter_request_id": null,
+    "paused_reason": "Requested manuscript round reached chapter 16; frozen delivery window retained"
+  },
+  "effects_by_status": [
+    [
+      "FAILED_RETRYABLE",
+      1
+    ],
+    [
+      "UNKNOWN",
+      9
+    ],
+    [
+      "READY",
+      1
+    ],
+    [
+      "SUCCEEDED",
+      225
+    ],
+    [
+      "FAILED_FINAL",
+      2
+    ]
+  ],
+  "model_dispatch_suspended": "1",
+  "configured_release_sha": "d13e13b2b240d44da7c2864a16a5c7311d971629",
+  "original_mutations": 0
+}

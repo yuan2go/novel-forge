@@ -1,0 +1,89 @@
+{
+  "asset_version_id": "718cf34e-d06d-44af-9bab-1bff0db13e6e",
+  "content_hash": "sha256:87764137423cec6422a0587f0d0ddcc58108a095eb3386b152d75c84fe1c6108",
+  "active_candidate_asset_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+  "active_candidate_content_hash": "sha256:d1af34efa6a6b4301cd5686662af999eeb634905ca7f6071acc6a26e6146a238",
+  "active_execution_scope": "PLANNED",
+  "activation": "UNCHANGED",
+  "source": "ISOLATED_ORIGINAL_BOOK_SNAPSHOT",
+  "content_projection": {
+    "type": "PlanningGenerationCandidate",
+    "title": "留给课堂的时辰",
+    "book_id": "book:qinglan-wendao-20261008",
+    "chapter": 17,
+    "premise": "练习场还有一段地要清理。沈砚问明交回办法后，只接下课堂前做得完的部分；至于陆衡愿不愿同行，他还要等一个答复。",
+    "objective": "让沈砚问清新增场地劳动的实际范围与交回要求，按不重叠的日程作出有限承诺，并把是否同行的选择留给陆衡。",
+    "source_planning_candidate_asset_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+    "scenes": [
+      {
+        "scene_id": "chapter:17:scene:terms-and-choice",
+        "goal": "在作出承诺前弄清劳动内容与交回办法，并限定自己能做的范围。",
+        "beats": [
+          {
+            "beat_id": "chapter:17:beat:1",
+            "ordinal": 1,
+            "function": "沈砚指出木架旁的枯枝和不平地面，询问新增劳动究竟包括哪一段、做到哪里才可交回。",
+            "expected_reader_effect": "看见第16章所留的场边事务有具体对象。"
+          },
+          {
+            "beat_id": "chapter:17:beat:2",
+            "ordinal": 2,
+            "function": "程观说明可接收的实际完成范围及交回时需要讲清的内容，不预先承诺质量或报酬。",
+            "expected_reader_effect": "明白劳动记录与进一步质量、收益核验的边界。"
+          },
+          {
+            "beat_id": "chapter:17:beat:3",
+            "ordinal": 3,
+            "function": "沈砚把这段劳动、往返、休息与下次课堂练习依先后排开，发现额外部分会占去要留下的时间。",
+            "expected_reader_effect": "感到多接劳动与保留课堂时间之间的现实取舍。"
+          },
+          {
+            "beat_id": "chapter:17:beat:4",
+            "ordinal": 4,
+            "function": "沈砚当面只接可在练习前完成的部分，放弃本次额外部分，约定做完后按实际范围交回。",
+            "expected_reader_effect": "获得明确任务边界与主动选择的踏实感。"
+          }
+        ],
+        "conflict": "眼前多做一些的机会会挤占下次课堂前所需的练习与休息时间。",
+        "entry_state": "承接第16章工作稿：沈砚已在练习场看见木架旁的枯枝和不平地面，知道无木片练习只能帮助他辨认手位；新增劳动的内容、用时与交回要求尚未问明。",
+        "exit_state": "程观已说明本次场地劳动按实际完成范围交回；沈砚已接下练习前能完成的有限部分并放弃本次额外部分，劳动尚未开始，课堂练习时段已留出。",
+        "participants": [
+          "character:shen-yan",
+          "character:cheng-guan"
+        ]
+      },
+      {
+        "scene_id": "chapter:17:scene:invitation",
+        "goal": "就已接下的具体劳动询问陆衡是否愿意同行，同时保留独自履约的安排。",
+        "beats": [
+          {
+            "beat_id": "chapter:17:beat:5",
+            "ordinal": 1,
+            "function": "沈砚在场边遇见陆衡，把自己已接的有限部分说清，询问他是否愿意同行，不把劳动转给他。",
+            "expected_reader_effect": "看见沈砚的请求有明确范围，陆衡的时间也有分量。"
+          },
+          {
+            "beat_id": "chapter:17:beat:6",
+            "ordinal": 2,
+            "function": "陆衡听完后表示还要顾及自己的练习安排；沈砚不催促，准备先按自己的承诺行事。",
+            "expected_reader_effect": "保留对陆衡自主答复的期待。"
+          }
+        ],
+        "conflict": "沈砚愿意邀请陆衡同行，但陆衡须自己衡量练习安排。",
+        "entry_state": "程观已说明本次场地劳动按实际完成范围交回；沈砚已接下练习前能完成的有限部分并放弃本次额外部分，劳动尚未开始，课堂练习时段已留出。",
+        "exit_state": "沈砚的有限劳动承诺仍待履行，练习时段仍已留出；陆衡听到具体同行请求，是否同行尚由他自己决定。",
+        "participants": [
+          "character:shen-yan",
+          "character:lu-heng"
+        ]
+      }
+    ]
+  },
+  "raw_immutable_plan_evidence": {
+    "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-narrative-continuity-prose-01/frozen-chapter17-plan.json",
+    "sha256": "sha256:3edee5efd9792c7c80e9f078f0724107570178bf17e3ead373da1329fb94486b",
+    "bytes": 559009,
+    "authority": "EXECUTION_EVIDENCE_ONLY"
+  },
+  "projection_is_full_content": false
+}

@@ -312,7 +312,8 @@ class ChapterAuthorEditingApplication:
                         finding = next(item for item in progress["findings"] if item["lineage_id"] == payload["source_lineage_id"])
                         linked = {"source_review_run_id": payload["source_review_run_id"], "source_lineage_id": payload["source_lineage_id"],
                                   "source_finding_digest": finding["finding_digest"], "source_manifest_digest": progress["manifest_digest"],
-                                  "source_review_digest": progress["review_digest"]}
+                                  "source_review_digest": progress["review_digest"],
+                                  **({"repair_route": finding["repair_route"]} if "repair_route" in finding else {})}
                 if linked is None:
                     raise KernelError("AUTHOR_REVIEW_LINEAGE_INVALID", "Review lineage is absent, stale or outside the editor Book scope")
                 content.update(linked)

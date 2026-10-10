@@ -1,0 +1,38 @@
+{
+  "work_package": "WP-NARRATIVE-CONTINUITY-AND-PROSE-QUALITY-01",
+  "baseline_main": "9a8fa7cfafc44da54c5c2b495390da66ac5f2453",
+  "authority": "EVIDENCE_ONLY_NOT_RUNTIME_AUTHORITY",
+  "document_cleanup": {
+    "before_code": true,
+    "strict_chain": "distinguished from author-first save path",
+    "literary_human_evidence": "removed implied new delivery gate; evidence ceiling preserved",
+    "obsolete_designs": "no active relevant design files found; four earlier archived proposals and all raw evidence retained",
+    "legacy_prompt_skill": "frozen copies preserved"
+  },
+  "current_code_gaps": [
+    "v2 has attributed excerpts but no persistent selected-manuscript observations",
+    "history_chapters=32 limits recall; optional lexical projection does not maintain current working state",
+    "exact prose review identifies dimensions but lacks explicit root-cause-to-repair scope binding",
+    "existing exact revision/resolution and future-only Replan owners must be reused"
+  ],
+  "reuse": [
+    "Book exact selected_source and UoW mutation",
+    "immutable AssetVersions and author edit CAS",
+    "Planning continuity/ExecutionIntent/Memo/Context Provider view",
+    "native Draft and save/read/export recovery",
+    "Review exact citations/Revision comparisons/Plan Change/Book Replan",
+    "existing human blind protocol"
+  ],
+  "implementation_design": {
+    "A": "Optional versioned working projection: source-bound observations alongside exact history retrieval. Draft can supply nonblocking observations; existing Book mutation may rebuild exact selected sources. Stale observations are excluded, not Canon. Memory and passage selection retain omissions and provenance.",
+    "B": "Located findings carry root cause and proposed repair level. Prose-only repair cannot rewrite Scene/Chapter/upper plans. Future structural changes remain native Plan Change proposals. Exact resolution checks retain their denominator.",
+    "compatibility": "Existing v1/v2 frozen inputs/schemas/Skills reconstruct unchanged. No schema migration or new Authority; optional failures cannot erase saved prose.",
+    "verification": "Scoped domain/input/Provider/recovery tests, PostgreSQL CAS/replay and same original manuscript regression. Real Provider and humans reported separately."
+  },
+  "recent_prs": {
+    "153": "MERGED",
+    "154": "MERGED",
+    "155": "MERGED"
+  },
+  "production_snapshot": "PENDING_CURRENT_DATABASE_VERIFICATION"
+}

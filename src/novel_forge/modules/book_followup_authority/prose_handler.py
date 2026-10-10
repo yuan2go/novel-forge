@@ -114,6 +114,7 @@ class LongformProseReviewHandler:
             payload={
                 "manifest_digest": content["manifest_digest"],
                 "window_id": content["window"]["window_id"],
+                **({"prose_diagnosis_contract": content["policy"]["diagnosis_contract"]} if content["policy"].get("diagnosis_contract") else {}),
             },
             reservation_tokens=content["policy"]["context_token_budget"],
             pre_send_assertion=lambda: assert_current(dispatch=True),
