@@ -488,7 +488,7 @@ def require_historical_input_scope_repair(cursor: Any, source: dict[str, Any], p
         raise KernelError("HISTORICAL_INPUT_SCOPE_REPAIR_INVALID", "Only the exact indirect Memo input shape can continue")
     cursor.execute("""SELECT result->>'error_code',result->>'error_message' FROM authority_attempt
         WHERE operation_id=%s ORDER BY attempt_number""", [source["operation_id"]])
-    if cursor.fetchall() != [("MANUSCRIPT_INPUT_SNAPSHOT_MISSING", "Historical sources require exact frozen input hashes")]:
+    if cursor.fetchall() != [("MANUSCRIPT_INPUT_SNAPSHOT_MISSING", "MANUSCRIPT_INPUT_SNAPSHOT_MISSING: Historical sources require exact frozen input hashes")]:
         raise KernelError("HISTORICAL_INPUT_SCOPE_REPAIR_INVALID", "Retain the exact preflight interpreter failure")
     cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
         EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s),

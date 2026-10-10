@@ -123,7 +123,7 @@ def test_indirect_memo_scope_successor_preserves_effects_outputs_and_retry_bound
     policy = {'contract_version': 'chapter-historical-input-scope-repair.v1', 'input_snapshot': source['input_asset_snapshot'],
               'target_deployment_id': 'pack', 'release_sha': 'sha'}
     cursor = Mock()
-    cursor.fetchall.return_value = [('MANUSCRIPT_INPUT_SNAPSHOT_MISSING', 'Historical sources require exact frozen input hashes')]
+    cursor.fetchall.return_value = [('MANUSCRIPT_INPUT_SNAPSHOT_MISSING', 'MANUSCRIPT_INPUT_SNAPSHOT_MISSING: Historical sources require exact frozen input hashes')]
     cursor.fetchone.side_effect = [facts, ('pack',)]
     if any(facts):
         with pytest.raises(KernelError, match='Preserve dispatched'):
