@@ -13,6 +13,11 @@ def current_planning_wire_result(result, inputs):
     if command.get("execution_contract_version") != "1.21.0":
         return result
     value = deepcopy(result)
+    story_state = (command.get("input_versions") or {}).get("story_state")
+    if story_state is not None and "entry_state_ref" in value:
+        value["entry_state_ref"] = story_state
+        for segment in value.get("narrative_segments", []):
+            segment["entry_state_ref"] = story_state
     if inputs.get("stage") in {"book_plan.generate", "arc_plan.generate"}:
         value.pop("parent_version_id", None)
     if inputs.get("stage") == "chapter_plan.generate":
