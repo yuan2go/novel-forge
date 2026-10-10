@@ -3794,6 +3794,10 @@ Duplicates settle once, conflicting evidence is rejected, and successor usage re
 separately reserved and accounted. Original UNKNOWN Effect/Dispatch and stopped Operation
 are not rewritten; late results have no candidate, activation, acceptance or publish right.
 
+Historical Planning Pack builds retain their published Skill text, version and source
+reference through checked artifact snapshots; mutable current Skills cannot change a
+frozen historical contract. Current Planning keeps its current Skill bindings.
+
 Pure-generation recovery applies to both the admitted CLI and remote API transport.
 The frozen tool boundary must deny all external writes, and the native invocation,
 Book, inputs, dispatch hash and output contract must agree. An API invocation whose

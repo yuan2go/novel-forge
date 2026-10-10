@@ -756,7 +756,6 @@ def _bind_planning_qualification_skills(
                 version = f"{skill_ref}-qualification-v3"
             else:
                 path = "config/capability_packs/artifacts/narrative_beat_design_work_v2.md"
-        # COMPATIBILITY: Published Planning identities retain their original Skill text and source reference.
         snapshot_path = {
             "skills/hot-novel-business-deconstruction/SKILL.md": "skills/hot-novel-business-deconstruction/legacy-v1.0.0.md",
             "skills/character-design/SKILL.md": "config/capability_packs/artifacts/character_design_work_v3.md",
