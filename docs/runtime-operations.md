@@ -151,7 +151,7 @@ using a new migration outside an isolated test database.
 
 The published chain through 0195 is immutable. The original audit boundary is
 0194; the following published migration adds prose-review generation isolation. Resolve the current head from the
-registry, including any subsequent forward repair. Resolve each full
+registry, including 0196, which adds six missing foreign-key reference indexes without rewriting facts or admission rules. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
@@ -165,7 +165,7 @@ Bind the release SHA/build, actual database/server and migration head, compiled/
 hashes, object store identity and original CLI execution root in the deployment record.
 0193 upgrade/restore evidence covers its frozen code and database only. The published 0194
 multi-generation and 0195 sidecar snapshots cover their own incremental heads; neither proves
-this release or a newer original ledger. Check only changed boundaries on disposable restores.
+this release or a newer original ledger. Check only changed boundaries on disposable restores. Historical migration fixtures seed the schema-supported scope and corpus facts directly; they do not run the current Kernel against an incomplete old schema. The upgrade then compares original rows, timestamps and ledger identities and checks the native current constraints.
 
 Recovery restores the database, referenced artifacts and original CLI execution directories
 from a mutually consistent snapshot under compatible code and Packs, with every writer stopped.

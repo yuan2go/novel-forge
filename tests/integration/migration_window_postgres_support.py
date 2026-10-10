@@ -476,3 +476,27 @@ def restore_post_window_fixture_tables(
             assert count == 0, f"upgrade already populated later fixture table: {name}"
         _insert_historical_fixture_rows(connection, tables)
         _advance_fixture_sequences(connection)
+
+
+def seed_historical_scope(database_url, *, project_id, workspace_id, book_id):
+    from unittest.mock import patch
+    from tests.integration import authority_postgres_support as support
+    with patch.object(support, "DATABASE_URL", database_url):
+        support.seed_authority_project_book(project_id=project_id, workspace_id=workspace_id, book_id=book_id)
+    with psycopg.connect(database_url) as connection:
+        return connection.execute("SELECT created_by_operation_id FROM authority_project WHERE project_id=%s", [project_id]).fetchone()[0]
+
+
+def seed_historical_corpus_action(database_url, *, project_id, workspace_id, action):
+    from novel_forge.modules.source_authority.corpus import validate_corpus_action
+    from novel_forge.modules.source_authority.corpus_mutations import apply_corpus_action
+    from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+    from tests.integration.authority_postgres_support import insert_definition, insert_operation
+    with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+        operation = "historical-corpus:" + uuid4().hex
+        definition = "source.corpus.commit"
+        cursor.execute("SELECT 1 FROM authority_operation_definition WHERE name=%s", [definition])
+        if cursor.fetchone() is None:
+            insert_definition(cursor, definition)
+        insert_operation(cursor, operation_id=operation, definition_name=definition, project_id=project_id, workspace_id=workspace_id, status="SUCCEEDED")
+        return apply_corpus_action(SourceAuthorityRepository(cursor), validate_corpus_action(action), project_id=project_id, workspace_id=workspace_id, operation_id=operation)

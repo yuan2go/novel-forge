@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261009_0195_prose_review_generation_isolation",
+  "migration_head": "20261010_0196_recovery_reference_indexes",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9775,6 +9775,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261009_0195_prose_review_generation_isolation.py",
           "id": "20261009_0195_prose_review_generation_isolation",
           "locator": "MIGRATION_ID = '20261009_0195_prose_review_generation_isolation'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261010_0196_recovery_reference_indexes.py",
+          "id": "20261010_0196_recovery_reference_indexes",
+          "locator": "MIGRATION_ID = '20261010_0196_recovery_reference_indexes'"
         }
       ],
       "external_effects": {
@@ -10061,7 +10066,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:3b3fed3b2525fc1f480cc7fc27bd7556db296ee65b0d1dc9817ed200696cda89"
+    "implementation_tree_sha": "sha256:b020ca0ddb781b66ae2786d70c72473a97ab56ec69b9b2f4c015d00a425e8dde"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

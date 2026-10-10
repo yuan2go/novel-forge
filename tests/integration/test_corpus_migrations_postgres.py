@@ -8,16 +8,10 @@ from psycopg import sql
 import pytest
 from unittest.mock import patch
 
-from novel_forge.modules.project_authority import (
-    ProjectAuthorityApplication,
-    ProjectAuthorityCommand,
-)
 from novel_forge.modules.source_authority import (
     SourceAuthorityApplication,
     SourceAuthorityScheduler,
 )
-from novel_forge.modules.source_authority.corpus import validate_corpus_action
-from novel_forge.modules.source_authority.corpus_application import CorpusCommand
 from novel_forge.storage.migrations import (
     LATEST_MIGRATION_ID,
     MIGRATIONS,
@@ -30,6 +24,8 @@ from tests.integration.authority_postgres_support import (
 )
 from tests.integration.migration_window_postgres_support import (
     disposable_database_at_migration,
+    seed_historical_scope,
+    seed_historical_corpus_action,
 )
 
 
@@ -52,20 +48,7 @@ def test_corpus_fresh_and_latest_main_upgrade_preserve_existing_data(baseline):
     ) as url:
         project, workspace = f"old-project-{uuid4()}", f"old-workspace-{uuid4()}"
         if baseline != "20260625_0001_initial_industrial_schema":
-            created = ProjectAuthorityApplication(
-                url, application_build_id="upgrade-test", commit_sha="e" * 40
-            ).execute(
-                ProjectAuthorityCommand(
-                    definition_name="project_lifecycle.create",
-                    project_id=project,
-                    workspace_id=workspace,
-                    actor_id="upgrade-operator",
-                    idempotency_key=project,
-                    trace_id=project,
-                    correlation_id=project,
-                    payload={"title": "Existing project: 不可改写"},
-                )
-            )
+            created = {"operation_id": seed_historical_scope(url, project_id=project, workspace_id=workspace, book_id="upgrade-book")}
             historical_facts = _seed_premerge_authority_facts(url, project, workspace)
             with psycopg.connect(url) as connection:
                 history_before = connection.execute(
@@ -238,35 +221,9 @@ def _authority_facts(connection, project):
 
 
 def _seed_premerge_authority_facts(url, project, workspace):
-    from novel_forge.modules.book_design_authority import (
-        BookDesignAuthorityApplication,
-        BookDesignAuthorityCommand,
-    )
     from tests.integration import authority_postgres_support as support
     from tests.integration import test_mkaos_authority_postgres as fixtures
 
-    BookDesignAuthorityApplication(
-        url, application_build_id="upgrade-facts", commit_sha="e" * 40
-    ).execute(
-        BookDesignAuthorityCommand(
-            definition_name="book.create",
-            project_id=project,
-            workspace_id=workspace,
-            book_id="upgrade-book",
-            actor_id="upgrade-operator",
-            service_identity="book-design-authority",
-            idempotency_key="upgrade-book",
-            trace_id="upgrade-book",
-            correlation_id=project,
-            payload={
-                "schema_version": "book-authority.v1",
-                "title": "升级前作品",
-                "production_profile": {"environment": "test"},
-                "runtime_policy": {"execution_fallback": "FAIL_CLOSED"},
-                "release_identity": "upgrade-facts@" + "e" * 40,
-            },
-        )
-    )
     with (
         patch.object(support, "DATABASE_URL", url),
         patch.object(fixtures, "DATABASE_URL", url),
@@ -385,36 +342,8 @@ def _seed_premerge_authority_facts(url, project, workspace):
             is not None
         )
     if has_corpus:
-        from novel_forge.modules.source_authority import (
-            SourceAuthorityApplication,
-            SourceAuthorityScheduler,
-        )
-        from novel_forge.modules.source_authority.corpus import validate_corpus_action
-        from novel_forge.modules.source_authority.corpus_application import (
-            CorpusCommand,
-        )
-
-        authority = SourceAuthorityApplication(
-            url, application_build_id="upgrade-facts", commit_sha="e" * 40
-        )
-        scheduler = SourceAuthorityScheduler(authority)
-
         def apply(action):
-            key = str(uuid4())
-            admitted = authority.admit_corpus(
-                CorpusCommand(
-                    project_id=project,
-                    workspace_id=workspace,
-                    actor_id="upgrade-operator",
-                    idempotency_key=key,
-                    trace_id=key,
-                    correlation_id=key,
-                    action=validate_corpus_action(action),
-                )
-            )
-            return scheduler.run_or_recover(
-                operation_id=admitted["operation_id"], project_id=project
-            )
+            return seed_historical_corpus_action(url, project_id=project, workspace_id=workspace, action=action)
 
         source = apply(
             {
@@ -509,20 +438,7 @@ def test_corpus_index_repair_preserves_existing_complete_lineage():
         target_migration_id="20260908_0123_source_analysis_dimensions",
     ) as url:
         project, workspace = f"index-project-{uuid4()}", f"index-workspace-{uuid4()}"
-        ProjectAuthorityApplication(
-            url, application_build_id="index-repair", commit_sha="e" * 40
-        ).execute(
-            ProjectAuthorityCommand(
-                definition_name="project_lifecycle.create",
-                project_id=project,
-                workspace_id=workspace,
-                actor_id="index-operator",
-                idempotency_key=project,
-                trace_id=project,
-                correlation_id=project,
-                payload={"title": "Existing Corpus lineage"},
-            )
-        )
+        seed_historical_scope(url, project_id=project, workspace_id=workspace, book_id="index-book")
         application = SourceAuthorityApplication(
             url, application_build_id="index-repair", commit_sha="e" * 40
         )
@@ -652,17 +568,4 @@ def _project_facts(connection, project, tables):
 
 
 def _execute_corpus_action(application, scheduler, project, workspace, action):
-    operation = application.admit_corpus(
-        CorpusCommand(
-            project_id=project,
-            workspace_id=workspace,
-            actor_id="index-operator",
-            idempotency_key=str(uuid4()),
-            trace_id=str(uuid4()),
-            correlation_id=project,
-            action=validate_corpus_action(action),
-        )
-    )
-    return scheduler.run_or_recover(
-        operation_id=operation["operation_id"], project_id=project
-    )
+    return seed_historical_corpus_action(application.database_url, project_id=project, workspace_id=workspace, action=action)
