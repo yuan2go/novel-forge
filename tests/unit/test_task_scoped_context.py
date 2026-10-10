@@ -508,3 +508,27 @@ def test_compression_groups_share_one_candidate_allocation():
     assert len({total for _, total in budgets}) == 1
     assert sum(part for part, _ in budgets) <= budgets[0][1] <= 1000
     assert receipt["after_estimated_tokens"] <= 1000
+
+
+def test_working_intent_budget_counts_the_structured_provider_value_without_escaping_source_twice():
+    from dataclasses import replace
+    import json
+    from novel_forge.modules.context_builder.task_compression import _candidate_tokens, _payload
+    from novel_forge.modules.context_builder.task_context import serialized_token_upper_bound
+    from novel_forge.modules.context_contracts import ContextCandidate
+    value = {"chapter_mission": {"knowledge": {"quoted": '\"exact dialogue\"' * 100}},
+             "working_manuscript": {"projection_policy": {"version": "working-prose-projection.v3"},
+                                    "sources": [{"text": "完整前章正文" * 100}]}}
+    source = ContextCandidate(asset_version_id="intent", asset_type="chapter_execution_intent",
+        project_id="project", book_id="book", estimated_tokens=1, relevance_score=1,
+        content_digest="source-hash", safe_summary=json.dumps(value, ensure_ascii=False),
+        provenance={"working_artifact": True})
+    frozen = source.safe_summary
+    amount, method = _candidate_tokens(source)
+    assert method == "STRUCTURED_WORKING_INTENT"
+    assert amount >= serialized_token_upper_bound(value)
+    assert amount < serialized_token_upper_bound(_payload(source))
+    assert json.loads(source.safe_summary) == value and source.safe_summary == frozen
+    for legacy in [replace(source, provenance={}), replace(source, asset_type="chapter_memo"),
+                   replace(source, safe_summary="ordinary summary")]:
+        assert _candidate_tokens(legacy) == (serialized_token_upper_bound(_payload(legacy)), "SERIALIZED_SUMMARY")

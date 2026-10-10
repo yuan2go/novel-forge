@@ -30,6 +30,21 @@ def _payload(candidate: ContextCandidate) -> dict[str, Any]:
     }
 
 
+def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
+    payload = _payload(candidate)
+    if candidate.asset_type == "chapter_execution_intent" and (candidate.provenance or {}).get("working_artifact"):
+        try:
+            intent = json.loads(candidate.safe_summary)
+        except (ValueError, TypeError):
+            intent = None
+        working = intent.get("working_manuscript") if isinstance(intent, dict) else None
+        if (isinstance(working, dict) and isinstance(working.get("projection_policy"), dict)
+            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"}):
+            # WHY: Writer parses this Intent into structured fields; escaped storage JSON is never its Provider representation.
+            return max(1, serialized_token_upper_bound({**payload, "safe_summary": intent}) + 64), "STRUCTURED_WORKING_INTENT"
+    return max(1, serialized_token_upper_bound(payload)), "SERIALIZED_SUMMARY"
+
+
 def _units(candidate: ContextCandidate, task: Mapping[str, Any]) -> list[dict[str, Any]]:
     units = []
     try:
@@ -144,8 +159,12 @@ def compile_task_context(
     working.extend(auxiliary[:12])
     excluded.extend(auxiliary[12:])
     normalized = []
+    candidate_accounting = []
     for candidate in working:
-        amount = 1 if candidate.allowed_use == "evidence_only" else max(1, serialized_token_upper_bound(_payload(candidate)))
+        amount, representation = (1, "EVIDENCE_ONLY") if candidate.allowed_use == "evidence_only" else _candidate_tokens(candidate)
+        candidate_accounting.append({"asset_version_id": candidate.asset_version_id,
+            "representation": representation, "provider_data_upper_bound": amount,
+            "storage_payload_bytes": serialized_token_upper_bound(_payload(candidate))})
         normalized.append(replace(candidate, estimated_tokens=amount, truncation_strategy=""))
     normalized, deduplications = deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("reference_analysis" if reference else "draft").required_asset_types)
     duplicated_ids = {receipt["asset_version_id"] for receipt in deduplications}
@@ -294,5 +313,5 @@ def compile_task_context(
     if reference:
         normalized.sort(key=source_position)
     result = [*normalized, *denied] + [replace(item, provenance={**dict(item.provenance or {}), "task_excluded": True}) for item in excluded]
-    receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": "utf8-byte-upper-bound.v1", "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
+    receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": "utf8-byte-upper-bound.v1", "candidate_accounting": candidate_accounting, "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
     return result, {**receipt, "receipt_hash": narrative_hash(receipt)}

@@ -471,6 +471,11 @@ source and hash before rendering. The complete Mission remains available once; d
 content or a missing source fails closed. Frozen legacy Contexts without this reference
 keep their original representation. This saves serialization before the task budget gate
 and does not change the task budget, model limit or output reservation.
+For a frozen working Intent, candidate budgeting counts the structured value Writer
+actually parses, including every field and conservative envelope allowance, rather than
+charging escaping introduced only by the storage summary string. The receipt records
+both storage bytes and Provider data estimates. Final fully rendered Provider admission
+remains independent and must still fit the unchanged model limit and output reserve.
 
 At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
 semantic overflow effects existed but formal Router selection rejected context tasks
