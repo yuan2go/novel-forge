@@ -4678,6 +4678,8 @@ class PostgresPlanningExecutionPreparer:
                 ),
                 "arc_working_set": dict(command.arc_working_set or {}),
                 "narrative_search": command.narrative_search_snapshot,
+                **({"working_continuity_projection_version": context_document.content["working_continuity_projection_version"]}
+                    if context_document.content.get("working_continuity_projection_version") else {}),
                 **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
@@ -5912,6 +5914,9 @@ class PostgresPlanningExecutionPreparer:
                 if command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} else {}),
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
+            **({"working_continuity_projection_version": "planning-working-continuity.v1"}
+                if command.execution_contract_version == "1.21.0"
+                and (command.arc_working_set or {}).get("working_manuscript") is not None else {}),
             **(
                 {"edition_execution": dict(command.edition_execution)}
                 if command.edition_execution

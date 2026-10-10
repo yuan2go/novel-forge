@@ -55,8 +55,13 @@ fails the applicable integrity boundary.
 
 Ordinary continuation freezes exact currently selected manuscript versions in the existing
 input snapshot and Arc Working Set. A bounded recent-source projection carries actual
-prose excerpts separately from formal State/Canon and future plan intent. It grants no
-verified facts or character knowledge. Native realization contract v3 retains this working
+prose excerpts separately from formal State/Canon and future plan intent. They supply
+continuity within the exact selected working version: direct actions and witnessed responses
+may be carried into its next scene without repeating them for formal acceptance. They grant
+no accepted fact IDs or verified Character Knowledge; inferred beliefs, reader-only disclosures,
+future plans and unresolved dependency changes retain their own uncertainty. New Planning
+contexts explicitly freeze this distinction; older contexts keep their original projection.
+Native realization contract v3 retains this working
 snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups without
 inventing accepted history. The source window is a bounded implementation policy; it does
 not prove long-form continuity or replace formal Canon. Author adoption uses the existing

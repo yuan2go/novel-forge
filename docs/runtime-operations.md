@@ -860,7 +860,12 @@ versions and begins from the supplied current base without recording adoption.
 assistant revision in one settled author-first Book run. Supply `--chapter`,
 `--candidate-version`, `--expected-version`, `--idempotency-key` and `--reason`.
 It preserves original delivery and candidate versions, requires the current base
-and its hash, and updates working continuation dependencies. It creates no author
+and its hash, and updates working continuation dependencies. Planning must consume
+that exact working prefix for continuity while retaining the actual accepted boundary.
+A witnessed action in the selected prose does not need to be repeated merely because
+it has no formal acceptance; unsupported claims, POV restrictions and changed dependencies
+remain uncertain. A structural repetition finding returns to scoped Plan Change before
+continuation. It creates no author
 choice, review pass or formal acceptance; human input and an existing author choice
 retain their separate decision path. Repeating the exact command is idempotent.
 The UI also downloads a readable text manuscript with the same version/status provenance.

@@ -608,6 +608,9 @@ def build_provider_task_view(
         if projection_version:
             task["contract_version"] = "provider-task-view-v2"
             task["craft_history_projection_version"] = projection_version
+        continuity = _planning_working_continuity(inputs, command)
+        if continuity is not None:
+            task["working_continuity"] = continuity
         return task
     if stage == "narrative_semantic_evaluation":
         profiles = inputs.get("qualification_profiles")
@@ -1475,6 +1478,9 @@ def build_provider_context_view(
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
 
     if stage in _PLANNING_STAGES or stage in FOUNDATION_GENERATORS:
+        continuity = _planning_working_continuity(context_bundle, context_bundle)
+        if task_view.get("working_continuity") != continuity:
+            raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Planning task and Context must bind the same selected working prefix")
         projected_selection = task_view.get("narrative_intelligence", {})
         projection_version = context_bundle.get("craft_history_projection_version")
         if projection_version or task_view.get("craft_history_projection_version") or "planning_history_projection" in projected_selection:
@@ -2286,6 +2292,11 @@ def _build_planning_context_view(
     }
     if context_bundle.get("author_design_projection"):
         view["author_design_projection"] = compile_provider_author_projection(context_bundle["author_design_projection"])
+    continuity = _planning_working_continuity(context_bundle, context_bundle)
+    if continuity is not None:
+        if continuity["accepted_through_chapter"] != accepted_through_chapter:
+            raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Working continuity must retain the actual accepted State boundary")
+        view["working_continuity"] = continuity
     input_projection = context_bundle.get("planning_input_projection_version")
     if input_projection is not None:
         if input_projection != "planning-input-role-references.v1":
@@ -2508,6 +2519,57 @@ def _compact_qualified_foundation_planning(
         if field in design_view:
             design_view[field] = replace_literal(design_view[field], "/" + field)
     explanation["literal_references"] = "A literal_source_role/json_pointer object means the exact full string at that selected segment content path. It inherits the original Book Design requirement."
+
+
+def _planning_working_continuity(source: Mapping[str, Any], scope: Mapping[str, Any]) -> dict[str, Any] | None:
+    version = source.get("working_continuity_projection_version")
+    if version is None:
+        return None
+    working = (source.get("arc_working_set") or {}).get("working_manuscript")
+    if (version != "planning-working-continuity.v1"
+            or not isinstance(working, Mapping)
+            or working.get("version") != "working-manuscript-context.v1"
+            or working.get("book_id") != scope.get("book_id")
+            or working.get("project_id") != scope.get("project_id")
+            or working.get("authority") != "AUTHOR_WORKING_PROSE_ONLY"
+            or working.get("structured_facts") != []
+            or not isinstance(working.get("book_run_id"), str) or not working["book_run_id"]
+            or not isinstance(working.get("sources"), list)
+            or type(working.get("target_chapter")) is not int
+            or type(working.get("accepted_through_chapter")) is not int
+            or not 0 <= working["accepted_through_chapter"] < working["target_chapter"]
+            or working.get("snapshot_hash") != _projection_hash({key: value for key, value in working.items() if key != "snapshot_hash"})):
+        raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Working continuity requires the exact scoped immutable manuscript snapshot")
+    numbers = []
+    for item in working["sources"]:
+        if (not isinstance(item, Mapping)
+                or type(item.get("chapter")) is not int
+                or not 0 < item["chapter"] < working["target_chapter"]
+                or item.get("status") != "UNREVIEWED_WORKING_PROSE"
+                or item.get("character_knowledge") != "NOT_VERIFIED"
+                or any(not isinstance(item.get(key), str) or not item[key] for key in ("asset_version_id", "content_hash", "text_hash", "excerpt"))):
+            raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Working continuity cannot relabel source observations as accepted knowledge")
+        numbers.append(item["chapter"])
+    if numbers != sorted(set(numbers)):
+        raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Working sources require a unique ordered predecessor sequence")
+    return {
+        "version": version,
+        "book_run_id": working["book_run_id"],
+        "snapshot_hash": working["snapshot_hash"],
+        "target_chapter": working["target_chapter"],
+        "accepted_through_chapter": working["accepted_through_chapter"],
+        "source_location": "/arc_working_set/working_manuscript",
+        "authority": "SELECTED_WORKING_VERSION_CONTINUITY_ONLY",
+        "instruction": (
+            "Continue this exact selected working version. Carry forward actions, witnessed responses and experiences "
+            "actually realized in these source excerpts within that working story; lack of formal acceptance alone "
+            "does not require characters to reapply, reverify, reperform or forget them. Preserve source uncertainty, "
+            "unresolved dependency changes and POV restrictions: claims and beliefs need not be true, reader-only "
+            "information is not character knowledge, and plans are not past events. Introduce subsequent events "
+            "that use the progress already realized. This projection grants no accepted fact IDs, verified Character "
+            "Knowledge, Canon mutation, author choice or formal acceptance. Keep accepted-state fields unchanged."
+        ),
+    }
 
 
 def _projection_hash(value: Any) -> str:
