@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `424273c9a43dad2bf7af9bc888860bb8706d4fd5`
-Baseline implementation identity: `sha256:dd45f49d3b7e38ca5f0e3261465d7cd6cc227880dac6a173b26778ced2a2a6ce`
+Current-reality baseline: `f544970def34613d0bbc1b43b322cc9bf0611020`
+Baseline implementation identity: `sha256:92e6355be5d9c9032af9ffce36364531feb7c16578c3f4ed9c035086cc35ceea`
 
 2026-10-08 scoped Source integration review: Bounded market observations have native controlled engineering evidence; live rankings, authorized text and real reference-assisted prose remain unproven. Other unresolved decisions are retained. Prior scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
 This checkpoint review is implementation evidence, not final backend qualification,
@@ -26,8 +26,8 @@ The earlier coordinated forward-contract integration retained its explicit NOT_R
   "reviewed_on": "2026-10-10",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "424273c9a43dad2bf7af9bc888860bb8706d4fd5",
-    "implementation_tree_sha": "sha256:dd45f49d3b7e38ca5f0e3261465d7cd6cc227880dac6a173b26778ced2a2a6ce"
+    "sha": "f544970def34613d0bbc1b43b322cc9bf0611020",
+    "implementation_tree_sha": "sha256:92e6355be5d9c9032af9ffce36364531feb7c16578c3f4ed9c035086cc35ceea"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
