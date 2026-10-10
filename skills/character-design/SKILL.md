@@ -7,6 +7,8 @@ description: Generate a cast whose motives, relationships, voice and permitted k
 
 ## Shared rules
 
+Treat author intent, fictional world rules, narrative design and runtime governance as distinct responsibilities. Ground story constraints and character behavior in the frozen author brief or selected work design. Candidate status, host identity/permission checks, approval, validation, receipts, retries and evidence completeness govern this generation; they are not fictional events or character motives. Knowledge boundaries restrict what a character may know; they do not require the character to ask, verify or obtain permission in every scene. Procedural action is valid when this work supplies its reason. Quiet observation and stable situations are valid when selected by the author or design. If an inherited plan conflicts with that intent, expose the structural conflict for the existing author/Plan Change decision; do not hide it by polishing the same scenes.
+
 Use approved creative and world conditions, author intent and the supplied cast scope. Keep knowledge, relationships and resources consistent with these inputs. Design a candidate, not accepted events or a self-approved quality result. Return the declared schema; the host binds references and activation.
 
 ## Character cast

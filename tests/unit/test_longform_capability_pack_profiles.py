@@ -183,8 +183,8 @@ def test_story_planning_profile_owns_typed_plans_and_foundation_generators() -> 
         if item["kind"] == "SCHEMA"
     }.issuperset(
         {
-            "schema:story-planning-pack-input:v1",
-            "schema:story-planning-pack-output:v1",
+            "schema:story-planning-pack-input:v2",
+            "schema:story-planning-pack-output:v2",
         }
     )
 
@@ -236,9 +236,9 @@ def test_creative_json_format_example_matches_native_schema_without_replacing_de
     ) == example
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
     assert profile.manifest["prompt_binding"]["template_ref"] == "prompt-template:story-planning-pack"
-    assert profile.manifest["prompt_binding"]["template_version"] == "v2"
-    bound = next(item for item in profile.artifact_catalog["artifacts"] if item["ref"] == "prompt-template:story-planning-pack" and item["version"] == "v2")
-    assert bound["content"]["text"] == (ROOT / "config/capability_packs/artifacts/story_planning_template_v2.md").read_text()
+    assert profile.manifest["prompt_binding"]["template_version"] == "v3"
+    bound = next(item for item in profile.artifact_catalog["artifacts"] if item["ref"] == "prompt-template:story-planning-pack" and item["version"] == "v3")
+    assert bound["content"]["text"] == (ROOT / "config/capability_packs/artifacts/story_planning_template_v3.md").read_text()
 
 
 def test_planning_context_target_is_frozen_in_manifest_and_resolved_policy():

@@ -400,6 +400,7 @@ def _principal(project_id: str) -> Principal:
                 "book.followup:*",
                 "chapter.authority.execute",
                 "external_effect.execute",
+                "external_effect.resolve",
             }
         ),
         project_scope=frozenset({project_id}),

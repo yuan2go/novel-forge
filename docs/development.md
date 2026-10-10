@@ -44,7 +44,7 @@ Semantic constraints use only `CURRENT_PROVEN_INVARIANT`, `CURRENT_RUNTIME_FACT`
 invariant; the last always requires an explicit design review marker.
 
 Repository-local design candidates remain outside canonical documentation and runtime
-Authority. Each file in `architecture/proposals/` visibly declares `PROPOSAL` and
+Authority. An active proposal, when present, visibly declares `PROPOSAL` and
 `NOT_RUNTIME_AUTHORITY` and carries one inline lifecycle record: status, exact reviewed
 Reality baseline, scope, implemented/superseding references and unresolved decisions or
 work. The checker rejects stale scope/review windows, contradictory implementation

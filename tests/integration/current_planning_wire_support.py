@@ -36,6 +36,24 @@ def current_planning_wire_result(result, inputs):
             value[field] = deepcopy(row[field])
         for field in CHAPTER_READER_SCHEDULE_FIELDS:
             value["reader_experience"][field] = deepcopy(row["reader_experience"][field])
+    if inputs.get("stage") in {"chapter_group_plan.generate", "chapter_plan.generate"}:
+        casts = [inputs["controlled_frozen_cast"]] if "controlled_frozen_cast" in inputs else [segment["content"] for segment in inputs.get("controlled_frozen_segments", []) if segment.get("role") == "character_cast"]
+        if len(casts) == 1 and len(casts[0].get("characters", [])) == 1:
+            actor = casts[0]["characters"][0]["character_id"]
+            from novel_forge.modules.hierarchical_planning.domain import character_planning_locator
+
+            locator = character_planning_locator(actor)
+            def bind_fixture_actor(item):
+                if isinstance(item, dict):
+                    return {key: bind_fixture_actor(child) for key, child in item.items()}
+                if isinstance(item, list):
+                    return [bind_fixture_actor(child) for child in item]
+                if item == "protagonist":
+                    return locator
+                if item == "character:protagonist":
+                    return locator
+                return item
+            value = bind_fixture_actor(value)
     fields = {
         "world_realization": {"invariant_refs": "WORLD_INVARIANT", "structure_refs": "WORLD_STRUCTURE", "state_ref": "WORLD_STATE"},
         "character_realization": {"identity_ref": "CHARACTER_IDENTITY", "state_ref": "CHARACTER_STATE", "trajectory_ref": "CHARACTER_TRAJECTORY"},
@@ -172,4 +190,21 @@ def current_planning_fixture_inputs(inputs, database_url):
 
     document = AuthorityAssetQuery(database_url).require(project_id=command["project_id"], logical_ref=f"planning/context_bundles/{command['generation_operation_id']}.json")
     view = document.content["context_manifest"]["provider_context_view"]["compiled_view"]
-    return {**inputs, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}
+    frozen_cast = {}
+    if inputs.get("stage") in {"chapter_group_plan.generate", "chapter_plan.generate"}:
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("SELECT s.foundation_set FROM authority_book_production b JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id WHERE b.project_id=%s AND b.book_id=%s", [command["project_id"], command["book_id"]])
+            snapshots = uow.cursor.fetchall()
+            if len(snapshots) != 1:
+                raise ValueError("Chapter fixture requires one exact active Book input snapshot")
+            bindings = [b for b in snapshots[0][0]["bindings"] if b["role"] == "CHARACTER_CAST"]
+            if len(bindings) != 1:
+                raise ValueError("Chapter fixture requires one exact frozen cast")
+            binding = bindings[0]
+            cast = uow.repositories.asset_documents.require(project_id=command["project_id"], asset_version_id=binding["asset_version_id"])
+            if cast.content_hash != binding["content_hash"]:
+                raise ValueError("Chapter fixture cast must match the frozen content hash")
+            frozen_cast = {"controlled_frozen_cast": deepcopy(cast.content)}
+    return {**inputs, **frozen_cast, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}

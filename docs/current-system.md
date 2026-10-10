@@ -271,7 +271,7 @@ commands and focused matrix in `docs/runtime-operations.md`.
 
 ### Bounded creative recovery contracts
 
-Creative template v11 is the current coordinated policy; v2–v10 remain explicit
+Creative template v12 is the current author-first policy; v2–v11 remain explicit
 historical contracts. They retain authenticated
 membership identity, independent-review requirements, source isolation and strict
 production gates. New Planning dispatch uses the single native `governed_repair`
@@ -2432,3 +2432,21 @@ exact native 1.21 ChapterGroup generation. It reuses the existing deterministic 
 chapter slice and retains every frozen event; historical single-slice contracts keep their guard.
 Membership retry compatibility excludes durably isolated historical execution rows while
 retaining current leases, cancellation, identity checks and paid accounting exposure.
+
+
+New Story Planning Pack 2.14 binds System v12, template v3 and stage-specific Skill
+versions to `planning-narrative-intent-projection.v1`. The existing generation
+preparer versions the sent output Schema instructions without changing the domain
+JSON shape or storage contract. The gateway first verifies the frozen Task/Context
+and source identities, then separates narrative direction from output protocol.
+Execution topology budgets, comparison weights, retry metadata and Context selection
+audits stay in durable source/projection receipts outside the narrative data.
+Exact matrix and literal pointers, accepted knowledge and working-manuscript
+continuity remain intact. Story constraints concern the author intent or selected
+fictional design; host approval and evidence status do not prescribe character action.
+Search defaults permit quiet or stable situations and author-selected procedural plots.
+An inherited structural conflict requires existing author/Plan Change and edition
+candidate decisions; this projection does not rewrite or activate old plans or prose.
+Historical Planning Packs keep their original bindings and rendering. Installing new
+code alone does not replace a Book's frozen Pack, grant a Provider task or prove
+literary improvement.

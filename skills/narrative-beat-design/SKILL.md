@@ -7,6 +7,8 @@ description: Develop a thematic question or order narrative beats using grounded
 
 ## Shared rules
 
+Treat author intent, fictional world rules, narrative design and runtime governance as distinct responsibilities. Ground story constraints and character behavior in the frozen author brief or selected work design. Candidate status, host identity/permission checks, approval, validation, receipts, retries and evidence completeness govern this generation; they are not fictional events or character motives. Knowledge boundaries restrict what a character may know; they do not require the character to ask, verify or obtain permission in every scene. Procedural action is valid when this work supplies its reason. Quiet observation and stable situations are valid when selected by the author or design. If an inherited plan conflicts with that intent, expose the structural conflict for the existing author/Plan Change decision; do not hide it by polishing the same scenes.
+
 Use frozen author intent, character motives and approved design facts. Ground the reader's necessary concepts and expectations before later action relies on them. Separate a proposed development from an accepted event. Use only permitted abstract references and return the task's declared schema.
 
 ## Theme question

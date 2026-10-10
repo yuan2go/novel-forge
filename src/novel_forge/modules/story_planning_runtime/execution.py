@@ -4449,6 +4449,11 @@ class PostgresPlanningExecutionPreparer:
 
                 output_schema = bind_planned_knowledge_schema(output_schema, by_role["story_state"].content)
                 output_schema_ref += ":accepted-knowledge-v1"
+        if (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
+            from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+
+            output_schema = bind_narrative_intent_schema(output_schema)
+            output_schema_ref += ":narrative-intent-v1"
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",

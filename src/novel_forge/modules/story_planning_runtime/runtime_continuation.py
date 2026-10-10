@@ -582,7 +582,7 @@ def _world_agency_pack_profile(version, operation_hash, *, repository_root):
                 f"{node['agent_definition_ref'].rpartition('@')[0]}@{generation}"
             )
     from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
-    current = build_story_planning_pack_profile(repository_root, operation_definition_hash=operation_hash, execution_contract_version="1.21.0")
+    current = build_story_planning_pack_profile(repository_root, operation_definition_hash=operation_hash, execution_contract_version="1.21.0", narrative_intent_boundary=False)
     manifest["prompt_binding"] = {**manifest["prompt_binding"], **{key: current.manifest["prompt_binding"][key] for key in ("system_instruction_ref", "system_instruction_version", "system_instruction_hash")}}
     catalog = deepcopy(version["artifact_catalog"])
     system = next(item for item in current.artifact_catalog["artifacts"] if item["ref"] == manifest["prompt_binding"]["system_instruction_ref"] and item["version"] == "v11")

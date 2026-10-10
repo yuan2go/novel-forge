@@ -7,6 +7,8 @@ description: Design an ending or a book, volume, arc or chapter-group plan from 
 
 ## Shared rules
 
+Treat author intent, fictional world rules, narrative design and runtime governance as distinct responsibilities. Ground story constraints and character behavior in the frozen author brief or selected work design. Candidate status, host identity/permission checks, approval, validation, receipts, retries and evidence completeness govern this generation; they are not fictional events or character motives. Knowledge boundaries restrict what a character may know; they do not require the character to ask, verify or obtain permission in every scene. Procedural action is valid when this work supplies its reason. Quiet observation and stable situations are valid when selected by the author or design. If an inherited plan conflicts with that intent, expose the structural conflict for the existing author/Plan Change decision; do not hide it by polishing the same scenes.
+
 Translate the author's intent, theme, character desires, world limits and reader promise into a coherent narrative progression at the requested scale. Preserve causal relations where events depend on each other; an intended observational or associative progression can remain stable. Proposed events remain future design. Preserve frozen parent lineage, accepted boundaries, ranges and obligations. Ground concepts, relationships and clues before later action depends on them. Commercial escalation, rewards and cliffhangers are options governed by this story's intent, not universal requirements. Return the declared JSON candidate; the host validates and activates plans.
 
 ## Ending intent

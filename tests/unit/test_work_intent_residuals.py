@@ -153,7 +153,7 @@ def test_current_chapter_manifest_binds_exact_definition_hashes():
     from novel_forge.storage.authority_repositories import definition_hash
 
     definitions = {
-        item["name"]: item
+        (item["name"], item["definition_version"]): item
         for item in chapter_operation_definitions(
             application_build_id="unit",
             commit_sha="0" * 40,
@@ -166,7 +166,8 @@ def test_current_chapter_manifest_binds_exact_definition_hashes():
         (ROOT / "config/capability_packs/chapter_generation_pack.json").read_text()
     )
     for node in manifest["workflow_template"]["nodes"]:
-        definition = definitions[node["operation_name"]]
+        version = node["operation_definition_ref"].rpartition("@")[2]
+        definition = definitions[(node["operation_name"], version)]
         assert (
             node["operation_definition_ref"]
             == definition["name"] + "@" + definition["definition_version"]
@@ -290,7 +291,7 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
         ROOT, operation_definition_hash="sha256:" + "a" * 64,
         execution_contract_version="1.19.0",
     )
-    assert current.manifest["identity"]["version"] == "2.13.0"
+    assert current.manifest["identity"]["version"] == "2.14.0"
     assert frozen_main.manifest["identity"]["version"] == "2.11.0"
     assert old.manifest["identity"]["version"] == "2.9.0"
     assert {node["operation_definition_ref"] for node in current.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.21.0"}
@@ -334,8 +335,8 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
         or "where the work commits" in new
     )
     assert new != legacy
-    assert frozen_main_binding == current_binding
-    assert method(frozen_main, frozen_main_binding) == new
+    assert frozen_main_binding != current_binding
+    assert method(frozen_main, frozen_main_binding) != new
     assert "Return the declared" in new or "declared schema" in new
 
 

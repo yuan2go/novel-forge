@@ -2504,7 +2504,9 @@ database or change an old request. Inspect the actual deployment, activation and
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
 identities; current candidate Chapter Pack 3.0.2 binds workflow and ordinary coordinated nodes 3.10.0, including Plan materialization, with
 Template v13 with lossless joint input transport. Frozen v12 Attempts retain their original manifests. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
-Current Planning Pack 2.13.0 binds Operation 1.21.0, System v11 and Template v2,
+Current Planning Pack 2.14.0 binds Operation 1.21.0, System v12 and Template v3
+with the narrative-intent boundary. Historical Planning Pack 2.13.0 retains
+Operation 1.21.0, System v11 and Template v2,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
 retaining qualification-v2 identities. Planning 1.21.0 requires Mission/Scene v4,
 activated-chapter-plan.v3 and runtime projection 3.0.0; its Provider output uses
@@ -3999,3 +4001,18 @@ and manifest/catalog. A drifted activation is reconciled by its native owner; th
 not impose a Reader or qualification requirement on author-first saved manuscript access.
 
 Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
+
+
+For a narrative-intent repair, compile and inspect the new Story Planning 2.14
+bindings through the existing Pack Authority before scoped use. System v12 and
+template v3 bind the narrative-intent projection and versioned sent Schema; historical
+recovery retains its exact old Pack. Inspect the projection receipt's source and
+projected hashes, omission pointers, stage methods and final rendered Prompt hash.
+Compare author-selected quiet, procedural and other narrative purposes through the
+real gateway assembler offline. A structural diagnosis returns to existing Plan
+Change and Book edition candidate owners with exact source plans/manuscript and any
+new approved input snapshot. Candidate saving, author selection and acceptance remain
+separate. Do not change a Book's length or delivery window for this repair.
+Only a separately authorized same-Book Provider experiment and subsequent literary
+review can establish prose improvement; offline assembly and scripted integration
+prove engineering execution only.

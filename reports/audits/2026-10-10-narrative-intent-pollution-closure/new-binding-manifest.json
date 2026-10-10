@@ -1,0 +1,1330 @@
+{
+  "class": "OFFLINE_PROFILE_PROJECTION_NOT_DEPLOYMENT",
+  "pack_identity": {
+    "pack_id": "story_planning_pack",
+    "name": "Story Planning Generator Pack",
+    "domain": "story_planning",
+    "capability_type": "production_workflow",
+    "version": "2.14.0",
+    "owner": "novel-os-core",
+    "status": "CANDIDATE",
+    "lifecycle": "VALIDATION",
+    "description": "Governed Foundation formation and hierarchical Planning candidate generation."
+  },
+  "prompt_binding": {
+    "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+    "system_instruction_ref": "prompt-system:story-planning-pack",
+    "system_instruction_version": "v12",
+    "system_instruction_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+    "template_ref": "prompt-template:story-planning-pack",
+    "template_version": "v3",
+    "template_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c",
+    "compiler_version": "chapter-prompt-compiler:v11",
+    "input_schema_ref": "schema:story-planning-pack-input:v2",
+    "output_schema_ref": "schema:story-planning-pack-output:v2"
+  },
+  "skill_binding": {
+    "mode": "STATIC",
+    "selection_policy_ref": null,
+    "skills": [
+      {
+        "skill_ref": "canon-continuity-graph",
+        "version": "canon-continuity-graph-qualification-v2",
+        "content_hash": "sha256:72cc55db18b93ddd7fefb2d99dbe02f04204fc2c2323bb166c8bb7f186f790f8",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "typed_narrative_semantic_evaluation"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "chapter-outline",
+        "version": "chapter-outline-qualification-v4",
+        "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "typed_narrative_semantic_evaluation"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "character-design",
+        "version": "character-design-qualification-v4",
+        "content_hash": "sha256:0dc47f3bb247b1c4496601d7a3f45f3f3479f6f2ae76909eed471581feb5e945",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "typed_narrative_semantic_evaluation"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "hot-novel-business-deconstruction",
+        "version": "hot-novel-business-deconstruction-qualification-v2",
+        "content_hash": "sha256:5136d8a48cc3f2445a25cd050002eaa6dabfdd34969e7adbe32bc6aba114c5d3",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "typed_narrative_semantic_evaluation"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "long-outline",
+        "version": "long-outline-v4",
+        "content_hash": "sha256:687c4217ce8108496eaf6c4b012b2231269ecd732f2ff56e305d183a54cdbf34",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "schema_backed_candidate"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "narrative-beat-design",
+        "version": "narrative-beat-design-qualification-v4",
+        "content_hash": "sha256:8532f17579e250d2a2301c16e78847771848e827e4808fa782d0fe69f9417397",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "typed_narrative_semantic_evaluation"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "topic-development",
+        "version": "topic-development-qualification-v4",
+        "content_hash": "sha256:89a9216dd1b61df2b96bb2f37a1df46b3c7bbc14e8e153ae4f985e1943fe8c09",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "typed_narrative_semantic_evaluation"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "worldbuilding",
+        "version": "worldbuilding-qualification-v4",
+        "content_hash": "sha256:8480fe241cb75639a5e9a8f6cefc5fe9375478f59b35a5fc65684304fdb89cda",
+        "required": true,
+        "input_contract_ref": "schema:story-planning-pack-input:v2",
+        "output_contract_ref": "schema:story-planning-pack-output:v2",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "typed_narrative_semantic_evaluation"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      }
+    ],
+    "anti_drift": {
+      "duplicate_skill_refs_forbidden": true,
+      "unbound_skill_forbidden": true,
+      "dynamic_selection_requires_policy": true
+    }
+  },
+  "artifact_bindings": [
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "chapter-operation-admission:v1",
+      "version": "v1",
+      "content_hash": "sha256:282d05c1df84541aab351ba151ff214fed19fa377afc91cb4c3d735e413cb92d",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#APPROVAL_POLICY:chapter-operation-admission:v1@v1"
+    },
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "chapter.agent_session.route:v1",
+      "version": "v1",
+      "content_hash": "sha256:eb62b71ebfe1e1f7cb867c8428f4612d2af43b0ab9ba77363d124dae94be328e",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#APPROVAL_POLICY:chapter.agent_session.route:v1@v1"
+    },
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "chapter.stage.route.policy:v1",
+      "version": "v1",
+      "content_hash": "sha256:750b4dac19211a00d06879fea1350325bd3dd43ccd5052abef8d21360e7605eb",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#APPROVAL_POLICY:chapter.stage.route.policy:v1@v1"
+    },
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "domain-decision-record:v1",
+      "version": "v1",
+      "content_hash": "sha256:f23f495bbc81245ef172fc1e54de2ef2395619c519114d56655f96c279b7a0a4",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#APPROVAL_POLICY:domain-decision-record:v1@v1"
+    },
+    {
+      "kind": "BUDGET_POLICY",
+      "ref": "budget:agent-session-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:dd15cde9627df70b1bfacdabe6fd9f895dd821b761cbc7d4bf8bd875c034e124",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#BUDGET_POLICY:budget:agent-session-pack:v1@v1"
+    },
+    {
+      "kind": "BUDGET_POLICY",
+      "ref": "budget:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:55e75983b6c85de1808c06d3b9ea15402d1325e4adfbd14014440b3a28ad74f8",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#BUDGET_POLICY:budget:chapter-generation-pack:v1@v1"
+    },
+    {
+      "kind": "COMMIT_POLICY",
+      "ref": "commit:agent-session-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:81ded346d7b458b80005bf61d8c1752beb2572431b25526a0718a576a0558d3c",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#COMMIT_POLICY:commit:agent-session-pack:v1@v1"
+    },
+    {
+      "kind": "COMMIT_POLICY",
+      "ref": "commit:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:c384e0f71b9b40ad94967db61bb3723a388bb49b589c3a73252cb19aaca0abdc",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#COMMIT_POLICY:commit:chapter-generation-pack:v1@v1"
+    },
+    {
+      "kind": "COMPENSATION_POLICY",
+      "ref": "append-only-evidence:v1",
+      "version": "v1",
+      "content_hash": "sha256:ca496cc701d1a49e4a18893d9d25cd94877a31a80b80d85d6b81fdaaa375eba6",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#COMPENSATION_POLICY:append-only-evidence:v1@v1"
+    },
+    {
+      "kind": "COMPENSATION_POLICY",
+      "ref": "append-only-supersede:v1",
+      "version": "v1",
+      "content_hash": "sha256:a824dd00bc9dfafc8ad31d7cc4a58bc9fd3bc233adfec20d43bf8b7bd68221f6",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#COMPENSATION_POLICY:append-only-supersede:v1@v1"
+    },
+    {
+      "kind": "CONTEXT_POLICY",
+      "ref": "context-policy:agent-session-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:d53ab14f09458f3b607f829df7ebc3b07e0571b67792a97c879e5d949db54a4e",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:agent-session-pack:v1@v1"
+    },
+    {
+      "kind": "CONTEXT_POLICY",
+      "ref": "context-policy:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:6b99169dfbbee43029ec4fddeb4d2aa5b40e8dd4db09022810ec8e719d2586e6",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v1@v1"
+    },
+    {
+      "kind": "CONTEXT_POLICY",
+      "ref": "context-policy:chapter-generation-pack:v2",
+      "version": "v2",
+      "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v2@v2"
+    },
+    {
+      "kind": "KNOWLEDGE",
+      "ref": "knowledge:chapter-causal-cost:v1",
+      "version": "v1",
+      "content_hash": "sha256:e880fdc724a45fccecbff445974f362668511fe03238b812f2740160e20b6c49",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#KNOWLEDGE:knowledge:chapter-causal-cost:v1@v1"
+    },
+    {
+      "kind": "KNOWLEDGE",
+      "ref": "knowledge:chapter-causal-cost:v2",
+      "version": "v2",
+      "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#KNOWLEDGE:knowledge:chapter-causal-cost:v2@v2"
+    },
+    {
+      "kind": "PROMPT_SYSTEM_INSTRUCTION",
+      "ref": "prompt-system:agent-session-pack",
+      "version": "v1",
+      "content_hash": "sha256:bcd0bbee6320dc6d61f8ad28e836da8ca97a4e3868f330de2b9bb907abc553c4",
+      "source_identity": "config/capability_packs/artifacts/agent_session_system_instruction.md"
+    },
+    {
+      "kind": "PROMPT_SYSTEM_INSTRUCTION",
+      "ref": "prompt-system:chapter-generation-pack",
+      "version": "v1",
+      "content_hash": "sha256:56ca60948dbfee8de94e233307604f3a178e0b61c3f3082803a38cce0830ba20",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_system_instruction_v1.md"
+    },
+    {
+      "kind": "PROMPT_SYSTEM_INSTRUCTION",
+      "ref": "prompt-system:chapter-generation-pack",
+      "version": "v2",
+      "content_hash": "sha256:aac995402b1a612d5c47c29cce9e3808db9a8413f3079785a98182f629f6e757",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_system_instruction_v2.md"
+    },
+    {
+      "kind": "PROMPT_SYSTEM_INSTRUCTION",
+      "ref": "prompt-system:chapter-generation-pack",
+      "version": "v3",
+      "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_system_instruction.md"
+    },
+    {
+      "kind": "PROMPT_SYSTEM_INSTRUCTION",
+      "ref": "prompt-system:model-reference-creation",
+      "version": "v1",
+      "content_hash": "sha256:b6eedf6e4431fb87aecc0fc3b7b1efe033c64a0f1cf54ce584de3e3dfe70da06",
+      "source_identity": "config/capability_packs/artifacts/model_reference_system_instruction_v1.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:agent-session-pack",
+      "version": "v1",
+      "content_hash": "sha256:c86df042f1ebfca06a5d36e4fa881e2154b3109596a3426e08c17c25dbd48d8d",
+      "source_identity": "config/capability_packs/artifacts/agent_session_template.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v10",
+      "content_hash": "sha256:1ca9fcad4d3b445345ea0041d43f7b0c146cf69468db802662151db2b58657c5",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v10.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v11",
+      "content_hash": "sha256:2845538cbe4c271435e8fc6f65948b06fef4f923cf6a59c5eb933ab07e1f72e0",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v11.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v2",
+      "content_hash": "sha256:5a8ccec99d1c1bf0a28870f1cb608169974f78529b0552119dbfbe5c790b22c0",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v2.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v3",
+      "content_hash": "sha256:b8494536005f52d31f7b0ccd157b06b63fb0bd91b68f17945928469259ead93b",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v4",
+      "content_hash": "sha256:b8494536005f52d31f7b0ccd157b06b63fb0bd91b68f17945928469259ead93b",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v5",
+      "content_hash": "sha256:1884c4c455147b5063ebf50d661077f6061002120861b4140d14f8af9cf40906",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v5.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v6",
+      "content_hash": "sha256:3151ea35fb8c277c0370a603ee833ae71495e4a123fac38838ccd7299aff69a8",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v6.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v7",
+      "content_hash": "sha256:b8b05541a1917ce8adcca677322577c836bec8117d0b71285eb85c6d780529e0",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v7.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v8",
+      "content_hash": "sha256:a9db022befe464affb689e04220032e9517d2569cc22332cf8c8de384f14bd7d",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v8.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:chapter-generation-pack",
+      "version": "v9",
+      "content_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+      "source_identity": "config/capability_packs/artifacts/chapter_generation_template_v9.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:model-reference-creation",
+      "version": "v1",
+      "content_hash": "sha256:8f61c741123f686172a5219d5aec47286e3beb936e4b2449e4f8038b57a1304e",
+      "source_identity": "config/capability_packs/artifacts/model_reference_template_v1.md"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "agent-session-input.v1",
+      "version": "v1",
+      "content_hash": "sha256:0560751fcb6a47b69d450fc97d996ae55ade5c9895efb5b11e234bd57f35fa57",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:agent-session-input.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "agent-session-output.v1",
+      "version": "v1",
+      "content_hash": "sha256:78c602ef61cec1cd21fe9326c53d7478921e87cf7d235fd7fd1f0e1678547877",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:agent-session-output.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "append-only-supersede.v1",
+      "version": "v1",
+      "content_hash": "sha256:7aa1c7b97dde01c0d86dabb92db7b0806d232ea7dcc31997624ddff2c9ecaceb",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:append-only-supersede.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "authority-audit.v1",
+      "version": "v1",
+      "content_hash": "sha256:89f7a1017e05a1d432732c12bab9f6cc9f012430fbbf0efe86b3ba1d2ef02701",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:authority-audit.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "authority-error.v1",
+      "version": "v1",
+      "content_hash": "sha256:d01fd990990048ae18349b3b14eefadbdc846a896dd45509b0b62d1607ff239f",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:authority-error.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "authority-event.v1",
+      "version": "v1",
+      "content_hash": "sha256:519002f8a8ca56171d46ae243d0a8b424402fb8680d5105a9b86a04c5fe17485",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:authority-event.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "chapter-generation-input.v1",
+      "version": "v1",
+      "content_hash": "sha256:59885002e252568885154f713aa5adc48d9b2f028b99b05de5f41d4ef6b99142",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:chapter-generation-input.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "chapter-generation-output.v1",
+      "version": "v1",
+      "content_hash": "sha256:3e27c2be000ef57429cfdd2a5304c05d1a5cba5092198a4dcac6ba9ae2a39292",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:chapter-generation-output.v1@v1"
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "operation-saga-attempt-state.v1",
+      "version": "v1",
+      "content_hash": "sha256:c5db530e4f6af790fd4c109d986b0295c4806d8831cadf17c1778abdac64c9c1",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#PROTOCOL:operation-saga-attempt-state.v1@v1"
+    },
+    {
+      "kind": "RULE",
+      "ref": "source-isolation-no-raw-expression:v1",
+      "version": "v1",
+      "content_hash": "sha256:4a80543cc430910c2921e2232930d4db0079c968ef12dea5c3fae2465f5e396c",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#RULE:source-isolation-no-raw-expression:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "chapter-plan-authority.v1",
+      "version": "v1",
+      "content_hash": "sha256:5f34516adf67ac9cdf03ede1afbe813d1fc8e1dcac0b5e4f311cd7cdc3159ab5",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:chapter-plan-authority.v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "operation-saga-attempt-state.v1",
+      "version": "v1",
+      "content_hash": "sha256:2d1a6d21f9ab7a82a159faa1a6eff0e56db30f18a2abe487ccbaf12985faad0f",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:operation-saga-attempt-state.v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:canon-extraction-input:v1",
+      "version": "v1",
+      "content_hash": "sha256:5590fa3031f4b03b957f98fc95f130656d85f247acf5034317236c81d6dcfc72",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:canon-extraction-input:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:canon-patch:v1",
+      "version": "v1",
+      "content_hash": "sha256:a68627d4795419c8d59038ed13493706f97d3a34a1b80abd70cf53134b0ef2e2",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:canon-patch:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-context-input:v1",
+      "version": "v1",
+      "content_hash": "sha256:a96aa0e6ba538a51f664a81b2c0006fdb33e99fc8cc1f2123c6f31df4fe65870",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-context-input:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-generation-pack-input:v1",
+      "version": "v1",
+      "content_hash": "sha256:01cbbf70492dddcd9efb3d0cf077c6114d4ac8a77c1034314ed59920e70f2d61",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-generation-pack-input:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-generation-pack-output:v1",
+      "version": "v1",
+      "content_hash": "sha256:18dff79cab9b28f6db0e51ef59222f1d8a0fc4f6f5032e8f546b1a10ed5fe946",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-generation-pack-output:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-plan-version:v1",
+      "version": "v1",
+      "content_hash": "sha256:6cfd893f7d1b01cb971ae76cc841d98e9037a777595d6d7d42bba9923693ce66",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-plan-version:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-plan:v1",
+      "version": "v1",
+      "content_hash": "sha256:429db4076d34a10596cc18f1d71b44d09324482687ead2d71e7a58a849d53813",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-plan:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-review-input:v1",
+      "version": "v1",
+      "content_hash": "sha256:2e808ed5d0c218d73c6845feb25f2d8080591d09517104caa00af85f9bab88ce",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-review-input:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-review-output:v1",
+      "version": "v1",
+      "content_hash": "sha256:ed0c385a5c83e06ed987e0a18921f03eae2227ea2af03c83836c31496b2f45a9",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-review-output:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:context-bundle:v1",
+      "version": "v1",
+      "content_hash": "sha256:470efe07d196dcceb657edeed0cb3bcb416d2b3e43a5ed1016f53b23fd856e8d",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:context-bundle:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:context-bundle:v2",
+      "version": "v2",
+      "content_hash": "sha256:76b952e320beb87285bf6dec7ae4c52ff8ce8d03351d2a2c7e1cad5d801a7a45",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:context-bundle:v2@v2"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:agent-workspace-execute:v1",
+      "version": "v1",
+      "content_hash": "sha256:97400455aef7b8f44ea3d48412bedff90bc15119ec1331ad8a0d6816e842a681",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:agent-workspace-execute:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:canon-extract:v1",
+      "version": "v1",
+      "content_hash": "sha256:9bd6d98c7aa3fbf41f92b92f72a3f5d3dd9bfd280d9841a20a25c37afaed3321",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:canon-extract:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:context-task-compile:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:context-task-compile:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-chapter-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:9c840225b7fc43c1b5863cf9d99610aed577d68299b0cef1f8e61fc66e34852d",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:planning-chapter-generate:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-chapter-memo:v1",
+      "version": "v1",
+      "content_hash": "sha256:0e0021b570bd8f3f1103cb944d2fc1008bb720a334be2b06ffed16fa9b1178d4",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:planning-chapter-memo:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:prose-chapter-draft:v1",
+      "version": "v1",
+      "content_hash": "sha256:1f7d9743e42a87e983c63b4c82cd0e9873154b3dfad0e4524fa6541ad89ef1c8",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:prose-chapter-draft:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:quality-intrinsic-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:7beda5bae7d124ba01cbc9a0af8a81769462fa5daf7840845cdfe3b05a667a60",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:quality-intrinsic-judge:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:quality-originality-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:e7fcdad8c6ff3f530dd5b23f89656ccd01526685cc9bbf3c19085449b862e7ab",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:quality-originality-judge:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:quality-platform-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:a273b005027bb5978f26ab4b1219ad9395ed6a75dfbb374818d752ac9798501b",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:quality-platform-judge:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:retrieval-embed:v1",
+      "version": "v1",
+      "content_hash": "sha256:a67283de446fc73985b5e4d78a9fdeb41bd94c580d558135e45b1400fccf86e3",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:retrieval-embed:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:review-chapter-evaluate:v1",
+      "version": "v1",
+      "content_hash": "sha256:5f5290dc5450a204363470147e0aa92878161c811affc6c99180dcb1d637d784",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:review-chapter-evaluate:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:revision-chapter-revise:v1",
+      "version": "v1",
+      "content_hash": "sha256:145f1c209c6fb38ad595c8bb5d40b4fde39eeb9f9a1630e9794abe8511e0ea7c",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:revision-chapter-revise:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:agent-workspace-execute:v1",
+      "version": "v1",
+      "content_hash": "sha256:8e375f7becd6968e1782258038de106a40f2d2bb88bceee62655f9f8e7e97edb",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:agent-workspace-execute:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:canon-extract:v1",
+      "version": "v1",
+      "content_hash": "sha256:17be56dc7b1e5b46185619866c6ec92d346162a906cb231c4f176f32812927a0",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:canon-extract:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:context-task-compile:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:context-task-compile:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-chapter-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:3684a5b3d4c0084986a92e22b9eab23b6b04882bde47041de2d94e6d6d393732",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:planning-chapter-generate:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-chapter-memo:v1",
+      "version": "v1",
+      "content_hash": "sha256:99cd1db74b0e87be9c60f5920ff71e686a4e33303a17221b4119d1663c0d2c12",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:planning-chapter-memo:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:prose-chapter-draft:v1",
+      "version": "v1",
+      "content_hash": "sha256:54b9f64c4dbbc03929e6b90a9224fe99ffae9fbda6c358c72f95ca417fa444f2",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:prose-chapter-draft:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:quality-intrinsic-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:d08994a6abdd5c0708c33e2f516f08a92ee42713025ca14cb5d54dee04e1beb3",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:quality-intrinsic-judge:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:quality-originality-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:370710dc2c35522254f4bd7626a8e1533afcb8f38314feb7ea217e01bc3a01f7",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:quality-originality-judge:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:quality-platform-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:2acaaedf41acb37d672e093b0a6706e2deb6ef38b20cd907aaa8e2a1661e3ea0",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:quality-platform-judge:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:retrieval-embed:v1",
+      "version": "v1",
+      "content_hash": "sha256:38b7e0267a6eabaae28cc7a79f173998e92fa54cec8f906bc02d5bb3d86614f8",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:retrieval-embed:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:review-chapter-evaluate:v1",
+      "version": "v1",
+      "content_hash": "sha256:acf1653875eab0cb125025bc99b10afbdff8fece4c63638594bc94aa94f8338e",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:review-chapter-evaluate:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:revision-chapter-revise:v1",
+      "version": "v1",
+      "content_hash": "sha256:794e1cc6b417a62875fcba6732f65b0a3b8940f68d1fc9310ea2c08ea3028e81",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:revision-chapter-revise:v1@v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:model-reference-creation-input:v1",
+      "version": "v1",
+      "content_hash": "sha256:fadfed7559f185dccc4624ce1fc7d43ad16fa1f3fcabd1f34ba9e3f293df9bd8",
+      "source_identity": "native:model-reference-creation-input-v1"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:model-reference-creation-output:v1",
+      "version": "v1",
+      "content_hash": "sha256:8d2fd3f13a27ee5fb9973a3cecb0c096f9cd3e2ea254b0633a06ea2e00318952",
+      "source_identity": "native:model-reference-creation-output-v1"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "agent-loop-governance",
+      "version": "agent-loop-governance-v1",
+      "content_hash": "sha256:caf8f32bda87c6e48b3c4514133646de94c714a3222e0c86193ba7517b564fcc",
+      "source_identity": "skills/agent-loop-governance/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "canon-continuity-graph",
+      "version": "canon-continuity-graph-v1",
+      "content_hash": "sha256:544403d3856c07938f96db9e90ef7333f975daa4c942214235f797b6720c4a38",
+      "source_identity": "skills/canon-continuity-graph/legacy-v1.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "canon-continuity-graph",
+      "version": "canon-continuity-graph-v2",
+      "content_hash": "sha256:72cc55db18b93ddd7fefb2d99dbe02f04204fc2c2323bb166c8bb7f186f790f8",
+      "source_identity": "skills/canon-continuity-graph/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "chapter-outline",
+      "version": "chapter-plan-skill-v1",
+      "content_hash": "sha256:6434e396a96a6d29f9a839bdbfade605a57bbc129bfbef350434a2f9911744ed",
+      "source_identity": "skills/chapter-outline/legacy-v1.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "chapter-outline",
+      "version": "chapter-plan-skill-v2",
+      "content_hash": "sha256:d70ad57ec4d0452e2544e3465c96efe9776e347a39966fdc8834c8e4e27ac61f",
+      "source_identity": "skills/chapter-outline/legacy-calibration-20261003.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "chapter-outline",
+      "version": "chapter-plan-skill-v3",
+      "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39",
+      "source_identity": "skills/chapter-outline/legacy-narrative-intent-20261010.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "context-builder-source-isolation",
+      "version": "context-builder-source-isolation-v1",
+      "content_hash": "sha256:beba0a22037fe37179f884bac2a1f37cb96ea226b5f8bcd92e07fae61b5841f6",
+      "source_identity": "skills/context-builder-source-isolation/legacy-calibration-20261003.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "context-builder-source-isolation",
+      "version": "context-builder-source-isolation-v2",
+      "content_hash": "sha256:8135e20e5076c38c5613a5b13dc1eb0f35aa343ea7df051e55a35545c15e2326",
+      "source_identity": "skills/context-builder-source-isolation/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "prose-generation",
+      "version": "prose-generation-v1",
+      "content_hash": "sha256:c9436cb57637cac0d788d22699727b9ecf6fee1bede01da9f8fc41e3df7c4c11",
+      "source_identity": "skills/prose-generation/legacy-v1.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "prose-generation",
+      "version": "prose-generation-v2",
+      "content_hash": "sha256:d75cd005721bbee04002324830ea9ab6b7a896d3ddcac4e0db961cf72a545ca1",
+      "source_identity": "skills/prose-generation/legacy-v2.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "prose-generation",
+      "version": "prose-generation-v3",
+      "content_hash": "sha256:7728142f0f7319b4aea1d2ee285e7d792e1212357282a8f76c6c3c54e532fa1d",
+      "source_identity": "skills/prose-generation/legacy-calibration-20261003.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "prose-generation",
+      "version": "prose-generation-v4",
+      "content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea",
+      "source_identity": "skills/prose-generation/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "quality-review",
+      "version": "quality-review-v1",
+      "content_hash": "sha256:27d5dbd40de81ddcefc90d20a2ead047903e7ca29eebef6a9ab3f28dfd156e23",
+      "source_identity": "skills/quality-review/legacy-v1.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "quality-review",
+      "version": "quality-review-v2",
+      "content_hash": "sha256:31ac64c42c096be535787d5c54da17852dcb3418bafa6e239a7d545d4541c8a5",
+      "source_identity": "skills/quality-review/legacy-calibration-20261003.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "quality-review",
+      "version": "quality-review-v3",
+      "content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+      "source_identity": "skills/quality-review/legacy-v3.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "quality-review",
+      "version": "quality-review-v4",
+      "content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+      "source_identity": "skills/quality-review/legacy-v3.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "quality-review",
+      "version": "quality-review-v5",
+      "content_hash": "sha256:bf47e210d719e6846d13c103d08564c3242540b5b965bcc6d7874575d178f1c7",
+      "source_identity": "skills/quality-review/SKILL.md"
+    },
+    {
+      "kind": "SOURCE_POLICY",
+      "ref": "source:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:d401ef641c18c8211f5a9f145b8279e64cd3be1e9ce3f2fd148a8ccba246cefb",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SOURCE_POLICY:source:chapter-generation-pack:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:agent-workspace-execute:v1",
+      "version": "v1",
+      "content_hash": "sha256:ec2a3f17658732eae3213e2580584f8145b8cebdcd021171746b23d2662868a6",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:agent-workspace-execute:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:canon-extract:v1",
+      "version": "v1",
+      "content_hash": "sha256:12a98da58d370ff846c40dfa025f92cee332a22393d0e654ea5eb382ee09e94e",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:canon-extract:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:context-task-compile:v1",
+      "version": "v1",
+      "content_hash": "sha256:50a70987bdf1e2441875dd3c3b9320dae0a16ede06249c49a7285a954bd4e3da",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:context-task-compile:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-chapter-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:263bf4a7d2cec3002140966e03d91f2d90ffffb41f43e42a3df8b0601331ca1a",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:planning-chapter-generate:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-chapter-memo:v1",
+      "version": "v1",
+      "content_hash": "sha256:c386e4837e5114a3b50bed667456cd1de32676b2d1cc952fca54e01ab7bcb310",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:planning-chapter-memo:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:prose-chapter-draft:v1",
+      "version": "v1",
+      "content_hash": "sha256:d8bc25d9f3a06bb333fcc3174642beaf77059ad7efe3f744529b9cb23ae9a018",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:prose-chapter-draft:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:publishing-release-query:v1",
+      "version": "v1",
+      "content_hash": "sha256:0254aeb5354fab1392fb061e705506e786e09d42869179db3a06df585e6104b2",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:publishing-release-query:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-aggregate:v1",
+      "version": "v1",
+      "content_hash": "sha256:05414d59a2a78bffe50d8dc57daf2551ee30c81efcd0e118072ad1c27d7491de",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:quality-aggregate:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-intrinsic-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:dc487c93aa288db7a86bf2013ae69dfcfd47bd3587141cbcd053cab81a7c9485",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:quality-intrinsic-judge:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-originality-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:1b0b71001606328f37933fa8796c394747d1498ce272a20921cbe5a2c93417dd",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:quality-originality-judge:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-platform-judge:v1",
+      "version": "v1",
+      "content_hash": "sha256:265674f67778d1cb57e69d0da3df39d4442ee8ac110cd33f9dd757cd69fdc2a9",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:quality-platform-judge:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:retrieval-embed:v1",
+      "version": "v1",
+      "content_hash": "sha256:a5b7c2a33459f328d48c643a2eca80a131c5e60d41141e52abb5ac9ea914bb3d",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:retrieval-embed:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:retrieval-index-query:v1",
+      "version": "v1",
+      "content_hash": "sha256:ae5eef18cd7dd71ab511ced2b8c83f74fa5390aef221643d1a2cbda76cc68091",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:retrieval-index-query:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:review-chapter-evaluate:v1",
+      "version": "v1",
+      "content_hash": "sha256:0a1f851ac6caa9b9752c075271dee2434fcdbe51ada16916999f970e4e71465f",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:review-chapter-evaluate:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:revision-chapter-revise:v1",
+      "version": "v1",
+      "content_hash": "sha256:d242a23e66b08363dd43fd4b86c8583474831273d6af118827216548784f43bf",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:revision-chapter-revise:v1@v1"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:storage-object-put:v1",
+      "version": "v1",
+      "content_hash": "sha256:528a7df30600f8451b39dee90bac08779282a66000de1d3a84da862d24320227",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TIMEOUT_POLICY:timeout:storage-object-put:v1@v1"
+    },
+    {
+      "kind": "TOOL_POLICY",
+      "ref": "tools:agent-session-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:a7811360b5e1b05fdad49f8da07381278d6305939dcd8ec0bd16c87c115c0e1f",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:agent-session-pack:v1@v1"
+    },
+    {
+      "kind": "TOOL_POLICY",
+      "ref": "tools:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:8386763a51c1b8696e43f92cfc96428442fac00c3ad28d3f42e9067873314035",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:chapter-generation-pack:v1@v1"
+    },
+    {
+      "kind": "TOOL_POLICY",
+      "ref": "tools:chapter-generation-pack:v2",
+      "version": "v2",
+      "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:chapter-generation-pack:v2@v2"
+    },
+    {
+      "kind": "VALIDATION_POLICY",
+      "ref": "validation:agent-session-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:4a3138edc83808024dcd7cae7df49f18d4675bcfe16958a939302a3f6312146b",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#VALIDATION_POLICY:validation:agent-session-pack:v1@v1"
+    },
+    {
+      "kind": "VALIDATION_POLICY",
+      "ref": "validation:chapter-generation-pack:v1",
+      "version": "v1",
+      "content_hash": "sha256:49711dbe12cb7ae9e58604ea94fcdf24149de7dd03c3012e737503b00325694a",
+      "source_identity": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#VALIDATION_POLICY:validation:chapter-generation-pack:v1@v1"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "long-outline",
+      "version": "long-outline-v4",
+      "content_hash": "sha256:687c4217ce8108496eaf6c4b012b2231269ecd732f2ff56e305d183a54cdbf34",
+      "source_identity": "skills/long-outline/SKILL.md"
+    },
+    {
+      "kind": "PROMPT_SYSTEM_INSTRUCTION",
+      "ref": "prompt-system:story-planning-pack",
+      "version": "v12",
+      "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+      "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+    },
+    {
+      "kind": "PROMPT_TEMPLATE",
+      "ref": "prompt-template:story-planning-pack",
+      "version": "v3",
+      "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c",
+      "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:story-planning-pack-input:v2",
+      "version": "v2",
+      "content_hash": "sha256:73ab0d88537e73524568bbb72cea681578b64cc720ed9af6e2d76f6a32f6e677",
+      "source_identity": "generated:longform-pack-domain-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:story-planning-pack-output:v2",
+      "version": "v2",
+      "content_hash": "sha256:d8146d45f1bb627bfec903822feedf67f4f27b707bbab9c6a44f4417fc7e1af5",
+      "source_identity": "generated:longform-pack-domain-schema"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "canon-continuity-graph",
+      "version": "canon-continuity-graph-qualification-v2",
+      "content_hash": "sha256:72cc55db18b93ddd7fefb2d99dbe02f04204fc2c2323bb166c8bb7f186f790f8",
+      "source_identity": "skills/canon-continuity-graph/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "chapter-outline",
+      "version": "chapter-outline-qualification-v4",
+      "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f",
+      "source_identity": "skills/chapter-outline/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "character-design",
+      "version": "character-design-qualification-v4",
+      "content_hash": "sha256:0dc47f3bb247b1c4496601d7a3f45f3f3479f6f2ae76909eed471581feb5e945",
+      "source_identity": "skills/character-design/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "hot-novel-business-deconstruction",
+      "version": "hot-novel-business-deconstruction-qualification-v2",
+      "content_hash": "sha256:5136d8a48cc3f2445a25cd050002eaa6dabfdd34969e7adbe32bc6aba114c5d3",
+      "source_identity": "skills/hot-novel-business-deconstruction/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "narrative-beat-design",
+      "version": "narrative-beat-design-qualification-v4",
+      "content_hash": "sha256:8532f17579e250d2a2301c16e78847771848e827e4808fa782d0fe69f9417397",
+      "source_identity": "skills/narrative-beat-design/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "topic-development",
+      "version": "topic-development-qualification-v4",
+      "content_hash": "sha256:89a9216dd1b61df2b96bb2f37a1df46b3c7bbc14e8e153ae4f985e1943fe8c09",
+      "source_identity": "skills/topic-development/SKILL.md"
+    },
+    {
+      "kind": "SKILL",
+      "ref": "worldbuilding",
+      "version": "worldbuilding-qualification-v4",
+      "content_hash": "sha256:8480fe241cb75639a5e9a8f6cefc5fe9375478f59b35a5fc65684304fdb89cda",
+      "source_identity": "skills/worldbuilding/SKILL.md"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:creative-proposal-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:creative-proposal-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:creative-proposal-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:4a5d51a3dee4418076943167159a85d1a38646884b1002060a075ca4f06ceed2",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:theme-question-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:theme-question-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:theme-question-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:219848964b05b4158e7504d45d9407233ade290abb9275c455a5e31805e68d3d",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:ending-intent-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:ending-intent-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:ending-intent-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:4425a430f1ddf9f05c6c4adfc38cb1453c1a3ad66cd2d7535148445ccedab707",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:reader-promise-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:reader-promise-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:reader-promise-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:cb737ed960fcfb6444d7033674700175e01818b45bd39b389305b94ec82a77c0",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:world-design-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:world-design-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:world-design-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:9258ac0dfdc29d547595a6f53d662f834ff4840331d51930fb983dacdc8f0e18",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:character-cast-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:character-cast-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:character-cast-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:e47821f3eeffb53be444a66737ed679a172aca9d98b2bde99ee26fdcd2f0bb2d",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-book-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-book-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-book-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:d07536543ab957bfb304d32b817a66af304e270f569841c7ab13ec0afefa83eb",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-volume-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-volume-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-volume-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:1d01122058b9b41b3e5aa2575894120a0be21a6e2e633d4ee2c254b6f827052b",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-arc-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-arc-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-arc-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:baa66c6891084576b0b4881ab5624bb3fa9490c0f6b0074815a2d0f75f8eb5f0",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-chapter_group-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-chapter_group-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-chapter_group-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:0b0b8f6dc9f744a4e9224e474e3b968a4a042f1cccbf1fb7fca0a3b102f1578e",
+      "source_identity": "generated:story-planning-pack-profile"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+      "version": "v1",
+      "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423",
+      "source_identity": "generated:longform-pack-capability-schema"
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-story_chapter-generate:v3",
+      "version": "v3",
+      "content_hash": "sha256:c796ac0cc07c2a471eb50232cc8a3ec22766f437baf9ef74fe0ec89323a698b5",
+      "source_identity": "generated:story-planning-pack-profile"
+    }
+  ]
+}

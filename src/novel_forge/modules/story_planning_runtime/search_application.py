@@ -32,9 +32,9 @@ from .narrative_search import (
 
 
 DEFAULT_SEARCH_DIRECTIVES = (
-    "maximize costly character agency while preserving future options",
-    "advance promises through consequence, reversal, and differentiated rhythm",
-    "hybridize world pressure and relationship change without repeating recent patterns",
+    "explore a distinct realization of the author intent and selected work design",
+    "explore people, relationships or observation serving the selected reader experience",
+    "explore pacing and information suited to the work, including quiet or stable situations",
 )
 
 NARRATIVE_SEARCH_BRANCH_EVIDENCE_VERSION = 1

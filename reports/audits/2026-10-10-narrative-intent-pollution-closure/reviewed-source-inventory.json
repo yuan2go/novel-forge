@@ -1,0 +1,172 @@
+{
+  "baseline_main": "f067d189a63f644a3a49f78abda557035b5fa59a",
+  "pr151": {
+    "head": "3d523515f8e908672f131179ce02cadad636b9e2",
+    "merge": "56b167164d99fa87e57f9146df5266f94b1173c8"
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "file_sha256": "sha256:779289f36393b0922645bb0aeeb0e2374f71510ea4a35a4e0b2a53891237c27c",
+      "bytes": 2310,
+      "lines": 57,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "docs/README.md",
+      "file_sha256": "sha256:010f0109ec815d6c7c96b97f32cbec919dc4caef80c17be332f3cf1e72d49740",
+      "bytes": 2083,
+      "lines": 39,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "docs/current-system.md",
+      "file_sha256": "sha256:82012209bee593659fad0e2925607f8824b34a6bc414d775aed1b7aa5ae5fac4",
+      "bytes": 191321,
+      "lines": 2442,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "docs/development.md",
+      "file_sha256": "sha256:0aaf85028d6fb33732347b2d36b67e6715fc2f60b1a34d6bb99f9eb8edeaf6dc",
+      "bytes": 10263,
+      "lines": 170,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "docs/runtime-operations.md",
+      "file_sha256": "sha256:8009f6b55b4e5c4cd037eebcd3867472403ba135a19e9a623ee33ca2bd5f558f",
+      "bytes": 297990,
+      "lines": 3986,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/ASSET_EVALUATIONS.md",
+      "file_sha256": "sha256:336bbf06431e21cee43b884151007a349d8c32a3afd9d5566e6269d6e3b97d42",
+      "bytes": 83887,
+      "lines": 328,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/AUDIT.md",
+      "file_sha256": "sha256:a7d21c503c92dd53ba4f90625f19603061df0294694ccd747734ffaef69e5f78",
+      "bytes": 46614,
+      "lines": 346,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/ENGINEERING_OPTIMAL_CHANGE_PLAN.md",
+      "file_sha256": "sha256:ce7acf8e138ae268eba22b4f0af17db614d0373eae19cce62ba122d1b375641a",
+      "bytes": 45322,
+      "lines": 428,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/PACKAGE_README.md",
+      "file_sha256": "sha256:065cddfc549a81048bbef901dff02e3aa8a7558367f88fceb514352f8164ada2",
+      "bytes": 2080,
+      "lines": 13,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/PROMPTS_AND_SKILLS_FULL.md",
+      "file_sha256": "sha256:3b2e1551e914da6754bf01180373f4c2de2e79d28354f5850e1a95db0937e63a",
+      "bytes": 2025912,
+      "lines": 61541,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/REWRITE_PROPOSALS.md",
+      "file_sha256": "sha256:8bc05a3ace3c43a57ee8d4e4bfce3f3dbe9bf9f5ca37547bb1bb32f9022fbd32",
+      "bytes": 26599,
+      "lines": 223,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/inventory.jsonl",
+      "file_sha256": "sha256:440c411f888278f99d917e9761063fc39a2a231efcb9db6af1afa2ecae5a61cd",
+      "bytes": 560731,
+      "lines": 354,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified",
+      "parsed_records": 354
+    },
+    {
+      "path": "reports/audits/2026-10-04-prompt-skill-pollution-audit/novel-forge-prompt-skill-audit-b1d42e6107d8.zip",
+      "file_sha256": "sha256:a3f48a51fe43a4a21db588a88afba2361c48b9d1b49e834cb85968ec0e184e54",
+      "bytes": 2001013,
+      "archive_entries": 588,
+      "archive_integrity_error": null
+    },
+    {
+      "path": "reports/audits/2026-10-10-generation-recovery-final-delivery/final-current-instance-and-delivery-readback.json",
+      "file_sha256": "sha256:a67e1a1a08cd0c8bf7a5709dc387ee298c245e32a0a97fc14135ae361dca1fbb",
+      "bytes": 760,
+      "lines": 22,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-generation-recovery-final-delivery/original-chapter5-memo-exhausted-checkpoint.json",
+      "file_sha256": "sha256:093f42a368f240acc38344b49861a466a2ca7b96e324fb9dce3f26194974e5de",
+      "bytes": 3628,
+      "lines": 88,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-generation-recovery-final-delivery/publication-index.json",
+      "file_sha256": "sha256:374d71079d56ca9fd8bae81d8981fe27e7c206921f778ff2738c7e3345132186",
+      "bytes": 2309,
+      "lines": 54,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-generation-recovery-final-delivery/qinglan-wendao-001-004-387d37d6a1df.json",
+      "file_sha256": "sha256:6297f3e48b3aa440cc017765ba94b8e514d8dbe7820fa747ba7e07cc03d4ac51",
+      "bytes": 93089,
+      "lines": 384,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-generation-recovery-final-delivery/qinglan-wendao-001-004-387d37d6a1df.md",
+      "file_sha256": "sha256:f840753ad46f2e79cb1f06cbb15d7be6ca99939179e71cacc2cfc5e6274c1fd6",
+      "bytes": 37661,
+      "lines": 501,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-generation-recovery-final-delivery/qinglan-wendao-001-004-literary-revision-candidates.md",
+      "file_sha256": "sha256:95df2961f8cbb6d3f4e4727a8e7d209f1715de81bfce01c426a09b02ebee1cf6",
+      "bytes": 38006,
+      "lines": 532,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/classical-corpus-codex-validation.md",
+      "file_sha256": "sha256:148b2b93605d00ae9fae4a98d7b5df738c0f8596315472f64fe4424a71c8073b",
+      "bytes": 12257,
+      "lines": 217,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/industrial-novel-os-blueprint.md",
+      "file_sha256": "sha256:54ab10f49e28c1ed14db6096ddcbdf64c8d46e22b8369af773e4c4b6e57ddaae",
+      "bytes": 43201,
+      "lines": 606,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/narrative-memory-context-lifecycle-closure.md",
+      "file_sha256": "sha256:e3f93369330d9f6b408f4f785a5dff3766cae3dc3235abcaa058210a18b817f0",
+      "bytes": 38394,
+      "lines": 783,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    },
+    {
+      "path": "reports/audits/2026-10-10-narrative-intent-pollution-closure/archived-designs/prompt-and-generation-contract-convergence-01.md",
+      "file_sha256": "sha256:02a333118a507119f9553ae40419ba18c7f754949c9ebf205d0b674a553033ef",
+      "bytes": 51677,
+      "lines": 552,
+      "read_scope": "COMPLETE_BYTE_READ; main analysis and exact current-path contracts reviewed; catalog prose not a claim of all dynamic combinations qualified"
+    }
+  ],
+  "oct4_relevance": "Frozen b1d42 audit is historical. Actual original operations use System v11 / Planning template v1 and Chapter template v13; do not substitute audit defaults for receipt bindings."
+}

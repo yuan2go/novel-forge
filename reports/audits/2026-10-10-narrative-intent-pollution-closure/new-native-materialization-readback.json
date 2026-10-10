@@ -1,0 +1,1404 @@
+{
+  "database": "nf_intent_b4a5bd751ab1_test",
+  "original_book_database_mutations": 0,
+  "provider_calls": 0,
+  "class": "SCRIPTED_NATIVE_FROZEN_MATERIALIZATION_OFFLINE_RENDER",
+  "rendered": [
+    {
+      "operation_id": "8f11e175-664f-4a79-93f9-331dcfd48598",
+      "effect_id": "bcf8aade-2041-4285-9ed7-814e63ff36c1",
+      "stage": "creative.candidates.generate",
+      "materialization_asset_version_id": "fbbe8bc7-e76c-4452-b472-aa5fd2c91679",
+      "materialization_content_hash": "sha256:9b8425141c5ba1890ca8ee70a75f614dc6d89055f4943a1eca51bfd1eda256ea",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:foundation-provider-output:creative_foundation:v4:narrative-intent-v1",
+      "schema_hash": "sha256:7265309777053abb2b5c04cd3007b805d649b7188d7647c8aa6c01a08117ac14",
+      "fully_rendered_prompt_hash": "sha256:6098ecb568b12827d928fff57a0d4628042d4328aaccc43cd8346f8db9145094",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:18326ac53be8be0729f4dab0470f42449fb50ee0b1c36ce68c48e0092c2f96fa",
+        "source_context_hash": "sha256:599a4c654c5fd3f586d35fc6539930860131a7013157eabd2871e6eb007e6e06",
+        "projected_task_hash": "sha256:c9a9e6962bba153fa38d0c0b7ab5e19c52bb9e31ee5bf6932f572a2da7b20f06",
+        "projected_context_hash": "sha256:5bf326813d1274b5ab4df5cbcb5c91d77f67de912c501ca16bc4afb01f90c07c",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:fac93bdcfeaf4ec1bc62bf035683786d64f0981b32b6c59d78b42c0849dbdaed"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "c7d0fcf4-47f5-4854-8966-0d415db29eb1",
+      "effect_id": "3506367c-68a7-424a-b32d-b72ee5258a9d",
+      "stage": "creative.candidates.generate",
+      "materialization_asset_version_id": "df1c8d1e-6483-4fbf-bf56-9d6d8f67cc94",
+      "materialization_content_hash": "sha256:95a333af093eca3b5b28b37daa12c779869e4d68ea70d2a9cd792a4e5780be52",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:foundation-provider-output:creative_foundation:v4:narrative-intent-v1",
+      "schema_hash": "sha256:7265309777053abb2b5c04cd3007b805d649b7188d7647c8aa6c01a08117ac14",
+      "fully_rendered_prompt_hash": "sha256:a7abf84e35c7f38f0c33f284fd2a45b4a035629cbbdbd66e2b87a47894815ac6",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:b263efcaa20508d30ba76c1fa00870ab7cfb5a4c02b5d183f9fe5401ae7831eb",
+        "source_context_hash": "sha256:38d7ac97b185574a5de2a6277b4d265716118cfe2297b90cf982e353196ed1a3",
+        "projected_task_hash": "sha256:b27e1798f659dbb86f7ea05b761cb5211043c0d98a288dc1b7918cd9c0707d3d",
+        "projected_context_hash": "sha256:16fa0d352359bc4f78b66aa4f6bd6083864319e48b9fd5a857f0b0020ddb841b",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:3cf3700d99cbae78dfd5d72c2215c275ba7a3bf790a495edc5c3221444ca52b3"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "55cbd849-9e1d-4a52-a67b-f02aba62cd47",
+      "effect_id": "2163e048-92cc-4bc9-9823-e3e656b440de",
+      "stage": "theme.candidates.generate",
+      "materialization_asset_version_id": "d780d964-123f-4b45-baca-436b5de07397",
+      "materialization_content_hash": "sha256:712aa2e4b473e97fbd417f1c63d6d3bfb2f18d6b514e81a388e674a8ff50ff66",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:foundation-provider-output:theme_contract:v4:narrative-intent-v1",
+      "schema_hash": "sha256:3e89d6f0f54a9259a7a72c66eda9d6a784da41f7eef74deda9c782034f295593",
+      "fully_rendered_prompt_hash": "sha256:112ea89f95fadf770c794f7d12df10869814f54065b21eeb88f8d98f6a97da02",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:a6ce0bbb5693de591afec121d8922cb2acf1648dd32c1bea3527d8d7223c0eff",
+        "source_context_hash": "sha256:f141094aaeb083c1563303a817f1a7ade3f91bf08216f834cae1bcf8a94f4984",
+        "projected_task_hash": "sha256:9448edfab3ce22c1b797ed55f070b16d425c9cfae526d6d024c0508560fda767",
+        "projected_context_hash": "sha256:f55e4974049258d89db3919d66b2cccc0d8a70eecc66161d8ce79bb0bfc67e9b",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:f3a789b766ce8f25b3f7b2789cd0b53e1483da543e86d0026898eea5fb6c1750"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "d5d50cda-5622-4154-9013-ec43b5ba71d0",
+      "effect_id": "cb886bff-0944-4af7-aab7-7607e90f4fed",
+      "stage": "ending.intent.generate",
+      "materialization_asset_version_id": "bf8dc474-1d61-4265-8816-2d38af3184c0",
+      "materialization_content_hash": "sha256:795e8199bf0da68797a36b5d2087c4ab3c3b95d5f6a1efa3b412a0ad82202e5d",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:foundation-provider-output:ending_intent:v4:narrative-intent-v1",
+      "schema_hash": "sha256:55adae2b3fae907e113863ffa6a5caa03aa41514883fad9d5829fd78b47f2e1a",
+      "fully_rendered_prompt_hash": "sha256:b43435c0826781d80cd58bdca802d27c5154ec942ff1bc658f1f20a25fcc7833",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:3b43e0ee15245e020dfa8065d6a19489a3ac5187eb9b1cbe076bcde2f33dd788",
+        "source_context_hash": "sha256:994e0b94336a67c236a6ef0bf83845b00afc41f2af26878a589c03bdcb50da32",
+        "projected_task_hash": "sha256:329e60f2bed32ac6bf13d2f595e61fd1a74b2320e7d87964ec21d7e4b190ecf9",
+        "projected_context_hash": "sha256:eba814008c9d89fff8aec94644f892439064af56bcf8b10fa6c3cbfd2aacf343",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:abf47e09ff22e7f0a0f21d41fb87231543ee984aa2f4f8ce5900d6693f98f09c"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "b163edd8-c922-4b8e-9793-933e8321ea7c",
+      "effect_id": "4528937a-db19-4ac9-86e1-6576fca15da8",
+      "stage": "reader.promise.generate",
+      "materialization_asset_version_id": "5086da73-2a8e-4d8a-8f8e-9d7afdfc4a17",
+      "materialization_content_hash": "sha256:ba2702b432315fb72b5e7d9180ee621ca8606c9479a6a8ca209c9ef2aa3aa591",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:foundation-provider-output:reader_promise:v4:narrative-intent-v1",
+      "schema_hash": "sha256:b62486be0700ed329f8ae926a91addb3b5082fcbfd29d8e974d010e41db2fcc6",
+      "fully_rendered_prompt_hash": "sha256:21da6164458bb75669b485a469e083134c3520751a107e6a4ee989cfb6c0491c",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:f03f7632532a66733d6fd12650d5ba6559fc576312e2ae1f3a58e21554bb8d4d",
+        "source_context_hash": "sha256:0aa94eb74dbd5993c20d12b026b6cacd5099ba7a449df296c33bca1d11689976",
+        "projected_task_hash": "sha256:60db6ed4bc7e4fe54bbc248ce142b6b6065efeaad6173c8c9c9db407778bcb73",
+        "projected_context_hash": "sha256:b617519fc906242184df651c18e2cf4737c7ae38b517d5f2f2b647d2e40cb8ac",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:81b3b30c139c551030e03320b2ef5496d18628a5bea13a59b362c9d3acb33464"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "606c6a62-7a6f-4311-a71b-56c62fd1f67a",
+      "effect_id": "80684307-37c2-41d9-9c43-84dfdd12a381",
+      "stage": "world.design.generate",
+      "materialization_asset_version_id": "1b7aa875-9fec-4367-9f6f-31d25cae0466",
+      "materialization_content_hash": "sha256:e9d8ab0eeae1e99b4c302477970761f8347aeebcf7965695bc79a59932198e76",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:foundation-provider-output:world_bible:v4:narrative-intent-v1",
+      "schema_hash": "sha256:fa3d33b20fac9fda778f908a0546ed4678ddebbbab578f55177cdcf1a5191427",
+      "fully_rendered_prompt_hash": "sha256:1cec15ccaa3770dab22941d5eaa1a6f625bdcf1c8b13c42aba80f92f13b82c54",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:cdbe900380a676d658bdcde02d490536fb004c122b06e9e1190751f71c2e261f",
+        "source_context_hash": "sha256:6670922fddbbb445417fe53706ca4276e218654be998e40f196022e0ca0470fa",
+        "projected_task_hash": "sha256:e919dc141eb6b0e94c5217c52243bdaa180ce93e5ab0c3d0454b3b5203ae2dbc",
+        "projected_context_hash": "sha256:69909e473e6ed0ba27713a7ac852a9a53bdab989390d1898ecdc537deca29170",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:c683f9fce747c6425b55ff7182aa2f60bb4322a914df9f10a306be21b4602ed6"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "3478bf97-b556-4516-9317-f2a4edcd8aa6",
+      "effect_id": "1c306c05-795b-4e0b-a673-e1c6f4c832f4",
+      "stage": "character.cast.generate",
+      "materialization_asset_version_id": "4455803b-3b9a-49c3-86ff-9c075cd57ab8",
+      "materialization_content_hash": "sha256:59db175710f1ed5f8ef5f7654696ff7162432a04e3df7564bf7165b11d0e90fc",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:foundation-provider-output:character_cast:v4:narrative-intent-v1",
+      "schema_hash": "sha256:38dafac4af515ed828abdc8a125aa2c07d4465cbeba9bcb1141cc406dff70a8b",
+      "fully_rendered_prompt_hash": "sha256:bf2d8339979c1255cfb03dc160aba0838e1768f3a4919fd655e311e88cd040f5",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:107cb98d36a2a89a09f7da5d700084ca4c8fb55836c97506eab79cc3c656c61a",
+        "source_context_hash": "sha256:6d8ee4f13d12b6202f328a35bc00810cba5c366e06c26e161b450ca9a6cd19b9",
+        "projected_task_hash": "sha256:25c7e6eb72b619f0a92dceb6966cbaeec9588b26a8e2dcd5087419833d61d88d",
+        "projected_context_hash": "sha256:71cd8e363e111cc61abaf795c9abdd9a963a4c749b076be2a4680869f6a8bbc0",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:ae6380f4b224db60acc932da4fd2218968adadb8a70e61831e6a5e1aa69cee79"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "8f1e6a62-21f9-4ec7-89da-77721fb186e3",
+      "effect_id": "54434f7e-cf5d-46d6-9e1a-22843d52ceb8",
+      "stage": "book_plan.generate",
+      "materialization_asset_version_id": "15a249e7-858f-4dd7-af0f-a0d8eebfede6",
+      "materialization_content_hash": "sha256:4275214bd3d385bda86bb4566d2a74ed02657bf5675f73d2b6aea7816e74e827",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:book:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:c6e0ddfee74894da73220540b391e35e65de0a1ec1bf05a4f3adc79b6fdd5896",
+      "fully_rendered_prompt_hash": "sha256:8fb56bbe3091eff4d5958be28f8e7ccafd4fc07e85946295c808392f0aadac88",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:fbaa6bf44c8977c6c4a9f44fe75b12e232824d3b5edc57d7d7db1760dece8bf7",
+        "source_context_hash": "sha256:fcfa9c3fa8d9ac1a9b32a4bc94136bff26106818688028d7c45201c007435eb3",
+        "projected_task_hash": "sha256:e411ead4a6e3cfcf6171554956db6e5c9fca67b06826ce56af7576be7c02ab25",
+        "projected_context_hash": "sha256:3ad891b9b90698e89569f3307fdf38d5c10552aed20be952b9b327496f97f036",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:2199db92505bdce6f481e05073322ccb8f13b1bd7d907a7aec05a0e5973c1870"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_planning_horizon/opening_topology_budget",
+            "content_hash": "sha256:ba78ad00078182ddc3df4ec65bd71516e7ff4bdff61ee0cbfbc1500d8870f337"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:a3e67569f21f593e27c37442088be7b7c1b7a0327f617cb110f1d1c9953640be"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "0362cb86-5645-46df-a475-7d946f734719",
+      "effect_id": "cdc599d8-b9f6-48b5-8138-b1d6a95a6caa",
+      "stage": "book_plan.generate",
+      "materialization_asset_version_id": "aa564c19-bdca-4677-8dfb-9a6a9ebf26d3",
+      "materialization_content_hash": "sha256:edd91fda21091c1e40f2c5f10cfa00fb00f4000d30520d235288613c1016270c",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:book:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:c6e0ddfee74894da73220540b391e35e65de0a1ec1bf05a4f3adc79b6fdd5896",
+      "fully_rendered_prompt_hash": "sha256:fa2eb1859a2d144f386916dee3e39cb73e7887865d9bc6fc2f0a48406b11e3d6",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:5bbd5e780526903629160855b6b5be522b3d8fdd92e30e661c927afb5bfe8c15",
+        "source_context_hash": "sha256:1c09a86eaae8884283d421863bfcf8602fa72d391560b533bf152cfa8a2271a1",
+        "projected_task_hash": "sha256:34ee5487a956bff8eacf778f10387ecd8d6a40c9e8b4887190c52af4a3f04d17",
+        "projected_context_hash": "sha256:a219e762030992361a1cb16e3495299f323035a64599a5e95be89b15fad81e1b",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:cf7531171361cede72b34cb664a3c7add3beaa33396a297cb99ccf1d950ceb04"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_planning_horizon/opening_topology_budget",
+            "content_hash": "sha256:ba78ad00078182ddc3df4ec65bd71516e7ff4bdff61ee0cbfbc1500d8870f337"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:e2cef80b5522871e0ad1174e4743fd445911721046312d5522be653c33ede939"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "f7b04f21-aa1d-4d7b-8e02-32c4fe156de6",
+      "effect_id": "ddeaae6b-2dc2-484c-8d94-2ff713d51bb4",
+      "stage": "book_plan.generate",
+      "materialization_asset_version_id": "9b29f47c-c647-4e69-b8ca-a4027624d353",
+      "materialization_content_hash": "sha256:65b4a1904d1561ee8c2ecd51c5372901af3133dddd98ee1d5f2ef2f2247109e2",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:book:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:c6e0ddfee74894da73220540b391e35e65de0a1ec1bf05a4f3adc79b6fdd5896",
+      "fully_rendered_prompt_hash": "sha256:7ae6a9832eaf5743bec3d638628ed3709d1e564c09d0611950172e1d3daa4a0d",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:6a2121b8c005a70fb3359c0090ceb14d98b1884d49c41db2954416a34e29507e",
+        "source_context_hash": "sha256:f430eebe07cf63a9a9a2b42f27b189f0d3fd6e80f08b91443cb2a576b9a8c8e4",
+        "projected_task_hash": "sha256:eab7883c9d88ba25c5cc017200a0662da3a243b217058504735b9f649d2d91f2",
+        "projected_context_hash": "sha256:d698c50d39b6e31f1cf9da832c8d5bb4c9f20af3d1eb43c7c20b4e0731785383",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:31da1a31dd42b8dbbe62ab6c09a10274cb4b635672d03ffe5658802d7a1f74de"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_planning_horizon/opening_topology_budget",
+            "content_hash": "sha256:ba78ad00078182ddc3df4ec65bd71516e7ff4bdff61ee0cbfbc1500d8870f337"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:21990345720ea4e45e394c136c8125e5a2443e384f751252ccbbb5c79c4b225d"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "50ab50aa-df08-4506-ad45-fb57fda7afde",
+      "effect_id": "8d7824e4-c482-4fc9-bf59-4bc022837bc6",
+      "stage": "volume_plan.generate",
+      "materialization_asset_version_id": "8c8feb17-f09a-4cf3-8584-f1dadc7f3d25",
+      "materialization_content_hash": "sha256:f52334deaf402194ba5e2d1bff989fcee01a729ffcaed7606874310fd24ab68f",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:volume:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:0006a7d1cfbf2919684557ef9f8239128f26e1e20c92484a89a5d2a9f8c0682f",
+      "fully_rendered_prompt_hash": "sha256:2cf2f5165ab81933b402e83b7bf0c17dbb47cc963bdc26ce876d25ee3b5888b9",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:73c31a9fdac09d06cb792b1f3b1dda2969fd285e7644a1f223255e8bbb866440",
+        "source_context_hash": "sha256:fcf5144c6db3dc345fc34e52ce54431430773cbfc02a6f2b221051d9f56c2e6d",
+        "projected_task_hash": "sha256:1cb486a4aecaca5034b49bb112060a0baba7492f33d22c8b52ceb05c02fb836e",
+        "projected_context_hash": "sha256:98b334fd182e6dc4e3c2ee03edc158fe78a73e60d4bf8e0a606ac3a96fda1b8e",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:2199db92505bdce6f481e05073322ccb8f13b1bd7d907a7aec05a0e5973c1870"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:d07b80eb6906a1b413fb3a40a5dd1de138dd6e610b67f09e3c37be843434c81a"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "d5385634-3f90-4dcc-adc8-15ccc40aff31",
+      "effect_id": "38878927-6ce0-47b6-91e9-102820228483",
+      "stage": "volume_plan.generate",
+      "materialization_asset_version_id": "c4867869-b76d-4f12-a72a-fc0d2ece0ded",
+      "materialization_content_hash": "sha256:641cb310f333df3e915c7677c679bece24a56250d0e6f300e1efd31d466daac0",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:volume:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:0006a7d1cfbf2919684557ef9f8239128f26e1e20c92484a89a5d2a9f8c0682f",
+      "fully_rendered_prompt_hash": "sha256:25b1c819ee8b3d77dd0f79ab2fca8d851cf8a742db81b557d38a6a224d2bdfd9",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:8c94a02228753456c6041d3a818f6bf4ccaefa33c737ff19dca61ebbe9243600",
+        "source_context_hash": "sha256:f5f3397d8663b19460ed38ca748efa87cc57ab9007c2fa7e42443d2bf70c44b1",
+        "projected_task_hash": "sha256:9e257d2a48187d49ff5fb9daaa56fd389d75e4a543a2be73bae9de0e2e56ab11",
+        "projected_context_hash": "sha256:d431983175eacdf13bd96cba522df1a1ff6d36b085cb727ad9fe5a393a61cc10",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:cf7531171361cede72b34cb664a3c7add3beaa33396a297cb99ccf1d950ceb04"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:fa7b7b269d2356ccd616d82139788247bc1d8dc1928354a22d046f5fe4c6a7d9"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "9eb87021-01b2-4dc0-96ed-1b18dcc90812",
+      "effect_id": "92b9233b-ad98-4ac3-8e76-5ffbc80eb324",
+      "stage": "volume_plan.generate",
+      "materialization_asset_version_id": "e899e811-0b07-4673-9beb-fa7fe1e2b809",
+      "materialization_content_hash": "sha256:ec1fe4720560dc1d6047ed9f6a35afd64e761619034eca3e3fe9e32afa736724",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:volume:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:0006a7d1cfbf2919684557ef9f8239128f26e1e20c92484a89a5d2a9f8c0682f",
+      "fully_rendered_prompt_hash": "sha256:8be423553ea9e3ae140a1bfea11a8789f198c95dc59a484b3e91bc3bad9878e3",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:82d861364b3eec04f2146c5a0d0200343171898d9f899d9e0b1272207421231c",
+        "source_context_hash": "sha256:ed879e7c52f8d189d0bfd070cfb9d551ab808d38306c363c55db1a692c494bbb",
+        "projected_task_hash": "sha256:069a30a9c505ed43f8f98aa1dc2d2ec3c3ca689aa2a5b2a157adf1d8b89f4cf1",
+        "projected_context_hash": "sha256:9df968e4bd5c3665f3cbeed39ae6a71d6e3234fc646f689ea34d2583322d50c1",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:31da1a31dd42b8dbbe62ab6c09a10274cb4b635672d03ffe5658802d7a1f74de"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:130e75556474e9fe7703fb9492eedff87a1b5971716cd6646511affe7daf2693"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "0acab825-126a-45ec-b0ee-a3cf7f4f2bed",
+      "effect_id": "d6274e20-81af-4186-9b6a-106ee5df8e87",
+      "stage": "arc_plan.generate",
+      "materialization_asset_version_id": "b5cdc9f4-0cb4-4251-812e-f7f5325dbcef",
+      "materialization_content_hash": "sha256:8b5d8621b1abe493038d62e09bd0211e7ba51364aca7aa0f62eeb559588fd0dd",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:arc:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:dd2b9edf0068780896452670cff2b3d9a20f7ba28e485e28f60bd9c969974dec",
+      "fully_rendered_prompt_hash": "sha256:d5c1608b8308f55b23aaf483bf1805c094838999e755136812c02332c6a19f12",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:950446c7b7ddca16ad496d015205d9d4495c2dd3fce1251f2246011f32305b65",
+        "source_context_hash": "sha256:58f75c80478c2a54b678431ce55a10a594fd52ed56d8dbee15ecbcb9d5ccbd78",
+        "projected_task_hash": "sha256:29dbe644c90e5da3f12181ff6f3cb90aeb8cb681e31191bfe3c5a2344caf7e25",
+        "projected_context_hash": "sha256:50571740eef3a332285bf2c4b3d252ddefc5b7f3430ce8b316e034e88d4e7f99",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:2199db92505bdce6f481e05073322ccb8f13b1bd7d907a7aec05a0e5973c1870"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:bd4506fa865344e58c07a102ed19744e18cdf00f60024e7f39d386f63c2f8ed3"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "2257244a-b751-44e3-b474-1a835dabbc38",
+      "effect_id": "314680eb-9149-4c11-a9c5-dcc070f786ef",
+      "stage": "arc_plan.generate",
+      "materialization_asset_version_id": "aa29094e-d5db-451c-82fa-734fef300ce0",
+      "materialization_content_hash": "sha256:b2c8942f6824812ce8e201b6892f132fb688c6e189c3884d3ee5f0be3ec35400",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:arc:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:dd2b9edf0068780896452670cff2b3d9a20f7ba28e485e28f60bd9c969974dec",
+      "fully_rendered_prompt_hash": "sha256:6b9035345516f827f0a97f776a6736d7cdc61af4ec8de0ca78e1c4d1abd8d568",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:f3223ff0633810d1914d9d297170b8d8843d5a4d34fb223f8055ecbfe3f314de",
+        "source_context_hash": "sha256:acb51f08800a1729a8eb0f1dab42f69ed43500314c12f6ed1d7ec50ac9b47c01",
+        "projected_task_hash": "sha256:f8e999f201f2b482c66b385e2bb9a11db9af65147be83d5a25f625ed0c95c591",
+        "projected_context_hash": "sha256:724452fa51e16fc8358dfbfcf0925cf02d7ab9b2f3318d6ed18ca8a08e10382d",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:cf7531171361cede72b34cb664a3c7add3beaa33396a297cb99ccf1d950ceb04"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:a3a27f20c3eb8f25c68120c28f9df5356a6f3b5b8cd4c252d24736587d30e476"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "8768bf72-57c3-4720-9f48-e4c1aaf1b24c",
+      "effect_id": "5496e30f-9750-46f0-95d7-d988b619f1cc",
+      "stage": "arc_plan.generate",
+      "materialization_asset_version_id": "f61c451c-4a60-470c-a16d-87ad50cc12d8",
+      "materialization_content_hash": "sha256:bc4574d1cc3155a7502c38d4bc5859ce8d5859e641666da41e8bdbe3f1ce856e",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:arc:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:dd2b9edf0068780896452670cff2b3d9a20f7ba28e485e28f60bd9c969974dec",
+      "fully_rendered_prompt_hash": "sha256:a69550571e14f968919d766191ebb2da4fd76ddd7769ab55e3ff0bd9195c6941",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:dfd76d856e0e153ae9027d2d0a58fdeec2908b8595d2fdc086e4827408cb97cf",
+        "source_context_hash": "sha256:983ca8e1cce9c7a09c98671c4b6d04d43237533e8e9c57711ff6acd421da2e36",
+        "projected_task_hash": "sha256:d674788049d4860f9e42bdfc5afdbda43b3da1deaf21086943c57efd5ccd2eb5",
+        "projected_context_hash": "sha256:02f03765b3d1814ec600beea23697433c7cbcf87af5b093295c17d03c7362156",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:31da1a31dd42b8dbbe62ab6c09a10274cb4b635672d03ffe5658802d7a1f74de"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:d51e6a04184a7e2a479cf8340e03d32db238e3e8050dd08ea5523ce49006e1b0"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "a9b6a3f7-d40b-486e-a3be-d01ab1111a5a",
+      "effect_id": "0590c21d-ca3b-4bff-91a0-dd4dd37efe5c",
+      "stage": "arc_plan.generate",
+      "materialization_asset_version_id": "3f9e656e-0eaa-4b8b-adbe-2a1654a01bba",
+      "materialization_content_hash": "sha256:e38cd33da95a8dabe7d335d89be70a0ba234d8239742d87c6eeb580e6ce99c36",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:arc:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:5f9c24993b419a54b3a0cc8078a60681b04299e576ce546e996ece43d942b8df",
+      "fully_rendered_prompt_hash": "sha256:8e63166abbcd8c146e6c208bdc0e4aa740841499bcd3acd01bc7605aa9c53109",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:00833c4feacbb4281e3a79ff91ccaec18eb4aabc5eee72078e8e2efeb2d33244",
+        "source_context_hash": "sha256:0efecc0815015aa3f33c27f0603aa0f63ee3f4443efe62380ec3a4014ee5aee8",
+        "projected_task_hash": "sha256:487ec8cca8cc854288fdfd80d38ff9d3cef393ecb6f29b8b3b8523ca0d98c6a2",
+        "projected_context_hash": "sha256:d75b7d6df444949c2be4fc99615cf983e9f95c0aa718e1b4379f6ada6661d9ec",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:2199db92505bdce6f481e05073322ccb8f13b1bd7d907a7aec05a0e5973c1870"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:b0d8e5b36ed820714eb1261310df9444bcce7a3ad8a5744bc5fded0f856865c3"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "059c910b-80af-4bf4-94f2-385ef3baa1b5",
+      "effect_id": "daf23a7c-08ca-48c7-9fb0-f14debc96d9f",
+      "stage": "arc_plan.generate",
+      "materialization_asset_version_id": "bc848b75-bd84-48ab-8c44-b383b77da12e",
+      "materialization_content_hash": "sha256:ceb8bbc3d2931be354654c8eda43ab879b5d83a2dd3eba4fdb67c23b853d449c",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:arc:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:5f9c24993b419a54b3a0cc8078a60681b04299e576ce546e996ece43d942b8df",
+      "fully_rendered_prompt_hash": "sha256:d079780d9782bed976c9c3d8f49daa7cb6e747e858ebd7f1bb9d34765fac33de",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:cd05cd4991c487d7939a8256ed04cf0d76c54971988c7919bae87dc66226902a",
+        "source_context_hash": "sha256:5ff96e4b57a91e381485f26cbe44c3b03f881168eaf45426d40e0207edb1e6d2",
+        "projected_task_hash": "sha256:0d4c98dd9510e215288ef12dd4726d31dc068cd21381d2dfaab93140e376e44c",
+        "projected_context_hash": "sha256:d751e96fbbd878dc767cd5c0659303ca2ccfe49762e401636fd680d43443737e",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:cf7531171361cede72b34cb664a3c7add3beaa33396a297cb99ccf1d950ceb04"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:b2390e373b2f837df8febbc9ac0e6d83a01d3be565de06d22e94bcfc08fe837a"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "5d360791-47e1-4765-aeb1-ce30291f4c6f",
+      "effect_id": "776f884a-971f-4aa1-8fa0-9438dd5e1ef6",
+      "stage": "arc_plan.generate",
+      "materialization_asset_version_id": "f95a88c6-4f34-4d0c-98a0-5445db1e8df3",
+      "materialization_content_hash": "sha256:ecb145a119b98b4a7928e6a932feec8ffc9ac0ffc913682a318c3cc732906d1d",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:arc:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:5f9c24993b419a54b3a0cc8078a60681b04299e576ce546e996ece43d942b8df",
+      "fully_rendered_prompt_hash": "sha256:0c12df17ef0d7557ccbb9ca65bbc985d178858790e90e7cf4fe4d00321783354",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:040c2d730dca82093027665315de62599d78fd6e1ccb4c457af92a1fe795dcf6",
+        "source_context_hash": "sha256:d9c93b24f13f29c9212382214f9d70bf8ed0d81205ae15496133d41e0101e36b",
+        "projected_task_hash": "sha256:d87b51164543ebbda380636aadadf680a289e21f87a6e84613b3af4b43ad4b9e",
+        "projected_context_hash": "sha256:99fbcae22a654864ef935e82a3c52cef49307e93f3015e36cd4d9830d532d8b6",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:31da1a31dd42b8dbbe62ab6c09a10274cb4b635672d03ffe5658802d7a1f74de"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:28b8376a215d64d8012518525e4139d569f5411d400f09ffbcd56daf16baaf64"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "a92459ca-1d1c-46af-af27-5fd07604ada5",
+      "effect_id": "2daf5ab4-3232-463b-8e5c-80f95264ed5c",
+      "stage": "chapter_group_plan.generate",
+      "materialization_asset_version_id": "a39be624-1786-4abc-af6c-dc8d7b48cfce",
+      "materialization_content_hash": "sha256:c3e9cb4317499798097e18361095d16ac22346e71a9d06b2e3984040af508b61",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2:frozen-character-references-v1:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:8b2ddd37c6c72b9000fd040224ea96ad058c8d1758df662293b48d769f208992",
+      "fully_rendered_prompt_hash": "sha256:b6d467b9360bd19e4b9f76c26ed7a0e95134a8a2318585fbdecd9a3d1e7e495f",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:752b39d1a15db30c0605966d266bcb244688e455b55fa97c1899e5ec31be1d4b",
+        "source_context_hash": "sha256:8b9f02a6ab0b0f2dd8b5089522e11147f2ae514d413e4cbea88c4b6c735194f9",
+        "projected_task_hash": "sha256:d2c23d4c6ecc53489d8fa8c77482218d090adac4e58510863663402cb30aef98",
+        "projected_context_hash": "sha256:83beff09f85693fcef0fc2edfa810d9558680f3070436e88f41ceb8fbb7dbd1c",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:2199db92505bdce6f481e05073322ccb8f13b1bd7d907a7aec05a0e5973c1870"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:f386707a8f29558c7343274f926d00c32b692b293d62057854c38722b2daa0cf"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "cc54e4f3-170d-47c9-87ff-aba7e715dbcb",
+      "effect_id": "37d47878-792c-4c4b-bd66-d9e3e6340ba1",
+      "stage": "chapter_group_plan.generate",
+      "materialization_asset_version_id": "98cdefc1-381c-4bf3-ad19-9b675df1e3f2",
+      "materialization_content_hash": "sha256:c5003232d1491c7548b4c97b7b8d99bf06fd8082386db55f2a64eb073b58ee5d",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2:frozen-character-references-v1:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:8b2ddd37c6c72b9000fd040224ea96ad058c8d1758df662293b48d769f208992",
+      "fully_rendered_prompt_hash": "sha256:f387f9b7fca48231cb1d851745914bc73e9eab70354f640a26b77699bb9573c2",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:e42491f502fd5f0ac53af99351b032c86bcf316f6d1f1079645b24daf204569c",
+        "source_context_hash": "sha256:a1c94ea147a9ab8ec11efa8a711c2e2eda89da845d0937c154db50e25d7c4931",
+        "projected_task_hash": "sha256:30e53fad628a0c9c4aed06bb33b79d8708b6b5589b8592b88b6d32b94e41a793",
+        "projected_context_hash": "sha256:d25f242f87a42a51039e76709fd5445bee76346a86c2fca03cf9a8a9060603ba",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:cf7531171361cede72b34cb664a3c7add3beaa33396a297cb99ccf1d950ceb04"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:1ca52c5f58b7356091f432661d4200290b4092f2093ae972306696933d64f678"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "cb7ebd06-e203-44e0-b55e-609c677b61ce",
+      "effect_id": "76d3fadf-664e-494d-8a3a-a286da207b91",
+      "stage": "chapter_group_plan.generate",
+      "materialization_asset_version_id": "8b0cf933-831e-4475-817e-5042f2263ff7",
+      "materialization_content_hash": "sha256:937c3428dce94c2cec391117493deb91fc178032a998be683b130632b863ea3d",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2:frozen-character-references-v1:planning-semantic-fields-v2:narrative-intent-v1",
+      "schema_hash": "sha256:8b2ddd37c6c72b9000fd040224ea96ad058c8d1758df662293b48d769f208992",
+      "fully_rendered_prompt_hash": "sha256:717729965cc2c87b138da7bbb504215b5d01a40257a3ee1bc63c1c99625df674",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:b0dd843ba918db57c46ed4a4d7ea748f2618ad182e5dee4de054a8cb0efda639",
+        "source_context_hash": "sha256:423a9cc5aae6d627d82e1ccfaf482338053064bc79dd9a35defceff6a0727c9e",
+        "projected_task_hash": "sha256:13366161f247cdfe67ce1306252c94ee7e6d961b07a67c35f06b0403ebac92d1",
+        "projected_context_hash": "sha256:a7bd903c15f262906e3aae4c15aa86ece9ab14b50c00c4348491cbf5aac04516",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:31da1a31dd42b8dbbe62ab6c09a10274cb4b635672d03ffe5658802d7a1f74de"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:7831e08de619f7126416735db75e44a2c0c71ad9731eace816ed9542eb63485d"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    },
+    {
+      "operation_id": "5458aeac-9c96-4607-88d9-8f99e60d7690",
+      "effect_id": "4f4cedd5-a545-4f9b-a4c5-e1ee50324f45",
+      "stage": "chapter_plan.generate",
+      "materialization_asset_version_id": "f7ea9be9-e23f-41df-afd0-70be2315c954",
+      "materialization_content_hash": "sha256:c8ac8c21d4ecc1bc8ef4fc5ace71aef216841b3996aff3a6fd06a4905bb1e392",
+      "pack_identity": {
+        "pack_id": "synthesis-formation-b56eb93bea3e42ec817e3d6c4938adc8",
+        "pack_version": "1.1.0",
+        "manifest_hash": "sha256:f007e68957ec452e435e47d458d1b7706697f9969c6043c1804652c290d32150",
+        "binding_set_id": "2d6f847c-3a7a-4a37-9eac-af26d1ef6686",
+        "binding_set_hash": "sha256:6e662912762618e03d2caf95faa45e2aaebb5df6418a7321129bbd14445b275b",
+        "compilation_hash": "sha256:1435adb9e7ed6da8bf302770aadda943b8bf8d5f6911e0832b0b7350031e7208",
+        "catalog_snapshot_hash": "sha256:052a8f7f122f8c9204034e1b1cc37872b1ddf317b4572822db7966c76a9c6e0d"
+      },
+      "system_binding": {
+        "ref": "prompt-system:story-planning-pack",
+        "kind": "PROMPT_SYSTEM_INSTRUCTION",
+        "version": "v12",
+        "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe",
+        "source_identity": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md"
+      },
+      "template_binding": {
+        "ref": "prompt-template:story-planning-pack",
+        "kind": "PROMPT_TEMPLATE",
+        "version": "v3",
+        "content_hash": "sha256:25c09e973e5919b9f30a5c0af56799efaa74f899d04008c5e09ed65373345a0c",
+        "source_identity": "config/capability_packs/artifacts/story_planning_template_v3.md"
+      },
+      "schema_ref": "schema:planning-provider-output:chapter:v5:work-v4:host-selectors-v2:frozen-character-references-v1:planning-semantic-fields-v2:accepted-knowledge-v1:narrative-intent-v1",
+      "schema_hash": "sha256:b6b414aba0d2b7f5dfe38ac4f905e9519c1fe3395074bec63a514b55cc77d0bd",
+      "fully_rendered_prompt_hash": "sha256:37ceed428272a775042e9d7b005d2c208f8bb86f94758d6488ad5ef251e59ae3",
+      "replay_match": true,
+      "projection_receipt": {
+        "contract_version": "planning-narrative-intent-projection.v1",
+        "source_task_hash": "sha256:a28579a5947566f05b5dfa7495caaaccc37f16079561dfdf7f4be70caf51f8a3",
+        "source_context_hash": "sha256:1b05a60a4e17438b3a75e4e95d31750bd6cd183633fb8aece3a75adaf3f37da7",
+        "projected_task_hash": "sha256:4a337645086cfa7f13f0f203e6e4ea01b0e0e694278db52ef47e74f6a4f594c5",
+        "projected_context_hash": "sha256:5e5882dc678403b18ca45e1d716f1be66fa2e9eaebeb3b54d5307f48b82cea2c",
+        "omissions": [
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_number",
+            "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/repair_reason",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+            "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+          },
+          {
+            "source_pointer": "/context_bundle/selection_explanation",
+            "content_hash": "sha256:443c7a371e953af8c902a771356317989682b131584a6d01849a3c7905500d1c"
+          }
+        ],
+        "semantic_source_rewrite": false
+      }
+    }
+  ],
+  "status": "PASS",
+  "rendered_count": 23,
+  "full_book_integration": "FAIL_AT_SCRIPTED_CANON_OUTPUT_CODEC",
+  "accepted_canon_change": "NOT_CLAIMED"
+}

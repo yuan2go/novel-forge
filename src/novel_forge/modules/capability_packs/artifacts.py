@@ -295,10 +295,11 @@ def default_chapter_artifact_resolver(
             "agent-loop-governance-v1",
             "skills/agent-loop-governance/SKILL.md",
         ),
-        ("chapter-outline", "chapter-plan-skill-v3", "skills/chapter-outline/SKILL.md"),
+        ("chapter-outline", "chapter-plan-skill-v3", "skills/chapter-outline/legacy-narrative-intent-20261010.md"),
         ("prose-generation", "prose-generation-v4", "skills/prose-generation/SKILL.md"),
         ("quality-review", "quality-review-v3", "skills/quality-review/legacy-v3.md"),
-        ("quality-review", "quality-review-v4", "skills/quality-review/SKILL.md"),
+        ("quality-review", "quality-review-v4", "skills/quality-review/legacy-v3.md"),
+        ("quality-review", "quality-review-v5", "skills/quality-review/SKILL.md"),
         ("context-builder-source-isolation", "context-builder-source-isolation-v2", "skills/context-builder-source-isolation/SKILL.md"),
     )
     for ref, version, source in skill_sources:
