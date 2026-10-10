@@ -1304,6 +1304,32 @@ def project_retrieved_state_context(content: Mapping[str, Any], *, projection: M
     return {**content, "structured_facts": [*filtered, *metadata], "safe_summary": "Governed accepted state projection at the frozen chapter boundary.", "omitted_state_fact_count": len(state_facts) - len(filtered)}
 
 
+def _validate_memo_realization_reference(raw, segments):
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+
+    try:
+        memo = json.loads(raw.get("safe_summary") or "{}")
+    except (ValueError, TypeError):
+        return
+    reference = memo.get("narrative_realization_reference") if isinstance(memo, dict) else None
+    if reference is None:
+        return
+    if not isinstance(reference, Mapping):
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Realization reference must be an exact source binding")
+    sources = [item for item in segments if isinstance(item, Mapping)
+               and item.get("asset_type") == "chapter_execution_intent"
+               and item.get("asset_version_id") == reference.get("asset_version_id")]
+    if len(sources) != 1 or reference.get("json_pointer") != "/chapter_mission/narrative_realization":
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Require one exact protected Intent source")
+    try:
+        source = json.loads(sources[0].get("safe_summary") or "{}")
+        realization = source["chapter_mission"]["narrative_realization"]
+    except (ValueError, TypeError, KeyError) as exc:
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Referenced Mission is missing") from exc
+    if reference.get("content_hash") != narrative_hash(realization):
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Referenced Mission content changed")
+
+
 def build_provider_context_view(
     stage: str,
     context_bundle: Mapping[str, Any],
@@ -1691,6 +1717,8 @@ def build_provider_context_view(
                 "rebuild the governed task projection before dispatch",
             )
         omitted_facts += len(facts) - len(selected_facts)
+        if stage in {"draft", "revision"} and asset_type == "chapter_memo":
+            _validate_memo_realization_reference(raw, segments)
         summary = str(raw.get("safe_summary") or "").strip()
         if writer_projection_version == "accepted-writer-history.v2":
             from novel_forge.modules.context_builder.story_projection import story_history

@@ -126,6 +126,21 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
 
         self.assertNotIn("RECEIPT_MUST_NOT_BECOME_WRITING_CONTEXT", json.dumps(bundle))
         self.assertIn("RECEIPT_MUST_NOT_BECOME_WRITING_CONTEXT", json.dumps(memo))
+        memo_segment = next(item for item in bundle["context_segments"] if item["asset_type"] == "chapter_memo")
+        memo_view = json.loads(memo_segment["safe_summary"])
+        self.assertNotIn("narrative_realization", memo_view)
+        reference = memo_view["narrative_realization_reference"]
+        self.assertEqual(reference["asset_version_id"], "intent-v1")
+        self.assertEqual(reference["json_pointer"], "/chapter_mission/narrative_realization")
+        from novel_forge.modules.chapter_authority.provider_views import _validate_memo_realization_reference
+        _validate_memo_realization_reference(memo_segment, bundle["context_segments"])
+        bad_reference = deepcopy(memo_view)
+        bad_reference["narrative_realization_reference"]["content_hash"] = "forged"
+        with self.assertRaisesRegex(KernelError, "MEMO_REALIZATION_REFERENCE_DRIFT"):
+            _validate_memo_realization_reference({**memo_segment, "safe_summary": json.dumps(bad_reference)}, bundle["context_segments"])
+        with self.assertRaisesRegex(KernelError, "MEMO_REALIZATION_REFERENCE_DRIFT"):
+            _validate_memo_realization_reference(memo_segment, [memo_segment])
+        self.assertEqual(memo["narrative_realization"], intent["chapter_mission"]["narrative_realization"])
         expectations = bundle["chapter_execution_expectations"]
         self.assertEqual(
             expectations["required_state_transitions"],

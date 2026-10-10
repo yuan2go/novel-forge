@@ -464,6 +464,14 @@ boundaries, not a product or narrative development sequence.
 
 ## Task Context capacity and assembly
 
+Chapter Memo and protected Execution Intent can contain the same Realization. Context
+assembly replaces only an equal Memo copy with an exact asset/version, JSON pointer and
+content-hash reference to the selected protected Mission. Writer projection verifies that
+source and hash before rendering. The complete Mission remains available once; differing
+content or a missing source fails closed. Frozen legacy Contexts without this reference
+keep their original representation. This saves serialization before the task budget gate
+and does not change the task budget, model limit or output reservation.
+
 At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
 semantic overflow effects existed but formal Router selection rejected context tasks
 with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v13`

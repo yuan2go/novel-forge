@@ -349,6 +349,19 @@ def build_context_bundle(
                 "json_pointer": "/craft_strategy", "strategy_digest": strategy["strategy_digest"],
                 "projection": "EXACT_DUPLICATE_REPLACED_BY_PROTECTED_CONTEXT_REFERENCE",
             }
+        if asset_type == "chapter_memo" and content.get("narrative_realization"):
+            from novel_forge.modules.narrative_state.reality import narrative_hash
+            realization = content["narrative_realization"]
+            if (not execution_intent_asset_version_id
+                or realization != (execution_intent or {}).get("chapter_mission", {}).get("narrative_realization")):
+                raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Memo must reference the identical protected Mission realization")
+            rendered_content.pop("narrative_realization")
+            rendered_content["narrative_realization_reference"] = {
+                "asset_version_id": execution_intent_asset_version_id,
+                "json_pointer": "/chapter_mission/narrative_realization",
+                "content_hash": narrative_hash(realization),
+                "projection": "EXACT_DUPLICATE_REPLACED_BY_PROTECTED_CONTEXT_REFERENCE",
+            }
         if asset_type == "chapter_execution_intent":
             rendered_content["active_obligations"] = [
                 disclosed_fact_projection(item)
