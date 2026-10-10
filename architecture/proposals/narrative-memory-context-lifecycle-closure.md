@@ -9,7 +9,7 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `7556474f753bb84fa4548462222c7c79634c6fca`
+Reality baseline: `7f0c94b3c9430f958bec69d0476410634c041bd2`
 Baseline implementation identity:
 `sha256:703cd3a1fcf29bf74eb71651d20abf665593d515f0c7bcbaa14f03533bf798ee`
 
@@ -28,8 +28,8 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
   "reviewed_on": "2026-10-10",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "7556474f753bb84fa4548462222c7c79634c6fca",
-    "implementation_tree_sha": "sha256:703cd3a1fcf29bf74eb71651d20abf665593d515f0c7bcbaa14f03533bf798ee"
+    "sha": "7f0c94b3c9430f958bec69d0476410634c041bd2",
+    "implementation_tree_sha": "sha256:9f6b1686c53d9f25507b0979636665a82a379fd9950861215562a93b446527a5"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
