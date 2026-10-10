@@ -2213,6 +2213,8 @@ class PostgresChapterExecutionContractBinder:
             workflow_ref = (
                 f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@{graph['definition_version']}"
             )
+        if graph["definition_name"] == ChapterNode.DRAFT.definition_name and graph["definition_version"] == "3.10.2":
+            workflow_ref = f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@{CHAPTER_COORDINATED_DEFINITION_VERSION}"
         pack_id = self.capability_pack_id + (".reference_samples" if reference_samples else ".reference_sampling" if reference else ".provider_sampling") if sampling else self.capability_pack_id
         try:
             return self.pack_resolver.freeze_attempt_snapshot(
