@@ -1,0 +1,95 @@
+{
+  "baseline_sha": "e763d5fc959fb2fa3e03faff839de1e0d9c6ee64",
+  "records": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "70625877c9804584f1aa91e358c78ace073559d9aa1a91336bb22a6ea458ecfa",
+      "bytes": 5095,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "010f0109ec815d6c7c96b97f32cbec919dc4caef80c17be332f3cf1e72d49740",
+      "bytes": 2083,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "docs/current-system.md",
+      "sha256": "eb04420f4ef398442eda1761d47cc3a29b19f52523036eb919d7195611edab3e",
+      "bytes": 192156,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "docs/runtime-operations.md",
+      "sha256": "9514ac46abe184d1f121ec876b1e0e606b62e2edc8149b5fe1be328cb477d30d",
+      "bytes": 300895,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "docs/development.md",
+      "sha256": "0aaf85028d6fb33732347b2d36b67e6715fc2f60b1a34d6bb99f9eb8edeaf6dc",
+      "bytes": 10263,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "architecture/reality-evidence.json",
+      "sha256": "d9e0a32f8326b68a997f49ba78047636111d356ae8db094b3bbf2464a9112088",
+      "bytes": 474393,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "architecture/manifests/worker-manifest.yaml",
+      "sha256": "29bcdd78b2db97ba0c1d66939d590ca8d7b9504675fa99cfc41627aadddd0e6b",
+      "bytes": 3399,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "architecture/manifests/production-path-manifest.yaml",
+      "status": "PATH_NOT_PRESENT"
+    },
+    {
+      "path": "architecture/manifests/migration-manifest.yaml",
+      "sha256": "3e53817de2e6d5908daf8146240347e2b826910b691a8a5b378157637289ff26",
+      "bytes": 9789,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "reports/audits/2026-10-10-narrative-intent-pollution-closure/ROOT_CAUSE_AND_CLOSURE.md",
+      "sha256": "44a05a5259f6ce6891e06da36374687c1950123ef91e6904dd1afc906a592cc5",
+      "bytes": 20688,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "reports/audits/2026-10-10-narrative-intent-pollution-closure/design-archive-manifest.json",
+      "sha256": "be9501ca3c8f04e04d46d01657807c29a557f8018f5fa4e6ed3d2407cfacaebb",
+      "bytes": 2606,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "reports/audits/2026-10-10-qinglan-chapters-1-16/qinglan-forty-chapters-20261010/青岚问道-工作版本第1—16章.json",
+      "sha256": "13218934657245a174ef48c02e5560245b85c44c618f746c856846ba1c67dd8e",
+      "bytes": 363755,
+      "review": "source identity and task-relevant sections"
+    },
+    {
+      "path": "reports/audits/2026-10-10-qinglan-chapters-1-16/qinglan-forty-chapters-20261010/group16-active-plan.json",
+      "sha256": "8be26a05d10cbae74c4b17517c1848fc4a7f429f80628cf99c95072cad40f5a9",
+      "bytes": 177599,
+      "review": "source identity and task-relevant sections"
+    }
+  ],
+  "current_runtime": {
+    "process_release": "d13e13b2b240d44da7c2864a16a5c7311d971629-qinglan-repair",
+    "api_health": "alive",
+    "provider_dispatch_suspended": true,
+    "main_deployed": "NOT_PROVEN"
+  },
+  "other_work": {
+    "PR153": "MERGED f067d189a63f644a3a49f78abda557035b5fa59a",
+    "PR154": "MERGED e763d5fc959fb2fa3e03faff839de1e0d9c6ee64",
+    "PR133": "OPEN creative-validation-resources",
+    "PR135": "OPEN latest-production-progress",
+    "narrative_intent_followup_thread": "idle; independent task, not messaged",
+    "main_checkout": "dirty; not modified"
+  }
+}

@@ -75,7 +75,13 @@ in its separate continuity input; a prose AssetVersion is not a formal State ref
 Native realization contract v3 retains this working
 snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups without
 inventing accepted history. The source window is a bounded implementation policy; it does
-not prove long-form continuity or replace formal Canon. Author adoption uses the existing
+not prove long-form continuity or replace formal Canon. The current default selects only
+the last four chapters' tails; earlier experience and an action's preceding cause can be
+absent even when their exact selected source remains saved. Memo receives the compiled
+ExecutionIntent before the later Draft Context and has no independent working-prose
+evidence at that boundary. These coverage limits do not require characters to repeat
+earlier actions or forget experiences in the selected working version.
+Author adoption uses the existing
 editor candidate/session mechanism. Book locking and source/hash checks prevent stale edits,
 late extraction or late review from replacing a newer selection. Later chapters retain
 exact predecessor dependencies and display direct and transitive source changes without deleting
