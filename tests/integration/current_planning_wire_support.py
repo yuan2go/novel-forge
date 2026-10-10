@@ -40,9 +40,27 @@ def current_planning_wire_result(result, inputs):
         "world_realization": {"invariant_refs": "WORLD_INVARIANT", "structure_refs": "WORLD_STRUCTURE", "state_ref": "WORLD_STATE"},
         "character_realization": {"identity_ref": "CHARACTER_IDENTITY", "state_ref": "CHARACTER_STATE", "trajectory_ref": "CHARACTER_TRAJECTORY"},
     }
-    catalog = (inputs.get("realization_reference_contract") or {}).get("references_by_domain", {})
+    reference_contract = inputs.get("realization_reference_contract") or {}
+    cast = (reference_contract.get("character_references") or {}).get("bindings", [])
+    if len(cast) == 1:
+        character = cast[0]["character_id"]
+        for collection in ("character_realization", "character_participation"):
+            for entity in value.get(collection, []):
+                if entity.get("character_id") == "protagonist":
+                    entity["character_id"] = character
+        for scene in value.get("scene_plan", []):
+            if scene.get("pov_character_id") == "protagonist":
+                scene["pov_character_id"] = character
+            if isinstance(scene.get("participants"), list):
+                scene["participants"] = [character if item == "protagonist" else item for item in scene["participants"]]
+    catalog = reference_contract.get("references_by_domain", {})
     for manifest, domains in fields.items():
         for entity in value.get(manifest, []):
+            levels = ("ANCHOR", "DEFINED", "DETAILED", "ACTIVE")
+            old_level, required_level = entity.get("realization_level"), value.get("realization_level")
+            if (entity.get("narrative_relevance") == "CURRENT" and old_level in levels
+                    and required_level in levels and levels.index(old_level) < levels.index(required_level)):
+                entity["realization_level"] = required_level
             for field, domain in domains.items():
                 raw = entity[field]
                 selected = []
