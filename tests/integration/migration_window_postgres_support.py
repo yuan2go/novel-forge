@@ -4,6 +4,11 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 from uuid import uuid4
+from pathlib import Path
+import hashlib
+import json
+import shutil
+import subprocess
 
 import psycopg
 from psycopg import sql
@@ -21,6 +26,68 @@ from tests.integration.conftest import (
 PRE_WORKFLOW_MIGRATION_ID = "20260829_0103_book_opening_semantic_runtime_hardening"
 WORKFLOW_MIGRATION_ID = "20260829_0104_book_opening_workflow_nodes"
 _OWNED_MIGRATION_DATABASES: set[str] = set()
+
+
+def _database_fingerprint(database_url):
+    with psycopg.connect(database_url) as connection:
+        identity = connection.execute("SELECT current_database(),oid FROM pg_database WHERE datname=current_database()").fetchone()
+        cluster = connection.execute("SELECT system_identifier::text FROM pg_control_system()").fetchone()[0]
+        tables = connection.execute("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename").fetchall()
+        fingerprints = {}
+        for (name,) in tables:
+            rows = connection.execute(sql.SQL("SELECT to_jsonb(t)::text FROM {} t ORDER BY to_jsonb(t)::text").format(sql.Identifier(name))).fetchall()
+            payload = json.dumps([row[0] for row in rows], separators=(",", ":")).encode()
+            fingerprints[name] = {"rows": len(rows), "sha256": hashlib.sha256(payload).hexdigest()}
+        return {"database": identity[0], "oid": identity[1], "cluster": cluster}, fingerprints
+
+
+@contextmanager
+def restored_generation_backup(database_url: str, *, backup_root: Path, execution_root: Path | None = None):
+    preflight_integration_database(database_url)
+    backup_root.mkdir(parents=True)
+    original_identity, before = _database_fingerprint(database_url)
+    dump = backup_root / "database.dump"
+    commands = []
+    def run(arguments):
+        result = subprocess.run(arguments, capture_output=True, timeout=120, check=False)
+        commands.append({"command": [argument.replace(database_url, "<owned-source-database>").replace(restored_url, "<owned-restored-database>") for argument in arguments], "exit_code": result.returncode})
+        (backup_root / f"command-{len(commands)}.log").write_bytes(result.stdout + result.stderr)
+        assert result.returncode == 0, result.stderr.decode(errors="replace")
+    name = _temporary_database_name("generation_restore")
+    restored_url = _database_url(database_url, name)
+    admin_url = _database_url(database_url, "postgres")
+    execution_files = {}
+    if execution_root is not None:
+        for path in sorted(execution_root.rglob("*")):
+            if path.is_file():
+                execution_files[str(path.relative_to(execution_root))] = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert execution_files
+        shutil.copytree(execution_root, backup_root / "execution-directory")
+    run(["pg_dump", "--format=custom", "--file=" + str(dump), database_url])
+    with psycopg.connect(admin_url, autocommit=True) as connection:
+        connection.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    try:
+        run(["pg_restore", "--exit-on-error", "--dbname=" + restored_url, str(dump)])
+        restored_identity, after = _database_fingerprint(restored_url)
+        assert original_identity != restored_identity and before == after
+        if execution_root is not None:
+            # WHY: Frozen receipts use original absolute paths; restore at that owned path.
+            execution_root.rename(backup_root / "original-execution-directory")
+            shutil.copytree(backup_root / "execution-directory", execution_root)
+            assert execution_files == {str(path.relative_to(execution_root)): hashlib.sha256(path.read_bytes()).hexdigest()
+                for path in execution_root.rglob("*") if path.is_file()}
+        report = {"contract_version": "generation-joint-restore-evidence.v1", "status": "PASS",
+            "source": original_identity, "restored": restored_identity, "commands": commands,
+            "dump_sha256": hashlib.sha256(dump.read_bytes()).hexdigest(), "tables": before,
+            "execution_root": str(execution_root) if execution_root else None,
+            "execution_files": execution_files, "artifact_store": "POSTGRES_AUTHORITY_ASSET_VERSIONS",
+            "migration_identities": [{"migration_id":migration.migration_id,"down_revision":migration.down_revision} for migration in MIGRATIONS]}
+        (backup_root / "restore-evidence.json").write_text(json.dumps(report, indent=2) + "\n")
+        yield restored_url
+    finally:
+        with psycopg.connect(admin_url, autocommit=True) as connection:
+            connection.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s AND pid<>pg_backend_pid()", [name])
+            connection.execute(sql.SQL("DROP DATABASE {}").format(sql.Identifier(name)))
 
 
 def _database_url(base_database_url: str, database_name: str) -> str:

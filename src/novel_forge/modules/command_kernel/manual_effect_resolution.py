@@ -77,6 +77,10 @@ def resolve_external_effect_manually(
             from .generation_isolation import append_isolation
             append_isolation(uow, effect, command)
             target_operation = str(uow.repositories.attempt_runtime.operation_state(command.operation_id, command.project_id)["status"])
+        elif _isolated_api(uow.cursor, effect):
+            from .isolated_api_reconciliation import append_resolution as append_api_resolution
+            append_api_resolution(uow, effect, command)
+            target_operation = str(operation["status"])
         elif original_reconciled:
             append_resolution(uow, effect, original, command)
             target_operation = str(operation["status"])
@@ -217,3 +221,9 @@ def _same_isolation_replay(cursor, command):
         [command.project_id, command.external_effect_id, command.idempotency_key])
     return cursor.fetchone() == (command.operation_id, command.actor_id, command.decision, command.reason,
         command.evidence, command.trace_id, command.correlation_id)
+
+
+def _isolated_api(cursor, effect):
+    from .generation_isolation import isolation
+    proof = isolation(cursor, effect["external_effect_id"])
+    return proof and proof.get("execution_transport") == "REMOTE_PROVIDER_API"

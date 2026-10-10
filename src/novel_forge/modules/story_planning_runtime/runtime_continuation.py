@@ -141,8 +141,6 @@ def require_source(
             SELECT count(DISTINCT i.operation_id) FROM authority_generation_isolation i
               JOIN ancestors USING(operation_id)""", [source_operation_id])
         recovery_number = int(uow.cursor.fetchone()[0])
-        if recovery_number > 2:
-            raise KernelError("GENERATION_RECOVERY_EXHAUSTED", "Two native continuations exhausted this logical generation; retain saved manuscript and inspect original path evidence", details=proof)
         return {"mode": "ISOLATED_PURE_GENERATION", "source_operation_id": source_operation_id,
             "command": frozen, "version": int(row[1]), "evidence_asset_version_id": proof["evidence_asset_version_id"],
             "evidence_hash": uow.repositories.asset_documents.require(project_id=project_id,

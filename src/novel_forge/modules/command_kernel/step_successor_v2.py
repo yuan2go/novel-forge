@@ -223,6 +223,8 @@ def replace_failed_step(
                 or policy_evidence.get("contract_version") != "chapter-pure-generation-successor.v1"
                 or any(proof["operation_id"] != predecessor_id or proof["actor_id"] != context.actor_id for proof in proofs)):
                 raise KernelError("STEP_SUCCESSOR_ISOLATION_UNPROVEN", "Bind every original effect to its immutable pure generation disposition")
+            from .generation_isolation import require_generation_retry_budget
+            require_generation_retry_budget(cursor, operation_id=predecessor_id)
             external = False
             output = has_domain_outputs(cursor, predecessor_id)
         if external or output or dependent or live_lease:

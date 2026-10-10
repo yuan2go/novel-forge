@@ -149,8 +149,9 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
-The published chain through 0184 is immutable. The current forward segment is
-0185–0195, ending at native prose-review sidecar isolation. Resolve each full
+The published chain through 0195 is immutable. The original audit boundary is
+0194; the following published migration adds prose-review generation isolation. Resolve the current head from the
+registry, including any subsequent forward repair. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
@@ -1249,7 +1250,9 @@ PRODUCTION and REPAIR. Retain old account lanes at their carried usage and bind 
 lane to the new authorization reference. New-window consumption has its own shared cap;
 settling or releasing old reservations cannot enlarge it. Use a new evidence hash and
 reference for the actual author approval. Expiry runs from that approval, not deployment.
-Old frozen reservations cannot borrow the new expiry. UNKNOWN still needs reconciliation.
+Old frozen reservations cannot borrow the new expiry. Original UNKNOWN accounting
+still needs reconciliation; authorized pure generation may isolate the old commit right
+and register a native successor without recovering the original receipt first.
 Do not substitute a new campaign, rename a reservation or release historical holds to
 configure a renewal. Separate model grants and Book review boundaries remain required.
 
@@ -3762,6 +3765,33 @@ For authorized baseline delivery, a trusted operator can configure the existing 
 Control policy with `planning_selection_mode=AVAILABLE_QUALIFIED`. Opening then formally
 selects an available qualified branch and retains the incomplete comparison evidence.
 This is an automatic Planning choice; it does not record an author decision or acceptance.
+
+Planning and Chapter recovery use the existing coordinated nested UoW so isolation,
+linked successor registration and native scheduling intent commit together. Planning
+retains its continuation command and registered outbox event; Chapter retains the
+admitted Operation/outbox and current Saga step reference. A failed
+registration rolls back isolation; an exhausted task records its immutable isolation
+and explicit stop checkpoint. Chapter Context dispatch and successor admission use the
+same persisted dispatch lineage as other generation nodes. The frozen retry policy is
+`CONFIGURABLE_POLICY`; retained recovery ordinal fields are diagnostics, not a second
+allowance. Restart, route changes and
+replay cannot reset that fault allowance.
+
+The existing POST `/product/content-authority/external-effects/{external_effect_id}/resolve`
+accepts an isolated API original receipt under `external_effect.resolve`. `evidence` may
+bind `original_remote_receipt_ref`, or supply `original_provider_record` and
+`original_remote_receipt` for atomic native execution-evidence intake. Their contracts are
+`generation-provider-record.v1` and `generation-remote-receipt.v1`. The receipt requires
+`AUTHORIZED_OPERATOR_ATTESTATION`, the authenticated `verified_by`, original Project,
+workspace, Book, Operation, Effect, dispatch generation, request hash, execution request
+hash, input manifest, execution/Attempt/fence, Provider/model and Provider request ID.
+The preserved source record must match all remote facts. Measured token totals must agree;
+paid settlement requires explicit measured cost and currency. Missing measurements remain
+unresolved; no estimated usage or zero cost is manufactured. Entitlement cost remains
+UNKNOWN. Intake, reconciliation and original reservation settlement share one transaction.
+Duplicates settle once, conflicting evidence is rejected, and successor usage remains
+separately reserved and accounted. Original UNKNOWN Effect/Dispatch and stopped Operation
+are not rewritten; late results have no candidate, activation, acceptance or publish right.
 
 Pure-generation recovery applies to both the admitted CLI and remote API transport.
 The frozen tool boundary must deny all external writes, and the native invocation,
