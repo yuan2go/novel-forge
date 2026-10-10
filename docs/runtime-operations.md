@@ -818,6 +818,12 @@ Chapter planning binds `known_fact_ids` to the frozen accepted StoryState. Worki
 prose memories and agreements may inform scenes but cannot create accepted knowledge
 IDs. A native continuation admission error returns `NATIVE_CONTINUATION_BLOCKED`
 with the retained manuscript and error; inspect its original evidence before repair.
+After an authorized Volume or Arc Plan Change, continuation resolves the original
+portfolio through its exact activated replacement lineage in the same Project and
+Book. The admission snapshot and past Chapter inputs remain immutable. An unapproved
+replacement, ambiguous lineage, cycle, non-current endpoint or foreign Book remains
+blocked. Arc cross-volume membership follows that same proven Volume lineage for
+cursor projection without rewriting the frozen Arc document.
 Chapter Arc scheduling selects only from the frozen row's required Arc contributions.
 Other frozen Arc inputs provide context and do not require scheduling or movement.
 

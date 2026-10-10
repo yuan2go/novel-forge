@@ -1518,6 +1518,46 @@ class PostgresBookProductionQuery:
         arc_ids = tuple(str(item) for item in snapshot["arc_portfolio_plan_versions"])
         portfolio_ids = (*volume_ids, *arc_ids)
         with AuthorityUnitOfWork(self.database_url) as uow:
+            from .plan_portfolio import resolve_portfolio_lineage
+
+            uow.cursor.execute(
+                "SELECT project_id,book_id FROM authority_book_production_input_snapshot WHERE snapshot_id=%s",
+                [snapshot_id],
+            )
+            scope = uow.cursor.fetchone()
+            if scope is None:
+                raise KernelError("BOOK_INPUT_SNAPSHOT_MISSING", "Book input snapshot vanished")
+            project_id, book_id = scope
+            uow.cursor.execute(
+                """
+                SELECT change.target_asset_version_id, change.proposed_asset_version_id
+                FROM authority_plan_change_proposal AS change
+                JOIN story_plan_binding AS source
+                  ON source.asset_version_id=change.target_asset_version_id
+                 AND source.project_id=change.project_id AND source.book_id=change.book_id
+                JOIN story_plan_binding AS replacement
+                  ON replacement.asset_version_id=change.proposed_asset_version_id
+                 AND replacement.project_id=source.project_id
+                 AND replacement.book_id=source.book_id
+                 AND replacement.logical_key=source.logical_key
+                 AND replacement.contract_type=source.contract_type
+                WHERE change.project_id=%s AND change.book_id=%s
+                  AND change.status='ACTIVE'
+                  AND change.approval_operation_id IS NOT NULL
+                  AND change.activation_operation_id IS NOT NULL
+                  AND source.contract_type IN ('VOLUME','ARC')
+                """,
+                [project_id, book_id],
+            )
+            lineage = resolve_portfolio_lineage(
+                portfolio_ids,
+                tuple(uow.cursor.fetchall()) + self._approved_downstream_plan_replacements(
+                    uow, project_id=project_id, book_id=book_id
+                ),
+            )
+            volume_ids = tuple(lineage[item] for item in volume_ids)
+            arc_ids = tuple(lineage[item] for item in arc_ids)
+            portfolio_ids = (*volume_ids, *arc_ids)
             uow.cursor.execute(
                 """
                 SELECT binding.asset_version_id, binding.contract_type,
@@ -1528,11 +1568,12 @@ class PostgresBookProductionQuery:
                 JOIN authority_asset_version AS version
                   ON version.asset_version_id=binding.asset_version_id
                 WHERE binding.asset_version_id=ANY(%s)
+                  AND binding.project_id=%s AND binding.book_id=%s
                   AND version.lifecycle='ACTIVE'
                   AND version.eligibility='ELIGIBLE'
                   AND version.governance='CLEAR'
                 """,
-                [list(portfolio_ids)],
+                [list(portfolio_ids), project_id, book_id],
             )
             rows = uow.cursor.fetchall()
         by_id = {str(row[0]): row for row in rows}
@@ -1562,6 +1603,7 @@ class PostgresBookProductionQuery:
             volumes=volumes,
             arcs=arcs,
             chapter_cursor=chapter_cursor,
+            volume_version_lineage=lineage,
         )
         return {
             "chapter_cursor": chapter_cursor,
@@ -1570,7 +1612,48 @@ class PostgresBookProductionQuery:
                 int(item) for item in volume["content"]["chapter_range"]
             ),
             "arc_plan_versions": relevant_arcs,
+            "portfolio_version_lineage": lineage,
         }
+
+    @staticmethod
+    def _approved_downstream_plan_replacements(
+        uow: AuthorityUnitOfWork, *, project_id: str, book_id: str
+    ) -> tuple[tuple[str, str], ...]:
+        uow.cursor.execute(
+            """
+            SELECT source.asset_version_id, replacement.asset_version_id
+            FROM story_plan_binding AS replacement
+            JOIN authority_operation AS binding
+              ON binding.operation_id=replacement.created_by_operation_id
+             AND binding.project_id=replacement.project_id
+             AND binding.status='SUCCEEDED'
+             AND binding.definition_name='planning.binding.activate'
+            JOIN authority_plan_change_proposal AS change
+              ON change.proposal_id=binding.command_payload #>> '{decision_evidence,plan_change_proposal_id}'
+             AND change.project_id=replacement.project_id
+             AND change.book_id=replacement.book_id
+             AND change.status='ACTIVE'
+             AND change.approval_operation_id IS NOT NULL
+             AND change.activation_operation_id IS NOT NULL
+            JOIN authority_plan_change_impact AS impact
+              ON impact.proposal_id=change.proposal_id
+             AND impact.project_id=change.project_id
+             AND impact.impacted_asset_version_id=binding.command_payload #>> '{decision_evidence,invalidated_source_asset_version_id}'
+             AND impact.target_freshness IN ('IMPACTED','STALE')
+            JOIN story_plan_binding AS source
+              ON source.asset_version_id=impact.impacted_asset_version_id
+             AND source.project_id=replacement.project_id
+             AND source.book_id=replacement.book_id
+             AND source.logical_key=replacement.logical_key
+             AND source.contract_type=replacement.contract_type
+            WHERE replacement.project_id=%s AND replacement.book_id=%s
+              AND replacement.contract_type IN ('VOLUME','ARC')
+              AND binding.command_payload->>'replacement_approved'='true'
+              AND binding.command_payload #>> '{decision_evidence,downstream_requalification}'='true'
+            """,
+            [project_id, book_id],
+        )
+        return tuple(uow.cursor.fetchall())
 
     def require_arc_working_set(
         self,
