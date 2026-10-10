@@ -186,8 +186,8 @@ def install_chapter_validation_pack(
         from .artifacts import ArtifactKind
 
         # WHY: An experiment binds exact Skill bytes without upgrading historical or default Packs.
-        if runtime_environment != "validation" or not pack_id_override or not pack_version_override:
-            raise ValueError("prospective prose Skill selection requires an explicit validation Pack identity")
+        if not pack_id_override or not pack_version_override:
+            raise ValueError("prospective prose Skill selection requires an explicit Pack identity")
         selected_skill = resolver.resolve(ArtifactKind.SKILL, "prose-generation", prose_skill_version)
         bindings = [item for item in manifest["skill_binding"]["skills"] if item["skill_ref"] == "prose-generation"]
         if len(bindings) != 1:
