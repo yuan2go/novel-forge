@@ -73,7 +73,7 @@ def _handler_definition_version(
             else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.10.0", "3.9.0", "3.9.1", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15", "3.9.16"}
         )
         if node in {ChapterNode.MEMO, ChapterNode.DRAFT}:
-            recoverable = recoverable | {"3.10.1", "3.10.2"}
+            recoverable = recoverable | ({"3.10.1", "3.10.2"} if node is ChapterNode.MEMO else {"3.10.1"})
         if node is ChapterNode.EXECUTION_INTENT:
             recoverable = recoverable | {"3.10.1"}
         if row is not None and str(row[0]) in recoverable:

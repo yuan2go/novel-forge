@@ -74,3 +74,28 @@ def test_unsent_transport_window_rejects_release_drift():
     with pytest.raises(KernelError, match="STEP_SUCCESSOR_WINDOW_INVALID"):
         recovery._corrected_contract_window(Mock(), root, {}, {}, datetime.now(timezone.utc),
             {**transport, "contract_version": "kernel-unsent-transport-window.v1", "release_sha": "foreign"}, transport_policy=transport)
+
+
+@pytest.mark.parametrize('version,failures,schemas,valid', [
+    ('3.10.0', ['MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'], [('schema:chapter-provider-output:draft:v4:working-memory-v1', 'codex-structured-schema.v5')], True),
+    ('3.10.0', ['MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'], [('other-schema', 'codex-structured-schema.v5')], False),
+    ('3.10.0', ['MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE'], [('schema:chapter-provider-output:draft:v4:working-memory-v1', 'codex-structured-schema.v5')], False),
+    ('3.10.2', ['CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED', 'CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT'], [], True),
+    ('3.10.2', ['CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT'], [], False),
+])
+def test_optional_memory_recovery_binds_exact_failure_family(version, failures, schemas, valid):
+    from novel_forge.modules.chapter_authority.context_transport_recovery import require_optional_memory_transport
+    cursor = Mock()
+    cursor.fetchone.side_effect = [('deployment',), ('chapter-optional-memory-transport.v1',), (False,)]
+    cursor.fetchall.side_effect = [[(code,) for code in failures], schemas]
+    source = {'operation_id': 'operation', 'project_id': 'project', 'definition_name': 'chapter.draft.generate',
+        'definition_version': version, 'command_payload': {'book_id': 'book'}, 'input_asset_snapshot': ['exact']}
+    policy = {'contract_version': 'chapter-optional-memory-transport.v1', 'transport_projection': 'codex-optional-working-memory.v1',
+        'input_snapshot': ['exact'], 'schema_rejection_receipts': [{}], 'target_deployment_id': 'deployment', 'release_sha': 'sha'}
+    if valid:
+        assert require_optional_memory_transport(cursor, source, policy, '3.10.0')
+    else:
+        with pytest.raises(KernelError, match='CHAPTER_MEMORY_TRANSPORT_INVALID'):
+            require_optional_memory_transport(cursor, source, policy, '3.10.0')
+    with pytest.raises(KernelError, match='CHAPTER_MEMORY_TRANSPORT_INVALID'):
+        require_optional_memory_transport(cursor, source, {**policy, 'input_snapshot': ['foreign']}, '3.10.0')

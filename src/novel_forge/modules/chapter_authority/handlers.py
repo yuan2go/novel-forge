@@ -1526,7 +1526,7 @@ class _DraftHandler:
         core_policy = "scene-core-slots.v1" if request.effective_definition_version in {"3.9.1", "3.9.2", "3.10.0"} else "EXPLICIT_SKELETON_V1"
         information_policy = "scene-information-flow.v1" if request.effective_definition_version in {"3.9.2", "3.10.0"} else "ENTRY_ONLY_V1"
         source_arguments = {}
-        if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2"}:
+        if request.effective_definition_version in {"3.10.0", "3.10.1"}:
             from .realization_composition import resolve_accepted_realization_sources
             core_policy, information_policy = "continuous-scene.v1", "actor-source-scope.v1"
             source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
@@ -1556,7 +1556,7 @@ class _DraftHandler:
             work_requirements=request.work_requirements_enabled,
             core_policy=core_policy,
             information_policy=information_policy,
-            realization_contract=realization_contract if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2"} else None,
+            realization_contract=realization_contract if request.effective_definition_version in {"3.10.0", "3.10.1"} else None,
             enforce_voice_contract=not bool((request.command.get("preparation_report") or {}).get("author_workflow")),
         )
         if (request.command.get("preparation_report") or {}).get("author_workflow"):
@@ -2142,7 +2142,7 @@ class _CanonProposalHandler:
                 context = request.require_input("context_bundle")
                 comparison = comparison_input(planned=(context.content.get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
                     extraction=extraction.content, text=str(revision.content.get("text") or ""))
-            if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2"} and request.database_url:
+            if request.effective_definition_version in {"3.10.0", "3.10.1"} and request.database_url:
                 from .canon_support_coverage import retained_review
                 retained = retained_review(request)
             generated = self.provider.invoke(request, stage="canon_support", payload={
@@ -3271,7 +3271,7 @@ def _canon_recovery_feedback(request):
 
 def _invoke_with_known_receipt(provider, request, *, stage, payload):
     retained = None
-    if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2"} and request.database_url:
+    if request.effective_definition_version in {"3.10.0", "3.10.1"} and request.database_url:
         from .receipt_recovery import consume_known_draft_receipt
         retained = consume_known_draft_receipt(request)
     if stage == "draft" and request.effective_definition_version == "3.10.1" and retained is None:
