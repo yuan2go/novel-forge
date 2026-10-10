@@ -347,6 +347,24 @@ Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy t
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
+An activated upstream PlanChange can make an unfinished Chapter's frozen Context stale.
+`authority-manuscript recover-upstream-plan --proposal-id ... --corrected-plan-version ...`
+uses Book's preprose replacement boundary: require the same live frontier and actor,
+recorded stale-input failure, current corrected Chapter binding and lineage to the active
+upstream successor. Only terminal preprose work and settled Memo effects are admissible;
+Writer work, acceptance, live leases, foreign children or uncertain effects stop recovery.
+The journal retains original failures and settled usage and binds the next request's
+generation; replay returns the same mutation. It does not reset an Attempt or grant approval.
+
+Selected historical working prose remains readable after a future PlanChange only through
+Book's exact source/range/hash verification and, for Chapter work, its frozen reservation.
+The handler exception covers direct historical draft/editor inputs whose invalidations
+all originate in active same-Book PlanChanges; invalidations remain recorded. Current plans,
+Intent and Memo receive no such exception. The historical indirect-Memo preflight defect
+has a single guarded Kernel successor contract, `chapter-historical-input-scope-repair.v1`:
+exact original error/input, no dispatch, budget, output or previous repair, and the matching
+same-Book deployed correction. Other failures retain ordinary recovery and reconciliation.
+
 A focused pass does not substitute for release qualification below. Before rollout of
 work contracts, run migration clean-install/upgrade and the applicable same-release
 matrix, register/compile/approve/deploy the coherent Pack and routing profiles, and
