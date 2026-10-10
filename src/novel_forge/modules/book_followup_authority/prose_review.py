@@ -140,7 +140,7 @@ def freeze_manifest(
         "context_token_budget",
         "maximum_windows",
     }
-    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version"}
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection"}
     if (
         not required <= set(policy)
         or set(policy) - required - optional
@@ -181,6 +181,9 @@ def freeze_manifest(
         )
     if policy.get("relation_retrieval_version", "lexical.v1") not in {"lexical.v1", "accepted-state-relations.v2"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown explicit relation retrieval version")
+    if (policy.get("window_selection", "SEQUENTIAL") not in {"SEQUENTIAL", "EXPLICIT_RANGES_ONLY"}
+        or (policy.get("window_selection") == "EXPLICIT_RANGES_ONLY" and policy.get("execution_mode", "MANUAL") != "MANUAL")):
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Explicit range selection requires manual review")
     if (any(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
             and policy.get("relation_retrieval_version") == "accepted-state-relations.v2"):
         raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")

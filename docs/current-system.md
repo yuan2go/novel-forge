@@ -1319,6 +1319,12 @@ require their native reconciliation.
 
 `BookProseReviewCoordinator` extends Book Follow-up with immutable accepted-manuscript
 manifests, exact prose windows, coverage and excluded ranges. `longform.prose_review`
+can use manual policy `window_selection=EXPLICIT_RANGES_ONLY` with two to eight exact
+source ranges supplied at start. The full source/version manifest stays bound, but only
+that bounded evidence window is dispatched; coverage completeness then describes the
+selected window, not the whole manuscript. Automatic and default sequential review keep
+their existing behavior. Missing or stale ranges fail closed; this scope does not grant
+human, acceptance or whole-book literary evidence. The existing stage
 uses the governed `longform_prose_review` Provider stage through the existing worker and
 ExternalEffect path. Recaps are navigation, never evidence of full prose reading. Reports
 cover structural repetition, character/relationship movement, setup/progression/payoff,

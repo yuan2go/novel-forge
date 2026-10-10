@@ -278,6 +278,8 @@ class BookProseReviewCoordinator:
         ) -> dict[str, Any]:
             sources = load_review_sources(uow, book_run_id, project_id)
             manifest = freeze_manifest(**scope, sources=sources, policy=policy)
+            if policy.get("window_selection") == "EXPLICIT_RANGES_ONLY" and not evidence_ranges:
+                raise KernelError("LONGFORM_PROSE_RETRIEVAL_BOUNDS", "Manual selected review requires exact source ranges")
             if evidence_ranges:
                 self._append_evidence_window(manifest, sources, evidence_ranges)
             uow.cursor.execute(
@@ -1264,6 +1266,8 @@ class BookProseReviewCoordinator:
             item["window_id"] == window["window_id"] for item in manifest["windows"]
         ):
             manifest["windows"].append(window)
+        if manifest["policy"].get("window_selection") == "EXPLICIT_RANGES_ONLY":
+            manifest["windows"] = [window]
         manifest["manifest_digest"] = completion_digest(
             {key: value for key, value in manifest.items() if key != "manifest_digest"}
         )
