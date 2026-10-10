@@ -1,0 +1,42 @@
+{
+  "before": {
+    "state": [
+      "FAILED_RETRYABLE",
+      1,
+      "3"
+    ],
+    "effects": [
+      [
+        "300729ed-08dc-43da-912c-95b90e625c34",
+        "SUCCEEDED"
+      ],
+      [
+        "b33c4f88-421c-4800-b805-7d215adf4429",
+        "SUCCEEDED"
+      ]
+    ]
+  },
+  "after": {
+    "state": [
+      "FAILED_FINAL",
+      2,
+      "3"
+    ],
+    "effects": [
+      [
+        "300729ed-08dc-43da-912c-95b90e625c34",
+        "SUCCEEDED"
+      ],
+      [
+        "b33c4f88-421c-4800-b805-7d215adf4429",
+        "SUCCEEDED"
+      ]
+    ]
+  },
+  "error": {
+    "code": "WORLD_AGENCY_CLASSIFICATION_REJECTED",
+    "message": "{\"diagnostics\": [{\"rationale\": \"阅读说明包含沈砚主动查阅的决定，不能仅以 PERCEPTION 分类绕过人物行动门槛。其 epistemic_basis 为空；公开说明也仅存在于尚未接受的准备步骤中。即使两步的拟议顺序正确，当前仍不能执行该获知转移。\", \"supported\": false, \"field_path\": \"$.candidates[0].transition\"}]}"
+  },
+  "provider_dispatch_suspended": false,
+  "purpose": "revalidate exact retained generation and Director receipts; effects must remain unchanged"
+}

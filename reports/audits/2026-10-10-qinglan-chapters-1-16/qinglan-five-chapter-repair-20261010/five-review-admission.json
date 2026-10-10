@@ -1,0 +1,9 @@
+{
+  "operation_id": "d52a75fe-6ede-4944-9feb-6ca690e00aef",
+  "status": "SUCCEEDED",
+  "run_id": "4376f27d-a812-473a-aa5d-ddbe5f9e6161",
+  "manifest_digest": "sha256:b0aca55f01dc7589a18fc9494a434fb409c727fadac745ea55567f3283370a9a",
+  "reused": false,
+  "total_windows": 6,
+  "replayed": false
+}

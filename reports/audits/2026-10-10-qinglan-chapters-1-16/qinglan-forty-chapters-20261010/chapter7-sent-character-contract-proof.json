@@ -1,0 +1,62 @@
+{
+  "source_sha": "8d56e553c610a6919751ae7db1a9d3170478fb2f",
+  "external_effect_id": "41670549-a103-4c47-aa17-43c5a67bc57b",
+  "materialization_asset_id": "e1e1a36c-e147-4b75-8d04-f3c1b73239e2",
+  "materialization_hash": "sha256:0f2dddb019b08a9f60ea1fb77093aa33dde92de42a254669cfcfaec3ca28a691",
+  "character_enums": [
+    [
+      "character:character:cheng-guan",
+      "character:character:lu-heng",
+      "character:character:shen-yan",
+      "character:character:tang-sui",
+      "character:character:xu-ting",
+      "character:cheng-guan",
+      "character:lu-heng",
+      "character:shen-yan",
+      "character:tang-sui",
+      "character:xu-ting"
+    ],
+    [
+      "character:character:cheng-guan",
+      "character:character:lu-heng",
+      "character:character:shen-yan",
+      "character:character:tang-sui",
+      "character:character:xu-ting",
+      "character:cheng-guan",
+      "character:lu-heng",
+      "character:shen-yan",
+      "character:tang-sui",
+      "character:xu-ting"
+    ],
+    [
+      "character:character:cheng-guan",
+      "character:character:lu-heng",
+      "character:character:shen-yan",
+      "character:character:tang-sui",
+      "character:character:xu-ting",
+      "character:cheng-guan",
+      "character:lu-heng",
+      "character:shen-yan",
+      "character:tang-sui",
+      "character:xu-ting"
+    ],
+    [
+      "character:character:cheng-guan",
+      "character:character:lu-heng",
+      "character:character:shen-yan",
+      "character:character:tang-sui",
+      "character:character:xu-ting",
+      "character:cheng-guan",
+      "character:lu-heng",
+      "character:shen-yan",
+      "character:tang-sui",
+      "character:xu-ting"
+    ]
+  ],
+  "bad_handler_allowed": false,
+  "prompt_template": {
+    "ref": "prompt-template:story-planning-pack",
+    "version": "v2",
+    "content_hash": "sha256:2785acd8703d1fff8ca65d92c887dd7a87610f0a112785b0611d6e83548455a5"
+  }
+}

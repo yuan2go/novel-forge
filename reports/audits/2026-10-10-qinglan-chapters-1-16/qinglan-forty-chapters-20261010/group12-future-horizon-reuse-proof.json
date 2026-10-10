@@ -1,0 +1,19 @@
+{
+  "source_candidate": "authority-output:94bdd690-21bb-44e3-a2e1-f76949100a28:story_planning.candidate:v1",
+  "replacement_candidate": "authority-output:5ab4e0fd-7e4c-4209-a828-80f587d3649d:story_planning.candidate:v1",
+  "original_range": [
+    12,
+    15
+  ],
+  "unwritten_range": [
+    13,
+    15
+  ],
+  "matrix_rows_13_15_exactly_equal": true,
+  "literary_event_fields_13_15_exactly_equal": true,
+  "original_12_plan_and_working_body": "PRESERVED",
+  "formal_accepted_cursor": 0,
+  "human_choice": "NOT_GRANTED",
+  "failure_report": "chapter13-original-future-boundary-blocked.json",
+  "native_plan_change": "plan-change:e11f5369-72df-48fb-b398-e57a79976a03"
+}

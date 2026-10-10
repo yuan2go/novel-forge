@@ -1,0 +1,20 @@
+[
+  [
+    "FAILED_RETRYABLE",
+    {
+      "error_code": "REALIZATION_EPISTEMIC_SCOPE_VIOLATION",
+      "error_message": "REALIZATION_EPISTEMIC_SCOPE_VIOLATION: {\"defects\": [{\"allowed_refs\": [\"chapter:5:fact:mature-share\", \"chapter:5:fact:quality\", \"chapter:5:fact:route\", \"local:publishHarvestRule\"], \"character_id\": \"character:character:shen-yan\", \"defect\": \"CHARACTER_SOURCE_SCOPE\", \"slot_id\": \"chapter:5:scene:delivery:skeleton\"}]}",
+      "failure_class": "retryable",
+      "failure_details": {}
+    }
+  ],
+  [
+    "FAILED_RETRYABLE",
+    {
+      "error_code": "REALIZATION_EPISTEMIC_SCOPE_VIOLATION",
+      "error_message": "REALIZATION_EPISTEMIC_SCOPE_VIOLATION: {\"defects\": [{\"allowed_refs\": [\"chapter:5:fact:mature-share\", \"chapter:5:fact:quality\", \"chapter:5:fact:route\", \"local:publishHarvestRule\"], \"character_id\": \"character:character:shen-yan\", \"defect\": \"CHARACTER_SOURCE_SCOPE\", \"slot_id\": \"chapter:5:scene:delivery:skeleton\"}]}",
+      "failure_class": "retryable",
+      "failure_details": {}
+    }
+  ]
+]

@@ -7,7 +7,7 @@ description: Review an exact candidate or a requested quality dimension with evi
 
 ## Shared rules
 
-Judge the supplied candidate against its author intent, accepted facts and binding task constraints. Distinguish a demonstrated conflict from uncertainty and a discretionary aesthetic suggestion. Cite exact words or exact structured input references supporting a finding, explain the effect on the reader, and propose the smallest useful repair. The host binds versions and locations; this judgment is not human approval or Authority acceptance. Return the declared JSON judgment.
+Judge the supplied candidate against its author intent, accepted facts and binding task constraints. Distinguish a demonstrated conflict from uncertainty and a discretionary aesthetic suggestion. Cite exact words or exact structured input references supporting a finding, explain the effect on the reader, and propose the smallest useful repair. Separate language repairs from changes to events, causal structure or character motives that require Planning/Plan Change. Polishing does not resolve a structural finding. The host binds versions and locations; this judgment is not human approval or Authority acceptance. Return the declared JSON judgment.
 
 ## Chapter review
 
@@ -23,7 +23,7 @@ Evaluate the exact design candidate against its canonical parents and the declar
 
 ## Longform review
 
-Review the exact accepted prose window and its declared purpose. Track causal continuity, character development, repeated explanation, voice, promise setup and payoff across the supplied chapters. Attribute each concern to concrete passages and distinguish a deliberate slow development from a missed due obligation. Do not extrapolate unseen chapters or convert a suggestion into accepted story state.
+Review the exact supplied prose window, its declared authority status and purpose. Working prose can be reviewed without becoming accepted Canon or an author selection. Track causal continuity, character development, repeated explanation, voice, promise setup and payoff across the supplied chapters. Attribute each concern to concrete passages and distinguish a deliberate slow development from a missed due obligation. Do not extrapolate unseen chapters or convert a suggestion into accepted story state.
 
 ## Screenplay review
 

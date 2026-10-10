@@ -1,0 +1,167 @@
+{
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "book_id": "book:qinglan-wendao-20261008",
+  "source_sha": "960e8ee4ab9622339639792eee2605e95f5d3264",
+  "chapters": 10,
+  "total_han_characters": 27769,
+  "version_vector": [
+    {
+      "chapter": 1,
+      "asset_version_id": "64c825b9-6296-4058-9ee3-4132222e2fa2",
+      "text_hash": "sha256:64fa220086268c6ca6be4ed8d3d5c014e1a080bd8b8b149f4a7520e187198fef",
+      "title": "雨前的药篓",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3006,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 2,
+      "asset_version_id": "ccda20cc-bdad-45c7-8643-d9ba664ee278",
+      "text_hash": "sha256:e7e6e4d51f13bcbc56b4b6a79ac80369b801893902fa6f06e9a60d31d2b266ef",
+      "title": "住下之后",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2923,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 3,
+      "asset_version_id": "bccc74c1-3b4f-46fe-a327-d115143cb89f",
+      "text_hash": "sha256:5aff616921b6c11d4aaf4be2519f2e9d12b3c70a7041a53e5926b627ff486d1c",
+      "title": "一线气机",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2915,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 4,
+      "asset_version_id": "794e5fb7-42e5-4837-af0d-5394c97f110c",
+      "text_hash": "sha256:82dbd208248445809f699cd03ee0f7c8e62663b48c1846f3d15de5664e85dc80",
+      "title": "湿叶里的差别",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2864,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 5,
+      "asset_version_id": "f20f8ea7-9cc3-4ee8-98f8-efe4dbe3157a",
+      "text_hash": "sha256:96a90c9d3ad3e71779e06f573a912fbd53c4b46d2891730f52518ab81e1fa337",
+      "title": "石湾谷的第一篓",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3069,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 6,
+      "asset_version_id": "fd426812-e534-4975-a358-258da2832beb",
+      "text_hash": "sha256:f0c9d97fcd4e9b4e990f46823de236f5e14116c03825bb73b22a37ead4c66a57",
+      "title": "把问题带过去",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2557,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 7,
+      "asset_version_id": "26b6ac37-8cc2-4a2d-8ad3-d6a8aa61edcf",
+      "text_hash": "sha256:d0b3e00614162fe1325ed3b991f4cdb543e6b69a18e80535eefc4d0a1420e9a2",
+      "title": "课位与叶柄",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2500,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 8,
+      "asset_version_id": "1f233c1e-48bd-4dce-a727-2061788968f6",
+      "text_hash": "sha256:a00efdb353ceffb011757815025b4db3d76f670bd1abfc11d6971cf7696770c5",
+      "title": "东屋第一课",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2580,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 9,
+      "asset_version_id": "17127099-12f0-4d83-a896-8bddb5955ff6",
+      "text_hash": "sha256:b64ee1a6f2a1e5215a169a8c222917e964f6fa963ef44fb095014a7b09235a7e",
+      "title": "一刻之间",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2557,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    },
+    {
+      "chapter": 10,
+      "asset_version_id": "82f5c0fc-dbe4-4e53-a6f2-cee2704c6aa3",
+      "text_hash": "sha256:2d3de692ad0fce418d9495e8d6c8d9044c628edd6611020b9befa0a72a98b800",
+      "title": "分叶有时",
+      "author_selection": "WORKING_SELECTED",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2798,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      }
+    }
+  ],
+  "native_manifest_digest": "sha256:a2e30bdad85f1efa331665c97d11829ff07045aac77e988808d023c8dbdc75f0",
+  "export_sha256": "1ff0bca9a72346e545c992d5b50904c042d7d043bde52e25c7597ec6f3480803",
+  "readback_verified": true,
+  "prefix_1_5_unchanged": true,
+  "dependency_changes": [],
+  "formal_accepted_cursor": 0,
+  "human_choice": "NOT_GRANTED",
+  "publication": "NOT_AUTHORIZED"
+}

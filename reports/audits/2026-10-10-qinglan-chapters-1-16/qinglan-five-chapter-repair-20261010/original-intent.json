@@ -1,0 +1,986 @@
+{
+  "content": {
+    "type": "ChapterExecutionIntent",
+    "chapter": 5,
+    "project_id": "qid-learning-prose-01",
+    "scene_plans": [
+      {
+        "goal": "现场读核既有说明和纸上的时间安排，按说明完成五分钟尝试，留意本人动作与开始追等结果的察觉，保住未得到预期感觉时仍可取得的信息。",
+        "beats": [
+          {
+            "beat_id": "chapter:5:scene:1:beat:1",
+            "ordinal": 1,
+            "function": "从已留出的练习起点开始，说明和分栏纸在手边，旁人不在场；沈砚先实际读核既有说明及纸上的练习、记录、休息与待作配合起止，取得本场行动所需信息，再按原说明尝试。读核是五分钟尝试的启动步骤，不新增修炼动作或额外时段，也不以回忆替代现场取得。",
+            "expected_reader_effect": "看见前章协商落实为本人行动，进入安静而有边界的练习；行动依据来自他现场实际读到的内容。"
+          },
+          {
+            "beat_id": "chapter:5:scene:1:beat:2",
+            "ordinal": 2,
+            "function": "让没有辨清气机的过程持续出现；通过沈砚本人能够察觉的肩背与呼吸，呈现注意力逐渐转向等待结果。",
+            "expected_reader_effect": "理解期待如何占据注意力，保留感觉可能不重现的不确定。"
+          },
+          {
+            "beat_id": "chapter:5:scene:1:beat:3",
+            "ordinal": 3,
+            "function": "沈砚发现自己已经开始催等下一点感觉，能定位这次追等的察觉，却在察觉肩背提起时无法倒推出实际起点；只继续原说明内的尝试。",
+            "expected_reader_effect": "获得能够辨认的小幅进步，同时意识到观察仍不完整。"
+          },
+          {
+            "beat_id": "chapter:5:scene:1:beat:4",
+            "ordinal": 4,
+            "function": "五分钟边界到达，他停止尝试；本次未再次辨清气机，不追加一轮，转向预留的记录工作。",
+            "expected_reader_effect": "让失落有实际重量，也看见他守住时间与动作范围的自主选择。"
+          }
+        ],
+        "ordinal": 1,
+        "conflict": "感觉没有按期待重现，等待结果容易挤走动作观察；他能发现自己在追等，却不能因此补出此前没有持续观察的提肩起点。",
+        "scene_id": "chapter:5:scene:1",
+        "exit_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。",
+        "entry_state": "条件性承接第4章：沈砚在桌边完成既定整理，既有说明与分栏纸在手边；程观、许庭均已离开。以程观离开为相对零点，第12分钟的五分钟独立练习即将开始，本次结果未知。已接受入口没有人物知识事实，本章尚未通过本人现场读核取得说明和时间安排。",
+        "arc_progress": [
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "participants": [
+          "沈砚"
+        ],
+        "reader_effect": "先感到独自尝试的期待与失落，再认出他没有把全部注意力丢给结果；观察仍有限，但不是一无所获。",
+        "scene_version": 1,
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "chapter:5:fact:existing-instructions",
+          "chapter:5:fact:written-time-arrangement",
+          "chapter:5:fact:solo-observation"
+        ],
+        "state_transitions": [
+          "沈砚:chapter:5:fact:existing-instructions",
+          "沈砚:chapter:5:fact:written-time-arrangement",
+          "沈砚:chapter:5:fact:solo-observation"
+        ],
+        "realization_event_ids": [
+          "group4-e4"
+        ]
+      },
+      {
+        "goal": "在预留三分钟内将本次观察分列落字，留下提肩起点的证据缺口，再完整保留五分钟休息。",
+        "beats": [
+          {
+            "beat_id": "chapter:5:scene:2:beat:1",
+            "ordinal": 1,
+            "function": "先写本次未再次辨清气机，再分别写开始追等结果的察觉和本人能够确认的动作；每一项都只依据刚结束的尝试。",
+            "expected_reader_effect": "看见观察变成可复查的信息，避免把本次结果套进旧记录。"
+          },
+          {
+            "beat_id": "chapter:5:scene:2:beat:2",
+            "ordinal": 2,
+            "function": "笔移到提肩起点一栏时，沈砚尝试回想，却发现只能确认后来察觉到提肩；他不把这处察觉换写成实际开始。",
+            "expected_reader_effect": "理解留白的困难来自他想把事情解释清楚，而不是故意制造谜团。"
+          },
+          {
+            "beat_id": "chapter:5:scene:2:beat:3",
+            "ordinal": 3,
+            "function": "将提肩起点留空，并标明未持续观察；本次内容与旧纸分开，不添加内在因果箭头，也不预填旁人尚未提供的报告。",
+            "expected_reader_effect": "获得诚实完成一项工作的踏实感，保留后续核对的具体需要。"
+          },
+          {
+            "beat_id": "chapter:5:scene:2:beat:4",
+            "ordinal": 4,
+            "function": "三分钟记录结束便收笔，保留第20—25分钟休息；他不借休息再试，也不请求旁人提前到场。休息后的待作观察仍是下一步。",
+            "expected_reader_effect": "感到实际时间得到承接，章节从用力求解回到平稳等待下一步。"
+          },
+          {
+            "beat_id": "chapter:5:scene:2:beat:5",
+            "ordinal": 5,
+            "function": "章末落在已经写清的条目与未清空格之间：他知道下一次不能问笼统的原因，需要先决定有限外部观察该核对哪一段；不提前给出答案。",
+            "expected_reader_effect": "带着一个有限、可行动的疑问进入下一章。"
+          }
+        ],
+        "ordinal": 2,
+        "conflict": "他希望记录能解释变化，现有证据却只能支持部分察觉；把空白留下会显得不完整，也最能暴露下一次真正需要核对的地方。",
+        "scene_id": "chapter:5:scene:2",
+        "exit_state": "相对第25分钟，三分钟记录和五分钟休息均已结束。沈砚的纸页分列本次未辨清气机、开始追等结果的察觉及能够确认的动作，提肩实际起点仍留空；他准备携记录进入待作外部观察，观察尚未开始，稳定流转及内在因果仍未获证明。",
+        "entry_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。",
+        "arc_progress": [
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "participants": [
+          "沈砚"
+        ],
+        "reader_effect": "看见沈砚自己完成记录，并将最想解释的空白留住；失落没有被夸大，独立完成工作的踏实感与下一次核对的期待同时成立。",
+        "scene_version": 1,
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "chapter:5:fact:recorded-gap"
+        ],
+        "state_transitions": [
+          "沈砚:chapter:5:fact:recorded-gap",
+          "thread:qinglan-wendao:future-1:own-road",
+          "沈砚"
+        ],
+        "realization_event_ids": [
+          "group4-e5"
+        ]
+      }
+    ],
+    "reader_tension": {},
+    "required_beats": [
+      {
+        "beat_id": "chapter:5:scene:1:beat:1",
+        "ordinal": 1,
+        "function": "从已留出的练习起点开始，说明和分栏纸在手边，旁人不在场；沈砚先实际读核既有说明及纸上的练习、记录、休息与待作配合起止，取得本场行动所需信息，再按原说明尝试。读核是五分钟尝试的启动步骤，不新增修炼动作或额外时段，也不以回忆替代现场取得。",
+        "scene_id": "chapter:5:scene:1",
+        "expected_reader_effect": "看见前章协商落实为本人行动，进入安静而有边界的练习；行动依据来自他现场实际读到的内容。"
+      },
+      {
+        "beat_id": "chapter:5:scene:1:beat:2",
+        "ordinal": 2,
+        "function": "让没有辨清气机的过程持续出现；通过沈砚本人能够察觉的肩背与呼吸，呈现注意力逐渐转向等待结果。",
+        "scene_id": "chapter:5:scene:1",
+        "expected_reader_effect": "理解期待如何占据注意力，保留感觉可能不重现的不确定。"
+      },
+      {
+        "beat_id": "chapter:5:scene:1:beat:3",
+        "ordinal": 3,
+        "function": "沈砚发现自己已经开始催等下一点感觉，能定位这次追等的察觉，却在察觉肩背提起时无法倒推出实际起点；只继续原说明内的尝试。",
+        "scene_id": "chapter:5:scene:1",
+        "expected_reader_effect": "获得能够辨认的小幅进步，同时意识到观察仍不完整。"
+      },
+      {
+        "beat_id": "chapter:5:scene:1:beat:4",
+        "ordinal": 4,
+        "function": "五分钟边界到达，他停止尝试；本次未再次辨清气机，不追加一轮，转向预留的记录工作。",
+        "scene_id": "chapter:5:scene:1",
+        "expected_reader_effect": "让失落有实际重量，也看见他守住时间与动作范围的自主选择。"
+      },
+      {
+        "beat_id": "chapter:5:scene:2:beat:1",
+        "ordinal": 1,
+        "function": "先写本次未再次辨清气机，再分别写开始追等结果的察觉和本人能够确认的动作；每一项都只依据刚结束的尝试。",
+        "scene_id": "chapter:5:scene:2",
+        "expected_reader_effect": "看见观察变成可复查的信息，避免把本次结果套进旧记录。"
+      },
+      {
+        "beat_id": "chapter:5:scene:2:beat:2",
+        "ordinal": 2,
+        "function": "笔移到提肩起点一栏时，沈砚尝试回想，却发现只能确认后来察觉到提肩；他不把这处察觉换写成实际开始。",
+        "scene_id": "chapter:5:scene:2",
+        "expected_reader_effect": "理解留白的困难来自他想把事情解释清楚，而不是故意制造谜团。"
+      },
+      {
+        "beat_id": "chapter:5:scene:2:beat:3",
+        "ordinal": 3,
+        "function": "将提肩起点留空，并标明未持续观察；本次内容与旧纸分开，不添加内在因果箭头，也不预填旁人尚未提供的报告。",
+        "scene_id": "chapter:5:scene:2",
+        "expected_reader_effect": "获得诚实完成一项工作的踏实感，保留后续核对的具体需要。"
+      },
+      {
+        "beat_id": "chapter:5:scene:2:beat:4",
+        "ordinal": 4,
+        "function": "三分钟记录结束便收笔，保留第20—25分钟休息；他不借休息再试，也不请求旁人提前到场。休息后的待作观察仍是下一步。",
+        "scene_id": "chapter:5:scene:2",
+        "expected_reader_effect": "感到实际时间得到承接，章节从用力求解回到平稳等待下一步。"
+      },
+      {
+        "beat_id": "chapter:5:scene:2:beat:5",
+        "ordinal": 5,
+        "function": "章末落在已经写清的条目与未清空格之间：他知道下一次不能问笼统的原因，需要先决定有限外部观察该核对哪一段；不提前给出答案。",
+        "scene_id": "chapter:5:scene:2",
+        "expected_reader_effect": "带着一个有限、可行动的疑问进入下一章。"
+      }
+    ],
+    "chapter_mission": {
+      "entry_state": {
+        "entry_state_ref": "",
+        "first_scene_state": "条件性承接第4章：沈砚在桌边完成既定整理，既有说明与分栏纸在手边；程观、许庭均已离开。以程观离开为相对零点，第12分钟的五分钟独立练习即将开始，本次结果未知。已接受入口没有人物知识事实，本章尚未通过本人现场读核取得说明和时间安排。",
+        "previous_accepted_ending": ""
+      },
+      "hook_intent": {
+        "ending_hook": "",
+        "unresolved_exit_question": "提肩起点没有看清，下一次有限的外部观察该先核对哪一段，才能真正补到缺口？"
+      },
+      "reader_effect": {
+        "reward_mode": "看见沈砚独立完成可复查的记录",
+        "exit_question": "提肩起点没有看清，下一次有限的外部观察该先核对哪一段，才能真正补到缺口？",
+        "entry_question": "没有人在旁提醒，沈砚能否一边期待感觉重现，一边留住自己的动作观察？",
+        "target_emotion": "安静而踏实"
+      },
+      "arc_working_set": {
+        "accepted_reality": {
+          "actual_only": true,
+          "narrative_state": {
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "state_kind_counts": {},
+            "accepted_through_chapter": 0
+          },
+          "projection_hash": "",
+          "projection_set_id": "",
+          "accepted_through_chapter": 0,
+          "source_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        "working_set_digest": "sha256:8e988328e7880e9fc2aeeae704945f1acf65065e6db2ea474410264c9fc4271c",
+        "schedule_correction": {
+          "status": "GROUP_CADENCE_CONFIRMED",
+          "added_arc_plan_version_ids": [],
+          "removed_arc_plan_version_ids": []
+        }
+      },
+      "obligation_refs": [],
+      "trajectory_refs": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      ],
+      "primary_function": "沈砚独自按既有说明完成一次有时限的比较，并诚实记录未再辨清气机时仍可观察到的动作。",
+      "arc_contributions": [
+        {
+          "role": "PRIMARY",
+          "score": 25,
+          "action": "ADVANCE",
+          "reason_codes": [
+            "GROUP_CADENCE_ADVANCE"
+          ],
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "forbidden_changes": {
+        "forbidden_events": [],
+        "hard_constraints": [],
+        "forbidden_payoffs": [],
+        "prohibited_outcomes": [
+          "以没有再次感知为由撤销先前候选中的观察能力。",
+          "增加未经说明的新修炼动作。",
+          "把一次比较失败写成确定的中断原因。"
+        ]
+      },
+      "required_outcomes": {
+        "required_events": [],
+        "required_payoffs": [],
+        "state_transitions": [
+          {
+            "to_state": "在第一场实际读核现场既有说明，知道本次可遵循的原有说明范围；不新增未供应的动作或追认此前知识。",
+            "entity_key": "沈砚:chapter:5:fact:existing-instructions",
+            "from_state": "已接受入口没有该人物知识事实；现场说明尚未在本章通过本人阅读取得。",
+            "state_kind": "character_knowledge"
+          },
+          {
+            "to_state": "在第一场实际读核纸上的练习、记录、休息及待作配合起止，知道本次应遵守的时间边界；不证明此前协商已获接受。",
+            "entity_key": "沈砚:chapter:5:fact:written-time-arrangement",
+            "from_state": "已接受入口没有该人物知识事实；纸上的时间安排尚未在本章通过本人阅读取得。",
+            "state_kind": "character_knowledge"
+          },
+          {
+            "to_state": "知道本次没有再次辨清气机，能够报告自己开始追等结果的察觉和实际察觉到的肩背、呼吸变化。",
+            "entity_key": "沈砚:chapter:5:fact:solo-observation",
+            "from_state": "本次独立尝试尚未发生，结果与本人将察觉到的动作未知。",
+            "state_kind": "character_knowledge"
+          },
+          {
+            "to_state": "知道本次记录已经分列确知与未知，无法确认提肩实际开始时刻的空格仍在。",
+            "entity_key": "沈砚:chapter:5:fact:recorded-gap",
+            "from_state": "尚未通过本次落笔核对确定记录中哪些部分有依据、哪些部分缺失。",
+            "state_kind": "character_knowledge"
+          },
+          {
+            "to_state": "已有一次标明未再次辨清气机并保留提肩起点空白的独立比较记录，下一次核对可针对证据缺口展开。",
+            "entity_key": "thread:qinglan-wendao:future-1:own-road",
+            "from_state": "尚无本组由沈砚独立完成、可以用于下一次核对的比较记录。",
+            "state_kind": "plot_thread"
+          },
+          {
+            "to_state": "已完成独立尝试与记录，接受本次仍有证据空白，按约休息并准备携带记录继续核对。",
+            "entity_key": "沈砚",
+            "from_state": "准备按约独自尝试，仍希望一次比较能说明先前未清的变化。",
+            "state_kind": "character_state"
+          }
+        ],
+        "required_state_delta": {}
+      },
+      "expected_exit_state": {
+        "summary": "拟形成一份由沈砚独立完成的比较记录：本次未再次辨清气机，开始追等结果的察觉与本人能够报告的动作变化已有落字，提肩实际起点仍留空。五分钟练习、三分钟记录和五分钟休息分别得到承接；下一次外部观察尚未执行，稳定流转仍未获证明。"
+      },
+      "mission_fingerprint": "sha256:75b66f374e696200960cebebf786a6069c4ab1e034c9b27d15aaea1938417a66",
+      "narrative_composition": {
+        "events": [
+          {
+            "beat_ids": [
+              "chapter:5:scene:1:beat:1",
+              "chapter:5:scene:1:beat:2",
+              "chapter:5:scene:1:beat:3",
+              "chapter:5:scene:1:beat:4"
+            ],
+            "event_id": "chapter:5:scene:1",
+            "participants": [
+              "沈砚"
+            ],
+            "causal_intent": {
+              "goal": "现场读核既有说明和纸上的时间安排，按说明完成五分钟尝试，留意本人动作与开始追等结果的察觉，保住未得到预期感觉时仍可取得的信息。",
+              "conflict": "感觉没有按期待重现，等待结果容易挤走动作观察；他能发现自己在追等，却不能因此补出此前没有持续观察的提肩起点。",
+              "exit_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。",
+              "entry_state": "条件性承接第4章：沈砚在桌边完成既定整理，既有说明与分栏纸在手边；程观、许庭均已离开。以程观离开为相对零点，第12分钟的五分钟独立练习即将开始，本次结果未知。已接受入口没有人物知识事实，本章尚未通过本人现场读核取得说明和时间安排。"
+            },
+            "reader_effect": "先感到独自尝试的期待与失落，再认出他没有把全部注意力丢给结果；观察仍有限，但不是一无所获。",
+            "information_gain": [
+              "chapter:5:fact:existing-instructions",
+              "chapter:5:fact:written-time-arrangement",
+              "chapter:5:fact:solo-observation"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "state_transitions": [
+              "沈砚:chapter:5:fact:existing-instructions",
+              "沈砚:chapter:5:fact:written-time-arrangement",
+              "沈砚:chapter:5:fact:solo-observation"
+            ],
+            "narrative_functions": [
+              "CHARACTER",
+              "MYSTERY_DISCLOSURE",
+              "PLOT",
+              "READER_EXPERIENCE"
+            ]
+          },
+          {
+            "beat_ids": [
+              "chapter:5:scene:2:beat:1",
+              "chapter:5:scene:2:beat:2",
+              "chapter:5:scene:2:beat:3",
+              "chapter:5:scene:2:beat:4",
+              "chapter:5:scene:2:beat:5"
+            ],
+            "event_id": "chapter:5:scene:2",
+            "participants": [
+              "沈砚"
+            ],
+            "causal_intent": {
+              "goal": "在预留三分钟内将本次观察分列落字，留下提肩起点的证据缺口，再完整保留五分钟休息。",
+              "conflict": "他希望记录能解释变化，现有证据却只能支持部分察觉；把空白留下会显得不完整，也最能暴露下一次真正需要核对的地方。",
+              "exit_state": "相对第25分钟，三分钟记录和五分钟休息均已结束。沈砚的纸页分列本次未辨清气机、开始追等结果的察觉及能够确认的动作，提肩实际起点仍留空；他准备携记录进入待作外部观察，观察尚未开始，稳定流转及内在因果仍未获证明。",
+              "entry_state": "相对第17分钟，沈砚已停止五分钟独立尝试，本次未再次辨清气机；他能报告开始追等结果的察觉及本人察觉到的肩背、呼吸变化，却不能确认提肩实际起点。观察尚未落字，三分钟记录即将开始，旁人仍未到场。"
+            },
+            "reader_effect": "看见沈砚自己完成记录，并将最想解释的空白留住；失落没有被夸大，独立完成工作的踏实感与下一次核对的期待同时成立。",
+            "information_gain": [
+              "chapter:5:fact:recorded-gap"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "state_transitions": [
+              "沈砚:chapter:5:fact:recorded-gap",
+              "thread:qinglan-wendao:future-1:own-road",
+              "沈砚"
+            ],
+            "narrative_functions": [
+              "CHARACTER",
+              "MYSTERY_DISCLOSURE",
+              "PLOT",
+              "READER_EXPERIENCE"
+            ]
+          }
+        ],
+        "event_count": 2,
+        "composition_rule": "CAUSAL_MULTI_FUNCTION_EVENTS",
+        "contract_version": "chapter-narrative-composition-v1",
+        "multi_arc_event_count": 0
+      },
+      "narrative_realization": {
+        "events": [
+          {
+            "action": "沈砚按已知说明独自完成一次有时限的尝试，同时留意肩背、呼吸与自己开始等待结果的时刻。",
+            "causes": [
+              "group4-e3"
+            ],
+            "decision": "按既有说明完成尝试，不临时增添动作来追求感觉。",
+            "event_id": "group4-e4",
+            "required": true,
+            "slice_id": "chapter-5",
+            "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "motivation": "检验自己能否在没有即时反馈时持续观察。",
+            "resistance": "未得到期待的感觉，容易诱使他把动作观察丢掉。",
+            "consequence": "即使未再次辨清气机，他仍获得自己动作变化的可复查记录。",
+            "disclosures": [
+              "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+            ],
+            "state_deltas": [
+              {
+                "to_state": "有一次标明未再次辨清气机的独立比较",
+                "entity_id": "thread:qinglan-wendao:future-1:own-road",
+                "from_state": "尚无本组独立比较记录",
+                "state_kind": "practice_evidence"
+              }
+            ],
+            "preconditions": [
+              "有可用且不与已确认事务重叠的练习时段。",
+              "既有说明的适用范围已在候选连续性中明确。"
+            ],
+            "chapter_number": 5,
+            "feature_status": {
+              "decision": {
+                "status": "APPLICABLE",
+                "rationale": "沈砚自主选择遵守已知说明和时间边界。"
+              },
+              "resistance": {
+                "status": "APPLICABLE",
+                "rationale": "气机不按期待重现，观察欲望又容易使呼吸变急。"
+              },
+              "irreversible_change": {
+                "status": "APPLICABLE",
+                "rationale": "本次练习实际耗时，不要求额外伤害或重大牺牲。"
+              }
+            },
+            "next_event_ids": [
+              "group4-e5"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "knowledge_boundary": {
+              "actor_knows": [
+                "沈砚知道本次自己遵循的说明。",
+                "沈砚可报告本次亲自察觉的肩背与呼吸变化。"
+              ],
+              "reader_may_learn": [
+                "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+              ],
+              "forbidden_disclosures": [
+                "许庭或程观未在场时的私下判断。",
+                "没有再次感知就证明此前从未感知。"
+              ]
+            },
+            "obligation_actions": [],
+            "irreversible_change": "本次有时限练习所用时间已耗去。"
+          },
+          {
+            "action": "沈砚写下本次能确认的动作和不能确认的内在先后，把空白留在记录中。",
+            "causes": [
+              "group4-e4"
+            ],
+            "decision": "不把没有观察到的变化补写为已知原因。",
+            "event_id": "group4-e5",
+            "required": true,
+            "slice_id": "chapter-5",
+            "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "motivation": "让下一次求助建立在真实记录上。",
+            "resistance": "把空白写明会使记录看起来不够完整。",
+            "consequence": "下一次核对可以针对证据空白，而不必重演整次练习。",
+            "disclosures": [
+              "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+            ],
+            "state_deltas": [
+              {
+                "to_state": "本次观察已分列确知与未知",
+                "entity_id": "thread:qinglan-wendao:future-1:own-road",
+                "from_state": "本次观察仍在回忆中",
+                "state_kind": "practice_record"
+              }
+            ],
+            "preconditions": [
+              "本次独立尝试已完成。"
+            ],
+            "chapter_number": 5,
+            "feature_status": {
+              "decision": {
+                "status": "APPLICABLE",
+                "rationale": "主动留下空白是一项影响后续核对方式的判断。"
+              },
+              "resistance": {
+                "status": "APPLICABLE",
+                "rationale": "沈砚希望得到原因，但现有观察不足。"
+              },
+              "irreversible_change": {
+                "status": "NOT_APPLICABLE",
+                "rationale": "记录可修改，不能据此强行制造不可逆代价。"
+              }
+            },
+            "next_event_ids": [
+              "group4-e6"
+            ],
+            "arc_contributions": [
+              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+            ],
+            "knowledge_boundary": {
+              "actor_knows": [
+                "沈砚知道自己本次实际察觉到的动作变化。",
+                "沈砚知道哪些时刻自己没有持续留意。"
+              ],
+              "reader_may_learn": [
+                "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+              ],
+              "forbidden_disclosures": [
+                "提肩已被证明是气机消失的原因。"
+              ]
+            },
+            "obligation_actions": [],
+            "irreversible_change": null
+          }
+        ],
+        "slice_id": "chapter-5",
+        "event_ids": [
+          "group4-e4",
+          "group4-e5"
+        ],
+        "proof_hash": "sha256:99fb8eeb1f94c2f6bd05e9184b32385892cbcd5a19e8b8d46e73902f5f2267fb",
+        "chapter_number": 5,
+        "realization_id": "narrative-realization:d901739991ade7b9cf438aa795bf182c0ae72bfd9df1fef7d533d5a9be05087e",
+        "contract_digest": "sha256:859156e794d36f7738dacbaf2a8d54d83d28ecada77c827aca7990f93b2b77a0",
+        "foundation_set_digest": "sha256:00e78821a055e905a55475313f3209cc1eb5d0af07dfef25ca87249946c92b37",
+        "arc_working_set_digest": "sha256:d657cbed7d45b88424c15404d2940bcee31f85231aac1231afbd31cd9fa182af",
+        "proof_asset_version_id": "authority-output:b1af1e58-1939-4c2e-9a6a-d4929c61cb60:story_design.transition.receipt:v1",
+        "accepted_through_chapter": 0,
+        "chapter_group_content_hash": "sha256:050928f617302350954c01bb753c104ffea9622380939a56eaeeb95e5c28fd7a",
+        "chapter_group_plan_version_id": "authority-output:a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3:story_planning.candidate:v1"
+      },
+      "why_this_chapter_exists": "让沈砚在无人即时反馈的情况下完成一次有界比较，把对感觉重现的期待转为本人能够执行的观察与记录工作。章节的变化落在证据的取得和缺口的定位：未再次辨清气机仍能获得可用信息，记录完整性不能靠补写未知先后来换取。",
+      "unresolved_obligation_intent": {
+        "setups": [],
+        "payoffs": [],
+        "scheduled_actions": []
+      },
+      "knowledge_and_disclosure_boundaries": {
+        "disclosures": [
+          {
+            "mode": "CONFIRM",
+            "fact_id": "chapter:5:fact:solo-observation",
+            "audience": "READER",
+            "disclosure_id": "chapter:5:disclosure:solo-observation",
+            "earliest_chapter": 5,
+            "presentation_channel": "group4-e4的限知练习过程与沈砚本人察觉：这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+          },
+          {
+            "mode": "CONFIRM",
+            "fact_id": "chapter:5:fact:recorded-gap",
+            "audience": "READER",
+            "disclosure_id": "chapter:5:disclosure:recorded-gap",
+            "earliest_chapter": 5,
+            "presentation_channel": "group4-e5中纸页的实际落字与留白：沈砚的记录保留了无法确认提肩开始时刻的空白。"
+          },
+          {
+            "mode": "WITHHOLD",
+            "fact_id": "chapter:5:fact:shoulder-causality",
+            "audience": "READER",
+            "disclosure_id": "chapter:5:disclosure:withheld-causality",
+            "earliest_chapter": 5,
+            "presentation_channel": "记录只呈现本人察觉与证据缺口；不提供提肩与气机变化之间的确定因果解释。"
+          }
+        ],
+        "knowledge_boundaries": [
+          {
+            "layer": "CHARACTER_KNOWLEDGE",
+            "status": "KNOWN",
+            "fact_id": "chapter:5:fact:existing-instructions",
+            "subject_id": "沈砚",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "CHARACTER_KNOWLEDGE",
+            "status": "KNOWN",
+            "fact_id": "chapter:5:fact:written-time-arrangement",
+            "subject_id": "沈砚",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "STORY_TRUTH",
+            "status": "TRUE",
+            "fact_id": "chapter:5:fact:solo-observation",
+            "subject_id": "chapter:5",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "CHARACTER_KNOWLEDGE",
+            "status": "KNOWN",
+            "fact_id": "chapter:5:fact:solo-observation",
+            "subject_id": "沈砚",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "READER_KNOWLEDGE",
+            "status": "KNOWN",
+            "fact_id": "chapter:5:fact:solo-observation",
+            "subject_id": "READER",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "STORY_TRUTH",
+            "status": "TRUE",
+            "fact_id": "chapter:5:fact:recorded-gap",
+            "subject_id": "chapter:5",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "CHARACTER_KNOWLEDGE",
+            "status": "KNOWN",
+            "fact_id": "chapter:5:fact:recorded-gap",
+            "subject_id": "沈砚",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "READER_KNOWLEDGE",
+            "status": "KNOWN",
+            "fact_id": "chapter:5:fact:recorded-gap",
+            "subject_id": "READER",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "STORY_TRUTH",
+            "status": "UNKNOWN",
+            "fact_id": "chapter:5:fact:shoulder-causality",
+            "subject_id": "chapter:5",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "CHARACTER_KNOWLEDGE",
+            "status": "UNKNOWN",
+            "fact_id": "chapter:5:fact:shoulder-causality",
+            "subject_id": "沈砚",
+            "available_from_chapter": 5
+          },
+          {
+            "layer": "READER_KNOWLEDGE",
+            "status": "WITHHELD",
+            "fact_id": "chapter:5:fact:shoulder-causality",
+            "subject_id": "READER",
+            "available_from_chapter": 5
+          }
+        ]
+      }
+    },
+    "previous_ending": "",
+    "retrieval_graph": {
+      "entity_ids": [],
+      "character_ids": [],
+      "relationship_ids": []
+    },
+    "contract_version": "chapter-execution-intent-v4",
+    "accepted_boundary": {
+      "accepted_through_chapter": 0,
+      "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    "chapter_objective": "沈砚独自按既有说明完成一次有时限的比较，并诚实记录未再辨清气机时仍可观察到的动作。",
+    "active_obligations": [],
+    "intent_fingerprint": "sha256:5ebe902874574b4a557fae4f7c9781edc82bf71b52c35f2f4b44aaa6844859b6",
+    "source_chapter_plan": {
+      "locked": true,
+      "content_hash": "sha256:bd17deb9c5fdeb5a43af5c638c3acf894d4b56a77bcc529dac5a9384bbbfcb59",
+      "asset_version_id": "authority-output:a1386240-6466-4d6e-93ff-5deed71c38a1:chapter.plan:v1"
+    },
+    "creative_requirements": {
+      "style": {
+        "policies": [
+          {
+            "constraints": [
+              "正文主要使用简体中文，单章2500—3500中文字。",
+              "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+              "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+              "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+              "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+              "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+              "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+              "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+            ],
+            "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+            "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+            "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+            "structured_facts": [
+              {
+                "kind": "voice_contract",
+                "layer": "NARRATOR",
+                "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                "required_markers": [],
+                "forbidden_markers": []
+              },
+              {
+                "kind": "voice_contract",
+                "layer": "GENRE",
+                "guidance": [
+                  "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                  "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                  "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                  "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                  "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                ],
+                "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                "required_markers": [],
+                "forbidden_markers": []
+              },
+              {
+                "kind": "voice_contract",
+                "layer": "CHARACTER",
+                "guidance": [
+                  {
+                    "situation": "问询一项尚未接受的劳作安排时。",
+                    "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                    "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                  },
+                  {
+                    "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                    "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                    "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                  },
+                  {
+                    "situation": "协商首次结伴采药的路线时。",
+                    "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                    "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                  }
+                ],
+                "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                "character_id": "character:shen-yan",
+                "required_markers": [],
+                "forbidden_markers": []
+              },
+              {
+                "kind": "voice_contract",
+                "layer": "CHARACTER",
+                "guidance": [
+                  {
+                    "situation": "收到尚未说明回程安排的采药邀请时。",
+                    "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                    "motivation": "在答应同行前保留自己的时间边界。"
+                  },
+                  {
+                    "situation": "检查拟用于同行的携行工具时。",
+                    "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                    "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                  },
+                  {
+                    "situation": "同行者提出在任务途中多看一处观察点时。",
+                    "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                    "motivation": "让额外学习进入协商，而非一概拒绝。"
+                  }
+                ],
+                "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                "character_id": "character:lu-heng",
+                "required_markers": [],
+                "forbidden_markers": []
+              },
+              {
+                "kind": "voice_contract",
+                "layer": "CHARACTER",
+                "guidance": [
+                  {
+                    "situation": "准备采药时，有人询问她是否认识目标药材。",
+                    "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                    "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                  },
+                  {
+                    "situation": "商定材料保管办法时。",
+                    "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                    "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                  },
+                  {
+                    "situation": "任务途中发现值得核实的细小差别时。",
+                    "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                    "motivation": "争取观察机会，同时承认同行者的安排。"
+                  }
+                ],
+                "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                "character_id": "character:tang-sui",
+                "required_markers": [],
+                "forbidden_markers": []
+              },
+              {
+                "kind": "voice_contract",
+                "layer": "CHARACTER",
+                "guidance": [
+                  {
+                    "situation": "有人只说引气练习没有进展时。",
+                    "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                    "motivation": "让求助者提供可用于指导的观察。"
+                  },
+                  {
+                    "situation": "未来观察到弟子一次短暂成功后。",
+                    "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                    "motivation": "区分一次感觉与可重复的操作能力。"
+                  },
+                  {
+                    "situation": "沈砚询问自己是否能够参加正式课程时。",
+                    "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                    "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                  }
+                ],
+                "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                "character_id": "character:xu-ting",
+                "required_markers": [],
+                "forbidden_markers": []
+              },
+              {
+                "kind": "voice_contract",
+                "layer": "CHARACTER",
+                "guidance": [
+                  {
+                    "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                    "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                    "motivation": "让调整请求能够被具体处理。"
+                  },
+                  {
+                    "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                    "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                    "motivation": "区分任务报酬与兑换对象的实际供给。"
+                  },
+                  {
+                    "situation": "有人要求他直接确认正式课程资格时。",
+                    "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                    "motivation": "在部门职责边界内给出下一步回应。"
+                  }
+                ],
+                "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                "character_id": "character:cheng-guan",
+                "required_markers": [],
+                "forbidden_markers": []
+              },
+              {
+                "key": "work_applicability",
+                "value": {
+                  "scope": "BOOK",
+                  "book_id": "book:qinglan-wendao-20261008",
+                  "declarations": [
+                    {
+                      "status": "APPLICABLE",
+                      "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                      "field_path": "$.subgenre"
+                    },
+                    {
+                      "status": "APPLICABLE",
+                      "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                      "field_path": "$.core_desire"
+                    },
+                    {
+                      "status": "APPLICABLE",
+                      "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                      "field_path": "$.core_fear"
+                    },
+                    {
+                      "status": "APPLICABLE",
+                      "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                      "field_path": "$.core_conflict"
+                    },
+                    {
+                      "status": "APPLICABLE",
+                      "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                      "field_path": "$.serialization_potential"
+                    }
+                  ],
+                  "source_bindings": [
+                    {
+                      "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                      "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                    },
+                    {
+                      "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                      "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                    },
+                    {
+                      "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                      "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                    }
+                  ],
+                  "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                  "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                }
+              },
+              {
+                "key": "creative_style",
+                "value": {
+                  "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                  "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                  "constraints": [
+                    "正文主要使用简体中文，单章2500—3500中文字。",
+                    "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                    "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                    "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                    "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                    "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                    "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                    "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                  ],
+                  "genre_conventions": [
+                    "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                    "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                    "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                    "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                    "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                  ],
+                  "original_examples": [
+                    {
+                      "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                      "purpose": "呈现扎实练习中的可见变化。",
+                      "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                    },
+                    {
+                      "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                      "purpose": "让同门利益参与任务选择。",
+                      "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                    },
+                    {
+                      "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                      "purpose": "通过具体取舍表现主角主动性。",
+                      "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                    },
+                    {
+                      "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                      "purpose": "建立章际承接与节奏变化。",
+                      "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                    }
+                  ]
+                }
+              },
+              {
+                "key": "creative_direction",
+                "value": {
+                  "genre": "传统修仙",
+                  "subgenre": "宗门成长与任务历练",
+                  "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                  "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                }
+              },
+              {
+                "key": "realization_policy",
+                "value": {
+                  "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                  "contract_version": "scene-craft-tasks.v2"
+                }
+              }
+            ]
+          }
+        ],
+        "contract_version": "draft-style-view-v2",
+        "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+      },
+      "point_of_view": null,
+      "method_choices": {
+        "ending_hook": "记录中的空白恰落在他最想解释的地方，下一次核对需要怎样取舍？",
+        "reward_action": "即使未能重复辨清气机，沈砚仍准确找到自己开始追等结果的时刻。",
+        "promise_action": "让独自练习也产生可用信息，证明进步不只取决于一次感觉是否重现。",
+        "serialization_function": "承接本书以具体不足、尝试和结果推动连续成长的读者承诺：本章完成一次独立比较及可复查记录，提供安静的局部回报；以提肩起点的证据空白连接下一次有时限的外部核对，不以新危机或虚假突破制造续读动力。"
+      },
+      "style_constraints": [],
+      "target_word_count": null,
+      "prohibited_outcomes": [
+        "以没有再次感知为由撤销先前候选中的观察能力。",
+        "增加未经说明的新修炼动作。",
+        "把一次比较失败写成确定的中断原因。"
+      ]
+    },
+    "mission_schema_version": "chapter-mission-scene.v4",
+    "created_by_operation_id": "ff6d8b98-c937-41a4-80db-8cee0f59711f",
+    "required_arc_contributions": [
+      {
+        "contribution": "沈砚在无人代判时坚持区分已观察到的动作与未观察到的气机连续性。",
+        "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      }
+    ]
+  },
+  "asset_id": "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent",
+  "lifecycle": "ACTIVE",
+  "created_at": "2026-10-10T00:02:25.826646+08:00",
+  "governance": "CLEAR",
+  "eligibility": "ELIGIBLE",
+  "content_hash": "sha256:98d8f711a229e34fb135bb273c056e509eb37fd46a02da440b99118d297ab5d6",
+  "schema_version": "chapter-execution-intent.v1",
+  "version_number": 1,
+  "asset_version_id": "authority-output:ff6d8b98-c937-41a4-80db-8cee0f59711f:chapter.execution_intent:v1"
+}

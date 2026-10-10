@@ -2,13 +2,13 @@ from __future__ import annotations
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from .prose_budget import frozen_prose_budget_scope
-from .prose_coordinator import load_accepted_sources
+from .prose_coordinator import load_accepted_sources, load_review_sources
 from .prose_review import freeze_manifest, validate_window_report
 
 
 def require_prose_planning_evidence(database_url, *, command, asset_version_id, commit_sha):
     failure = KernelError("PLANNING_PROSE_EVIDENCE_INVALID", "Planning requires a current exact Book report from its native successful review and compiled release")
-    if command.execution_contract_version != "1.16.0":
+    if command.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"}:
         raise failure
     with AuthorityUnitOfWork(database_url) as uow:
         document = uow.repositories.asset_documents.require(project_id=command.project_id, asset_version_id=asset_version_id)
@@ -30,16 +30,17 @@ def require_prose_planning_evidence(database_url, *, command, asset_version_id, 
             raise failure
         operation, definition, version, payload, request, run_id, manifest, _ = rows[0]
         bound_run = (command.edition_execution or {}).get("book_run_id") or (command.world_preparation_request or {}).get("book_run_id")
-        if bound_run != run_id:
+        working = manifest["schema_version"] == "longform-prose-manifest.v3"
+        if (bound_run and bound_run != run_id) or (not bound_run and not working):
             raise KernelError("PLANNING_PROSE_EDITION_SCOPE_INVALID", "Review evidence must match the exact Book run frozen by this planning task")
         if uow.repositories.definitions.get_release(definition, version, commit_sha=commit_sha) is None:
             raise failure
         frozen_prose_budget_scope(uow.cursor, {"operation_id": operation, "command_payload": payload, "request_payload": request}, project_id=command.project_id)
         current = freeze_manifest(project_id=command.project_id, workspace_id=command.workspace_id, book_run_id=run_id,
-            sources=load_accepted_sources(uow, run_id, command.project_id), policy=manifest["policy"],
-            work_intent=manifest["schema_version"] == "longform-prose-manifest.v2")
+            sources=load_review_sources(uow, run_id, command.project_id) if working else load_accepted_sources(uow, run_id, command.project_id), policy=manifest["policy"],
+            work_intent=manifest["schema_version"] in {"longform-prose-manifest.v2", "longform-prose-manifest.v3"})
         if current["sources"] != manifest["sources"]:
-            raise KernelError("PLANNING_PROSE_EVIDENCE_STALE", "Re-review the current accepted manuscript before replacing future plans")
+            raise KernelError("PLANNING_PROSE_EVIDENCE_STALE", "Re-review the exact current source manuscript before replacing plans")
         window = next((item for item in manifest["windows"] if item["window_id"] == document.content.get("window_id")), None)
         if window is None:
             raise failure

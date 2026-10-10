@@ -1,0 +1,16 @@
+{
+  "base_sha": "d13e13b2b240d44da7c2864a16a5c7311d971629",
+  "patch_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "release_root": "/Users/yuan/.codex/releases/d13e13b2b240d44da7c2864a16a5c7311d971629-qinglan-repair",
+  "modified_files": {},
+  "git_commit_created": true,
+  "model_dispatches": 0,
+  "api_pid": 35418,
+  "worker_pid": 35440,
+  "worker_source_root": "/Users/yuan/.codex/releases/d13e13b2b240d44da7c2864a16a5c7311d971629-qinglan-repair",
+  "migration_head": "20261010_0197_authorized_planning_capacity",
+  "original_backup_sha256": "070bcee9e134a8b9fc9b793aef1831407533b8d63fad013bb9d944c4b8e7164d",
+  "backup_restore_verified": false,
+  "backup_archive_list_verified": true,
+  "latest_backup_sha256": "3933f7e75fa041424606a7ce4b0b66e5ee8ae87650a594fa2659856f071b977b"
+}

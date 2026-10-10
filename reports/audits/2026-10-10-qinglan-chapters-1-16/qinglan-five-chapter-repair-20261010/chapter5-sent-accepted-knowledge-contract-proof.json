@@ -1,0 +1,18 @@
+{
+  "source_operation": "7a5d5d7c-48e5-4062-80da-a84db0f6263a",
+  "source_effect": "f2531b44-2696-4863-a778-93ffb4f8be71",
+  "frozen_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+  "frozen_story_state_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+  "materialization_asset_version_id": "0c609c7a-326c-4e29-a361-c1c73916ae89",
+  "materialization_content_hash": "sha256:94f688eede33dd3e5817e0a9ac78b9838dc3a7c461348af1e63a2a4370f54a9b",
+  "schema_known_fact_declarations": [
+    {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 0,
+      "description": "Only frozen accepted Character Knowledge at chapter entry. Select supplied IDs for this character; working prose observations, agreements and remembered experiences are not accepted fact IDs. When none are supplied, use []. Continue working experiences in prose without inventing accepted knowledge."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "idea": "十六岁的普通山村少年沈砚想成为能独自御剑远行的修士。他主动争取青岚宗外门入门机会，凭扎实练习学会引气，选择适合自己而非别人安排的修行任务，在宗门劳作、资源竞争和山中历练中获得真实可见的进步。近期故事单元是入门、初次引气、与同门结伴完成第一次山谷采药任务，并争取进入正式外门修炼课。主线为修炼成长与历练。",
+  "genre": "传统修仙",
+  "audience": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者",
+  "project_id": "qid-learning-prose-01",
+  "constraints": [
+    "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+    "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+    "每章2500—3500中文字，写完整场景，章际动作与人物承诺有承接。",
+    "姓名、地点、功法、冲突与事件原创形成；悬念和伏笔按本书需要设置。"
+  ],
+  "source_boundaries": [
+    "当前独立作品的原创作者输入。既有作品的世界、角色、正文与叙事状态均不作为本书输入。",
+    "榜单、实验标记、工程操作与检查答案不能转成剧情要求。参考正文只存研究侧，选定抽象方法须经MKAOS与editorial_learning准入。"
+  ],
+  "creative_input_selection": {
+    "book_id": "book:qinglan-wendao-20261008",
+    "purpose": "WORK_PRODUCTION",
+    "intent_ref": "creation:qid-learning-prose-01:book:qinglan-wendao-20261008:qid-learning-prose-01:creation:01",
+    "project_id": "qid-learning-prose-01",
+    "source_kind": "CURRENT_AUTHOR_INPUT",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "contract_version": "creative-input-selection.v1",
+    "selected_by_actor_id": "author-first-native-operator",
+    "selection_operation_id": "8bb703c5-c9fc-4027-80f3-c781cc7332cf"
+  },
+  "creative_brief_contract_version": "creative-brief-v2"
+}

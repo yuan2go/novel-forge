@@ -1,0 +1,30 @@
+[
+  {
+    "book_id": "book:qinglan-wendao-20261008",
+    "version": 1,
+    "freshness": "CURRENT",
+    "binding_id": "plan-binding:qid-learning-prose-01:authority-output:dbdaaf28-a4d9-445e-8ab6-da6b34f1f769:story_planning.candidate:v1",
+    "created_at": "2026-10-09T04:52:24.887543+00:00",
+    "project_id": "qid-learning-prose-01",
+    "logical_key": "chapter-group:containing:1",
+    "contract_type": "CHAPTER_GROUP",
+    "execution_scope": "FROZEN",
+    "asset_version_id": "authority-output:dbdaaf28-a4d9-445e-8ab6-da6b34f1f769:story_planning.candidate:v1",
+    "parent_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+    "created_by_operation_id": "88a21ef6-a5be-4fe4-9c89-9940e8abd75d"
+  },
+  {
+    "book_id": "book:qinglan-wendao-20261008",
+    "version": 1,
+    "freshness": "CURRENT",
+    "binding_id": "plan-binding:qid-learning-prose-01:authority-output:a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3:story_planning.candidate:v1",
+    "created_at": "2026-10-09T15:26:36.258272+00:00",
+    "project_id": "qid-learning-prose-01",
+    "logical_key": "chapter-group:containing:4",
+    "contract_type": "CHAPTER_GROUP",
+    "execution_scope": "FROZEN",
+    "asset_version_id": "authority-output:a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3:story_planning.candidate:v1",
+    "parent_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+    "created_by_operation_id": "f0b87cdf-b671-4264-81ca-faaf095e2f04"
+  }
+]

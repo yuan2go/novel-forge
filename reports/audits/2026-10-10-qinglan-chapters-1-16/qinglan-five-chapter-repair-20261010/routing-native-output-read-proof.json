@@ -1,0 +1,37 @@
+{
+  "effect": "c50ae727-7b9b-4306-90f8-5e9509556a85",
+  "query_seconds": 0.055417832991224714,
+  "complete_projection_seconds": 1.2072922910010675,
+  "retained_negative_evidence": {
+    "c50ae727-7b9b-4306-90f8-5e9509556a85": {
+      "accepted": false,
+      "failure_class": "SCHEMA_REJECTION",
+      "metric": "DOMAIN_GATE_ACCEPTANCE.v1",
+      "validation_kind": "STRUCTURAL",
+      "error_code": "SCENE_ACCEPTED_KNOWLEDGE_MISMATCH",
+      "evidence_refs": [
+        "planning-validation:sha256:826e13e664387b3bd0ebc38dcfa6f781be9b88f7654a58549f93840e39bc0eda",
+        "asset-version:authority-output:ec90b103-531c-4ec3-a28a-ee42874d765f:story_planning.candidate:v1",
+        "asset-version:9f06faa6-7157-4630-9fc1-0510949bf298"
+      ]
+    }
+  },
+  "complete_projection": {
+    "c50ae727-7b9b-4306-90f8-5e9509556a85": {
+      "accepted": false,
+      "failure_class": "SCHEMA_REJECTION",
+      "metric": "DOMAIN_GATE_ACCEPTANCE.v1",
+      "validation_kind": "STRUCTURAL",
+      "error_code": "SCENE_ACCEPTED_KNOWLEDGE_MISMATCH",
+      "evidence_refs": [
+        "planning-validation:sha256:826e13e664387b3bd0ebc38dcfa6f781be9b88f7654a58549f93840e39bc0eda",
+        "asset-version:authority-output:ec90b103-531c-4ec3-a28a-ee42874d765f:story_planning.candidate:v1",
+        "asset-version:9f06faa6-7157-4630-9fc1-0510949bf298"
+      ]
+    }
+  },
+  "ddl": false,
+  "timeout_changed": false,
+  "global_producer_model_logs": 99,
+  "unlinked_model_logs": 0
+}

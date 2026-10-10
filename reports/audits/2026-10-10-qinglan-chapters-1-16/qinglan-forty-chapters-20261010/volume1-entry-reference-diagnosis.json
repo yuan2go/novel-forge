@@ -1,0 +1,10 @@
+{
+  "candidate_operation": "45a0d47a-29f8-4ff0-bb45-6caeae0e2a12",
+  "field": "/narrative_segments/1/entry_state_ref",
+  "actual": "authority-output:19e4b8ba-46b7-4bdf-9baf-253a8da1b19e",
+  "formal_story_state": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+  "working_draft_version": "19e4b8ba-46b7-4bdf-9baf-253a8da1b19e",
+  "literary_plan_approved": false,
+  "next_contract": "planning-semantic-fields.v2",
+  "history_preserved": true
+}

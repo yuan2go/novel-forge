@@ -1,0 +1,110 @@
+[
+  [
+    "c55ac3d0-a9c5-414f-80f3-c7ccb3d65aaa",
+    "FAILED_RETRYABLE",
+    {
+      "error_code": "WORLD_AGENCY_CLASSIFICATION_REJECTED",
+      "error_message": "WORLD_AGENCY_CLASSIFICATION_REJECTED: {\"diagnostics\": [{\"rationale\": \"阅读说明包含沈砚主动查阅的决定，不能仅以 PERCEPTION 分类绕过人物行动门槛。其 epistemic_basis 为空；公开说明也仅存在于尚未接受的准备步骤中。即使两步的拟议顺序正确，当前仍不能执行该获知转移。\", \"supported\": false, \"field_path\": \"$.candidates[0].transition\"}]}",
+      "failure_class": "retryable",
+      "failure_details": {}
+    }
+  ],
+  [
+    "e1628090-5a4b-49ba-a836-2ffcb6bce379",
+    "FAILED_FINAL",
+    {
+      "error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "error_message": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED: required Planning Provider Context exceeds its conservative task token budget or serialized byte guard",
+      "failure_class": "final_failure",
+      "failure_details": {
+        "task_token_upper_bound": 64000,
+        "serialization_byte_limit": 8388608,
+        "required_serialized_bytes": 94370
+      }
+    }
+  ],
+  [
+    "b330d03a-4606-492c-b146-69b4b46509d6",
+    "FAILED_RETRYABLE",
+    {
+      "error_code": "PROVIDER_ROUTING_BLOCKED",
+      "error_message": "PROVIDER_ROUTING_BLOCKED: routing-decision:47697d0de9c97b60a0810810adb471bc6a23c0b8b45aa9ef14d0e0c51f75fe3a",
+      "failure_class": "retryable",
+      "failure_details": {
+        "cause": "ROUTE_CANDIDATES_REJECTED",
+        "stage": "PROVIDER_ROUTE_ADMISSION",
+        "error_code": "PROVIDER_ROUTING_BLOCKED",
+        "task_stage": "chapter_plan.generate",
+        "decision_id": "routing-decision:47697d0de9c97b60a0810810adb471bc6a23c0b8b45aa9ef14d0e0c51f75fe3a",
+        "retryability": "CHANGED_ADMISSION_REQUIRED",
+        "recovery_state": "NOT_SENT",
+        "business_impact": "NO_GENERATED_CANDIDATE",
+        "recovery_action": "INSPECT_ROUTE_ADMISSION",
+        "provider_invoked": false,
+        "execution_identity": {
+          "work_id": "book:qinglan-wendao-20261008",
+          "chain_id": "sha256:9f517126dcb9cb9fe078e60296f82d35bb6a943badf39aa4c05d8679a670e813",
+          "attempt_id": "e61f899f-a013-4415-b34f-eba90584c7f8",
+          "project_id": "qid-learning-prose-01",
+          "operation_id": "b330d03a-4606-492c-b146-69b4b46509d6"
+        },
+        "candidate_rejections": [
+          {
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "rejected_reasons": [
+              "CONTEXT_CAPACITY_EXCEEDED",
+              "BUDGET_HARD_LIMIT",
+              "TEMPLATE_MODEL_UNAUTHORIZED"
+            ],
+            "estimated_total_tokens": 261934
+          },
+          {
+            "candidate_id": "codex-cli:gpt-6-sol:high",
+            "rejected_reasons": [
+              "CONTEXT_CAPACITY_EXCEEDED",
+              "BUDGET_HARD_LIMIT"
+            ],
+            "estimated_total_tokens": 261934
+          }
+        ]
+      }
+    }
+  ],
+  [
+    "c7ae095c-c8af-47d4-ab9c-ec9eef3a0064",
+    "FAILED_FINAL",
+    {
+      "error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "error_message": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED: required Planning Provider Context exceeds its conservative task token budget or serialized byte guard",
+      "failure_class": "final_failure",
+      "failure_details": {
+        "task_token_upper_bound": 64000,
+        "serialization_byte_limit": 8388608,
+        "required_serialized_bytes": 134904
+      }
+    }
+  ],
+  [
+    "ee7b1df0-2506-4fdf-bb47-9f48b876367b",
+    "SUCCEEDED",
+    {
+      "content_hash": "sha256:1d0f10ce3a2a8adf9a5f723b321c45bffa5544469f1d237f1e854957d6c78012",
+      "recovery_mode": "fresh_attempt",
+      "asset_version_id": "authority-output:ee7b1df0-2506-4fdf-bb47-9f48b876367b:story_planning.candidate:v1"
+    }
+  ],
+  [
+    "e5b3a033-bff1-41ab-ac3b-7fc70ae0f443",
+    "FAILED_FINAL",
+    {
+      "error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "error_message": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED: required Planning Provider Context exceeds its conservative task token budget or serialized byte guard",
+      "failure_class": "final_failure",
+      "failure_details": {
+        "task_token_upper_bound": 64000,
+        "serialization_byte_limit": 8388608,
+        "required_serialized_bytes": 92330
+      }
+    }
+  ]
+]

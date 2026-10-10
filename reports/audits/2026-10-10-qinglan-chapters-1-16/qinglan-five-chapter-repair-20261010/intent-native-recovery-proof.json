@@ -1,0 +1,72 @@
+{
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "root": "6e839bc3-f674-4d6f-86df-2bfd747e8a9b",
+  "source": "abddc048-91ec-45a3-bedc-66471080366a",
+  "concurrent_results": [
+    true,
+    true
+  ],
+  "successors": [
+    "be57304f-1c24-4242-b0bd-7ae33bcd5ae2"
+  ],
+  "source_attempts": [
+    [
+      1,
+      "FAILED_FINAL",
+      {
+        "error_code": "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID",
+        "error_message": "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Each frozen Scene participant needs a unique exact cast binding",
+        "failure_class": "final_failure",
+        "failure_details": {}
+      }
+    ]
+  ],
+  "restart_tick": "ChapterSchedulerTick(root_operation_id='6e839bc3-f674-4d6f-86df-2bfd747e8a9b', saga_id='7615e6d1-e312-4c29-9552-30c823e5c711', saga_status='RUNNING', operation_id='be57304f-1c24-4242-b0bd-7ae33bcd5ae2', node='execution_intent', operation_status='SUCCEEDED', recovery_mode='fresh_attempt')",
+  "successor_status": "SUCCEEDED",
+  "effects_before": 103,
+  "effects_after": 103,
+  "provider_invoked": false,
+  "repeated_recovery_changed": false,
+  "frozen_reference_contract": {
+    "book_id": "book:qinglan-wendao-20261008",
+    "bindings": [
+      {
+        "aliases": [],
+        "character_id": "character:cheng-guan",
+        "display_name": "程观"
+      },
+      {
+        "aliases": [],
+        "character_id": "character:shen-yan",
+        "display_name": "沈砚"
+      },
+      {
+        "aliases": [],
+        "character_id": "character:xu-ting",
+        "display_name": "许庭"
+      }
+    ],
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "token_bindings": {
+      "沈砚": "character:shen-yan",
+      "程观": "character:cheng-guan",
+      "许庭": "character:xu-ting",
+      "character:xu-ting": "character:xu-ting",
+      "character:shen-yan": "character:shen-yan",
+      "character:cheng-guan": "character:cheng-guan",
+      "character:character:xu-ting": "character:xu-ting",
+      "character:character:shen-yan": "character:shen-yan",
+      "character:character:cheng-guan": "character:cheng-guan"
+    },
+    "contract_version": "frozen-character-references.v1",
+    "cast_content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+    "input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+    "participant_bindings": {
+      "character:character:xu-ting": "character:xu-ting",
+      "character:character:shen-yan": "character:shen-yan",
+      "character:character:cheng-guan": "character:cheng-guan"
+    },
+    "cast_asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+  }
+}

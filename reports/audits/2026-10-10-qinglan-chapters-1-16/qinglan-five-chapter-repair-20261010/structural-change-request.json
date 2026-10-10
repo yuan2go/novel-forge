@@ -1,0 +1,9 @@
+{
+  "operation_id": "3bfe7075-e36d-45f1-ad97-09d0844fe9cf",
+  "asset_id": "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request",
+  "asset_version_id": "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1",
+  "content_hash": "sha256:9a2acc547f943848977a7c30b7bb8c938bd49a0fdb7a66183048b4ad143dc8bb",
+  "output_key": "planning.change_request",
+  "replayed": true,
+  "materialized_outputs": []
+}

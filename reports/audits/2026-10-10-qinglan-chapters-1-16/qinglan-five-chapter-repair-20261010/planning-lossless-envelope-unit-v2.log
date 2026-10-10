@@ -1,0 +1,74 @@
+..................F....................FFF.............................. [100%]
+=================================== FAILURES ===================================
+_ test_current_planning_template_binds_whole_envelope_and_retains_historical_template _
+
+    def test_current_planning_template_binds_whole_envelope_and_retains_historical_template():
+        from pathlib import Path
+        from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+        root = Path(__file__).resolve().parents[2]
+        current = build_story_planning_pack_profile(root, operation_definition_hash='sha256:' + 'a' * 64, execution_contract_version='1.21.0')
+>       assert current.manifest.prompt_binding.template_version == 'v2'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'dict' object has no attribute 'prompt_binding'
+
+tests/unit/test_completed_generation_recovery.py:151: AttributeError
+_ test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.17.0] _
+
+version = '1.17.0'
+
+    @pytest.mark.parametrize("version", ["1.17.0", "1.18.0", "1.19.0"])
+    def test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact(version):
+        definition = story_planning_generation_definition(application_build_id="historical-hash-probe", commit_sha="1" * 40, definition_version=version)
+        profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64, execution_contract_version=version)
+>       assert {"definition": digest(definition), "manifest": digest(profile.manifest), "catalog": digest(profile.artifact_catalog)} == FROZEN["contracts"][version]
+E       AssertionError: assert {'definition'...3a0d8f95a516'} == {'definition'...27eeaaecc897'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'manifest': 'f1b4b2a7afb90a9c3bfcc687e4954a135da7f8e02a51c2aaf385b74b3f5042c0'} != {'manifest': '2c321daee423b79b34e702606646848fe89f7c19b1558d546573d8b16cf0927e'}
+E         {'catalog': 'c151d17a39a2eb9b17612763036d57d6c912edd7a98fef172a353a0d8f95a516'} != {'catalog': '2bcc60c7eae712014b5421e505d09962afd07bbbcd3d71af9e0c27eeaaecc897'}
+E         Use -v to get more diff
+
+tests/unit/test_planning_coordinated_contracts.py:31: AssertionError
+_ test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.18.0] _
+
+version = '1.18.0'
+
+    @pytest.mark.parametrize("version", ["1.17.0", "1.18.0", "1.19.0"])
+    def test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact(version):
+        definition = story_planning_generation_definition(application_build_id="historical-hash-probe", commit_sha="1" * 40, definition_version=version)
+        profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64, execution_contract_version=version)
+>       assert {"definition": digest(definition), "manifest": digest(profile.manifest), "catalog": digest(profile.artifact_catalog)} == FROZEN["contracts"][version]
+E       AssertionError: assert {'definition'...9cb5f95738ee'} == {'definition'...96804d2f7624'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'manifest': 'a634006db3aa7daaade38a112628db3bdadf2aec818418c6eeffdcc19dfcc79f'} != {'manifest': 'c60192655029f2ebc210641d4953d250dc1ccd98fd6c2fb16da8f644ab28f17e'}
+E         {'catalog': '3bc22b4bd5112ad446339b66b044904374bdca80d8fc8d3eb7619cb5f95738ee'} != {'catalog': 'a59e26a12721c6af8c88742e978b64fb33d6a10dea3c3c3d1bd796804d2f7624'}
+E         Use -v to get more diff
+
+tests/unit/test_planning_coordinated_contracts.py:31: AssertionError
+_ test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.19.0] _
+
+version = '1.19.0'
+
+    @pytest.mark.parametrize("version", ["1.17.0", "1.18.0", "1.19.0"])
+    def test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact(version):
+        definition = story_planning_generation_definition(application_build_id="historical-hash-probe", commit_sha="1" * 40, definition_version=version)
+        profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64, execution_contract_version=version)
+>       assert {"definition": digest(definition), "manifest": digest(profile.manifest), "catalog": digest(profile.artifact_catalog)} == FROZEN["contracts"][version]
+E       AssertionError: assert {'definition'...630514b7c299'} == {'definition'...dfe101881d3f'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'manifest': '34c143daf35bc8054bf9fcb5f616d9475cd0080a8235da730a489b909fa1f06c'} != {'manifest': '3302faee3985ad6b681a32feacdf8e748f3b530ab0938730626a1e4dc4d019fd'}
+E         {'catalog': '17610e4f380b6dbf4be142e5e1d97f49e8410e90fac08f9d15e8630514b7c299'} != {'catalog': '2ba44ac971f1899d5d49e644b2c0420f0b7e675aa8f7c1dbeb9adfe101881d3f'}
+E         Use -v to get more diff
+
+tests/unit/test_planning_coordinated_contracts.py:31: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_completed_generation_recovery.py::test_current_planning_template_binds_whole_envelope_and_retains_historical_template
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.17.0]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.18.0]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.19.0]
+4 failed, 68 passed in 1.19s

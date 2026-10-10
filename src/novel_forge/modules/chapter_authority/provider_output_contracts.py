@@ -939,11 +939,12 @@ def chapter_provider_output_schema(
     targeted_revision: bool = False,
     work_requirements: bool = False,
     allow_noop_revision: bool = False,
+    character_references: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
 
     if stage == "memo":
         from .creative_memo import creative_memo_schema
-        schema = creative_memo_schema(legacy=legacy_contract)
+        schema = creative_memo_schema(legacy=legacy_contract, character_references=character_references)
     elif stage == "draft":
         schema = _draft_schema(legacy=legacy_contract)
     elif stage == "agent_session":
@@ -1014,6 +1015,7 @@ def chapter_provider_output_schema_ref(
     targeted_revision: bool = False,
     work_requirements: bool = False,
     allow_noop_revision: bool = False,
+    character_references: Mapping[str, Any] | None = None,
 ) -> str:
     chapter_provider_output_schema(stage, causal_batch=causal_batch, legacy_contract=legacy_contract, targeted_revision=targeted_revision)
     version = (
@@ -1046,7 +1048,7 @@ def chapter_provider_output_schema_ref(
         else "v1"
     )
     if stage == "memo" and not legacy_contract:
-        version = "v2"
+        version = "v3" if character_references else "v2"
     return f"schema:chapter-provider-output:{stage}:{version}"
 
 

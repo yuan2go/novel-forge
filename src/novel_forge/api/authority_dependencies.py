@@ -1928,6 +1928,14 @@ def build_book_authority_application(
     )
 
 
+def _coordinated_reader_contract_enabled(
+    settings: IndustrialSettings, values: Mapping[str, str]
+) -> bool:
+    return settings.environment in {"production", "validation"} and values.get(
+        "NOVEL_FORGE_COORDINATED_READER_CONTRACT"
+    ) == "reader-accepted-context.v3"
+
+
 def build_book_followup_authority_application(
     settings: IndustrialSettings,
     *,
@@ -1944,7 +1952,7 @@ def build_book_followup_authority_application(
         settings.database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
-        coordinated_reader=settings.environment == "validation" and values.get("NOVEL_FORGE_COORDINATED_READER_CONTRACT") == "reader-accepted-context.v3",
+        coordinated_reader=_coordinated_reader_contract_enabled(settings, values),
         model_port=build_reader_outcome_model_port(
             settings,
             execution=execution,
@@ -2080,7 +2088,7 @@ def build_book_production_composition(
         planning=planning.planning,
         application_build_id=authority.application_build_id,
         commit_sha=authority.commit_sha,
-        coordinated_contract=settings.environment == "validation" and values.get("NOVEL_FORGE_COORDINATED_READER_CONTRACT") == "reader-accepted-context.v3",
+        coordinated_contract=_coordinated_reader_contract_enabled(settings, values),
         worker_id=str(
             values.get("NOVEL_FORGE_PLAN_CHANGE_WORKER_ID")
             or "plan-change-authority-worker"
@@ -2120,7 +2128,7 @@ def build_book_production_composition(
         input_resolver=input_resolver,
         principal=principal,
         narrative_search=narrative_search,
-        coordinated_contract=settings.environment == "validation" and values.get("NOVEL_FORGE_COORDINATED_READER_CONTRACT") == "reader-accepted-context.v3",
+        coordinated_contract=_coordinated_reader_contract_enabled(settings, values),
     )
     supervisor = PostgresBookProductionSupervisor(
         authority,

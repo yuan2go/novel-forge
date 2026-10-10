@@ -1,0 +1,20 @@
+{
+  "source_sha": "63df90c9b5714d4d1a9d28b6b990a55ad893ee5f",
+  "external_effect_id": "fc16071c-3c6b-454e-8ab6-e42ca6975354",
+  "materialization_asset_version_id": "e689f303-3169-453c-aabc-a18124e936b6",
+  "materialization_content_hash": "sha256:4cad2c210f308ee4d1dec74a43255a36ccdf62ba114b55753c0bfc5ac11ee064",
+  "working_continuity": [
+    {
+      "version": "planning-working-continuity.v1",
+      "authority": "SELECTED_WORKING_VERSION_CONTINUITY_ONLY",
+      "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "instruction": "Continue this exact selected working version. Carry forward actions, witnessed responses and experiences actually realized in these source excerpts within that working story; lack of formal acceptance alone does not require characters to reapply, reverify, reperform or forget them. Preserve source uncertainty, unresolved dependency changes and POV restrictions: claims and beliefs need not be true, reader-only information is not character knowledge, and plans are not past events. Introduce subsequent events that use the progress already realized. This projection grants no accepted fact IDs, verified Character Knowledge, Canon mutation, author choice or formal acceptance. Keep accepted-state fields unchanged.",
+      "snapshot_hash": "sha256:bb06fffea1099ab4095478f8baf5719e01bd35d380f27d27ce8b73ca93a929a4",
+      "target_chapter": 8,
+      "source_location": "/arc_working_set/working_manuscript",
+      "accepted_through_chapter": 0
+    }
+  ],
+  "accepted_through_chapter": 0,
+  "new_prose_chapters": 0
+}

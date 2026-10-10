@@ -1,0 +1,47 @@
+{
+  "type": "production_profile",
+  "book_id": "book:qinglan-wendao-20261008",
+  "profile_id": "creative-validation-production-profile",
+  "project_id": "qid-learning-prose-01",
+  "raw_source": false,
+  "allowed_use": "generation",
+  "safe_summary": "Initial production_profile; no accepted narrative history.",
+  "chapter_length": {
+    "maximum": 3500,
+    "minimum": 2500
+  },
+  "evidence_level": "OPERATOR_AUTHORED",
+  "author_workflow": {
+    "mode": "AUTHOR_FIRST",
+    "version": "author-workflow.v1",
+    "deep_review": false
+  },
+  "execution_window": {
+    "version": "creation-execution-window.v1",
+    "stop_after_chapter": 3
+  },
+  "structured_facts": [],
+  "governance_status": "CLEAR",
+  "language_contract": {
+    "required_language": "zh-CN"
+  },
+  "operator_authored": true,
+  "authority_boundary": "FUTURE_INTENT",
+  "provider_generated": false,
+  "ground_truth_claimed": false,
+  "target_chapter_count": 240,
+  "chapter_context_policy": {
+    "version": "book-chapter-context.v1",
+    "draft_profile": "draft-context-profile-v4",
+    "draft_token_budget": 226400,
+    "quality_token_budget": 226400
+  },
+  "world_production_policy": {
+    "version": "world-production-policy.v4",
+    "max_provider_stages": 2,
+    "context_token_budget": 226400
+  },
+  "human_preference_evidence": false,
+  "source_expression_included": false,
+  "narrative_truth_mutation_allowed": false
+}

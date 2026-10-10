@@ -1,0 +1,15 @@
+{
+  "restore_verified": true,
+  "backup_sha256": "070bcee9e134a8b9fc9b793aef1831407533b8d63fad013bb9d944c4b8e7164d",
+  "database": "nf_qinglan_migration_final_test",
+  "effect_status": "FAILED_RETRYABLE",
+  "original_attempts": [
+    [
+      1,
+      "FAILED_RETRYABLE"
+    ]
+  ],
+  "isolations": 1,
+  "successors": 1,
+  "provider_invoked": false
+}

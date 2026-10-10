@@ -1,0 +1,13 @@
+{
+  "book_state": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "state": "PAUSED",
+    "current_chapter": 16,
+    "accepted_through_chapter": 0,
+    "target_chapter_count": 40,
+    "version": 114
+  },
+  "saved_units": 16,
+  "han_characters": 43221,
+  "dependency_changes": 0
+}

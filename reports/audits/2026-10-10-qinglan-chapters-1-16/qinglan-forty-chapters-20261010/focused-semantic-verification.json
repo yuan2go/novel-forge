@@ -1,0 +1,16 @@
+{
+  "source_sha": "960e8ee4",
+  "test_result": "69 passed",
+  "checks": [
+    "planning semantic fields",
+    "working continuity v1/v2",
+    "frozen character schema",
+    "Memo character reference compatibility",
+    "accepted knowledge schema"
+  ],
+  "ruff": "PASS",
+  "documentation_reality": "PASS",
+  "full_suite": "NOT_RUN",
+  "database_tests_in_this_increment": "NOT_RUN",
+  "real_provider": "IN_PROGRESS Chapter9 scoped native generation"
+}

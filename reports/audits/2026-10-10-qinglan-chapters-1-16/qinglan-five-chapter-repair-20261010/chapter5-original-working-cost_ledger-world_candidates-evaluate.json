@@ -1,0 +1,57 @@
+{
+  "cost": {
+    "model": "gpt-6-sol",
+    "amount": null,
+    "reason": "monetary_cost_not_observable",
+    "currency": "UNKNOWN",
+    "cost_status": "UNKNOWN",
+    "measurement": "UNKNOWN",
+    "availability": "UNAVAILABLE",
+    "provider_billed": "UNKNOWN",
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+    "entitlement_snapshot": {
+      "cli_version": "codex-cli 0.159.2",
+      "billing_identity": {
+        "version": "codex-membership-identity.v1",
+        "auth_mode": "chatgpt",
+        "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+        "billing_channel": "ACCOUNT_ENTITLEMENT"
+      },
+      "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+      "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+      "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+    },
+    "budget_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+    "entitlement_snapshot_hash": "sha256:11fd8cd1ab78162fb9963e1535887111e06611960e8cad9f34fe3ae6ceb9e9ae"
+  },
+  "type": "cost_ledger",
+  "stage": "world_candidates.evaluate",
+  "usage": {
+    "model": "gpt-6-sol",
+    "measurement": "MEASURED",
+    "availability": "AVAILABLE",
+    "input_tokens": 61612,
+    "total_tokens": 61647,
+    "output_tokens": 35,
+    "cached_input_tokens": 0,
+    "uncached_input_tokens": 61612,
+    "budget_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+    "reasoning_output_tokens": 13,
+    "conservative_reserved_tokens": 61647
+  },
+  "amount": null,
+  "currency": "UNKNOWN",
+  "project_id": "qid-learning-prose-01",
+  "cost_status": "UNKNOWN",
+  "measurement": "UNKNOWN",
+  "availability": "UNAVAILABLE",
+  "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+  "total_tokens": 61647,
+  "accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "candidate_accepted": false,
+  "post_provider_failure": {},
+  "provider_invoked_this_attempt": true,
+  "recovered_external_effect_success": false
+}

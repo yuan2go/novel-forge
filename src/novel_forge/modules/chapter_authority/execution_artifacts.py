@@ -217,6 +217,7 @@ def build_chapter_execution_intent(
     work_requirements: bool = False,
     style_view: Mapping[str, Any] | None = None,
     accepted_through_chapter: int | None = None,
+    character_references: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     current_contract = None
     if chapter_plan.get("chapter_contract_schema_version"):
@@ -594,6 +595,10 @@ def build_chapter_execution_intent(
         }
         if style_view is not None:
             intent["creative_requirements"]["style"] = dict(style_view)
+    if chapter_plan.get("book_id"):
+        intent["book_id"] = chapter_plan["book_id"]
+    if character_references is not None:
+        intent["character_reference_contract"] = dict(character_references)
     intent["intent_fingerprint"] = _hash(intent)
     return intent
 

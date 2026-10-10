@@ -131,3 +131,42 @@ def test_current_prose_review_context_budget_is_not_an_output_budget():
     assert not task_scoped_prose_review(request,'draft')
     window.content['schema_version']='longform-prose-window.v1'
     assert not task_scoped_prose_review(request,'longform_prose_review')
+
+
+def test_planning_envelope_references_deduplicate_task_and_context_without_losing_repair():
+    content = {'characters': ['沈砚', '许庭'], 'constraints': '已有事实与尚未发生的规划必须区分。' * 100}
+    source = {'input_manifest': {'constraints': content}, 'context_bundle': {'constraints': content,
+        'repair': {'error_code': 'CHAPTER_STATE_TRANSITION_IDENTITY_INVALID', 'candidate': content}}}
+    encoded, proof = compile_exact_context_references(source)
+    assert expand_exact_context_references(encoded) == source
+    assert proof['reference_count'] >= 2
+    assert len(__import__('json').dumps(encoded)) < len(__import__('json').dumps(source)) / 2
+
+
+def test_current_planning_template_binds_whole_envelope_and_retains_historical_template():
+    from pathlib import Path
+    from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+    root = Path(__file__).resolve().parents[2]
+    current = build_story_planning_pack_profile(root, operation_definition_hash='sha256:' + 'a' * 64, execution_contract_version='1.21.0')
+    assert current.manifest['prompt_binding']['template_version'] == 'v2'
+    assert '{{provider_data_envelope}}' in (root / 'config/capability_packs/artifacts/story_planning_template_v2.md').read_text()
+    assert '{{input_manifest}}' in (root / 'config/capability_packs/artifacts/story_planning_template.md').read_text()
+
+
+@pytest.mark.parametrize('reasons,allowed', [
+    ([['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED'], ['CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT']], True),
+    ([['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED']], False),
+    ([['AUTHORIZATION_MISSING', 'CONTEXT_CAPACITY_EXCEEDED']], False),
+    ([['BUDGET_HARD_LIMIT']], False),
+    ([['QUALITY_FLOOR_NOT_MET', 'CONTEXT_CAPACITY_EXCEEDED']], False),
+])
+def test_planning_capacity_recovery_uses_authorized_candidate_failures(reasons, allowed):
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import require_capacity_route_candidates
+    frozen = {'project_id': 'project', 'book_id': 'book'}
+    decision = {'status': 'BLOCKED', 'task': {'project_id': 'project', 'work_id': 'book', 'operation_id': 'operation'},
+        'candidates': [{'rejected_reasons': value} for value in reasons]}
+    if allowed:
+        require_capacity_route_candidates(decision, frozen=frozen, source_operation_id='operation')
+    else:
+        with pytest.raises(KernelError, match='PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED'):
+            require_capacity_route_candidates(decision, frozen=frozen, source_operation_id='operation')

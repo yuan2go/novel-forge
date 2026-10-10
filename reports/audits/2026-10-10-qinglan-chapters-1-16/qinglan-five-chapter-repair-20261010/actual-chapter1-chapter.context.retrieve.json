@@ -1,0 +1,291 @@
+{
+  "type": "RetrievalResult",
+  "book_id": "book:qinglan-wendao-20261008",
+  "ranking": {
+    "weights": {
+      "arc": 0.11,
+      "entity": 0.1,
+      "temporal": 0.08,
+      "embedding": 0.18,
+      "obligation": 0.11,
+      "relationship": 0.1,
+      "postgresql_fts": 0.16,
+      "lexical_overlap": 0.06,
+      "character_timeline": 0.1
+    },
+    "algorithm": "accepted-lexical-first-ranking-v4",
+    "graph_signals": [
+      "entity",
+      "character_timeline",
+      "relationship",
+      "arc",
+      "obligation"
+    ],
+    "lexical_signal": "PostgreSQL Full-Text Search / ts_rank",
+    "semantic_signal": "cosine_similarity",
+    "temporal_signal": "accepted_chapter_recency",
+    "candidate_discovery": "LEXICAL_AND_EXACT_STRUCTURED_ONLY",
+    "ranking_policy_version": "accepted-lexical-first-ranking-v4",
+    "semantic_candidate_expansion": false
+  },
+  "project_id": "qid-learning-prose-01",
+  "query_plan": {
+    "queries": [
+      "核对已接受的初始设定中，青岚宗山门、药篓及沈砚、许庭、程观的身份与职责边界。",
+      "核对已接受的初始人物状态中，沈砚抵达山门时的入门资格和御剑愿望。"
+    ],
+    "entity_ids": [],
+    "result_limit": 24,
+    "character_ids": [],
+    "obligation_ids": [],
+    "temporal_range": {
+      "to_chapter": 0,
+      "from_chapter": 0
+    },
+    "campaign_policy": {
+      "cost_limit": "1.00",
+      "result_limit": 24,
+      "fallback_mode": "DETERMINISTIC_FALLBACK",
+      "policy_version": "minimum-sufficient-retrieval-campaign-v1",
+      "model_token_limit": 4096,
+      "total_query_limit": 10,
+      "total_round_limit": 3,
+      "provider_call_limit": 4,
+      "total_candidate_limit": 768,
+      "additional_round_limit": 2,
+      "queries_per_round_limit": 4,
+      "candidates_per_round_limit": 256
+    },
+    "candidate_limit": 256,
+    "ranking_weights": {
+      "arc": 0.11,
+      "entity": 0.1,
+      "temporal": 0.08,
+      "embedding": 0.18,
+      "obligation": 0.11,
+      "relationship": 0.1,
+      "postgresql_fts": 0.16,
+      "lexical_overlap": 0.06,
+      "character_timeline": 0.1
+    },
+    "semantic_policy": "FALLBACK_ALLOWED",
+    "contract_version": "retrieval-query-plan-v6",
+    "memo_fingerprint": "sha256:544c791a14d6920ef610433ab24ec86e006324bb8db31ae3a5b11b6be7f75811",
+    "relationship_ids": [],
+    "accepted_boundary": {
+      "accepted_through_chapter": 0,
+      "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    "coverage_contract": {
+      "chapter": 1,
+      "required": {
+        "fact_ids": [],
+        "obligation_ids": [],
+        "relationship_ids": [],
+        "arc_plan_version_ids": [],
+        "historical_reference_ids": []
+      },
+      "selectors": {
+        "entity_ids": [
+          "character:character:cheng-guan",
+          "character:character:shen-yan",
+          "character:character:xu-ting"
+        ],
+        "character_ids": [
+          "character:character:cheng-guan",
+          "character:character:shen-yan",
+          "character:character:xu-ting"
+        ],
+        "obligation_ids": [],
+        "relationship_ids": [],
+        "arc_plan_version_ids": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        ]
+      },
+      "query_hints": {},
+      "contract_version": "retrieval-coverage-contract-v1",
+      "memo_fingerprint": "sha256:544c791a14d6920ef610433ab24ec86e006324bb8db31ae3a5b11b6be7f75811",
+      "accepted_boundary": {
+        "accepted_through_chapter": 0,
+        "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      "intent_fingerprint": "sha256:873d6a318455c067e04d8b1e10c49af389e471545e9b3e0ebc6439b663076c39",
+      "protected_evidence": {
+        "fact_ids": [],
+        "obligation_ids": [],
+        "relationship_ids": [],
+        "arc_plan_version_ids": [],
+        "historical_reference_ids": []
+      },
+      "sufficiency_policy": "ALL_REQUIRED_IDENTITIES_OBSERVED",
+      "coverage_contract_fingerprint": "sha256:867dd10990d7a376c62d84c1b3ad9f6ad41d1bddc3a0477fd782e44154d0ad6b"
+    },
+    "intent_fingerprint": "sha256:873d6a318455c067e04d8b1e10c49af389e471545e9b3e0ebc6439b663076c39",
+    "arc_plan_version_ids": [
+      "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+    ],
+    "postgresql_fts_query": "核对已接受的初始设定中，青岚宗山门、药篓及沈砚、许庭、程观的身份与职责边界。 核对已接受的初始人物状态中，沈砚抵达山门时的入门资格和御剑愿望。",
+    "task_dependency_refs": {
+      "required_refs": [],
+      "source_bindings": [
+        {
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+          "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+        }
+      ],
+      "contract_version": "task-dependency-refs-v1",
+      "closure_round_limit": 32,
+      "dependency_ref_limit": 2048,
+      "protected_fact_aliases": [
+        "foundation:authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+      ],
+      "required_obligation_ids": [],
+      "referenced_obligation_ids": [],
+      "protected_initial_obligations": []
+    },
+    "semantic_rerank_limit": 64,
+    "query_plan_fingerprint": "sha256:4b4f5c61a34018d0706b4f717445c19052b502b1e9b283833ed14737c39ffa3a",
+    "ranking_policy_version": "accepted-lexical-first-ranking-v4",
+    "retrieval_policy_version": "minimum-sufficient-task-retrieval-v6",
+    "task_dependency_discovery": {
+      "required_refs": [],
+      "closure_rounds": 0,
+      "contract_version": "task-dependency-discovery-v1",
+      "protected_resolved_refs": [],
+      "required_document_count": 0,
+      "required_obligation_ids": [],
+      "matched_documents_by_ref": {},
+      "matched_documents_by_obligation": {},
+      "protected_initial_obligation_ids": [],
+      "protected_initial_obligation_sources": []
+    },
+    "writer_projection_version": "accepted-writer-history.v2",
+    "candidate_projection_cutoff": "2026-10-09T19:15:37.410516+00:00",
+    "retrieval_round_query_fingerprints": [
+      "sha256:af76ea09accceea9a8b3f5bb70ae18b5619ce9d9c51b3ef1277a24ce0f713ebd"
+    ]
+  },
+  "semantic_status": {
+    "policy": "FALLBACK_ALLOWED",
+    "status": "RETRIEVAL_SEMANTIC_PROJECTION_NOT_READY",
+    "fallback": "LEXICAL_STRUCTURED_DETERMINISTIC",
+    "provider_wired": false,
+    "candidate_channels": [
+      "FTS",
+      "ENTITY",
+      "RELATIONSHIP",
+      "CHARACTER",
+      "ARC",
+      "OBLIGATION",
+      "TEMPORAL",
+      "TASK_DEPENDENCY"
+    ],
+    "campaign_round_count": 1,
+    "ready_document_count": 0,
+    "query_embedding_model": "",
+    "agentic_expansion_used": false,
+    "query_embedding_status": "NOT_READY",
+    "ranking_policy_version": "accepted-lexical-first-ranking-v4",
+    "vector_candidate_count": 0,
+    "candidate_document_count": 0,
+    "query_embedding_dimensions": 0,
+    "candidate_projection_cutoff": "2026-10-09T19:15:37.410516+00:00",
+    "semantic_candidate_expansion": false,
+    "semantic_rerank_document_count": 0,
+    "deterministic_coverage_fast_path": true
+  },
+  "contract_version": "chapter-retrieval-result-v6",
+  "memo_fingerprint": "sha256:544c791a14d6920ef610433ab24ec86e006324bb8db31ae3a5b11b6be7f75811",
+  "accepted_boundary": {
+    "accepted_through_chapter": 0,
+    "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+  },
+  "candidate_channels": [],
+  "intent_fingerprint": "sha256:873d6a318455c067e04d8b1e10c49af389e471545e9b3e0ebc6439b663076c39",
+  "rejected_documents": [],
+  "result_fingerprint": "sha256:8a5a89e50447b9de94499457a8938f2baa82c82ad3dade6b9b3986e2a22513b7",
+  "retrieval_campaign": {
+    "usage": {
+      "currency": "USD",
+      "latency_ms": 0,
+      "cost_amount": "0",
+      "input_tokens": 0,
+      "model_tokens": 0,
+      "output_tokens": 0,
+      "provider_calls": 0,
+      "candidate_count": 0
+    },
+    "coverage": {
+      "missing": {},
+      "observed": {
+        "fact_ids": [],
+        "obligation_ids": [],
+        "relationship_ids": [],
+        "arc_plan_version_ids": [],
+        "historical_reference_ids": []
+      },
+      "required": {
+        "fact_ids": [],
+        "obligation_ids": [],
+        "relationship_ids": [],
+        "arc_plan_version_ids": [],
+        "historical_reference_ids": []
+      },
+      "sufficient": true,
+      "decision_owner": "DETERMINISTIC_CONTEXT_POLICY",
+      "contract_version": "retrieval-coverage-assessment-v1",
+      "accepted_boundary": {
+        "accepted_through_chapter": 0,
+        "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      "protected_evidence": {
+        "fact_ids": [],
+        "obligation_ids": [],
+        "relationship_ids": [],
+        "arc_plan_version_ids": [],
+        "historical_reference_ids": []
+      },
+      "coverage_fingerprint": "sha256:9da0e607577e3e86cd5b530295186d87cad588f39ea3bbff87adbb7ce3416942",
+      "evidence_document_ids": [],
+      "coverage_contract_fingerprint": "sha256:867dd10990d7a376c62d84c1b3ad9f6ad41d1bddc3a0477fd782e44154d0ad6b"
+    },
+    "authority": "DETERMINISTIC_CONTEXT_POLICY",
+    "campaign_id": "retrieval-campaign:6eabc186635ec328f8cc7daec1e89ea3ac51da992f8cf7753874237e456d41a7",
+    "round_count": 1,
+    "policy_version": "minimum-sufficient-retrieval-campaign-v1",
+    "contract_version": "retrieval-campaign-result-v1",
+    "accepted_boundary": {
+      "accepted_through_chapter": 0,
+      "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    "termination_reason": "REQUIRED_EVIDENCE_SATISFIED",
+    "round_snapshot_hashes": [
+      "sha256:fb06eb069bb2420214ce5fa746924b6630a9b44cdf685c03a2ae8d62c78755e2"
+    ],
+    "final_evidence_identity": "sha256:beca39066e29d57ca51f999da91e80ee96637e260f4d67ef303b6a7d992c48eb"
+  },
+  "selected_documents": [],
+  "candidate_snapshot_id": "retrieval-campaign:6eabc186635ec328f8cc7daec1e89ea3ac51da992f8cf7753874237e456d41a7",
+  "memo_asset_version_id": "authority-output:81116e81-7420-4d7d-85ba-22d8593e8d0b:chapter.memo:v1",
+  "candidate_snapshot_hash": "sha256:beca39066e29d57ca51f999da91e80ee96637e260f4d67ef303b6a7d992c48eb",
+  "intent_asset_version_id": "authority-output:be57304f-1c24-4242-b0bd-7ae33bcd5ae2:chapter.execution_intent:v1",
+  "candidate_asset_versions": [],
+  "query_embedding_evidence": {},
+  "retrieval_policy_version": "minimum-sufficient-task-retrieval-v6",
+  "selected_source_asset_versions": []
+}

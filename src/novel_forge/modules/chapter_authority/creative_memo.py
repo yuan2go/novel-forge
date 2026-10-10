@@ -2,27 +2,24 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from novel_forge.modules.command_kernel.errors import KernelError
-
 from .execution_artifacts import qualify_chapter_memo
 
 
 def qualify_creative_memo(
     *, intent: Mapping[str, Any], intent_asset_version_id: str,
     result: Mapping[str, Any], execution_evidence: Mapping[str, Any],
+    character_references: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     from .provider_output_contracts import validate_chapter_provider_output_schema
 
     validated = validate_chapter_provider_output_schema("memo", result)
-    participants = {str(value) for scene in intent.get("scene_plans", []) for value in scene.get("participants", [])}
-    choices = validated["creative_guidance"]["character_choices"]
-    if any(choice["character_id"] not in participants for choice in choices):
-        raise KernelError("CHAPTER_MEMO_CHARACTER_DRIFT", "creative choices require an exact frozen Scene participant")
+    from .character_references import normalize_character_choices
+    validated = normalize_character_choices(intent, validated, character_references)
     return qualify_chapter_memo(intent=intent, intent_asset_version_id=intent_asset_version_id,
                                 result=validated, execution_evidence=execution_evidence)
 
 
-def creative_memo_schema(*, legacy: bool = False) -> dict[str, Any]:
+def creative_memo_schema(*, legacy: bool = False, character_references=None) -> dict[str, Any]:
     def obj(properties):
         return {"type": "object", "properties": properties, "required": list(properties), "additionalProperties": False}
 
@@ -30,12 +27,13 @@ def creative_memo_schema(*, legacy: bool = False) -> dict[str, Any]:
     def rows(properties, maximum=32):
         return {"type": "array", "maxItems": maximum, "items": obj(properties)}
 
+    identity = {"enum": [r["character_id"] for r in character_references["bindings"]]} if character_references else text
     return obj({
         "execution_strategy": text, "tension_strategy": text, "composition_strategy": text,
         "creative_guidance": obj({
             **{key: text for key in ("chapter_goal", "pov", "voice")},
             **{key: text if legacy else {"type": ["string", "null"]} for key in ("emotional_turn", "reader_promise", "ending_change")},
-            "character_choices": rows({"character_id": text, "choice": text, "motivation": text,
+            "character_choices": rows({"character_id": identity, "choice": text, "motivation": text,
                                        "cost": text if legacy else {"type": ["string", "null"]}}),
             "constraints": {"type": "array", **({"minItems": 1} if legacy else {}), "maxItems": 32, "items": text},
         }),

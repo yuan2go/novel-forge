@@ -264,6 +264,9 @@ def append_isolation(uow, effect, command):
         [effect["operation_id"]],
     )
     operation = cursor.fetchone()[0]
+    from .cli_effect_reconciliation import historical_cli_dispatch
+    historical = historical_cli_dispatch(cursor, effect)
+    stopped_legacy = bool(historical and historical["evidence"]["production_execution"]["execution_result"]["outcome"] in {"UNKNOWN", "TIMED_OUT", "CANCELLED", "ORPHANED"})
     followup_generation = operation['definition_name'] == 'longform.prose_review'
     if followup_generation and (operation['root_operation_id'] != operation['operation_id']
         or operation['parent_operation_id'] or operation['definition_snapshot']['family'] != 'book_followup_authority'
@@ -285,6 +288,7 @@ def append_isolation(uow, effect, command):
             "DEAD_LETTER",
             "WAITING_EXTERNAL_RESULT",
             "RECONCILIATION_REQUIRED",
+            *({"FAILED_RETRYABLE"} if stopped_legacy else set()),
         }
         or operation["actor_id"] != command.actor_id
         or not (
@@ -293,7 +297,7 @@ def append_isolation(uow, effect, command):
             or followup_generation
         )
         or effect["effect_type"] != "model.invoke"
-        or effect["status"] not in {"UNKNOWN", "RECONCILIATION_REQUIRED"}
+        or effect["status"] not in {"UNKNOWN", "RECONCILIATION_REQUIRED", *({"FAILED_RETRYABLE"} if stopped_legacy else set())}
     ):
         raise KernelError(
             "GENERATION_ISOLATION_SCOPE_UNSAFE",
@@ -558,6 +562,7 @@ def append_isolation(uow, effect, command):
             "GENERATION_ISOLATION_AUTHORIZATION_REQUIRED",
             "Bind actual generation recovery authorization and original Book",
         )
+    proof["stopped_legacy_cli"] = stopped_legacy
     proof["execution_transport"] = transport
     proof["evidence_asset_version_id"] = evidence_asset_version_id
     if operation["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}:
@@ -568,27 +573,28 @@ def append_isolation(uow, effect, command):
         )
         if (
             attempt["operation_id"] != operation["operation_id"]
-            or attempt["status"] != "CHECKPOINTED"
+            or (attempt["status"] != "CHECKPOINTED" and not (stopped_legacy and operation["status"] == "FAILED_RETRYABLE" and attempt["status"] == "FAILED_RETRYABLE"))
         ):
             raise KernelError(
                 "GENERATION_ISOLATION_WRITER_ACTIVE",
                 "Only a released stopped reconciliation checkpoint may be retired",
             )
-        _transition_attempt(
-            uow,
-            attempt,
-            "CANCELLED",
-            worker_id=command.actor_id,
-            fencing_token=None,
-            trace_id=command.trace_id,
-            correlation_id=command.correlation_id,
-            result={
-                "error_code": "GENERATION_ATTEMPT_ISOLATED",
-                "failure": observed,
-                "local_execution_disposition": "RETIRED",
-                "remote_cancellation": "NOT_ESTABLISHED",
-            },
-        )
+        if attempt["status"] == "CHECKPOINTED":
+            _transition_attempt(
+                uow,
+                attempt,
+                "CANCELLED",
+                worker_id=command.actor_id,
+                fencing_token=None,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                result={
+                    "error_code": "GENERATION_ATTEMPT_ISOLATED",
+                    "failure": observed,
+                    "local_execution_disposition": "RETIRED",
+                    "remote_cancellation": "NOT_ESTABLISHED",
+                },
+            )
         _cas_operation(
             uow,
             operation_id=operation["operation_id"],

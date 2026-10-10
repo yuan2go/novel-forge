@@ -1,0 +1,20 @@
+{
+  "two_fresh_processes": [
+    {
+      "status": "MANUSCRIPT_READY",
+      "next_chapter": 6,
+      "digest": "sha256:9d123926775af34aefdec6719421dcc856fc06544f6ffd862d5db7783d04b896",
+      "dispatch_suspended": "1"
+    },
+    {
+      "status": "MANUSCRIPT_READY",
+      "next_chapter": 6,
+      "digest": "sha256:9d123926775af34aefdec6719421dcc856fc06544f6ffd862d5db7783d04b896",
+      "dispatch_suspended": "1"
+    }
+  ],
+  "external_effects_before": 155,
+  "external_effects_after": 155,
+  "provider_calls_created": 0,
+  "status": "PASS"
+}

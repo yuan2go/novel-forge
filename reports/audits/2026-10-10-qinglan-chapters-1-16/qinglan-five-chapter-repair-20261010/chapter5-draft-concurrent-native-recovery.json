@@ -1,0 +1,93 @@
+{
+  "before": {
+    "source_effect_count": 2,
+    "journals": [],
+    "source_state": [
+      "FAILED_RETRYABLE",
+      2
+    ]
+  },
+  "outcomes": [
+    {
+      "contender": 1,
+      "recovered": true
+    },
+    {
+      "contender": 2,
+      "recovered": true
+    }
+  ],
+  "after": {
+    "source_effect_count": 2,
+    "journals": [
+      [
+        "a2436f70-ec4e-4002-89bd-1a1fb676f8a9",
+        {
+          "contract_version": "chapter-known-receipt.v2",
+          "provider_invoked": false,
+          "source_effect_id": "ae155c77-db8e-4dde-85dd-b88d54b336b2",
+          "completion_checks": "UNCHANGED",
+          "source_dispatch_id": "0173ee08-1ebc-4c53-8577-b6f08fe85336",
+          "source_output_hash": "sha256:7e7c55947fba8e8e49d7f84e53ed50a237b898bc1a1aee52e4aec63fb8f5abc7",
+          "source_operation_id": "54761100-b80b-438c-8d32-4e0b84fd0a0b",
+          "source_request_hash": "sha256:788823d767f2ab35d3d731e6172d7a56ad7b188521f16db06a0e628e7693f564",
+          "cost_authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+          "settled_draft_receipts": [
+            {
+              "normalization": {
+                "changes": [
+                  {
+                    "slot_id": "chapter:5:scene:delivery:skeleton",
+                    "added_scene_refs": [
+                      "chapter:5:fact:route"
+                    ]
+                  }
+                ],
+                "contract_hash": "sha256:5adc84deb1a6db4c9ebef76fc6f5a0359d3b9e76e19e5e978c6fef8a803e4634",
+                "prose_changed": false,
+                "raw_output_hash": "sha256:5872864bc5f780b7dbd278d971b55a945a989949466a36240e8884fb1a43bf76",
+                "fact_mutation_allowed": false,
+                "normalized_scene_hash": "sha256:bbf381b898c368e82bab8d2574a51ebd48711a77ccd87d6cb6b18360d6efa5ae"
+              },
+              "source_effect_id": "03cc900d-31d1-473b-8dc7-8a71be47f134",
+              "source_dispatch_id": "34aecb2c-f90c-49e0-b4ed-9672989de21c",
+              "source_output_hash": "sha256:5872864bc5f780b7dbd278d971b55a945a989949466a36240e8884fb1a43bf76",
+              "source_request_hash": "sha256:cb368823e57123cc07c7bab53fd854acc97c49179d7a6f25ca70d49299a04cee",
+              "cost_authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request"
+            },
+            {
+              "normalization": {
+                "changes": [
+                  {
+                    "slot_id": "chapter:5:scene:delivery:skeleton",
+                    "added_scene_refs": [
+                      "chapter:5:fact:route"
+                    ]
+                  }
+                ],
+                "contract_hash": "sha256:5adc84deb1a6db4c9ebef76fc6f5a0359d3b9e76e19e5e978c6fef8a803e4634",
+                "prose_changed": false,
+                "raw_output_hash": "sha256:7e7c55947fba8e8e49d7f84e53ed50a237b898bc1a1aee52e4aec63fb8f5abc7",
+                "fact_mutation_allowed": false,
+                "normalized_scene_hash": "sha256:af7c459b06c6adcfbc014eeb3416c217322888bc762e67491c8b30b593cfe95e"
+              },
+              "source_effect_id": "ae155c77-db8e-4dde-85dd-b88d54b336b2",
+              "source_dispatch_id": "0173ee08-1ebc-4c53-8577-b6f08fe85336",
+              "source_output_hash": "sha256:7e7c55947fba8e8e49d7f84e53ed50a237b898bc1a1aee52e4aec63fb8f5abc7",
+              "source_request_hash": "sha256:788823d767f2ab35d3d731e6172d7a56ad7b188521f16db06a0e628e7693f564",
+              "cost_authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request"
+            }
+          ],
+          "strict_certification_eligible": false,
+          "scene_evidence_union_revalidation": "scene-evidence-union.v1"
+        }
+      ]
+    ],
+    "source_state": [
+      "DEAD_LETTER",
+      2
+    ]
+  },
+  "provider_calls_created": 0,
+  "same_source_successor_count": 1
+}

@@ -1,0 +1,160 @@
+[
+  {
+    "reason": "Unsent native candidate repair preserves frozen source and all original World receipts. Current template v2 losslessly deduplicates complete task/context envelope; no budget, quality or input gate reduction. Reproduce duplicate Chapter transition diagnosis and use one chapter entry-to-exit aggregate.",
+    "capacity_only": true,
+    "registered_by": "author-first-native-operator",
+    "formation_run_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+    "authorization_ref": "user:qinglan-five-chapter-repair:20261010",
+    "registered_by_agent": true,
+    "template_policy_hash": "f78ae0c3a560bd5b90cea3e7831055d63cbed15fe8b1a29804626e98e1646e85",
+    "account_evidence_source": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
+    "authorization_reference": "creation:creation:qid-learning-prose-01:book:qinglan-wendao-20261008:qid-learning-prose-01:creation:01",
+    "independent_human_review": "NOT_REVIEWED"
+  },
+  {
+    "account": {
+      "codex_home": "/Users/yuan/.codex",
+      "executable": "/Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/bin/codex",
+      "entitlement": {
+        "cli_version": "codex-cli 0.159.2",
+        "billing_identity": {
+          "version": "codex-membership-identity.v1",
+          "auth_mode": "chatgpt",
+          "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+          "billing_channel": "ACCOUNT_ENTITLEMENT"
+        },
+        "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+        "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+        "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+      },
+      "retry_policy": "codex-no-transport-retry.v1"
+    },
+    "model_id": "gpt-6-sol",
+    "pack_snapshot": {
+      "pack_id": "story_planning_pack.creative.a7bb62b2dbf2852b445326aa",
+      "skill_ref": "chapter-outline",
+      "rollout_id": "",
+      "release_sha": "4781a7f60d282df85ce4a28c4b0dc4d422445514",
+      "pack_version": "2.13.116600345",
+      "deployment_id": "deployment:quality:story_planning_pack.creative.a7bb62b2dbf2852b445326aa:db1ba5afb5693782459e",
+      "manifest_hash": "sha256:d2e492dada3fba8193d16942c5bed377f31742d868d825c51cbd79e8342f5027",
+      "skill_version": "chapter-outline-qualification-v2",
+      "assignment_ref": "activation:sha256:5734377474dc9cef8ee454b3eedbb12f52ddbeeb2428e178b95c62cd48761abf@45",
+      "binding_set_id": "a6be78a1-d38e-4863-9b30-278e0335f4af",
+      "capability_ref": "planning.story_chapter.generate@1",
+      "compilation_id": "compilation:quality:story_planning_pack.creative.a7bb62b2dbf2852b445326aa:db1ba5afb5693782459e",
+      "capability_hash": "sha256:b31ee2f44d780c26ddb5e11292fd549cfd7d8b597fbd4e1e7dfe23489ae4edab",
+      "tool_policy_ref": "tools:chapter-generation-pack:v2",
+      "binding_set_hash": "sha256:dc4fcc3de2de2aa5e9951b6eb2cd3e6d51048f36eb2bdb50936efacf77f8d0d5",
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "compilation_hash": "sha256:025bdf502fc777fff647986ed079c152c25c51dfac5ec3c31be83e4911ab3064",
+      "route_policy_ref": "chapter.stage.route.policy:v1",
+      "selection_reason": "BOOK deployment selected",
+      "skill_bundle_ref": "chapter-outline@chapter-outline-qualification-v2",
+      "tool_policy_hash": "sha256:65c39e5333d62a936e6d4f1047b0a9ac4bf71d49a9e4422257de7a9e643b58c8",
+      "workflow_node_id": "chapter_plan.generate",
+      "budget_policy_ref": "budget:chapter-generation-pack:v1",
+      "prompt_bundle_ref": "prompt-system:story-planning-pack@v11",
+      "route_policy_hash": "sha256:750b4dac19211a00d06879fea1350325bd3dd43ccd5052abef8d21360e7605eb",
+      "skill_bundle_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39",
+      "activation_version": 45,
+      "budget_policy_hash": "sha256:55e75983b6c85de1808c06d3b9ea15402d1325e4adfbd14014440b3a28ad74f8",
+      "context_policy_ref": "context-policy:chapter-generation-pack:v2",
+      "input_contract_ref": "schema:execution-input:planning-story_chapter-generate:v1",
+      "prompt_bundle_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d",
+      "skill_content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39",
+      "approval_policy_ref": "domain-decision-record:v1",
+      "context_policy_hash": "sha256:72fd78ee57d7a72f287e5589a0add59765d1743c0d31cde7bd5d5e3fb808d0d0",
+      "output_contract_ref": "schema:execution-output:planning-story_chapter-generate:v1",
+      "prompt_template_ref": "prompt-template:story-planning-pack@v1",
+      "selected_scope_type": "BOOK",
+      "agent_definition_ref": "",
+      "approval_policy_hash": "sha256:f23f495bbc81245ef172fc1e54de2ef2395619c519114d56655f96c279b7a0a4",
+      "prompt_template_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00",
+      "agent_definition_hash": "",
+      "catalog_snapshot_hash": "sha256:93200ff0f79b24d32e399221a3285243bc043f4ad540c2c8e0611045cb009a65",
+      "evaluation_policy_ref": "chapter-generation-evaluation-v1",
+      "evaluation_policy_hash": "sha256:e3ad9cdf888fafad5779562080038701ebdf3d7ffd5bf0ffd6df0d8b751d9e1f",
+      "execution_capability_id": "planning.story_chapter.generate",
+      "prompt_compiler_version": "chapter-prompt-compiler:v11",
+      "workflow_definition_ref": "story_planning_generators@1.12.0",
+      "operation_definition_ref": "story_planning.generate@1.21.0",
+      "tool_policy_payload_json": "{\"database\":{\"allowed_tables\":[],\"forbidden_tables\":[\"legacy_assets\"],\"read_allowed\":false,\"write_allowed\":false},\"default\":\"DENY\",\"external_models\":{\"allowed\":true,\"context_substages\":[\"context_compress\",\"context_fidelity\"],\"route_policy_ref\":\"chapter.stage.route.policy:v1\"},\"files\":{\"allowed_roots\":[],\"read_allowed\":false,\"write_allowed\":false},\"policy_id\":\"tools:chapter-generation-pack:v2\",\"retrieval\":{\"allowed\":true,\"source_policy_ref\":\"source:chapter-generation-pack:v1\"},\"tools\":[{\"allowed_operations\":[\"creative.candidates.generate\",\"theme.candidates.generate\",\"ending.intent.generate\",\"reader.promise.generate\",\"world.design.generate\",\"character.cast.generate\",\"book_plan.generate\",\"volume_plan.generate\",\"arc_plan.generate\",\"chapter_group_plan.generate\",\"chapter_plan.generate\"],\"approval_required\":false,\"audit_required\":true,\"budget_policy_ref\":\"budget:chapter-generation-pack:v1\",\"permission\":\"EXECUTE\",\"risk_class\":\"HIGH\",\"tool_ref\":\"model.provider.invoke\"}]}",
+      "execution_capability_hash": "sha256:b31ee2f44d780c26ddb5e11292fd549cfd7d8b597fbd4e1e7dfe23489ae4edab",
+      "operation_definition_hash": "sha256:d718641608c969fb4386268a9e96fc6c8f1bb2c6af2f0ce6903fb15ca85e96fe",
+      "context_policy_payload_json": "{\"allowed_asset_types\":[\"book_design\",\"canon_snapshot\",\"chapter_execution_intent\",\"chapter_memo\",\"chapter_plan\",\"chapter_plan_version\",\"context_bundle\",\"knowledge_pack\",\"planning_generation_input_snapshot\",\"story_state\"],\"forbidden_asset_types\":[\"raw_source_document\",\"raw_source_chunk\"],\"freshness\":{\"reject_cross_project\":true,\"reject_stale\":true,\"reject_unqualified\":true},\"longform_bindings\":{\"arc\":\"optional\",\"book\":\"required\",\"canon\":\"required\",\"chapter\":\"required\",\"chapter_group\":\"required\",\"reader_feedback\":\"optional\",\"story_bible\":\"required\",\"volume\":\"optional\"},\"max_tokens\":512000,\"policy_id\":\"context-policy:chapter-generation-pack:v2\",\"priority\":[\"chapter_plan\",\"canon_snapshot\",\"story_state\",\"knowledge_pack\"],\"required_version_refs\":[\"chapter_plan_asset_version_id\",\"canon_snapshot_version_id\"],\"source_isolation\":\"ABSTRACT_ASSETS_ONLY\"}",
+      "domain_acceptance_policy_ref": "domain-decision-record:v1",
+      "prompt_system_instruction_ref": "prompt-system:story-planning-pack@v11",
+      "evaluation_policy_payload_json": "{\"evaluation_id\":\"chapter-generation-evaluation-v1\",\"failure_policy\":{\"acceptable_failures\":[],\"retryable_failures\":[\"PROVIDER_TIMEOUT\",\"OBJECT_STORE_UNAVAILABLE\"],\"terminal_failures\":[\"CONTEXT_MANIFEST_CONSISTENCY_FAILED\",\"SOURCE_LEAKAGE_DETECTED\"]},\"metrics\":[],\"required_gates\":[{\"blocking\":true,\"gate_id\":\"planning_source_isolation\",\"judge_capability_id\":\"quality.originality.judge\",\"required_evidence\":[\"planning_generation_candidate\"],\"threshold\":1}]}",
+      "prompt_system_instruction_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+    },
+    "runtime_class": "LOCAL_CLI_REMOTE_INFERENCE",
+    "model_provider": "codex-cli",
+    "auth_profile_ref": "auth:current-chatgpt-member:codex:ac313a67364269b8e4a28d1192c2b375a8df36901ca1c20528bb6279a3a9a7cc",
+    "model_backend_id": "codex-cli",
+    "reasoning_effort": "high",
+    "planning_capacity": {
+      "version": "planning-capacity-allocation.v1",
+      "source_failure": {
+        "error_code": "PROVIDER_ROUTING_BLOCKED",
+        "error_message": "PROVIDER_ROUTING_BLOCKED: routing-decision:dc6f6fd16ab02b990dda366e779e4ee9022a47c7b8c3295cb7a49b618f81bd34",
+        "failure_class": "retryable",
+        "failure_details": {
+          "cause": "ROUTE_CANDIDATES_REJECTED",
+          "stage": "PROVIDER_ROUTE_ADMISSION",
+          "error_code": "PROVIDER_ROUTING_BLOCKED",
+          "task_stage": "chapter_plan.generate",
+          "decision_id": "routing-decision:dc6f6fd16ab02b990dda366e779e4ee9022a47c7b8c3295cb7a49b618f81bd34",
+          "retryability": "CHANGED_ADMISSION_REQUIRED",
+          "recovery_state": "NOT_SENT",
+          "business_impact": "NO_GENERATED_CANDIDATE",
+          "recovery_action": "INSPECT_ROUTE_ADMISSION",
+          "provider_invoked": false,
+          "execution_identity": {
+            "work_id": "book:qinglan-wendao-20261008",
+            "chain_id": "sha256:e726ea106fe8be1544217b999b7bdfe951f656762447cb4b60b54fa5048b6a94",
+            "attempt_id": "4db49044-999a-4322-bd53-ba5934309a52",
+            "project_id": "qid-learning-prose-01",
+            "operation_id": "cc9f0e82-a10e-48cd-8264-d530bb2748fc"
+          },
+          "candidate_rejections": [
+            {
+              "candidate_id": "codex-cli:gpt-6.1-sol:high",
+              "rejected_reasons": [
+                "CONTEXT_CAPACITY_EXCEEDED",
+                "BUDGET_HARD_LIMIT",
+                "TEMPLATE_MODEL_UNAUTHORIZED"
+              ],
+              "estimated_total_tokens": 262685
+            },
+            {
+              "candidate_id": "codex-cli:gpt-6-sol:high",
+              "rejected_reasons": [
+                "CONTEXT_CAPACITY_EXCEEDED",
+                "BUDGET_HARD_LIMIT"
+              ],
+              "estimated_total_tokens": 262685
+            }
+          ]
+        }
+      },
+      "projection_hash": "sha256:9034f5206357ee0ba0a8753029eba34fcb9171fd54c7d4823becefc4441d7bd6",
+      "prior_task_tokens": 226128,
+      "context_revalidation": {
+        "reason": "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions",
+        "contract_version": "planning-exact-value-reference.v1",
+        "blocked_decision_id": "routing-decision:dc6f6fd16ab02b990dda366e779e4ee9022a47c7b8c3295cb7a49b618f81bd34",
+        "context_content_hash": "sha256:a7fde4353c72126ec232de32a0f122846f76a28498f668c14a3977bbba44cf53",
+        "source_operation_status": "FAILED_RETRYABLE",
+        "context_asset_version_id": "50470bbf-9d92-44d3-b4e4-e75c438d6b0b"
+      },
+      "allocated_task_tokens": 226128,
+      "single_request_ceiling": 226128,
+      "external_intents_at_source": 0
+    },
+    "cost_accounting_basis": "ACCOUNT_ENTITLEMENT"
+  },
+  2,
+  null
+]

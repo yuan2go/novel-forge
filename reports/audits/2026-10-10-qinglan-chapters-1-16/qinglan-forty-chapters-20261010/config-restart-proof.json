@@ -1,0 +1,25 @@
+{
+  "services": [
+    {
+      "service": "novel_forge.workers.book_authority",
+      "old_pid": 3762,
+      "pid": 39203,
+      "source_sha": "26e361a603ef03f789064d1ff92da9d8bb6a9386",
+      "source_root": "/Users/yuan/.codex/releases/26e361a603ef03f789064d1ff92da9d8bb6a9386-qinglan-repair",
+      "background_model_dispatch_suspended": true
+    },
+    {
+      "service": "serve-api",
+      "old_pid": 3752,
+      "pid": 39213,
+      "source_sha": "26e361a603ef03f789064d1ff92da9d8bb6a9386",
+      "source_root": "/Users/yuan/.codex/releases/26e361a603ef03f789064d1ff92da9d8bb6a9386-qinglan-repair",
+      "background_model_dispatch_suspended": true
+    }
+  ],
+  "health": {
+    "provider_dispatch_suspended": true,
+    "status": "alive",
+    "storage_authority": "postgresql"
+  }
+}

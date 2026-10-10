@@ -150,7 +150,7 @@ forward-only, backup and downgrade properties. Run clean-install and upgrade tes
 using a new migration outside an isolated test database.
 
 The published chain through 0195 is immutable. The generation-recovery segment is
-0185–0195, ending at native prose-review sidecar isolation. Resolve each full
+0185–0197, ending at authorized native planning capacity. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
@@ -735,6 +735,11 @@ invocation. The immutable isolation journal preserves remote UNKNOWN, terminal O
 history and unknown usage. It revokes old commit and activation rights and binds one
 native Planning runtime continuation or Chapter Saga step successor to the exact original
 Book, inputs and logical task.
+Planning CLI timeouts are uncertain external outcomes, not permission to resubmit.
+Historical `FAILED_RETRYABLE` CLI timeout records use this same isolation path only
+with the original dispatch, stopped process receipt, unmeasured usage and frozen pure
+Tool boundary. Their failed Attempt and Effect status remain in history; the native
+isolation journal revokes their commit rights before a bounded successor is registered.
 The successor retains previously admitted per-task Context capacity. A typed pre-send
 capacity-inheritance continuation may restore that exact allocation without increasing it.
 Opening, Chapter, Book coordination, delivery windows and budget lineage consume this same
@@ -828,6 +833,7 @@ and authorizing its actual native Project. Use the same work identity for these 
 ```bash
 novel-forge authority-manuscript read --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
 novel-forge authority-manuscript continue --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript continue --book-run-id "$BOOK_RUN" --stop-after-chapter "$ROUND_END"
 novel-forge authority-manuscript pause --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
 novel-forge authority-manuscript resume --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
 novel-forge authority-manuscript edit --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
@@ -839,12 +845,77 @@ novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$
   --output "$NEW_MANUSCRIPT_JSON"
 ```
 
+For an author-first BookRun that is not Formation-derived, `continue` uses the existing
+native Book coordinator and Chapter scheduler with that exact Run identity. Its optional
+round boundary cannot exceed the frozen delivery window and does not change the full-book
+target, author selection or acceptance. Saved prose remains readable at recovery stops.
+An already-delivered round is a read-only replay; actual continuation retains the current
+deployment's dispatch, reconciliation, Provider authorization and budget policies.
+
+Chapter planning binds `known_fact_ids` to the frozen accepted StoryState. Working
+prose memories and agreements may inform scenes but cannot create accepted knowledge
+IDs. A native continuation admission error returns `NATIVE_CONTINUATION_BLOCKED`
+with the retained manuscript and error; inspect its original evidence before repair.
+After an authorized Volume or Arc Plan Change, continuation resolves the original
+portfolio through its exact activated replacement lineage in the same Project and
+Book. The admission snapshot and past Chapter inputs remain immutable. An unapproved
+replacement, ambiguous lineage, cycle, non-current endpoint or foreign Book remains
+blocked. Arc cross-volume membership follows that same proven Volume lineage for
+cursor projection without rewriting the frozen Arc document.
+Chapter admission also validates each replacement's current approval receipt through
+its existing design owner. Its admission evidence binds those effective receipts and
+the original snapshot qualification hash; it does not require a superseded receipt
+to describe the current design or upgrade the original qualification.
+Chapter Arc scheduling selects only from the frozen row's required Arc contributions.
+Other frozen Arc inputs provide context and do not require scheduling or movement.
+
+The `edit` and `adopt` example above is for expression edits inside the existing Scene
+contract. It does not repair deficient events or authorize an assistant to record an
+author choice. A structural diagnosis must first enter the owning Planning/Plan Change
+path with the exact manuscript and plan versions. Save replacement prose as a working
+candidate, retain its source and diagnosis, and review the rewritten events. Working
+version use, author selection and formal acceptance are separate records. A finding marked
+`UNRESOLVED_PLAN_SCOPE` remains unresolved after expression polishing.
+
+For Memo reference failures, inspect the exact frozen Intent, sent Schema and successful
+Provider receipt before retrying. A display name and a stable character ID are distinct
+references; only an explicit unique binding in this Book's frozen input versions can
+normalize them. Do not infer IDs from transliteration. Retain exhausted Attempts and use
+the owning versioned contract-recovery successor for a proven repair; repeated unchanged
+input, a new Book or a reset counter is not recovery.
+
+Planning locators use the owning `character_planning_locator` serializer around a
+stable cast ID. They are distinct from that ID and its display name. Frozen Scene
+locators may resolve only through the exact Book cast, with collisions rejected.
+Existing name-based contracts retain their original tokens. A failed, unmaterialized
+Intent with this proven reference-contract error and no external effects may use the
+bounded `planning-character-locator.v1` successor; its Plan, authorization and failed
+Attempt remain unchanged. The native Book creation driver runs this recovery before
+Memo execution, including after process restart.
+
 Editing compares the full submitted chapter with the selected base and freezes only actual
 changed Unicode ranges. Preserve unsubmitted input on conflict, reload the selected base and
 rebase explicitly. Diff returns the original-protecting candidates, before/after edits and
 adoption decisions. Export creates a new JSON artifact containing exact source versions,
 statuses, prose and hashes; it refuses to overwrite an existing output file. `--chapters`
 selects an ordered available range, and `--versions` binds an expected version list.
+An editor session selection applies only to the exact native source of that working
+run, or an edit whose originating draft is that source. A same-Book session from an
+older run remains readable but cannot replace a newer run's delivered text or its
+continuation dependencies. Saving against a changed native base retains the old session
+versions and begins from the supplied current base without recording adoption.
+`authority-manuscript use-working-candidate` records delegated use of an exact saved
+assistant revision in one settled author-first Book run. Supply `--chapter`,
+`--candidate-version`, `--expected-version`, `--idempotency-key` and `--reason`.
+It preserves original delivery and candidate versions, requires the current base
+and its hash, and updates working continuation dependencies. Planning must consume
+that exact working prefix for continuity while retaining the actual accepted boundary.
+A witnessed action in the selected prose does not need to be repeated merely because
+it has no formal acceptance; unsupported claims, POV restrictions and changed dependencies
+remain uncertain. A structural repetition finding returns to scoped Plan Change before
+continuation. It creates no author
+choice, review pass or formal acceptance; human input and an existing author choice
+retain their separate decision path. Repeating the exact command is idempotent.
 The UI also downloads a readable text manuscript with the same version/status provenance.
 An Editor link containing the Project and Book run opens the current manuscript directly.
 Provider-dependent API services assemble only for related execution operations; API restart
@@ -2267,6 +2338,12 @@ and a rationale. It creates a proposal, retaining the existing approval and futu
 invalidation boundary. A new source or policy requires a new frozen review run; identical
 valid windows can be reused without pretending unreviewed text was read.
 
+Select `NOVEL_FORGE_COORDINATED_READER_CONTRACT=reader-accepted-context.v3` for the
+current Reader, Plan Change and Book Replan owners in production or validation. This
+selection retains the runtime environment and each owner's exact frozen Book template
+checks. An unset or older contract retains legacy wiring; it cannot consume current
+structural candidates by treating them as already qualified literary evidence.
+
 For a finding disposition, obtain `finding_digest` and `expected_version` from the current
 report. `KEEP_HISTORY`, `CURRENT_CANDIDATE_REVISION` and `FUTURE_PLAN_PROPOSAL` retain an
 unresolved issue until the appropriate review/approval consumer completes. A candidate
@@ -3182,6 +3259,24 @@ add accepted support or relax a causal predicate. The owning Planning result bec
 terminal with `WORLD_PREPARATION_RESULT_INVALID` and can create its diagnosed repair;
 older `WORLD_PREPARATION_BLOCKED` retry checkpoints retain their history and replay
 the original receipt before this classification, without another Provider request.
+Current Planning template v2 compiles input manifest and context together into one
+lossless exact-reference envelope, with reconstruction equality and source/encoded
+hashes retained. Repeated task/context content is serialized once; no constraint or
+repair evidence is omitted and no budget is enlarged. Capacity continuation examines
+the frozen authorized candidates; an explicitly template-unauthorized catalog model
+is retained as rejected and cannot veto or receive that continuation. At least one
+authorized candidate must prove only capacity and its coupled token-reservation
+failure; other authorization, quality or budget-only denials remain closed.
+Forward migration 0197 binds the database continuation guard to this same authorized
+candidate rule; published migration bodies remain unchanged.
+Historical template v1 keeps
+its original rendering. Chapter transitions describe one entry-to-exit change per
+(state_kind, entity_key); Scene contracts retain intermediate changes.
+A retained `WORLD_AGENCY_CLASSIFICATION_REJECTED` is a terminal proposal-contract
+failure, not a transport retry. Its bounded native result repair reproduces the
+classification against the exact generation and settled Director receipt even when
+compilation failed before an action asset existed. It cannot add accepted knowledge
+or substitute a host-authored NO_OP.
 A new World proposal can obtain its necessary Director evaluation within that same
 allowance only with the current generation's verified settled receipt, exact source
 and frozen knowledge selection. This dependent evaluation receipt cannot authorize
@@ -3216,8 +3311,11 @@ The additional recovery procedures use exact native sources:
 | Provider nullable enum rejection | Replay the exact failed Planning task. A successor requires native `PROVIDER_SCHEMA_REJECTED` evidence and a hash-verified `codex-nullable-shared-types.v2` to v3 projection correction. The canonical Schema, inputs and task stay fixed; completed World generation/evaluation/action assets are reused after receipt and current-source checks. Original missing usage remains unmeasured. A v3 failure has no unchanged-codec successor; persisted dispatch lineage enforces the shared retry bound. |
 | Complete Planning result after host failure | Reuse the original verified complete normalized output through native gateway result admission, with exact request/result/process hashes, original Pack and input identities, and settled reservation evidence. Measurement may remain unknown; it is not a content-validity predicate. Isolated or already superseded operations have no renewed submission or activation right. Ordinary Story Design validation and bounded repair still apply. |
 | Interrupted Planning World stages | Follow only the native same-task continuation ancestry. Reuse each completed generation/evaluation/actor stage from its actual owning Operation and verified result; require current World source and unchanged request/knowledge identity. Execute only missing stages. A completed action is read by its retained formal lineage, without writing a false new-operation alias. |
+| Changed Chapter planning directive with a completed World action | Explicitly freeze that current `world-production-action.v1` or `world-production-action.v2` through the existing governance-action input. Require one same-workspace, Book and actor proposal, exact current frontier and planning-source refs, both original succeeded Provider outputs with settled usage, and an identical recompiled World plan. Reuse the action in the new constraint envelope and execute only Chapter planning. A changed frontier, missing receipt, rejected action or changed Director result fails closed; selection never accepts World facts. |
+| Chapter Arc composition | When a governed Arc Working Set is frozen, both Provider Schema and validation require its selected IDs and exact roles in the Chapter schedule, contributions and combined Scene progress. The Chapter row alone supplies the scope only when no Working Set is supplied. Unselected related context does not create a required contribution. Preserve the frozen selection; do not omit a selected Arc, promote its role or change IDs to pass validation. |
 | Empty Planning knowledge search | Newly frozen `planning-empty-query-projection.v1` requests retain the exact empty selection and need digests plus policy, while retrieval query text stays in durable Context. Selected or required cards are never omitted. Chapter repair schemas use `operational-commitments-v1` to enforce the existing HARD_CONSTRAINT/SOFT_INTENT operational rule; original frozen schemas remain unchanged. |
 | Chapter successor | The native creation driver may replace a known settled pre-prose member Memo timeout or an exact failed scene/information/review/length/Canon step. Command Kernel appends successor evidence; Book/Group update only their owned references. Old terminal history, successful siblings and fees remain. |
+| Unproduced Chapter with an invalid Plan identity | Return the diagnostic to Planning and activate an exact Chapter PlanChange. `authority-manuscript recover-plan-references --book-run-id … --proposal-id …` validates the corrected Plan against the frozen Book cast, cancels only the original unproduced child, and journals its linked next generation. A pending cancellation retains the same request and recovery key for native worker reconciliation. No Effect, produced body, active lease or acceptance may exist; a corrected successor cannot repeat this recovery. The next native Book tick recalculates execution projection, Intent, Memo and Context against the new Plan and current working prefix. Author selection and acceptance remain separate. |
 | Derived Canon/Quality | Explicit v6 `grounded-canon-validation.v2` correction binds the frozen diagnosis and contracts to an unaccepted frontier. Existing successful outputs remain immutable. Accepted state, foreign actor/scope, live lease, unresolved effects or committed downstream state reject recovery. |
 
 Window continuation requires the explicit v5/v6
@@ -3290,6 +3388,14 @@ not use the six-chapter two-arm blind-export completion check. AI_EDITORIAL_REVI
 author input and independent human review are distinct; no human feedback means
 NOT_REVIEWED. The work-specific, relative-path command sequence is linked from the
 current novel entry above.
+
+For working-manuscript continuation, verify the exact frozen working projection and
+the sent schema separately from accepted knowledge. An exhausted planning candidate
+does not authorize another identical repair: retain its outputs and validation reports,
+then use a scoped author change request after correcting the diagnosed generation
+contract. That new work retains the original world preparation when its exact frozen
+inputs remain valid. Planning approval authorizes a working plan, not author prose
+choice or Book acceptance.
 
 ## Knowledge-grounded six-chapter comparison
 
@@ -3861,3 +3967,5 @@ New current-contract Chapter Planning requests bind the existing operational com
 The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 template per Attempt. Its joint task-and-Context data envelope replaces only identical repeated values with local RFC6901 references in canonical key order after an exact full round-trip check, and admission measures the encoded prompt with the complete output reservation. Original Context assets and prior Attempt manifests remain unchanged. A proven unsent capacity failure may use its remaining native Attempt allowance with this new Pack. If its v12 attempts already exhausted, the native StepSuccessor records at most one v13 transport correction with identical inputs, completion checks, actor, Book and original retry lineage; all routes must prove only Context capacity rejection and no Effect or budget reservation may exist. A later v13 failure cannot repeat that correction. Changing the Pack never resets the persisted failure allowance or authorizes another business commit.
 
 The unsent v12-to-v13 correction binds `kernel-unsent-transport-window.v1` to the exact compiled target deployment. Native StepSuccessor atomically retains exhausted failure history, extends only a derived Root window by its original bounded duration, aligns the Saga deadline projection and registers the successor. Explicit author/business deadlines, active leases, unsettled sibling Effects and irreversible work retain their existing guards. The single correction decision and shared fault counter do not reset on restart.
+
+Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.

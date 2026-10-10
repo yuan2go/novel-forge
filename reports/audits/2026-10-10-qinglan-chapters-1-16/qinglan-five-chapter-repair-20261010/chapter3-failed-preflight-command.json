@@ -1,0 +1,500 @@
+{
+  "book_id": "book:qinglan-wendao-20261008",
+  "actor_id": "author-first-native-operator",
+  "trace_id": "c14fec92-6d9a-4cbf-932f-aa85b7257a71:chapter_plan.generate:3",
+  "project_id": "qid-learning-prose-01",
+  "logical_key": "chapter:3",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "repair_number": 1,
+  "repair_reason": "SCENE_ACCEPTED_KNOWLEDGE_MISMATCH:sha256:826e13e664387b3bd0ebc38dcfa6f781be9b88f7654a58549f93840e39bc0eda",
+  "correlation_id": "c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "input_versions": {
+    "arc_plans": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+    "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "story_state": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+    "reader_state": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+    "quality_trend": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+    "canon_snapshot": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+    "chapter_group_plan": "authority-output:4abb3a34-ff7b-4af9-8bc5-d1f836b0f2eb:story_planning.candidate:v1",
+    "previous_chapter_outcome": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+    "chapter_function_matrix_row": "authority-output:4abb3a34-ff7b-4af9-8bc5-d1f836b0f2eb:story_planning.candidate:v1"
+  },
+  "arc_working_set": {
+    "type": "ArcWorkingSet",
+    "book_id": "book:qinglan-wendao-20261008",
+    "capacity": {
+      "source": "LOW",
+      "maximum_active_arcs": 1,
+      "narrative_load_policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+    },
+    "candidates": [
+      {
+        "score": 25,
+        "reasons": [
+          "GROUP_CADENCE_ADVANCE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "ADVANCE",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 10,
+        "reasons": [
+          "GROUP_CADENCE_TOUCH"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "TOUCH",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 25,
+        "reasons": [
+          "GROUP_CADENCE_ADVANCE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "ADVANCE",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 9,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 7,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      }
+    ],
+    "project_id": "qid-learning-prose-01",
+    "reader_intent": {
+      "reward_mode": "微弱气感的即时身体经验与可复查的动作差别",
+      "target_emotion": "羞怯、惊喜以及气感消失后的不甘"
+    },
+    "policy_version": "accepted-reality-arc-working-set-v1",
+    "target_chapter": 3,
+    "accepted_reality": {
+      "actual_only": true,
+      "narrative_state": {
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "state_kind_counts": {},
+        "accepted_through_chapter": 0
+      },
+      "projection_hash": "",
+      "projection_set_id": "",
+      "accepted_through_chapter": 0,
+      "source_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+    },
+    "contract_version": "arc-working-set-v1",
+    "planning_horizon": {
+      "scope": "CHAPTER",
+      "chapter": 3
+    },
+    "authority_boundary": {
+      "selection_is_future_intent": true,
+      "actual_progress_requires_accepted_chapter_outcome": true
+    },
+    "working_manuscript": {
+      "book_id": "book:qinglan-wendao-20261008",
+      "sources": [
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 1,
+          "excerpt": "篓沿，才回答：“我能说准的是这件搬整差事。你明日来，照刚才说的范围做，做完向我交代。入门登记要由负责办理的人核定，我不能替他们答应。今天这话，也不算你已经办了登记。”\n\n雨点从檐口斜斜打进来，沈砚往后让了半步。程观说得直，没把差事说成一条能越过山门的捷径。沈砚有些失望。他刚才手都磨红了，心里还是偷偷盼过，盼这人顺口说一句：明日做完，便留下。\n\n但程观已经转向棚里的木架，等的是一个肯不肯来的答复。沈砚看着那几只空篓。活不难懂，也不是什么修炼本领；他做不做，明日这里都得有人搬。方才那只药篓起初也不是他的事，可等绳结系牢，他亲手托着它走进檐下，才觉得自己不再只是山门外一个不知如何开口的人。\n\n他把包带从磨红的掌心移到指节上，抬起头。\n\n“我明日来。”沈砚说，“天亮后，在这棚下找你。”\n\n程观应了一声，抬手把一只挡在通道上的空篓往里移了移，留出棚前的路：“记住位置就行。明日来了再动，别趁雨里做。”\n\n沈砚点头。雨还在下，山门里的石路被洗得发亮。他没有跨进那道门，也没有得到入门的凭据。包带重新落回肩上时，掌心被绳磨出的地方微微发热。他又看了一眼檐下系稳的药篓，再看向空篓旁那几根散绳。他将一根挡着脚边的散绳轻轻拨到檐内，没有再去搬空篓。明日的活还没开始，眼前的雨已把石阶洗得发亮。他靠在棚边，看那串檐水从细线渐渐变成水珠，心里仍惦记着方才掠过山脊的剑影。\n\n这回再往山门望，他先记住了棚子的位置。",
+          "text_hash": "sha256:64fa220086268c6ca6be4ed8d3d5c014e1a080bd8b8b149f4a7520e187198fef",
+          "content_hash": "sha256:44246b62fccfbb45a80f6a37c928620cf018ef52e0d472aaa7e4aab878c03e4a",
+          "asset_version_id": "64c825b9-6296-4058-9ee3-4132222e2fa2",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 2,
+          "excerpt": "，我空着。满篓没碰。”\n\n程观推了推最外头的空篓，见它稳着，便把沈砚肩头一截沾湿的绳屑摘下来。\n\n“行，收拾得能用了。去登记吧，沿石路往上，左边那间屋。”\n\n沈砚应下，取回墙角的包。走出棚子前，他又看了一眼案前腾出的地面。陆衡在那里收他的背带，自己答应的篓和绳也都有了位置。他想向陆衡说一声，却见那人正同一只扣眼较劲，索性没打扰。程观还站在棚下，冲他往石路那头抬了抬下巴。他便背起包，第一次从山门正中走了进去。\n\n石路上还有几处雨后的浅水。沈砚绕过它们，走到程观所指的登记处，先把包带从肩上放松。屋内一张桌子对着门，桌后有人正翻着名册。他说了自己的名字和来意，又把昨日与今日在棚下的事简短交代清楚。\n\n经办的人让他把名字再说一遍，问过来处，核对手边的记录，提笔在普通外门的名册上写下两行。沈砚看着笔尖落定，才敢问：“这样就算登记好了？我今晚能住在哪里？”\n\n“普通外门登记办好了。”那人把一张写着住处去向的纸递给他，指明从哪条路过去、到哪间屋落脚。沈砚接过纸，先看自己的名字，又把屋号念了一遍，怕走到半路记错。\n\n他把纸折好，仍站在桌前：“修炼课呢？是到住处以后去上吗？”\n\n“修炼课还没给你排上。”经办的人把名册合到一边，招呼门口另一个来办事的人，“先去住下，等开课消息。”\n\n沈砚点了点头。他原盼着登记完便能马上坐进课里，听见这句，心里空了一小块。可纸还在手中，纸边被他的拇指捏出一道浅折，墨还没有全干。名册翻过去了，方才那两行字留在里面，不必由他守着。他从前站在山门外，只能问自己能不能进；如今至少知道今晚该往哪一扇门走。\n\n他向经办的人道谢，把纸收在贴身的衣襟里，照着指引往住处去。走过一处岔路，他将纸举到亮处，辨出左边的窄道。沿路有门开着，也有门紧闭。他从门前经过时听见有人咳嗽、有人翻书，一只衣袖伸出窗外，将歪在墙上的竹竿扶正。他忍不住放轻脚步。昨日他只看见高处的剑影，原来山门里面的人也会把衣服晾在窗下。\n\n沈砚照着纸上的屋号找过去。屋里只有一张木床、一张小桌，窗扇推开，能看见院墙边晒着的竹竿。他把包放到床脚，手却没有立刻松开。走了一路的包带在肩上压出一道印，往常他放下它，还得想着下一处能在哪里歇脚；这回床边有一块空地，足够让它安稳待到明日。\n\n门外传来脚步声。许庭抱着一叠洗净的旧衣走到檐下，看见他，认出了昨日在棚边系篓绳的人。“找到屋了？”\n\n沈砚点头，让开门口。许庭抽出一件衣衫递给他：“这件还能穿。袖口旧了些，洗过，也没有破。”\n\n沈砚接过来，先摸了摸领口，再抖开比了比肩宽。布料洗得发软，肘边有一道补过的细线。他把它叠在小桌上，桌面原本空空的，放上衣衫后，忽然像是有人会回来取用的地方。他把包里的东西取出一半，想摆得整齐些，手指却又碰到衣襟里的登记纸。\n\n“师姐，吐纳能不能先教我一点？”他说得快，见许庭将其余旧衣换到另一只手上，又忙补了一句，“只教我该怎么坐，怎么呼吸也行。”\n\n许庭朝檐下那块干地看了一眼：“坐。”\n\n沈砚愣了一下，抱着旧衣就要坐下去。许庭拦住他，将衣衫接过来放回桌上，才在他旁边落座。她只是借这一会儿教他基础动作，并没有替他安排课程；沈砚此时却顾不上失望，连包带蹭疼的肩头也忘了。\n\n“这样？”沈砚挺直背，眼睛盯住她。\n\n两人到檐下坐定。许庭让他双脚落稳，背自然立起，不要为了坐直而把肩膀顶高。她自己坐给他看，呼吸时肩头几乎不动，只在吸气后略停一停，便缓缓呼出。她又示意他留意腰背：“先认清呼吸能不能平稳走完。若一开始就憋着，后面只会更乱。”\n\n沈砚跟着坐好。院里有人经过，脚步声渐渐远了；风从竹竿间穿过去，带来晒过布的气味。他按许庭示范的样子吸气，起初还能数清一进一出。可一想到自己已经住进外门，修行的门却仍在前头，他便盼这一口气里能有些什么。昨天山脊上那道剑影又掠过心头。他想抓住那种离地远行的可能，胸口便先紧了起来。\n\n他偷看许庭一眼，见她仍坐得安稳，便将腰背又挺了挺，不愿让她觉得自己连呼吸都学不会。下一口气却吸得短。他怕错过，又急急补了一口，肩膀随之抬高。为了把气留住，他把背绷直，连腹部也暗暗用力。呼出去时，气从鼻端一下散尽；他还想照原来的快慢接上，喉间却先发紧，只好停下来重新吸。竹竿上的衣角轻轻动着，他看得见，自己的呼吸反倒越听越乱。\n\n许庭伸手在他高起的肩旁虚点了一下：“停。肩放下来，你不是在扛篓子。”\n\n沈砚垂眼看膝上的手。手指扣得很紧，指节泛白。他松开一点，回想方才那几口气：“第一口还能慢慢呼完。后来我想留住感觉，第二口吸得太急，没等呼完又补了一口。肩背也跟着使劲。”\n\n“气还没出去，你又抢着吸。”许庭说，“让这一口走完。手也松开。”\n\n沈砚张了张嘴，本想说鼻端方才凉了一下，话到嘴边却停住了。窗边也正吹着风。许庭没有催他，他望着膝上慢慢张开的手指，低声说：“什么也没留住。”\n\n承认这句话比搬那一早上的空篓难。他原以为，只要进了山门，那些在村口想了许多年的事就会离自己近一点；如今坐得腿麻，喉咙发涩，连一口平稳的气也没走完。屋子和旧衣都是真的，坐在这里也是真的；可这次尝试结束，身体里没有留下他盼望的东西。\n\n许庭起身时，他没有追着要再试一遍。方才急促的几口气还压在胸口，照原样重来，多半仍会把肩背绷紧。他向许庭道谢，回到屋里，把旧衣摊开搭在床边。窗外的风吹得衣角微动。他将衣服穿上，袖口比手腕长了一截，卷起两折才合适。刚才只顾着盼气感，肩头一直顶着；这会儿放下来，旧布轻轻贴住皮肤，才觉得酸痛。\n\n他抬手摸到肘边的补线。针脚一针挨着一针，线的颜色比旧布深些。他的手指在那处停了一会儿，没有把衣服换回去。\n\n登记纸安稳收在衣襟里，包也已放在床脚。沈砚看了一眼门外许庭离开的方向，下次见她，他还是要问那两口气。但不能一边问，一边假装自己已经会了。沈砚将桌上那半包东西也取出来，留着一角放登记纸。他终于松开了背了一路的包带。",
+          "text_hash": "sha256:e7e6e4d51f13bcbc56b4b6a79ac80369b801893902fa6f06e9a60d31d2b266ef",
+          "content_hash": "sha256:2fb32617fe40600d14358f598101a11b226d2f235735a24a2c541d1ff4a2e14b",
+          "asset_version_id": "ccda20cc-bdad-45c7-8643-d9ba664ee278",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ],
+      "version": "working-manuscript-context.v1",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "project_id": "qid-learning-prose-01",
+      "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+      "snapshot_hash": "sha256:c5dd7caa4d200eb502e8d23d36ba95b2812b9365b68f9b79cc88a43e56a586cb",
+      "target_chapter": 3,
+      "structured_facts": [],
+      "accepted_through_chapter": 0
+    },
+    "working_set_digest": "sha256:fa4f406aae4f749fa4f896923acc13ce5b526b990a4501b665c12c102f84119e",
+    "schedule_correction": {
+      "status": "CORRECTED_FROM_GROUP_CADENCE",
+      "added_arc_plan_version_ids": [],
+      "removed_arc_plan_version_ids": [
+        "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ]
+    },
+    "selected_contributions": [
+      {
+        "role": "PRIMARY",
+        "score": 25,
+        "action": "ADVANCE",
+        "reason_codes": [
+          "GROUP_CADENCE_ADVANCE"
+        ],
+        "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+      }
+    ],
+    "deferred_arc_plan_version_ids": [
+      "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+      "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+      "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1"
+    ]
+  },
+  "idempotency_key": "qinglan-five:continuous-work:v1:chapter_plan.generate:3:snapshot:sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab:working-set:sha256:fa4f406aae4f749fa4f896923acc13ce5b526b990a4501b665c12c102f84119e:repair:1:runtime-continuation:1",
+  "parent_version_id": "authority-output:4abb3a34-ff7b-4af9-8bc5-d1f836b0f2eb:story_planning.candidate:v1",
+  "narrative_search_id": "",
+  "auto_approve_low_risk": true,
+  "narrative_realization": {
+    "events": [
+      {
+        "action": "沈砚把前次急促用力的动作说清楚；许庭给出一条简短纠正。沈砚照此放慢，身体里掠过一线极弱的气感，想留住时它又断开。",
+        "causes": [
+          "group-1:e4"
+        ],
+        "decision": "沈砚选择按纠正调整，而不继续加大力气。",
+        "event_id": "group-1:e5",
+        "required": true,
+        "slice_id": "group-1:chapter-3",
+        "actor_ref": "character:character:shen-yan",
+        "motivation": "沈砚想知道失败是否能通过自己的动作调整发生变化。",
+        "resistance": "气感短促，急于抓住它的反应又会扰乱动作。",
+        "consequence": "首次失败中的具体问题进入新的尝试，沈砚得到短暂身体经验，也看见气感仍不稳定。",
+        "disclosures": [
+          "放慢并调整动作后，沈砚第一次感到微弱、断续的一线气机。",
+          "这次气感尚不能稳定维持。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "初次感到微弱、断续的气机，尚不能稳定维持",
+            "entity_id": "character:character:shen-yan",
+            "from_state": "首次吐纳失败，尚无气感",
+            "state_kind": "身体经验"
+          }
+        ],
+        "preconditions": [
+          "沈砚已有首次失败的具体经验。",
+          "许庭的纠正由当面交流获得。"
+        ],
+        "chapter_number": 3,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚实际改用与上次不同的动作，承担本次尝试。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "气感微弱且会因沈砚急于留住而断开。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "首次身体经验形成可承接的学习记忆，但不需要外加不可逆损失。"
+          }
+        },
+        "next_event_ids": [
+          "group-1:e6"
+        ],
+        "arc_contributions": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚记得前次失败时自己的动作。",
+            "许庭当面给出了本次可试的具体纠正。"
+          ],
+          "reader_may_learn": [
+            "放慢并调整动作后，沈砚第一次感到微弱、断续的一线气机。",
+            "这次气感尚不能稳定维持。"
+          ],
+          "forbidden_disclosures": [
+            "沈砚已能独立重复运用灵气。",
+            "沈砚已具备稳定基础流转。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": null
+      },
+      {
+        "action": "气感消失后，沈砚当场松开过度用力的肩背，按刚才有效的节奏再试；那一线感觉短暂闪回又断开。他说出自己改对的动作，而没有宣称已经引气成功。",
+        "causes": [
+          "group-1:e5"
+        ],
+        "decision": "沈砚选择复试刚才有效的动作，而不以更大的力气强留气感。",
+        "event_id": "group-1:e6",
+        "required": true,
+        "slice_id": "group-1:chapter-3",
+        "actor_ref": "character:character:shen-yan",
+        "motivation": "沈砚既想确认那一线感觉并非偶然，也不愿再把急切误当办法。",
+        "resistance": "短暂的改善还不足以支持独立、稳定的灵气运用。",
+        "consequence": "第三章以当下发生的动作修正结束：沈砚有了可再检验的办法，却仍未取得稳定流转。",
+        "disclosures": [
+          "沈砚能辨出一次有效的动作差别，但气感仍会断开。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "能辨认并当场复试一处有效动作，气感仍断续",
+            "entity_id": "character:character:shen-yan",
+            "from_state": "只经历一次短暂气感，尚未辨清可复试动作",
+            "state_kind": "练习方法"
+          }
+        ],
+        "preconditions": [
+          "沈砚刚经历第一次短暂气感。",
+          "气感消失与他重新用力之间有可感的动作联系。"
+        ],
+        "chapter_number": 3,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "气感消失后，沈砚立刻改变身体动作并当场复试。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "同一动作仍只能带来短暂气感，稳定流转尚待后续实践。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "本组的必要变化是可辨认的学习进步，无需为章末制造永久损失。"
+          }
+        },
+        "next_event_ids": [],
+        "arc_contributions": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚刚刚感到过一线气机，也感到它断开。",
+            "沈砚记得刚才较有效的呼吸和肩背动作。"
+          ],
+          "reader_may_learn": [
+            "沈砚能辨出一次有效的动作差别，但气感仍会断开。"
+          ],
+          "forbidden_disclosures": [
+            "短暂闪回证明稳定引气。",
+            "正式课程资格已经取得。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": null
+      }
+    ],
+    "slice_id": "group-1:chapter-3",
+    "event_ids": [
+      "group-1:e5",
+      "group-1:e6"
+    ],
+    "proof_hash": "sha256:fb5de92a87adb2825ed320cfb4355a77900deddd4b36b90fc13a5a4eea7cb8a0",
+    "chapter_number": 3,
+    "realization_id": "narrative-realization:c9d06c03b13b3971a24e4be8bb9789029e35d3a71b9c38fa8e97ccea65cc0f70",
+    "contract_digest": "sha256:e726cd000b577018dbb86fc02c512e818b269fd11afe195d2fbbdfb251794575",
+    "foundation_set_digest": "sha256:00e78821a055e905a55475313f3209cc1eb5d0af07dfef25ca87249946c92b37",
+    "arc_working_set_digest": "sha256:8dd1158baf84178c04d017c13586ba4df98302808b138f5b17aa56eca73f1c96",
+    "proof_asset_version_id": "authority-output:a60791ad-8b9f-4121-88a1-4c95c568cc1f:story_design.transition.receipt:v1",
+    "accepted_through_chapter": 0,
+    "chapter_group_content_hash": "sha256:419144c1fb569995e68025c777cc25b59b02b5465b9232c8b470ca01d7aa4f91",
+    "chapter_group_plan_version_id": "authority-output:4abb3a34-ff7b-4af9-8bc5-d1f836b0f2eb:story_planning.candidate:v1"
+  },
+  "repair_of_candidate_id": "authority-output:ec90b103-531c-4ec3-a28a-ee42874d765f:story_planning.candidate:v1",
+  "runtime_continuation_id": "planning-runtime-continuation:5b8c0fa3-9982-4246-b482-ac27383de6f0",
+  "generator_operation_name": "chapter_plan.generate",
+  "opening_execution_binding": {},
+  "world_preparation_request": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "canon_version_id": "",
+    "input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+    "planning_input_refs": [
+      {
+        "role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "role": "volume_plan",
+        "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_plans",
+        "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+      },
+      {
+        "role": "chapter_group_plan",
+        "asset_version_id": "authority-output:4abb3a34-ff7b-4af9-8bc5-d1f836b0f2eb:story_planning.candidate:v1"
+      }
+    ],
+    "story_state_version_id": "",
+    "accepted_through_chapter": 0
+  },
+  "execution_contract_version": "1.21.0",
+  "change_evidence_version_ids": [],
+  "narrative_search_branch_key": "",
+  "related_arc_plan_version_ids": [],
+  "governance_action_version_ids": [],
+  "dependent_arc_plan_version_ids": [],
+  "arc_scope_volume_plan_version_ids": [],
+  "narrative_search_hard_constraints": [],
+  "narrative_search_planning_horizon": {},
+  "parent_agent_session_operation_id": "",
+  "narrative_search_strategy_directive": "",
+  "narrative_search_desired_transformation": {},
+  "narrative_search_accepted_through_chapter": 0,
+  "narrative_search_parent_state_asset_version_id": ""
+}

@@ -1,0 +1,766 @@
+{
+  "mode": "CREATIVE_VALIDATION",
+  "task": {
+    "risk": "",
+    "history": [],
+    "work_id": "book:qinglan-wendao-20261008",
+    "chain_id": "sha256:469c1aa83e05abd2e4c0d357ea9cae809e8e3d27623feb5376c4d71643ab404d",
+    "task_type": "world_candidates.generate",
+    "attempt_id": "5258d04b-18ba-49a7-baf3-8a9fdc1d829c",
+    "input_hash": "sha256:46ba76abef4bc9cedf896a033fb2b3b4ad83e69e9495a97676db773b6cb2e861",
+    "project_id": "qid-learning-prose-01",
+    "stable_key": "573b699f-46ae-4f00-a7be-77962862296f:planning.story_chapter.generate:world_candidates.generate:v1",
+    "input_tokens": 176779,
+    "operation_id": "573b699f-46ae-4f00-a7be-77962862296f",
+    "request_hash": "sha256:d72bdf7b9f9377563c6ecceb9a49327f3fc5872fb2f6ed612b23483d8670e29d",
+    "output_tokens": 32000,
+    "quality_floor": 0,
+    "cache_eligible": true,
+    "budget_snapshot": {
+      "scope": "execution_chain",
+      "candidates": {
+        "codex-cli:gpt-6-sol:high": {
+          "scopes": {},
+          "membership": true,
+          "remaining_calls": null,
+          "remaining_money": null,
+          "remaining_tokens": 258400,
+          "membership_identity": {
+            "version": "codex-membership-identity.v1",
+            "auth_mode": "chatgpt",
+            "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+            "billing_channel": "ACCOUNT_ENTITLEMENT"
+          },
+          "resource_control_version": "billing-channel-resources.v1"
+        },
+        "codex-cli:gpt-6.1-sol:high": {
+          "scopes": {},
+          "membership": true,
+          "remaining_calls": null,
+          "remaining_money": null,
+          "remaining_tokens": 258400,
+          "membership_identity": {
+            "version": "codex-membership-identity.v1",
+            "auth_mode": "chatgpt",
+            "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+            "billing_channel": "ACCOUNT_ENTITLEMENT"
+          },
+          "resource_control_version": "billing-channel-resources.v1"
+        }
+      },
+      "task_money_limit": "0",
+      "task_token_limit": 258400,
+      "work_resource_plan": {
+        "codex": {
+          "fee_budget": null,
+          "availability": "RECHECK_AT_DISPATCH",
+          "billing_channel": "ACCOUNT_ENTITLEMENT",
+          "estimated_tokens_per_call": 208779
+        },
+        "history": {
+          "codex-cli": {
+            "calls": 117,
+            "average_tokens": 66812,
+            "average_paid_amount": null
+          }
+        },
+        "version": "work-resource-estimate.v1",
+        "deepseek": {
+          "enabled": false,
+          "currency": null,
+          "maximum_amount": null,
+          "estimate_status": "COLD_START_REQUEST_RANGE"
+        },
+        "assumptions": [
+          "cold start: 16-40 calls per remaining chapter plus an initial buffer of 32 calls",
+          "upper range rolls upward with observed same-Book calls per accepted chapter plus 25 percent repair headroom",
+          "observed same-Book averages do not establish literary quality",
+          "estimates never alter work scope or quality floor"
+        ],
+        "goal_chapters": 40,
+        "paid_ceiling_scope": "ALL_SAME_BOOK_PURPOSES_AND_STAGES",
+        "remaining_chapters": 40,
+        "provider_calls_range": [
+          640,
+          1600
+        ],
+        "consumption_by_purpose": {
+          "BOOK_PRODUCTION": {
+            "settled_calls": 117,
+            "observed_tokens": 7816977,
+            "settled_deepseek_usd": "0"
+          }
+        },
+        "accepted_through_chapter": 0
+      },
+      "unavailable_channels": {},
+      "money_used_or_reserved": "0",
+      "tokens_used_or_reserved": 0,
+      "admission_recheck_required": true
+    },
+    "policy_snapshot": {
+      "policy": {
+        "reason": "native creation template; paid channel: PAID_TEMPLATE_UNAVAILABLE_OR_INVALID",
+        "policy_version": "qinglan-five-existing-member-sol-20261010-v2",
+        "task_overrides": [],
+        "execution_templates": [
+          {
+            "mode": "CREATIVE_VALIDATION",
+            "book_id": "book:qinglan-wendao-20261008",
+            "version": "creative-execution-template.v12",
+            "deepseek": null,
+            "repair_routing": {
+              "version": "native-repair-routing.v2",
+              "max_same_route_repairs": 2
+            },
+            "author_workflow": {
+              "mode": "AUTHOR_FIRST",
+              "version": "author-workflow.v1",
+              "deep_review": false
+            },
+            "allowed_candidates": [
+              "codex-cli:gpt-6-sol:high"
+            ],
+            "quality_corrections": {
+              "version": "quality-correction-control.v1",
+              "maximum_passes": 4,
+              "maximum_unchanged_candidates": 2
+            },
+            "optional_enhancements": [
+              "review",
+              "rereview",
+              "canon_extraction",
+              "canon_support",
+              "quality_structural",
+              "quality_commercial",
+              "quality_source_originality",
+              "quality_longform",
+              "quality_platform"
+            ],
+            "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+            "member_authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+            "world_future_preparation": "DISABLED",
+            "canon_validation_contract": "grounded-canon-validation.v2",
+            "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+            "require_independent_review": false,
+            "require_pack_human_approval": false,
+            "require_literary_qualification": false
+          }
+        ],
+        "author_supervised_books": [
+          {
+            "reason": "Native Source corpus work scope; this identifier is not a story Book.",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator"
+          }
+        ],
+        "author_supervised_authorizations": [
+          {
+            "reason": "Current user authorizes original-note Source analysis; quality remains unproven; no paid channel.",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.content.classify",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:source-classify:01",
+            "producer_contract_hash": "sha256:4c74c679beddd04aa6bf80720fcc1f6fdcc9576a162c11f18c862fe7b342d4e9"
+          },
+          {
+            "reason": "Current user authorizes actual read Gou 1-4 abstraction through original notes, original examples only; no quality claim or paid expansion",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-observe:02",
+            "producer_contract_hash": "sha256:5f2a84bc62c9e2e2777c065f1567e4154a1f0f5d9d4c23079c4dea3278e93ef7"
+          },
+          {
+            "reason": "Current user authorized Source review of original notes derived from Gou 1-4; model editorial opinion only; no human or quality proof",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-review:03",
+            "producer_contract_hash": "sha256:41478d69d32e301dae9966581a5438758965f77d935210fbd8dc72e76d9cde85"
+          },
+          {
+            "reason": "Current user authorized Source analysis; successor prompt clarifies research evidence vs abstract output; preserve past empty observations and all previous grants",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.content.classify",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-classify-contract11:04",
+            "producer_contract_hash": "sha256:8f47fc57403e658b6ec12bad73b62f7877c4518fb6729d97d4dc53c4164fe371"
+          },
+          {
+            "reason": "Current authorized Gou 1-4 original-note observation with bounded research support excerpts; no raw source draft inputs, paid route or quality claim",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-observe-contract11:05",
+            "producer_contract_hash": "sha256:4477566125cba08c6e84cb224defcc23633562e4ac65fd290f0a7552a74c349b"
+          },
+          {
+            "reason": "Current WP authorizes native review of original reading observations; original text restricted to research; model opinion is not reader or market proof.",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-review:06",
+            "producer_contract_hash": "sha256:0d7cbfaa6bf58180a4a39ef5918df23d9c51ba6f9c3ac219d204d7e7f5d2e664"
+          }
+        ]
+      },
+      "actor_id": "author-first-native-operator",
+      "policy_hash": "f78ae0c3a560bd5b90cea3e7831055d63cbed15fe8b1a29804626e98e1646e85",
+      "operation_id": "158ad8a4-07d3-4611-a802-32120bb18cd4"
+    },
+    "remaining_money": "0",
+    "remaining_tokens": 258400,
+    "soft_money_limit": null,
+    "cache_prefix_hash": "sha256:c76d9beac32597e372a416703fbb52ade0f328271d1a8c8e2858d52ae4a66866",
+    "escalation_reason": "",
+    "producer_contract": {
+      "skill": {
+        "ref": "chapter-outline",
+        "version": "chapter-outline-qualification-v2",
+        "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+      },
+      "stage": "world_candidates.generate",
+      "tool_policy": {
+        "ref": "tools:chapter-generation-pack:v2",
+        "version": "v2",
+        "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+      },
+      "input_schema": {
+        "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+        "version": "v1",
+        "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+      },
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema": {
+        "ref": "schema:world_candidates.generate:v2",
+        "shape_hash": "sha256:3f2545e4aeac432fa6023eb482b407514e918d3460f43a0c90e8776f2e807f49",
+        "factory_hash": "sha256:8b411dc1d27e82cc193ce25e1126e9900522486df4d00f3bc89fcda2da40fc48",
+        "binding_policy": "EXACT_WORLD_INSTANCE_ID_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_SEMANTICS_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED",
+        "identity_version": "world-schema-factory-and-bound-id-shape.v1"
+      },
+      "context_policy": {
+        "ref": "context-policy:chapter-generation-pack:v2",
+        "version": "v2",
+        "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+      },
+      "schema_version": "routing-producer-contract.v1",
+      "prompt_template": {
+        "ref": "prompt-template:story-planning-pack",
+        "version": "v2",
+        "content_hash": "sha256:2785acd8703d1fff8ca65d92c887dd7a87610f0a112785b0611d6e83548455a5"
+      },
+      "source_isolation": {},
+      "pack_output_schema": {
+        "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+        "version": "v1",
+        "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+      },
+      "system_instruction": {
+        "ref": "prompt-system:story-planning-pack",
+        "version": "v11",
+        "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+      },
+      "materialization_schema": "novelos.planning_capability_materialization.v1",
+      "provider_view_versions": {
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v4"
+      },
+      "required_reader_facing_language": "zh-CN",
+      "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1"
+    },
+    "latency_sla_seconds": 0,
+    "declared_requirements": {
+      "risk": "",
+      "chapter": 0,
+      "quality_floor": 0
+    },
+    "lineage_operation_ids": [
+      "4570ef52-0dd1-41e4-8eb0-570aae19e983",
+      "573b699f-46ae-4f00-a7be-77962862296f"
+    ],
+    "required_capabilities": [
+      "structured_output"
+    ],
+    "producer_contract_hash": "sha256:d23a822cd0e1ee1adc599bfbd80ba94c5e2db1fe5086eabadebb202836d8cead",
+    "reusable_prefix_tokens": 2585,
+    "latency_cost_per_second": "0"
+  },
+  "checks": {
+    "literary_model_qualification": {
+      "reason": "creative validation template excludes model literary calibration",
+      "status": "NOT_RUN"
+    }
+  },
+  "policy": {
+    "risk": "MEDIUM",
+    "max_attempts": 4,
+    "quality_floor": 0.75,
+    "quality_metric": "GENERATOR_SCORE",
+    "max_escalations": 1,
+    "minimum_samples": 8,
+    "confidence_penalty": 0.15,
+    "retain_failed_domain_samples": false
+  },
+  "status": "BLOCKED",
+  "selected": null,
+  "candidates": [
+    {
+      "benchmark": {
+        "as_of": "2026-10-10T00:21:48.195435+00:00",
+        "version": "sha256:28fb6d3afaa20c110069ab3e43d51e5703730bdb533b6dd221f62d0d6a153edd",
+        "uncertain": true,
+        "retry_rate": null,
+        "actual_cost": "0",
+        "judge_score": null,
+        "repair_rate": null,
+        "window_days": 30,
+        "input_tokens": 0,
+        "outcome_refs": [],
+        "quality_mean": 0.0,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "output_tokens": 0,
+        "quality_metric": "GENERATOR_SCORE",
+        "reference_risk": null,
+        "schema_success": 0.0,
+        "acceptance_rate": null,
+        "cache_hit_ratio": 0.0,
+        "escalation_rate": null,
+        "latency_seconds": null,
+        "maximum_samples": 200,
+        "predicted_quality": 0.0,
+        "priced_usage_cost": "0",
+        "confidence_penalty": 0.15,
+        "mean_output_tokens": null,
+        "canon_conflict_rate": null,
+        "metric_sample_count": 0,
+        "cost_unknown_samples": 0,
+        "latency_sample_count": 0,
+        "quality_distribution": [],
+        "quality_sample_count": 0,
+        "evidence_class_counts": {
+          "PRODUCTION_OUTCOME": 0,
+          "BENCHMARK_CHALLENGER": 0,
+          "REFERENCE_EVALUATION": 0,
+          "UNCLASSIFIED_REAL_PROVIDER": 0
+        },
+        "generator_score_basis": null,
+        "mean_cache_hit_tokens": 0,
+        "reference_label_strata": {
+          "FAIL": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          },
+          "PASS": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          }
+        },
+        "acceptance_sample_count": 0,
+        "domain_gate_sample_count": 0,
+        "independent_sample_count": 0,
+        "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+        "reference_agreement_rate": null,
+        "benchmark_acceptance_rate": null,
+        "generator_context_buckets": [],
+        "generator_protocol_hashes": [],
+        "reference_context_buckets": [],
+        "reference_protocol_hashes": [],
+        "production_acceptance_rate": null,
+        "conditional_content_quality": 0.0,
+        "served_model_identity_hashes": [],
+        "qualification_acceptance_rate": null,
+        "repeated_sample_attempt_count": 0,
+        "independent_reviewer_score_basis": null,
+        "production_eligible_sample_count": 0,
+        "reference_agreement_sample_count": 0,
+        "benchmark_acceptance_sample_count": 0,
+        "benchmark_challenger_sample_count": 0,
+        "production_acceptance_sample_count": 0,
+        "excluded_experiment_partition_count": 0,
+        "unadjudicated_reviewer_sample_count": 0,
+        "independent_reviewer_context_buckets": [],
+        "independent_reviewer_protocol_hashes": [],
+        "unadjudicated_generator_sample_count": 0,
+        "partition_conflicted_sample_identities": []
+      },
+      "candidate": {
+        "tier": "primary",
+        "model": "gpt-6.1-sol",
+        "pricing": {
+          "source": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+          "version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "currency": "UNKNOWN",
+          "effective_from": "2026-10-07T00:00:00+00:00",
+          "effective_until": "2026-10-10T00:00:00+00:00",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "output_per_million": "0",
+          "input_hit_per_million": "0",
+          "input_miss_per_million": "0"
+        },
+        "provider": "codex-cli",
+        "available": true,
+        "reasoning": "high",
+        "candidate_id": "codex-cli:gpt-6.1-sol:high",
+        "capabilities": [
+          "structured_output",
+          "text"
+        ],
+        "output_limit": 32000,
+        "context_limit": 258400,
+        "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+        "escalation_only": false,
+        "quota_remaining": null,
+        "authorized_tasks": [
+          "agent_session",
+          "arc_plan.generate",
+          "book_plan.generate",
+          "canon_extraction",
+          "canon_high_impact_conflict",
+          "canon_support",
+          "chapter_group_plan.generate",
+          "chapter_plan.generate",
+          "character.cast.generate",
+          "character.generate",
+          "character_analysis",
+          "classification",
+          "climax",
+          "context_compress",
+          "context_fidelity",
+          "core_character_arc",
+          "core_world_rules",
+          "creative.candidates.generate",
+          "creative_foundation.generate",
+          "critical_chapter",
+          "cross_volume_repair",
+          "deconstruction",
+          "draft",
+          "ending.generate",
+          "ending.intent.generate",
+          "fact_candidate",
+          "knowledge_extraction",
+          "longform_prose_review",
+          "major_reversal",
+          "memo",
+          "metadata",
+          "model_reference_adjudicate",
+          "model_reference_evaluate",
+          "narrative_semantic_evaluation",
+          "quality_commercial",
+          "quality_longform",
+          "quality_platform",
+          "quality_source_originality",
+          "quality_structural",
+          "reader.promise.generate",
+          "reader_outcome",
+          "reader_promise.generate",
+          "relationship_analysis",
+          "rereview",
+          "retrieval_query",
+          "retrieval_query_expansion",
+          "review",
+          "revision",
+          "screenplay_generate",
+          "screenplay_review",
+          "screenplay_revision",
+          "source.content.classify",
+          "source.deconstruction.observe",
+          "source.mkaos.extract",
+          "summary",
+          "tagging",
+          "theme.candidates.generate",
+          "theme.generate",
+          "volume_plan.generate",
+          "world.design.generate",
+          "world.generate",
+          "world_candidates.actor_0",
+          "world_candidates.actor_1",
+          "world_candidates.actor_2",
+          "world_candidates.evaluate",
+          "world_candidates.generate"
+        ],
+        "entitlement_role": "PRIMARY",
+        "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+        "capability_version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "availability_reason": "",
+        "estimated_price_multiplier": "1"
+      },
+      "expected_quality": 0.0,
+      "rejected_reasons": [
+        "PRICING_NOT_EFFECTIVE",
+        "TEMPLATE_MODEL_UNAUTHORIZED"
+      ],
+      "cache_evidence_refs": [],
+      "soft_limit_pressure": false,
+      "cache_tokens_estimate": 0,
+      "estimated_total_tokens": 208779,
+      "estimated_monetary_cost": null,
+      "expected_effective_cost": null,
+      "reservation_upper_bound": null,
+      "strict_rejected_reasons": [
+        "QUALITY_FLOOR_NOT_MET",
+        "BENCHMARK_INSUFFICIENT",
+        "PRICING_NOT_EFFECTIVE"
+      ]
+    },
+    {
+      "benchmark": {
+        "as_of": "2026-10-10T00:21:48.195435+00:00",
+        "version": "sha256:28fb6d3afaa20c110069ab3e43d51e5703730bdb533b6dd221f62d0d6a153edd",
+        "uncertain": true,
+        "retry_rate": null,
+        "actual_cost": "0",
+        "judge_score": null,
+        "repair_rate": null,
+        "window_days": 30,
+        "input_tokens": 0,
+        "outcome_refs": [],
+        "quality_mean": 0.0,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "output_tokens": 0,
+        "quality_metric": "GENERATOR_SCORE",
+        "reference_risk": null,
+        "schema_success": 0.0,
+        "acceptance_rate": null,
+        "cache_hit_ratio": 0.0,
+        "escalation_rate": null,
+        "latency_seconds": null,
+        "maximum_samples": 200,
+        "predicted_quality": 0.0,
+        "priced_usage_cost": "0",
+        "confidence_penalty": 0.15,
+        "mean_output_tokens": null,
+        "canon_conflict_rate": null,
+        "metric_sample_count": 0,
+        "cost_unknown_samples": 0,
+        "latency_sample_count": 0,
+        "quality_distribution": [],
+        "quality_sample_count": 0,
+        "evidence_class_counts": {
+          "PRODUCTION_OUTCOME": 0,
+          "BENCHMARK_CHALLENGER": 0,
+          "REFERENCE_EVALUATION": 0,
+          "UNCLASSIFIED_REAL_PROVIDER": 0
+        },
+        "generator_score_basis": null,
+        "mean_cache_hit_tokens": 0,
+        "reference_label_strata": {
+          "FAIL": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          },
+          "PASS": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          }
+        },
+        "acceptance_sample_count": 0,
+        "domain_gate_sample_count": 0,
+        "independent_sample_count": 0,
+        "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+        "reference_agreement_rate": null,
+        "benchmark_acceptance_rate": null,
+        "generator_context_buckets": [],
+        "generator_protocol_hashes": [],
+        "reference_context_buckets": [],
+        "reference_protocol_hashes": [],
+        "production_acceptance_rate": null,
+        "conditional_content_quality": 0.0,
+        "served_model_identity_hashes": [],
+        "qualification_acceptance_rate": null,
+        "repeated_sample_attempt_count": 0,
+        "independent_reviewer_score_basis": null,
+        "production_eligible_sample_count": 0,
+        "reference_agreement_sample_count": 0,
+        "benchmark_acceptance_sample_count": 0,
+        "benchmark_challenger_sample_count": 0,
+        "production_acceptance_sample_count": 0,
+        "excluded_experiment_partition_count": 0,
+        "unadjudicated_reviewer_sample_count": 0,
+        "independent_reviewer_context_buckets": [],
+        "independent_reviewer_protocol_hashes": [],
+        "unadjudicated_generator_sample_count": 0,
+        "partition_conflicted_sample_identities": []
+      },
+      "candidate": {
+        "tier": "primary",
+        "model": "gpt-6-sol",
+        "pricing": {
+          "source": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+          "version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "currency": "UNKNOWN",
+          "effective_from": "2026-10-07T00:00:00+00:00",
+          "effective_until": "2026-10-10T00:00:00+00:00",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "output_per_million": "0",
+          "input_hit_per_million": "0",
+          "input_miss_per_million": "0"
+        },
+        "provider": "codex-cli",
+        "available": true,
+        "reasoning": "high",
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "capabilities": [
+          "structured_output",
+          "text"
+        ],
+        "output_limit": 32000,
+        "context_limit": 258400,
+        "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:7e781f6e2ccbf723fdcd8304554867c016cebabb30d9dd79fefc12a6a94a6b28",
+        "escalation_only": false,
+        "quota_remaining": null,
+        "authorized_tasks": [
+          "agent_session",
+          "arc_plan.generate",
+          "book_plan.generate",
+          "canon_extraction",
+          "canon_high_impact_conflict",
+          "canon_support",
+          "chapter_group_plan.generate",
+          "chapter_plan.generate",
+          "character.cast.generate",
+          "character.generate",
+          "character_analysis",
+          "classification",
+          "climax",
+          "context_compress",
+          "context_fidelity",
+          "core_character_arc",
+          "core_world_rules",
+          "creative.candidates.generate",
+          "creative_foundation.generate",
+          "critical_chapter",
+          "cross_volume_repair",
+          "deconstruction",
+          "draft",
+          "ending.generate",
+          "ending.intent.generate",
+          "fact_candidate",
+          "knowledge_extraction",
+          "longform_prose_review",
+          "major_reversal",
+          "memo",
+          "metadata",
+          "model_reference_adjudicate",
+          "model_reference_evaluate",
+          "narrative_semantic_evaluation",
+          "quality_commercial",
+          "quality_longform",
+          "quality_platform",
+          "quality_source_originality",
+          "quality_structural",
+          "reader.promise.generate",
+          "reader_outcome",
+          "reader_promise.generate",
+          "relationship_analysis",
+          "rereview",
+          "retrieval_query",
+          "retrieval_query_expansion",
+          "review",
+          "revision",
+          "screenplay_generate",
+          "screenplay_review",
+          "screenplay_revision",
+          "source.content.classify",
+          "source.deconstruction.observe",
+          "source.mkaos.extract",
+          "summary",
+          "tagging",
+          "theme.candidates.generate",
+          "theme.generate",
+          "volume_plan.generate",
+          "world.design.generate",
+          "world.generate",
+          "world_candidates.actor_0",
+          "world_candidates.actor_1",
+          "world_candidates.actor_2",
+          "world_candidates.evaluate",
+          "world_candidates.generate"
+        ],
+        "entitlement_role": "PRIMARY",
+        "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+        "capability_version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "availability_reason": "",
+        "estimated_price_multiplier": "1"
+      },
+      "expected_quality": 0.0,
+      "rejected_reasons": [
+        "PRICING_NOT_EFFECTIVE"
+      ],
+      "cache_evidence_refs": [],
+      "soft_limit_pressure": false,
+      "cache_tokens_estimate": 0,
+      "estimated_total_tokens": 208779,
+      "estimated_monetary_cost": null,
+      "expected_effective_cost": null,
+      "reservation_upper_bound": null,
+      "strict_rejected_reasons": [
+        "QUALITY_FLOOR_NOT_MET",
+        "BENCHMARK_INSUFFICIENT",
+        "PRICING_NOT_EFFECTIVE"
+      ]
+    }
+  ],
+  "created_at": "2026-10-10T00:21:48.195435+00:00",
+  "decision_id": "routing-decision:a6ffb53a8b8bc86af5ae7b90abc1702f8236eab0f5ea92ba6c1f86c1dc930df9",
+  "policy_version": "quality-constrained-routing.v13",
+  "schema_version": "quality-constrained-routing.v13",
+  "resource_actions": {
+    "work_scope_changed": false,
+    "quality_floor_changed": false,
+    "paid_completion_pressure": false,
+    "deferred_paid_optional_tasks": [],
+    "membership_preferred_for_substitutable_work": true
+  },
+  "escalation_policy": {
+    "reason": "",
+    "history": [],
+    "max_attempts": 4,
+    "max_escalations": 1,
+    "unavailable_action": "BLOCK",
+    "semantic_failure_threshold": 2
+  },
+  "execution_template_hash": "sha256:454605c987eeede42b56fce636105a29c46d5761eaff1a1325d38049309c3a6f",
+  "resource_control_version": "billing-channel-resources.v1",
+  "internal_production_eligible": false,
+  "strict_certification_eligible": false,
+  "independent_qualification_eligible": false
+}

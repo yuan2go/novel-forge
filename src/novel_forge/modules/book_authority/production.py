@@ -862,6 +862,11 @@ class PostgresBookAuthority:
             existing = uow.cursor.fetchone()
             if existing is None:
                 frozen_command = asdict(command)
+                from .plan_recovery import BINDING, replacement_binding
+                plan_replacement = replacement_binding(uow,book=book,chapter=command.chapter_number,
+                    plan_version=command.chapter_plan_asset_version_id,plan_hash=command.chapter_plan_content_hash)
+                if plan_replacement:
+                    frozen_command["preparation_report"] = {**dict(frozen_command.get("preparation_report") or {}),BINDING:plan_replacement}
                 if author_first(book):
                     from .manuscript import verify_working_context
                     verify_working_context(uow, book, frozen_command["preparation_report"]["working_manuscript"])
@@ -897,7 +902,9 @@ class PostgresBookAuthority:
                         ],
                         "stable_idempotency_key": stable_key,
                         "command_payload": frozen_command,
-                    }
+                    },
+                    generation=plan_replacement["generation"] if plan_replacement else 1,
+                    predecessor_request_id=plan_replacement["predecessor_request_id"] if plan_replacement else "",
                 )
                 if not uow.repositories.book_authority.reserve_chapter(
                     book_run_id=command.book_run_id,
@@ -1000,6 +1007,11 @@ class PostgresBookAuthority:
                 saga_id=admission.saga_id,
                 expected_book_version=int(current["version"]),
             )
+            from .plan_recovery import BINDING
+            if (persisted_request["command_payload"].get("preparation_report") or {}).get(BINDING):
+                from novel_forge.modules.chapter_group_authority.author_revision import replace_unaccepted_child_reference
+                replace_unaccepted_child_reference(uow,request=persisted_request,root_operation_id=admission.root_operation_id,
+                    delegation_id=delegation_id,binding_key=BINDING)
             checkpoint("after_chapter_link")
             return {
                 "chapter_request_id": request_id,

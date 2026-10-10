@@ -1,0 +1,1169 @@
+{
+  "planning_command": {
+    "execution_contract_version": "1.21.0",
+    "creative_requirements_contract": "work-requirements.v2",
+    "project_id": "qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "generation_operation_id": "59d8970f-f686-4f25-8acb-dfbe7c71d2f5",
+    "logical_key": "chapter-group:containing:1",
+    "planning_scope": "CHAPTER_GROUP",
+    "parent_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+    "input_versions": {
+      "arc_plans": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "book_plan": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "story_state": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "volume_plan": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+      "reader_state": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "quality_trend": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "canon_snapshot": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "previous_chapter_group_outcome": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+    },
+    "arc_scope_volume_plan_version_ids": [],
+    "related_arc_plan_version_ids": [
+      "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+    ],
+    "dependent_arc_plan_version_ids": [],
+    "change_evidence_version_ids": [
+      "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1"
+    ],
+    "governance_action_version_ids": [],
+    "repair_number": 1,
+    "repair_reason": "CHAPTER_GROUP_RANGE_MISMATCH:sha256:6707a80ba371cc87fae8cd87c4fd8ff5f19fdd698ab59091371460279c49ca9c",
+    "arc_working_set": {
+      "type": "ArcWorkingSet",
+      "book_id": "book:qinglan-wendao-20261008",
+      "capacity": {
+        "source": "POLICY_DEFAULT",
+        "maximum_active_arcs": 3,
+        "narrative_load_policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+      },
+      "candidates": [
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 9,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 7,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        }
+      ],
+      "project_id": "qid-learning-prose-01",
+      "reader_intent": {},
+      "policy_version": "accepted-reality-arc-working-set-v1",
+      "target_chapter": 1,
+      "accepted_reality": {
+        "actual_only": true,
+        "narrative_state": {
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "state_kind_counts": {},
+          "accepted_through_chapter": 0
+        },
+        "projection_hash": "",
+        "projection_set_id": "",
+        "accepted_through_chapter": 0,
+        "source_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "contract_version": "arc-working-set-v1",
+      "planning_horizon": {
+        "scope": "CHAPTER",
+        "chapter": 1
+      },
+      "authority_boundary": {
+        "selection_is_future_intent": true,
+        "actual_progress_requires_accepted_chapter_outcome": true
+      },
+      "working_manuscript": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "sources": [],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "qid-learning-prose-01",
+        "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:a41200b3fff715471d0cd45a81d6d062af275cd63458f3e06a653d8354b32bb4",
+        "target_chapter": 1,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      },
+      "working_set_digest": "sha256:22bbfd9e16d2b998d3ef17b876af1da3a59dca964eb77338e15e955b2219b668",
+      "schedule_correction": {
+        "status": "NO_GROUP_CADENCE",
+        "added_arc_plan_version_ids": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "removed_arc_plan_version_ids": []
+      },
+      "selected_contributions": [
+        {
+          "role": "PRIMARY",
+          "score": 0,
+          "action": "ADVANCE",
+          "reason_codes": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "role": "SECONDARY",
+          "score": 0,
+          "action": "ADVANCE",
+          "reason_codes": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "role": "TOUCH",
+          "score": 0,
+          "action": "ADVANCE",
+          "reason_codes": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "deferred_arc_plan_version_ids": [
+        "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+        "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+        "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1"
+      ]
+    },
+    "narrative_search_id": "",
+    "narrative_search_branch_key": "",
+    "narrative_search_parent_state_asset_version_id": "",
+    "narrative_search_accepted_through_chapter": 0,
+    "narrative_search_strategy_directive": "",
+    "narrative_search_planning_horizon": {},
+    "narrative_search_desired_transformation": {},
+    "narrative_search_hard_constraints": [],
+    "narrative_realization": {}
+  },
+  "frozen_inputs": [
+    {
+      "role": "arc_plans",
+      "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+      "asset_type": "planning_generation_candidate"
+    },
+    {
+      "role": "book_plan",
+      "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+      "asset_type": "planning_generation_candidate"
+    },
+    {
+      "role": "story_state",
+      "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+      "asset_type": "story_state_snapshot"
+    },
+    {
+      "role": "volume_plan",
+      "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+      "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+      "asset_type": "planning_generation_candidate"
+    },
+    {
+      "role": "reader_state",
+      "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+      "asset_type": "reader_state"
+    },
+    {
+      "role": "quality_trend",
+      "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+      "asset_type": "quality_trend"
+    },
+    {
+      "role": "canon_snapshot",
+      "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+      "asset_type": "canon_snapshot"
+    },
+    {
+      "role": "previous_chapter_group_outcome",
+      "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1",
+      "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+      "asset_type": "previous_chapter_group_outcome"
+    },
+    {
+      "role": "related_arc:1",
+      "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+      "asset_type": "planning_generation_candidate"
+    },
+    {
+      "role": "related_arc:2",
+      "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+      "asset_type": "planning_generation_candidate"
+    }
+  ],
+  "authoritative_narrative_load": {
+    "narrative_load_policy": {
+      "type": "NarrativeLoadPolicy",
+      "limits": {
+        "max_active_arcs": 3,
+        "max_new_concepts": 4,
+        "max_dormant_arc_age": 30,
+        "max_open_obligations": 12,
+        "max_payoff_congestion": 3,
+        "max_overdue_obligations": 0,
+        "max_major_state_transitions": 8,
+        "max_character_appearance_gap": 10
+      },
+      "book_id": "book:qinglan-wendao-20261008",
+      "policy_id": "canonical-production-narrative-load",
+      "project_id": "qid-learning-prose-01",
+      "source_role": "production_profile",
+      "policy_version": 1,
+      "contract_version": "narrative-load-policy-v1",
+      "governed_overrides": [],
+      "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+      "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+    },
+    "narrative_load_policy_lineage": {
+      "type": "NarrativeLoadPolicyLineage",
+      "contract_version": "narrative-load-policy-lineage-v1",
+      "frozen_by_generation_operation_id": "59d8970f-f686-4f25-8acb-dfbe7c71d2f5",
+      "inherited_from": [
+        {
+          "role": "arc_plans",
+          "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92"
+        },
+        {
+          "role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2"
+        },
+        {
+          "role": "related_arc:1",
+          "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5"
+        },
+        {
+          "role": "related_arc:2",
+          "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+          "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2"
+        },
+        {
+          "role": "volume_plan",
+          "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0"
+        }
+      ],
+      "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+    },
+    "narrative_load_projection": {
+      "type": "NarrativeLoadProjection",
+      "contract_version": "narrative-load-projection-v2",
+      "accepted_through_chapter": 0,
+      "status": "MEASURED",
+      "metrics": {
+        "active_arc_count": 0,
+        "dormant_arc_max_age": 0,
+        "open_obligation_count": 0,
+        "overdue_obligation_count": 0,
+        "payoff_congestion_count": 0,
+        "character_appearance_max_gap": 0,
+        "narrative_debt_score": 0
+      },
+      "open_obligation_ids": [],
+      "overdue_obligation_ids": []
+    }
+  },
+  "arc_working_set": {
+    "type": "ArcWorkingSet",
+    "book_id": "book:qinglan-wendao-20261008",
+    "capacity": {
+      "source": "POLICY_DEFAULT",
+      "maximum_active_arcs": 3,
+      "narrative_load_policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+    },
+    "candidates": [
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 9,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 7,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      },
+      {
+        "score": 0,
+        "reasons": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "eligible": true,
+        "current_phase": "",
+        "obligation_debt": {
+          "due_ids": [],
+          "due_count": 0,
+          "stale_ids": [],
+          "overdue_ids": [],
+          "stale_count": 0,
+          "violated_ids": [],
+          "overdue_count": 0
+        },
+        "dormant_chapters": 0,
+        "lifecycle_status": "READY",
+        "payoff_readiness": "NOT_READY",
+        "dependency_states": {},
+        "cadence_preference": "",
+        "observation_status": "NOT_MATERIALIZED",
+        "arc_plan_version_id": "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+        "checkpoint_decision": "NOT_EVALUATED",
+        "dependency_blockers": [],
+        "target_window_status": "UNKNOWN",
+        "target_progress_units": 8,
+        "cumulative_progress_units": 0,
+        "last_material_progress_chapter": 0
+      }
+    ],
+    "project_id": "qid-learning-prose-01",
+    "reader_intent": {},
+    "policy_version": "accepted-reality-arc-working-set-v1",
+    "target_chapter": 1,
+    "accepted_reality": {
+      "actual_only": true,
+      "narrative_state": {
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "state_kind_counts": {},
+        "accepted_through_chapter": 0
+      },
+      "projection_hash": "",
+      "projection_set_id": "",
+      "accepted_through_chapter": 0,
+      "source_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+    },
+    "contract_version": "arc-working-set-v1",
+    "planning_horizon": {
+      "scope": "CHAPTER",
+      "chapter": 1
+    },
+    "authority_boundary": {
+      "selection_is_future_intent": true,
+      "actual_progress_requires_accepted_chapter_outcome": true
+    },
+    "working_manuscript": {
+      "book_id": "book:qinglan-wendao-20261008",
+      "sources": [],
+      "version": "working-manuscript-context.v1",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "project_id": "qid-learning-prose-01",
+      "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+      "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+      "snapshot_hash": "sha256:a41200b3fff715471d0cd45a81d6d062af275cd63458f3e06a653d8354b32bb4",
+      "target_chapter": 1,
+      "structured_facts": [],
+      "accepted_through_chapter": 0
+    },
+    "working_set_digest": "sha256:22bbfd9e16d2b998d3ef17b876af1da3a59dca964eb77338e15e955b2219b668",
+    "schedule_correction": {
+      "status": "NO_GROUP_CADENCE",
+      "added_arc_plan_version_ids": [
+        "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ],
+      "removed_arc_plan_version_ids": []
+    },
+    "selected_contributions": [
+      {
+        "role": "PRIMARY",
+        "score": 0,
+        "action": "ADVANCE",
+        "reason_codes": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+      },
+      {
+        "role": "SECONDARY",
+        "score": 0,
+        "action": "ADVANCE",
+        "reason_codes": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+      },
+      {
+        "role": "TOUCH",
+        "score": 0,
+        "action": "ADVANCE",
+        "reason_codes": [
+          "LEGAL_ARC_BASELINE"
+        ],
+        "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      }
+    ],
+    "deferred_arc_plan_version_ids": [
+      "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+      "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+      "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1"
+    ]
+  },
+  "narrative_search": {},
+  "planning_empty_query_projection_version": "planning-empty-query-projection.v1",
+  "narrative_intelligence": {
+    "need": {
+      "scope": "CHAPTER",
+      "genre_tags": [],
+      "theme_tags": [],
+      "need_digest": "sha256:c4cc4b5823e8f72aa59442a695a7154b9c83ded9c576c1e93aa4dc66fb5706ce",
+      "craft_policy": {},
+      "target_stage": "chapter_group_plan.generate",
+      "conflict_tags": [],
+      "craft_context": {
+        "pov": [],
+        "task": [
+          "chapter_group_plan.generate"
+        ],
+        "genre": [],
+        "style": [],
+        "pacing": [],
+        "emotion": [],
+        "conflict": [],
+        "characters": [
+          "character:cheng-guan",
+          "character:lu-heng",
+          "character:shen-yan",
+          "character:tang-sui",
+          "character:xu-ting"
+        ],
+        "scene_goal": [
+          "ADVANCE",
+          "拟使每次选择留下下一步必须承接的结果：劳动与交付改变可用资源，重复实践界定可做范围，错误比较改变接取，伙伴安排改变分工，携行检验改变行程。终局的独行不是关系断裂，而是沈砚能够把这些结果组织成自己的行动，并承担途中判断与落脚后的实际生活。",
+          "拟使沈砚逐渐能够带着问题和依据寻求帮助，同时自行承担已经能够完成的复查与判断。许庭保有有限但有效的参与方式，双方关系不依靠持续加码的帮助维持；早期指导方法最终由独行中的实际操作与判断承接。",
+          "拟让双方后续接触更依赖有来源的信息和清楚边界，减少无谓反复，同时保留重新核实时必须付出的时间。沈砚能够据明确回应自主调整，程观也能守住自己的事务；关系可以继续而不要求始终同行。变化不扩大任何人的权限，不免除旧约，也不代替终局能力与准备。"
+        ],
+        "scene_type": [],
+        "information": [],
+        "obligations": [],
+        "relationship": [],
+        "scene_demand": [],
+        "reader_effect": [
+          "这部故事承诺让读者陪一个普通山村少年，把陌生的修行本领逐渐练成自己能用、敢用的能力。入门、引气、劳作与山谷采药都有具体目的，行动之后能看见能力、资源或合作条件发生了什么变化。持续的期待来自沈砚接下来需要补足什么、会争取哪种机会，以及已有本领能否帮助他胜任自己选择的事情。读者将体验练习终于有用的踏实喜悦、争取机会时的紧张，以及与各有打算的同门协商、合作和相互理解的摩擦与温暖。沈砚可以判断失误、接受建议并调整做法，但这些结果需要被后续行动承接。长期愿望须由修炼、飞剑操控、路线判断和远行准备共同挣得，最终兑现为有本领支撑的独自御剑远行。用突来的力量替代积累、让他长期被动等待，或反复抹去进步拖延出发，都会背叛这份承诺。"
+        ],
+        "chapter_number": 0,
+        "writing_problem": [],
+        "chapter_function": [
+          "为许庭提出跨五卷的因果发展候选：保持让弟子亲自辨认、重复验证的教学原则，以实际反馈结果调整指导深度与参与范围，承担有限指导的时间占用并维持自身修炼；逐渐建立能够支持沈砚自行复查、准备和判断的关系，不预定职务、特批或收徒。",
+          "以本卷任务结果检查有限指导的用途。许庭拟主动结束已经不再需要的逐项确认，保留针对具体技术缺口的往来；让关系中的信任体现为给予沈砚承担判断的空间，而非增加依赖。",
+          "在卷一既定成长顺序内建立许庭的指导方式。其具体参与以实际明确的指导范围为前提，不承担入门、课程或资源批准。拟让他主动选择把有限答疑用于辨认练习过程，而非确认天赋高低，并将实际占用纳入自己的修炼安排。",
+          "在卷二交付与预留练习得到实际结果之后，拟让许庭检查自己给出的反馈是否帮助形成可重复本领。他主动修订反馈方式，并结清本轮明确答疑约定；不把教学结果当作课程录入、资源供应或新能力的自动证明。",
+          "承接修正方案与后续核实结果，拟让许庭主动结算本轮指导安排，说明自己仍可承担的有限事项，并为自己的修炼保留日程。支持沈砚准备独行，同时不以解除全部关系或承担所有风险表达信任。",
+          "承接准备缺口及重新分工的拟议结果。许庭拟明确自己能提供的反馈内容和时段，选择让沈砚先尝试、说明依据，再针对具体困难回应；不替他完成伙伴减少参与后留下的全部准备工作。",
+          "承接前段形成的自查问题及卷二任务比较的拟议结果。许庭拟在有限交流中辨认练习是否真正获得连续时间，主动缩减已经能够自行判断的重复确认，把指导用于尚未解决的技术问题；不以增加全部答疑时间替代沈砚修改安排。",
+          "承接前段明确的反馈范围。许庭拟选择回应沈砚提出的具体比较，而非替他确定唯一行程；若问题超出自己的已明确信息，明确保留未定，让有限帮助支持实际方案修正。",
+          "承接双方约定的处理结果，在临行前完成有用途的交流。许庭拟选择保留指导关系而结束本次准备的逐项确认，让教学成果通过沈砚自己的行动兑现；不把个人认可当作出发条件，也不提前知道独行结果。",
+          "承接持续练习与短程实践的拟议结果。许庭拟进一步从给出检查问题转向听取沈砚自己的比较和判断，再指出证据不足处；不远程接管现场决定，也不强制制造险情来证明教学有效。",
+          "承接新阶段明确的参与范围。面对持续控制练习暴露的时间问题，许庭拟选择把有限反馈用于检查沈砚的比较依据；其自身答疑与修炼同样纳入可行日程，不以随时待命制造无成本帮助。",
+          "拟让许庭检查此前采用的提问和复查方式是否真正支持自主判断，并主动减少无必要的逐项确认。处理本轮指导约定，保留器具、路线天气、补给和落脚须分别核实的边界。",
+          "条件式承接前卷形成的反馈方式。面对沈砚承担准备工作后带回的具体结果，许庭拟主动区分可以指导的动作问题与必须另行核实的工作条件，使指导更贴近实际用途，又不扩张自身权限。",
+          "条件式承接前段形成的指导关系，在飞剑相关世界条件和学习安排实际明确后重新核实参与范围。许庭拟主动说明可以回应与不能承诺的事项，不以熟悉沈砚为由取得新的职务、知识或批准权。",
+          "条件式承接卷一实际结果及卷二已明确的学习安排。许庭拟比较沈砚能够提供的练习过程与重复结果，选择只反馈证据支持的动作差别；把一次答疑转化为后续自查办法，同时保留自己明确的指导时段。",
+          "条件式承接第四卷实际形成的能力与约定。许庭拟主动重新限定准备阶段的反馈范围，要求沈砚区分操作证据与其他出行条件；自己的修炼节奏继续有效，不成为全部准备事项的默认负责人。"
+        ]
+      },
+      "hard_constraints": [
+        "Arc段落以有序entry_state_ref承接前段局部节点身份；所用字符串均复制冻结输入已有身份，不生成分段Authority版本。Arc节点在本合同中承载人物运动，Narrative Segment关联仍只承担Timeline定位。",
+        "CURRENT realization只表示本Arc规划相关性，世界呈现和准入标记不授予接受事实、人物知识或执行权限。",
+        "Thread与Arc描述跨卷因果变化，Volume与Narrative Segment描述时间范围；复用链键不将Timeline内容重写为批准Arc，也不产生额外时间分段。",
+        "accepted_through_chapter为0，初始状态、冲突、承诺和伏笔台账没有已接受叙事事实；未来结果须保持条件性，不补写前卷实际成果。",
+        "accepted_through_chapter为0，初始状态、冲突、承诺和伏笔账本均没有已接受叙事事实；各段出口只作条件式未来，不证明前卷成果已发生。",
+        "accepted_through_chapter为0；初始冲突、承诺和伏笔账本为空，所有入口与跨卷结果均为条件性未来。",
+        "arc_relations与dependencies保持为空，不以自身Arc关系排序分段；arc_contributions保持为空，不补造其他正式Arc或检查点。",
+        "arc_relations与dependencies保持为空，不以自边排序本Arc；arc_contributions保持为空，不创造其他正式Arc或批准检查点。",
+        "authority-output:01d50954-728c-47bb-85fb-06fd785130e0:story_planning.candidate:v1",
+        "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+        "authority-output:6b3fab3d-e978-45b0-a1d6-97df7254d134:story_planning.candidate:v1",
+        "authority-output:847cd4f1-7763-473d-8c46-0785ffa7b1f3:story_planning.candidate:v1",
+        "authority-output:bd11fa76-a76e-4b65-8e32-093f8f6e6bac:story_planning.candidate:v1",
+        "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+        "character_cast",
+        "contract_id与thread_id仅为本候选的本地组织标识，不代表宿主已批准的合同、Thread或Arc。",
+        "creative_foundation",
+        "cross_volume_scope严格按当前Volume及四个arc_scope_volume版本的供应顺序组成，不替换为卷号或逻辑标签。",
+        "cross_volume_scope严格采用冻结命令指定的五个VolumePlan版本及其顺序，分段只锚定相应VolumePlan已供应的Narrative Segment。",
+        "cross_volume_scope严格采用冻结命令给出的五个VolumePlan版本及顺序；每段只关联所属版本已有的Narrative Segment，不重排任何卷章域。",
+        "ending_intent",
+        "prohibited_outcomes",
+        "reader_promise",
+        "realization的CURRENT、可见性及准入方式仅表示本Arc设计相关性，不授予人物入口知识、世界接受事实或执行权限；所有CURRENT实现至少DEFINED。",
+        "theme_contract",
+        "world_bible",
+        "世界本地world_id仅标识候选实现范围；所有realization引用只选择对应冻结域的asset_version_id，由宿主绑定其余来源字段。",
+        "为同时保持供应身份边界与显式状态链，本候选segment_id复用对应供应Narrative Segment标识作为链键；每个后续entry_state_ref逐字引用前段segment_id，不生成新的Authority引用。",
+        "为支撑篇幅或提高责任压力预置外敌、秘密派系、宏大阴谋、固定职位或无关人物群。",
+        "为支撑篇幅预置外敌、秘密派系、宏大阴谋或无关人物群。",
+        "为程观强加隐藏创伤、秘密往事、必须推翻的错误信念、死亡、背叛或永久损失。",
+        "为程观的终局收束临时集中制造义务，或在沈砚独行期间安排无依据的远程援助与全知确认。",
+        "为表现代价虚构已经明确的互斥机会、价格、资格或损失。",
+        "为表现选择的代价而虚构已经明确的互斥机会、价格、资格或损失。",
+        "为证明教学价值无因果地制造伤残、器具毁坏、死亡、背叛或永久关系损失。",
+        "人物的权限与信息分别有限，程观、许庭的具体职位和权限不在本候选中补授。",
+        "人物相邻出场间隔不超过10章、休眠Arc年龄不超过30章须在后续具体排程逐项检查；不能以当前分段长度宣称已满足，也不为计数安排无用途露面。",
+        "仅以取得飞剑、境界名称、旁人赞叹、宣布出发或想象远方代替实际独自御剑远行。",
+        "仅以取得飞剑、获得资格、宣布出发或想象远方兑现御剑愿望。",
+        "仅凭姓名、欲望或关系将程观、许庭或其他人物指定为有权批准入门、课程、器具或资源的人。",
+        "仅凭教学轨迹指定许庭的具体职务、正式课程批准权、资源管理权或飞剑教学资格。",
+        "仅凭程观、许庭的姓名或人物轨迹授予具体职务、批准权、资源管理权、验收权或飞剑教学资格。",
+        "以一次受控失稳处置成功保证任意天气、载荷或无限续航。",
+        "以初次引气证明稳定流转、独立重复操作或飞剑能力，或以初次局部操控证明持续飞行能力。",
+        "以开放结局、新危机或续作目标替代本书独自御剑远行的实际完成。",
+        "以开放结局为由，直到收束仍不兑现独自御剑远行的长期愿望。",
+        "以强制心理创伤、秘密往事或必须推翻的错误信念作为所有人物成立的条件。",
+        "以每章强制突破、危机或重大牺牲替代成长节奏。",
+        "以沈砚为主的第三人称限知呈现程观变化，依据可见言行与实际接触，不将程观私下动机自动授予沈砚。",
+        "以空泛说教代替练习、协商与结果，或强制每个场景承担同一种道德考验。",
+        "以负余额、重复占用互斥时段、省略休息或无限体力补足不可行日程。",
+        "以财富、境界名称或旁人赞叹代替实际能力证明。",
+        "以逃避交付、伙伴默认补位或违背已有承诺换取练习与准备时间。",
+        "以隐藏血统、秘密传承、自动灌顶、临时赐能或无条件资源赠予替代沈砚的练习与选择。",
+        "以隐藏血统、秘密传承、自动灌顶、临时赐能或无条件赠予替代练习、选择与实际成长。",
+        "以隐藏血统、自动灌顶、无条件赠予或突然赐能替代练习和选择。",
+        "以隐藏血统、自动灌顶或无条件资源赠予代替本方向中的练习、选择与实际成长。",
+        "伪造批准Arc、检查点、父版本、接受事件或义务身份，创建自边来排序段落。",
+        "作品为内部私人稿件，不对外发布；production_profile的执行窗口止于第3章，不因240章战略规划而扩大当前执行权限。",
+        "作品为内部私人稿件，不对外发布；战略范围为240章不扩大当前止于第3章的执行权限，所有表达和细节须原创。",
+        "作品为内部私人稿件，不对外发布；战略规划不扩大production_profile止于第3章的当前执行权限。",
+        "作品为内部私人稿件，正文主要使用简体中文，单章2500—3500中文字、段落不超过500中文字；不导入既有作品或未准入材料。",
+        "使沈砚长期只能等待别人安排，或把同门写成只负责训诫和纠错的工具人物。",
+        "保留全部冻结父条件；本合同为future-2分支候选，accepted_through_chapter为0，不批准、激活或修改Authority状态。",
+        "保留全部冻结父条件；父Book合同为future-2分支候选，本次卷一搜索为future-1分支，accepted_through_chapter为0，不批准、激活或修改Authority状态。",
+        "保留持续操控、起降、失稳处置和独立判断的前文积累，不建立无限资源、无限续航、瞬移或未声明复生。",
+        "入门机会、基础吐纳说明与指定答疑、正式外门课程是不同条件；基础学习可以先于正式课程，不预授任何已完成资格。",
+        "入门机会、基础指导与指定答疑、正式外门课程条件分别处理，不预授完成资格。",
+        "入门机会、基础指导与正式课程分开处理；正式录入须核实当期可用课位及全部其他明确条件，交付成功或个人好感不足以自动录入。",
+        "全部必要准备最迟第234章结束前获得支持，第235—239章实际独行与落脚，第240章完成后收束。",
+        "六条跨卷贡献线与卷的时间功能保持正交，后续正式Arc身份由宿主提供，本合同不生成已批准Arc引用。",
+        "内部额度依据实际核验的劳动和交付取得；支出后不得出现负余额，余额充足不保证物资有库存。",
+        "内部额度来自实际核验的劳动与交付，支出后不得负余额；余额充足不能证明库存可用。",
+        "出发前处理影响本次行程的任务、资源与明确承诺，不要求失去宗门归属或结束同门关系。",
+        "判断修正不等于能力归零；接受指导、合作与合理帮助不削弱自主性，不保证沈砚每次判断正确。",
+        "劳动及交付所得须由实际核验取得，支出后余额不为负，余额充足不保证库存。",
+        "反复撤销已掌握本领、已获资格或已完成承诺来延长成长。",
+        "反复撤销已掌握能力、取得资格或完成承诺来拖延成长。",
+        "反复撤销已掌握能力或已完成承诺来拖延长期目标。",
+        "反复撤销已经掌握的本领、取得的资格或完成的承诺以拖延成长。",
+        "反复撤销已经掌握的能力、取得的资格或完成的承诺来拖延成长。",
+        "反复撤销沈砚已经掌握的能力、取得的资格或完成的承诺。",
+        "反复重置沈砚已经掌握的能力或已经完成的承诺，以拖延长期愿望的兑现。",
+        "取消、替换或倒置作者指定的四项近期成长单元。",
+        "取消、替换或倒置入门、初次引气、首次结伴山谷采药及争取正式外门修炼课。",
+        "取消、替换或倒置入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+        "取消、替换或倒置入门、初次引气、首次结伴采药及争取正式外门修炼课。",
+        "取消或替换作者指定的入门、初次引气、首次结伴山谷采药及争取正式外门修炼课单元。",
+        "叙事负载上限为同时活跃Arc3、单章主要状态变化8、新概念4、开放义务12、逾期义务0、同章到期兑现3。",
+        "叙事负载保持同时活跃Arc不超过3、单章主要状态变化不超过8、新概念不超过4、开放义务不超过12、逾期义务为0、同章到期兑现不超过3。",
+        "只处理影响本次行程的明确承诺，不要求失去宗门归属或结束全部关系，也不自动使程观知道远方结果。",
+        "同时活跃Arc不超过3，单章主要状态变化不超过8、新概念不超过4、开放义务不超过12、逾期义务为0、同章到期兑现不超过3。",
+        "同门各有时间、利益与承诺，可拒绝或重新协商；沈砚须承担自己同意的部分，不保证每次判断正确。",
+        "后果依据具体因果确定，不强制每次练习痛苦、伤残或每次选择重大牺牲，终局不另设必需损失。",
+        "后果依据实际行为与因果，不要求每次选择发生不可逆损失；核对投入与真实取舍已可承担本线分量。",
+        "后果分量依据实际行为与因果确定；不要求每次练习痛苦、受伤或每次选择发生重大牺牲，终局不另设强制牺牲。",
+        "后续章节排程逐项检查五名冻结人物的相邻出场间隔不超过10章、休眠Arc年龄不超过30章；本战略分段不宣称已经满足具体出场检查。",
+        "后续章节排程须逐项检查五名冻结人物相邻出场间隔不超过10章及休眠Arc年龄不超过30章；分段覆盖不等于已经满足，不插入无用途露面或虚构移动。",
+        "后续规划遵守人物出场间隔不超过10章、休眠Arc年龄不超过30章的冻结限制；以真实相关行动承接，不为计数插入无用途露面或虚构推进。",
+        "因账目有余额默认物资有库存，或因路线资料存在默认当前天气、补给与落脚可用。",
+        "在没有因果支持时强加死亡、背叛、废功或永久关系损失。",
+        "在没有相应事件因果时强加不可逆损失、死亡或背叛来制造分量。",
+        "在独行期间安排许庭代控、无依据远程援助或自动获得行程结果知识。",
+        "在第四卷提前完成第五卷的实际远行，或用重复同一行程填充终局。",
+        "姓名、地点、功法、冲突、生活细节和表达原创形成；不导入既有作品或未准入材料，不把榜单、实验标记与工程检查转成剧情要求。",
+        "姓名、地点、功法、生活细节及表达原创形成，不导入未准入材料。",
+        "学习成果来自观察、调整、重复和实际运用，已经掌握的本领不因单元变化自动消失；表现变化须有具体原因和后续承接。",
+        "完整继承冻结Book与五个VolumePlan的适用条件；父Book保持future-2分支，本Arc为future-1候选，不重写父版本。",
+        "完整继承冻结Creative Foundation、Book和五个VolumePlan条件；本合同只是目标character:character:cheng-guan的future-1战略候选。",
+        "实现引用只选择匹配域供应的asset_version_id，由宿主绑定其余身份、类型、哈希与Operation字段。",
+        "导入既有作品或未准入材料的角色、世界、正文、特色组合与场景序列。",
+        "导入既有作品或未准入材料的角色、世界、正文、特色组合和场景序列。",
+        "导入既有作品的世界、角色、正文、特色组合或场景序列。",
+        "导入既有作品的角色、世界、正文、特色组合或场景序列，或将榜单、实验标记与工程检查转为剧情要求。",
+        "导入未准入作品或材料，或将榜单、实验标记、工程检查与叙事负载计数转成剧情。",
+        "将御剑远行始终停留在象征与口号，取消长期愿望的实际兑现。",
+        "将普通劳作经验直接升级为灵气操作、药材辨认或全谷路线知识。",
+        "将未知库存、价格、报酬、余额、路线时长或飞剑门槛写成已知值、零值、无限或既得条件。",
+        "将自主等同于拒绝一切指导、合作与责任，或将接受合理建议一律判作软弱。",
+        "将自主等同于拒绝指导、合作与既有承诺。",
+        "已有能力继续有效，表现差异须有具体原因；独立重复运用灵气须有稳定基础流转的实践支持。",
+        "建立无限资源、无消耗飞行或未经声明的瞬移、复生机制。",
+        "建立无限资源、无限续航、瞬移或未经声明的复生机制。",
+        "引入既有作品的角色、世界、正文、特色组合或场景序列。",
+        "所有CURRENT realization仅表示本Arc规划相关性；引用采用匹配域的精确asset_version_id选择器，不授予已接受事实或执行权限。",
+        "所有人物保有合理时间、利益和承诺；可以拒绝、重新协商或暂不同行，接受指导和帮助不削弱自主性。",
+        "扩大当前止于第3章的正文执行窗口，或批准、激活、修改Authority状态。",
+        "扩大当前止于第3章的正文执行窗口，批准、激活或修改Authority状态。",
+        "把世界、人物和本书规划候选写成已接受历史、人物已有知识或已批准事实。",
+        "把世界、人物和本卷规划候选写成已接受历史、人物已有知识或已批准事实。",
+        "把世界候选、拟议制度或未来结果写成已经接受的历史、知识或世界事实。",
+        "把人物候选、背景设计、声音示范或拟议关系写成已接受历史、已发生章节事件或人物已有知识。",
+        "把候选发展写成已发生的章节事件、已接受的知识或已批准的世界事实。",
+        "把候选指导关系、前卷预期或人物愿望写成已发生事件、已有知识或已批准事实。",
+        "把初次引气直接当作稳定流转、独立重复运用灵气或御剑能力的充分证明。",
+        "把同场新信息、机构内部资料或他人未公开动机提前写成沈砚已有知识。",
+        "把尚未确定的课程条件、库存、价格或飞剑门槛视为已知。",
+        "把尚未确定的课程条件、账目数值、药材份额、路线时长或飞剑门槛当作人物已知事实。",
+        "把旧采药记录当作当前成熟份额、可行路线或天气的自动证明。",
+        "把普通劳作经验直接升级为灵气操作、全谷路线知识或药材辨认能力。",
+        "把普通劳作经验直接当作药材辨认、全谷路线知识或灵气操作能力。",
+        "把普通劳动经验、一次引气或局部操控成功直接扩大为药材辨认、稳定流转或完整飞行能力。",
+        "把未公开动机、机构资料或同场新信息提前写成人物已有知识。",
+        "把未定库存、价格、报酬、余额、路线时长与飞剑门槛当作已知值或既得条件。",
+        "把本候选、人物意向、世界设计或前卷拟议结果写成已经发生的事件、已接受事实或人物已有知识。",
+        "把本候选、前卷拟议成果或空白初始状态写成已接受历史、人物已有知识或已批准事实。",
+        "把榜单、实验标记、工程操作或检查答案转成剧情要求。",
+        "把榜单、实验标记、工程检查或叙事负载计数转成剧情要求。",
+        "把程观写成预置阻挠者、无条件恩人、全宗秘密掌握者或只负责训诫、纠错与赞叹的工具人物。",
+        "把自主等同于拒绝指导、合作和既有承诺。",
+        "把许庭写成只负责纠错、赞叹、退让或替沈砚完成关键准备的工具人物。",
+        "把许庭未公开的愿望或私下判断直接写成沈砚已知。",
+        "把资源多少、境界高低或旁人的赞叹直接当作拥有自己道路的充分证据。",
+        "把首次采药的既往记录当作当前成熟份额、可行路线或天气的自动证明。",
+        "折露草每次采收前核实当前成熟可采份额，采成熟外叶并保留芽根；验收结果依据已明确说明与实际质量。",
+        "指导时间、劳作、赶路、练习、休息及已有承诺使用同一明确计量单位，不得重复占用互斥时段或出现不可行余额。",
+        "指导范围与信息须由实际接触明确；涉及课程、资源、器具和操作准入的条件分别核实，不因信任或善意绕过。",
+        "改变冻结Volume章域、扩大当前正文执行窗口，或批准、激活、修改Authority状态。",
+        "教习、事务人员与同行者各有有限权限和信息，不能相互替代，也不能据善意绕过硬条件。",
+        "无因果地添加死亡、背叛、废功、永久关系损失或普遍不可逆代价。",
+        "无因果地添加死亡、背叛、废功、永久关系损失，或强制制造器具毁坏和伤残。",
+        "无因果地设置死亡、背叛、废功、永久关系损失或普遍不可逆代价。",
+        "日程使用同一明确计量单位，扣除劳作、练习、赶路、休息与已有承诺后余额不得为负，互斥活动不得重复占用时段。",
+        "日程使用同一明确计量单位，扣除劳作、练习、赶路、休息与旧约后不得为负，互斥活动不得重复占用。",
+        "日程使用同一明确计量单位，计入劳作、练习、赶路、等待、休息与已有承诺，余额不为负，互斥活动不重复占时。",
+        "普通方法可用于适当劳作环节，不能替代引气、药材辨认或路线核实；稳定重复运用灵气须有基础流转的实践支持。",
+        "未供应具体到期义务身份，不生成已接受义务或到期窗口；未来实际承诺须有来源、条件、回应及后续处理。",
+        "未经当前成熟份额核实采收折露草，或采毁芽根以扩大交付。",
+        "本Arc内分段定位采用已供应的段身份；后段entry_state_ref逐项复制前段segment_id。Arc的变化由本合同描述，不修改Timeline容器或其章范围。",
+        "本书240章；卷一[1,48]、卷二[49,96]、卷三[97,144]、卷四[145,192]、卷五[193,240]保持不变，不固定卷一单元内部章数、完整境界序列或未定资格门槛。",
+        "本书目标篇幅为240章；本候选只确定卷的功能，不固定各阶段章数、完整境界序列、具体课程资格或飞剑门槛。",
+        "本卷chapter_range严格为[1,48]；只细化父Book分配的卷一功能，不规划其他卷的具体事件或章段。",
+        "本次使用的所有引用仅选择冻结输入中的准确身份；空白Arc组合不构成自行创造正式Arc身份的许可。",
+        "正式Arc工作集、相关Arc与依赖Arc列表为空；arc_relations、dependencies及arc_contributions保持为空，不伪造自边、正式Arc或检查点。",
+        "正式课程录入须核实当期可用课位及全部其他明确条件，清楚回应不等于保证录入。",
+        "正式课程录入须核实当期实际可用课位及后续明确的全部其他条件；有课位、得到学习反馈或个人好感均不足以自动入课。",
+        "正文主要使用简体中文，单章2500—3500中文字，段落不超过500中文字，完整场景和章际动作、资源、承诺承接优先于设定展示。",
+        "正文主要使用简体中文，单章2500—3500中文字，段落不超过500中文字；动作、资源、承诺与完整场景连续性优先。",
+        "正文保持简体中文、单章2500—3500中文字、段落不超过500中文字，并优先承接完整场景、动作、资源和承诺。",
+        "每个arc_segments条目绑定对应供应Volume中的精确Narrative Segment标识，只在其既定章域内提出变化，不修改时间容器。",
+        "每次采收折露草前核实当前成熟可采份额，只采成熟外叶并保留芽根；验收依据已说明要求与实际质量。",
+        "沈砚保留十六岁普通山村少年主动争取入门的起点，四项近期成长顺序不变。",
+        "沈砚保留十六岁普通山村少年主动争取青岚宗外门机会的起点，四项近期单元保持原顺序。",
+        "沈砚可以选择、询问、争取和修改安排；同门各有自己的时间、利益与承诺，可以拒绝或重新协商。",
+        "沈砚起点为十六岁的普通山村少年，主动争取青岚宗外门入门机会，尚不具备独自御剑远行本领。",
+        "涉及折露草任务时每次核实当前成熟可采份额，采成熟外叶并保留芽根；许庭的反馈不能替代药材辨认、路线核实或实际验收。",
+        "独立重复运用灵气须有稳定维持基础流转的实践支持；初次尝试本身不要求预先掌握该能力。",
+        "独立重复运用灵气须有稳定维持基础流转的实践支持；已有本领不因任务或换卷自动消失。",
+        "独自御剑远行须同时满足能力、器具、路线天气、补给和落脚等全部必要条件；任一项未核实不得视为已经准备就绪。",
+        "独行所需能力、器具、路线天气、补给和落脚分别核实，任一必要条件未确认不得视为准备就绪。",
+        "独行须分别核实能力、器具、路线天气、补给与落脚；程观的信任或回应不能替代任何必要条件。",
+        "生成未供应的关联Arc、检查点、已接受事件或到期义务身份。",
+        "用开放结局、新危机或续作目标替代本书长期愿望的完成。",
+        "用无限指导时间、省略休息或重复占用时段消除教学安排的实际限制。",
+        "用负余额、重复占用互斥时段、省略必要休息或无限体力消除安排压力。",
+        "用隐藏血统、秘密传承、自动灌顶、临时赐能或无条件资源赠予代替练习与选择。",
+        "用隐藏血统、秘密传承、自动灌顶、临时赐能或无条件赠予替代练习和选择。",
+        "程观、许庭在当前输入中未获具体职务或权限说明；后续不得仅凭姓名将其指定为有权批准入门、课程或资源的人物。",
+        "程观、许庭的具体职位、权限、私下动机及已有知识未明确，不从人物欲望或轨迹反推这些事实。",
+        "程观出行相关事项最迟第234章结束前处理；第235—239章连续呈现沈砚实际独行和落脚，第240章兑现后收束。",
+        "程观可拟议自己的询问、时间投入、有限配合与拒绝；有关他人的承诺、分工和同意须由实际回应支持。",
+        "程观既有方向是来源清楚、安排可追踪，并依履约与信息完整程度改变协商方式；false_belief与need为空不构成补造缺陷的许可。",
+        "空白台账不提供具体义务或到期身份；未来明确承诺须记录真实来源、条件与回应，不伪造已接受义务。",
+        "终局实际完成能力相称的独行及落脚；开放部分仅限愿望兑现后的生活，不以新危机或续作代替收束。",
+        "终局所用持续操控、起降、失稳处置和独立判断须由前文积累支持，不建立无限资源、无限续航、瞬移或未经声明的复生。",
+        "终局能力、器具、路线天气、补给和落脚须分别核实；第234章结束前支持必要条件，第235—239章实际独行与落脚，第240章兑现后收束。",
+        "继承全部冻结父条件；Book父分支保持future-2，本候选采用future-1，不改写任何父版本。",
+        "自行生成父版本、批准身份或其他 Authority 引用。",
+        "自行生成父版本、批准身份或其他Authority引用。",
+        "虚构已经明确的互斥机会、价格、收益、库存、余额或课程条件来制造代价。",
+        "表现差异须有实际条件原因及后续承接，接受指导、合作和判断修正不等于能力归零或丧失自主性。",
+        "观察、调整、重复和实际运用支持本领增长；换任务或换卷不自动归零，表现变化须有具体原因和后续承接。",
+        "让教习、事务人员或同行者越过未明确权限承诺课位、库存、收益或资格。",
+        "让教习、事务人员或同门越过未明确的权限，承诺课位、库存、收益或资格。",
+        "让未公开动机、机构资料或同场新信息自动成为沈砚的已有知识。",
+        "让沈砚以学习愿望撤销已有承诺，或让程观未经相关人确认便替他们同意改期。",
+        "让沈砚每次判断必然正确，抹去其他人物的合理诉求。",
+        "让沈砚的每次判断必然正确，以他人的不合理或失败为其自主性作证。",
+        "让沈砚的自主选择永远正确，以同门的失误或无条件退让替他证明主题。",
+        "让沈砚长期只能等待分派，或使所有同门只负责纠错、赞叹与让步。",
+        "让沈砚长期只能等待安排，或让同门只负责纠错、赞叹与让步。",
+        "让沈砚长期只能等待安排，或让所有同门只负责训诫、纠错、赞叹和退让。",
+        "让沈砚长期等待安排，或让同门仅负责纠错、训诫、赞叹与无条件退让。",
+        "让程观凭善意承诺未核实的课位、库存、报酬、质量结论、资格或远行许可。",
+        "让许庭越过未明确的权限承诺课位、器具、库存、收益、资格或出行许可。",
+        "让许庭默认掌握任务验收、当前采收份额、全部路线天气或落脚信息。",
+        "许庭无需预置错误信念、心理创伤或必须改变的需求；允许原则稳定、反馈方式随结果调整。",
+        "许庭的教学愿望可以引导候选选择，不能证明其具体职务、权限、私下动机已经公开或已有专业知识。",
+        "资源有来源、管理者、用途与限度，未知库存、价格、课位、报酬及余额保持未定，内部额度支出后不得为负。",
+        "资源须有来源、管理者、用途和限度；未定库存、价格、报酬、余额和课位数量不能视为零、无限或既得资源。",
+        "资源须有来源、管理者、用途和限度；未知库存、价格、报酬、余额与课位不视为零、无限或既得。",
+        "资源须有来源、管理者、用途和限度；未知库存、价格、报酬、余额和课位数量不能视为零、无限或既得。",
+        "越过未明确权限承诺课位、库存、收益、验收结果或资格。",
+        "近期单元依次为入门、初次引气、首次结伴山谷采药及争取正式外门修炼课，不得取消、替换或倒置。",
+        "远行前处理影响本次行程的任务、资源与明确承诺；不要求丧失宗门归属或结束全部同门关系。",
+        "遵守冻结叙事负载限制：同时活跃Arc不超过3，单章主要状态变化不超过8，新增概念不超过4，开放义务不超过12，逾期义务为0，同章到期兑现不超过3。",
+        "采收折露草前核实当前成熟可采份额，只采成熟外叶并保留芽根；验收依据已说明要求与实际质量。",
+        "采用以沈砚为主的第三人称限知视角，他人的私下动机、机构资料和同场新信息不能提前成为其知识。",
+        "采用以沈砚为主的第三人称限知视角；机构资料、同门私下动机与未公布条件须经实际接触才可能进入人物所知。",
+        "采用以沈砚为主的第三人称限知；新条件、资料和他人动机须经实际接触才可能进入其所知。",
+        "飞剑局部操控、起降、持续控制、短程往返与失稳处置逐步获得实践支持；新增条件先说明用途、来源和限制。",
+        "首次采药允许普通手工方法，不把尚未学会的术法设为强制门槛；普通劳作经验不能替代引气、药材辨认或路线核实。",
+        "首次采药可使用适合的普通手工方法，但普通经验不能替代引气、材料辨认或路线核实。"
+      ],
+      "condition_sources": {
+        "arc_plans": {
+          "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+          "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        "book_plan": {
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        "story_state": {
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        "volume_plan": {
+          "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+          "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        },
+        "reader_state": {
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        "quality_trend": {
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        "related_arc:1": {
+          "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+          "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        "related_arc:2": {
+          "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+          "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        },
+        "canon_snapshot": {
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        "change_evidence:1": {
+          "content_hash": "sha256:9a2acc547f943848977a7c30b7bb8c938bd49a0fdb7a66183048b4ad143dc8bb",
+          "asset_version_id": "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1"
+        },
+        "previous_chapter_group_outcome": {
+          "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+          "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+        }
+      },
+      "semantic_families": [
+        "ANTI_PATTERN_FAILURE",
+        "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+        "MYSTERY_CLUE_REVEAL",
+        "READER_EMOTIONAL_CURVE",
+        "WORLD_CONSEQUENCE"
+      ],
+      "reader_effect_tags": [
+        "这部故事承诺让读者陪一个普通山村少年，把陌生的修行本领逐渐练成自己能用、敢用的能力。入门、引气、劳作与山谷采药都有具体目的，行动之后能看见能力、资源或合作条件发生了什么变化。持续的期待来自沈砚接下来需要补足什么、会争取哪种机会，以及已有本领能否帮助他胜任自己选择的事情。读者将体验练习终于有用的踏实喜悦、争取机会时的紧张，以及与各有打算的同门协商、合作和相互理解的摩擦与温暖。沈砚可以判断失误、接受建议并调整做法，但这些结果需要被后续行动承接。长期愿望须由修炼、飞剑操控、路线判断和远行准备共同挣得，最终兑现为有本领支撑的独自御剑远行。用突来的力量替代积累、让他长期被动等待，或反复抹去进步拖延出发，都会背叛这份承诺。"
+      ],
+      "recent_craft_usage": [],
+      "current_state_terms": [
+        "NOT_OBSERVED",
+        "PLANNED"
+      ],
+      "desired_transformation_terms": [
+        "为许庭提出跨五卷的因果发展候选：保持让弟子亲自辨认、重复验证的教学原则，以实际反馈结果调整指导深度与参与范围，承担有限指导的时间占用并维持自身修炼；逐渐建立能够支持沈砚自行复查、准备和判断的关系，不预定职务、特批或收徒。",
+        "以本卷任务结果检查有限指导的用途。许庭拟主动结束已经不再需要的逐项确认，保留针对具体技术缺口的往来；让关系中的信任体现为给予沈砚承担判断的空间，而非增加依赖。",
+        "在卷一既定成长顺序内建立许庭的指导方式。其具体参与以实际明确的指导范围为前提，不承担入门、课程或资源批准。拟让他主动选择把有限答疑用于辨认练习过程，而非确认天赋高低，并将实际占用纳入自己的修炼安排。",
+        "在卷二交付与预留练习得到实际结果之后，拟让许庭检查自己给出的反馈是否帮助形成可重复本领。他主动修订反馈方式，并结清本轮明确答疑约定；不把教学结果当作课程录入、资源供应或新能力的自动证明。",
+        "承接修正方案与后续核实结果，拟让许庭主动结算本轮指导安排，说明自己仍可承担的有限事项，并为自己的修炼保留日程。支持沈砚准备独行，同时不以解除全部关系或承担所有风险表达信任。",
+        "承接准备缺口及重新分工的拟议结果。许庭拟明确自己能提供的反馈内容和时段，选择让沈砚先尝试、说明依据，再针对具体困难回应；不替他完成伙伴减少参与后留下的全部准备工作。",
+        "承接前段形成的自查问题及卷二任务比较的拟议结果。许庭拟在有限交流中辨认练习是否真正获得连续时间，主动缩减已经能够自行判断的重复确认，把指导用于尚未解决的技术问题；不以增加全部答疑时间替代沈砚修改安排。",
+        "承接前段明确的反馈范围。许庭拟选择回应沈砚提出的具体比较，而非替他确定唯一行程；若问题超出自己的已明确信息，明确保留未定，让有限帮助支持实际方案修正。",
+        "承接双方约定的处理结果，在临行前完成有用途的交流。许庭拟选择保留指导关系而结束本次准备的逐项确认，让教学成果通过沈砚自己的行动兑现；不把个人认可当作出发条件，也不提前知道独行结果。",
+        "承接持续练习与短程实践的拟议结果。许庭拟进一步从给出检查问题转向听取沈砚自己的比较和判断，再指出证据不足处；不远程接管现场决定，也不强制制造险情来证明教学有效。",
+        "承接新阶段明确的参与范围。面对持续控制练习暴露的时间问题，许庭拟选择把有限反馈用于检查沈砚的比较依据；其自身答疑与修炼同样纳入可行日程，不以随时待命制造无成本帮助。",
+        "拟让许庭检查此前采用的提问和复查方式是否真正支持自主判断，并主动减少无必要的逐项确认。处理本轮指导约定，保留器具、路线天气、补给和落脚须分别核实的边界。",
+        "条件式承接前卷形成的反馈方式。面对沈砚承担准备工作后带回的具体结果，许庭拟主动区分可以指导的动作问题与必须另行核实的工作条件，使指导更贴近实际用途，又不扩张自身权限。",
+        "条件式承接前段形成的指导关系，在飞剑相关世界条件和学习安排实际明确后重新核实参与范围。许庭拟主动说明可以回应与不能承诺的事项，不以熟悉沈砚为由取得新的职务、知识或批准权。",
+        "条件式承接卷一实际结果及卷二已明确的学习安排。许庭拟比较沈砚能够提供的练习过程与重复结果，选择只反馈证据支持的动作差别；把一次答疑转化为后续自查办法，同时保留自己明确的指导时段。",
+        "条件式承接第四卷实际形成的能力与约定。许庭拟主动重新限定准备阶段的反馈范围，要求沈砚区分操作证据与其他出行条件；自己的修炼节奏继续有效，不成为全部准备事项的默认负责人。"
+      ],
+      "recently_used_repetition_keys": [
+        "future-2:伙伴各自目标改变同行",
+        "future-2:判断修正保留已有本领",
+        "future-2:局部操控与完整行程分开验证",
+        "future-2:早期准备方法终局回收",
+        "future-2:熟练后的日程协商",
+        "future-2:结果改变下一步任务选择",
+        "volume-1:future-1:学习目标进入可履行分工",
+        "volume-1:future-1:实际成果支持请求但不代替资格",
+        "volume-1:future-1:清楚回应保留不同学习路径",
+        "volume-1:future-1:自选安排形成真实时间占用",
+        "volume-1:future-1:质量反馈承接已核实说明",
+        "volume-1:future-1:首次感知转为具体稳定性问题",
+        "xu-ting:future-1:关系延续不扩张权限",
+        "xu-ting:future-1:具体问题进入下一次练习",
+        "xu-ting:future-1:实际结果修订反馈深度",
+        "xu-ting:future-1:指导时间保留自身安排",
+        "xu-ting:future-1:自行复查减少重复确认"
+      ],
+      "craft_selection_policy_version": "craft-need-driven-selection.v2",
+      "required_card_asset_version_ids": []
+    },
+    "rejected": [],
+    "selected": [],
+    "project_id": "qid-learning-prose-01",
+    "policy_version": "knowledge-grounded-selection-v2",
+    "pool_truncated": false,
+    "schema_version": "mkaos-narrative-intelligence-selection.v1",
+    "pool_query_mode": "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION",
+    "selection_digest": "sha256:d819f8708a53f675562740cc0fab9f74d46db5a85de5c5f86b8d3cc9022d6f67",
+    "selection_status": "NO_ELIGIBLE_MATCH",
+    "authority_boundary": {
+      "semantic_role": "POSSIBILITY_ONLY",
+      "may_mutate_narrative_state": false,
+      "may_mutate_story_authority": false,
+      "may_prove_accepted_reality": false,
+      "planning_must_recompose_for_project": true
+    },
+    "eligible_card_count": 0,
+    "examined_card_count": 0,
+    "craft_metadata_boundary": "Craft affinity, family and selection labels are descriptive metadata, not applicability predicates, author requirements or intended effects. Use only matched needs, resolved prerequisites and concrete adopted sites; do not impose metadata on this Book.",
+    "knowledge_access_policy": {
+      "mode": "PROJECT_DEFAULT",
+      "book_id": "book:qinglan-wendao-20261008",
+      "policy_id": "book-production-knowledge-access",
+      "project_id": "qid-learning-prose-01",
+      "policy_hash": "sha256:4c7f01950028f323f1706231dc12b0d5c5704d419a5aafb29df20885b2ccff2f",
+      "policy_version": 1,
+      "schema_version": "book-knowledge-access-policy.v1",
+      "configured_explicitly": false,
+      "allowed_knowledge_card_asset_version_ids": []
+    },
+    "craft_selection_policy_version": "craft-need-driven-selection.v2"
+  }
+}
