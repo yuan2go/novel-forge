@@ -1,0 +1,38 @@
+[
+  {
+    "file": "chapter-019-plan-candidate.json",
+    "kind": "SEMANTIC_AND_IDENTITY_VIEW",
+    "full_native_record": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-public-review-records/chapter-019-plan-candidate.json",
+    "full_file_sha256": "4842092007402100449b40cdc0a17753cd83150d47e8802e5936fd26778d70d5",
+    "omitted_from_view": [
+      "duplicate candidate_payload",
+      "full context_envelope/context_bundle",
+      "bulky execution metadata"
+    ],
+    "preservation": "Full immutable asset content remains in native PostgreSQL and retained exact JSON; original content hashes are not recomputed from this view"
+  },
+  {
+    "file": "compressed-group-candidate.json",
+    "kind": "SEMANTIC_AND_IDENTITY_VIEW",
+    "full_native_record": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-public-review-records/compressed-group-candidate.json",
+    "full_file_sha256": "e37a979c496972521a600a7bc87fcd2920d54dc171d1a9b2ef1eafd3fd3462af",
+    "omitted_from_view": [
+      "duplicate candidate_payload",
+      "full context_envelope/context_bundle",
+      "bulky execution metadata"
+    ],
+    "preservation": "Full immutable asset content remains in native PostgreSQL and retained exact JSON; original content hashes are not recomputed from this view"
+  },
+  {
+    "file": "future-group-candidate.json",
+    "kind": "SEMANTIC_AND_IDENTITY_VIEW",
+    "full_native_record": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-public-review-records/future-group-candidate.json",
+    "full_file_sha256": "84f9ac115ba2974bc987efc6a34d8892dfc5e8f2039fa2e33c95255ac2a6c1cf",
+    "omitted_from_view": [
+      "duplicate candidate_payload",
+      "full context_envelope/context_bundle",
+      "bulky execution metadata"
+    ],
+    "preservation": "Full immutable asset content remains in native PostgreSQL and retained exact JSON; original content hashes are not recomputed from this view"
+  }
+]

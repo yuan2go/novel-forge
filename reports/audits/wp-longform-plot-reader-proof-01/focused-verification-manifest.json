@@ -40,5 +40,10 @@
     "tested_sha": "e4fb3b1309ce217c2deca9b8951e83d47d27e7cd"
   },
   "canonical_full_P0": "NOT_RUN_USER_SCOPED_MATRIX; historical NO_GO retained",
-  "evidence_ceiling": "EXECUTABLE; NOT_QUALIFIED_OR_PRODUCTION_PROVEN"
+  "evidence_ceiling": "EXECUTABLE; NOT_QUALIFIED_OR_PRODUCTION_PROVEN",
+  "diff_whitespace": {
+    "source_docs_tests_architecture": "PASS",
+    "raw_evidence": "RAW_TRAILING_WHITESPACE_RETAINED",
+    "reason": "Exact original chapter exports and raw failure/warning logs are not normalized"
+  }
 }
