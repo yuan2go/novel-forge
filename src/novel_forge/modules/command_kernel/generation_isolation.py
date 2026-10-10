@@ -42,7 +42,7 @@ def require_generation_retry_budget(cursor, *, operation_id):
 
 def require_native_api_isolation_record(content, *, project_id, book_id, operation_id, effect_id, capability):
     from novel_forge.modules.production_execution.contracts import ExecutionRequest
-    from novel_forge.modules.production_execution.backends import _sha256
+    from .external_effect_runtime import _hash
 
     record = content.get("record") or {}
     original = ExecutionRequest.from_dict(record.get("request") or {})
@@ -52,7 +52,7 @@ def require_native_api_isolation_record(content, *, project_id, book_id, operati
             or original.contract_hash != content.get("request_contract_hash")
             or frozen.get("execution_request_hash") != original.contract_hash
             or frozen.get("request_hash") != capability.get("provider_request_envelope_hash")
-            or frozen.get("contract_hash") != _sha256({key:value for key,value in frozen.items() if key != "contract_hash"})
+            or frozen.get("contract_hash") != _hash({key:value for key,value in frozen.items() if key != "contract_hash"})
             or (record.get("handle") or {}).get("transport") != "REMOTE_PROVIDER_API"):
         raise KernelError("GENERATION_ISOLATION_IDENTITY_CONFLICT", "Require the original admitted native API invocation, inputs and output contract")
     if ((record.get("result") or {}).get("normalized_output_ref")

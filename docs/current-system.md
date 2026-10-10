@@ -25,7 +25,9 @@ New Creation requests select `config/execution_templates/author_first.json` (v12
 The ordinary CLI starts from an input file without Project/Workspace/Book or operation keys.
 Its native scope binding hashes the authenticated author, optional Project/work key and
 canonicalized JSON input. Moving an unchanged input file preserves that identity. Changed
-input values derive a different ordinary CLI identity; after an uncertain response, continue
+input values in a new invocation derive a different ordinary CLI identity. Repeated calls
+within one native CLI request retain its first actor/file/work binding; that command identity
+does not replace PostgreSQL checkpoints or authorize changed input. after an uncertain response, continue
 or reconcile the returned original work handles before considering any new input.
 A current-manuscript command may resolve its Project from the selected Book run.
 At a settled idle author-first checkpoint, `authority-manuscript extend-delivery-window`

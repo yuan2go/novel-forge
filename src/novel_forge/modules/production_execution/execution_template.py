@@ -131,8 +131,7 @@ def validate_templates(content: Mapping[str, Any]) -> None:
                 or value["version"] in {"creative-execution-template.v10", "creative-execution-template.v11", VERSION} and value["mode"] == MODE and value.get("quality_corrections") is None):
             raise KernelError("EXECUTION_TEMPLATE_QUALITY_CONTROL_INVALID", value["book_id"])
         if value.get("author_workflow") is not None:
-            from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW
-            if value["version"] != VERSION or value["author_workflow"] != AUTHOR_WORKFLOW or value["mode"] != MODE:
+            if value["version"] != VERSION or value["mode"] != MODE:
                 raise KernelError("AUTHOR_WORKFLOW_INVALID", value["book_id"])
         paid = value["deepseek"]
         if paid is not None and Decimal(paid["maximum_amount"]) <= 0:

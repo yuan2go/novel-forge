@@ -42,9 +42,16 @@ def run_creation_command(settings: Any, args: Any) -> dict[str, Any]:
         if not args.input_file:
             raise ValueError("Starting a work requires --input-file")
         principal = build_trusted_principal_resolver().resolve_api_principal()
-        identity = canonical_hash({"version": "author-cli-work.v1", "actor_id": principal.principal_id,
-            "project_id": args.project_id, "input_hash": canonical_hash(json.loads(args.input_file.read_bytes())),
-            "work_key": args.idempotency_key}).split(":")[-1]
+        source_identity = {"actor_id": principal.principal_id, "project_id": args.project_id,
+            "input_file": str(args.input_file.resolve()), "work_key": args.idempotency_key}
+        binding = getattr(args, "_author_cli_work_binding", None)
+        if binding and binding["source_identity"] == source_identity:
+            identity = binding["identity"]
+        else:
+            identity = canonical_hash({"version": "author-cli-work.v1", "actor_id": principal.principal_id,
+                "project_id": args.project_id, "input_hash": canonical_hash(json.loads(args.input_file.read_bytes())),
+                "work_key": args.idempotency_key}).split(":")[-1]
+            args._author_cli_work_binding = {"source_identity": source_identity, "identity": identity}
         args = SimpleNamespace(**vars(args))
         args.project_id = args.project_id or "project:author:" + identity
         args.book_id = args.book_id or "book:author:" + identity

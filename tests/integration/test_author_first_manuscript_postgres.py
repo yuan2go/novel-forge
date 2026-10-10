@@ -422,11 +422,16 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
         from novel_forge.modules.chapter_authority import handlers
         from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
         chapter_transport = transport.chapter
-        def context_transport(stage, inputs):
-            if stage in {'context_compress', 'context_fidelity'}:
-                return default_chapter_fixture_response(stage, inputs)
-            return chapter_transport(stage, inputs)
-        transport.chapter = context_transport
+        class ContextFixtureTransport:
+            def __setattr__(self, name, value):
+                setattr(chapter_transport, name, value)
+            def __getattr__(self, name):
+                return getattr(chapter_transport, name)
+            def __call__(self, stage, inputs):
+                if stage in {'context_compress', 'context_fidelity'}:
+                    return default_chapter_fixture_response(stage, inputs)
+                return chapter_transport(stage, inputs)
+        transport.chapter = ContextFixtureTransport()
         build_context = handlers.build_context_bundle
         def bounded_context(**kwargs):
             with AuthorityUnitOfWork(DATABASE_URL) as uow:

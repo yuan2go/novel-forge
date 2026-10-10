@@ -3853,3 +3853,10 @@ New current-contract Chapter Planning requests bind the existing operational com
 The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 template per Attempt. Its joint task-and-Context data envelope replaces only identical repeated values with local RFC6901 references in canonical key order after an exact full round-trip check, and admission measures the encoded prompt with the complete output reservation. Original Context assets and prior Attempt manifests remain unchanged. A proven unsent capacity failure may use its remaining native Attempt allowance with this new Pack. If its v12 attempts already exhausted, the native StepSuccessor records at most one v13 transport correction with identical inputs, completion checks, actor, Book and original retry lineage; all routes must prove only Context capacity rejection and no Effect or budget reservation may exist. A later v13 failure cannot repeat that correction. Changing the Pack never resets the persisted failure allowance or authorizes another business commit.
 
 The unsent v12-to-v13 correction binds `kernel-unsent-transport-window.v1` to the exact compiled target deployment. Native StepSuccessor atomically retains exhausted failure history, extends only a derived Root window by its original bounded duration, aligns the Saga deadline projection and registers the successor. Explicit author/business deadlines, active leases, unsettled sibling Effects and irreversible work retain their existing guards. The single correction decision and shared fault counter do not reset on restart.
+
+Repeated calls of the same native CLI request retain the first actor/file/work identity
+while the native command still checks its frozen input. A restarted uncertain work uses
+its returned Project/Book/checkpoint through `continue`; changing a file is not recovery
+evidence. Existing Reader activation replay requires the exact active deployment release
+and manifest/catalog. A drifted activation is reconciled by its native owner; this does
+not impose a Reader or qualification requirement on author-first saved manuscript access.
