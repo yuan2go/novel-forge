@@ -27,7 +27,11 @@
     "No new realm, sword flight, external/object power, automatic resources or course qualification"
   ],
   "classification": "GENERATED_GROUP_DESIGN_RESTRICTIONS_NOT_AUTHOR_INVARIANTS",
-  "actual_prose_consumption": "PENDING",
+  "actual_prose_consumption": "CHAPTER037_039_SAVED_READBACK_EXPORTED; CHAPTER040_NATIVE_PLANNING",
   "reader_willingness": "NOT_RUN",
-  "combination_effect_only": true
+  "combination_effect_only": true,
+  "chapter037_consumed_selected036": "3fe34394-8628-485c-9414-308850515eca",
+  "chapter037_selected": "37dda880-f890-4e84-9b79-f188459b4ddb",
+  "chapter038_selected": "201925b1-609d-4d09-a9ca-b925b8db0e4f",
+  "chapter039_selected": "20920948-a60c-4801-ac9f-dc7a12664da4"
 }

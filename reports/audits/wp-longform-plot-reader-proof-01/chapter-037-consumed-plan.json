@@ -1,0 +1,198 @@
+{
+  "asset_version_id": "authority-output:847e3d39-a158-42ba-ac15-4fcd58e903cb:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:5d279dba0619c1c23542651b1bc4cbfe55fc75a1282a1558e209c14f88aa397e",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:37"
+  },
+  "expected_group": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:2fc131ed9c5406c73ebf6b756797cbc88928a1f044db8e740b9456787a9d0bd1",
+  "chapter_root_operation_id": "0fb7d0d3-be42-4883-be50-4ddb8b23ac28",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 36,
+      "asset_version_id": "3fe34394-8628-485c-9414-308850515eca",
+      "content_hash": "sha256:58a146662b6f36c0dc29900161845eb1e8ccde3099f392d7e72e4a768a3345f5",
+      "text_hash": "sha256:c111fd3595d427c8c798aa2482de9e131b7cd92e448553d1e4430028746238c6",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 37,
+    "chapter_intent": "以一段完整的独练兑现沈砚想在无人提醒时自行辨差的念头。让脚步过急、停歇、缩步与多次收束形成可比较的动作结果，再由他本人选出缓步转身这一项待试的新条件。",
+    "scene_plan": [
+      {
+        "goal": "在无人提醒时辨出失稳，并按短步、分轮与休息的方式重复完成行步收束。",
+        "beats": [
+          {
+            "beat_id": "cg37-s1-b1",
+            "ordinal": 1,
+            "function": "沈砚在腾出的短时段回到熟悉平地，按寻常力道握住普通轻物，先定短步与分轮休息的范围。",
+            "expected_reader_effect": "看见沈砚主动接续已会的练习，也感到劳作后的身体限制。"
+          },
+          {
+            "beat_id": "cg37-s1-b2",
+            "ordinal": 2,
+            "function": "一轮中他急着接第二步，掌中细暖散去；没有旁人提醒，他自己察觉呼吸被步子催快。",
+            "expected_reader_effect": "通过脚与掌中细暖的具体差别，明白失稳如何发生。"
+          },
+          {
+            "beat_id": "cg37-s1-b3",
+            "ordinal": 3,
+            "function": "他停下歇肩臂，缩短步幅后再分轮试；几次在脚仍向前落时主动收住，轻物始终由手指承担重量。",
+            "expected_reader_effect": "感到进步来自可重复的调整，且范围清楚。"
+          }
+        ],
+        "conflict": "脚步一快，细暖便散；山路劳作后的肩臂也不足以支撑连续硬练。",
+        "scene_id": "cg37-s1",
+        "exit_state": "沈砚在熟悉平地手握普通轻物，已独自辨出一次脚步过急；休息并缩短步幅后，他多次在行步中主动收住。肩臂仍有倦意，转身尚未尝试，他已有可比较的直行结果。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter:37:practice",
+          "start_ordinal": 1
+        },
+        "entry_state": "第36章工作正文中，近坡任务已交回；沈砚在许庭指导下多次完成缓步维持与行步收束。山路劳作后的肩臂仍易疲倦，他想在无人提醒时自行辨出第二步是否过急，尚未独自试出结果。",
+        "location_id": "location:qinglan-basic-practice-flat",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan"
+        ],
+        "reader_effect": "以失稳和调整后的多次成功带来安静而具体的欣喜。",
+        "scene_version": 1,
+        "scene_group_id": "cg37-independent-practice",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:cg37-self-difference"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg37-e1"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "INTERIOR",
+          "DESCRIPTION"
+        ]
+      },
+      {
+        "goal": "依据独练所得选定下一项可执行练习，并及时结束当次练习。",
+        "beats": [
+          {
+            "beat_id": "cg37-s2-b1",
+            "ordinal": 1,
+            "function": "沈砚比较过急时细暖散去与缩步后主动收住的感觉，想到转身或折返会改变脚与呼吸的次序。",
+            "expected_reader_effect": "看清直行已有结果，转身仍是一个具体而有限的新问题。"
+          },
+          {
+            "beat_id": "cg37-s2-b2",
+            "ordinal": 2,
+            "function": "他决定下次只增加缓步转身这一项条件，在既有答疑时段向许庭展示实际动作；随后收起轻物，结束本轮并休息。",
+            "expected_reader_effect": "看见他把练习结果转成下一步行动，同时顾及身体疲倦。"
+          }
+        ],
+        "conflict": "已有直行结果不能替转身下结论，肩臂的疲倦也提醒他该结束本轮。",
+        "scene_id": "cg37-s2",
+        "exit_state": "沈砚保有熟悉平地短步条件下的自主辨差和多次行步收束结果；他结束本轮练习并休息，决定在下一次既有答疑时段展示直行动作、试缓步转身。转身结果仍未知。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 4,
+          "timeline_id": "chapter:37:practice",
+          "start_ordinal": 3
+        },
+        "entry_state": "沈砚在熟悉平地手握普通轻物，已独自辨出一次脚步过急；休息并缩短步幅后，他多次在行步中主动收住。肩臂仍有倦意，转身尚未尝试，他已有可比较的直行结果。",
+        "location_id": "location:qinglan-basic-practice-flat",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan"
+        ],
+        "reader_effect": "把本章的踏实进步延伸为对下一次转身练习的清楚期待。",
+        "scene_version": 1,
+        "scene_group_id": "cg37-independent-practice",
+        "obligation_refs": [
+          "cg37-turn-practice"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:cg37-turn-choice"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [],
+        "accessible_knowledge": [
+          "fact:cg37-self-difference"
+        ],
+        "realization_event_ids": [
+          "cg37-e2"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "ACTION",
+          "INTERIOR",
+          "TRANSITION"
+        ]
+      }
+    ],
+    "required_events": [
+      "cg37-e1：沈砚手握普通轻物，在熟悉平地独自分轮练短步；一次过急使细暖散去，他休息、缩步，随后多次于行步中主动收住。",
+      "cg37-e2：沈砚依据可比较的结果选定缓步转身这一项新问题，准备在既有答疑时段展示动作，并结束当次练习。"
+    ],
+    "forbidden_events": [
+      "第37章重新等待程观说明第36章已明确处理的三清一留，或复盘四处位置。",
+      "把第36章已练成的缓步与行步收束归零，再用数章重复同一问题。",
+      "使普通轻物成为灵气增力、托举、外物检测或治疗的媒介。",
+      "以未说明的库存、报酬、余额或课位作为既得条件。",
+      "为本章新增敌对势力、秘密派系或重大无因果损失。"
+    ],
+    "hard_constraints": [
+      "承接第36章已选工作正文：近坡任务已交回，沈砚在许庭指导下已有多次缓步维持及行步主动收束。",
+      "本章由沈砚独自分轮辨认、调整并多次成功，不能重演初次成功或使已学会的动作归零。",
+      "练习限熟悉平地、短时、短步及手持普通轻物；细暖只涉及自身气息的辨认与主动收束。",
+      "山路劳作后的肩臂疲倦须有休息与停止练习的实际动作，日程不得重复占用互斥时段。",
+      "许庭本章不在场；下一次答疑沿用此前说明的有限时段，不预授课程、器具或其他资格。",
+      "采用沈砚第三人称限知视角，只呈现他亲身经历、记得或在本章观察到的内容。",
+      "转身尚无重复结果，本章只选定问题，不预断新动作必然成功。"
+    ],
+    "reader_experience": {
+      "reward_mode": "看见自主辨认与重复成功带来的踏实进步",
+      "exit_question": "直行已能自行收住，缓步转身时他会怎样辨认脚与呼吸的次序？",
+      "entry_question": "没有许庭提醒，沈砚能否自己听出脚步催快的那一下？",
+      "target_emotion": "安静而具体的欣喜"
+    },
+    "ending_hook": "沈砚带着自己辨出的具体差别，决定在下一次既有答疑时段试缓步转身。",
+    "canon_dependencies": [
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-037-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

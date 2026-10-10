@@ -1,0 +1,226 @@
+{
+  "asset_version_id": "authority-output:59548f20-b8e3-4d6f-9220-5067820c59b9:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:a208b656aa2862d9a89b3bbddbf62dbf45bb68d266973340e91197e43446fcb9",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:39"
+  },
+  "expected_group": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:315269da329dfea6ec0211e5a4bb03ea41fef34424299b8e67824bd9bbf242fc",
+  "chapter_root_operation_id": "6202f7b4-1d45-4652-8143-0c971453e470",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 38,
+      "asset_version_id": "201925b1-609d-4d09-a9ca-b925b8db0e4f",
+      "content_hash": "sha256:71d58c38601e826b634e97dd3dd31ea850d535d643d935cf037f28acba550e52",
+      "text_hash": "sha256:b9f028409f7ab9ba4dbe93e5053b4883b9d4fc66e6e7123aeb7b4f3ae4a0a380",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 39,
+    "chapter_intent": "让第36章已经完成的交付转化为眼前可做的具体工作。程观当面说明自己经办的轻物整理，沈砚按实际时间和体力限定承接范围并开始搬放；唐穗因自己的材料学习目标选择有限参与。以真实分量和往返为第40章交付留下连续行动。",
+    "scene_plan": [
+      {
+        "goal": "弄清程观眼下交代的工作及其可承担范围。",
+        "beats": [
+          {
+            "beat_id": "cg39-s1-b1",
+            "ordinal": 1,
+            "function": "沈砚来到器架与平地相接处，程观因第36章的明确交回愿让他独立承担一段日常整理。",
+            "expected_reader_effect": "看见新机会出自已完成的近坡工作。"
+          },
+          {
+            "beat_id": "cg39-s1-b2",
+            "ordinal": 2,
+            "function": "程观指明当时实际可用的轻物、搬放用途、限定时段与交回标准，只说自己经办范围内的条件。",
+            "expected_reader_effect": "明白这是一件有用途、有边界的普通工作。"
+          },
+          {
+            "beat_id": "cg39-s1-b3",
+            "ordinal": 3,
+            "function": "沈砚听清条件，看向器架与平地间的短路，开始估量可承受的往返。",
+            "expected_reader_effect": "感到沈砚得到的是可行动的信任。"
+          }
+        ],
+        "conflict": "可用物件和限定时段决定工作大小，程观不能凭未知总量任意扩大安排。",
+        "scene_id": "cg39-s1-offer",
+        "exit_state": "程观已当面说明自己经办的普通轻物整理的来源、用途、现场可用物件、限定时段和交回标准；沈砚已听清条件，尚未领物或开始搬放。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter:39:main",
+          "start_ordinal": 1
+        },
+        "entry_state": "第36章近坡工作已按三处清出、一处未动交回完结；第38章沈砚在熟悉平地、短时轻负荷下多次练成转身时主动收束，肩臂也确实用过力。新整理工作尚未当面说明。",
+        "location_id": "location:qinglan-zong-rack-and-flat",
+        "arc_progress": [
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:cheng-guan"
+        ],
+        "reader_effect": "过去的可靠交付成为手边的一次具体机会。",
+        "scene_version": 1,
+        "scene_group_id": "cg39-light-work",
+        "obligation_refs": [
+          "cg39-light-work-delivery"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:cg39-work-terms"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:cheng-guan:character:shen-yan"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg39-e1"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "DIALOGUE",
+          "DESCRIPTION",
+          "INTERIOR",
+          "INTEGRATION"
+        ]
+      },
+      {
+        "goal": "按真实可用时间和体力开始自己接下的整理，并与唐穗协调有限互助。",
+        "beats": [
+          {
+            "beat_id": "cg39-s2-b1",
+            "ordinal": 1,
+            "function": "沈砚把当日已用的劳作时间、后续练习、短程往返和休息放在一起，向程观说出只接其中可完成的一段。",
+            "expected_reader_effect": "理解沈砚接活前怎样认真估量自己。"
+          },
+          {
+            "beat_id": "cg39-s2-b2",
+            "ordinal": 2,
+            "function": "唐穗说明想看物件摆放与盘边角度，约定观察和有限帮手；粗影的材质仍无结论。",
+            "expected_reader_effect": "看见唐穗的目标与选择独立成立。"
+          },
+          {
+            "beat_id": "cg39-s2-b3",
+            "ordinal": 3,
+            "function": "沈砚当场领到可用轻物，以手握持，按普通分量开始在器架与平地间搬放。",
+            "expected_reader_effect": "感到信任已经变成真实劳动。"
+          },
+          {
+            "beat_id": "cg39-s2-b4",
+            "ordinal": 4,
+            "function": "一次短程往返后，沈砚按实际肩臂感觉调整步幅和短暂歇息；他只辨认并收束自身气息，物件没有减重。两人继续手边搬放与核对。",
+            "expected_reader_effect": "感到工作仍需继续，身体与时间的限度可见。"
+          }
+        ],
+        "conflict": "普通物件的重量、往返次数和必要休息共同占用限定时段。",
+        "scene_id": "cg39-s2-begins",
+        "exit_state": "沈砚已限定承接范围并实际领物、开始普通手搬；唐穗为自己的材料学习目标选择有限观察与互助。限定时段内的搬放和核对仍在进行，交回尚待第40章。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 4,
+          "timeline_id": "chapter:39:main",
+          "start_ordinal": 3
+        },
+        "entry_state": "程观已当面说明自己经办的普通轻物整理的来源、用途、现场可用物件、限定时段和交回标准；沈砚已听清条件，尚未领物或开始搬放。",
+        "location_id": "location:qinglan-zong-rack-and-flat",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:cheng-guan",
+          "character:tang-sui"
+        ],
+        "reader_effect": "具体信任落在手中分量和共同安排上，期待下一章的完整交付。",
+        "scene_version": 1,
+        "scene_group_id": "cg39-light-work",
+        "obligation_refs": [
+          "cg39-light-work-delivery"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:cg39-work-begun",
+          "fact:cg39-tang-participation"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan",
+          "character:tang-sui"
+        ],
+        "accessible_knowledge": [
+          "fact:cg39-work-terms"
+        ],
+        "realization_event_ids": [
+          "cg39-e2"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "DIALOGUE",
+          "ACTION",
+          "INTERIOR",
+          "DESCRIPTION",
+          "TRANSITION",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "cg39-e1：程观当面交代自己经办的轻物整理及全部当前可说明的条件。",
+      "cg39-e2：沈砚限定范围、实际领物并开始手搬；唐穗为自己的学习目标选择有限参与。"
+    ],
+    "forbidden_events": [
+      "重新交付或重新等待第36章近坡三清一留的结论。",
+      "让程观越过经办范围承诺课位、器具、库存、报酬或远行资格。",
+      "让普通轻物由灵气托举、检测或减轻重量。",
+      "未经辨认断定盘边粗影是砂或灰。",
+      "把许庭第38章教出的短时转身收束写成全面稳定的负重能力。"
+    ],
+    "hard_constraints": [
+      "延续第36章近坡工作已按三处清出、一处未动交回完结的工作正文连续性。",
+      "程观只交代自己实际经办的日常整理，现场说明来源、用途、可用物件、限定时段与交回标准。",
+      "沈砚把劳作、练习、往返和休息放进同一日程，只承担真实时段内可完成的范围。",
+      "普通轻物由手握持和搬放；已有气息辨认与收束只用于沈砚自身动作。",
+      "唐穗保有自己的材料学习目标与参与选择；盘边粗影未经辨认仍未知。",
+      "以沈砚第三人称限知呈现程观和唐穗可见、可闻的言行。",
+      "本章开始执行新工作，完整交付和程观的明确回应留给第40章。"
+    ],
+    "reader_experience": {
+      "reward_mode": "既有履约换来具体信任与实际行动",
+      "exit_question": "沈砚和唐穗能否在限定时段内完成这段普通搬放，并按要求交回？",
+      "entry_question": "近坡工作交清之后，程观会把怎样一件眼下可做的事交到沈砚手上？",
+      "target_emotion": "被信任后的谨慎投入"
+    },
+    "ending_hook": "限定时段内的整理已展开，沈砚和唐穗仍须完成手边的普通搬放与核对。",
+    "canon_dependencies": [
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+      "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-039-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

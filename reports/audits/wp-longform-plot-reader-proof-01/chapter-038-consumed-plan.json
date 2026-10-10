@@ -1,0 +1,213 @@
+{
+  "asset_version_id": "authority-output:457e761c-316e-4bd1-934d-b67d0ff530c9:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:b3567132f10e4f2e24f60dd16e2a8d60c336ad1d1abf21a06b53054b4169af9c",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:38"
+  },
+  "expected_group": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:b1ab98fc648df0916c1786628175103f2391a906a53949bfce33529f86bafd33",
+  "chapter_root_operation_id": "bb22716a-f89c-4b2b-8d4f-c3421f33f45a",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 37,
+      "asset_version_id": "37dda880-f890-4e84-9b79-f188459b4ddb",
+      "content_hash": "sha256:cbd81946f477b3d5712af46b8ec03fb83be4201128376511d0877fce6cc514c1",
+      "text_hash": "sha256:999f4f4e71df2d56c006cc3d6c834219e9d43eafb510581c871a1fe8af1a5fc0",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 38,
+    "chapter_intent": "兑现沈砚在第37章选出的转身问题：让许庭在有限答疑时段内依据亲见表现实际教学，让沈砚通过失误、休息、调整和多次成功，把直行收束扩展到熟悉平地的短时缓步转身。",
+    "scene_plan": [
+      {
+        "goal": "让许庭看见已有的直行本领，并获得可立即练习的转身示范。",
+        "beats": [
+          {
+            "beat_id": "chapter38-scene1-beat1",
+            "ordinal": 1,
+            "function": "沈砚在既有答疑时段向许庭简短说明直行时辨出的步幅差别，并当场走一段短直路。许庭只根据眼前动作观察他能否在行步中主动收束。",
+            "expected_reader_effect": "看见第37章的独练确实成为本次请教的起点。"
+          },
+          {
+            "beat_id": "chapter38-scene1-beat2",
+            "ordinal": 2,
+            "function": "许庭见直行收束确实可行，示范平地缓慢半转，指出脚先抢快时气息容易被带急，让沈砚先练半转，再接折返。",
+            "expected_reader_effect": "明白新教学为何只增加转身这一项，以及脚步先后将成为具体难处。"
+          }
+        ],
+        "conflict": "许庭的答疑时间有限，而转身比直行多了脚步换向这一条件；她须按当场表现选取可教的范围。",
+        "scene_id": "chapter38-scene1",
+        "exit_state": "许庭已亲眼看见沈砚直行缓步并主动收束，决定只增加短时缓步转身这一项控制；她已示范半转时脚步与自身气息的先后，沈砚准备从半转练起，尚未取得转身成功的重复证据。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter38-answer-period",
+          "start_ordinal": 1
+        },
+        "entry_state": "既有答疑时段开始。沈砚带着第37章独自练成的短步直行与行步收束来到熟悉平地，准备让许庭亲眼看见动作，再问缓步转身；第37章的练习细节只有他自己经历过。",
+        "location_id": "location:qinglan-zong-familiar-flat-practice-ground",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:xu-ting"
+        ],
+        "reader_effect": "第37章的自主练习得到实际承接，教学从已会的直行自然推进到半转。",
+        "scene_version": 1,
+        "scene_group_id": "chapter38-flat-ground-teaching",
+        "obligation_refs": [
+          "cg37-turn-practice"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:chapter38:direct-observed",
+          "fact:chapter38:half-turn-sequence"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg38-e1"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "INTERIOR",
+          "DESCRIPTION"
+        ]
+      },
+      {
+        "goal": "通过分轮练习，把半转与短折返练成已知条件下能重复的主动收束动作。",
+        "beats": [
+          {
+            "beat_id": "chapter38-scene2-beat1",
+            "ordinal": 1,
+            "function": "沈砚按示范试半转，初次换脚时急着接上下一步，气息随之变浅，掌中细暖散去；他停住，没有用力强留。",
+            "expected_reader_effect": "感到转身确有与直行不同的动作难处，失误由可见的脚步抢快造成。"
+          },
+          {
+            "beat_id": "chapter38-scene2-beat2",
+            "ordinal": 2,
+            "function": "沈砚放下轻物歇息，待肩臂与呼吸缓过，再缩小换脚幅度；他先完成较简短的半转，然后将同一先后次序用于短距离折返。",
+            "expected_reader_effect": "看见教学如何转成沈砚自己的调整，而非一句评价。"
+          },
+          {
+            "beat_id": "chapter38-scene2-beat3",
+            "ordinal": 3,
+            "function": "几轮练习之间留出休息。沈砚在熟悉平地以寻常握力拿着木片，短时缓步转身时多次辨出自身细暖并主动收住；木片的重量始终由手指承担。",
+            "expected_reader_effect": "获得限定条件内可重复成功的踏实喜悦。"
+          },
+          {
+            "beat_id": "chapter38-scene2-beat4",
+            "ordinal": 4,
+            "function": "许庭只说自己亲眼见到的平地、轻物、短时结果，按时结束答疑去做自己的修炼。沈砚记下下次可自行练习的条件，准备把所得带回普通日常。",
+            "expected_reader_effect": "感到师生相处的温暖与清楚边界，并期待新本领进入日常。"
+          }
+        ],
+        "conflict": "转身时脚步容易先于气息抢快，身体也会疲倦；沈砚须休息、缩步并分轮再试，不能靠加力维持。",
+        "scene_id": "chapter38-scene2",
+        "exit_state": "沈砚经历脚步抢快的失误、休息与调整后，在熟悉平地手持普通轻物短时缓步转身时多轮辨出自身细暖并主动收住；他只承认这一范围内的结果。许庭说明亲眼所见的限度，按时结束答疑并继续自己的修炼。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 5,
+          "timeline_id": "chapter38-answer-period",
+          "start_ordinal": 3
+        },
+        "entry_state": "许庭已亲眼看见沈砚直行缓步并主动收束，决定只增加短时缓步转身这一项控制；她已示范半转时脚步与自身气息的先后，沈砚准备从半转练起，尚未取得转身成功的重复证据。",
+        "location_id": "location:qinglan-zong-familiar-flat-practice-ground",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:xu-ting"
+        ],
+        "reader_effect": "具体示范经失误和调整成为沈砚可自行重复的限定本领，答疑与修炼各得其时。",
+        "scene_version": 1,
+        "scene_group_id": "chapter38-flat-ground-teaching",
+        "obligation_refs": [
+          "cg37-turn-practice"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:chapter38:turn-repeatability",
+          "fact:chapter38:xu-returns-practice"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan",
+          "character:xu-ting"
+        ],
+        "accessible_knowledge": [
+          "fact:chapter38:half-turn-sequence"
+        ],
+        "realization_event_ids": [
+          "cg38-e2"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "INTERIOR",
+          "DESCRIPTION",
+          "TRANSITION",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "许庭在既有答疑时段亲眼看沈砚直行缓步与行步收束，再示范平地缓慢半转时如何留意自身气息和脚步先后。",
+      "沈砚在半转与折返中失误、休息并调整，随后分轮多次在熟悉平地手持普通轻物短时缓步转身时主动收束；许庭按时去做自己的练习。"
+    ],
+    "forbidden_events": [
+      "把第37章已经完成的直行独练当作尚未发生，重新从起意与收束教起。",
+      "让许庭知道她未亲见的第37章每一轮细节，或凭好感判断天赋、课位与器具资格。",
+      "使普通轻物增力、托举、外放、检测或治疗。",
+      "省略休息，以不断加力解决转身时脚步抢快。",
+      "无限延长许庭的答疑时段，挤掉她自己的修炼。",
+      "把复杂地形、重负荷或长时间下的稳定结果当作本章已验证。"
+    ],
+    "hard_constraints": [
+      "承接第36章已会的直行缓步收束与第37章独自分轮成功，不撤销既有进步。",
+      "许庭只依据本章亲眼所见决定指导内容，并在有限答疑时段内实际教授半转与缓步转身。",
+      "沈砚的转身练习包含失误、休息、脚步与呼吸调整以及分轮多次成功。",
+      "新控制只涉及自身气息的辨认与主动收束；普通轻物始终由手握持。",
+      "结果限熟悉平地、短时及轻负荷，不能外推至实际劳作或复杂场地。",
+      "许庭为女性，按时结束答疑并继续自己的修炼；她不授予正式课程或器具权限。",
+      "采用沈砚为主的第三人称限知视角，人物仅依据实际接触的信息行动。"
+    ],
+    "reader_experience": {
+      "reward_mode": "亲眼看见具体教学转成限定条件内可重复的动作",
+      "exit_question": "熟悉平地上练成的短时转身，带进普通劳作后会显出哪些新的用时和身体感受？",
+      "entry_question": "沈砚已能独自辨认直行时的快慢，换向时还能让脚步不催乱气息吗？",
+      "target_emotion": "受教后的明朗与温暖"
+    },
+    "ending_hook": "沈砚已能在熟悉平地短时缓步转身时收束，准备把练习所得带回普通日常。",
+    "canon_dependencies": [
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-038-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}
