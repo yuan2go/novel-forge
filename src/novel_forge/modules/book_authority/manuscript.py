@@ -439,7 +439,7 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
     if name == "story_planning.generate":
         request = payload.get("payload") or {}
         working = (request.get("arc_working_set") or {}).get("working_manuscript")
-    elif name in {"chapter.execution_intent.prepare", "chapter.memo.generate", "chapter.context.retrieve", "chapter.draft.generate"}:
+    elif name in {"chapter.execution_intent.prepare", "chapter.memo.generate", "chapter.context.retrieve", "chapter.context.build", "chapter.draft.generate"}:
         request = payload
         working = (request.get("preparation_report") or {}).get("working_manuscript")
     else:

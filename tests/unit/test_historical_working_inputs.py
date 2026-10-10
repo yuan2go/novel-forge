@@ -141,3 +141,15 @@ def test_direct_history_cannot_use_indirect_memo_repair():
     with pytest.raises(KernelError, match='exact indirect Memo'):
         m.require_historical_input_scope_repair(Mock(), source,
             {'contract_version': 'chapter-historical-input-scope-repair.v1', 'input_snapshot': source['input_asset_snapshot']}, '3.10.0')
+
+
+def test_context_build_direct_history_uses_exact_book_reservation(monkeypatch):
+    uow, verify = fixture(monkeypatch)
+    op = operation()
+    op['definition_name'] = 'chapter.context.build'
+    payload = op['command_payload']['payload']
+    op['command_payload'] = {'book_id': 'book', 'preparation_report': payload['arc_working_set']}
+    uow.cursor.fetchone.side_effect = [({'project_id': 'p', 'workspace_id': 'w', 'book_id': 'book',
+                                      'book_run_id': 'run', 'current_chapter': 18},), (payload['arc_working_set']['working_manuscript'],)]
+    assert m.historical_working_inputs(uow, op) == ('book', frozenset({'draft'}))
+    verify.assert_called_once()
