@@ -141,12 +141,39 @@
     },
     {
       "chapter": 32,
-      "asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
-      "content_hash": "sha256:ed6f9447462202209be083b0332066ac2bb649170458e9c6bc9543241c734989",
-      "text_hash": "sha256:58b7daaa674aba9b21c47e9252378106cf770c5eb3894ad388d912cf02b4b510",
-      "export_text_digest": "sha256:796e625f6e8be94edb9022cf4504641d4b7a406503877b3f653cbe1619ed90c9",
-      "file_sha256": "796e625f6e8be94edb9022cf4504641d4b7a406503877b3f653cbe1619ed90c9",
+      "asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79",
+      "content_hash": "sha256:bb0bb585bdd152c8b84b0db4a4f06550960389cfcdf8d2c634f554d006cfbefd",
+      "text_hash": "sha256:14ff5cc6817cb377a61fe8cc01c64929569cb071b733e774ed6d4e33248fb8b8",
+      "export_text_digest": "sha256:ba9463daeeafd53db4f34d5d425dcc27fcfd8ee03475c2c2dec4d7e67fa1b530",
+      "file_sha256": "ba9463daeeafd53db4f34d5d425dcc27fcfd8ee03475c2c2dec4d7e67fa1b530",
       "file": "reader-packet/连续阅读/第32章.txt"
+    },
+    {
+      "chapter": 33,
+      "asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38",
+      "content_hash": "sha256:bc5026ea2a8c3b37c1749af804720f6bf79e61a37c0cde2b52a2e64c652a515c",
+      "text_hash": "sha256:278f84642cdd419275acb909487b00f9d30fa9fa93ed3f5d67c20216d7d487e2",
+      "export_text_digest": "sha256:f46327a467183000a01774c9049038f2934e1a135607b6df741b129eec5c417d",
+      "file_sha256": "f46327a467183000a01774c9049038f2934e1a135607b6df741b129eec5c417d",
+      "file": "reader-packet/连续阅读/第33章.txt"
+    },
+    {
+      "chapter": 34,
+      "asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43",
+      "content_hash": "sha256:70d084059531254d29f5d5b7a97ae7483b23cb9c0064e7950638fe5c90ea8f28",
+      "text_hash": "sha256:dd90f41c3d483b8cea309024253502a8f28798570a55ce684ccf9ba5e1d473ff",
+      "export_text_digest": "sha256:45e7b6b1e842d5fa1a441ebf1d9c03d0d16d920a5173853684300cf43cf7d7e9",
+      "file_sha256": "45e7b6b1e842d5fa1a441ebf1d9c03d0d16d920a5173853684300cf43cf7d7e9",
+      "file": "reader-packet/连续阅读/第34章.txt"
+    },
+    {
+      "chapter": 35,
+      "asset_version_id": "e5ee36f1-1929-4946-9c86-7ad1df1f9829",
+      "content_hash": "sha256:ec63338bab13d819f3bb27b2bcaf748f84138a67b9cf0b899d945fe3b92211d5",
+      "text_hash": "sha256:d53a8f76d20e2d1ba18382b303be88eff36fb398fd0cc3d9e75ea161b4eaee66",
+      "export_text_digest": "sha256:9176a0763717114dc5689f59ccff661f546c04c34181501c62f0d5329dde6009",
+      "file_sha256": "9176a0763717114dc5689f59ccff661f546c04c34181501c62f0d5329dde6009",
+      "file": "reader-packet/连续阅读/第35章.txt"
     }
   ],
   "background": "Existing exact original selected chapters1–16",
@@ -159,7 +186,7 @@
   "adoption": "NO_HUMAN_DECISION; EXPERIMENTAL_DEFAULT_OFF",
   "reading_compilation": {
     "file": "reader-packet/连续阅读/连续阅读合订.txt",
-    "file_sha256": "f53ca49084806450d9e60b52fb4cfa46dec214fdba57f4cdfb99c5efe964dd49",
+    "file_sha256": "2d73c8cbd0f9963e6c2c2e524675142a64198bdf88b41c9c68b9d1e747cc6c3c",
     "kind": "READING_COMPILATION_OF_EXACT_CHAPTER_TEXTS",
     "background_chapters": [
       14,
@@ -182,7 +209,10 @@
       29,
       30,
       31,
-      32
+      32,
+      33,
+      34,
+      35
     ],
     "individual_exports_remain_authoritative": true
   }

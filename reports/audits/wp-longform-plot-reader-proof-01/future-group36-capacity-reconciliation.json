@@ -1,0 +1,66 @@
+{
+  "rows": [
+    [
+      "49c2f983-c936-4db0-af9f-6ae085e0d792",
+      "FAILED_FINAL",
+      3,
+      "wp-plot-reader:future-group36:generate:v1",
+      0,
+      0
+    ],
+    [
+      "402b270c-6e81-49d7-bd3b-4849f4717d9b",
+      "FAILED_FINAL",
+      4,
+      "wp-plot-reader:future-group36:generate:v1:runtime-continuation:1",
+      0,
+      0
+    ],
+    [
+      "f25eb88f-902c-4192-b1b2-5dd264b0bf22",
+      "FAILED_RETRYABLE",
+      3,
+      "wp-plot-reader:future-group36:generate:v1:runtime-continuation:1:runtime-continuation:2",
+      0,
+      0
+    ],
+    [
+      "5cb31913-53b4-4fd7-8d72-0e4cca17de08",
+      "FAILED_FINAL",
+      3,
+      "wp-plot-reader:future-group36-compact:generate:v2",
+      0,
+      0
+    ],
+    [
+      "084ee3f0-1ed2-4d6a-b06a-9bf463e86876",
+      "FAILED_RETRYABLE",
+      3,
+      "wp-plot-reader:future-group36-compact:generate:v2:runtime-continuation:1",
+      0,
+      0
+    ],
+    [
+      "64e2f395-119d-48b1-ba72-fd0e17f0c538",
+      "FAILED_FINAL",
+      3,
+      "wp-plot-reader:future-group36-budget:generate:v4",
+      0,
+      0
+    ],
+    [
+      "eabaf5a9-db0b-4d93-8d86-a916bfb047b6",
+      "EXECUTING",
+      2,
+      "wp-plot-reader:future-group36-budget:generate:v4:runtime-continuation:1",
+      0,
+      0
+    ]
+  ],
+  "scope": "ISOLATED_ONLY",
+  "limits_unchanged": true,
+  "replan_basis": "Known zero external intents and reservations before dispatch; new explicit compact request and prospective optional-history allocation. Original registrations, Attempts, routing decisions and frozen snapshots retained.",
+  "compatibility_migration": "20261011_0199_plan_change_capacity",
+  "history_not_rewritten": true,
+  "required_recent_allocation_rejection": "8000 FAILED_CLOSED before generation admission; 9131 chars required. New 10000-char exact snapshot preserves all three complete selected sources."
+}

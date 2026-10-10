@@ -1,19 +1,19 @@
 {
   "scope": "ISOLATED_ONLY",
   "database_oid": 318939,
-  "filename": "isolated-checkpoint-20261010T201332Z.dump",
-  "sha256": "6a76634074bba3bacf94482a4a7c7f995b6fdbbab2fb88093ca8c2ed3beec324",
-  "bytes": 386847642,
+  "filename": "isolated-checkpoint-20261010T220308Z.dump",
+  "sha256": "eb1c5349e5567080ec92cae4b51f904bca9a3cdd6feda251d3ab5e2895122995",
+  "bytes": 437620836,
   "book_before": {
-    "state": "READY",
-    "version": 177,
-    "current_chapter": 24,
+    "state": "PAUSED",
+    "version": 237,
+    "current_chapter": 35,
     "accepted_through_chapter": 0
   },
   "book_after": {
-    "state": "READY",
-    "version": 177,
-    "current_chapter": 24,
+    "state": "PAUSED",
+    "version": 237,
+    "current_chapter": 35,
     "accepted_through_chapter": 0
   },
   "postgres_consistent_snapshot": true,

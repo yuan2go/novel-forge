@@ -53,5 +53,28 @@
     "exact_recovery_journal_replay": "PASS",
     "original_recovery_operation_id": "a3faead0-28b3-482e-ac75-34af3515f436",
     "new_provider_dispatch": false
+  },
+  "plan_change_capacity_0199": {
+    "source_sha": "899d4279aebbb9efe7d206a92e24df3cabbbb3de",
+    "postgres_integration": {
+      "status": "PASS",
+      "passed": 2,
+      "file": "tests/integration/test_authorized_planning_capacity_postgres.py",
+      "evidence": "Native existing fixture extended to ChapterGroup request; exact hashes/scope/request-success/effect/budget/lease deny cases"
+    },
+    "migration_focused": {
+      "status": "PASS",
+      "passed": 13,
+      "files": [
+        "tests/unit/test_postgres_migrations.py",
+        "tests/unit/test_migration_history_admission.py",
+        "tests/architecture/test_migration_surface_boundary.py"
+      ]
+    },
+    "ruff": "PASS",
+    "migration_manifest": "PASS",
+    "documentation_reality": "PASS after checked inventory refresh",
+    "isolated_native_successor_database_gate": "PASS; downstream routing capacity rejection remains preserved",
+    "original_deployment": "NOT_RUN"
   }
 }

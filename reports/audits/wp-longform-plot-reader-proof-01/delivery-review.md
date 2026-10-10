@@ -1,13 +1,13 @@
 # WP-LONGFORM-PLOT-PROGRESSION-AND-READER-PROOF-01 交付核对
 
-本记录是本工作包的证据索引，不是平行架构或作者批准。工程证据上限为`EXECUTABLE`；未宣称`QUALIFIED`或`PRODUCTION_PROVEN`。起点main为`ecc666748166cd1d92cec789ebb84dd5607bf6a0`；隔离部署真实运行源码为`26c5b4c11899d8efabe3e445e640d6307b311416`，后续提交为规范文档和证据更新。
+本记录是本工作包的证据索引，不是平行架构或作者批准。工程证据上限为`EXECUTABLE`；未宣称`QUALIFIED`或`PRODUCTION_PROVEN`。起点main为`ecc666748166cd1d92cec789ebb84dd5607bf6a0`；隔离部署真实运行源码为`26c5b4c11899d8efabe3e445e640d6307b311416`，另有`899d4279`的0199数据库容量兼容迁移；运行Pack的源码与新增迁移身份分别记录，其他提交为规范文档和证据更新。
 
 ## 五项结果
 
 | 项目 | 当前证据 | 未证明或未完成 |
 |---|---|---|
 | 工程实现 | `EXECUTABLE`，199项定向单元PASS、相关原生PG回归PASS，真实17章起连续链路执行 | 完整P0未运行；历史NO_GO保留；原生产部署未完成 |
-| 真实连续交付 | 隔离实例17—32章已实际保存、读回、精确版本导出；下一章绑定写作时的实际选稿 | 原书未采用；工作稿不是正式接纳；40章目标保持，当前运行状态`READY` |
+| 真实连续交付 | 隔离实例17—35章已实际保存、读回、精确版本导出；下一章绑定写作时的实际选稿 | 原书未采用；工作稿不是正式接纳；40章目标保持，当前运行状态`PAUSED` |
 | 样本阅读改善 | 助手逐章/跨章审读有行动结果与人物分工证据，必要表达候选已原生选择 | 阅读意愿、文学质量达标和组合效果的普遍性未证明 |
 | 真人证据 | `NOT_RUN`，匿名对照、连续阅读材料、作者/独立读者空白答卷已准备 | 无实际授权的真人评阅身份；现有正式盲评导入和采用未完成，不能虚构 |
 | 原书状态 | 最后只读核验PAUSED、16章工作稿、正式接纳0、版本114；本包原实例写入0 | 原库需要原生写入/计划选择/模型授权后才可采用，不能把实验库当原书完成 |
@@ -45,15 +45,18 @@
 | 29 | 2629 | `8a228ef2-c3ae-4420-8b43-f0ee017f60c4` | [正文](chapter-029.txt)、[精确导出](chapter-029.json) |
 | 30 | 2501 | `cd596c20-baf9-4050-967d-c9eb8fd986f6` | [正文](chapter-030.txt)、[精确导出](chapter-030.json) |
 | 31 | 2883 | `c14312fd-943c-4f5d-b5a2-44776de63e41` | [正文](chapter-031.txt)、[精确导出](chapter-031.json) |
-| 32 | 2560 | `authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1` | [正文](chapter-032.txt)、[精确导出](chapter-032.json) |
+| 32 | 2785 | `32a4fb89-b907-4174-9bf4-0565780d0f79` | [正文](chapter-032.txt)、[精确导出](chapter-032.json) |
+| 33 | 2591 | `7f3df9b6-b125-4848-877e-9ee0c6f4dc38` | [正文](chapter-033.txt)、[精确导出](chapter-033.json) |
+| 34 | 2686 | `07e45a9e-2a01-4047-8096-9afefb1f6f43` | [正文](chapter-034.txt)、[精确导出](chapter-034.json) |
+| 35 | 2587 | `e5ee36f1-1929-4946-9c86-7ad1df1f9829` | [正文](chapter-035.txt)、[精确导出](chapter-035.json) |
 
-真实Writer原始候选也保留。第17、18、20、21、22、23、24、25、26、27、28、29、30、31章初稿低于作者2500下限，必要表达修订通过现有Author Editing保存，并在结算后的空闲Book检查点选用；正在执行期间仍未选用的候选另见当前篇幅检查；19修复交回对话的程序化措辞。修订标记`ASSISTANT_REVISION_PROPOSAL`，根助手模型/费用未暴露，明确UNKNOWN；不伪装成Writer的新Provider回执或作者签字。详细[跨章审读](cross-chapter-reading-review.md)及[精确当前篇幅检查](selected-prose-requirements.json)保留负面判断，尚不称样本全面达标。
+真实Writer原始候选也保留。第17、18、20、21、22、23、24、25、26、27、28、29、30、31、33、34、35章初稿低于作者2500下限，必要表达修订通过现有Author Editing保存，并在结算后的空闲Book检查点选用；正在执行期间仍未选用的候选另见当前篇幅检查；19修复交回对话的程序化措辞。修订标记`ASSISTANT_REVISION_PROPOSAL`，根助手模型/费用未暴露，明确UNKNOWN；不伪装成Writer的新Provider回执或作者签字。详细[跨章审读](cross-chapter-reading-review.md)及[精确当前篇幅检查](selected-prose-requirements.json)保留负面判断，尚不称样本全面达标。
 
 ## 实际绑定、容量与恢复
 
 [实际阶段绑定](actual-stage-bindings.json)分别保存Planning、Memo、Writer的Pack/Prompt/Skill/Schema和物化哈希。真实Writer使用显式实验Pack的`prose-generation-v5`，默认Chapter Pack仍为v4；Memo和Planning保留各自具体版本。沿用既有v3工作连续性、人物反应/行动后果及v13最终请求联合去重，不新建Memory/Actor/评审平台。
 
-[最终Writer容量](final-writer-capacity.json)记录全部成功/失败效果与费用证据。当前硬限258400、输出预留32000及授权模型`codex-cli:gpt-6-sol:high`均未改变。可选旧文从21起按原机制分配14000字符，近期完整三章必需，遗漏按Unicode范围冻结；输入容量、实测token、会员金额/权益UNKNOWN分别报告。失败请求不换ID盲发、不截断必需信息。
+[最终Writer容量](final-writer-capacity.json)记录全部成功/失败效果与费用证据。当前硬限258400、输出预留32000及授权模型`codex-cli:gpt-6-sol:high`均未改变。可选旧文从21起按原机制分配14000字符，近期完整三章必需，遗漏按Unicode范围冻结；输入容量、实测token、会员金额/权益UNKNOWN分别报告。失败请求不换ID盲发、不截断必需信息。未来36在旧文增长后再次容量拒绝，所有原请求/后继对账为零外部效果及预留；新原生规划提议压缩重复说明并采用10000字符旧文分配，完整保留33—35三章9131字符和精确学习来源。已真实派发请求最终预留244266/258400，输出32000，结果与激活尚在审查。0199只补齐精确PlanChange容量后继的数据库兼容边界，并不能单独制造容量通过。
 
 原生恢复保留17的Schema拒绝与两次未派发Pack预检失败、19旧图已结算Memo、原始stale Context、间接Memo预检失败和ContextBuild重试。Book只退休未写正文的旧图并链接新规划代次；Kernel追加合法后继，保留旧Attempt/效果/费用，重放不重复变更。v6仅传输可选memory的可空字段，领域Schema和正文要求不变。历史选稿读取必须通过Book冻结来源/range/hash核验，不清除失效记录，不接纳Canon，不放开当前计划/Intent/Memo。
 

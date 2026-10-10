@@ -3,7 +3,7 @@
   "method": "Native HAN_CHARACTERS_V1 and export paragraph count; literary judgment separate",
   "chapter_range": [
     17,
-    32
+    35
   ],
   "requirements": {
     "chapter_han": [
@@ -150,10 +150,37 @@
     },
     {
       "chapter": 32,
-      "asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
-      "text_hash": "sha256:58b7daaa674aba9b21c47e9252378106cf770c5eb3894ad388d912cf02b4b510",
-      "han_characters": 2560,
+      "asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79",
+      "text_hash": "sha256:14ff5cc6817cb377a61fe8cc01c64929569cb071b733e774ed6d4e33248fb8b8",
+      "han_characters": 2785,
       "maximum_paragraph_han": 173,
+      "chapter_requirement": "PASS",
+      "paragraph_requirement": "PASS"
+    },
+    {
+      "chapter": 33,
+      "asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38",
+      "text_hash": "sha256:278f84642cdd419275acb909487b00f9d30fa9fa93ed3f5d67c20216d7d487e2",
+      "han_characters": 2591,
+      "maximum_paragraph_han": 147,
+      "chapter_requirement": "PASS",
+      "paragraph_requirement": "PASS"
+    },
+    {
+      "chapter": 34,
+      "asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43",
+      "text_hash": "sha256:dd90f41c3d483b8cea309024253502a8f28798570a55ce684ccf9ba5e1d473ff",
+      "han_characters": 2686,
+      "maximum_paragraph_han": 172,
+      "chapter_requirement": "PASS",
+      "paragraph_requirement": "PASS"
+    },
+    {
+      "chapter": 35,
+      "asset_version_id": "e5ee36f1-1929-4946-9c86-7ad1df1f9829",
+      "text_hash": "sha256:d53a8f76d20e2d1ba18382b303be88eff36fb398fd0cc3d9e75ea161b4eaee66",
+      "han_characters": 2587,
+      "maximum_paragraph_han": 189,
       "chapter_requirement": "PASS",
       "paragraph_requirement": "PASS"
     }
