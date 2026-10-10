@@ -26,7 +26,7 @@ The earlier coordinated forward-contract integration retained its explicit NOT_R
   "reviewed_on": "2026-10-10",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "465957f04e335b24a9394bdf81aded70d7340a0d",
+    "sha": "e53f2e91cc7020f186f49b522af7e9eb7bd79207",
     "implementation_tree_sha": "sha256:b020ca0ddb781b66ae2786d70c72473a97ab56ec69b9b2f4c015d00a425e8dde"
   },
   "scope": [
