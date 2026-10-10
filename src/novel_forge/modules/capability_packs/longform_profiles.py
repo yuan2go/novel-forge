@@ -31,7 +31,7 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
 )
 
 _BASE_PACK = "config/capability_packs/historical/chapter_generation_pack_2_26_0.json"
-STORY_PLANNING_PROMPT_VERSION = "v11"
+STORY_PLANNING_PROMPT_VERSION = "v12"
 NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
 
 
@@ -93,10 +93,12 @@ def build_story_planning_pack_profile(
     pack_id: str = "story_planning_pack",
     execution_contract_version: str | None = None,
     planning_task_token_budget: int | None = None,
+    narrative_intent_boundary: bool = True,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
     if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"}:
         raise ValueError("Unsupported Planning execution contract")
+    intent_boundary = narrative_intent_boundary and version == "1.21.0"
     operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
     if planning_task_token_budget is not None:
@@ -147,7 +149,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
+        version="2.14.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -193,20 +195,20 @@ def build_story_planning_pack_profile(
         manifest,
         artifacts,
         skill_ref="long-outline",
-        skill_version="long-outline-v3" if version in {"1.18.0", "1.19.0", "1.21.0"} else "long-outline-v2",
-        skill_path="skills/long-outline/SKILL.md" if version in {"1.18.0", "1.19.0", "1.21.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
+        skill_version="long-outline-v4" if intent_boundary else "long-outline-v3" if version in {"1.18.0", "1.19.0", "1.21.0"} else "long-outline-v2",
+        skill_path="skills/long-outline/SKILL.md" if intent_boundary else "skills/long-outline/legacy-narrative-intent-20261010.md" if version in {"1.18.0", "1.19.0", "1.21.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
         system_ref="prompt-system:story-planning-pack",
         system_path=(
-            "config/capability_packs/artifacts/story_planning_system_instruction_v11.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"
+            "config/capability_packs/artifacts/story_planning_system_instruction_v12.md" if intent_boundary else "config/capability_packs/artifacts/story_planning_system_instruction_v11.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"
         ),
         template_ref="prompt-template:story-planning-pack",
-        template_path=("config/capability_packs/artifacts/story_planning_template_v2.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_template.md"),
-        template_version="v2" if version == "1.21.0" else "v1",
-        input_schema_ref="schema:story-planning-pack-input:v1",
-        output_schema_ref="schema:story-planning-pack-output:v1",
-        system_version=STORY_PLANNING_PROMPT_VERSION if version == "1.21.0" else "v9" if version == "1.19.0" else "v8",
+        template_path=("config/capability_packs/artifacts/story_planning_template_v3.md" if intent_boundary else "config/capability_packs/artifacts/story_planning_template_v2.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_template.md"),
+        template_version="v3" if intent_boundary else "v2" if version == "1.21.0" else "v1",
+        input_schema_ref="schema:story-planning-pack-input:v2" if intent_boundary else "schema:story-planning-pack-input:v1",
+        output_schema_ref="schema:story-planning-pack-output:v2" if intent_boundary else "schema:story-planning-pack-output:v1",
+        system_version=STORY_PLANNING_PROMPT_VERSION if intent_boundary else "v11" if version == "1.21.0" else "v9" if version == "1.19.0" else "v8",
     )
-    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0", "1.21.0"})
+    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0", "1.21.0"}, narrative_intent_boundary=intent_boundary)
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
         _append_capability_schemas(artifacts, capability)
@@ -362,7 +364,7 @@ def build_longform_prose_review_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.3.0"
+    manifest["identity"]["version"] = "1.4.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -429,7 +431,7 @@ def build_longform_prose_review_pack_profile(
         manifest,
         artifacts,
         skill_ref="quality-review",
-        skill_version="quality-review-v4",
+        skill_version="quality-review-v5",
         skill_path="skills/quality-review/SKILL.md",
         system_ref="prompt-system:longform-prose-review-pack",
         system_path=(
@@ -535,6 +537,7 @@ def build_narrative_evaluation_pack_profile(
         timeout_policy_ref="timeout:quality-intrinsic-judge:v1",
     )
     manifest["identity"].update(
+        version="2.27.0",
         name="Narrative Semantic Evaluation Pack",
         domain="story_design",
         description=(
@@ -581,7 +584,7 @@ def build_narrative_evaluation_pack_profile(
         manifest,
         artifacts,
         skill_ref="quality-review",
-        skill_version="quality-review-v4",
+        skill_version="quality-review-v5",
         skill_path="skills/quality-review/SKILL.md",
         system_ref="prompt-system:narrative-semantic-evaluation-pack",
         system_path=(
@@ -671,7 +674,7 @@ def _bind_domain_artifacts(
             artifacts,
             ArtifactKind.SCHEMA,
             schema_ref,
-            "v1",
+            schema_ref.rpartition(":")[2],
             {
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "$id": f"novel-forge://schemas/{schema_ref.removeprefix('schema:')}",
@@ -713,7 +716,7 @@ def _bind_planning_qualification_skills(
     root: Path,
     manifest: dict[str, Any],
     artifacts: list[dict[str, Any]],
-    *, aligned_methods: bool = False,
+    *, aligned_methods: bool = False, narrative_intent_boundary: bool = False,
 ) -> list[dict[str, Any]]:
     skill_paths = {
         "topic-development": "skills/topic-development/SKILL.md",
@@ -757,6 +760,11 @@ def _bind_planning_qualification_skills(
                 version = f"{skill_ref}-qualification-v3"
             else:
                 path = "config/capability_packs/artifacts/narrative_beat_design_work_v2.md"
+        if skill_ref in {"topic-development", "worldbuilding", "character-design", "narrative-beat-design", "chapter-outline"}:
+            if narrative_intent_boundary:
+                version = f"{skill_ref}-qualification-v4"
+            elif path == f"skills/{skill_ref}/SKILL.md":
+                path = f"skills/{skill_ref}/legacy-narrative-intent-20261010.md"
         content = {"text": _text(root, path)}
         _append_artifact(
             artifacts,
@@ -771,8 +779,8 @@ def _bind_planning_qualification_skills(
             "version": version,
             "content_hash": artifact_content_hash(content),
             "required": True,
-            "input_contract_ref": "schema:story-planning-pack-input:v1",
-            "output_contract_ref": "schema:story-planning-pack-output:v1",
+            "input_contract_ref": "schema:story-planning-pack-input:v2" if narrative_intent_boundary else "schema:story-planning-pack-input:v1",
+            "output_contract_ref": "schema:story-planning-pack-output:v2" if narrative_intent_boundary else "schema:story-planning-pack-output:v1",
             "preconditions": ["frozen_authority_inputs"],
             "postconditions": ["typed_narrative_semantic_evaluation"],
             "depends_on": [],

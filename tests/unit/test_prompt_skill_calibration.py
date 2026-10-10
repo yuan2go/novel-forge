@@ -311,3 +311,98 @@ def test_clean_retrieval_merge_compression_and_final_writer_projection_compose()
     next(segment for segment in tampered["context_segments"] if segment["asset_version_id"] == "source:1")["safe_summary"] += "\n\nREJECTED-PROSE"
     with pytest.raises(KernelError, match="WRITER_HISTORY_COMPRESSED_PROJECTION_REQUIRED"):
         build_provider_context_view("draft", tampered, {}, clean_writer_context=True)
+
+
+@pytest.mark.parametrize("experience", [
+    "Quiet family recollections with stable relationships and no conflict escalation.",
+    "A legal procedural story whose author selects witness verification and receipts.",
+    "An original cultivation adventure whose author selects growth and danger.",
+])
+def test_narrative_intent_pack_reaches_real_prompt_assembly_and_keeps_work_specific_story(experience):
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+    from tests.unit.test_provider_task_views import _authoritative_load, _arc_working_set, _narrative_intelligence
+    from tests.unit.test_production_execution_gateway import contracts
+
+    profile = build_story_planning_pack_profile(ROOT, operation_definition_hash=HASH)
+    assert profile.manifest["identity"]["version"] == "2.14.0"
+    assert profile.manifest["prompt_binding"]["template_version"] == "v3"
+    artifacts = profile.artifact_catalog["artifacts"]
+    def artifact(kind, ref, version):
+        return next(item for item in artifacts if (item["kind"], item["ref"], item["version"]) == (kind, ref, version))
+    context = {"schema_version": "novelos.planning_context_bundle.v1", "book_id": "book-1",
+        "logical_key": "book:main", "planning_scope": "BOOK", "input_versions": [
+            {"role": "book_design", "asset_version_id": "design:v1", "asset_type": "book_design",
+             "content_hash": HASH, "content": {"premise": experience, "target_chapters": 240}}]}
+    inputs = {"planning_command": {"logical_key": "book:main", "planning_scope": "BOOK",
+        "narrative_search_planning_horizon": {"target_chapters": 240, "opening_topology_budget": {"calls": "HOST-BUDGET-NOISE"}},
+        "narrative_search_desired_transformation": {"goal": experience, "selection_policy": {"weights": "HOST-SCORE-NOISE"}},
+        "narrative_search_hard_constraints": [experience], "repair_reason": "HOST-RETRY-NOISE"},
+        "frozen_inputs": [{"role": "book_design", "asset_version_id": "design:v1", "content_hash": HASH}],
+        "authoritative_narrative_load": _authoritative_load(), "arc_working_set": _arc_working_set(),
+        "narrative_intelligence": _narrative_intelligence()}
+    materialization = _prompt_materialization(context)
+    materialization["pack_artifacts"] = {
+        "system_instruction": artifact("PROMPT_SYSTEM_INSTRUCTION", "prompt-system:story-planning-pack", "v12"),
+        "prompt_template": artifact("PROMPT_TEMPLATE", "prompt-template:story-planning-pack", "v3"),
+        "skill": artifact("SKILL", "long-outline", "long-outline-v4")}
+    schema = bind_narrative_intent_schema({"type": "object", "properties": {"constraints": {"type": "array"}}})
+    materialization["output_schema"] = {"ref": "schema:planning-provider-output:book:v1:narrative-intent-v1", "content_hash": HASH, "content": schema}
+    frozen = deepcopy((inputs, materialization))
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    prompt, evidence = _materialize_production_codex_prompt(request=request, stage="book_plan.generate", inputs=inputs, materialization=materialization)
+    assert experience in prompt
+    for noise in ("HOST-BUDGET-NOISE", "HOST-SCORE-NOISE", "HOST-RETRY-NOISE"):
+        assert noise not in prompt
+    assert (inputs, materialization) == frozen
+    assert evidence["provider_prompt_projection_version"] == "planning-narrative-intent-projection.v1"
+    assert len(evidence["narrative_intent_projection"]["omissions"]) >= 3
+    assert evidence["method_selection"]["skill_sections"] == ["Shared rules", "Book planning"]
+    assert "Chapter serialization realization" not in evidence["method_selection"]["system_sections"]
+    assert "Chapter plan" not in evidence["method_selection"]["system_sections"]
+    assert '"target_chapters":240' in prompt
+
+
+def test_narrative_intent_projection_preserves_relative_refs_knowledge_and_full_repair_sources():
+    from novel_forge.modules.chapter_authority.provider_views import project_planning_narrative_intent
+
+    task = {"stage": "chapter_plan.generate", "planning_command": {"generation_operation_id": "operation:1"},
+            "working_continuity": {"prose": "Previously witnessed response", "accepted_through_chapter": 0}}
+    context = {"stage": "chapter_plan.generate", "segments": [{"role": "chapter_group_plan", "content": {"chapter_function_matrix": [{"chapter": 1}]}}],
+        "matrix_source": {"json_pointer": "/segments/0/content/chapter_function_matrix/0"},
+        "accepted_state_boundary": {"accepted_through_chapter": 0},
+        "repair_context": {"source_candidate": {"content": {"scene_plan": [{"objective": "author's procedural intention"}]}}, "validation_failure": "retain exact failure"},
+        "selection_explanation": {"audit_hash": HASH, "literal_references": "Read the full string in the named source role"}}
+    original = deepcopy((task, context))
+    new_task, new_context, receipt = project_planning_narrative_intent(task, context)
+    assert (task, context) == original
+    for key in ("segments", "matrix_source", "accepted_state_boundary", "repair_context"):
+        assert new_context[key] == context[key]
+    assert new_task["narrative_inputs"]["working_continuity"] == task["working_continuity"]
+    assert new_task["output_protocol"]["planning_command"]["generation_operation_id"] == "operation:1"
+    assert new_context["projection_reading_contract"]["literal_references"] == context["selection_explanation"]["literal_references"]
+    assert receipt["semantic_source_rewrite"] is False
+
+
+def test_historical_planning_profile_retains_previous_skill_bytes_and_new_schema_is_shape_compatible():
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+
+    legacy = build_story_planning_pack_profile(ROOT, operation_definition_hash=HASH, narrative_intent_boundary=False)
+    assert legacy.manifest["identity"]["version"] == "2.13.0"
+    assert legacy.manifest["prompt_binding"]["template_version"] == "v2"
+    for artifact in legacy.artifact_catalog["artifacts"]:
+        if artifact["kind"] == "SKILL" and "legacy-narrative-intent" in artifact.get("source_identity", ""):
+            assert artifact["content"]["text"] == (ROOT / artifact["source_identity"]).read_text()
+    schema = {"type": "object", "additionalProperties": False, "required": ["constraints"],
+              "properties": {"constraints": {"type": "array", "items": {"type": "string"}}}}
+    revised = bind_narrative_intent_schema(schema)
+    assert revised != schema
+    for value in ({"constraints": []}, {"constraints": ["The detective checks a witness as the author requires."]}, {"constraints": 3}, {"constraints": [], "extra": True}):
+        def valid(contract):
+            try:
+                validate_chapter_provider_output_against_schema("book_plan.generate", contract, value)
+                return True
+            except KernelError:
+                return False
+        assert valid(schema) == valid(revised)

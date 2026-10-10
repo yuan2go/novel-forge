@@ -10071,7 +10071,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:e6288a90d109d35dfb86ea4c3d76d1f0744af89aae3d5b650753907ffb4fd2e0"
+    "implementation_tree_sha": "sha256:6266cf2cb970bc877ba4dc465fa365668c0309a194b6e53e27f17753eecfeec8"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

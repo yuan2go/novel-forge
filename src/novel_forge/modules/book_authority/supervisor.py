@@ -1004,7 +1004,6 @@ class PostgresBookProductionSupervisor:
                         ),
                     },
                     hard_constraints=(
-                        "accepted reality is immutable",
                         "candidate scheduling and realization must exactly cover the frozen ChapterGroup range",
                         "only selected working-set arcs may receive contributions",
                         "preserve POV knowledge and forbidden-change boundaries",

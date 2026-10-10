@@ -131,7 +131,7 @@ class FormationGeneration:
                     desired_transformation={"author_brief": {"asset_version_id": brief.asset_version_id, "content_hash": brief.content_hash},
                         "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
                         "selection_policy": policy["selection_policy"]},
-                    hard_constraints=("Preserve the exact author brief and source boundaries", "Candidates are hypothetical; no accepted history or Canon mutation"),
+                    hard_constraints=("Preserve the exact author brief and source boundaries",),
                     accepted_through_chapter=0, strategy_directives=tuple(policy["strategy_directives"]))
             self.narrative_search.explore(search_request, principal=principal, activate_selected=False,
                 execution_probe=lambda: self._require_creation_live(run["formation_run_id"]))

@@ -3969,3 +3969,18 @@ The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 templ
 The unsent v12-to-v13 correction binds `kernel-unsent-transport-window.v1` to the exact compiled target deployment. Native StepSuccessor atomically retains exhausted failure history, extends only a derived Root window by its original bounded duration, aligns the Saga deadline projection and registers the successor. Explicit author/business deadlines, active leases, unsettled sibling Effects and irreversible work retain their existing guards. The single correction decision and shared fault counter do not reset on restart.
 
 Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
+
+
+For a narrative-intent repair, compile and inspect the new Story Planning 2.14
+bindings through the existing Pack Authority before scoped use. System v12 and
+template v3 bind the narrative-intent projection and versioned sent Schema; historical
+recovery retains its exact old Pack. Inspect the projection receipt's source and
+projected hashes, omission pointers, stage methods and final rendered Prompt hash.
+Compare author-selected quiet, procedural and other narrative purposes through the
+real gateway assembler offline. A structural diagnosis returns to existing Plan
+Change and Book edition candidate owners with exact source plans/manuscript and any
+new approved input snapshot. Candidate saving, author selection and acceptance remain
+separate. Do not change a Book's length or delivery window for this repair.
+Only a separately authorized same-Book Provider experiment and subsequent literary
+review can establish prose improvement; offline assembly and scripted integration
+prove engineering execution only.

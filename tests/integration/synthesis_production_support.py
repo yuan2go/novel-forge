@@ -229,7 +229,7 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
         if stage not in {"world_candidates.generate", "world_candidates.evaluate"}:
             from tests.integration.current_planning_wire_support import current_planning_fixture_inputs
 
-            inputs = current_planning_fixture_inputs(inputs, getattr(self, "database_url", ""))
+            inputs = current_planning_fixture_inputs({**inputs, "stage": stage}, getattr(self, "database_url", ""))
         if stage == "world_candidates.generate":
             if inputs["world_preparation"]["accepted_through_chapter"] >= 2:
                 result = {
