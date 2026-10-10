@@ -101,6 +101,7 @@
       "tests/integration/test_book_opening_workflow_upgrade_postgres.py",
       "tests/integration/test_book_projection_repair_upgrade_postgres.py",
       "tests/integration/test_source_analysis_dimension_upgrade_postgres.py",
+      "tests/integration/test_source_market_migration_postgres.py",
       "tests/integration/test_world_causal_migrations_postgres.py",
       "tests/integration/test_narrative_craft_migration_upgrade_postgres.py",
       "tests/integration/test_author_supervision_migration_postgres.py",

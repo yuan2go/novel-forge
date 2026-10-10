@@ -16,6 +16,39 @@ from tests.integration.creative_validation_production_support import controlled_
 from tests.integration.synthesis_production_support import SynthesisTransport
 
 
+def prepare_context_model_stages(transport, monkeypatch):
+    from novel_forge.modules.chapter_authority import handlers
+    from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+    chapter_transport = transport.chapter
+    class ContextFixtureTransport:
+        def __setattr__(self, name, value):
+            setattr(chapter_transport, name, value)
+        def __getattr__(self, name):
+            return getattr(chapter_transport, name)
+        def __call__(self, stage, inputs):
+            if stage in {"context_compress", "context_fidelity"}:
+                return default_chapter_fixture_response(stage, inputs)
+            return chapter_transport(stage, inputs)
+    transport.chapter = ContextFixtureTransport()
+    build_context = handlers.build_context_bundle
+    def prepare_two_model_stages(**kwargs):
+        if kwargs["plan"]["chapter"] == 1:
+            memo = kwargs["chapter_memo"]
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                source = uow.repositories.asset_documents.require(project_id=kwargs["project_id"],
+                    asset_version_id=kwargs["plan_asset_version_id"])
+            task = {"contract_version": "task-context-compression.v1", "policy_version": "task-scoped-context.v1",
+                "accepted_boundary": memo["accepted_boundary"], "memo_fingerprint": memo["memo_fingerprint"],
+                "task": {"stage": "draft", "chapter": 1, "goal": kwargs["plan"]["chapter_objective"]},
+                "target_tokens": 1024, "required_unit_ids": ["controlled-plan-goal"],
+                "units": [{"unit_id": "controlled-plan-goal", "text": kwargs["plan"]["chapter_objective"], "required": True}],
+                "source_binding": {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}}
+            selected = kwargs["context_model_call"]("context_compress", task)
+            kwargs["context_model_call"]("context_fidelity", {**task, "selected_unit_ids": selected["selected_unit_ids"]})
+        return build_context(**kwargs)
+    monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
+
+
 @pytest.mark.parametrize("completed_sibling", [False, True], ids=["single-interruption", "completed-sibling-interruption"])
 def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling):
     harness = CapabilityPackPostgresHarness("author-first")
@@ -57,36 +90,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
     if completed_sibling:
-        from novel_forge.modules.chapter_authority import handlers
-        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
-        chapter_transport = transport.chapter
-        class ContextFixtureTransport:
-            def __setattr__(self, name, value):
-                setattr(chapter_transport, name, value)
-            def __getattr__(self, name):
-                return getattr(chapter_transport, name)
-            def __call__(self, stage, inputs):
-                if stage in {"context_compress", "context_fidelity"}:
-                    return default_chapter_fixture_response(stage, inputs)
-                return chapter_transport(stage, inputs)
-        transport.chapter = ContextFixtureTransport()
-        build_context = handlers.build_context_bundle
-        def prepare_two_model_stages(**kwargs):
-            if kwargs["plan"]["chapter"] == 1:
-                memo = kwargs["chapter_memo"]
-                with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                    source = uow.repositories.asset_documents.require(project_id=kwargs["project_id"],
-                        asset_version_id=kwargs["plan_asset_version_id"])
-                task = {"contract_version": "task-context-compression.v1", "policy_version": "task-scoped-context.v1",
-                    "accepted_boundary": memo["accepted_boundary"], "memo_fingerprint": memo["memo_fingerprint"],
-                    "task": {"stage": "draft", "chapter": 1, "goal": kwargs["plan"]["chapter_objective"]},
-                    "target_tokens": 1024, "required_unit_ids": ["controlled-plan-goal"],
-                    "units": [{"unit_id": "controlled-plan-goal", "text": kwargs["plan"]["chapter_objective"], "required": True}],
-                    "source_binding": {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}}
-                selected = kwargs["context_model_call"]("context_compress", task)
-                kwargs["context_model_call"]("context_fidelity", {**task, "selected_unit_ids": selected["selected_unit_ids"]})
-            return build_context(**kwargs)
-        monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
+        prepare_context_model_stages(transport, monkeypatch)
     if not completed_sibling:
         from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
         from concurrent.futures import ThreadPoolExecutor
@@ -419,35 +423,7 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, 'resolve', interrupt_every_memo)
     if failure_stage.startswith('context_'):
-        from novel_forge.modules.chapter_authority import handlers
-        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
-        chapter_transport = transport.chapter
-        class ContextFixtureTransport:
-            def __setattr__(self, name, value):
-                setattr(chapter_transport, name, value)
-            def __getattr__(self, name):
-                return getattr(chapter_transport, name)
-            def __call__(self, stage, inputs):
-                if stage in {'context_compress', 'context_fidelity'}:
-                    return default_chapter_fixture_response(stage, inputs)
-                return chapter_transport(stage, inputs)
-        transport.chapter = ContextFixtureTransport()
-        build_context = handlers.build_context_bundle
-        def bounded_context(**kwargs):
-            with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                source = uow.repositories.asset_documents.require(project_id=kwargs['project_id'], asset_version_id=kwargs['plan_asset_version_id'])
-            task = {'contract_version': 'task-context-compression.v1', 'policy_version': 'task-scoped-context.v1',
-                'accepted_boundary': kwargs['chapter_memo']['accepted_boundary'],
-                'memo_fingerprint': kwargs['chapter_memo']['memo_fingerprint'],
-                'task': {'stage':'draft', 'chapter':1, 'goal':kwargs['plan']['chapter_objective']},
-                'target_tokens':1024, 'required_unit_ids':['bounded-goal'],
-                'units':[{'unit_id':'bounded-goal','text':kwargs['plan']['chapter_objective'],'required':True}],
-                'source_binding':{'asset_version_id':source.asset_version_id,'content_hash':source.content_hash}}
-            selected = kwargs['context_model_call']('context_compress', task)
-            kwargs['context_model_call']('context_fidelity', {**task, 'selected_unit_ids':selected['selected_unit_ids']})
-            return build_context(**kwargs)
-        monkeypatch.setattr(handlers, 'build_context_bundle', bounded_context)
-
+        prepare_context_model_stages(transport, monkeypatch)
     source = tmp_path / 'request.json'
     source.write_text(json.dumps({'version':'creation-request.v1','title':f'Bounded generation {failure_stage}','target_chapters':1,
         'language_contract':{'required_language':'zh-CN'},'chapter_length':{'minimum':800,'maximum':4000},

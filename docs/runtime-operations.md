@@ -158,6 +158,23 @@ before pending migration DDL. Preserve a foreign branch database and its migrati
 ledger; never delete, rewrite or fabricate applied IDs to make it match. Conversion
 of such a database is a separate governed operation.
 
+Before deploying a compatible recovery release, stop all old API, worker, outbox and
+maintenance writers, including host processes outside Compose. Keep dispatch stopped while
+one migration executor applies the registered chain; restart only matching release processes.
+Bind the release SHA/build, actual database/server and migration head, compiled/approved Pack
+hashes, object store identity and original CLI execution root in the deployment record.
+0193 upgrade/restore evidence covers its frozen code and database only. The published 0194
+multi-generation and 0195 sidecar snapshots cover their own incremental heads; neither proves
+this release or a newer original ledger. Check only changed boundaries on disposable restores.
+
+Recovery restores the database, referenced artifacts and original CLI execution directories
+from a mutually consistent snapshot under compatible code and Packs, with every writer stopped.
+Verify request/receipt digests, successor journals and accepted cursor before resuming. Preserve
+unknown paid exposure and original restored-snapshot provenance. Reverting code alone is
+unsupported: immutable isolation and forward schema facts survive a code rollback. Repair
+applied database behavior with a new forward migration. These are deployment/restore procedures,
+not a new backup qualification gate.
+
 For a stopped native `longform.prose_review` sidecar, replay its original advance command.
 Recovery checks the immutable window, current matching manuscript prefix, actor, permissions,
 Tool denial, cancellation, all original receipts and released writers. Isolation, one native
@@ -237,6 +254,27 @@ Historical audit reports and deployment manifests are immutable execution eviden
 stable successor intent without claiming a remote terminal outcome. Its pending intent is
 replayed through existing Planning continuation or Chapter step succession after restart.
 Original receipt recovery and usage correction remain available for isolated history.
+
+For isolated remote API generation, the same existing resolve endpoint accepts a
+same-project `execution_evidence` AssetVersion with schema and payload contract
+`api-original-receipt.v1`. Its authorized-operator attestation references an immutable
+`api-provider-record.v1` evidence AssetVersion and binds the original Project/Book,
+Operation/Effect, dispatch/generation, request hash, execution/Attempt/fence, execution
+request and input-manifest hashes, Provider/model and remote request ID. Both records
+must agree. Use `MARK_SUCCEEDED`, `MARK_FAILED_FINAL`, `MARK_CANCELLED` or proven
+`MARK_NOT_FOUND`; retry decisions cannot reopen isolated work. A verified native
+Provider callback enters the same Kernel journal after its original request binding.
+
+The `isolated-api-receipt.v1` journal only appends evidence and settles the original
+reservation in the owning UoW. Historical Effect/dispatch UNKNOWN, failed Operation and
+REVOKED commit/activation decisions remain unchanged. Missing measured usage or unresolved paid cost stays held;
+a later matching measured version can settle once. Duplicate records replay, conflicting
+results or measurements reject replacement, and actual overruns retain the existing
+budget-breach hold. This does not create a primary output, candidate, author choice or
+acceptance. An API Effect with multiple original dispatch generations fails closed for
+explicit accounting reconciliation; one receipt cannot settle other unknown generations.
+Ordinary reconciliation of isolated work reads confirmed evidence or requests this
+original-receipt path; it cannot acquire a replacement recovery Attempt or mutate history.
 
 Codex reconciliation reads the original execution directory, request, Attempt/fence,
 command and input digests. A changed complete process receipt can supersede cached
@@ -3776,23 +3814,6 @@ same persisted dispatch lineage as other generation nodes. The frozen retry poli
 `CONFIGURABLE_POLICY`; retained recovery ordinal fields are diagnostics, not a second
 allowance. Restart, route changes and
 replay cannot reset that fault allowance.
-
-The existing POST `/product/content-authority/external-effects/{external_effect_id}/resolve`
-accepts an isolated API original receipt under `external_effect.resolve`. `evidence` may
-bind `original_remote_receipt_ref`, or supply `original_provider_record` and
-`original_remote_receipt` for atomic native execution-evidence intake. Their contracts are
-`generation-provider-record.v1` and `generation-remote-receipt.v1`. The receipt requires
-`AUTHORIZED_OPERATOR_ATTESTATION`, the authenticated `verified_by`, original Project,
-workspace, Book, Operation, Effect, dispatch generation, request hash, execution request
-hash, input manifest, execution/Attempt/fence, Provider/model and Provider request ID.
-The preserved source record must match all remote facts, including any Provider request ID
-already known by the original Effect or invocation handle. Measured token totals must agree;
-paid settlement requires explicit measured cost and currency. Missing measurements remain
-unresolved; no estimated usage or zero cost is manufactured. Entitlement cost remains
-UNKNOWN. Intake, reconciliation and original reservation settlement share one transaction.
-Duplicates settle once, conflicting evidence is rejected, and successor usage remains
-separately reserved and accounted. Original UNKNOWN Effect/Dispatch and stopped Operation
-are not rewritten; late results have no candidate, activation, acceptance or publish right.
 
 Historical Planning Pack builds retain their published Skill text, version and source
 reference through checked artifact snapshots; mutable current Skills cannot change a

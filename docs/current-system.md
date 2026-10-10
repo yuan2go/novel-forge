@@ -2059,7 +2059,9 @@ dispatch generation and receipt records. A request that may have started is reco
 before resending the same Effect. Authorized pure generation can instead permanently isolate its old attempt and continue
 through a linked native successor. Original UNKNOWN facts and accounting remain separate
 from successor execution; recovering the original receipt is not a prerequisite for this
-continuation. Irreversible effects and uncertain database commits still require reconciliation. Idempotency keys bind the request digest;
+continuation. Authenticated late API receipts append only Kernel reconciliation evidence and
+original-reservation accounting; old business and activation rights remain revoked.
+Irreversible effects and uncertain database commits still require reconciliation. Idempotency keys bind the request digest;
 Attempt leases and fencing reject stale workers. Safe database retries are restricted to
 classified SQL states, while an unknown commit result requires evidence-based
 reconciliation. Recovery appends attempt, receipt, checkpoint or replacement lineage and
