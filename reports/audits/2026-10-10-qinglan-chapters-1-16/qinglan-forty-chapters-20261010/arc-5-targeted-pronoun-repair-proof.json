@@ -1,0 +1,21 @@
+{
+  "source_generation": "333c07c9-d2d2-48de-b5ba-711436f36769",
+  "successor_generation": "d0ee7f69-473e-4328-bfa9-bf9f56145831",
+  "frozen_cast_version": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+  "character_id": "character:xu-ting",
+  "frozen_pronouns": [
+    "她"
+  ],
+  "source_preserved": true,
+  "changed_literary_fields": [
+    "objective",
+    "arc_segments",
+    "hard_constraints"
+  ],
+  "segment_counts": [
+    14,
+    14
+  ],
+  "author_prose_selection": 0,
+  "formal_acceptance": 0
+}

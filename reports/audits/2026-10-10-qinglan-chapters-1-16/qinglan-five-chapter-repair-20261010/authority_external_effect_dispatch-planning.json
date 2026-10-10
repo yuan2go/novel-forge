@@ -1,0 +1,2028 @@
+[
+  {
+    "status": "FAILED_RETRYABLE",
+    "evidence": {
+      "model_id": "gpt-6.1-sol",
+      "provider_id": "codex-cli",
+      "skill_version": "long-outline@long-outline-v3",
+      "prompt_version": "prompt-system:story-planning-pack@v11",
+      "real_model_call": true,
+      "capability_runtime": {
+        "skill": {
+          "ref": "long-outline",
+          "version": "long-outline-v3",
+          "content_hash": "sha256:e619875c466e7b3b07b93c394c0ecb05414a9bf454ec5e30775a00b0b7fa5e29"
+        },
+        "allowed_tools": [
+          "model.provider.invoke"
+        ],
+        "provider_view": {
+          "component_hashes": {
+            "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+            "output_schema": "sha256:d63c8b1b883d80d553211a25f86640e16dacb8dc30f126bbaa2f685a2819badc",
+            "governed_skill": "sha256:ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:49fcf92295eb6a9ada9dd543948160f297b9f2ba0c823fcb56012828faf42b9c",
+            "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+            "fully_rendered_prompt": "sha256:db6b2a1e7bd0948db4abc69a3a6a310f6803a185aacf509ea1d653ca4fa8d54a",
+            "provider_context_view": "sha256:474a06997dad1bf15504e063481a002e5c635652d147d0c6b32ce95f3f2cb6e4",
+            "stage_semantic_contract": "sha256:b391c88f42d164b943f6c476f9912d0a780aab90df399a2e75d7eddf66dabe67"
+          },
+          "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+          "component_characters": {
+            "tool_policy": 258,
+            "output_schema": 17547,
+            "governed_skill": 1181,
+            "provider_knowledge": 559,
+            "provider_task_view": 23544,
+            "system_instruction": 9358,
+            "fully_rendered_prompt": 124773,
+            "provider_context_view": 69880,
+            "stage_semantic_contract": 1617
+          },
+          "representation_policy": "authority-projection-task-provider-v1",
+          "selection_explanation": {
+            "policy": "minimum-sufficient-planning-context-v2",
+            "loss_receipt": {
+              "audit_hash": "sha256:903424596557e98cde59c3e9b46cb6ef1e683def5e7d321b857af9e5ae219544",
+              "json_pointer": "/context_manifest/projection_audit",
+              "loss_record_count": 140,
+              "source_input_hash": "sha256:27794a93eac2953d7ccc8502f37fc59dd98353647e3e8ec036b03ca91756df56"
+            },
+            "field_classes": {
+              "invariants": "HARD_CONSTRAINT",
+              "constraints": "HARD_CONSTRAINT",
+              "inspiration": "OPTIONAL_GUIDANCE",
+              "required_facts": "REQUIRED_FACT",
+              "due_obligations": "DUE_OBLIGATION",
+              "forbidden_events": "PROHIBITION",
+              "hard_constraints": "HARD_CONSTRAINT",
+              "required_payoffs": "DUE_OBLIGATION",
+              "soft_suggestions": "OPTIONAL_GUIDANCE",
+              "forbidden_payoffs": "PROHIBITION",
+              "optional_guidance": "OPTIONAL_GUIDANCE",
+              "required_fact_ids": "REQUIRED_FACT",
+              "story_constraints": "HARD_CONSTRAINT",
+              "style_suggestions": "OPTIONAL_GUIDANCE",
+              "prohibited_outcomes": "PROHIBITION",
+              "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+              "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+              "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+              "required_obligation_ids": "DUE_OBLIGATION",
+              "unresolved_obligation_ids": "DUE_OBLIGATION"
+            },
+            "compiler_version": "scope-preserving-planning-context-v2",
+            "maximum_segments": 24,
+            "token_accounting": "utf8-byte-upper-bound.v1",
+            "omitted_fact_count": 0,
+            "omitted_item_count": 339,
+            "task_target_tokens": 226128,
+            "included_fact_count": 0,
+            "omitted_segment_count": 0,
+            "included_segment_count": 11,
+            "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+            "maximum_serialized_bytes": 8388608,
+            "maximum_facts_per_segment": null,
+            "truncated_character_count": 0
+          },
+          "task_contract_version": "provider-task-view-v1",
+          "context_contract_version": "provider-context-view-v4",
+          "context_projection_ratio": 0.323668,
+          "exact_context_references": {
+            "decoded_equal": true,
+            "reference_count": 4,
+            "contract_version": "planning-exact-value-reference.v1",
+            "source_context_hash": "sha256:a0ac1914dbdfe01ecbb18b83c1e02d7207430844d9326be7fb97082b205728c3",
+            "encoded_context_hash": "sha256:474a06997dad1bf15504e063481a002e5c635652d147d0c6b32ce95f3f2cb6e4"
+          },
+          "component_estimated_tokens": {
+            "tool_policy": 86,
+            "output_schema": 5849,
+            "governed_skill": 394,
+            "provider_knowledge": 187,
+            "provider_task_view": 7848,
+            "system_instruction": 3120,
+            "fully_rendered_prompt": 62313,
+            "provider_context_view": 44015,
+            "stage_semantic_contract": 539
+          },
+          "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+          "component_utf8_byte_upper_bounds": {
+            "tool_policy": 258,
+            "output_schema": 17547,
+            "governed_skill": 1181,
+            "provider_knowledge": 559,
+            "provider_task_view": 23544,
+            "system_instruction": 9358,
+            "fully_rendered_prompt": 186937,
+            "provider_context_view": 132044,
+            "stage_semantic_contract": 1617
+          },
+          "provider_context_estimated_tokens": 44015,
+          "authority_context_estimated_tokens": 135988,
+          "rendered_prompt_to_semantic_input_ratio": 1.197176,
+          "provider_admission_uses_component_estimates": false
+        },
+        "prompt_template": {
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v1",
+          "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+        },
+        "method_selection": {
+          "skill_sections": [
+            "Shared rules",
+            "Chapter-group planning"
+          ],
+          "system_sections": [
+            "Shared rules",
+            "Foundation",
+            "Realization references",
+            "Book plan",
+            "Volume plan",
+            "Arc plan",
+            "Chapter group",
+            "Chapter plan",
+            "World proposals",
+            "World evaluation",
+            "Actor intention",
+            "Chapter serialization realization",
+            "Host source selectors and scheduled Arc scope"
+          ],
+          "contract_version": "production-stage-methods.v1"
+        },
+        "output_schema_ref": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2",
+        "output_schema_hash": "sha256:d63c8b1b883d80d553211a25f86640e16dacb8dc30f126bbaa2f685a2819badc",
+        "provider_admission": {
+          "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+          "status": "ADMITTED",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "envelope_hash": "sha256:928518d3db2e14dc7feb84271d93c7ea1df56c2968e2c5154496572f70d35955",
+          "total_reserved": 219209,
+          "component_usage": {
+            "safety_margin": 256,
+            "output_reserve": 32000,
+            "provider_input": 186937,
+            "request_framing": 16
+          },
+          "applicable_limit": 258400,
+          "contract_version": "provider-token-admission-v1",
+          "accounting_contract": {
+            "model": "gpt-6.1-sol",
+            "provider": "codex-cli",
+            "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+            "meter_version": "v1",
+            "safety_margin": 256,
+            "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+            "output_reserve": 32000,
+            "route_identity": "chapter_group_plan.generate:codex-cli:gpt-6.1-sol:06f1a77931dd5795cf94653d71bc09abf131579f:sha256:f888c72dc747293b51f0058cac303f71708cd84362555c3d6a7367c4e19e97c1",
+            "contract_version": "provider-token-accounting-v3",
+            "framing_overhead": 16,
+            "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+            "model_context_limit": 258400,
+            "execution_token_limit": 258400,
+            "serialization_contract": "codex-cli-application-stdin-v1"
+          },
+          "context_bundle_status": "VALID",
+          "context_bundle_tokens": 135988,
+          "input_component_hashes": {
+            "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+            "output_schema": "sha256:d63c8b1b883d80d553211a25f86640e16dacb8dc30f126bbaa2f685a2819badc",
+            "governed_skill": "sha256:ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:49fcf92295eb6a9ada9dd543948160f297b9f2ba0c823fcb56012828faf42b9c",
+            "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+            "fully_rendered_prompt": "sha256:db6b2a1e7bd0948db4abc69a3a6a310f6803a185aacf509ea1d653ca4fa8d54a",
+            "provider_context_view": "sha256:474a06997dad1bf15504e063481a002e5c635652d147d0c6b32ce95f3f2cb6e4",
+            "stage_semantic_contract": "sha256:b391c88f42d164b943f6c476f9912d0a780aab90df399a2e75d7eddf66dabe67"
+          },
+          "complete_request_coverage": [
+            "system_runtime_instructions",
+            "prompt_template",
+            "skill_instructions",
+            "tool_policy_and_schemas",
+            "structured_output_schema",
+            "context_bundle",
+            "knowledge_inputs",
+            "request_envelope_and_framing",
+            "output_reserve",
+            "safety_margin"
+          ]
+        },
+        "system_instruction": {
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v11",
+          "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+        },
+        "materialization_hash": "sha256:19b42ba162b4cf908a0b653ef320e812e680c54cbb647ef85c872394808a2ff3",
+        "rendered_prompt_bytes": 186937,
+        "reusable_prefix_bytes": 10619,
+        "knowledge_content_hashes": [
+          "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+        ],
+        "context_asset_version_ids": [
+          "ccc13510-8f2a-4229-a91a-4355802ffbac"
+        ],
+        "embedding_output_contract": null,
+        "fully_rendered_prompt_hash": "sha256:db6b2a1e7bd0948db4abc69a3a6a310f6803a185aacf509ea1d653ca4fa8d54a",
+        "provider_request_envelope_hash": "sha256:928518d3db2e14dc7feb84271d93c7ea1df56c2968e2c5154496572f70d35955",
+        "required_reader_facing_language": "zh-CN",
+        "rendered_prompt_estimated_tokens": 62313,
+        "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1",
+        "provider_admission_asset_version_id": "7ca65573-33ef-4953-b9e2-72e6d7f97280"
+      },
+      "production_verified": false,
+      "production_execution": {
+        "input_manifest": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "read_set": [
+            "asset-version:ccc13510-8f2a-4229-a91a-4355802ffbac",
+            "asset-version:authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+            "asset-version:authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "asset-version:authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "asset-version:authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+            "asset-version:authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+            "asset-version:authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+            "asset-version:authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+            "asset-version:authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1",
+            "asset-version:authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+            "asset-version:authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "asset-version:authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1"
+          ],
+          "attempt_id": "a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "project_id": "qid-learning-prose-01",
+          "manifest_id": "production_execution/inputs/e141fc6caea38f4306ee",
+          "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "chapter-group:containing:1",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter_group"
+          },
+          "fencing_token": 1,
+          "input_artifacts": [
+            {
+              "artifact_ref": "asset-version:ccc13510-8f2a-4229-a91a-4355802ffbac",
+              "content_hash": "sha256:bffdbdd7a0a24c474aad4b2388723346daf63fd9c24db165450cffa55d4b84aa",
+              "artifact_type": "context_bundle",
+              "schema_version": "novelos.planning_context_bundle.v1",
+              "asset_version_id": "ccc13510-8f2a-4229-a91a-4355802ffbac",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+              "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+              "artifact_type": "planning_generation_candidate",
+              "schema_version": "planning_generation_candidate.v1",
+              "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "artifact_type": "planning_generation_candidate",
+              "schema_version": "planning_generation_candidate.v1",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+              "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+              "artifact_type": "story_state_snapshot",
+              "schema_version": "story_state_snapshot.v1",
+              "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+              "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+              "artifact_type": "planning_generation_candidate",
+              "schema_version": "planning_generation_candidate.v1",
+              "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+              "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+              "artifact_type": "reader_state",
+              "schema_version": "reader_state.v1",
+              "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+              "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+              "artifact_type": "quality_trend",
+              "schema_version": "quality_trend.v1",
+              "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+              "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+              "artifact_type": "canon_snapshot",
+              "schema_version": "canon_snapshot.v1",
+              "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1",
+              "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+              "artifact_type": "previous_chapter_group_outcome",
+              "schema_version": "previous_chapter_group_outcome.v1",
+              "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+              "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+              "artifact_type": "planning_generation_candidate",
+              "schema_version": "planning_generation_candidate.v1",
+              "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+              "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+              "artifact_type": "planning_generation_candidate",
+              "schema_version": "planning_generation_candidate.v1",
+              "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1",
+              "content_hash": "sha256:9a2acc547f943848977a7c30b7bb8c938bd49a0fdb7a66183048b4ad143dc8bb",
+              "artifact_type": "replan_request",
+              "schema_version": "replan_request.v1",
+              "asset_version_id": "authority-output:3bfe7075-e36d-45f1-ad97-09d0844fe9cf:planning.change_request:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            }
+          ],
+          "arc_version_refs": [],
+          "planning_version": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "skill_bundle_ref": "long-outline@long-outline-v3",
+          "prompt_bundle_ref": "prompt-system:story-planning-pack@v11",
+          "source_policy_ref": "source:planning-chapter_group-generate:v1",
+          "canon_version_refs": [
+            "asset-version:authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+          ],
+          "context_bundle_ref": "asset-version:ccc13510-8f2a-4229-a91a-4355802ffbac",
+          "source_eligibility": "PRODUCTION_ELIGIBLE",
+          "story_state_version": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "skill_bundle_version": "long-outline@long-outline-v3",
+          "prompt_bundle_version": "prompt-system:story-planning-pack@v11",
+          "canon_snapshot_version": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+          "context_bundle_version": "ccc13510-8f2a-4229-a91a-4355802ffbac",
+          "quality_profile_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        "route_snapshot": {
+          "model_id": "gpt-6.1-sol",
+          "policy_id": "planning.chapter_group.route.sha256.6d6790c4a6971a23adeee7c63ad5aff47615bbf7b1540918b6e15d991e8f401e",
+          "attempt_id": "a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "backend_id": "codex-cli",
+          "release_sha": "06f1a77931dd5795cf94653d71bc09abf131579f",
+          "approval_ref": "",
+          "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+          "model_provider": "codex-cli",
+          "policy_version": 1,
+          "backend_version": "1.0.0",
+          "runtime_host_id": "host:author-first-live-isolated",
+          "auth_profile_ref": "auth:current-chatgpt-member:codex:ac313a67364269b8e4a28d1192c2b375a8df36901ca1c20528bb6279a3a9a7cc",
+          "credential_scope": "",
+          "fallback_trigger": "",
+          "model_profile_id": "planning.chapter_group.default.sha256.6d6790c4a6971a23adeee7c63ad5aff47615bbf7b1540918b6e15d991e8f401e",
+          "reasoning_effort": "high",
+          "route_generation": 1,
+          "skill_bundle_ref": "long-outline@long-outline-v3",
+          "output_schema_ref": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2",
+          "prompt_bundle_ref": "prompt-system:story-planning-pack@v11",
+          "route_decision_id": "routing-decision:3dd830082251d58c80dcf3059411e3a84094bf9b0fdaeab6d38e4280d9b8bfda",
+          "route_policy_hash": "52641efec99d9148f22a8504e765bb98fe56be8b01db3a26b8e58c5591520b1f",
+          "route_snapshot_id": "production_execution/routes/e141fc6caea38f4306ee",
+          "context_bundle_ref": "asset-version:ccc13510-8f2a-4229-a91a-4355802ffbac",
+          "model_profile_hash": "eba6398c52e5dadffc343d4bb654123ca6c16ef1206d07a88a88e89c6e2de794",
+          "route_change_index": 0,
+          "secret_version_ref": "",
+          "fallback_policy_ref": "planning.chapter_group.fail-closed.sha256.6d6790c4a6971a23adeee7c63ad5aff47615bbf7b1540918b6e15d991e8f401e",
+          "model_profile_version": 1,
+          "fallback_policy_version": 1,
+          "parent_route_snapshot_id": "",
+          "quality_revalidation_ref": "",
+          "requested_reasoning_effort": "high"
+        },
+        "execution_handle": {
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "attempt_id": "a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "backend_id": "codex-cli",
+          "execution_id": "planning-execution:101cb54a-ac3c-42d5-8fc0-2d131f672217:a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+          "fencing_token": 1,
+          "completion_mode": "PROCESS_EXIT",
+          "local_process_id": 15721,
+          "query_capability": "SUPPORTED",
+          "cancel_capability": "SUPPORTED",
+          "callback_capability": "UNSUPPORTED",
+          "external_request_id": null,
+          "provider_request_id": null,
+          "backend_execution_id": "process-receipt:af8baf5a921d997758646dd0",
+          "local_process_group_id": 15721,
+          "local_process_start_time": "Sat Oct 10 01:31:24 2026",
+          "local_execution_receipt_id": "process-receipt:af8baf5a921d997758646dd0"
+        },
+        "execution_result": {
+          "error": {
+            "phase": "RESPONSE_WAIT",
+            "scope": "ORIGINAL_LOGICAL_TASK",
+            "stage": "RESPONSE_WAIT",
+            "causes": [],
+            "identity": {
+              "book_id": "book:qinglan-wendao-20261008",
+              "attempt_id": "a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+              "project_id": "qid-learning-prose-01",
+              "execution_id": "planning-execution:101cb54a-ac3c-42d5-8fc0-2d131f672217:a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+              "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+              "fencing_token": 1
+            },
+            "retryable": true,
+            "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+            "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+            "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+            "recovery_state": "REQUIRED",
+            "remote_outcome": "UNESTABLISHED",
+            "business_impact": "CURRENT_TASK_BLOCKED",
+            "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+            "contract_version": "provider-failure.v1",
+            "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+          },
+          "outcome": "TIMED_OUT",
+          "attempt_id": "a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "started_at": "2026-10-09T17:31:24.594352Z",
+          "completed_at": "2026-10-09T17:40:55.889457Z",
+          "execution_id": "planning-execution:101cb54a-ac3c-42d5-8fc0-2d131f672217:a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+          "fencing_token": 1,
+          "raw_output_ref": null,
+          "cost_receipt_ref": null,
+          "usage_receipt_ref": null,
+          "output_manifest_ref": null,
+          "process_receipt_ref": "authority-asset-version:18e9dd9e-d76a-4ce5-a552-46aa5c2e2a81",
+          "external_receipt_ref": null,
+          "provider_receipt_ref": null,
+          "normalized_output_ref": null,
+          "validation_report_ref": null
+        },
+        "process_evidence": {
+          "stage": "chapter_group_plan.generate",
+          "failure": {
+            "phase": "RESPONSE_WAIT",
+            "scope": "ORIGINAL_LOGICAL_TASK",
+            "stage": "RESPONSE_WAIT",
+            "causes": [],
+            "identity": {
+              "book_id": "book:qinglan-wendao-20261008",
+              "attempt_id": "a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+              "project_id": "qid-learning-prose-01",
+              "execution_id": "planning-execution:101cb54a-ac3c-42d5-8fc0-2d131f672217:a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+              "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+              "fencing_token": 1
+            },
+            "retryable": true,
+            "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+            "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+            "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+            "recovery_state": "REQUIRED",
+            "remote_outcome": "UNESTABLISHED",
+            "business_impact": "CURRENT_TASK_BLOCKED",
+            "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+            "contract_version": "provider-failure.v1",
+            "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+          },
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "denied_tools": [],
+          "failure_code": "PROVIDER_RESPONSE_TIMEOUT",
+          "allowed_tools": [
+            "model.provider.invoke"
+          ],
+          "output_schema": {
+            "type": "object",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "required": [
+              "contract_id",
+              "logical_key",
+              "objective",
+              "entry_state_ref",
+              "exit_state_spec",
+              "hard_constraints",
+              "soft_constraints",
+              "required_events",
+              "forbidden_events",
+              "required_payoffs",
+              "forbidden_payoffs",
+              "character_deltas",
+              "world_deltas",
+              "relationship_deltas",
+              "arc_contributions",
+              "canon_dependencies",
+              "quality_targets",
+              "budget_policy_ref",
+              "context_profile_ref",
+              "local_objective",
+              "trigger",
+              "resistance_escalation",
+              "turn",
+              "local_climax",
+              "information_release",
+              "emotion_curve",
+              "antagonist_actions",
+              "chapter_function_matrix",
+              "chapter_range",
+              "cost_range",
+              "primary_arc_ids",
+              "secondary_arc_ids",
+              "required_arc_contributions",
+              "arc_checkpoint_expectations",
+              "narrative_event_chain",
+              "narrative_architecture_version",
+              "planning_horizon",
+              "realization_level",
+              "commitment_contract",
+              "world_realization",
+              "character_realization",
+              "narrative_segment_ref",
+              "parent_version_id"
+            ],
+            "properties": {
+              "turn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "trigger": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "objective": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cost_range": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 0
+              },
+              "contract_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "logical_key": {
+                "type": "string",
+                "const": "chapter-group:containing:1"
+              },
+              "local_climax": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1
+              },
+              "world_deltas": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "subject",
+                    "change"
+                  ],
+                  "properties": {
+                    "change": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "subject": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "chapter_range": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 2,
+                "minItems": 2
+              },
+              "emotion_curve": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "entry_state_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "exit_state_spec": {
+                "type": "object",
+                "required": [
+                  "summary"
+                ],
+                "properties": {
+                  "summary": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              },
+              "local_objective": {
+                "type": "string",
+                "minLength": 1
+              },
+              "primary_arc_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "const": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+                },
+                "maxItems": 1,
+                "minItems": 1,
+                "description": "The frozen primary Arc for this request."
+              },
+              "quality_targets": {
+                "type": "object",
+                "required": [
+                  "minimum"
+                ],
+                "properties": {
+                  "minimum": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
+              },
+              "required_events": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "character_deltas": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "subject",
+                    "change"
+                  ],
+                  "properties": {
+                    "change": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "subject": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "forbidden_events": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "hard_constraints": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "planning_horizon": {
+                "type": "string",
+                "const": "TACTICAL"
+              },
+              "required_payoffs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "soft_constraints": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "arc_contributions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "subject",
+                    "change"
+                  ],
+                  "properties": {
+                    "change": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "subject": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "budget_policy_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "forbidden_payoffs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "parent_version_id": {
+                "type": "string",
+                "const": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+              },
+              "realization_level": {
+                "enum": [
+                  "ACTIVE",
+                  "DEFINED",
+                  "DETAILED"
+                ],
+                "type": "string"
+              },
+              "secondary_arc_ids": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                    "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "description": "Classify every frozen related Arc exactly once. Membership does not require movement in this chapter; HOLD and future setup remain possible.",
+                "uniqueItems": true
+              },
+              "world_realization": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "world_id",
+                    "invariant_refs",
+                    "structure_refs",
+                    "state_ref",
+                    "realization_level",
+                    "narrative_relevance",
+                    "visibility",
+                    "accessibility"
+                  ],
+                  "properties": {
+                    "world_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "state_ref": {
+                      "type": "object",
+                      "required": [
+                        "asset_version_id"
+                      ],
+                      "properties": {
+                        "asset_version_id": {
+                          "enum": [
+                            "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+                            "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+                            "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+                          ],
+                          "type": "string",
+                          "description": "Select one supplied source in this domain. The host binds all identity, hash, type and Operation fields."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "visibility": {
+                      "enum": [
+                        "HIDDEN",
+                        "PARTIAL",
+                        "VISIBLE",
+                        "SCENE_VISIBLE"
+                      ],
+                      "type": "string"
+                    },
+                    "accessibility": {
+                      "enum": [
+                        "CLOSED",
+                        "RESTRICTED",
+                        "ACCESSIBLE"
+                      ],
+                      "type": "string"
+                    },
+                    "invariant_refs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "asset_version_id"
+                        ],
+                        "properties": {
+                          "asset_version_id": {
+                            "enum": [
+                              "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+                              "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+                            ],
+                            "type": "string",
+                            "description": "Select one supplied source in this domain. The host binds all identity, hash, type and Operation fields."
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "minItems": 1
+                    },
+                    "structure_refs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "asset_version_id"
+                        ],
+                        "properties": {
+                          "asset_version_id": {
+                            "enum": [
+                              "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+                              "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+                            ],
+                            "type": "string",
+                            "description": "Select one supplied source in this domain. The host binds all identity, hash, type and Operation fields."
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "minItems": 1
+                    },
+                    "realization_level": {
+                      "enum": [
+                        "ANCHOR",
+                        "DEFINED",
+                        "DETAILED",
+                        "ACTIVE"
+                      ],
+                      "type": "string"
+                    },
+                    "narrative_relevance": {
+                      "enum": [
+                        "CURRENT",
+                        "NEAR_FUTURE",
+                        "FUTURE"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "antagonist_actions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 0
+              },
+              "canon_dependencies": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+                    "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+                    "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+                    "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+                    "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+                    "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+                    "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+                    "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1",
+                    "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                    "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                  ],
+                  "type": "string"
+                }
+              },
+              "commitment_contract": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "commitment_id",
+                    "level",
+                    "statement"
+                  ],
+                  "properties": {
+                    "level": {
+                      "enum": [
+                        "HARD_CONSTRAINT",
+                        "SOFT_INTENT",
+                        "OPEN_DESIGN_SPACE"
+                      ],
+                      "type": "string"
+                    },
+                    "statement": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "commitment_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "context_profile_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "information_release": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 0
+              },
+              "relationship_deltas": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "subject",
+                    "change"
+                  ],
+                  "properties": {
+                    "change": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "subject": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "character_realization": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "character_id",
+                    "identity_ref",
+                    "state_ref",
+                    "trajectory_ref",
+                    "scope",
+                    "reach",
+                    "realization_level",
+                    "narrative_relevance"
+                  ],
+                  "properties": {
+                    "reach": {
+                      "enum": [
+                        "DISTANT",
+                        "FUTURE_VOLUME",
+                        "CURRENT_VOLUME",
+                        "CURRENT_SEGMENT",
+                        "CURRENT_CHAPTER",
+                        "CURRENT_SCENE"
+                      ],
+                      "type": "string"
+                    },
+                    "scope": {
+                      "enum": [
+                        "BOOK",
+                        "VOLUME",
+                        "ARC",
+                        "CHAPTER_GROUP",
+                        "CHAPTER"
+                      ],
+                      "type": "string"
+                    },
+                    "state_ref": {
+                      "type": "object",
+                      "required": [
+                        "asset_version_id"
+                      ],
+                      "properties": {
+                        "asset_version_id": {
+                          "enum": [
+                            "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+                            "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+                          ],
+                          "type": "string",
+                          "description": "Select one supplied source in this domain. The host binds all identity, hash, type and Operation fields."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "character_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "identity_ref": {
+                      "type": "object",
+                      "required": [
+                        "asset_version_id"
+                      ],
+                      "properties": {
+                        "asset_version_id": {
+                          "enum": [
+                            "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+                          ],
+                          "type": "string",
+                          "description": "Select one supplied source in this domain. The host binds all identity, hash, type and Operation fields."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "trajectory_ref": {
+                      "type": "object",
+                      "required": [
+                        "asset_version_id"
+                      ],
+                      "properties": {
+                        "asset_version_id": {
+                          "enum": [
+                            "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+                          ],
+                          "type": "string",
+                          "description": "Select one supplied source in this domain. The host binds all identity, hash, type and Operation fields."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "realization_level": {
+                      "enum": [
+                        "ANCHOR",
+                        "DEFINED",
+                        "DETAILED",
+                        "ACTIVE"
+                      ],
+                      "type": "string"
+                    },
+                    "narrative_relevance": {
+                      "enum": [
+                        "CURRENT",
+                        "NEAR_FUTURE",
+                        "FUTURE"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "narrative_event_chain": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "event_id",
+                    "slice_id",
+                    "chapter_number",
+                    "causes",
+                    "actor_ref",
+                    "motivation",
+                    "preconditions",
+                    "knowledge_boundary",
+                    "action",
+                    "decision",
+                    "resistance",
+                    "consequence",
+                    "state_deltas",
+                    "disclosures",
+                    "obligation_actions",
+                    "arc_contributions",
+                    "irreversible_change",
+                    "next_event_ids",
+                    "required",
+                    "feature_status"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "causes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": "Only earlier event_id values in this exact narrative_event_chain. Every edge A -> B must appear both as A.next_event_ids containing B and B.causes containing A. No external, later or self event references."
+                    },
+                    "decision": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "event_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "slice_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "actor_ref": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "motivation": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "resistance": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "consequence": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "disclosures": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 0
+                    },
+                    "state_deltas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "state_kind",
+                          "entity_id",
+                          "from_state",
+                          "to_state"
+                        ],
+                        "properties": {
+                          "to_state": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "entity_id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "from_state": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "state_kind": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "minItems": 0
+                    },
+                    "preconditions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 0
+                    },
+                    "chapter_number": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "feature_status": {
+                      "type": "object",
+                      "required": [
+                        "decision",
+                        "resistance",
+                        "irreversible_change"
+                      ],
+                      "properties": {
+                        "decision": {
+                          "type": "object",
+                          "required": [
+                            "status",
+                            "rationale"
+                          ],
+                          "properties": {
+                            "status": {
+                              "enum": [
+                                "APPLICABLE",
+                                "NOT_APPLICABLE",
+                                "PROHIBITED"
+                              ],
+                              "type": "string"
+                            },
+                            "rationale": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "resistance": {
+                          "type": "object",
+                          "required": [
+                            "status",
+                            "rationale"
+                          ],
+                          "properties": {
+                            "status": {
+                              "enum": [
+                                "APPLICABLE",
+                                "NOT_APPLICABLE",
+                                "PROHIBITED"
+                              ],
+                              "type": "string"
+                            },
+                            "rationale": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "irreversible_change": {
+                          "type": "object",
+                          "required": [
+                            "status",
+                            "rationale"
+                          ],
+                          "properties": {
+                            "status": {
+                              "enum": [
+                                "APPLICABLE",
+                                "NOT_APPLICABLE",
+                                "PROHIBITED"
+                              ],
+                              "type": "string"
+                            },
+                            "rationale": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "next_event_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": "Only later event_id values in this exact narrative_event_chain. Include every event that names this event in causes; each outgoing edge must be reciprocated in the target's causes. The final event has no later edge."
+                    },
+                    "arc_contributions": {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+                          "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                        ],
+                        "type": "string"
+                      },
+                      "minItems": 0
+                    },
+                    "knowledge_boundary": {
+                      "type": "object",
+                      "required": [
+                        "actor_knows",
+                        "reader_may_learn",
+                        "forbidden_disclosures"
+                      ],
+                      "properties": {
+                        "actor_knows": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 0
+                        },
+                        "reader_may_learn": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 0
+                        },
+                        "forbidden_disclosures": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "obligation_actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 0
+                    },
+                    "irreversible_change": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "narrative_segment_ref": {
+                "type": "object",
+                "required": [
+                  "volume_plan_version_id",
+                  "segment_id"
+                ],
+                "properties": {
+                  "segment_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "volume_plan_version_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              },
+              "resistance_escalation": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 0
+              },
+              "chapter_function_matrix": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "chapter_number",
+                    "primary_function",
+                    "secondary_functions",
+                    "required_state_delta",
+                    "required_arc_contributions",
+                    "promise_action",
+                    "foreshadow_action",
+                    "reward_action",
+                    "ending_hook",
+                    "prohibited_outcomes",
+                    "narrative_density",
+                    "reader_experience",
+                    "arc_cadence",
+                    "obligation_actions"
+                  ],
+                  "properties": {
+                    "arc_cadence": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "arc_plan_version_id",
+                          "action"
+                        ],
+                        "properties": {
+                          "action": {
+                            "enum": [
+                              "ADVANCE",
+                              "TOUCH",
+                              "DORMANT",
+                              "REACTIVATE",
+                              "SETUP",
+                              "PAYOFF"
+                            ],
+                            "type": "string"
+                          },
+                          "arc_plan_version_id": {
+                            "enum": [
+                              "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+                              "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "maxItems": 3,
+                      "minItems": 0
+                    },
+                    "ending_hook": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "reward_action": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "chapter_number": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "promise_action": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "primary_function": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "foreshadow_action": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "narrative_density": {
+                      "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH"
+                      ],
+                      "type": "string"
+                    },
+                    "reader_experience": {
+                      "type": "object",
+                      "required": [
+                        "target_emotion",
+                        "reward_mode"
+                      ],
+                      "properties": {
+                        "reward_mode": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "minLength": 1
+                        },
+                        "target_emotion": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "obligation_actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "obligation_id",
+                          "action",
+                          "due_chapter"
+                        ],
+                        "properties": {
+                          "action": {
+                            "enum": [
+                              "SETUP",
+                              "ADVANCE",
+                              "PAYOFF"
+                            ],
+                            "type": "string"
+                          },
+                          "due_chapter": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "obligation_id": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "prohibited_outcomes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "secondary_functions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "required_state_delta": {
+                      "type": "object",
+                      "required": [
+                        "status",
+                        "summary"
+                      ],
+                      "properties": {
+                        "status": {
+                          "enum": [
+                            "CHANGED",
+                            "NO_INCREMENT",
+                            "UNDETERMINED"
+                          ],
+                          "type": "string"
+                        },
+                        "summary": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "required_arc_contributions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "arc_plan_version_id",
+                          "contribution"
+                        ],
+                        "properties": {
+                          "contribution": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "arc_plan_version_id": {
+                            "enum": [
+                              "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+                              "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                              "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "minItems": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "required_arc_contributions": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+                    "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                    "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "minItems": 0
+              },
+              "arc_checkpoint_expectations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "arc_plan_version_id",
+                    "expectation"
+                  ],
+                  "properties": {
+                    "expectation": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "arc_plan_version_id": {
+                      "enum": [
+                        "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+                        "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 3,
+                "minItems": 0
+              },
+              "narrative_architecture_version": {
+                "type": "string",
+                "const": "canonical-narrative-v1"
+              }
+            },
+            "additionalProperties": false
+          },
+          "failure_message": "PROVIDER_RESPONSE_TIMEOUT",
+          "model_authority": {
+            "schema_version": "novelos.model_authority_evidence.v1",
+            "route_policy_id": "planning.chapter_group.route.sha256.6d6790c4a6971a23adeee7c63ad5aff47615bbf7b1540918b6e15d991e8f401e",
+            "invocation_model": "gpt-6.1-sol",
+            "model_profile_id": "planning.chapter_group.default.sha256.6d6790c4a6971a23adeee7c63ad5aff47615bbf7b1540918b6e15d991e8f401e",
+            "route_policy_hash": "52641efec99d9148f22a8504e765bb98fe56be8b01db3a26b8e58c5591520b1f",
+            "route_snapshot_id": "production_execution/routes/e141fc6caea38f4306ee",
+            "frozen_route_model": "gpt-6.1-sol",
+            "model_profile_hash": "eba6398c52e5dadffc343d4bb654123ca6c16ef1206d07a88a88e89c6e2de794",
+            "route_snapshot_hash": "74ff97d97c5e45d5bdfc6d8b8f27504c903f54e878258fe10d9211fb124957f6",
+            "route_policy_version": 1,
+            "model_profile_version": 1,
+            "policy_requested_model": "gpt-6.1-sol",
+            "invocation_command_hash": "sha256:019f5ef977251ea29caf80ffaae054cf7cb0288bc887089af747a024d8bcc3fc",
+            "provider_observed_model": "unavailable",
+            "session_recovery_policy": "codex-local-session-evidence.v1",
+            "local_session_persistence": "DURABLE",
+            "local_user_config_ignored": true,
+            "invocation_reasoning_effort": "high",
+            "frozen_route_reasoning_effort": "high",
+            "policy_requested_reasoning_effort": "high",
+            "provider_observed_reasoning_effort": "unavailable",
+            "local_user_config_is_model_authority": false
+          },
+          "submission_phase": "PROCESS_RESULT_RECORDED",
+          "stream_diagnostics": {
+            "version": "codex-stream-diagnostics.v1",
+            "event_counts": {
+              "turn.started": 1,
+              "item.completed": 3,
+              "thread.started": 1
+            },
+            "stdout_bytes": 863,
+            "stdout_sha256": "ea5de33a3701e8ba8d08202236294cdb98c8f34b0b74a4a84f17bd775b102716",
+            "usage_present": false,
+            "remote_outcome": "UNESTABLISHED",
+            "scan_truncated": false,
+            "turn_completed": false,
+            "local_thread_id": "01a121b8-3d53-7d73-9121-5fc98f9075d7",
+            "stream_disconnected": false,
+            "response_body_decode_failed": false
+          },
+          "capability_evidence": {
+            "skill": {
+              "ref": "long-outline",
+              "version": "long-outline-v3",
+              "content_hash": "sha256:e619875c466e7b3b07b93c394c0ecb05414a9bf454ec5e30775a00b0b7fa5e29"
+            },
+            "allowed_tools": [
+              "model.provider.invoke"
+            ],
+            "provider_view": {
+              "component_hashes": {
+                "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+                "output_schema": "sha256:d63c8b1b883d80d553211a25f86640e16dacb8dc30f126bbaa2f685a2819badc",
+                "governed_skill": "sha256:ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:49fcf92295eb6a9ada9dd543948160f297b9f2ba0c823fcb56012828faf42b9c",
+                "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+                "fully_rendered_prompt": "sha256:db6b2a1e7bd0948db4abc69a3a6a310f6803a185aacf509ea1d653ca4fa8d54a",
+                "provider_context_view": "sha256:474a06997dad1bf15504e063481a002e5c635652d147d0c6b32ce95f3f2cb6e4",
+                "stage_semantic_contract": "sha256:b391c88f42d164b943f6c476f9912d0a780aab90df399a2e75d7eddf66dabe67"
+              },
+              "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+              "component_characters": {
+                "tool_policy": 258,
+                "output_schema": 17547,
+                "governed_skill": 1181,
+                "provider_knowledge": 559,
+                "provider_task_view": 23544,
+                "system_instruction": 9358,
+                "fully_rendered_prompt": 124773,
+                "provider_context_view": 69880,
+                "stage_semantic_contract": 1617
+              },
+              "representation_policy": "authority-projection-task-provider-v1",
+              "selection_explanation": {
+                "policy": "minimum-sufficient-planning-context-v2",
+                "loss_receipt": {
+                  "audit_hash": "sha256:903424596557e98cde59c3e9b46cb6ef1e683def5e7d321b857af9e5ae219544",
+                  "json_pointer": "/context_manifest/projection_audit",
+                  "loss_record_count": 140,
+                  "source_input_hash": "sha256:27794a93eac2953d7ccc8502f37fc59dd98353647e3e8ec036b03ca91756df56"
+                },
+                "field_classes": {
+                  "invariants": "HARD_CONSTRAINT",
+                  "constraints": "HARD_CONSTRAINT",
+                  "inspiration": "OPTIONAL_GUIDANCE",
+                  "required_facts": "REQUIRED_FACT",
+                  "due_obligations": "DUE_OBLIGATION",
+                  "forbidden_events": "PROHIBITION",
+                  "hard_constraints": "HARD_CONSTRAINT",
+                  "required_payoffs": "DUE_OBLIGATION",
+                  "soft_suggestions": "OPTIONAL_GUIDANCE",
+                  "forbidden_payoffs": "PROHIBITION",
+                  "optional_guidance": "OPTIONAL_GUIDANCE",
+                  "required_fact_ids": "REQUIRED_FACT",
+                  "story_constraints": "HARD_CONSTRAINT",
+                  "style_suggestions": "OPTIONAL_GUIDANCE",
+                  "prohibited_outcomes": "PROHIBITION",
+                  "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+                  "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+                  "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+                  "required_obligation_ids": "DUE_OBLIGATION",
+                  "unresolved_obligation_ids": "DUE_OBLIGATION"
+                },
+                "compiler_version": "scope-preserving-planning-context-v2",
+                "maximum_segments": 24,
+                "token_accounting": "utf8-byte-upper-bound.v1",
+                "omitted_fact_count": 0,
+                "omitted_item_count": 339,
+                "task_target_tokens": 226128,
+                "included_fact_count": 0,
+                "omitted_segment_count": 0,
+                "included_segment_count": 11,
+                "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+                "maximum_serialized_bytes": 8388608,
+                "maximum_facts_per_segment": null,
+                "truncated_character_count": 0
+              },
+              "task_contract_version": "provider-task-view-v1",
+              "context_contract_version": "provider-context-view-v4",
+              "context_projection_ratio": 0.323668,
+              "exact_context_references": {
+                "decoded_equal": true,
+                "reference_count": 4,
+                "contract_version": "planning-exact-value-reference.v1",
+                "source_context_hash": "sha256:a0ac1914dbdfe01ecbb18b83c1e02d7207430844d9326be7fb97082b205728c3",
+                "encoded_context_hash": "sha256:474a06997dad1bf15504e063481a002e5c635652d147d0c6b32ce95f3f2cb6e4"
+              },
+              "component_estimated_tokens": {
+                "tool_policy": 86,
+                "output_schema": 5849,
+                "governed_skill": 394,
+                "provider_knowledge": 187,
+                "provider_task_view": 7848,
+                "system_instruction": 3120,
+                "fully_rendered_prompt": 62313,
+                "provider_context_view": 44015,
+                "stage_semantic_contract": 539
+              },
+              "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+              "component_utf8_byte_upper_bounds": {
+                "tool_policy": 258,
+                "output_schema": 17547,
+                "governed_skill": 1181,
+                "provider_knowledge": 559,
+                "provider_task_view": 23544,
+                "system_instruction": 9358,
+                "fully_rendered_prompt": 186937,
+                "provider_context_view": 132044,
+                "stage_semantic_contract": 1617
+              },
+              "provider_context_estimated_tokens": 44015,
+              "authority_context_estimated_tokens": 135988,
+              "rendered_prompt_to_semantic_input_ratio": 1.197176,
+              "provider_admission_uses_component_estimates": false
+            },
+            "prompt_template": {
+              "ref": "prompt-template:story-planning-pack",
+              "version": "v1",
+              "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+            },
+            "method_selection": {
+              "skill_sections": [
+                "Shared rules",
+                "Chapter-group planning"
+              ],
+              "system_sections": [
+                "Shared rules",
+                "Foundation",
+                "Realization references",
+                "Book plan",
+                "Volume plan",
+                "Arc plan",
+                "Chapter group",
+                "Chapter plan",
+                "World proposals",
+                "World evaluation",
+                "Actor intention",
+                "Chapter serialization realization",
+                "Host source selectors and scheduled Arc scope"
+              ],
+              "contract_version": "production-stage-methods.v1"
+            },
+            "output_schema_ref": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2",
+            "output_schema_hash": "sha256:d63c8b1b883d80d553211a25f86640e16dacb8dc30f126bbaa2f685a2819badc",
+            "provider_admission": {
+              "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+              "status": "ADMITTED",
+              "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+              "envelope_hash": "sha256:928518d3db2e14dc7feb84271d93c7ea1df56c2968e2c5154496572f70d35955",
+              "total_reserved": 219209,
+              "component_usage": {
+                "safety_margin": 256,
+                "output_reserve": 32000,
+                "provider_input": 186937,
+                "request_framing": 16
+              },
+              "applicable_limit": 258400,
+              "contract_version": "provider-token-admission-v1",
+              "accounting_contract": {
+                "model": "gpt-6.1-sol",
+                "provider": "codex-cli",
+                "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+                "meter_version": "v1",
+                "safety_margin": 256,
+                "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                "output_reserve": 32000,
+                "route_identity": "chapter_group_plan.generate:codex-cli:gpt-6.1-sol:06f1a77931dd5795cf94653d71bc09abf131579f:sha256:f888c72dc747293b51f0058cac303f71708cd84362555c3d6a7367c4e19e97c1",
+                "contract_version": "provider-token-accounting-v3",
+                "framing_overhead": 16,
+                "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                "model_context_limit": 258400,
+                "execution_token_limit": 258400,
+                "serialization_contract": "codex-cli-application-stdin-v1"
+              },
+              "context_bundle_status": "VALID",
+              "context_bundle_tokens": 135988,
+              "input_component_hashes": {
+                "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+                "output_schema": "sha256:d63c8b1b883d80d553211a25f86640e16dacb8dc30f126bbaa2f685a2819badc",
+                "governed_skill": "sha256:ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:49fcf92295eb6a9ada9dd543948160f297b9f2ba0c823fcb56012828faf42b9c",
+                "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+                "fully_rendered_prompt": "sha256:db6b2a1e7bd0948db4abc69a3a6a310f6803a185aacf509ea1d653ca4fa8d54a",
+                "provider_context_view": "sha256:474a06997dad1bf15504e063481a002e5c635652d147d0c6b32ce95f3f2cb6e4",
+                "stage_semantic_contract": "sha256:b391c88f42d164b943f6c476f9912d0a780aab90df399a2e75d7eddf66dabe67"
+              },
+              "complete_request_coverage": [
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "knowledge_inputs",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin"
+              ]
+            },
+            "system_instruction": {
+              "ref": "prompt-system:story-planning-pack",
+              "version": "v11",
+              "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+            },
+            "materialization_hash": "sha256:19b42ba162b4cf908a0b653ef320e812e680c54cbb647ef85c872394808a2ff3",
+            "rendered_prompt_bytes": 186937,
+            "reusable_prefix_bytes": 10619,
+            "knowledge_content_hashes": [
+              "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+            ],
+            "context_asset_version_ids": [
+              "ccc13510-8f2a-4229-a91a-4355802ffbac"
+            ],
+            "embedding_output_contract": null,
+            "fully_rendered_prompt_hash": "sha256:db6b2a1e7bd0948db4abc69a3a6a310f6803a185aacf509ea1d653ca4fa8d54a",
+            "provider_request_envelope_hash": "sha256:928518d3db2e14dc7feb84271d93c7ea1df56c2968e2c5154496572f70d35955",
+            "required_reader_facing_language": "zh-CN",
+            "rendered_prompt_estimated_tokens": 62313,
+            "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1",
+            "provider_admission_asset_version_id": "7ca65573-33ef-4953-b9e2-72e6d7f97280"
+          },
+          "failure_disposition": "RETRYABLE",
+          "provider_request_id": null,
+          "output_schema_version": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2",
+          "transport_retry_policy": {
+            "version": "codex-no-transport-retry.v1",
+            "stream_max_retries": 0,
+            "request_max_retries": 0,
+            "invocation_overrides": [
+              "model_provider=\"novel_forge_openai_no_retry\"",
+              "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+              "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+              "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+              "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+              "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+            ]
+          },
+          "provider_schema_contract": {
+            "version": "codex-structured-schema.v5",
+            "provider_hash": "sha256:67f82de3692085f0005dd10a34dbfa912c702ebcc8247273cf474a7f2c5a7d77",
+            "canonical_hash": "sha256:d63c8b1b883d80d553211a25f86640e16dacb8dc30f126bbaa2f685a2819badc",
+            "equivalent_projection": "codex-nullable-shared-types.v3",
+            "local_constraints_retained": [
+              "uniqueItems"
+            ]
+          },
+          "local_execution_receipt_id": "process-receipt:af8baf5a921d997758646dd0",
+          "reconciliation_fingerprint": "sha256:24c41ae4d2db1ee98ac409341dc94542c1861081464f368290ef5e6abc275ed5"
+        },
+        "execution_request": {
+          "stage": "chapter_group_plan.generate",
+          "domain": "planning",
+          "book_id": "book:qinglan-wendao-20261008",
+          "saga_id": "52bb9866-ab0a-430c-bce7-c5f66f7e94bb",
+          "trace_id": "qinglan-five:group1",
+          "task_kind": "story_planning.generate",
+          "attempt_id": "a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "capability": "planning.chapter_group.generate",
+          "project_id": "qid-learning-prose-01",
+          "risk_class": "high",
+          "execution_id": "planning-execution:101cb54a-ac3c-42d5-8fc0-2d131f672217:a388fde2-5658-4f2d-bc89-aa7e72cd5ed2",
+          "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+          "origin_chain": [
+            "story_planning.generate",
+            "chapter_group_plan.generate"
+          ],
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "chapter-group:containing:1",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter_group"
+          },
+          "workspace_id": "workspace:qid-learning-prose-01",
+          "fencing_token": 1,
+          "correlation_id": "qinglan-five-work-v1",
+          "agent_hop_count": 0,
+          "resource_claims": [
+            "book:book:qinglan-wendao-20261008",
+            "planning:chapter-group:containing:1"
+          ],
+          "importance_class": "HIGH",
+          "budget_policy_ref": "budget:planning-chapter_group-generate:v1",
+          "commit_policy_ref": "commit:planning-chapter_group-generate:v1",
+          "root_operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+          "route_snapshot_id": "production_execution/routes/e141fc6caea38f4306ee",
+          "external_effect_id": "101cb54a-ac3c-42d5-8fc0-2d131f672217",
+          "input_manifest_ref": "production_execution/inputs/e141fc6caea38f4306ee",
+          "timeout_policy_ref": "timeout:planning-chapter_group-generate:v3",
+          "budget_reservation_id": "8cf0326b-2a4f-40b6-8558-4fc298569fa0",
+          "permission_policy_ref": "permission:planning-chapter_group-generate:v1",
+          "validation_policy_ref": "validation:planning-chapter_group-generate:v1",
+          "stable_idempotency_key": "b6d08c58-1052-41dd-91dd-bcd8e48809ce:planning.chapter_group.generate:planning-pep-v2",
+          "workspace_snapshot_ref": "workspace:qid-learning-prose-01"
+        }
+      },
+      "fixture_protocol_only": false
+    },
+    "provider": "production_execution_gateway",
+    "created_at": "2026-10-09T17:31:24.166477+00:00",
+    "generation": 1,
+    "receipt_id": "",
+    "updated_at": "2026-10-09T17:40:56.155548+00:00",
+    "dispatch_id": "0e9e2ede-a408-47fd-95f0-f764e4137979",
+    "finished_at": "2026-10-09T17:40:56.155548+00:00",
+    "payload_hash": "sha256:2b5e7e3208b693ac6f629f0428bbdd31487f8a0b73352371c2839b2c3b11c789",
+    "external_effect_id": "101cb54a-ac3c-42d5-8fc0-2d131f672217",
+    "provider_correlation_id": "process-receipt:af8baf5a921d997758646dd0"
+  }
+]

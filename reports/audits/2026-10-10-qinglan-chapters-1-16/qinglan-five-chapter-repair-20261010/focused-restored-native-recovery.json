@@ -1,0 +1,27 @@
+{
+  "database": "nf_qinglan_repair_validation_20261010",
+  "restore_verified": true,
+  "concurrent_results": [
+    true,
+    true
+  ],
+  "native_successors": 1,
+  "original_attempts": [
+    [
+      1,
+      "FAILED_RETRYABLE"
+    ],
+    [
+      2,
+      "FAILED_RETRYABLE"
+    ]
+  ],
+  "restart_result": "ChapterSchedulerTick(root_operation_id='915771af-85c8-446e-9ef4-d4af77f7c25d', saga_id='51a215bf-7684-4a32-bc89-e9f36b678a45', saga_status='RUNNING', operation_id='fadbf3fb-59fe-4343-b1e2-96f318fdd72d', node='memo', operation_status='SUCCEEDED', recovery_mode='fresh_attempt')",
+  "external_effects_before": 94,
+  "external_effects_after": 94,
+  "original_receipts_acknowledged": [
+    "2e140437-5c4b-4764-ac2b-410a1a1feb62",
+    "79e0710c-57eb-4540-be0a-b4c5bad67611"
+  ],
+  "provider_invoked": false
+}

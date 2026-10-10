@@ -1,0 +1,24 @@
+[
+  {
+    "operation_id": "de87bc3f-4f77-42d9-96fa-9bcb26e1ea06",
+    "status": "SUCCEEDED",
+    "chapter": 1,
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "author_selection": "NOT_GRANTED",
+    "formal_acceptance": "NOT_GRANTED",
+    "source_asset_version_id": "64c825b9-6296-4058-9ee3-4132222e2fa2",
+    "selection_asset_version_id": "cb3c7309-73ec-4cfe-98bd-b94a5d37dc46",
+    "replayed": true
+  },
+  {
+    "operation_id": "de87bc3f-4f77-42d9-96fa-9bcb26e1ea06",
+    "status": "SUCCEEDED",
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "chapter": 1,
+    "selection_asset_version_id": "cb3c7309-73ec-4cfe-98bd-b94a5d37dc46",
+    "source_asset_version_id": "64c825b9-6296-4058-9ee3-4132222e2fa2",
+    "author_selection": "NOT_GRANTED",
+    "formal_acceptance": "NOT_GRANTED",
+    "replayed": false
+  }
+]

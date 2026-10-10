@@ -1,0 +1,84 @@
+{
+  "operation_id": "9391c807-7a7b-4cc2-93c4-78d3bfb387d3",
+  "external_effect_id": "43092677-d787-4160-905a-f9517764179a",
+  "materialization_asset_id": "763433ed-7f16-49f5-9f66-b06f6b3e1996",
+  "materialization_hash": "sha256:60382e4a8b57a00fc6644794856cbc532a1e3d5aa66856d091cbbd05bf709626",
+  "template": {
+    "version": "v2",
+    "content_hash": "sha256:2785acd8703d1fff8ca65d92c887dd7a87610f0a112785b0611d6e83548455a5",
+    "source_identity": "config/capability_packs/artifacts/story_planning_template_v2.md"
+  },
+  "pack_identity": {
+    "pack_id": "story_planning_pack.creative.a7bb62b2dbf2852b445326aa",
+    "pack_version": "2.13.116600347",
+    "manifest_hash": "sha256:c20ae4be68f80a1e6df2b22c85cdbc349989fb9bdf8a399e7db52131fa4ffcbb",
+    "binding_set_id": "2844bbb8-e6c5-438c-85c7-7d7ab4150105",
+    "binding_set_hash": "sha256:3c4cfdb955503d80194c4b25c05cfaf363cda83d805a63ccc9eca645ab8f617c",
+    "compilation_hash": "sha256:2d7905c8ebdc0f9976f7375626eb1490205f6a52e6fd00c1b927b3934a1994fa",
+    "catalog_snapshot_hash": "sha256:3d96220a37a98f35bddb75db8d3dc3ed1034f9f75c192b53ea17aea8f35b3400"
+  },
+  "schema_arc_id_role_bindings": [
+    {
+      "role": "PRIMARY",
+      "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+    },
+    {
+      "role": "SECONDARY",
+      "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+    },
+    {
+      "role": "TOUCH",
+      "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+    }
+  ],
+  "selected_world_action": {
+    "disclosures": [
+      {
+        "mode": "CONFIRM",
+        "source": {
+          "state": {
+            "public_harvest_rule": "只采成熟外叶并保留中心芽与根"
+          },
+          "evidence_role": "PLANNED_LOCAL_OCCURRENCE",
+          "source_event_id": "local:publishHarvestRule"
+        },
+        "fact_id": "local:publishHarvestRule",
+        "audience": "READER",
+        "claim_kind": "CURRENT_ASSERTION",
+        "disclosure_id": "reader-harvest-rule",
+        "permitted_fields": [
+          "public_harvest_rule"
+        ],
+        "presentation_channel": "ON_CAMERA:采收说明"
+      }
+    ],
+    "disposition": "ELIGIBLE",
+    "contract_version": "world-planning-direction.v1",
+    "on_camera_events": [
+      {
+        "camera": "ON_CAMERA",
+        "changes": {
+          "world_state_id": "unit:herb-store",
+          "public_harvest_rule": "只采成熟外叶并保留中心芽与根"
+        },
+        "actor_id": "unit:herb-store",
+        "entity_key": "world_state_id=unit:herb-store",
+        "state_kind": "world_state",
+        "story_time": {
+          "label": "第5章采收说明可供查阅",
+          "precision": "ORDERED",
+          "end_ordinal": 1,
+          "timeline_id": "chapter:5",
+          "start_ordinal": 1
+        },
+        "transition_id": "publishHarvestRule"
+      }
+    ],
+    "action_content_hash": "sha256:f0842e345a7dff5870f4963ed70720032cf31a2185e479c61b75b806f96168ba",
+    "fact_mutation_allowed": false,
+    "action_asset_version_id": "f6a815f2-e74e-426e-a4ef-ea786dec0096"
+  },
+  "provider_stages": [
+    "chapter_plan.generate"
+  ]
+}

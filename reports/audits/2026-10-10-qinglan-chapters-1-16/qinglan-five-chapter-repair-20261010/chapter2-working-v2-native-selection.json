@@ -1,0 +1,11 @@
+{
+  "operation_id": "67520188-68d8-4ebb-b998-eac7f665a3f4",
+  "status": "SUCCEEDED",
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "chapter": 2,
+  "selection_asset_version_id": "16b5e6a6-145b-49ca-a331-ba47076251d9",
+  "source_asset_version_id": "ccda20cc-bdad-45c7-8643-d9ba664ee278",
+  "author_selection": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "replayed": false
+}

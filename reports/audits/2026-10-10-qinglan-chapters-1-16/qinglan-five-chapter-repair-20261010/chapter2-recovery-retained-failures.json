@@ -1,0 +1,35 @@
+[
+  [
+    "34330928-4f50-4ca8-8f9a-6125f15bef89",
+    "DEAD_LETTER",
+    1,
+    {
+      "error_code": "CHAPTER_MEMO_CHARACTER_DRIFT",
+      "error_message": "CHAPTER_MEMO_CHARACTER_DRIFT: creative choices require an exact frozen Scene participant",
+      "failure_class": "retryable",
+      "failure_details": {}
+    }
+  ],
+  [
+    "34330928-4f50-4ca8-8f9a-6125f15bef89",
+    "DEAD_LETTER",
+    2,
+    {
+      "error_code": "CHAPTER_MEMO_CHARACTER_DRIFT",
+      "error_message": "CHAPTER_MEMO_CHARACTER_DRIFT: creative choices require an exact frozen Scene participant",
+      "failure_class": "retryable",
+      "failure_details": {}
+    }
+  ],
+  [
+    "c65573b3-3ee0-441c-b90a-f54e6e3c7228",
+    "FAILED_FINAL",
+    1,
+    {
+      "error_code": "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID",
+      "error_message": "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Each frozen Scene participant needs a unique exact cast binding",
+      "failure_class": "final_failure",
+      "failure_details": {}
+    }
+  ]
+]

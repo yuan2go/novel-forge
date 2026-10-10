@@ -1,0 +1,26 @@
+{
+  "canonical_document_count": 5,
+  "capability_count": 26,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "70ac89b1fedb304e10422d78e4bd231ebfc52831",
+    "base_source_comment_count": 515,
+    "base_source_docstring_count": 135,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [
+    "canonical document references missing path: docs/runtime-operations.md:world-production-action.v1/v2",
+    "current-system projection is stale for the implementation tree"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:023b9f7410b56b2cc096f9ec1b054bef16b8a5fc437ce7260919fb6825e8416e",
+  "module_docstring_count": 37,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 515,
+  "source_docstring_count": 135,
+  "status": "FAIL",
+  "tested_sha": "30dd9137be855c80cb2c68fbbf6c0c51f9efd265",
+  "web_comment_count": 5
+}

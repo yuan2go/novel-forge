@@ -1,0 +1,34 @@
+[
+  {
+    "effect_id": "03cc900d-31d1-473b-8dc7-8a71be47f134",
+    "contract_hash": "sha256:5adc84deb1a6db4c9ebef76fc6f5a0359d3b9e76e19e5e978c6fef8a803e4634",
+    "raw_output_hash": "sha256:5872864bc5f780b7dbd278d971b55a945a989949466a36240e8884fb1a43bf76",
+    "normalized_scene_hash": "sha256:bbf381b898c368e82bab8d2574a51ebd48711a77ccd87d6cb6b18360d6efa5ae",
+    "changes": [
+      {
+        "slot_id": "chapter:5:scene:delivery:skeleton",
+        "added_scene_refs": [
+          "chapter:5:fact:route"
+        ]
+      }
+    ],
+    "prose_changed": false,
+    "fact_mutation_allowed": false
+  },
+  {
+    "effect_id": "ae155c77-db8e-4dde-85dd-b88d54b336b2",
+    "contract_hash": "sha256:5adc84deb1a6db4c9ebef76fc6f5a0359d3b9e76e19e5e978c6fef8a803e4634",
+    "raw_output_hash": "sha256:7e7c55947fba8e8e49d7f84e53ed50a237b898bc1a1aee52e4aec63fb8f5abc7",
+    "normalized_scene_hash": "sha256:af7c459b06c6adcfbc014eeb3416c217322888bc762e67491c8b30b593cfe95e",
+    "changes": [
+      {
+        "slot_id": "chapter:5:scene:delivery:skeleton",
+        "added_scene_refs": [
+          "chapter:5:fact:route"
+        ]
+      }
+    ],
+    "prose_changed": false,
+    "fact_mutation_allowed": false
+  }
+]

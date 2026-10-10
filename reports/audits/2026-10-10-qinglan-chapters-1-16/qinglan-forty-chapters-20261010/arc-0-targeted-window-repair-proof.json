@@ -1,0 +1,31 @@
+{
+  "source_preserved": true,
+  "source_generation": "386ebc38-1367-4605-990c-eb3c76b082b6",
+  "successor_generation": "7f77bbfc-f8e0-4629-8fb6-5a7c34e9f8da",
+  "changed_literary_contract_fields": [
+    "hard_constraints"
+  ],
+  "identical_fields": [
+    "arc_type",
+    "objective",
+    "arc_segments",
+    "required_events",
+    "forbidden_events",
+    "required_payoffs",
+    "forbidden_payoffs",
+    "character_deltas",
+    "world_deltas",
+    "relationship_deltas",
+    "closure_conditions",
+    "arc_relations",
+    "commitment_contract",
+    "quality_targets",
+    "cross_volume_scope"
+  ],
+  "changed_constraints_before_after": {
+    "before": "本候选不批准、激活或修改Authority状态，不扩大止于第3章的当前正文执行权限。",
+    "after": "本候选只提供工作规划；正文执行沿用原生Book冻结240章目标及40章交付窗口，生成仍须现有Provider授权和预算；不记录作者正文选择或正式接纳。"
+  },
+  "author_selection": 0,
+  "formal_acceptance": 0
+}

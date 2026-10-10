@@ -1,0 +1,1406 @@
+{
+  "cost": "程观为核对不完整的交回信息和协商调整占用自己的有限事务时间；沈砚因履约与安排修改承担实际用时或当次机会取舍，具体分量由后续事件确定。",
+  "turn": "拟在沈砚以实际履约和完整说明提出调整时，程观从只按已发布安排接收，转为在职责范围内考虑有依据的重新分配；是否同意每次请求仍取决于当时条件。",
+  "type": "PlanningGenerationCandidate",
+  "choice": "程观拟在已发布要求和当天事务允许的范围内，依据沈砚交回与说明的具体情况决定接收、要求补充信息或协商后续安排。",
+  "result": "拟形成一种可追踪、可协商的劳作交回关系：程观完成权限内的工作并保有个人安排，沈砚以履约与明确说明争取可行空间，最终出行不遗留影响本次行程的含糊承诺。",
+  "book_id": "book:qinglan-wendao-20261008",
+  "arc_type": "CHARACTER",
+  "objective": "规划程观贯穿五卷的有限而有用的人物作用：他为劳作交回的可靠承接作出自身选择，依据沈砚的实际履约与信息完整程度调整协商方式；在不越权的前提下，使任务、学习日程和远行前承诺的后果清楚可见。",
+  "thread_id": "thread:cheng-guan:reliable-handover",
+  "escalation": "拟由卷一具体交回说明，推进到卷二任务取舍、卷三更复杂的准备与交付、卷四练习日程调整及卷五远行前承诺结清；每一步依实际结果和程观有限职责成立。",
+  "project_id": "qid-learning-prose-01",
+  "resistance": "交回要求、实际质量信息、沈砚的学习需要、伙伴日程与程观当天事务可能彼此错位；未核实的结果和不完整说明使他不能凭善意作出越权承诺。",
+  "consequence": "程观的职责边界使交回事实与后续验收、资源或教学结果各有明确去向；沈砚若改变安排，须承接已接事项和实际耗时，同门的选择也可改变分工。",
+  "contract_id": "arc-plan:character:cheng-guan:successor-v1",
+  "logical_key": "character:character:cheng-guan",
+  "arc_segments": [
+    {
+      "status": "PLANNED",
+      "objective": "保留首次采药交回及共同药叶劳作的工作稿连续性，确定程观只在劳动交回职责内参与，不替有权者审批整批质量、报酬或课程。",
+      "segment_id": "arc:cheng-guan:segment:01",
+      "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "exit_state_spec": {
+        "summary": "条件式承接第1—11章工作稿所示的劳作交回接触；这些经历仍是工作连续性，非第0章之后的已接受事实。程观的已知信息与权限须由后续实际接触确定。"
+      },
+      "narrative_segment_id": "volume1-segment-01",
+      "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第12—18章的新日常事务中，使程观为可靠交回和减少错配采取具体行动，而不让权限核对成为反复对白。",
+      "segment_id": "arc:cheng-guan:segment:02",
+      "entry_state_ref": "arc:cheng-guan:segment:01",
+      "exit_state_spec": {
+        "summary": "拟使一件新的有限外门事务有清楚的交回要求；程观据实际收到的信息说明自己能处理的部分，其他结果仍待相应权限内的回应。"
+      },
+      "narrative_segment_id": "volume1-segment-02",
+      "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接第19—25章跨场所尝试的实际结果，让程观关心交回是否符合先前说明，并在信息不足时要求补全可核对的内容。",
+      "segment_id": "arc:cheng-guan:segment:03",
+      "entry_state_ref": "arc:cheng-guan:segment:02",
+      "exit_state_spec": {
+        "summary": "拟使现场变化带来的交回差异得到记录和范围内的回应；沈砚据此修订练习或事务选择，程观不替他作判断。"
+      },
+      "narrative_segment_id": "volume1-segment-03",
+      "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第26—32章不同于药叶分拣的事务中，以具体交回事项检验协商后的分工，让程观因职责和当天安排作出有限选择。",
+      "segment_id": "arc:cheng-guan:segment:04",
+      "entry_state_ref": "arc:cheng-guan:segment:03",
+      "exit_state_spec": {
+        "summary": "拟使沈砚与同门重新约定的工作范围反映到可交回的事项中；程观完成自身接收或转交职责，整批验收及资源变化仍依有权核验。"
+      },
+      "narrative_segment_id": "volume1-segment-04",
+      "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接沈砚主动安排并完成的有限行动，使劳作交回反馈成为下一步练习或分工的依据之一，而非把反馈当作课程或修为资格。",
+      "segment_id": "arc:cheng-guan:segment:05",
+      "entry_state_ref": "arc:cheng-guan:segment:04",
+      "exit_state_spec": {
+        "summary": "拟让第40章有限行动中的交回部分获得可辨认结果；程观说明已收事项及仍须交由有权者处理的部分，行动本身在第40章收束，卷一继续至第48章。"
+      },
+      "narrative_segment_id": "volume1-segment-05",
+      "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第41—48章基础实践的结果中，承接第40章的实际交回，不将程观写成授课者、整批质量审批者或沈砚成长的唯一评判人。",
+      "segment_id": "arc:cheng-guan:segment:06",
+      "entry_state_ref": "arc:cheng-guan:segment:05",
+      "exit_state_spec": {
+        "summary": "拟结清本卷属于程观职责内的交回事项，尚待其他权限回应的结果保留清楚去向；他对沈砚是否能可靠说明承担范围形成有依据、可继续修订的工作判断。"
+      },
+      "narrative_segment_id": "volume1-segment-06",
+      "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "条件式衔接第49—56章的学习与劳作安排，厘清已答应事项和可协商的新事项，不补造前卷已接受成果。",
+      "segment_id": "arc:cheng-guan:segment:07",
+      "entry_state_ref": "arc:cheng-guan:segment:06",
+      "exit_state_spec": {
+        "summary": "拟依据届时实际前卷结果，说明可接取的劳作要求与尚需核实之处；程观听取有依据的调整请求，但不把愿望本身当作撤销承诺的理由。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:1",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第73—80章任务判断修正后，让沈砚先处理已接工作，再向程观说明后续可承担范围；是否存在合适新任务须实际核实。",
+      "segment_id": "arc:cheng-guan:segment:08",
+      "entry_state_ref": "arc:cheng-guan:segment:07",
+      "exit_state_spec": {
+        "summary": "拟使一次任务选择的实际交付得到程观职责范围内的接收与记录；往返和等待耗去的时间及相应结果由沈砚承接，未核验报酬不被预记。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:4",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第89—96章以实际交付检验修正后的接取安排，程观回应自己负责的交回事实，不越权确认课程、整批质量或额外资源。",
+      "segment_id": "arc:cheng-guan:segment:09",
+      "entry_state_ref": "arc:cheng-guan:segment:08",
+      "exit_state_spec": {
+        "summary": "拟让受控合作交付与职责内的回执清楚衔接，沈砚保留经实践验证的练习时段；程观依据完整说明和履约结果更新后续协商方式。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:6",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "条件式承接卷二的任务安排，参与第97—104章新职责的交回边界说明，不预授复杂任务资格。",
+      "segment_id": "arc:cheng-guan:segment:10",
+      "entry_state_ref": "arc:cheng-guan:segment:09",
+      "exit_state_spec": {
+        "summary": "拟形成届时可核对的已接劳作范围与待确认条件；程观对信息完整的请求给出职责内回应，沈砚自行决定准备投入。"
+      },
+      "narrative_segment_id": "volume:3:segment:1",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第121—128章伙伴重新分工时，确认劳作交回范围与变动请求的实际影响，使程观有理由接受、要求补充或拒绝特定调整。",
+      "segment_id": "arc:cheng-guan:segment:11",
+      "entry_state_ref": "arc:cheng-guan:segment:10",
+      "exit_state_spec": {
+        "summary": "拟使沈砚放弃互斥的当次额外机会后，原承诺仍被履行或明确协商；程观知道的是向他说明且属于其职责的事项，不自动获知沈砚全部练习计划。"
+      },
+      "narrative_segment_id": "volume:3:segment:4",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第137—144章承接受控结伴任务的交付结果，使沈砚修正后的准备方法影响下一轮接取，同时不让程观代替同门完成判断。",
+      "segment_id": "arc:cheng-guan:segment:12",
+      "entry_state_ref": "arc:cheng-guan:segment:11",
+      "exit_state_spec": {
+        "summary": "拟把本卷实际交回与后续任务边界记录清楚；质量验收、内部额度及报酬依有权核验结果处理，程观的可靠交回目标获得具体承接。"
+      },
+      "narrative_segment_id": "volume:3:segment:6",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第145—152章沈砚核实练习条件时，按实际旧约安排劳作交回，使练习时间与承诺不互相挤占。",
+      "segment_id": "arc:cheng-guan:segment:13",
+      "entry_state_ref": "arc:cheng-guan:segment:12",
+      "exit_state_spec": {
+        "summary": "拟使飞剑学习前已答应的劳作交回有明确安排；程观回应其负责的事项，不授予器具使用、教学或飞行资格。"
+      },
+      "narrative_segment_id": "volume4-segment1",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第169—176章短程实践准备中，让程观依据已履行事项和真实可用时段处理劳作变动，显示其可靠履约原则与有限协商空间。",
+      "segment_id": "arc:cheng-guan:segment:14",
+      "entry_state_ref": "arc:cheng-guan:segment:13",
+      "exit_state_spec": {
+        "summary": "拟使沈砚因持续控制练习而调整的新接取范围落实到具体劳作安排；少接未承诺事项所失去的可能收益不被虚构成确定数值。"
+      },
+      "narrative_segment_id": "volume4-segment4",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第185—192章受控往返及复查之后，结算程观职责内的交回事项，为第五卷清理影响出行的承诺留下可核对起点。",
+      "segment_id": "arc:cheng-guan:segment:15",
+      "entry_state_ref": "arc:cheng-guan:segment:14",
+      "exit_state_spec": {
+        "summary": "拟使本卷相关劳作回执和未完约定有清楚去向，飞剑实践的器具、操控与风险判断仍由对应条件及沈砚本人承担。"
+      },
+      "narrative_segment_id": "volume4-segment6",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第193—200章远行缺口盘点中，明确影响出行的劳作承诺及交回去向，程观坚持来源清楚、安排可追踪。",
+      "segment_id": "arc:cheng-guan:segment:16",
+      "entry_state_ref": "arc:cheng-guan:segment:15",
+      "exit_state_spec": {
+        "summary": "拟从未来实际前卷结果核实与程观有关的待交回事项，区分已履行、可协商和仍待有权回应的部分；不把第192章拟议结果当作已接受事实。"
+      },
+      "narrative_segment_id": "volume-5:segment-1",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第217—224章路线、补给和落脚核实期间，承接程观所负责的劳作交回及可能影响准备日程的安排。",
+      "segment_id": "arc:cheng-guan:segment:17",
+      "entry_state_ref": "arc:cheng-guan:segment:16",
+      "exit_state_spec": {
+        "summary": "拟让相关交付和交回信息支持沈砚修正后的准备范围；程观对履约与说明完整程度作职责内回应，不保证库存、路线或落脚可用。"
+      },
+      "narrative_segment_id": "volume-5:segment-4",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在第233—234章临行复核前后，为劳作交回约定给出清楚结果；程观既不代沈砚决定行程，也不因其出行而失去自己的职责和生活。",
+      "segment_id": "arc:cheng-guan:segment:18",
+      "entry_state_ref": "arc:cheng-guan:segment:17",
+      "exit_state_spec": {
+        "summary": "拟在第234章结束前结清或明确协商程观职责内影响本次出行的事项；第235—239章的独行与落脚由沈砚实际完成，程观可继续自己的宗门事务。"
+      },
+      "narrative_segment_id": "volume-5:segment-6",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "dependencies": [],
+  "world_deltas": [
+    {
+      "change": "拟使外门劳作交回、后续有权验收与内部额度或报酬处理的边界在相关行动中逐渐清楚；具体库存、价格与额度仍须实际核验。",
+      "subject": "青岚宗外门劳作交回"
+    },
+    {
+      "change": "拟使远行前相关任务的履约或协商结果可追踪，既不授予飞剑器具与路线条件，也不阻断沈砚处理完承诺后的独行。",
+      "subject": "远行前事务安排"
+    }
+  ],
+  "arc_relations": [],
+  "frozen_inputs": [
+    {
+      "role": "book_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+      "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+    },
+    {
+      "role": "volume_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+      "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "role": "conflict_state",
+      "asset_type": "conflict_state",
+      "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+      "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+    },
+    {
+      "role": "promise_ledger",
+      "asset_type": "promise_ledger_snapshot",
+      "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+      "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+    },
+    {
+      "role": "foreshadowing_ledger",
+      "asset_type": "foreshadowing_ledger",
+      "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+      "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+    },
+    {
+      "role": "character_arc_portfolio",
+      "asset_type": "character_arc_portfolio",
+      "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+      "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+    },
+    {
+      "role": "arc_scope_volume:1",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+      "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "role": "arc_scope_volume:2",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+      "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "role": "arc_scope_volume:3",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+      "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "role": "arc_scope_volume:4",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+      "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "ARC",
+  "schema_version": "story_design.authority.v1",
+  "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+  "exit_state_spec": {
+    "summary": "拟使程观与沈砚围绕劳作交回形成有依据的协商方式，相关承诺在远行前得到清楚处理；程观继续自己的事务，沈砚凭已建立的能力与准备完成独自御剑远行和落脚。此为未来规划结果，非已接受事实。"
+  },
+  "quality_targets": {
+    "minimum": 80
+  },
+  "required_events": [
+    "卷一六段依次承接新卷一计划：第1—11章工作稿边界、第12—18章新日常事务、第19—25章现场结果、第26—32章不同事务、第33—40章有限行动及第41—48章卷末结算。",
+    "至少一次让程观依据交回内容或说明缺口采取接收、转交、要求补充或协商的实际行动，结果影响沈砚后续安排。",
+    "卷二任务价值修正后，沈砚履行已接事项并用实际范围向程观说明后续接取选择。",
+    "卷三更复杂任务的交回要求与真实质量核验分开处理，程观负责的环节有明确结果。",
+    "卷四飞剑练习挤压日程时，先处理与程观相关的已有劳作承诺，再调整未承诺的新事项。",
+    "卷五第234章结束前，影响本次远行且属于程观职责内的相关交回事项得到结清或明确协商。"
+  ],
+  "character_deltas": [
+    {
+      "change": "拟从维持劳作交回清楚可追踪的原则出发，依据沈砚实际履约和说明完整程度，逐渐更准确地判断哪些调整值得协商；不预定私下动机或越权善意。",
+      "subject": "程观"
+    },
+    {
+      "change": "拟由只说明更想修炼，逐渐能带着已完成事项、具体缺口和可承担范围同程观商谈，并亲自履行或协商旧约。",
+      "subject": "沈砚"
+    }
+  ],
+  "forbidden_events": [
+    "把第1—11章工作稿、卷计划或本Arc候选写成第0章之后的已接受事实。",
+    "重演已经写入工作稿的课程录入、首课、初次引气或首次结伴采药，或把第40章当作卷一完结。",
+    "让程观授课位、审批整批质量、确定未核实报酬、库存、额度或飞剑资格。",
+    "以反复核时间、问权限、记下正确问题或放肩寻找气感充当程观每段主要行动。",
+    "让沈砚为练习无故抹去已接劳作承诺，或让程观、同门无条件替他完成交付。",
+    "以无因果的外敌、阴谋、打脸、强制重大牺牲或能力归零推动此Arc。"
+  ],
+  "hard_constraints": [
+    "严格继承冻结Book、五卷及新卷一范围：全书240章，卷一第1—48章，第40章仅收束当前交付窗口内的有限行动。",
+    "正式接受进度为第0章；第1—11章工作稿内容只能作为条件式工作连续性，不补写为已接受Canon或程观已知事实。",
+    "程观的具体职位、全部权限、私下动机与已有知识未由当前输入充分确定；其行动限于已经明确的劳动交回职责。",
+    "交回、整批质量核验、内部额度、报酬、课程录入与器具使用各依实际来源和有权回应，不得相互替代。",
+    "日程以同一计量单位核对劳作、练习、赶路、休息及既有承诺；互斥时段不得重复占用，余额和库存均须实际核实。",
+    "沈砚与同门可主动选择或重新协商，各自保有时间、利益和拒绝范围；程观也有当天事务与可靠履约目标。",
+    "已掌握能力须继续有效；独立稳定运用灵气、飞剑操作及最终远行分别需要相应实践与全部必要条件支持。",
+    "后续章节遵守同时活跃Arc不超过3、人物出场间隔不超过10章、休眠Arc年龄不超过30章等冻结叙事负载限制；真实相关行动优先于计数露面。",
+    "作品为内部私人稿件；当前正文执行窗口止于第3章，本战略Arc候选不扩大执行权限或修改Authority状态。"
+  ],
+  "planning_horizon": "STRATEGIC",
+  "required_payoffs": [
+    "程观的可靠履约原则在具体交回结果与后续协商方式中得到体现，而非只由旁白宣称。",
+    "沈砚从实际履约、信息补全和安排修正中得到可执行的下一步；已耗时间与机会取舍留有连续后果。",
+    "首次采药和后续劳作中的要求核实、分工及质量复查，延后支持更复杂任务和远行准备，但不重演首次采药。",
+    "远行前相关承诺有清楚结果；程观保持自己的事务，沈砚独立完成最终飞行与落脚。"
+  ],
+  "soft_constraints": [
+    "程观的表达应由他想减少错配、按时完成事务的动机生成，避免让他成为反复讲规则的工具人。",
+    "让程观在真实事件中偶有不同判断或合理拒绝，沈砚可提供新证据或修改方案；不预置恶意和无条件让步。",
+    "卷一第12章以后引入新的课堂、场所与事务经验，不机械重复工作稿中的纸条、药叶分拣或追赶气感动作。",
+    "允许安静的交回、协商和复查场景；奖赏来自可用的结果和关系变化，无需固定爽点代价公式。"
+  ],
+  "arc_contributions": [
+    {
+      "change": "拟在卷一承接劳作交回与信息说明：程观依职责回应沈砚的具体询问，交回、整批验收和报酬分别由有权者处理，不将第1—11章工作稿视为已接受历史。",
+      "subject": "卷一：第1—48章"
+    },
+    {
+      "change": "拟让程观依据实际履约与说明是否完整，调整同沈砚商谈后续劳作范围的方式；任务取舍须由沈砚执行并承接结果。",
+      "subject": "卷二：第49—96章"
+    },
+    {
+      "change": "拟让准备时间、工具和交付要求在程观负责的劳作交回环节得到清楚传递；沈砚与伙伴自行核实、分工和完成任务。",
+      "subject": "卷三：第97—144章"
+    },
+    {
+      "change": "拟让沈砚处理与练习日程冲突的既有劳作承诺；程观只在自己负责的交回事项内确认履约与可协商范围。",
+      "subject": "卷四：第145—192章"
+    },
+    {
+      "change": "拟在远行前结清或明确协商影响本次出行的劳作交回事项，使程观的职责获得结果，沈砚仍亲自判断并完成独行。",
+      "subject": "卷五：第193—240章"
+    }
+  ],
+  "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+  "candidate_payload": {
+    "cost": "程观为核对不完整的交回信息和协商调整占用自己的有限事务时间；沈砚因履约与安排修改承担实际用时或当次机会取舍，具体分量由后续事件确定。",
+    "turn": "拟在沈砚以实际履约和完整说明提出调整时，程观从只按已发布安排接收，转为在职责范围内考虑有依据的重新分配；是否同意每次请求仍取决于当时条件。",
+    "choice": "程观拟在已发布要求和当天事务允许的范围内，依据沈砚交回与说明的具体情况决定接收、要求补充信息或协商后续安排。",
+    "result": "拟形成一种可追踪、可协商的劳作交回关系：程观完成权限内的工作并保有个人安排，沈砚以履约与明确说明争取可行空间，最终出行不遗留影响本次行程的含糊承诺。",
+    "arc_type": "CHARACTER",
+    "objective": "规划程观贯穿五卷的有限而有用的人物作用：他为劳作交回的可靠承接作出自身选择，依据沈砚的实际履约与信息完整程度调整协商方式；在不越权的前提下，使任务、学习日程和远行前承诺的后果清楚可见。",
+    "thread_id": "thread:cheng-guan:reliable-handover",
+    "escalation": "拟由卷一具体交回说明，推进到卷二任务取舍、卷三更复杂的准备与交付、卷四练习日程调整及卷五远行前承诺结清；每一步依实际结果和程观有限职责成立。",
+    "resistance": "交回要求、实际质量信息、沈砚的学习需要、伙伴日程与程观当天事务可能彼此错位；未核实的结果和不完整说明使他不能凭善意作出越权承诺。",
+    "consequence": "程观的职责边界使交回事实与后续验收、资源或教学结果各有明确去向；沈砚若改变安排，须承接已接事项和实际耗时，同门的选择也可改变分工。",
+    "contract_id": "arc-plan:character:cheng-guan:successor-v1",
+    "logical_key": "character:character:cheng-guan",
+    "arc_segments": [
+      {
+        "status": "PLANNED",
+        "objective": "保留首次采药交回及共同药叶劳作的工作稿连续性，确定程观只在劳动交回职责内参与，不替有权者审批整批质量、报酬或课程。",
+        "segment_id": "arc:cheng-guan:segment:01",
+        "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "exit_state_spec": {
+          "summary": "条件式承接第1—11章工作稿所示的劳作交回接触；这些经历仍是工作连续性，非第0章之后的已接受事实。程观的已知信息与权限须由后续实际接触确定。"
+        },
+        "narrative_segment_id": "volume1-segment-01",
+        "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第12—18章的新日常事务中，使程观为可靠交回和减少错配采取具体行动，而不让权限核对成为反复对白。",
+        "segment_id": "arc:cheng-guan:segment:02",
+        "entry_state_ref": "arc:cheng-guan:segment:01",
+        "exit_state_spec": {
+          "summary": "拟使一件新的有限外门事务有清楚的交回要求；程观据实际收到的信息说明自己能处理的部分，其他结果仍待相应权限内的回应。"
+        },
+        "narrative_segment_id": "volume1-segment-02",
+        "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "承接第19—25章跨场所尝试的实际结果，让程观关心交回是否符合先前说明，并在信息不足时要求补全可核对的内容。",
+        "segment_id": "arc:cheng-guan:segment:03",
+        "entry_state_ref": "arc:cheng-guan:segment:02",
+        "exit_state_spec": {
+          "summary": "拟使现场变化带来的交回差异得到记录和范围内的回应；沈砚据此修订练习或事务选择，程观不替他作判断。"
+        },
+        "narrative_segment_id": "volume1-segment-03",
+        "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第26—32章不同于药叶分拣的事务中，以具体交回事项检验协商后的分工，让程观因职责和当天安排作出有限选择。",
+        "segment_id": "arc:cheng-guan:segment:04",
+        "entry_state_ref": "arc:cheng-guan:segment:03",
+        "exit_state_spec": {
+          "summary": "拟使沈砚与同门重新约定的工作范围反映到可交回的事项中；程观完成自身接收或转交职责，整批验收及资源变化仍依有权核验。"
+        },
+        "narrative_segment_id": "volume1-segment-04",
+        "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "承接沈砚主动安排并完成的有限行动，使劳作交回反馈成为下一步练习或分工的依据之一，而非把反馈当作课程或修为资格。",
+        "segment_id": "arc:cheng-guan:segment:05",
+        "entry_state_ref": "arc:cheng-guan:segment:04",
+        "exit_state_spec": {
+          "summary": "拟让第40章有限行动中的交回部分获得可辨认结果；程观说明已收事项及仍须交由有权者处理的部分，行动本身在第40章收束，卷一继续至第48章。"
+        },
+        "narrative_segment_id": "volume1-segment-05",
+        "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第41—48章基础实践的结果中，承接第40章的实际交回，不将程观写成授课者、整批质量审批者或沈砚成长的唯一评判人。",
+        "segment_id": "arc:cheng-guan:segment:06",
+        "entry_state_ref": "arc:cheng-guan:segment:05",
+        "exit_state_spec": {
+          "summary": "拟结清本卷属于程观职责内的交回事项，尚待其他权限回应的结果保留清楚去向；他对沈砚是否能可靠说明承担范围形成有依据、可继续修订的工作判断。"
+        },
+        "narrative_segment_id": "volume1-segment-06",
+        "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "条件式衔接第49—56章的学习与劳作安排，厘清已答应事项和可协商的新事项，不补造前卷已接受成果。",
+        "segment_id": "arc:cheng-guan:segment:07",
+        "entry_state_ref": "arc:cheng-guan:segment:06",
+        "exit_state_spec": {
+          "summary": "拟依据届时实际前卷结果，说明可接取的劳作要求与尚需核实之处；程观听取有依据的调整请求，但不把愿望本身当作撤销承诺的理由。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:1",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第73—80章任务判断修正后，让沈砚先处理已接工作，再向程观说明后续可承担范围；是否存在合适新任务须实际核实。",
+        "segment_id": "arc:cheng-guan:segment:08",
+        "entry_state_ref": "arc:cheng-guan:segment:07",
+        "exit_state_spec": {
+          "summary": "拟使一次任务选择的实际交付得到程观职责范围内的接收与记录；往返和等待耗去的时间及相应结果由沈砚承接，未核验报酬不被预记。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:4",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第89—96章以实际交付检验修正后的接取安排，程观回应自己负责的交回事实，不越权确认课程、整批质量或额外资源。",
+        "segment_id": "arc:cheng-guan:segment:09",
+        "entry_state_ref": "arc:cheng-guan:segment:08",
+        "exit_state_spec": {
+          "summary": "拟让受控合作交付与职责内的回执清楚衔接，沈砚保留经实践验证的练习时段；程观依据完整说明和履约结果更新后续协商方式。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:6",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "条件式承接卷二的任务安排，参与第97—104章新职责的交回边界说明，不预授复杂任务资格。",
+        "segment_id": "arc:cheng-guan:segment:10",
+        "entry_state_ref": "arc:cheng-guan:segment:09",
+        "exit_state_spec": {
+          "summary": "拟形成届时可核对的已接劳作范围与待确认条件；程观对信息完整的请求给出职责内回应，沈砚自行决定准备投入。"
+        },
+        "narrative_segment_id": "volume:3:segment:1",
+        "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第121—128章伙伴重新分工时，确认劳作交回范围与变动请求的实际影响，使程观有理由接受、要求补充或拒绝特定调整。",
+        "segment_id": "arc:cheng-guan:segment:11",
+        "entry_state_ref": "arc:cheng-guan:segment:10",
+        "exit_state_spec": {
+          "summary": "拟使沈砚放弃互斥的当次额外机会后，原承诺仍被履行或明确协商；程观知道的是向他说明且属于其职责的事项，不自动获知沈砚全部练习计划。"
+        },
+        "narrative_segment_id": "volume:3:segment:4",
+        "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第137—144章承接受控结伴任务的交付结果，使沈砚修正后的准备方法影响下一轮接取，同时不让程观代替同门完成判断。",
+        "segment_id": "arc:cheng-guan:segment:12",
+        "entry_state_ref": "arc:cheng-guan:segment:11",
+        "exit_state_spec": {
+          "summary": "拟把本卷实际交回与后续任务边界记录清楚；质量验收、内部额度及报酬依有权核验结果处理，程观的可靠交回目标获得具体承接。"
+        },
+        "narrative_segment_id": "volume:3:segment:6",
+        "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第145—152章沈砚核实练习条件时，按实际旧约安排劳作交回，使练习时间与承诺不互相挤占。",
+        "segment_id": "arc:cheng-guan:segment:13",
+        "entry_state_ref": "arc:cheng-guan:segment:12",
+        "exit_state_spec": {
+          "summary": "拟使飞剑学习前已答应的劳作交回有明确安排；程观回应其负责的事项，不授予器具使用、教学或飞行资格。"
+        },
+        "narrative_segment_id": "volume4-segment1",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第169—176章短程实践准备中，让程观依据已履行事项和真实可用时段处理劳作变动，显示其可靠履约原则与有限协商空间。",
+        "segment_id": "arc:cheng-guan:segment:14",
+        "entry_state_ref": "arc:cheng-guan:segment:13",
+        "exit_state_spec": {
+          "summary": "拟使沈砚因持续控制练习而调整的新接取范围落实到具体劳作安排；少接未承诺事项所失去的可能收益不被虚构成确定数值。"
+        },
+        "narrative_segment_id": "volume4-segment4",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第185—192章受控往返及复查之后，结算程观职责内的交回事项，为第五卷清理影响出行的承诺留下可核对起点。",
+        "segment_id": "arc:cheng-guan:segment:15",
+        "entry_state_ref": "arc:cheng-guan:segment:14",
+        "exit_state_spec": {
+          "summary": "拟使本卷相关劳作回执和未完约定有清楚去向，飞剑实践的器具、操控与风险判断仍由对应条件及沈砚本人承担。"
+        },
+        "narrative_segment_id": "volume4-segment6",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第193—200章远行缺口盘点中，明确影响出行的劳作承诺及交回去向，程观坚持来源清楚、安排可追踪。",
+        "segment_id": "arc:cheng-guan:segment:16",
+        "entry_state_ref": "arc:cheng-guan:segment:15",
+        "exit_state_spec": {
+          "summary": "拟从未来实际前卷结果核实与程观有关的待交回事项，区分已履行、可协商和仍待有权回应的部分；不把第192章拟议结果当作已接受事实。"
+        },
+        "narrative_segment_id": "volume-5:segment-1",
+        "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第217—224章路线、补给和落脚核实期间，承接程观所负责的劳作交回及可能影响准备日程的安排。",
+        "segment_id": "arc:cheng-guan:segment:17",
+        "entry_state_ref": "arc:cheng-guan:segment:16",
+        "exit_state_spec": {
+          "summary": "拟让相关交付和交回信息支持沈砚修正后的准备范围；程观对履约与说明完整程度作职责内回应，不保证库存、路线或落脚可用。"
+        },
+        "narrative_segment_id": "volume-5:segment-4",
+        "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在第233—234章临行复核前后，为劳作交回约定给出清楚结果；程观既不代沈砚决定行程，也不因其出行而失去自己的职责和生活。",
+        "segment_id": "arc:cheng-guan:segment:18",
+        "entry_state_ref": "arc:cheng-guan:segment:17",
+        "exit_state_spec": {
+          "summary": "拟在第234章结束前结清或明确协商程观职责内影响本次出行的事项；第235—239章的独行与落脚由沈砚实际完成，程观可继续自己的宗门事务。"
+        },
+        "narrative_segment_id": "volume-5:segment-6",
+        "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      }
+    ],
+    "dependencies": [],
+    "world_deltas": [
+      {
+        "change": "拟使外门劳作交回、后续有权验收与内部额度或报酬处理的边界在相关行动中逐渐清楚；具体库存、价格与额度仍须实际核验。",
+        "subject": "青岚宗外门劳作交回"
+      },
+      {
+        "change": "拟使远行前相关任务的履约或协商结果可追踪，既不授予飞剑器具与路线条件，也不阻断沈砚处理完承诺后的独行。",
+        "subject": "远行前事务安排"
+      }
+    ],
+    "arc_relations": [],
+    "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "exit_state_spec": {
+      "summary": "拟使程观与沈砚围绕劳作交回形成有依据的协商方式，相关承诺在远行前得到清楚处理；程观继续自己的事务，沈砚凭已建立的能力与准备完成独自御剑远行和落脚。此为未来规划结果，非已接受事实。"
+    },
+    "quality_targets": {
+      "minimum": 80
+    },
+    "required_events": [
+      "卷一六段依次承接新卷一计划：第1—11章工作稿边界、第12—18章新日常事务、第19—25章现场结果、第26—32章不同事务、第33—40章有限行动及第41—48章卷末结算。",
+      "至少一次让程观依据交回内容或说明缺口采取接收、转交、要求补充或协商的实际行动，结果影响沈砚后续安排。",
+      "卷二任务价值修正后，沈砚履行已接事项并用实际范围向程观说明后续接取选择。",
+      "卷三更复杂任务的交回要求与真实质量核验分开处理，程观负责的环节有明确结果。",
+      "卷四飞剑练习挤压日程时，先处理与程观相关的已有劳作承诺，再调整未承诺的新事项。",
+      "卷五第234章结束前，影响本次远行且属于程观职责内的相关交回事项得到结清或明确协商。"
+    ],
+    "character_deltas": [
+      {
+        "change": "拟从维持劳作交回清楚可追踪的原则出发，依据沈砚实际履约和说明完整程度，逐渐更准确地判断哪些调整值得协商；不预定私下动机或越权善意。",
+        "subject": "程观"
+      },
+      {
+        "change": "拟由只说明更想修炼，逐渐能带着已完成事项、具体缺口和可承担范围同程观商谈，并亲自履行或协商旧约。",
+        "subject": "沈砚"
+      }
+    ],
+    "forbidden_events": [
+      "把第1—11章工作稿、卷计划或本Arc候选写成第0章之后的已接受事实。",
+      "重演已经写入工作稿的课程录入、首课、初次引气或首次结伴采药，或把第40章当作卷一完结。",
+      "让程观授课位、审批整批质量、确定未核实报酬、库存、额度或飞剑资格。",
+      "以反复核时间、问权限、记下正确问题或放肩寻找气感充当程观每段主要行动。",
+      "让沈砚为练习无故抹去已接劳作承诺，或让程观、同门无条件替他完成交付。",
+      "以无因果的外敌、阴谋、打脸、强制重大牺牲或能力归零推动此Arc。"
+    ],
+    "hard_constraints": [
+      "严格继承冻结Book、五卷及新卷一范围：全书240章，卷一第1—48章，第40章仅收束当前交付窗口内的有限行动。",
+      "正式接受进度为第0章；第1—11章工作稿内容只能作为条件式工作连续性，不补写为已接受Canon或程观已知事实。",
+      "程观的具体职位、全部权限、私下动机与已有知识未由当前输入充分确定；其行动限于已经明确的劳动交回职责。",
+      "交回、整批质量核验、内部额度、报酬、课程录入与器具使用各依实际来源和有权回应，不得相互替代。",
+      "日程以同一计量单位核对劳作、练习、赶路、休息及既有承诺；互斥时段不得重复占用，余额和库存均须实际核实。",
+      "沈砚与同门可主动选择或重新协商，各自保有时间、利益和拒绝范围；程观也有当天事务与可靠履约目标。",
+      "已掌握能力须继续有效；独立稳定运用灵气、飞剑操作及最终远行分别需要相应实践与全部必要条件支持。",
+      "后续章节遵守同时活跃Arc不超过3、人物出场间隔不超过10章、休眠Arc年龄不超过30章等冻结叙事负载限制；真实相关行动优先于计数露面。",
+      "作品为内部私人稿件；当前正文执行窗口止于第3章，本战略Arc候选不扩大执行权限或修改Authority状态。"
+    ],
+    "planning_horizon": "STRATEGIC",
+    "required_payoffs": [
+      "程观的可靠履约原则在具体交回结果与后续协商方式中得到体现，而非只由旁白宣称。",
+      "沈砚从实际履约、信息补全和安排修正中得到可执行的下一步；已耗时间与机会取舍留有连续后果。",
+      "首次采药和后续劳作中的要求核实、分工及质量复查，延后支持更复杂任务和远行准备，但不重演首次采药。",
+      "远行前相关承诺有清楚结果；程观保持自己的事务，沈砚独立完成最终飞行与落脚。"
+    ],
+    "soft_constraints": [
+      "程观的表达应由他想减少错配、按时完成事务的动机生成，避免让他成为反复讲规则的工具人。",
+      "让程观在真实事件中偶有不同判断或合理拒绝，沈砚可提供新证据或修改方案；不预置恶意和无条件让步。",
+      "卷一第12章以后引入新的课堂、场所与事务经验，不机械重复工作稿中的纸条、药叶分拣或追赶气感动作。",
+      "允许安静的交回、协商和复查场景；奖赏来自可用的结果和关系变化，无需固定爽点代价公式。"
+    ],
+    "arc_contributions": [
+      {
+        "change": "拟在卷一承接劳作交回与信息说明：程观依职责回应沈砚的具体询问，交回、整批验收和报酬分别由有权者处理，不将第1—11章工作稿视为已接受历史。",
+        "subject": "卷一：第1—48章"
+      },
+      {
+        "change": "拟让程观依据实际履约与说明是否完整，调整同沈砚商谈后续劳作范围的方式；任务取舍须由沈砚执行并承接结果。",
+        "subject": "卷二：第49—96章"
+      },
+      {
+        "change": "拟让准备时间、工具和交付要求在程观负责的劳作交回环节得到清楚传递；沈砚与伙伴自行核实、分工和完成任务。",
+        "subject": "卷三：第97—144章"
+      },
+      {
+        "change": "拟让沈砚处理与练习日程冲突的既有劳作承诺；程观只在自己负责的交回事项内确认履约与可协商范围。",
+        "subject": "卷四：第145—192章"
+      },
+      {
+        "change": "拟在远行前结清或明确协商影响本次出行的劳作交回事项，使程观的职责获得结果，沈砚仍亲自判断并完成独行。",
+        "subject": "卷五：第193—240章"
+      }
+    ],
+    "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "forbidden_payoffs": [
+      "以程观的赞许或交回记录代替实际验收、课程条件、稳定修行能力或任务结果。",
+      "以程观同意调整劳作安排代替沈砚后续实际执行与练习验证。",
+      "以获得器具、宣布出发或他人代作判断替代第235—239章真实独自御剑远行及落脚。"
+    ],
+    "realization_level": "DEFINED",
+    "world_realization": [
+      {
+        "world_id": "world:qinglan-external-labor-handover",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        },
+        "visibility": "PARTIAL",
+        "accessibility": "RESTRICTED",
+        "invariant_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_INVARIANT",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+          }
+        ],
+        "structure_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STRUCTURE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+          }
+        ],
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "canon_dependencies": [
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+      "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+      "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+      "4f94123b-a129-4975-aae7-c2fa7182b42d"
+    ],
+    "closure_conditions": [
+      "卷一第1—11章仅作工作稿连续性；本Arc的未来进展须由后续实际事件支持，不倒填已接受历史。",
+      "程观职责范围内与沈砚有关的劳作交回事项得到明确接收、转交、履行或协商结果；整批质量、报酬、课程和飞剑资格不由他越权决定。",
+      "远行前影响本次行程的相关劳作承诺已处理，第235—239章独行及落脚仍由沈砚本人完成。"
+    ],
+    "cross_volume_scope": [
+      "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+      "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+      "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+      "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+      "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    ],
+    "commitment_contract": [
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "程观只在自身劳动交回职责内行动；不授课位、不审批整批质量，不凭善意确认未核实的库存、收益或资格。",
+        "commitment_id": "cheng-guan:commitment:01"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "本Arc承接新卷一第1—48章六段结构，第40章完成有限实际行动，第48章仍是卷一边界；第1—11章是工作稿连续性，正式接受进度为第0章。",
+        "commitment_id": "cheng-guan:commitment:02"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "卷二承担稳定重复与更有用途的实践；程观的交回互动不能提前授予沈砚独立稳定运气、御剑或完整远行条件。",
+        "commitment_id": "cheng-guan:commitment:03"
+      },
+      {
+        "level": "SOFT_INTENT",
+        "statement": "让程观的当天任务、可靠履约原则和减少错配的愿望，通过实际接收、转交或协商影响事件，而非机械重复核时间、问权限等对白。",
+        "commitment_id": "cheng-guan:commitment:04"
+      },
+      {
+        "level": "OPEN_DESIGN_SPACE",
+        "statement": "具体交回项目、工作量、可协商时段与有权验收者须在后续章节依实际条件建立，本层不预定数值或额外职位。",
+        "commitment_id": "cheng-guan:commitment:05"
+      }
+    ],
+    "constraint_envelope": {
+      "type": "PlanningConstraintEnvelope",
+      "book_id": "book:qinglan-wendao-20261008",
+      "project_id": "qid-learning-prose-01",
+      "planning_scope": "ARC",
+      "envelope_digest": "sha256:51b948fab17a1b7c21cb63ab0d9a6a4d8684582c4c219ea111b4c2f38ec69cfb",
+      "parent_versions": [
+        {
+          "role": "arc_scope_volume:1",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+          "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:2",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+          "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:3",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+          "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:4",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+          "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        },
+        {
+          "role": "book_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "role": "character_arc_portfolio",
+          "asset_type": "character_arc_portfolio",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        {
+          "role": "conflict_state",
+          "asset_type": "conflict_state",
+          "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+          "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+        },
+        {
+          "role": "foreshadowing_ledger",
+          "asset_type": "foreshadowing_ledger",
+          "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+          "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+        },
+        {
+          "role": "promise_ledger",
+          "asset_type": "promise_ledger_snapshot",
+          "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+          "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+        },
+        {
+          "role": "volume_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+          "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+        }
+      ],
+      "contract_version": "planning-constraint-envelope-v2",
+      "change_governance": {
+        "requires_evidence": true,
+        "preserve_executed_history": true,
+        "wider_scope_requires_new_plan_change": true
+      },
+      "prohibited_outcomes": [],
+      "inherited_invariants": [],
+      "required_obligations": [],
+      "narrative_load_policy": {
+        "type": "NarrativeLoadPolicy",
+        "limits": {
+          "max_active_arcs": 3,
+          "max_new_concepts": 4,
+          "max_dormant_arc_age": 30,
+          "max_open_obligations": 12,
+          "max_payoff_congestion": 3,
+          "max_overdue_obligations": 0,
+          "max_major_state_transitions": 8,
+          "max_character_appearance_gap": 10
+        },
+        "book_id": "book:qinglan-wendao-20261008",
+        "policy_id": "canonical-production-narrative-load",
+        "project_id": "qid-learning-prose-01",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "source_role": "production_profile",
+        "policy_version": 1,
+        "contract_version": "narrative-load-policy-v1",
+        "governed_overrides": [],
+        "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+        "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+      },
+      "permitted_change_scope": "ARC",
+      "accepted_state_boundary": {
+        "future_plan_only": true,
+        "accepted_through_chapter": 0
+      },
+      "generation_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0",
+      "generator_operation_name": "arc_plan.generate",
+      "narrative_load_projection": {
+        "type": "NarrativeLoadProjection",
+        "status": "NOT_OBSERVED",
+        "metrics": {},
+        "contract_version": "narrative-load-projection-v2",
+        "open_obligation_ids": [],
+        "overdue_obligation_ids": [],
+        "accepted_through_chapter": 0
+      },
+      "narrative_load_policy_lineage": {
+        "type": "NarrativeLoadPolicyLineage",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "inherited_from": [
+          {
+            "role": "arc_scope_volume:1",
+            "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+            "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:2",
+            "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+            "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:3",
+            "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+            "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:4",
+            "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+            "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+          },
+          {
+            "role": "book_plan",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          },
+          {
+            "role": "volume_plan",
+            "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+            "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "narrative-load-policy-lineage-v1",
+        "frozen_by_generation_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "creative_requirements_contract": "work-requirements.v2"
+    },
+    "context_profile_ref": "context-policy:chapter-generation-pack:v2",
+    "relationship_deltas": [
+      {
+        "change": "拟从具体劳作交回接触，发展为双方能够说明已履行事项、可承担范围和待有权回应之处的工作关系；信任随可核对结果变化，不由一次好感自动取得。",
+        "subject": "程观—沈砚"
+      },
+      {
+        "change": "拟让程观提供交回职责内的准确信息，陆衡与唐穗各自决定分工与时间；彼此协作不意味着程观掌握他们的私下打算。",
+        "subject": "程观—陆衡、唐穗"
+      }
+    ],
+    "character_realization": [
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "ARC",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        },
+        "character_id": "character:character:cheng-guan",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "ARC",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        },
+        "character_id": "character:character:shen-yan",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "narrative_architecture_version": "canonical-narrative-v1"
+  },
+  "forbidden_payoffs": [
+    "以程观的赞许或交回记录代替实际验收、课程条件、稳定修行能力或任务结果。",
+    "以程观同意调整劳作安排代替沈砚后续实际执行与练习验证。",
+    "以获得器具、宣布出发或他人代作判断替代第235—239章真实独自御剑远行及落脚。"
+  ],
+  "realization_level": "DEFINED",
+  "world_realization": [
+    {
+      "world_id": "world:qinglan-external-labor-handover",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "WORLD_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "visibility": "PARTIAL",
+      "accessibility": "RESTRICTED",
+      "invariant_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_INVARIANT",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        }
+      ],
+      "structure_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STRUCTURE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+        }
+      ],
+      "realization_level": "DEFINED",
+      "narrative_relevance": "CURRENT"
+    }
+  ],
+  "canon_dependencies": [
+    "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+    "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+    "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+    "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+    "4f94123b-a129-4975-aae7-c2fa7182b42d"
+  ],
+  "closure_conditions": [
+    "卷一第1—11章仅作工作稿连续性；本Arc的未来进展须由后续实际事件支持，不倒填已接受历史。",
+    "程观职责范围内与沈砚有关的劳作交回事项得到明确接收、转交、履行或协商结果；整批质量、报酬、课程和飞剑资格不由他越权决定。",
+    "远行前影响本次行程的相关劳作承诺已处理，第235—239章独行及落脚仍由沈砚本人完成。"
+  ],
+  "cross_volume_scope": [
+    "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+    "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+    "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+    "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+    "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+  ],
+  "execution_evidence": {
+    "attempt_id": "fd69a03b-ea7c-444b-9720-f1f10d592011",
+    "operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0",
+    "fencing_token": 1,
+    "commit_authority": "STORY_DESIGN_AUTHORITY",
+    "cost_receipt_ref": "authority-asset-version:1e1059b1-9d55-4048-8cfb-2cce7976c8cb",
+    "route_snapshot_id": "production_execution/routes/460c799b55188d1ddd2b",
+    "usage_receipt_ref": "authority-asset-version:73365a28-36a0-4563-9276-f854083f1844",
+    "input_manifest_ref": "production_execution/inputs/460c799b55188d1ddd2b",
+    "context_bundle_hash": "sha256:22f323e7999a5a4dfb8c63d5efb664935431c7ae832a1347a7a3784d230c6c16",
+    "output_manifest_ref": "authority-asset-version:570402eb-86ba-41cb-b152-d71eaf59114f",
+    "production_verified": false,
+    "external_receipt_ref": "94ad5358-7c53-4d8c-9aee-86a409c25ab1",
+    "real_provider_proven": true,
+    "fixture_protocol_only": false,
+    "external_effect_backed": true,
+    "validation_manifest_ref": "authority-asset-version:c8cf0699-c943-4e78-b4e1-4d1fbe099bed",
+    "capability_execution_ref": "51d853a5-156c-5164-abd3-c8513e8aa250",
+    "capability_execution_hash": "sha256:d5db7659d7f869f29db2dc54af109a7ae4206b1ee6478470bea278332e4aa5a4",
+    "capability_runtime_binding_ref": "sha256:5f8164f343b29d7c261f7b95a3d93a4e0ec5a50f28ca228bf8363ba9da3bf60e",
+    "capability_runtime_binding_hash": "sha256:82a8dbb01b4f13b719b24fe9e125a6f761976ea8b3b6475592e08bb94d604dd7",
+    "context_bundle_asset_version_id": "d1976b33-0a44-4a21-9ab8-4f7c1cb85517",
+    "capability_pack_attempt_snapshot_id": "sha256:5f8164f343b29d7c261f7b95a3d93a4e0ec5a50f28ca228bf8363ba9da3bf60e",
+    "production_execution_gateway_backed": true,
+    "capability_pack_attempt_snapshot_hash": "sha256:82a8dbb01b4f13b719b24fe9e125a6f761976ea8b3b6475592e08bb94d604dd7",
+    "narrative_intelligence_selection_digest": "sha256:965cb9af4653d6d5b40cab2968d52f8d4a8183b4b52c6b5a2afc40802ed90ade"
+  },
+  "commitment_contract": [
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "程观只在自身劳动交回职责内行动；不授课位、不审批整批质量，不凭善意确认未核实的库存、收益或资格。",
+      "commitment_id": "cheng-guan:commitment:01"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "本Arc承接新卷一第1—48章六段结构，第40章完成有限实际行动，第48章仍是卷一边界；第1—11章是工作稿连续性，正式接受进度为第0章。",
+      "commitment_id": "cheng-guan:commitment:02"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "卷二承担稳定重复与更有用途的实践；程观的交回互动不能提前授予沈砚独立稳定运气、御剑或完整远行条件。",
+      "commitment_id": "cheng-guan:commitment:03"
+    },
+    {
+      "level": "SOFT_INTENT",
+      "statement": "让程观的当天任务、可靠履约原则和减少错配的愿望，通过实际接收、转交或协商影响事件，而非机械重复核时间、问权限等对白。",
+      "commitment_id": "cheng-guan:commitment:04"
+    },
+    {
+      "level": "OPEN_DESIGN_SPACE",
+      "statement": "具体交回项目、工作量、可协商时段与有权验收者须在后续章节依实际条件建立，本层不预定数值或额外职位。",
+      "commitment_id": "cheng-guan:commitment:05"
+    }
+  ],
+  "constraint_envelope": {
+    "type": "PlanningConstraintEnvelope",
+    "book_id": "book:qinglan-wendao-20261008",
+    "project_id": "qid-learning-prose-01",
+    "planning_scope": "ARC",
+    "envelope_digest": "sha256:51b948fab17a1b7c21cb63ab0d9a6a4d8684582c4c219ea111b4c2f38ec69cfb",
+    "parent_versions": [
+      {
+        "role": "arc_scope_volume:1",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+        "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:2",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+        "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:3",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+        "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:4",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+        "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      },
+      {
+        "role": "book_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "role": "character_arc_portfolio",
+        "asset_type": "character_arc_portfolio",
+        "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+        "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+      },
+      {
+        "role": "conflict_state",
+        "asset_type": "conflict_state",
+        "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+        "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+      },
+      {
+        "role": "foreshadowing_ledger",
+        "asset_type": "foreshadowing_ledger",
+        "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+        "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+      },
+      {
+        "role": "promise_ledger",
+        "asset_type": "promise_ledger_snapshot",
+        "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+        "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+      },
+      {
+        "role": "volume_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+        "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      }
+    ],
+    "contract_version": "planning-constraint-envelope-v2",
+    "change_governance": {
+      "requires_evidence": true,
+      "preserve_executed_history": true,
+      "wider_scope_requires_new_plan_change": true
+    },
+    "prohibited_outcomes": [],
+    "inherited_invariants": [],
+    "required_obligations": [],
+    "narrative_load_policy": {
+      "type": "NarrativeLoadPolicy",
+      "limits": {
+        "max_active_arcs": 3,
+        "max_new_concepts": 4,
+        "max_dormant_arc_age": 30,
+        "max_open_obligations": 12,
+        "max_payoff_congestion": 3,
+        "max_overdue_obligations": 0,
+        "max_major_state_transitions": 8,
+        "max_character_appearance_gap": 10
+      },
+      "book_id": "book:qinglan-wendao-20261008",
+      "policy_id": "canonical-production-narrative-load",
+      "project_id": "qid-learning-prose-01",
+      "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+      "source_role": "production_profile",
+      "policy_version": 1,
+      "contract_version": "narrative-load-policy-v1",
+      "governed_overrides": [],
+      "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+      "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+    },
+    "permitted_change_scope": "ARC",
+    "accepted_state_boundary": {
+      "future_plan_only": true,
+      "accepted_through_chapter": 0
+    },
+    "generation_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0",
+    "generator_operation_name": "arc_plan.generate",
+    "narrative_load_projection": {
+      "type": "NarrativeLoadProjection",
+      "status": "NOT_OBSERVED",
+      "metrics": {},
+      "contract_version": "narrative-load-projection-v2",
+      "open_obligation_ids": [],
+      "overdue_obligation_ids": [],
+      "accepted_through_chapter": 0
+    },
+    "narrative_load_policy_lineage": {
+      "type": "NarrativeLoadPolicyLineage",
+      "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+      "inherited_from": [
+        {
+          "role": "arc_scope_volume:1",
+          "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+          "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:2",
+          "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+          "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:3",
+          "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+          "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:4",
+          "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+          "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        },
+        {
+          "role": "book_plan",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "role": "volume_plan",
+          "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+          "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+        }
+      ],
+      "contract_version": "narrative-load-policy-lineage-v1",
+      "frozen_by_generation_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+    },
+    "creative_requirements_contract": "work-requirements.v2"
+  },
+  "context_profile_ref": "context-policy:chapter-generation-pack:v2",
+  "relationship_deltas": [
+    {
+      "change": "拟从具体劳作交回接触，发展为双方能够说明已履行事项、可承担范围和待有权回应之处的工作关系；信任随可核对结果变化，不由一次好感自动取得。",
+      "subject": "程观—沈砚"
+    },
+    {
+      "change": "拟让程观提供交回职责内的准确信息，陆衡与唐穗各自决定分工与时间；彼此协作不意味着程观掌握他们的私下打算。",
+      "subject": "程观—陆衡、唐穗"
+    }
+  ],
+  "character_realization": [
+    {
+      "reach": "CURRENT_VOLUME",
+      "scope": "ARC",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "character_id": "character:character:cheng-guan",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "character_arc_portfolio",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+        "authority_role": "character_arc_portfolio",
+        "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "character_arc_portfolio",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+        "authority_role": "character_arc_portfolio",
+        "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "realization_level": "DEFINED",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "reach": "CURRENT_VOLUME",
+      "scope": "ARC",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "character_id": "character:character:shen-yan",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "character_arc_portfolio",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+        "authority_role": "character_arc_portfolio",
+        "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "character_arc_portfolio",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+        "authority_role": "character_arc_portfolio",
+        "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+        "frozen_by_operation_id": "154dd90b-c9ea-4f33-920d-d9ebaa5fb1e0"
+      },
+      "realization_level": "DEFINED",
+      "narrative_relevance": "CURRENT"
+    }
+  ],
+  "generator_operation_name": "arc_plan.generate",
+  "narrative_architecture_version": "canonical-narrative-v1",
+  "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+}

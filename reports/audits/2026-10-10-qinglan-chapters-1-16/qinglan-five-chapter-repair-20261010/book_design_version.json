@@ -1,0 +1,172 @@
+{
+  "title": "青岚问道",
+  "narrative_dna": {
+    "cost_logic": null,
+    "core_question": "一个尚无独行本领的普通少年，怎样在借助宗门与同伴的同时，逐渐把修行的路走成自己的路？",
+    "recurring_choice": "沈砚需要用宗门劳作换取修炼条件，却不能把所有时间都耗在眼前报酬上；适合他练习的任务又需要资格、同伴与承担责任的能力。他必须在收入、练习和任务风险之间作出选择，并与各有打算的同门协商。阻力随成长从能否获得一次机会，转为能否胜任自己争取来的职责，最终落实到能否独立判断路线、使用飞剑并承担远行所需的准备。",
+    "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。",
+    "distinctive_mechanism": "把自主选择任务作为成长的关键动作：沈砚会逐渐学会辨别一项差事究竟能换来多少资源、练到什么本领、需要谁的帮助。第一次采药的吸引力来自山路、药材采收时限和同行者的不同诉求；后续任务再改变技术与合作条件。修炼成果能回到生活中使用，例如引气稳定后更能控制采收力度，身法进步后能承担探路职责。御剑远行因而有一条读者看得见的准备过程。"
+  },
+  "foundation_set": {
+    "bindings": [
+      {
+        "role": "CREATIVE_FOUNDATION",
+        "authority": "STORY_DESIGN_AUTHORITY",
+        "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+        "activation_id": "ec3b803a-abb6-4e6f-b563-50e0125c06da",
+        "schema_version": "planning-generation-candidate.v1",
+        "upstream_digest": "",
+        "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+        "qualification_hash": "sha256:ab3c592074801fcbe2d689633c84060c691c4cf7aae405d8c7fc8f5080d95737",
+        "qualification_evidence_asset_version_id": "authority-output:29ada127-8ea5-402d-ad82-32318bacf75e:story_design.transition.receipt:v1"
+      },
+      {
+        "role": "THEME_CONTRACT",
+        "authority": "STORY_DESIGN_AUTHORITY",
+        "content_hash": "sha256:2675b7877af6f6cce0e11301031fa9d16930416fec74ba856ec5d071716387b6",
+        "activation_id": "a063d5d4-a98f-42fa-980d-70612eac7f28",
+        "schema_version": "planning-generation-candidate.v1",
+        "upstream_digest": "sha256:5c3b25ad2f65a86254723999cbf8808b0205385de94f77beb5cca1eb958612de",
+        "asset_version_id": "authority-output:01d50954-728c-47bb-85fb-06fd785130e0:story_planning.candidate:v1",
+        "qualification_hash": "sha256:5ea635218b3b7299d70dafd52534f2a7dfc6d06fe394d383275207f93d386b88",
+        "qualification_evidence_asset_version_id": "authority-output:dda1f163-783e-4a7f-9586-f1207df4d258:story_design.transition.receipt:v1"
+      },
+      {
+        "role": "ENDING_INTENT",
+        "authority": "STORY_DESIGN_AUTHORITY",
+        "content_hash": "sha256:d9f50e929ae9d09537c95ae88d54afe4b29ec019fcc9d5586d776d8adacbcba8",
+        "activation_id": "1ecec7fc-7c36-4fc1-bbfa-2634bfb00916",
+        "schema_version": "planning-generation-candidate.v1",
+        "upstream_digest": "sha256:5c3b25ad2f65a86254723999cbf8808b0205385de94f77beb5cca1eb958612de",
+        "asset_version_id": "authority-output:847cd4f1-7763-473d-8c46-0785ffa7b1f3:story_planning.candidate:v1",
+        "qualification_hash": "sha256:6180e3ddf6351ca024fab3c8473af9cefe655d2cef04dd9804b5a00fa02d7cb5",
+        "qualification_evidence_asset_version_id": "authority-output:135bc59f-b456-4301-a937-20f8b92cb4f6:story_design.transition.receipt:v1"
+      },
+      {
+        "role": "READER_PROMISE",
+        "authority": "STORY_DESIGN_AUTHORITY",
+        "content_hash": "sha256:a47a74192fa9c6f53e92c6a892ed357860826895b0364940c66da65a3f36d626",
+        "activation_id": "e02b92be-da95-4a40-b500-726a76edd97b",
+        "schema_version": "planning-generation-candidate.v1",
+        "upstream_digest": "sha256:5c3b25ad2f65a86254723999cbf8808b0205385de94f77beb5cca1eb958612de",
+        "asset_version_id": "authority-output:6b3fab3d-e978-45b0-a1d6-97df7254d134:story_planning.candidate:v1",
+        "qualification_hash": "sha256:ee3f15fddb185d2d201ba618b042050b3827169f86bcd84da28c4666cea60972",
+        "qualification_evidence_asset_version_id": "authority-output:8a863736-0fc8-4964-a90d-930af374298a:story_design.transition.receipt:v1"
+      },
+      {
+        "role": "WORLD_BIBLE",
+        "authority": "STORY_DESIGN_AUTHORITY",
+        "content_hash": "sha256:7ef530a1dd5335664a8bfffede178ad5c612ba1a4009473e461f02d104ecbb15",
+        "activation_id": "a03c279b-eada-4073-b569-5d33e15c2d9e",
+        "schema_version": "planning-generation-candidate.v1",
+        "upstream_digest": "sha256:0aaa1adf2f33ee8b30a8be8ed6f2327dd9047cbb4888a446093bf745c480590c",
+        "asset_version_id": "authority-output:bd11fa76-a76e-4b65-8e32-093f8f6e6bac:story_planning.candidate:v1",
+        "qualification_hash": "sha256:a785dc5574606ca0e4956046a2976abf104c744dfcb1fb7ca877e22f587fb67a",
+        "qualification_evidence_asset_version_id": "authority-output:bf555a86-80bf-4314-8951-dded2b2704fa:story_design.transition.receipt:v1"
+      },
+      {
+        "role": "CHARACTER_CAST",
+        "authority": "STORY_DESIGN_AUTHORITY",
+        "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+        "activation_id": "85e47123-f9d2-4e68-bff1-18d9f7e410e0",
+        "schema_version": "planning-generation-candidate.v1",
+        "upstream_digest": "sha256:f4108ae6a38ff7d7d7c477357ce2e088969e5e924a50e9931d7a7c1cd3421973",
+        "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+        "qualification_hash": "sha256:2eb5eb7273bd2f498b11883742bad5ec3703d22cdb28f6ec5407335a208e5df3",
+        "qualification_evidence_asset_version_id": "authority-output:21b32c49-7d5e-4f3a-a082-fe2af8750f7a:story_design.transition.receipt:v1"
+      }
+    ],
+    "set_digest": "sha256:00e78821a055e905a55475313f3209cc1eb5d0af07dfef25ca87249946c92b37",
+    "schema_version": "qualified-foundation-set.v1"
+  },
+  "schema_version": "book-design.v7",
+  "book_invariants": [
+    "以修炼成长、宗门生活、资源争取与任务历练推进，世界规则直观，人物数量适度。",
+    "沈砚有具体愿望、主动选择和可见进步；同门有自己的利益与性格，不只是纠正主角的导师。",
+    "每章2500—3500中文字，写完整场景，章际动作与人物承诺有承接。",
+    "姓名、地点、功法、冲突与事件原创形成；悬念和伏笔按本书需要设置。",
+    "保留十六岁普通山村少年沈砚主动争取青岚宗外门入门机会、凭扎实练习学会引气的起点。",
+    "近期故事单元依次围绕入门、初次引气、与同门结伴完成第一次山谷采药任务、争取进入正式外门修炼课展开。",
+    "以240章作为本方向的篇幅适配视野，具体阶段长度与境界设置留待后续规划。",
+    "全部新增人物动机、修行机制与发展结果均为候选设计，不构成已接受事件或人物知识。",
+    "以冻结creative_brief和creative_foundation为依据，仅提出主题及其探索方式，不改变上游条件。",
+    "以240章作为篇幅适配视野，具体阶段长度、课程条件与境界设置留待后续规划。",
+    "长期愿望须由持续积累的能力与准备支持，并获得独自御剑远行的具体兑现；山外生活可以保持开放。",
+    "主题可通过观察、练习差别、任务结果、协商和简短反思呈现，不要求每个场景都设置对立答案或重大取舍。",
+    "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲；后果的分量依据具体行动及其因果确定。",
+    "以沈砚为主的第三人称限知视角呈现主题，同门未说明的动机只通过可见行为留下判断空间。",
+    "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺，不用重复归零延长成长。",
+    "正文主要使用简体中文，每章2500—3500中文字；主题表达服从完整场景与朴素、清楚、有分寸的叙述。",
+    "姓名、地点、功法、冲突与事件原创形成；不使用既有作品或未准入研究材料作为故事事实。",
+    "全部新增动机、机制、取舍与结果均为候选设计，不构成已接受事件、人物知识或世界事实。",
+    "结局延续以沈砚为主的第三人称限知视角，以他能够观察和理解的行动结果呈现成长。",
+    "时间投入、资源消耗及合作变化的分量由具体选择决定，不把每次练习写成痛苦硬撑，也不把远行强制写成重大牺牲。",
+    "终局所用能力须由前文积累支持，独立行动仍须尊重能力限度；接受合理建议与帮助不削弱沈砚的自主判断。",
+    "开放部分限于愿望兑现之后仍可继续的生活，不以新增危机或续作桥段代替本书长期目标的完成。",
+    "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+    "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+    "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+    "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+    "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+    "后果的分量由具体行动及其因果决定；阶段回报、悬念和节奏变化按实际成长需要安排，不承诺每章突破、危机或反转。",
+    "本结果仅为世界设计候选；accepted_through_chapter为0，不新增已发生事件、人物知识或已接受世界事实，父版本身份由宿主绑定。",
+    "近期故事单元依次为入门、初次引气、首次结伴山谷采药及争取正式外门修炼课；世界制度不得取消、替换或倒置这些单元。",
+    "以传统修仙的修炼成长、宗门生活、资源争取与任务历练推进，规则直观，人物与术语数量适度。",
+    "240章仅为篇幅适配视野；不在本候选固定阶段章数、完整境界序列或具体课程资格。",
+    "入门阶段基础指导与正式外门修炼课有所区别，使沈砚能够先练习引气，再争取正式课程；不预先赋予他任何已完成的资格。",
+    "资源必须有来源、管理者、用途与限度；具体库存、价格、报酬和课位数量须在相关规划中明确，不能把未定值当作零或无限。",
+    "学习成果通过观察、调整和实际运用建立，不以隐藏血统、自动灌顶或无条件资源赠予替代。",
+    "沈砚可以选择、询问、争取和修改安排；同门有自己的时间、利益与承诺，可以拒绝或重新协商。",
+    "时间、材料消耗和关系变化按实际因果确定，不要求每次练习痛苦硬撑，不强加普遍不可逆代价。",
+    "已经取得的能力、资源变化与明确承诺须获得承接；不能为延长成长反复归零。",
+    "采用以沈砚为主的第三人称限知视角；机构记录、读者信息与人物所知分别处理。",
+    "规则在准备使用、遇到限制或作出选择时逐步解释，不要求正文复述整份世界设定。",
+    "御剑远行须由修为、飞剑操控、路线判断与独立准备共同支撑，终局实际完成与能力相称的独行及落脚。",
+    "接受指导、合作或合理帮助不削弱自主性；远行不以失去宗门归属或全部关系为条件。",
+    "新增名称与机制均为原创候选，不引用既有作品或未准入研究材料作为事实。",
+    "正文主要使用简体中文，单章2500—3500中文字，完整场景与章际承接优先于设定展示。",
+    "本结果仅为人物设计候选；accepted_through_chapter为0，不新增已发生事件、人物知识、已接受关系或世界事实，父版本与批准身份由宿主绑定。",
+    "保留character:shen-yan的既有身份：十六岁的普通山村少年沈砚，主动争取青岚宗外门入门机会，起点不具备独自御剑远行本领。",
+    "新增人物身份、生活经验、心理、能力与关系均为候选设计；人物背景不充当已接受历史证据，拟议关系不表示已经相识或合作。",
+    "近期单元依次为入门、初次引气、首次结伴山谷采药及争取正式外门修炼课；人物设计不得取消、替换或倒置这些单元。",
+    "入门机会、基础吐纳说明与指定答疑、正式外门修炼课是不同条件；不预授沈砚已完成的资格，也不固定正式课程的申请办法、费用、考核或课位数量。",
+    "240章仅为篇幅适配视野；本候选不安排阶段章数、完整境界序列、具体飞剑门槛或人物必然达到的后续职位。",
+    "采用以沈砚为主的第三人称限知视角；人物设计可以明确其他人的候选心理，正文只能通过沈砚实际接触的言行、信息来源与理解呈现。",
+    "机构资料、同门动机、路线知识和未公布条件不自动成为沈砚已有知识；他人的候选能力也不自动成为沈砚已知的能力。",
+    "同门各有时间、利益和承诺，可以拒绝、提出条件或重新协商；帮助具有具体来源与范围，不保证所有人退让。",
+    "修炼成果由观察、调整、重复与实际运用建立；生活经验可以帮助学习，不能替代引气、药材辨认、飞剑操控或路线核实。",
+    "人物所需工具、材料、额度和课程资源受实际来源、管理者与供给限制；未定库存、价格、报酬与余额不得视为零、无限或既得资源。",
+    "教习、事务人员与同行者的权限分别有限；个人好感、熟练程度或善意不能替代正式权限和硬条件。",
+    "既有能力、资源变化与明确承诺须由后续行动承接；判断修正不等于能力归零，也不把接受指导等同于失去自主性。",
+    "时间投入、材料消耗、返工与关系变化按具体因果确定，不要求每次练习疼痛、受伤或每次选择发生重大牺牲。",
+    "终局实际独自御剑远行并完成与能力相称的行程及落脚；持续操控、起降、失稳处置、器具、路线天气与补给准备均须由前文积累支持。",
+    "远行不以失去宗门归属或全部同门关系为条件；其他人物可以继续各自的生活与目标。",
+    "人物数量与术语保持适度，后续新角色只在实际目标需要时扩展；不为篇幅预置外敌、秘密派系或宏大阴谋。",
+    "姓名、生活细节、对话与关系压力原创形成；不导入既有作品或未准入研究材料。",
+    "所有voice_anchors均为原创条件性表达示范，不代表已发生对话、已取得成果或已确认制度数值。",
+    "正文主要使用简体中文，单章2500—3500中文字；声音区分服务当下目的、完整场景与章际承接，不以标签代替行为。"
+  ],
+  "target_chapters": 240,
+  "cross_layer_synthesis": [
+    {
+      "constraint": "一个尚无独行本领的普通少年，怎样在借助宗门与同伴的同时，逐渐把修行的路走成自己的路？",
+      "source_roles": [
+        "CREATIVE_FOUNDATION",
+        "THEME_CONTRACT"
+      ],
+      "synthesis_id": "conflict-and-theme",
+      "downstream_scope": "BOOK",
+      "narrative_function": "采用愿望推动的连续成长循环：沈砚发现当前能力不足，选择一项能补足缺口的练习或任务，争取资源与合作条件，在完整场景中尝试，承接结果，再调整下一步。近期以正式外门修炼课为清晰目标，入门、引气和首次山谷采药分别提供资格、基础能力与实践经验。中后期可由课程、宗门职责及山外历练扩大行动范围，逐步把修为、飞剑操控、路线判断和独立准备汇合到御剑远行。单元之间沿用尚未完成的动作、约定与资源安排；不同单元改变难题类型，避免只重复领取任务和兑换奖励。"
+    },
+    {
+      "constraint": "拟采用长期愿望得到兑现、山外生活保持开放的结局。沈砚从需要争取入门与课程机会的普通少年，逐步成长为能判断自己需要什么、选择合适任务并承担准备责任的修士。终局拟让他处理好此次出行涉及的安排与承诺，选择一条能力足以应对的路线，实际独自御剑走出熟悉的山路，并在途中完成一次自主判断与落脚，使读者看见早期练习、任务经验和同门合作如何共同支持这一刻。他仍珍惜宗门与同门关系，也仍有尚未学会的本领；山外还有什么、更高修行能走多远可以留白。本书以他已经能够亲自出发的踏实喜悦收束，不要求飞升、称霸或斩断旧生活。",
+      "source_roles": [
+        "READER_PROMISE",
+        "ENDING_INTENT"
+      ],
+      "synthesis_id": "promise-and-ending",
+      "downstream_scope": "BOOK",
+      "narrative_function": "这部故事承诺让读者陪一个普通山村少年，把陌生的修行本领逐渐练成自己能用、敢用的能力。入门、引气、劳作与山谷采药都有具体目的，行动之后能看见能力、资源或合作条件发生了什么变化。持续的期待来自沈砚接下来需要补足什么、会争取哪种机会，以及已有本领能否帮助他胜任自己选择的事情。读者将体验练习终于有用的踏实喜悦、争取机会时的紧张，以及与各有打算的同门协商、合作和相互理解的摩擦与温暖。沈砚可以判断失误、接受建议并调整做法，但这些结果需要被后续行动承接。长期愿望须由修炼、飞剑操控、路线判断和远行准备共同挣得，最终兑现为有本领支撑的独自御剑远行。用突来的力量替代积累、让他长期被动等待，或反复抹去进步拖延出发，都会背叛这份承诺。"
+    }
+  ]
+}

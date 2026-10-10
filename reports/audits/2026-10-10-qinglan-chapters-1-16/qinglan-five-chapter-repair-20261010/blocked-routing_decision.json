@@ -1,0 +1,862 @@
+{
+  "mode": "CREATIVE_VALIDATION",
+  "task": {
+    "risk": "",
+    "history": [
+      {
+        "status": "FAILED_RETRYABLE",
+        "escalation": false,
+        "candidate_id": "codex-cli:gpt-6.1-sol:high",
+        "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+        "outcome_refs": [],
+        "failure_class": "PROVIDER_RESPONSE_TIMEOUT",
+        "external_effect_id": "101cb54a-ac3c-42d5-8fc0-2d131f672217",
+        "generation_isolated": true
+      },
+      {
+        "status": "SUCCEEDED",
+        "escalation": false,
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "operation_id": "b80295a3-5aaf-4487-877a-72827cb56185",
+        "outcome_refs": [
+          "planning-validation:sha256:6707a80ba371cc87fae8cd87c4fd8ff5f19fdd698ab59091371460279c49ca9c",
+          "asset-version:authority-output:b80295a3-5aaf-4487-877a-72827cb56185:story_planning.candidate:v1",
+          "asset-version:fe5bca6a-3e24-4c34-94df-65ff47bce791"
+        ],
+        "failure_class": "SCHEMA_REJECTION",
+        "external_effect_id": "ca46164c-c102-4b40-b180-0bbe9346b4d5",
+        "generation_isolated": false
+      }
+    ],
+    "work_id": "book:qinglan-wendao-20261008",
+    "chain_id": "sha256:09514598a2552acbcfd2cf90350e5bc12f707fe62680ce960026f4e7730a2fc5",
+    "task_type": "chapter_group_plan.generate",
+    "attempt_id": "ab0da82c-10bc-4f6f-8e01-fcbedf07efb9",
+    "input_hash": "sha256:08fa8aee308302005a1650fd5e93ec8651b7450273dae2882b43f096760fea80",
+    "project_id": "qid-learning-prose-01",
+    "stable_key": "59d8970f-f686-4f25-8acb-dfbe7c71d2f5:planning.chapter_group.generate:planning-pep-v2",
+    "input_tokens": 236839,
+    "operation_id": "59d8970f-f686-4f25-8acb-dfbe7c71d2f5",
+    "request_hash": "sha256:e5105c9fd83f503ddf31f03d3dadbcfbd896001e3dc6065e46058855c091ec34",
+    "output_tokens": 32000,
+    "quality_floor": 0,
+    "cache_eligible": true,
+    "budget_snapshot": {
+      "scope": "execution_chain",
+      "candidates": {
+        "codex-cli:gpt-6-sol:high": {
+          "scopes": {},
+          "membership": true,
+          "remaining_calls": null,
+          "remaining_money": null,
+          "remaining_tokens": 258400,
+          "membership_identity": {
+            "version": "codex-membership-identity.v1",
+            "auth_mode": "chatgpt",
+            "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+            "billing_channel": "ACCOUNT_ENTITLEMENT"
+          },
+          "resource_control_version": "billing-channel-resources.v1"
+        },
+        "codex-cli:gpt-6.1-sol:high": {
+          "scopes": {},
+          "membership": true,
+          "remaining_calls": null,
+          "remaining_money": null,
+          "remaining_tokens": 258400,
+          "membership_identity": {
+            "version": "codex-membership-identity.v1",
+            "auth_mode": "chatgpt",
+            "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+            "billing_channel": "ACCOUNT_ENTITLEMENT"
+          },
+          "resource_control_version": "billing-channel-resources.v1"
+        }
+      },
+      "task_money_limit": "0",
+      "task_token_limit": 258400,
+      "work_resource_plan": {
+        "codex": {
+          "fee_budget": null,
+          "availability": "RECHECK_AT_DISPATCH",
+          "billing_channel": "ACCOUNT_ENTITLEMENT",
+          "estimated_tokens_per_call": 268839
+        },
+        "history": {
+          "codex-cli": {
+            "calls": 60,
+            "average_tokens": 66853,
+            "average_paid_amount": null
+          }
+        },
+        "version": "work-resource-estimate.v1",
+        "deepseek": {
+          "enabled": false,
+          "currency": null,
+          "maximum_amount": null,
+          "estimate_status": "COLD_START_REQUEST_RANGE"
+        },
+        "assumptions": [
+          "cold start: 16-40 calls per remaining chapter plus an initial buffer of 32 calls",
+          "upper range rolls upward with observed same-Book calls per accepted chapter plus 25 percent repair headroom",
+          "observed same-Book averages do not establish literary quality",
+          "estimates never alter work scope or quality floor"
+        ],
+        "goal_chapters": 40,
+        "paid_ceiling_scope": "ALL_SAME_BOOK_PURPOSES_AND_STAGES",
+        "remaining_chapters": 40,
+        "provider_calls_range": [
+          640,
+          1600
+        ],
+        "consumption_by_purpose": {
+          "BOOK_PRODUCTION": {
+            "settled_calls": 60,
+            "observed_tokens": 4011154,
+            "settled_deepseek_usd": "0"
+          }
+        },
+        "accepted_through_chapter": 0
+      },
+      "unavailable_channels": {},
+      "money_used_or_reserved": "0",
+      "tokens_used_or_reserved": 302561,
+      "admission_recheck_required": true
+    },
+    "policy_snapshot": {
+      "policy": {
+        "reason": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02: authorized pure-generation recovery with compatible membership fallback; preserve source grants, input contracts and paid authorization",
+        "policy_version": "qid-learning-generation-recovery-membership.v7",
+        "task_overrides": [],
+        "execution_templates": [
+          {
+            "mode": "CREATIVE_VALIDATION",
+            "book_id": "book:qinglan-wendao-20261008",
+            "version": "creative-execution-template.v12",
+            "deepseek": null,
+            "repair_routing": {
+              "version": "native-repair-routing.v2",
+              "max_same_route_repairs": 2
+            },
+            "author_workflow": {
+              "mode": "AUTHOR_FIRST",
+              "version": "author-workflow.v1",
+              "deep_review": false
+            },
+            "allowed_candidates": [
+              "codex-cli:gpt-6.1-sol:high",
+              "codex-cli:gpt-6-sol:high"
+            ],
+            "quality_corrections": {
+              "version": "quality-correction-control.v1",
+              "maximum_passes": 4,
+              "maximum_unchanged_candidates": 2
+            },
+            "optional_enhancements": [
+              "review",
+              "rereview",
+              "canon_extraction",
+              "canon_support",
+              "quality_structural",
+              "quality_commercial",
+              "quality_source_originality",
+              "quality_longform",
+              "quality_platform"
+            ],
+            "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+            "member_authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+            "world_future_preparation": "DISABLED",
+            "canon_validation_contract": "grounded-canon-validation.v2",
+            "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+            "require_independent_review": false,
+            "require_pack_human_approval": false,
+            "require_literary_qualification": false
+          }
+        ],
+        "author_supervised_books": [
+          {
+            "reason": "Native Source corpus work scope; this identifier is not a story Book.",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator"
+          }
+        ],
+        "author_supervised_authorizations": [
+          {
+            "reason": "Current user authorizes original-note Source analysis; quality remains unproven; no paid channel.",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.content.classify",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:source-classify:01",
+            "producer_contract_hash": "sha256:4c74c679beddd04aa6bf80720fcc1f6fdcc9576a162c11f18c862fe7b342d4e9"
+          },
+          {
+            "reason": "Current user authorizes actual read Gou 1-4 abstraction through original notes, original examples only; no quality claim or paid expansion",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-observe:02",
+            "producer_contract_hash": "sha256:5f2a84bc62c9e2e2777c065f1567e4154a1f0f5d9d4c23079c4dea3278e93ef7"
+          },
+          {
+            "reason": "Current user authorized Source review of original notes derived from Gou 1-4; model editorial opinion only; no human or quality proof",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-review:03",
+            "producer_contract_hash": "sha256:41478d69d32e301dae9966581a5438758965f77d935210fbd8dc72e76d9cde85"
+          },
+          {
+            "reason": "Current user authorized Source analysis; successor prompt clarifies research evidence vs abstract output; preserve past empty observations and all previous grants",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.content.classify",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-classify-contract11:04",
+            "producer_contract_hash": "sha256:8f47fc57403e658b6ec12bad73b62f7877c4518fb6729d97d4dc53c4164fe371"
+          },
+          {
+            "reason": "Current authorized Gou 1-4 original-note observation with bounded research support excerpts; no raw source draft inputs, paid route or quality claim",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-observe-contract11:05",
+            "producer_contract_hash": "sha256:4477566125cba08c6e84cb224defcc23633562e4ac65fd290f0a7552a74c349b"
+          },
+          {
+            "reason": "Current WP authorizes native review of original reading observations; original text restricted to research; model opinion is not reader or market proof.",
+            "book_id": "source-corpus:qid-learning-prose-01",
+            "author_id": "author-first-native-operator",
+            "task_type": "source.deconstruction.observe",
+            "expires_at": "2026-10-10T09:54:40.807345+00:00",
+            "candidate_id": "codex-cli:gpt-6.1-sol:high",
+            "maximum_amount": "0",
+            "maximum_tokens": 258400,
+            "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+            "authorization_id": "qid-learning:preferred-source-review:06",
+            "producer_contract_hash": "sha256:0d7cbfaa6bf58180a4a39ef5918df23d9c51ba6f9c3ac219d204d7e7f5d2e664"
+          }
+        ]
+      },
+      "actor_id": "author-first-native-operator",
+      "policy_hash": "0b0f30b89164fec9ab4c295b5320ab4ee7ee6c30eea0f8d98071dda81c630e47",
+      "operation_id": "dad17172-f558-46c9-b7cc-e2f58468cf23"
+    },
+    "remaining_money": "0",
+    "remaining_tokens": 0,
+    "soft_money_limit": null,
+    "cache_prefix_hash": "sha256:9944133f064cfba121dc7af149a976185116ef0806f9d8e875f1931b0c19687a",
+    "escalation_reason": "",
+    "producer_contract": {
+      "skill": {
+        "ref": "long-outline",
+        "version": "long-outline-v3",
+        "content_hash": "sha256:e619875c466e7b3b07b93c394c0ecb05414a9bf454ec5e30775a00b0b7fa5e29"
+      },
+      "stage": "chapter_group_plan.generate",
+      "tool_policy": {
+        "ref": "tools:chapter-generation-pack:v2",
+        "version": "v2",
+        "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+      },
+      "input_schema": {
+        "ref": "schema:execution-input:planning-chapter_group-generate:v1",
+        "version": "v1",
+        "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+      },
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema": {
+        "ref": "schema:planning-provider-output:chapter_group:v3:work-v4:host-selectors-v2",
+        "shape_hash": "sha256:19ae31261b47e8fa1ca7f56e3b2288d592b91822346b614df9684ee4b4ff99e5",
+        "factory_hash": "sha256:c1b99c34145e554834b86be8b54e00361964ca25ecb63c2a4b5e364c2b5f3405",
+        "binding_policy": "CONST_AND_ENUM_VALUES_ARE_FROZEN_PER_REQUEST;_TYPES_CARDINALITY_AND_FACTORY_ARE_SHARED",
+        "identity_version": "planning-schema-factory-and-shape.v1"
+      },
+      "context_policy": {
+        "ref": "context-policy:chapter-generation-pack:v2",
+        "version": "v2",
+        "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+      },
+      "schema_version": "routing-producer-contract.v1",
+      "prompt_template": {
+        "ref": "prompt-template:story-planning-pack",
+        "version": "v1",
+        "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+      },
+      "source_isolation": {},
+      "pack_output_schema": {
+        "ref": "schema:execution-output:planning-chapter_group-generate:v1",
+        "version": "v1",
+        "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+      },
+      "system_instruction": {
+        "ref": "prompt-system:story-planning-pack",
+        "version": "v11",
+        "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+      },
+      "materialization_schema": "novelos.planning_capability_materialization.v1",
+      "provider_view_versions": {
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v4"
+      },
+      "required_reader_facing_language": "zh-CN",
+      "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1"
+    },
+    "latency_sla_seconds": 0,
+    "declared_requirements": {
+      "risk": "",
+      "chapter": 0,
+      "quality_floor": 0,
+      "governed_repair": {
+        "input_hash": "sha256:08fa8aee308302005a1650fd5e93ec8651b7450273dae2882b43f096760fea80",
+        "command_hash": "sha256:f6928729eef606f6cc7760b0fbd298f6dd6a4db30b7520e19f59076d9b789a56",
+        "operation_id": "59d8970f-f686-4f25-8acb-dfbe7c71d2f5",
+        "repair_number": 1,
+        "diagnosis_hash": "sha256:6707a80ba371cc87fae8cd87c4fd8ff5f19fdd698ab59091371460279c49ca9c",
+        "maximum_repairs": 2,
+        "contract_version": "planning-route-repair.v1",
+        "source_input_hash": "sha256:42d7a50b696d1ad499dde707bb08c8bde90075c63ab468d88affe2c47333992e",
+        "source_operation_id": "b80295a3-5aaf-4487-877a-72827cb56185",
+        "source_asset_version_id": "authority-output:b80295a3-5aaf-4487-877a-72827cb56185:story_planning.candidate:v1",
+        "authorized_history_operation_ids": [
+          "0f4d4d1f-af2b-428a-98c4-396c2a92bd72",
+          "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+          "b80295a3-5aaf-4487-877a-72827cb56185",
+          "13598429-fb44-4708-b414-247d26f2cc7d"
+        ],
+        "accepted_history_mutation_allowed": false
+      }
+    },
+    "lineage_operation_ids": [
+      "0f4d4d1f-af2b-428a-98c4-396c2a92bd72",
+      "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+      "b80295a3-5aaf-4487-877a-72827cb56185",
+      "13598429-fb44-4708-b414-247d26f2cc7d",
+      "59d8970f-f686-4f25-8acb-dfbe7c71d2f5"
+    ],
+    "required_capabilities": [
+      "structured_output"
+    ],
+    "producer_contract_hash": "sha256:0b0847350edf0079307e5681b50f84c8b5d405e3f6edc3e3c6a50273efdbb243",
+    "reusable_prefix_tokens": 2654,
+    "latency_cost_per_second": "0"
+  },
+  "checks": {
+    "literary_model_qualification": {
+      "reason": "creative validation template excludes model literary calibration",
+      "status": "NOT_RUN"
+    }
+  },
+  "policy": {
+    "risk": "MEDIUM",
+    "max_attempts": 4,
+    "quality_floor": 0.75,
+    "quality_metric": "GENERATOR_SCORE",
+    "max_escalations": 1,
+    "minimum_samples": 8,
+    "confidence_penalty": 0.15,
+    "retain_failed_domain_samples": false
+  },
+  "status": "BLOCKED",
+  "selected": null,
+  "candidates": [
+    {
+      "benchmark": {
+        "as_of": "2026-10-09T18:22:00.407616+00:00",
+        "version": "sha256:160a7403b87f68ef83892b7d48af29b7dec0360a4ec097648578a285f41081c5",
+        "uncertain": true,
+        "retry_rate": null,
+        "actual_cost": "0",
+        "judge_score": null,
+        "repair_rate": null,
+        "window_days": 30,
+        "input_tokens": 0,
+        "outcome_refs": [],
+        "quality_mean": 0.0,
+        "sample_count": 0,
+        "evidence_refs": [],
+        "output_tokens": 0,
+        "quality_metric": "GENERATOR_SCORE",
+        "reference_risk": null,
+        "schema_success": 0.0,
+        "acceptance_rate": null,
+        "cache_hit_ratio": 0.0,
+        "escalation_rate": null,
+        "latency_seconds": null,
+        "maximum_samples": 200,
+        "predicted_quality": 0.0,
+        "priced_usage_cost": "0",
+        "confidence_penalty": 0.15,
+        "mean_output_tokens": null,
+        "canon_conflict_rate": null,
+        "metric_sample_count": 0,
+        "cost_unknown_samples": 0,
+        "latency_sample_count": 0,
+        "quality_distribution": [],
+        "quality_sample_count": 0,
+        "evidence_class_counts": {
+          "PRODUCTION_OUTCOME": 0,
+          "BENCHMARK_CHALLENGER": 0,
+          "REFERENCE_EVALUATION": 0,
+          "UNCLASSIFIED_REAL_PROVIDER": 0
+        },
+        "generator_score_basis": null,
+        "mean_cache_hit_tokens": 0,
+        "reference_label_strata": {
+          "FAIL": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          },
+          "PASS": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          }
+        },
+        "acceptance_sample_count": 0,
+        "domain_gate_sample_count": 0,
+        "independent_sample_count": 0,
+        "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+        "reference_agreement_rate": null,
+        "benchmark_acceptance_rate": null,
+        "generator_context_buckets": [],
+        "generator_protocol_hashes": [],
+        "reference_context_buckets": [],
+        "reference_protocol_hashes": [],
+        "production_acceptance_rate": null,
+        "conditional_content_quality": 0.0,
+        "served_model_identity_hashes": [],
+        "qualification_acceptance_rate": null,
+        "repeated_sample_attempt_count": 0,
+        "independent_reviewer_score_basis": null,
+        "production_eligible_sample_count": 0,
+        "reference_agreement_sample_count": 0,
+        "benchmark_acceptance_sample_count": 0,
+        "benchmark_challenger_sample_count": 0,
+        "production_acceptance_sample_count": 0,
+        "excluded_experiment_partition_count": 0,
+        "unadjudicated_reviewer_sample_count": 0,
+        "independent_reviewer_context_buckets": [],
+        "independent_reviewer_protocol_hashes": [],
+        "unadjudicated_generator_sample_count": 0,
+        "partition_conflicted_sample_identities": []
+      },
+      "candidate": {
+        "tier": "primary",
+        "model": "gpt-6.1-sol",
+        "pricing": {
+          "source": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+          "version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "currency": "UNKNOWN",
+          "effective_from": "2026-10-07T00:00:00+00:00",
+          "effective_until": "2026-10-10T00:00:00+00:00",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "output_per_million": "0",
+          "input_hit_per_million": "0",
+          "input_miss_per_million": "0"
+        },
+        "provider": "codex-cli",
+        "available": true,
+        "reasoning": "high",
+        "candidate_id": "codex-cli:gpt-6.1-sol:high",
+        "capabilities": [
+          "structured_output",
+          "text"
+        ],
+        "output_limit": 32000,
+        "context_limit": 258400,
+        "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:bdd115338a1dcfb1dae762a5da33f3b4fa7459586ac38e9077ee651c1a2b846d",
+        "escalation_only": false,
+        "quota_remaining": null,
+        "authorized_tasks": [
+          "agent_session",
+          "arc_plan.generate",
+          "book_plan.generate",
+          "canon_extraction",
+          "canon_high_impact_conflict",
+          "canon_support",
+          "chapter_group_plan.generate",
+          "chapter_plan.generate",
+          "character.cast.generate",
+          "character.generate",
+          "character_analysis",
+          "classification",
+          "climax",
+          "context_compress",
+          "context_fidelity",
+          "core_character_arc",
+          "core_world_rules",
+          "creative.candidates.generate",
+          "creative_foundation.generate",
+          "critical_chapter",
+          "cross_volume_repair",
+          "deconstruction",
+          "draft",
+          "ending.generate",
+          "ending.intent.generate",
+          "fact_candidate",
+          "knowledge_extraction",
+          "longform_prose_review",
+          "major_reversal",
+          "memo",
+          "metadata",
+          "model_reference_adjudicate",
+          "model_reference_evaluate",
+          "narrative_semantic_evaluation",
+          "quality_commercial",
+          "quality_longform",
+          "quality_platform",
+          "quality_source_originality",
+          "quality_structural",
+          "reader.promise.generate",
+          "reader_outcome",
+          "reader_promise.generate",
+          "relationship_analysis",
+          "rereview",
+          "retrieval_query",
+          "retrieval_query_expansion",
+          "review",
+          "revision",
+          "screenplay_generate",
+          "screenplay_review",
+          "screenplay_revision",
+          "source.content.classify",
+          "source.deconstruction.observe",
+          "source.mkaos.extract",
+          "summary",
+          "tagging",
+          "theme.candidates.generate",
+          "theme.generate",
+          "volume_plan.generate",
+          "world.design.generate",
+          "world.generate",
+          "world_candidates.actor_0",
+          "world_candidates.actor_1",
+          "world_candidates.actor_2",
+          "world_candidates.evaluate",
+          "world_candidates.generate"
+        ],
+        "entitlement_role": "PRIMARY",
+        "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+        "capability_version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "availability_reason": "",
+        "estimated_price_multiplier": "1"
+      },
+      "expected_quality": 0.0,
+      "rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "BUDGET_HARD_LIMIT"
+      ],
+      "cache_evidence_refs": [],
+      "soft_limit_pressure": false,
+      "cache_tokens_estimate": 0,
+      "estimated_total_tokens": 268839,
+      "estimated_monetary_cost": null,
+      "expected_effective_cost": null,
+      "reservation_upper_bound": null,
+      "strict_rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "QUALITY_FLOOR_NOT_MET",
+        "BENCHMARK_INSUFFICIENT",
+        "BUDGET_HARD_LIMIT"
+      ]
+    },
+    {
+      "benchmark": {
+        "as_of": "2026-10-09T18:22:00.407616+00:00",
+        "version": "sha256:a2ec7ffd8187aaa1e8251fa9d5680fddcfd666c67d77853cd822a6f504a432a4",
+        "uncertain": true,
+        "retry_rate": 1,
+        "actual_cost": "0",
+        "judge_score": null,
+        "repair_rate": null,
+        "window_days": 30,
+        "input_tokens": 66185,
+        "outcome_refs": [
+          "asset-version:authority-output:b80295a3-5aaf-4487-877a-72827cb56185:story_planning.candidate:v1",
+          "asset-version:fe5bca6a-3e24-4c34-94df-65ff47bce791",
+          "planning-validation:sha256:6707a80ba371cc87fae8cd87c4fd8ff5f19fdd698ab59091371460279c49ca9c"
+        ],
+        "quality_mean": 0.0,
+        "sample_count": 1,
+        "evidence_refs": [
+          "asset-version:fe5bca6a-3e24-4c34-94df-65ff47bce791"
+        ],
+        "output_tokens": 17167,
+        "quality_metric": "GENERATOR_SCORE",
+        "reference_risk": null,
+        "schema_success": 1,
+        "acceptance_rate": null,
+        "cache_hit_ratio": 0.0,
+        "escalation_rate": 0,
+        "latency_seconds": null,
+        "maximum_samples": 200,
+        "predicted_quality": 0.0,
+        "priced_usage_cost": "0",
+        "confidence_penalty": 0.15,
+        "mean_output_tokens": 17167,
+        "canon_conflict_rate": null,
+        "metric_sample_count": 0,
+        "cost_unknown_samples": 1,
+        "latency_sample_count": 0,
+        "quality_distribution": [],
+        "quality_sample_count": 0,
+        "evidence_class_counts": {
+          "PRODUCTION_OUTCOME": 0,
+          "BENCHMARK_CHALLENGER": 0,
+          "REFERENCE_EVALUATION": 0,
+          "UNCLASSIFIED_REAL_PROVIDER": 1
+        },
+        "generator_score_basis": null,
+        "mean_cache_hit_tokens": 0,
+        "reference_label_strata": {
+          "FAIL": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          },
+          "PASS": {
+            "lower_bound": 0.0,
+            "sample_count": 0,
+            "agreement_rate": null
+          }
+        },
+        "acceptance_sample_count": 0,
+        "domain_gate_sample_count": 0,
+        "independent_sample_count": 1,
+        "quality_constraint_basis": "CONTENT_AND_OBSERVED_DELIVERY_YIELD",
+        "reference_agreement_rate": null,
+        "benchmark_acceptance_rate": null,
+        "generator_context_buckets": [],
+        "generator_protocol_hashes": [],
+        "reference_context_buckets": [],
+        "reference_protocol_hashes": [],
+        "production_acceptance_rate": null,
+        "conditional_content_quality": 0.0,
+        "served_model_identity_hashes": [],
+        "qualification_acceptance_rate": 0,
+        "repeated_sample_attempt_count": 0,
+        "independent_reviewer_score_basis": null,
+        "production_eligible_sample_count": 0,
+        "reference_agreement_sample_count": 0,
+        "benchmark_acceptance_sample_count": 0,
+        "benchmark_challenger_sample_count": 0,
+        "production_acceptance_sample_count": 0,
+        "excluded_experiment_partition_count": 0,
+        "unadjudicated_reviewer_sample_count": 0,
+        "independent_reviewer_context_buckets": [],
+        "independent_reviewer_protocol_hashes": [],
+        "unadjudicated_generator_sample_count": 0,
+        "partition_conflicted_sample_identities": []
+      },
+      "candidate": {
+        "tier": "reference",
+        "model": "gpt-6-sol",
+        "pricing": {
+          "source": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+          "version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "currency": "UNKNOWN",
+          "effective_from": "2026-10-07T00:00:00+00:00",
+          "effective_until": "2026-10-10T00:00:00+00:00",
+          "accounting_basis": "ACCOUNT_ENTITLEMENT",
+          "output_per_million": "0",
+          "input_hit_per_million": "0",
+          "input_miss_per_million": "0"
+        },
+        "provider": "codex-cli",
+        "available": true,
+        "reasoning": "high",
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "capabilities": [
+          "structured_output",
+          "text"
+        ],
+        "output_limit": 32000,
+        "context_limit": 258400,
+        "model_revision": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021:codex-router-models.v1:sha256:c38e6ad15b53af44a932e1b2fc677c39b57bab57fe22c29c5ec35c40d3834686",
+        "escalation_only": false,
+        "quota_remaining": null,
+        "authorized_tasks": [
+          "agent_session",
+          "arc_plan.generate",
+          "book_plan.generate",
+          "canon_extraction",
+          "canon_high_impact_conflict",
+          "canon_support",
+          "chapter_group_plan.generate",
+          "chapter_plan.generate",
+          "character.cast.generate",
+          "character.generate",
+          "character_analysis",
+          "classification",
+          "climax",
+          "context_compress",
+          "context_fidelity",
+          "core_character_arc",
+          "core_world_rules",
+          "creative.candidates.generate",
+          "creative_foundation.generate",
+          "critical_chapter",
+          "cross_volume_repair",
+          "deconstruction",
+          "draft",
+          "ending.generate",
+          "ending.intent.generate",
+          "fact_candidate",
+          "knowledge_extraction",
+          "longform_prose_review",
+          "major_reversal",
+          "memo",
+          "metadata",
+          "model_reference_adjudicate",
+          "model_reference_evaluate",
+          "narrative_semantic_evaluation",
+          "quality_commercial",
+          "quality_longform",
+          "quality_platform",
+          "quality_source_originality",
+          "quality_structural",
+          "reader.promise.generate",
+          "reader_outcome",
+          "reader_promise.generate",
+          "relationship_analysis",
+          "rereview",
+          "retrieval_query",
+          "retrieval_query_expansion",
+          "review",
+          "revision",
+          "screenplay_generate",
+          "screenplay_review",
+          "screenplay_revision",
+          "source.content.classify",
+          "source.deconstruction.observe",
+          "source.mkaos.extract",
+          "summary",
+          "tagging",
+          "theme.candidates.generate",
+          "theme.generate",
+          "volume_plan.generate",
+          "world.design.generate",
+          "world.generate",
+          "world_candidates.actor_0",
+          "world_candidates.actor_1",
+          "world_candidates.actor_2",
+          "world_candidates.evaluate",
+          "world_candidates.generate"
+        ],
+        "entitlement_role": "REFERENCE",
+        "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+        "capability_version": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "availability_reason": "",
+        "estimated_price_multiplier": "1"
+      },
+      "expected_quality": 0.0,
+      "rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "BUDGET_HARD_LIMIT"
+      ],
+      "cache_evidence_refs": [
+        "asset-version:fe5bca6a-3e24-4c34-94df-65ff47bce791"
+      ],
+      "soft_limit_pressure": false,
+      "cache_tokens_estimate": 0,
+      "estimated_total_tokens": 268839,
+      "estimated_monetary_cost": null,
+      "expected_effective_cost": null,
+      "reservation_upper_bound": null,
+      "strict_rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "QUALITY_FLOOR_NOT_MET",
+        "BENCHMARK_INSUFFICIENT",
+        "BUDGET_HARD_LIMIT"
+      ]
+    }
+  ],
+  "created_at": "2026-10-09T18:22:00.407616+00:00",
+  "decision_id": "routing-decision:80bf844dc733b8d6ca21274bd4e95c1519913347626bdc299194528ade442667",
+  "policy_version": "quality-constrained-routing.v13",
+  "schema_version": "quality-constrained-routing.v13",
+  "resource_actions": {
+    "transport_recovery": {
+      "action": "NO_AUTHORIZED_ROUTE",
+      "contract_version": "native-isolated-transport-fallback.v1",
+      "authorization_source": "CURRENT_NATIVE_TEMPLATE_AND_ISOLATED_SUCCESSOR",
+      "failed_route_effects": {
+        "codex-cli:gpt-6.1-sol:high": [
+          "101cb54a-ac3c-42d5-8fc0-2d131f672217"
+        ]
+      },
+      "selected_candidate_id": null,
+      "retry_allowance_changed": false
+    },
+    "work_scope_changed": false,
+    "quality_floor_changed": false,
+    "paid_completion_pressure": false,
+    "deferred_paid_optional_tasks": [],
+    "membership_preferred_for_substitutable_work": true
+  },
+  "escalation_policy": {
+    "reason": "",
+    "history": [
+      {
+        "status": "FAILED_RETRYABLE",
+        "escalation": false,
+        "candidate_id": "codex-cli:gpt-6.1-sol:high",
+        "operation_id": "b6d08c58-1052-41dd-91dd-bcd8e48809ce",
+        "outcome_refs": [],
+        "failure_class": "PROVIDER_RESPONSE_TIMEOUT",
+        "external_effect_id": "101cb54a-ac3c-42d5-8fc0-2d131f672217",
+        "generation_isolated": true
+      },
+      {
+        "status": "SUCCEEDED",
+        "escalation": false,
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "operation_id": "b80295a3-5aaf-4487-877a-72827cb56185",
+        "outcome_refs": [
+          "planning-validation:sha256:6707a80ba371cc87fae8cd87c4fd8ff5f19fdd698ab59091371460279c49ca9c",
+          "asset-version:authority-output:b80295a3-5aaf-4487-877a-72827cb56185:story_planning.candidate:v1",
+          "asset-version:fe5bca6a-3e24-4c34-94df-65ff47bce791"
+        ],
+        "failure_class": "SCHEMA_REJECTION",
+        "external_effect_id": "ca46164c-c102-4b40-b180-0bbe9346b4d5",
+        "generation_isolated": false
+      }
+    ],
+    "max_attempts": 4,
+    "max_escalations": 1,
+    "unavailable_action": "BLOCK",
+    "semantic_failure_threshold": 2
+  },
+  "execution_template_hash": "sha256:d8457c9534df01634b27e189b809e13f224e59b345c8924cc39ac1fb90611cda",
+  "resource_control_version": "billing-channel-resources.v1",
+  "internal_production_eligible": false,
+  "strict_certification_eligible": false,
+  "independent_qualification_eligible": false
+}

@@ -1,0 +1,99 @@
+{
+  "status": "REPAIR_REQUIRED",
+  "book_id": "book:qinglan-wendao-20261008",
+  "version": 2,
+  "created_at": "2026-10-09T20:44:23.960633+00:00",
+  "project_id": "qid-learning-prose-01",
+  "updated_at": "2026-10-09T20:47:21.081522+00:00",
+  "logical_key": "chapter:5",
+  "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "generation_id": "planning-generation:99583564-f754-4642-8c1f-2d81f8f442fe",
+  "repair_number": 0,
+  "repair_reason": null,
+  "input_snapshot": [
+    {
+      "role": "book_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+      "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+    },
+    {
+      "role": "volume_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+      "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+    },
+    {
+      "role": "arc_plans",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+      "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+    },
+    {
+      "role": "chapter_group_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:f409cbc1254032b155921afde1d6e7a72f5f4add28a65f861f685606652ec062",
+      "asset_version_id": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1"
+    },
+    {
+      "role": "chapter_function_matrix_row",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:f409cbc1254032b155921afde1d6e7a72f5f4add28a65f861f685606652ec062",
+      "asset_version_id": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1"
+    },
+    {
+      "role": "previous_chapter_outcome",
+      "asset_type": "previous_chapter_outcome",
+      "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+      "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1"
+    },
+    {
+      "role": "story_state",
+      "asset_type": "story_state_snapshot",
+      "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+      "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+    },
+    {
+      "role": "canon_snapshot",
+      "asset_type": "canon_snapshot",
+      "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+      "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    {
+      "role": "quality_trend",
+      "asset_type": "quality_trend",
+      "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+      "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+    },
+    {
+      "role": "reader_state",
+      "asset_type": "reader_state",
+      "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+      "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+    },
+    {
+      "role": "related_arc:1",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+      "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+    },
+    {
+      "role": "related_arc:2",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+      "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "CHAPTER",
+  "parent_version_id": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+  "input_snapshot_hash": "sha256:df9a80abb4edfcb8c7743d85749820fa2cb2d55e976864eaaa728dfae9d64676",
+  "narrative_search_id": null,
+  "repair_of_candidate_id": null,
+  "repair_of_operation_id": null,
+  "runtime_continuation_id": "planning-runtime-continuation:280d38d6-2586-42ac-a6d6-fdf1c6a5b068",
+  "generator_operation_name": "chapter_plan.generate",
+  "candidate_asset_version_id": "authority-output:99583564-f754-4642-8c1f-2d81f8f442fe:story_planning.candidate:v1",
+  "narrative_search_branch_key": null,
+  "repair_result_asset_version_id": null
+}

@@ -1,0 +1,1095 @@
+{
+  "cost": {
+    "model": "gpt-6-sol",
+    "reason": "monetary_cost_not_observable",
+    "currency": "UNKNOWN",
+    "measurement": "UNKNOWN",
+    "availability": "UNAVAILABLE",
+    "provider_billed": "UNKNOWN",
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+    "entitlement_snapshot": {
+      "cli_version": "codex-cli 0.159.2",
+      "billing_identity": {
+        "version": "codex-membership-identity.v1",
+        "auth_mode": "chatgpt",
+        "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+        "billing_channel": "ACCOUNT_ENTITLEMENT"
+      },
+      "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+      "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+      "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+    },
+    "entitlement_snapshot_hash": "sha256:11fd8cd1ab78162fb9963e1535887111e06611960e8cad9f34fe3ae6ceb9e9ae"
+  },
+  "type": "model_call_log",
+  "stage": "world_candidates.generate",
+  "usage": {
+    "model": "gpt-6-sol",
+    "measurement": "MEASURED",
+    "availability": "AVAILABLE",
+    "input_tokens": 68773,
+    "total_tokens": 69872,
+    "output_tokens": 1099,
+    "cached_input_tokens": 0,
+    "uncached_input_tokens": 68773,
+    "reasoning_output_tokens": 948
+  },
+  "result": {
+    "reason": "第5章的首次结伴采药需要先有可追溯的任务说明、三人同行约定、当次成熟可采份额核实及可行日程。当前仅接受至第0章，接受历史为空；第4章的分拣补救与结伴安排仍是规划候选，也没有可供人物感知的已接受信息源。此时提出采收、交回或验收转换，会把未发生的准备当作既成事实。待必要前因获得支持后，再在第5章范围内提出转换。",
+    "candidates": [],
+    "disposition": "DEFER"
+  },
+  "model_id": "gpt-6-sol",
+  "project_id": "qid-learning-prose-01",
+  "provider_id": "codex-cli",
+  "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+  "skill_version": "chapter-outline@chapter-outline-qualification-v2",
+  "prompt_version": "prompt-system:story-planning-pack@v11",
+  "real_model_call": true,
+  "candidate_accepted": false,
+  "capability_runtime": {
+    "skill": {
+      "ref": "chapter-outline",
+      "version": "chapter-outline-qualification-v2",
+      "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+    },
+    "allowed_tools": [
+      "model.provider.invoke"
+    ],
+    "provider_view": {
+      "component_hashes": {
+        "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+        "output_schema": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+        "governed_skill": "sha256:56f15ea6762d048082c3b064636b7ceccf074c9afac71c4f331523ddf964bac2",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:7b4b5823655734659ce9bb5273c3f9f124ee6f86902c708e3a9471fa4788024f",
+        "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+        "fully_rendered_prompt": "sha256:3398f0f2b0d250f3abba788e8b68203029e26ca90b220302ee1ecbe8424d8cc7",
+        "provider_context_view": "sha256:4b9180327068a0c51ae9654c3018ebccc187a324e5e2ad6977dbdf0c26910038",
+        "stage_semantic_contract": "sha256:80af805dbd4479b295d52db443cd94f0283ad32554d1b30b3f3d8ff87ee93289"
+      },
+      "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+      "component_characters": {
+        "tool_policy": 258,
+        "output_schema": 16294,
+        "governed_skill": 902,
+        "provider_knowledge": 559,
+        "provider_task_view": 85973,
+        "system_instruction": 9358,
+        "fully_rendered_prompt": 115757,
+        "provider_context_view": 966,
+        "stage_semantic_contract": 682
+      },
+      "representation_policy": "authority-projection-task-provider-v1",
+      "selection_explanation": {
+        "policy": "accepted-boundary-only",
+        "omitted_count": 0,
+        "selected_count": 1
+      },
+      "task_contract_version": "provider-task-view-v1",
+      "context_contract_version": "provider-context-view-v4",
+      "context_projection_ratio": 0.001842,
+      "component_estimated_tokens": {
+        "tool_policy": 86,
+        "output_schema": 5432,
+        "governed_skill": 301,
+        "provider_knowledge": 187,
+        "provider_task_view": 58074,
+        "system_instruction": 3120,
+        "fully_rendered_prompt": 68002,
+        "provider_context_view": 322,
+        "stage_semantic_contract": 228
+      },
+      "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+      "component_utf8_byte_upper_bounds": {
+        "tool_policy": 258,
+        "output_schema": 16294,
+        "governed_skill": 902,
+        "provider_knowledge": 559,
+        "provider_task_view": 174221,
+        "system_instruction": 9358,
+        "fully_rendered_prompt": 204005,
+        "provider_context_view": 966,
+        "stage_semantic_contract": 682
+      },
+      "provider_context_estimated_tokens": 322,
+      "authority_context_estimated_tokens": 174832,
+      "rendered_prompt_to_semantic_input_ratio": 1.16078,
+      "provider_admission_uses_component_estimates": false
+    },
+    "prompt_template": {
+      "ref": "prompt-template:story-planning-pack",
+      "version": "v1",
+      "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+    },
+    "method_selection": {
+      "skill_sections": [
+        "Shared rules",
+        "World transition proposals"
+      ],
+      "system_sections": [
+        "Shared rules",
+        "Foundation",
+        "Realization references",
+        "Book plan",
+        "Volume plan",
+        "Arc plan",
+        "Chapter group",
+        "Chapter plan",
+        "World proposals",
+        "World evaluation",
+        "Actor intention",
+        "Chapter serialization realization",
+        "Host source selectors and scheduled Arc scope"
+      ],
+      "contract_version": "production-stage-methods.v1"
+    },
+    "output_schema_ref": "schema:world_candidates.generate:v2",
+    "output_schema_hash": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+    "provider_admission": {
+      "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+      "status": "ADMITTED",
+      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+      "envelope_hash": "sha256:054e26dedc56ff8766a5ff3ca491c85c862e54cce4394facfb030f00a23c1bc9",
+      "total_reserved": 236277,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 32000,
+        "provider_input": 204005,
+        "request_framing": 16
+      },
+      "applicable_limit": 258400,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "gpt-6-sol",
+        "provider": "codex-cli",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+        "output_reserve": 32000,
+        "route_identity": "chapter_plan.generate:codex-cli:gpt-6-sol:79fd2f146cf0fe97693104b7fe880ba582e98a60:sha256:9e511b15c8c69ebdf5c74dcdde8f2b274842eb3ba0d1241c62ff9c80550ae078",
+        "contract_version": "provider-token-accounting-v3",
+        "framing_overhead": 16,
+        "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        "model_context_limit": 258400,
+        "execution_token_limit": 258400,
+        "serialization_contract": "codex-cli-application-stdin-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 174832,
+      "input_component_hashes": {
+        "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+        "output_schema": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+        "governed_skill": "sha256:56f15ea6762d048082c3b064636b7ceccf074c9afac71c4f331523ddf964bac2",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:7b4b5823655734659ce9bb5273c3f9f124ee6f86902c708e3a9471fa4788024f",
+        "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+        "fully_rendered_prompt": "sha256:3398f0f2b0d250f3abba788e8b68203029e26ca90b220302ee1ecbe8424d8cc7",
+        "provider_context_view": "sha256:4b9180327068a0c51ae9654c3018ebccc187a324e5e2ad6977dbdf0c26910038",
+        "stage_semantic_contract": "sha256:80af805dbd4479b295d52db443cd94f0283ad32554d1b30b3f3d8ff87ee93289"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "system_instruction": {
+      "ref": "prompt-system:story-planning-pack",
+      "version": "v11",
+      "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+    },
+    "materialization_hash": "sha256:cdc72b5ae5bc8c378bc92de3fecd5f0d4a9639b3d8e03676d64ebd38311170cd",
+    "rendered_prompt_bytes": 204005,
+    "reusable_prefix_bytes": 10340,
+    "knowledge_content_hashes": [
+      "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+    ],
+    "context_asset_version_ids": [
+      "13c9cfb2-9b28-44ff-a401-ef9f79d3c687"
+    ],
+    "embedding_output_contract": null,
+    "fully_rendered_prompt_hash": "sha256:3398f0f2b0d250f3abba788e8b68203029e26ca90b220302ee1ecbe8424d8cc7",
+    "provider_request_envelope_hash": "sha256:054e26dedc56ff8766a5ff3ca491c85c862e54cce4394facfb030f00a23c1bc9",
+    "required_reader_facing_language": "zh-CN",
+    "rendered_prompt_estimated_tokens": 68002,
+    "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1",
+    "provider_admission_asset_version_id": "400735e8-91ab-4756-a0f1-15a963fb74d6"
+  },
+  "production_verified": false,
+  "production_execution": {
+    "input_manifest": {
+      "book_id": "book:qinglan-wendao-20261008",
+      "read_set": [
+        "asset-version:13c9cfb2-9b28-44ff-a401-ef9f79d3c687",
+        "asset-version:authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "asset-version:authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "asset-version:authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "asset-version:authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+        "asset-version:authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+        "asset-version:authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+        "asset-version:authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+        "asset-version:authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+        "asset-version:authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+        "asset-version:authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+        "asset-version:authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "asset-version:authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "asset-version:9b663cc0-eb18-4733-b7b8-7e97bd21c57e"
+      ],
+      "attempt_id": "eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "project_id": "qid-learning-prose-01",
+      "manifest_id": "production_execution/inputs/ae4ea76a995b74279292",
+      "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+      "target_scope": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "scope_id": "chapter:5",
+        "project_id": "qid-learning-prose-01",
+        "scope_kind": "chapter"
+      },
+      "fencing_token": 1,
+      "input_artifacts": [
+        {
+          "artifact_ref": "asset-version:13c9cfb2-9b28-44ff-a401-ef9f79d3c687",
+          "content_hash": "sha256:e4462daf641f97d8072d75796bbafa37dc59577c0e636b11fae608fbbbb257db",
+          "artifact_type": "context_bundle",
+          "schema_version": "novelos.planning_context_bundle.v1",
+          "asset_version_id": "13c9cfb2-9b28-44ff-a401-ef9f79d3c687",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+          "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+          "artifact_type": "planning_generation_candidate",
+          "schema_version": "planning_generation_candidate.v1",
+          "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "artifact_type": "planning_generation_candidate",
+          "schema_version": "planning_generation_candidate.v1",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "artifact_type": "story_state_snapshot",
+          "schema_version": "story_state_snapshot.v1",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+          "artifact_type": "planning_generation_candidate",
+          "schema_version": "planning_generation_candidate.v1",
+          "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "artifact_type": "reader_state",
+          "schema_version": "reader_state.v1",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "artifact_type": "quality_trend",
+          "schema_version": "quality_trend.v1",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "artifact_type": "canon_snapshot",
+          "schema_version": "canon_snapshot.v1",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+          "content_hash": "sha256:f409cbc1254032b155921afde1d6e7a72f5f4add28a65f861f685606652ec062",
+          "artifact_type": "planning_generation_candidate",
+          "schema_version": "planning_generation_candidate.v1",
+          "asset_version_id": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+          "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+          "artifact_type": "previous_chapter_outcome",
+          "schema_version": "previous_chapter_outcome.v1",
+          "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+          "content_hash": "sha256:f409cbc1254032b155921afde1d6e7a72f5f4add28a65f861f685606652ec062",
+          "artifact_type": "planning_generation_candidate",
+          "schema_version": "planning_generation_candidate.v1",
+          "asset_version_id": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+          "artifact_type": "planning_generation_candidate",
+          "schema_version": "planning_generation_candidate.v1",
+          "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+          "artifact_type": "planning_generation_candidate",
+          "schema_version": "planning_generation_candidate.v1",
+          "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        },
+        {
+          "artifact_ref": "asset-version:9b663cc0-eb18-4733-b7b8-7e97bd21c57e",
+          "content_hash": "sha256:8c20fa62e4c4d6efd68a8ed4e056474cd9459365b5865d8a62768b762702698f",
+          "artifact_type": "world_preparation_source",
+          "schema_version": "world_preparation_source.v1",
+          "asset_version_id": "9b663cc0-eb18-4733-b7b8-7e97bd21c57e",
+          "source_eligibility": "PRODUCTION_ELIGIBLE"
+        }
+      ],
+      "arc_version_refs": [],
+      "planning_version": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+      "skill_bundle_ref": "chapter-outline@chapter-outline-qualification-v2",
+      "prompt_bundle_ref": "prompt-system:story-planning-pack@v11",
+      "source_policy_ref": "source:planning-story_chapter-generate:v1",
+      "canon_version_refs": [
+        "asset-version:authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      ],
+      "context_bundle_ref": "asset-version:13c9cfb2-9b28-44ff-a401-ef9f79d3c687",
+      "source_eligibility": "PRODUCTION_ELIGIBLE",
+      "story_state_version": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "skill_bundle_version": "chapter-outline@chapter-outline-qualification-v2",
+      "prompt_bundle_version": "prompt-system:story-planning-pack@v11",
+      "canon_snapshot_version": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "context_bundle_version": "13c9cfb2-9b28-44ff-a401-ef9f79d3c687",
+      "quality_profile_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+    },
+    "route_snapshot": {
+      "model_id": "gpt-6-sol",
+      "policy_id": "planning.world_candidates_generate.route.sha256.65d65dd539ea64b4e8d7771a82656bcda74298cb14fe18d8f76939e7f0f0738a",
+      "attempt_id": "eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "backend_id": "codex-cli",
+      "release_sha": "79fd2f146cf0fe97693104b7fe880ba582e98a60",
+      "approval_ref": "",
+      "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+      "model_provider": "codex-cli",
+      "policy_version": 1,
+      "backend_version": "1.0.0",
+      "runtime_host_id": "host:author-first-live-isolated",
+      "auth_profile_ref": "auth:current-chatgpt-member:codex:ac313a67364269b8e4a28d1192c2b375a8df36901ca1c20528bb6279a3a9a7cc",
+      "credential_scope": "",
+      "fallback_trigger": "",
+      "model_profile_id": "planning.world_candidates_generate.default.sha256.65d65dd539ea64b4e8d7771a82656bcda74298cb14fe18d8f76939e7f0f0738a",
+      "reasoning_effort": "high",
+      "route_generation": 1,
+      "skill_bundle_ref": "chapter-outline@chapter-outline-qualification-v2",
+      "output_schema_ref": "schema:world_candidates.generate:v2",
+      "prompt_bundle_ref": "prompt-system:story-planning-pack@v11",
+      "route_decision_id": "routing-decision:ac045188a98039ba940956d97fb4381ddf1ded60138069fd4da5fa397c1bdbce",
+      "route_policy_hash": "3c1d6d7c03d721d44d055b9d4343d16970b34e7a38a2ba4269f1c1561429c089",
+      "route_snapshot_id": "production_execution/routes/ae4ea76a995b74279292",
+      "context_bundle_ref": "asset-version:13c9cfb2-9b28-44ff-a401-ef9f79d3c687",
+      "model_profile_hash": "a52219896101508e2f5cfa55a3b376ecd7bf7de46a052403ccbbd1c697c1d388",
+      "route_change_index": 0,
+      "secret_version_ref": "",
+      "fallback_policy_ref": "planning.world_candidates_generate.fail-closed.sha256.65d65dd539ea64b4e8d7771a82656bcda74298cb14fe18d8f76939e7f0f0738a",
+      "model_profile_version": 1,
+      "fallback_policy_version": 1,
+      "parent_route_snapshot_id": "",
+      "quality_revalidation_ref": "",
+      "requested_reasoning_effort": "high"
+    },
+    "execution_handle": {
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "attempt_id": "eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "backend_id": "codex-cli",
+      "execution_id": "planning-execution:bad829b1-1748-4d9d-8fae-fa23784a8228:eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+      "fencing_token": 1,
+      "completion_mode": "PROCESS_EXIT",
+      "local_process_id": 71807,
+      "query_capability": "SUPPORTED",
+      "cancel_capability": "SUPPORTED",
+      "callback_capability": "UNSUPPORTED",
+      "external_request_id": null,
+      "provider_request_id": null,
+      "backend_execution_id": "process-receipt:4da50fe28141b961217683bd",
+      "local_process_group_id": 71807,
+      "local_process_start_time": "Sat Oct 10 04:44:30 2026",
+      "local_execution_receipt_id": "process-receipt:4da50fe28141b961217683bd"
+    },
+    "execution_result": {
+      "error": null,
+      "outcome": "SUCCEEDED",
+      "attempt_id": "eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "started_at": "2026-10-09T20:44:30.336332Z",
+      "completed_at": "2026-10-09T20:44:54.073890Z",
+      "execution_id": "planning-execution:bad829b1-1748-4d9d-8fae-fa23784a8228:eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+      "fencing_token": 1,
+      "raw_output_ref": "authority-asset-version:5e61477b-6863-4cb4-919c-73d1ebee6c16",
+      "cost_receipt_ref": "authority-asset-version:891c7f98-4497-4f3e-aa61-33b939c428bc",
+      "usage_receipt_ref": "authority-asset-version:c7ad4979-b6d7-4e89-8c5c-0ef00ad5e98f",
+      "output_manifest_ref": "authority-asset-version:7023554b-afae-4bf7-b53e-d3e6c8cfd6c3",
+      "process_receipt_ref": "authority-asset-version:782797c5-6b65-47ff-9d58-3854bad1fa2d",
+      "external_receipt_ref": null,
+      "provider_receipt_ref": null,
+      "normalized_output_ref": "authority-asset-version:d1969776-226e-4209-bd71-73d89b5a9320",
+      "validation_report_ref": "authority-asset-version:b1aa6c07-9692-4a03-bc6e-dff22c7018f4"
+    },
+    "process_evidence": {
+      "cost": {
+        "model": "gpt-6-sol",
+        "reason": "monetary_cost_not_observable",
+        "currency": "UNKNOWN",
+        "measurement": "UNKNOWN",
+        "availability": "UNAVAILABLE",
+        "provider_billed": "UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+        "entitlement_snapshot": {
+          "cli_version": "codex-cli 0.159.2",
+          "billing_identity": {
+            "version": "codex-membership-identity.v1",
+            "auth_mode": "chatgpt",
+            "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+            "billing_channel": "ACCOUNT_ENTITLEMENT"
+          },
+          "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+          "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+          "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+        },
+        "entitlement_snapshot_hash": "sha256:11fd8cd1ab78162fb9963e1535887111e06611960e8cad9f34fe3ae6ceb9e9ae"
+      },
+      "stage": "world_candidates.generate",
+      "tools": {
+        "denied": [],
+        "policy": "DEFAULT_DENY",
+        "allowed": [
+          "model.provider.invoke"
+        ],
+        "invoked": [
+          "model.provider.invoke"
+        ],
+        "invocations": [
+          {
+            "event": "provider_execution",
+            "status": "completed",
+            "call_id": "",
+            "tool_ref": "model.provider.invoke"
+          }
+        ]
+      },
+      "usage": {
+        "model": "gpt-6-sol",
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 68773,
+        "total_tokens": 69872,
+        "output_tokens": 1099,
+        "cached_input_tokens": 0,
+        "uncached_input_tokens": 68773,
+        "reasoning_output_tokens": 948
+      },
+      "result": {
+        "reason": "第5章的首次结伴采药需要先有可追溯的任务说明、三人同行约定、当次成熟可采份额核实及可行日程。当前仅接受至第0章，接受历史为空；第4章的分拣补救与结伴安排仍是规划候选，也没有可供人物感知的已接受信息源。此时提出采收、交回或验收转换，会把未发生的准备当作既成事实。待必要前因获得支持后，再在第5章范围内提出转换。",
+        "candidates": [],
+        "disposition": "DEFER"
+      },
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "event_count": 7,
+      "denied_tools": [],
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema": {
+        "type": "object",
+        "required": [
+          "disposition",
+          "reason",
+          "candidates"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "transition",
+                "affected_entities",
+                "world_consequences",
+                "arc_refs",
+                "obligation_refs",
+                "risks",
+                "soft_assumptions",
+                "narrative_preferences",
+                "rationale",
+                "preparation_paths",
+                "information_scope"
+              ],
+              "properties": {
+                "risks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 16
+                },
+                "arc_refs": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+                      "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+                      "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+                    ],
+                    "type": "string"
+                  },
+                  "maxItems": 3,
+                  "description": "Only these exact native references are authorized; use an empty array when none applies."
+                },
+                "rationale": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "transition": {
+                  "type": "object",
+                  "required": [
+                    "payload_json"
+                  ],
+                  "properties": {
+                    "payload_json": {
+                      "type": "string",
+                      "maxLength": 16384,
+                      "minLength": 2,
+                      "description": "JSON serialization of this typed contract: {\"additionalProperties\": false, \"description\": \"Serialized WorldTransition, not prose. Copy approved actor/entity identities and exact frozen foundation or accepted causal references. story_time is an ordered object, never a chapter label string; end_ordinal must be at least start_ordinal. No invented prerequisites or inferred accepted facts.\", \"properties\": {\"action\": {\"minLength\": 1, \"type\": \"string\"}, \"action_mode\": {\"description\": \"ROUTINE: ordinary non-epistemic agency supported by supplied Foundation or accepted causes, never hidden-information decisions. PERCEPTION: observe an available objective source. INFORMATION_DEPENDENT: act on this character's own knowledge/belief. Director checks the classification against action and effects.\", \"enum\": [\"ROUTINE\", \"PERCEPTION\", \"INFORMATION_DEPENDENT\"], \"type\": \"string\"}, \"actor_id\": {\"minLength\": 1, \"type\": \"string\"}, \"camera\": {\"enum\": [\"ON_CAMERA\", \"OFF_CAMERA\", \"UNDERCURRENT\"], \"type\": \"string\"}, \"cause_refs\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"minItems\": 1, \"type\": \"array\", \"uniqueItems\": true}, \"changes\": {\"description\": \"Use state-kind semantics: resource_state is quantitative inventory/balance (initial balance or reconciled balance_before/delta/balance_after). Nonquantitative availability/access/status belongs to world_state for the exact approved entity. character_knowledge is one own character/proposition with status KNOWN and observation_source for PERCEPTION. Changes are proposals, not accepted facts. Never invent a numeric balance for a document's access status.\", \"minProperties\": 1, \"type\": \"object\"}, \"entity_key\": {\"minLength\": 1, \"type\": \"string\"}, \"epistemic_basis\": {\"description\": \"Information-dependent decisions require the actor's own supplied knowledge/belief predicates. Under world-agency.v2 classify action_mode explicitly. ROUTINE cannot grant epistemic state; PERCEPTION needs objective source predicates and cause refs. Own-character knowledge acquisition binds changes.observation_source {state_kind,entity_key,field,value} to an EQUALS source predicate. Sources precede perception, and a later information-dependent decision depends on that actor's acquisition. No borrowed, reader, future or self-supporting knowledge. Proposed steps remain unaccepted. NO_OP/DEFER only when actually appropriate to the story.\", \"items\": {\"additionalProperties\": false, \"description\": \"Copy exact causal state identity and field. EXISTS may use null value; numeric comparison requires a numeric value. Epistemic bases must use character_knowledge or character_belief.\", \"properties\": {\"entity_key\": {\"minLength\": 1, \"type\": \"string\"}, \"field\": {\"minLength\": 1, \"type\": \"string\"}, \"operator\": {\"enum\": [\"EQUALS\", \"AT_LEAST\", \"AT_MOST\", \"EXISTS\"], \"type\": \"string\"}, \"requirement_id\": {\"minLength\": 1, \"type\": \"string\"}, \"state_kind\": {\"enum\": [\"character_knowledge\", \"character_belief\"], \"type\": \"string\"}, \"value\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"number\"}, {\"type\": \"boolean\"}, {\"type\": \"null\"}]}}, \"required\": [\"requirement_id\", \"state_kind\", \"entity_key\", \"field\", \"operator\", \"value\"], \"type\": \"object\"}, \"type\": \"array\"}, \"requirements\": {\"items\": {\"additionalProperties\": false, \"description\": \"Copy exact causal state identity and field. EXISTS may use null value; numeric comparison requires a numeric value. Epistemic bases must use character_knowledge or character_belief.\", \"properties\": {\"entity_key\": {\"minLength\": 1, \"type\": \"string\"}, \"field\": {\"minLength\": 1, \"type\": \"string\"}, \"operator\": {\"enum\": [\"EQUALS\", \"AT_LEAST\", \"AT_MOST\", \"EXISTS\"], \"type\": \"string\"}, \"requirement_id\": {\"minLength\": 1, \"type\": \"string\"}, \"state_kind\": {\"enum\": [\"canon_fact\", \"timeline_event\", \"character_state\", \"relationship_state\", \"world_rule\", \"resource_state\", \"power_state\", \"foreshadow_state\", \"plot_thread\", \"narrative_debt\", \"mystery_state\", \"antagonist_state\", \"arc_state\", \"reward_event\", \"theme_movement\", \"character_knowledge\", \"character_belief\", \"character_arc\", \"world_state\", \"faction_state\", \"location_state\", \"consequence_state\", \"conflict_state\", \"payoff_event\"], \"type\": \"string\"}, \"value\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"number\"}, {\"type\": \"boolean\"}, {\"type\": \"null\"}]}}, \"required\": [\"requirement_id\", \"state_kind\", \"entity_key\", \"field\", \"operator\", \"value\"], \"type\": \"object\"}, \"type\": \"array\"}, \"state_kind\": {\"enum\": [\"canon_fact\", \"timeline_event\", \"character_state\", \"relationship_state\", \"world_rule\", \"resource_state\", \"power_state\", \"foreshadow_state\", \"reader_promise\", \"plot_thread\", \"narrative_debt\", \"mystery_state\", \"antagonist_state\", \"arc_state\", \"reward_event\", \"theme_movement\", \"character_knowledge\", \"character_belief\", \"character_arc\", \"reader_knowledge\", \"disclosure_event\", \"world_state\", \"faction_state\", \"location_state\", \"consequence_state\", \"conflict_state\", \"narrative_obligation\", \"payoff_event\"], \"type\": \"string\"}, \"story_time\": {\"additionalProperties\": false, \"properties\": {\"end_ordinal\": {\"minimum\": 1, \"type\": \"integer\"}, \"label\": {\"type\": \"string\"}, \"precision\": {\"enum\": [\"EXACT\", \"ORDERED\", \"RANGE\"], \"type\": \"string\"}, \"start_ordinal\": {\"minimum\": 1, \"type\": \"integer\"}, \"timeline_id\": {\"minLength\": 1, \"type\": \"string\"}}, \"required\": [\"timeline_id\", \"start_ordinal\", \"end_ordinal\", \"precision\", \"label\"], \"type\": \"object\"}, \"transition_id\": {\"description\": \"Use a batch-local name matching [A-Za-z][A-Za-z0-9_-]{0,63}, without a local: prefix. In cause_refs, refer to a preparation event as local:<name>; other references must be exact supplied foundation or accepted event identities.\", \"minLength\": 1, \"type\": \"string\"}}, \"required\": [\"transition_id\", \"actor_id\", \"camera\", \"story_time\", \"action\", \"state_kind\", \"entity_key\", \"changes\", \"requirements\", \"cause_refs\", \"epistemic_basis\", \"action_mode\"], \"type\": \"object\"}"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "obligation_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 0,
+                  "description": "Only these exact native references are authorized; use an empty array when none applies."
+                },
+                "soft_assumptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 16
+                },
+                "affected_entities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 16,
+                  "minItems": 1
+                },
+                "information_scope": {
+                  "type": "object",
+                  "required": [
+                    "disclosures"
+                  ],
+                  "properties": {
+                    "disclosures": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "disclosure_id",
+                          "event_id",
+                          "audience",
+                          "mode",
+                          "fields",
+                          "presentation_channel",
+                          "claim_kind"
+                        ],
+                        "properties": {
+                          "mode": {
+                            "enum": [
+                              "HINT",
+                              "PARTIAL",
+                              "MISDIRECT",
+                              "CONFIRM",
+                              "WITHHOLD"
+                            ],
+                            "type": "string"
+                          },
+                          "fields": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "maxItems": 16,
+                            "description": "Only explicit scalar event fields may be presented. WITHHOLD requires no fields. Private causes, decisions and summaries are never presentation fields."
+                          },
+                          "audience": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "READER or one exact character_id. Mixed audiences use distinct disclosure records; no implicit ALL."
+                          },
+                          "event_id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "claim_kind": {
+                            "enum": [
+                              "CURRENT_ASSERTION",
+                              "HISTORICAL_OCCURRENCE"
+                            ],
+                            "type": "string"
+                          },
+                          "disclosure_id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "presentation_channel": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "maxItems": 8
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "preparation_paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "path_id",
+                      "rationale",
+                      "steps"
+                    ],
+                    "properties": {
+                      "steps": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "transition",
+                            "chapter_offset"
+                          ],
+                          "properties": {
+                            "transition": {
+                              "type": "object",
+                              "required": [
+                                "payload_json"
+                              ],
+                              "properties": {
+                                "payload_json": {
+                                  "type": "string",
+                                  "maxLength": 16384,
+                                  "minLength": 2,
+                                  "description": "JSON serialization of this typed contract: {\"additionalProperties\": false, \"description\": \"Serialized WorldTransition, not prose. Copy approved actor/entity identities and exact frozen foundation or accepted causal references. story_time is an ordered object, never a chapter label string; end_ordinal must be at least start_ordinal. No invented prerequisites or inferred accepted facts.\", \"properties\": {\"action\": {\"minLength\": 1, \"type\": \"string\"}, \"action_mode\": {\"description\": \"ROUTINE: ordinary non-epistemic agency supported by supplied Foundation or accepted causes, never hidden-information decisions. PERCEPTION: observe an available objective source. INFORMATION_DEPENDENT: act on this character's own knowledge/belief. Director checks the classification against action and effects.\", \"enum\": [\"ROUTINE\", \"PERCEPTION\", \"INFORMATION_DEPENDENT\"], \"type\": \"string\"}, \"actor_id\": {\"minLength\": 1, \"type\": \"string\"}, \"camera\": {\"enum\": [\"ON_CAMERA\", \"OFF_CAMERA\", \"UNDERCURRENT\"], \"type\": \"string\"}, \"cause_refs\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"minItems\": 1, \"type\": \"array\", \"uniqueItems\": true}, \"changes\": {\"description\": \"Use state-kind semantics: resource_state is quantitative inventory/balance (initial balance or reconciled balance_before/delta/balance_after). Nonquantitative availability/access/status belongs to world_state for the exact approved entity. character_knowledge is one own character/proposition with status KNOWN and observation_source for PERCEPTION. Changes are proposals, not accepted facts. Never invent a numeric balance for a document's access status.\", \"minProperties\": 1, \"type\": \"object\"}, \"entity_key\": {\"minLength\": 1, \"type\": \"string\"}, \"epistemic_basis\": {\"description\": \"Information-dependent decisions require the actor's own supplied knowledge/belief predicates. Under world-agency.v2 classify action_mode explicitly. ROUTINE cannot grant epistemic state; PERCEPTION needs objective source predicates and cause refs. Own-character knowledge acquisition binds changes.observation_source {state_kind,entity_key,field,value} to an EQUALS source predicate. Sources precede perception, and a later information-dependent decision depends on that actor's acquisition. No borrowed, reader, future or self-supporting knowledge. Proposed steps remain unaccepted. NO_OP/DEFER only when actually appropriate to the story.\", \"items\": {\"additionalProperties\": false, \"description\": \"Copy exact causal state identity and field. EXISTS may use null value; numeric comparison requires a numeric value. Epistemic bases must use character_knowledge or character_belief.\", \"properties\": {\"entity_key\": {\"minLength\": 1, \"type\": \"string\"}, \"field\": {\"minLength\": 1, \"type\": \"string\"}, \"operator\": {\"enum\": [\"EQUALS\", \"AT_LEAST\", \"AT_MOST\", \"EXISTS\"], \"type\": \"string\"}, \"requirement_id\": {\"minLength\": 1, \"type\": \"string\"}, \"state_kind\": {\"enum\": [\"character_knowledge\", \"character_belief\"], \"type\": \"string\"}, \"value\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"number\"}, {\"type\": \"boolean\"}, {\"type\": \"null\"}]}}, \"required\": [\"requirement_id\", \"state_kind\", \"entity_key\", \"field\", \"operator\", \"value\"], \"type\": \"object\"}, \"type\": \"array\"}, \"requirements\": {\"items\": {\"additionalProperties\": false, \"description\": \"Copy exact causal state identity and field. EXISTS may use null value; numeric comparison requires a numeric value. Epistemic bases must use character_knowledge or character_belief.\", \"properties\": {\"entity_key\": {\"minLength\": 1, \"type\": \"string\"}, \"field\": {\"minLength\": 1, \"type\": \"string\"}, \"operator\": {\"enum\": [\"EQUALS\", \"AT_LEAST\", \"AT_MOST\", \"EXISTS\"], \"type\": \"string\"}, \"requirement_id\": {\"minLength\": 1, \"type\": \"string\"}, \"state_kind\": {\"enum\": [\"canon_fact\", \"timeline_event\", \"character_state\", \"relationship_state\", \"world_rule\", \"resource_state\", \"power_state\", \"foreshadow_state\", \"plot_thread\", \"narrative_debt\", \"mystery_state\", \"antagonist_state\", \"arc_state\", \"reward_event\", \"theme_movement\", \"character_knowledge\", \"character_belief\", \"character_arc\", \"world_state\", \"faction_state\", \"location_state\", \"consequence_state\", \"conflict_state\", \"payoff_event\"], \"type\": \"string\"}, \"value\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"number\"}, {\"type\": \"boolean\"}, {\"type\": \"null\"}]}}, \"required\": [\"requirement_id\", \"state_kind\", \"entity_key\", \"field\", \"operator\", \"value\"], \"type\": \"object\"}, \"type\": \"array\"}, \"state_kind\": {\"enum\": [\"canon_fact\", \"timeline_event\", \"character_state\", \"relationship_state\", \"world_rule\", \"resource_state\", \"power_state\", \"foreshadow_state\", \"reader_promise\", \"plot_thread\", \"narrative_debt\", \"mystery_state\", \"antagonist_state\", \"arc_state\", \"reward_event\", \"theme_movement\", \"character_knowledge\", \"character_belief\", \"character_arc\", \"reader_knowledge\", \"disclosure_event\", \"world_state\", \"faction_state\", \"location_state\", \"consequence_state\", \"conflict_state\", \"narrative_obligation\", \"payoff_event\"], \"type\": \"string\"}, \"story_time\": {\"additionalProperties\": false, \"properties\": {\"end_ordinal\": {\"minimum\": 1, \"type\": \"integer\"}, \"label\": {\"type\": \"string\"}, \"precision\": {\"enum\": [\"EXACT\", \"ORDERED\", \"RANGE\"], \"type\": \"string\"}, \"start_ordinal\": {\"minimum\": 1, \"type\": \"integer\"}, \"timeline_id\": {\"minLength\": 1, \"type\": \"string\"}}, \"required\": [\"timeline_id\", \"start_ordinal\", \"end_ordinal\", \"precision\", \"label\"], \"type\": \"object\"}, \"transition_id\": {\"description\": \"Use a batch-local name matching [A-Za-z][A-Za-z0-9_-]{0,63}, without a local: prefix. In cause_refs, refer to a preparation event as local:<name>; other references must be exact supplied foundation or accepted event identities.\", \"minLength\": 1, \"type\": \"string\"}}, \"required\": [\"transition_id\", \"actor_id\", \"camera\", \"story_time\", \"action\", \"state_kind\", \"entity_key\", \"changes\", \"requirements\", \"cause_refs\", \"epistemic_basis\", \"action_mode\"], \"type\": \"object\"}"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "chapter_offset": {
+                              "type": "integer",
+                              "maximum": 3,
+                              "minimum": 0
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "maxItems": 4,
+                        "minItems": 1
+                      },
+                      "path_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "rationale": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "maxItems": 3
+                },
+                "world_consequences": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 16,
+                  "minItems": 1
+                },
+                "narrative_preferences": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "maxItems": 16
+                }
+              },
+              "additionalProperties": false
+            },
+            "maxItems": 4
+          },
+          "disposition": {
+            "enum": [
+              "CANDIDATES",
+              "NO_OP",
+              "DEFER"
+            ],
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "model_authority": {
+        "schema_version": "novelos.model_authority_evidence.v1",
+        "route_policy_id": "planning.world_candidates_generate.route.sha256.65d65dd539ea64b4e8d7771a82656bcda74298cb14fe18d8f76939e7f0f0738a",
+        "invocation_model": "gpt-6-sol",
+        "model_profile_id": "planning.world_candidates_generate.default.sha256.65d65dd539ea64b4e8d7771a82656bcda74298cb14fe18d8f76939e7f0f0738a",
+        "route_policy_hash": "3c1d6d7c03d721d44d055b9d4343d16970b34e7a38a2ba4269f1c1561429c089",
+        "route_snapshot_id": "production_execution/routes/ae4ea76a995b74279292",
+        "frozen_route_model": "gpt-6-sol",
+        "model_profile_hash": "a52219896101508e2f5cfa55a3b376ecd7bf7de46a052403ccbbd1c697c1d388",
+        "route_snapshot_hash": "4a218964ca546f0d35b26191c6c8b4e01babb0508df9b4ea90b7fcf5b5863b7f",
+        "route_policy_version": 1,
+        "model_profile_version": 1,
+        "policy_requested_model": "gpt-6-sol",
+        "invocation_command_hash": "sha256:a4515e12b90f6f642556c58a69232fb7c8a8a58d883c3699ba47ae1857e20e83",
+        "provider_observed_model": "unavailable",
+        "session_recovery_policy": "codex-local-session-evidence.v1",
+        "local_session_persistence": "DURABLE",
+        "local_user_config_ignored": true,
+        "invocation_reasoning_effort": "high",
+        "frozen_route_reasoning_effort": "high",
+        "policy_requested_reasoning_effort": "high",
+        "provider_observed_reasoning_effort": "unavailable",
+        "local_user_config_is_model_authority": false
+      },
+      "submission_phase": "PROCESS_RESULT_RECORDED",
+      "validation_checks": {
+        "tool_policy": "tool-policy:sha256:fc1887030896cf96eb10fd22ab968efc6575033ebead938c975fb6e617f1d9c1",
+        "output_schema": "schema:world_candidates.generate:v2",
+        "stage_semantics": "chapter-stage:world_candidates.generate:semantic-validation",
+        "capability_materialization": "sha256:cdc72b5ae5bc8c378bc92de3fecd5f0d4a9639b3d8e03676d64ebd38311170cd"
+      },
+      "stream_diagnostics": {
+        "version": "codex-stream-diagnostics.v1",
+        "event_counts": {
+          "turn.started": 1,
+          "item.completed": 4,
+          "thread.started": 1,
+          "turn.completed": 1
+        },
+        "stdout_bytes": 1621,
+        "stdout_sha256": "5b6efb87c610b76f5a661b320f5088d97ce0349c7153e84a410a1e3703ab4eec",
+        "usage_present": true,
+        "remote_outcome": "UNESTABLISHED",
+        "scan_truncated": false,
+        "turn_completed": true,
+        "local_thread_id": "01a12269-05ed-77c0-a8a4-5510efa514c8",
+        "stream_disconnected": false,
+        "response_body_decode_failed": false
+      },
+      "unauthorized_tools": [],
+      "capability_evidence": {
+        "skill": {
+          "ref": "chapter-outline",
+          "version": "chapter-outline-qualification-v2",
+          "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+        },
+        "allowed_tools": [
+          "model.provider.invoke"
+        ],
+        "provider_view": {
+          "component_hashes": {
+            "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+            "output_schema": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+            "governed_skill": "sha256:56f15ea6762d048082c3b064636b7ceccf074c9afac71c4f331523ddf964bac2",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:7b4b5823655734659ce9bb5273c3f9f124ee6f86902c708e3a9471fa4788024f",
+            "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+            "fully_rendered_prompt": "sha256:3398f0f2b0d250f3abba788e8b68203029e26ca90b220302ee1ecbe8424d8cc7",
+            "provider_context_view": "sha256:4b9180327068a0c51ae9654c3018ebccc187a324e5e2ad6977dbdf0c26910038",
+            "stage_semantic_contract": "sha256:80af805dbd4479b295d52db443cd94f0283ad32554d1b30b3f3d8ff87ee93289"
+          },
+          "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+          "component_characters": {
+            "tool_policy": 258,
+            "output_schema": 16294,
+            "governed_skill": 902,
+            "provider_knowledge": 559,
+            "provider_task_view": 85973,
+            "system_instruction": 9358,
+            "fully_rendered_prompt": 115757,
+            "provider_context_view": 966,
+            "stage_semantic_contract": 682
+          },
+          "representation_policy": "authority-projection-task-provider-v1",
+          "selection_explanation": {
+            "policy": "accepted-boundary-only",
+            "omitted_count": 0,
+            "selected_count": 1
+          },
+          "task_contract_version": "provider-task-view-v1",
+          "context_contract_version": "provider-context-view-v4",
+          "context_projection_ratio": 0.001842,
+          "component_estimated_tokens": {
+            "tool_policy": 86,
+            "output_schema": 5432,
+            "governed_skill": 301,
+            "provider_knowledge": 187,
+            "provider_task_view": 58074,
+            "system_instruction": 3120,
+            "fully_rendered_prompt": 68002,
+            "provider_context_view": 322,
+            "stage_semantic_contract": 228
+          },
+          "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+          "component_utf8_byte_upper_bounds": {
+            "tool_policy": 258,
+            "output_schema": 16294,
+            "governed_skill": 902,
+            "provider_knowledge": 559,
+            "provider_task_view": 174221,
+            "system_instruction": 9358,
+            "fully_rendered_prompt": 204005,
+            "provider_context_view": 966,
+            "stage_semantic_contract": 682
+          },
+          "provider_context_estimated_tokens": 322,
+          "authority_context_estimated_tokens": 174832,
+          "rendered_prompt_to_semantic_input_ratio": 1.16078,
+          "provider_admission_uses_component_estimates": false
+        },
+        "prompt_template": {
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v1",
+          "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+        },
+        "method_selection": {
+          "skill_sections": [
+            "Shared rules",
+            "World transition proposals"
+          ],
+          "system_sections": [
+            "Shared rules",
+            "Foundation",
+            "Realization references",
+            "Book plan",
+            "Volume plan",
+            "Arc plan",
+            "Chapter group",
+            "Chapter plan",
+            "World proposals",
+            "World evaluation",
+            "Actor intention",
+            "Chapter serialization realization",
+            "Host source selectors and scheduled Arc scope"
+          ],
+          "contract_version": "production-stage-methods.v1"
+        },
+        "output_schema_ref": "schema:world_candidates.generate:v2",
+        "output_schema_hash": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+        "provider_admission": {
+          "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+          "status": "ADMITTED",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "envelope_hash": "sha256:054e26dedc56ff8766a5ff3ca491c85c862e54cce4394facfb030f00a23c1bc9",
+          "total_reserved": 236277,
+          "component_usage": {
+            "safety_margin": 256,
+            "output_reserve": 32000,
+            "provider_input": 204005,
+            "request_framing": 16
+          },
+          "applicable_limit": 258400,
+          "contract_version": "provider-token-admission-v1",
+          "accounting_contract": {
+            "model": "gpt-6-sol",
+            "provider": "codex-cli",
+            "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+            "meter_version": "v1",
+            "safety_margin": 256,
+            "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+            "output_reserve": 32000,
+            "route_identity": "chapter_plan.generate:codex-cli:gpt-6-sol:79fd2f146cf0fe97693104b7fe880ba582e98a60:sha256:9e511b15c8c69ebdf5c74dcdde8f2b274842eb3ba0d1241c62ff9c80550ae078",
+            "contract_version": "provider-token-accounting-v3",
+            "framing_overhead": 16,
+            "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+            "model_context_limit": 258400,
+            "execution_token_limit": 258400,
+            "serialization_contract": "codex-cli-application-stdin-v1"
+          },
+          "context_bundle_status": "VALID",
+          "context_bundle_tokens": 174832,
+          "input_component_hashes": {
+            "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+            "output_schema": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+            "governed_skill": "sha256:56f15ea6762d048082c3b064636b7ceccf074c9afac71c4f331523ddf964bac2",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:7b4b5823655734659ce9bb5273c3f9f124ee6f86902c708e3a9471fa4788024f",
+            "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+            "fully_rendered_prompt": "sha256:3398f0f2b0d250f3abba788e8b68203029e26ca90b220302ee1ecbe8424d8cc7",
+            "provider_context_view": "sha256:4b9180327068a0c51ae9654c3018ebccc187a324e5e2ad6977dbdf0c26910038",
+            "stage_semantic_contract": "sha256:80af805dbd4479b295d52db443cd94f0283ad32554d1b30b3f3d8ff87ee93289"
+          },
+          "complete_request_coverage": [
+            "system_runtime_instructions",
+            "prompt_template",
+            "skill_instructions",
+            "tool_policy_and_schemas",
+            "structured_output_schema",
+            "context_bundle",
+            "knowledge_inputs",
+            "request_envelope_and_framing",
+            "output_reserve",
+            "safety_margin"
+          ]
+        },
+        "system_instruction": {
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v11",
+          "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+        },
+        "materialization_hash": "sha256:cdc72b5ae5bc8c378bc92de3fecd5f0d4a9639b3d8e03676d64ebd38311170cd",
+        "rendered_prompt_bytes": 204005,
+        "reusable_prefix_bytes": 10340,
+        "knowledge_content_hashes": [
+          "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+        ],
+        "context_asset_version_ids": [
+          "13c9cfb2-9b28-44ff-a401-ef9f79d3c687"
+        ],
+        "embedding_output_contract": null,
+        "fully_rendered_prompt_hash": "sha256:3398f0f2b0d250f3abba788e8b68203029e26ca90b220302ee1ecbe8424d8cc7",
+        "provider_request_envelope_hash": "sha256:054e26dedc56ff8766a5ff3ca491c85c862e54cce4394facfb030f00a23c1bc9",
+        "required_reader_facing_language": "zh-CN",
+        "rendered_prompt_estimated_tokens": 68002,
+        "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1",
+        "provider_admission_asset_version_id": "400735e8-91ab-4756-a0f1-15a963fb74d6"
+      },
+      "provider_request_id": null,
+      "output_schema_version": "schema:world_candidates.generate:v2",
+      "transport_retry_policy": {
+        "version": "codex-no-transport-retry.v1",
+        "stream_max_retries": 0,
+        "request_max_retries": 0,
+        "invocation_overrides": [
+          "model_provider=\"novel_forge_openai_no_retry\"",
+          "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+          "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+          "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+          "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+          "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+        ]
+      },
+      "terminal_event_observed": true,
+      "provider_schema_contract": {
+        "version": "codex-structured-schema.v5",
+        "provider_hash": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+        "canonical_hash": "sha256:4d2babd2511bfa7779c6f3a51ecaeea80170517072319ad4ffad30a3698d520f",
+        "equivalent_projection": "codex-nullable-shared-types.v3",
+        "local_constraints_retained": [
+          "uniqueItems"
+        ]
+      },
+      "local_execution_receipt_id": "process-receipt:4da50fe28141b961217683bd",
+      "reconciliation_fingerprint": "sha256:9adfe476d41b0723c49d1913e9c704bc3256a1468cc6f14d3a365cd3d60b5881"
+    },
+    "execution_request": {
+      "stage": "world_candidates.generate",
+      "domain": "planning",
+      "book_id": "book:qinglan-wendao-20261008",
+      "saga_id": "8ae0b74c-7f54-447b-ba60-99855b00ea07",
+      "trace_id": "c14fec92-6d9a-4cbf-932f-aa85b7257a71:chapter_plan.generate:5",
+      "task_kind": "story_planning.generate",
+      "attempt_id": "eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "capability": "planning.story_chapter.generate",
+      "project_id": "qid-learning-prose-01",
+      "risk_class": "high",
+      "execution_id": "planning-execution:bad829b1-1748-4d9d-8fae-fa23784a8228:eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+      "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+      "origin_chain": [
+        "story_planning.generate",
+        "chapter_plan.generate"
+      ],
+      "target_scope": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "scope_id": "chapter:5",
+        "project_id": "qid-learning-prose-01",
+        "scope_kind": "chapter"
+      },
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "fencing_token": 1,
+      "correlation_id": "c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "agent_hop_count": 0,
+      "resource_claims": [
+        "book:book:qinglan-wendao-20261008",
+        "planning:chapter:5"
+      ],
+      "importance_class": "HIGH",
+      "budget_policy_ref": "budget:planning-story_chapter-generate:v1",
+      "commit_policy_ref": "commit:planning-story_chapter-generate:v1",
+      "root_operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+      "route_snapshot_id": "production_execution/routes/ae4ea76a995b74279292",
+      "external_effect_id": "bad829b1-1748-4d9d-8fae-fa23784a8228",
+      "input_manifest_ref": "production_execution/inputs/ae4ea76a995b74279292",
+      "timeout_policy_ref": "timeout:planning-story_chapter-generate:v3",
+      "budget_reservation_id": "a4dd2537-736c-4f21-9ba7-b384265f6320",
+      "permission_policy_ref": "permission:planning-story_chapter-generate:v1",
+      "validation_policy_ref": "validation:planning-story_chapter-generate:v1",
+      "stable_idempotency_key": "99583564-f754-4642-8c1f-2d81f8f442fe:planning.story_chapter.generate:world_candidates.generate:v1",
+      "workspace_snapshot_ref": "workspace:qid-learning-prose-01"
+    }
+  },
+  "fixture_protocol_only": false,
+  "post_provider_failure": {},
+  "candidate_validation_status": "PENDING_DOMAIN_VALIDATION",
+  "provider_invoked_this_attempt": true,
+  "recovered_external_effect_success": false
+}

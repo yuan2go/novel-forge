@@ -1,0 +1,61 @@
+{
+  "kind": "validation-manifest",
+  "payload": {
+    "checks": [
+      {
+        "status": "PASSED",
+        "check_kind": "structured_object",
+        "evidence_ref": "authority-asset-version:9dad60ee-c337-4217-84a9-1283b40e5380"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "fencing",
+        "evidence_ref": "authority-attempt:eadeae5a-2d60-4137-86d4-34e670f1e9f9:fence:1"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "route_snapshot",
+        "evidence_ref": "production_execution/routes/f884b1c3cd8782c65a07"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "capability_materialization",
+        "evidence_ref": "sha256:147fab94190ea45257a2bf2e3cca8a14e08e380ac4d7ac9b2c1b8ca233e8acaa"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "output_schema",
+        "evidence_ref": "schema:planning-provider-output:chapter:v5:work-v4:host-selectors-v2"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "stage_semantics",
+        "evidence_ref": "chapter-stage:chapter_plan.generate:semantic-validation"
+      },
+      {
+        "status": "PASSED",
+        "check_kind": "tool_policy",
+        "evidence_ref": "tool-policy:sha256:fc1887030896cf96eb10fd22ab968efc6575033ebead938c975fb6e617f1d9c1"
+      }
+    ],
+    "decision": "ACCEPTED",
+    "attempt_id": "eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+    "manifest_id": "validation-manifest:planning-execution:6453fe9f-e7f1-4e41-bbc9-5956daa0ca92:eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+    "operation_id": "99583564-f754-4642-8c1f-2d81f8f442fe",
+    "fencing_token": 1,
+    "output_manifest_ref": "authority-asset-version:c31ad32e-ca4a-4517-9e10-18b7a955af3a",
+    "required_check_kinds": [
+      "structured_object",
+      "fencing",
+      "route_snapshot",
+      "capability_materialization",
+      "output_schema",
+      "stage_semantics",
+      "tool_policy"
+    ],
+    "validation_policy_ref": "validation:planning-story_chapter-generate:v1"
+  },
+  "execution_id": "planning-execution:6453fe9f-e7f1-4e41-bbc9-5956daa0ca92:eadeae5a-2d60-4137-86d4-34e670f1e9f9",
+  "payload_hash": "530037b0f35115bcd4bd0b1f584f36d203f157e18a143803bf3083dd90bbad8f",
+  "contract_version": "authority-execution-evidence.v1"
+}

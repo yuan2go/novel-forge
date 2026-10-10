@@ -1,0 +1,36 @@
+{
+  "commit_sha": "bd1b3b6801ca69422e1cedbd8a66a9e8fd57bf22",
+  "fresh_composition_restart_readback": "PASS",
+  "working_source": "64c825b9-6296-4058-9ee3-4132222e2fa2",
+  "working_source_hash": "sha256:44246b62fccfbb45a80f6a37c928620cf018ef52e0d472aaa7e4aab878c03e4a",
+  "author_selection": "WORKING_SELECTED",
+  "formal_accepted_through": 0,
+  "original_sources": [
+    {
+      "chapter": 1,
+      "asset_version_id": "authority-output:df816504-1cdb-4b69-ba6a-c3e46bb6f006:chapter.draft:v1",
+      "content_hash": "sha256:19ec1aaf259ad24aba278284cc619601a3d399f05bcdb7e04dfa72bfda409d8c",
+      "text_hash": "sha256:2b91717fc80afc360c79bc0d6d39b6af99293a0a931b65b932de101f3ce5fa75"
+    },
+    {
+      "chapter": 2,
+      "asset_version_id": "authority-output:bf1d1a39-b237-4a3c-8622-fa155e587290:chapter.draft:v1",
+      "content_hash": "sha256:4554376ed0485ccf54f6188e096d2fb263d12109813257419a1a39ac9d3aaa17",
+      "text_hash": "sha256:ae4eda88e8ce086dd9212010d04a1d630b2d64f839999c6bf71b32c22d89adde"
+    },
+    {
+      "chapter": 3,
+      "asset_version_id": "authority-output:80f1bfab-e161-405b-a356-1119b562e0b5:chapter.draft:v1",
+      "content_hash": "sha256:efe178f401f43a9b9c7d91c2a8c31eb21978099216e4f193674434fd51c8316b",
+      "text_hash": "sha256:e37b1fae5ca43006bfffe8080c311eb14e66cc82a477800a1adcc732168c221b"
+    },
+    {
+      "chapter": 4,
+      "asset_version_id": "authority-output:7e5c1c93-4b94-4a04-b0ec-193924f412bc:chapter.draft:v1",
+      "content_hash": "sha256:e90315a155513506d3b5a9e883c0b35dfc581f12fed5e9f31954c2fedca214b8",
+      "text_hash": "sha256:bf6b761ae66fd75708c5d8d8f9d2a6b1adf786a104a7085604233dd5fbcf647e"
+    }
+  ],
+  "same_book_id": "book:qinglan-wendao-20261008",
+  "original_state": "ABORTED"
+}

@@ -1,0 +1,7 @@
+{
+  "action_id": "f6a815f2-e74e-426e-a4ef-ea786dec0096",
+  "content_hash": "sha256:f0842e345a7dff5870f4963ed70720032cf31a2185e479c61b75b806f96168ba",
+  "disposition": "ELIGIBLE",
+  "new_provider_calls": 0,
+  "fact_mutation_allowed": false
+}

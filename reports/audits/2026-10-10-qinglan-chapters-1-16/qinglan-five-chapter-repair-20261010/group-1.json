@@ -1,0 +1,3442 @@
+{
+  "turn": "沈砚发现即使再次没有辨清气机，独立记录仍能指出自己何时开始追等结果；随后把外部观察与内在报告分开使用。",
+  "type": "PlanningGenerationCandidate",
+  "book_id": "book:qinglan-wendao-20261008",
+  "trigger": "若前三章工作稿获得连续承接，沈砚留下的“从开始变弱到完全觉不出怎样比较”成为本组具体问题。",
+  "objective": "为第4—7章提出条件性章节组计划：承接工作稿中的初次引气观察问题，以有界指导、来源清楚的外部观察和沈砚的独立比较推进早期学习，不越过已接受现实与卷一的有序成长范围。",
+  "cost_range": [
+    "实际使用的练习、观察和反馈时间不可追回，须从各人可用日程中扣除。",
+    "沈砚承担独自记录与等待下一次有条件反馈的工作；不预造收入、资格或永久损失。"
+  ],
+  "project_id": "qid-learning-prose-01",
+  "contract_id": "chapter-group:containing:4:future-1:candidate",
+  "logical_key": "chapter-group:containing:4",
+  "local_climax": "第7章沈砚在针对性再试中准确报告细微感知前后的可观察差别，并主动保留无法证明的连续性结论。",
+  "world_deltas": [
+    {
+      "change": "拟在实际确认的时段中安排练习、观察、反馈和休息；没有预授固定课位、场地权限或资源。",
+      "subject": "基础练习与答疑安排"
+    }
+  ],
+  "chapter_range": [
+    4,
+    7
+  ],
+  "emotion_curve": [
+    "第4章：问题终于可说清的期待。",
+    "第5章：独自尝试后面对证据空白的安静失落。",
+    "第6章：核对边界时的克制与理解。",
+    "第7章：辨认到小幅进步、同时保留未解问题的踏实喜悦。"
+  ],
+  "frozen_inputs": [
+    {
+      "role": "arc_plans",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+      "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+    },
+    {
+      "role": "book_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+      "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+    },
+    {
+      "role": "story_state",
+      "asset_type": "story_state_snapshot",
+      "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+      "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+    },
+    {
+      "role": "volume_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+      "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+    },
+    {
+      "role": "reader_state",
+      "asset_type": "reader_state",
+      "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+      "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+    },
+    {
+      "role": "quality_trend",
+      "asset_type": "quality_trend",
+      "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+      "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+    },
+    {
+      "role": "canon_snapshot",
+      "asset_type": "canon_snapshot",
+      "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+      "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    {
+      "role": "previous_chapter_group_outcome",
+      "asset_type": "previous_chapter_group_outcome",
+      "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+      "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+    },
+    {
+      "role": "related_arc:1",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+      "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+    },
+    {
+      "role": "related_arc:2",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+      "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "CHAPTER_GROUP",
+  "schema_version": "story_design.authority.v1",
+  "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+  "exit_state_spec": {
+    "summary": "若前序工作稿获得连续承接，拟使沈砚在第4—7章完成有范围的求助、独立比较、来源核对及一次针对性再试；许庭和程观各自投入并限定可承担的时间与判断。沈砚的观察方法更可靠，但稳定流转、课程资格与后续任务结果均未获证明。本摘要仅为未来候选出口。"
+  },
+  "local_objective": "把工作稿提出的“从开始变弱到完全觉不出怎样比较”转成第4—7章可执行、可核对的练习链，同时让三人各自承担有界选择与时间占用。",
+  "primary_arc_ids": [
+    "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+  ],
+  "quality_targets": {
+    "minimum": 80
+  },
+  "required_events": [
+    "第4章沈砚提出具体比较请求，程观与许庭分别确认可承担范围。",
+    "第5章沈砚独立尝试并留下标明未知处的记录。",
+    "第6章程观核对外在观察，许庭依据实际记录缩小反馈重点。",
+    "第7章沈砚针对性再试，许庭按证据确认局部进步并保留稳定性问题。"
+  ],
+  "character_deltas": [
+    {
+      "change": "拟从急于求一次肯定，转为自行记录、比较和提出有证据边界的问题；不授予稳定流转。",
+      "subject": "沈砚"
+    },
+    {
+      "change": "拟依据实际记录减少重复确认，把反馈集中在尚不能自行检验的部分，并履行有界时间安排。",
+      "subject": "许庭"
+    },
+    {
+      "change": "拟主动说明可投入的时间和可亲自观察的范围，并只对该范围给出可追踪回应。",
+      "subject": "程观"
+    }
+  ],
+  "forbidden_events": [
+    "把未审定的前三章工作稿或本组候选写成已接受历史。",
+    "让许庭或程观凭姓名取得未说明的职务、批准权、验收权或资源权限。",
+    "把初次或再次短暂感知当作稳定流转及独立重复运用灵气的充分证明。",
+    "以未知库存、课位、报酬、资格或既有互斥机会制造确定代价。",
+    "取消或倒置入门、初次引气、首次结伴采药及正式课程争取的既定顺序。",
+    "在第4—7章之外安排本组事件，或扩大止于第3章的正文执行窗口。"
+  ],
+  "hard_constraints": [
+    "chapter_range严格为[4,7]，四章均须有对应功能与事件；接受现实止于第0章。",
+    "只为冻结工作集中的许庭、程观、沈砚三条Arc安排贡献，其他Arc不在本组激活。",
+    "前三章工作稿仅供条件性连续性参考，人物知识须由本组实际接触和各自观察支持。",
+    "基础指导与正式课程分开；本组不授予课程、资源或职位权限。",
+    "日程以同一明确单位记录实际练习、交流和休息，不重复占用互斥时段。",
+    "本组不以短暂感知证明稳定流转，也不提前进入采药交付或正式课程回应。",
+    "沈砚为主的第三人称限知；他人私下判断不得提前进入他的知识。",
+    "同时活跃Arc不超过3，单章主要状态变化不超过8、新概念不超过4、开放义务不超过12、逾期义务为0、同章到期兑现不超过3。"
+  ],
+  "planning_horizon": "TACTICAL",
+  "required_payoffs": [
+    "本组的学习进步必须由动作观察、记录差别和再次尝试辨认，不能仅靠称赞。",
+    "许庭调整反馈深度须由沈砚的实际独立记录支持。",
+    "程观的配合须有明确来源、时间范围和实际回应。",
+    "三人的实际耗时进入后续安排，沈砚继续承担自己能完成的复查。",
+    "本组结束时仍明确区分短暂感知、观察方法进步与尚未证明的稳定流转。"
+  ],
+  "soft_constraints": [
+    "用协商、安静练习、证据核对和针对性再试形成节奏变化。",
+    "优先呈现人物能亲自确认的动作与言语，减少抽象修炼结论。",
+    "局部奖励保持踏实，不靠突来力量或重大损失制造分量。"
+  ],
+  "arc_contributions": [
+    {
+      "change": "以有界反馈和实际练习结果检验许庭的指导方式。",
+      "subject": "许庭的有限指导"
+    },
+    {
+      "change": "以亲自可核对的信息和真实可用时间形成一次范围明确的配合。",
+      "subject": "程观的可追踪协商"
+    },
+    {
+      "change": "沈砚承担记录、比较和下一次提问，保留尚未查明的因果缺口。",
+      "subject": "沈砚的自主学习"
+    }
+  ],
+  "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+  "candidate_payload": {
+    "turn": "沈砚发现即使再次没有辨清气机，独立记录仍能指出自己何时开始追等结果；随后把外部观察与内在报告分开使用。",
+    "trigger": "若前三章工作稿获得连续承接，沈砚留下的“从开始变弱到完全觉不出怎样比较”成为本组具体问题。",
+    "objective": "为第4—7章提出条件性章节组计划：承接工作稿中的初次引气观察问题，以有界指导、来源清楚的外部观察和沈砚的独立比较推进早期学习，不越过已接受现实与卷一的有序成长范围。",
+    "cost_range": [
+      "实际使用的练习、观察和反馈时间不可追回，须从各人可用日程中扣除。",
+      "沈砚承担独自记录与等待下一次有条件反馈的工作；不预造收入、资格或永久损失。"
+    ],
+    "contract_id": "chapter-group:containing:4:future-1:candidate",
+    "logical_key": "chapter-group:containing:4",
+    "local_climax": "第7章沈砚在针对性再试中准确报告细微感知前后的可观察差别，并主动保留无法证明的连续性结论。",
+    "world_deltas": [
+      {
+        "change": "拟在实际确认的时段中安排练习、观察、反馈和休息；没有预授固定课位、场地权限或资源。",
+        "subject": "基础练习与答疑安排"
+      }
+    ],
+    "chapter_range": [
+      4,
+      7
+    ],
+    "emotion_curve": [
+      "第4章：问题终于可说清的期待。",
+      "第5章：独自尝试后面对证据空白的安静失落。",
+      "第6章：核对边界时的克制与理解。",
+      "第7章：辨认到小幅进步、同时保留未解问题的踏实喜悦。"
+    ],
+    "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "exit_state_spec": {
+      "summary": "若前序工作稿获得连续承接，拟使沈砚在第4—7章完成有范围的求助、独立比较、来源核对及一次针对性再试；许庭和程观各自投入并限定可承担的时间与判断。沈砚的观察方法更可靠，但稳定流转、课程资格与后续任务结果均未获证明。本摘要仅为未来候选出口。"
+    },
+    "local_objective": "把工作稿提出的“从开始变弱到完全觉不出怎样比较”转成第4—7章可执行、可核对的练习链，同时让三人各自承担有界选择与时间占用。",
+    "primary_arc_ids": [
+      "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+    ],
+    "quality_targets": {
+      "minimum": 80
+    },
+    "required_events": [
+      "第4章沈砚提出具体比较请求，程观与许庭分别确认可承担范围。",
+      "第5章沈砚独立尝试并留下标明未知处的记录。",
+      "第6章程观核对外在观察，许庭依据实际记录缩小反馈重点。",
+      "第7章沈砚针对性再试，许庭按证据确认局部进步并保留稳定性问题。"
+    ],
+    "character_deltas": [
+      {
+        "change": "拟从急于求一次肯定，转为自行记录、比较和提出有证据边界的问题；不授予稳定流转。",
+        "subject": "沈砚"
+      },
+      {
+        "change": "拟依据实际记录减少重复确认，把反馈集中在尚不能自行检验的部分，并履行有界时间安排。",
+        "subject": "许庭"
+      },
+      {
+        "change": "拟主动说明可投入的时间和可亲自观察的范围，并只对该范围给出可追踪回应。",
+        "subject": "程观"
+      }
+    ],
+    "forbidden_events": [
+      "把未审定的前三章工作稿或本组候选写成已接受历史。",
+      "让许庭或程观凭姓名取得未说明的职务、批准权、验收权或资源权限。",
+      "把初次或再次短暂感知当作稳定流转及独立重复运用灵气的充分证明。",
+      "以未知库存、课位、报酬、资格或既有互斥机会制造确定代价。",
+      "取消或倒置入门、初次引气、首次结伴采药及正式课程争取的既定顺序。",
+      "在第4—7章之外安排本组事件，或扩大止于第3章的正文执行窗口。"
+    ],
+    "hard_constraints": [
+      "chapter_range严格为[4,7]，四章均须有对应功能与事件；接受现实止于第0章。",
+      "只为冻结工作集中的许庭、程观、沈砚三条Arc安排贡献，其他Arc不在本组激活。",
+      "前三章工作稿仅供条件性连续性参考，人物知识须由本组实际接触和各自观察支持。",
+      "基础指导与正式课程分开；本组不授予课程、资源或职位权限。",
+      "日程以同一明确单位记录实际练习、交流和休息，不重复占用互斥时段。",
+      "本组不以短暂感知证明稳定流转，也不提前进入采药交付或正式课程回应。",
+      "沈砚为主的第三人称限知；他人私下判断不得提前进入他的知识。",
+      "同时活跃Arc不超过3，单章主要状态变化不超过8、新概念不超过4、开放义务不超过12、逾期义务为0、同章到期兑现不超过3。"
+    ],
+    "planning_horizon": "TACTICAL",
+    "required_payoffs": [
+      "本组的学习进步必须由动作观察、记录差别和再次尝试辨认，不能仅靠称赞。",
+      "许庭调整反馈深度须由沈砚的实际独立记录支持。",
+      "程观的配合须有明确来源、时间范围和实际回应。",
+      "三人的实际耗时进入后续安排，沈砚继续承担自己能完成的复查。",
+      "本组结束时仍明确区分短暂感知、观察方法进步与尚未证明的稳定流转。"
+    ],
+    "soft_constraints": [
+      "用协商、安静练习、证据核对和针对性再试形成节奏变化。",
+      "优先呈现人物能亲自确认的动作与言语，减少抽象修炼结论。",
+      "局部奖励保持踏实，不靠突来力量或重大损失制造分量。"
+    ],
+    "arc_contributions": [
+      {
+        "change": "以有界反馈和实际练习结果检验许庭的指导方式。",
+        "subject": "许庭的有限指导"
+      },
+      {
+        "change": "以亲自可核对的信息和真实可用时间形成一次范围明确的配合。",
+        "subject": "程观的可追踪协商"
+      },
+      {
+        "change": "沈砚承担记录、比较和下一次提问，保留尚未查明的因果缺口。",
+        "subject": "沈砚的自主学习"
+      }
+    ],
+    "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "forbidden_payoffs": [
+      "以称赞或一次感觉代替可辨认的练习结果。",
+      "以程观或许庭的认可自动兑现资格、课程、资源或稳定本领。",
+      "以无条件帮助或无限指导时间消除沈砚自己的复查责任。",
+      "以提前采药交付或正式课程录入替代本组应有的局部学习进步。"
+    ],
+    "parent_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+    "realization_level": "ACTIVE",
+    "secondary_arc_ids": [
+      "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+    ],
+    "world_realization": [
+      {
+        "world_id": "青岚宗基础练习与有界答疑",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "visibility": "SCENE_VISIBLE",
+        "accessibility": "RESTRICTED",
+        "invariant_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_INVARIANT",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+          }
+        ],
+        "structure_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STRUCTURE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+          }
+        ],
+        "realization_level": "ACTIVE",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "antagonist_actions": [],
+    "canon_dependencies": [
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+      "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+    ],
+    "commitment_contract": [
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "本候选只安排第4—7章；第0章以后尚无已接受正文结果，工作稿不得升级为已接受事实。",
+        "commitment_id": "group4-range-and-boundary"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "沈砚、许庭、程观的选择各有实际时间占用和信息范围；不虚构既有互斥机会、损失或权限。",
+        "commitment_id": "group4-bounded-agency"
+      },
+      {
+        "level": "SOFT_INTENT",
+        "statement": "以更可靠的自我观察与报告形成局部奖励，同时保留稳定流转的真实缺口。",
+        "commitment_id": "group4-local-payoff"
+      },
+      {
+        "level": "OPEN_DESIGN_SPACE",
+        "statement": "后续可依真实练习结果选择重复、再询问或修改比较方法；本组不预定正式课程、采药或资格结果。",
+        "commitment_id": "group4-future-route"
+      }
+    ],
+    "constraint_envelope": {
+      "type": "PlanningConstraintEnvelope",
+      "book_id": "book:qinglan-wendao-20261008",
+      "project_id": "qid-learning-prose-01",
+      "planning_scope": "CHAPTER_GROUP",
+      "arc_working_set": {
+        "type": "ArcWorkingSet",
+        "book_id": "book:qinglan-wendao-20261008",
+        "capacity": {
+          "source": "POLICY_DEFAULT",
+          "maximum_active_arcs": 3,
+          "narrative_load_policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+        },
+        "candidates": [
+          {
+            "score": 0,
+            "reasons": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "eligible": true,
+            "current_phase": "",
+            "obligation_debt": {
+              "due_ids": [],
+              "due_count": 0,
+              "stale_ids": [],
+              "overdue_ids": [],
+              "stale_count": 0,
+              "violated_ids": [],
+              "overdue_count": 0
+            },
+            "dormant_chapters": 0,
+            "lifecycle_status": "READY",
+            "payoff_readiness": "NOT_READY",
+            "dependency_states": {},
+            "cadence_preference": "",
+            "observation_status": "NOT_MATERIALIZED",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+            "checkpoint_decision": "NOT_EVALUATED",
+            "dependency_blockers": [],
+            "target_window_status": "UNKNOWN",
+            "target_progress_units": 8,
+            "cumulative_progress_units": 0,
+            "last_material_progress_chapter": 0
+          },
+          {
+            "score": 0,
+            "reasons": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "eligible": true,
+            "current_phase": "",
+            "obligation_debt": {
+              "due_ids": [],
+              "due_count": 0,
+              "stale_ids": [],
+              "overdue_ids": [],
+              "stale_count": 0,
+              "violated_ids": [],
+              "overdue_count": 0
+            },
+            "dormant_chapters": 0,
+            "lifecycle_status": "READY",
+            "payoff_readiness": "NOT_READY",
+            "dependency_states": {},
+            "cadence_preference": "",
+            "observation_status": "NOT_MATERIALIZED",
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+            "checkpoint_decision": "NOT_EVALUATED",
+            "dependency_blockers": [],
+            "target_window_status": "UNKNOWN",
+            "target_progress_units": 8,
+            "cumulative_progress_units": 0,
+            "last_material_progress_chapter": 0
+          },
+          {
+            "score": 0,
+            "reasons": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "eligible": true,
+            "current_phase": "",
+            "obligation_debt": {
+              "due_ids": [],
+              "due_count": 0,
+              "stale_ids": [],
+              "overdue_ids": [],
+              "stale_count": 0,
+              "violated_ids": [],
+              "overdue_count": 0
+            },
+            "dormant_chapters": 0,
+            "lifecycle_status": "READY",
+            "payoff_readiness": "NOT_READY",
+            "dependency_states": {},
+            "cadence_preference": "",
+            "observation_status": "NOT_MATERIALIZED",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+            "checkpoint_decision": "NOT_EVALUATED",
+            "dependency_blockers": [],
+            "target_window_status": "UNKNOWN",
+            "target_progress_units": 8,
+            "cumulative_progress_units": 0,
+            "last_material_progress_chapter": 0
+          },
+          {
+            "score": 0,
+            "reasons": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "eligible": true,
+            "current_phase": "",
+            "obligation_debt": {
+              "due_ids": [],
+              "due_count": 0,
+              "stale_ids": [],
+              "overdue_ids": [],
+              "stale_count": 0,
+              "violated_ids": [],
+              "overdue_count": 0
+            },
+            "dormant_chapters": 0,
+            "lifecycle_status": "READY",
+            "payoff_readiness": "NOT_READY",
+            "dependency_states": {},
+            "cadence_preference": "",
+            "observation_status": "NOT_MATERIALIZED",
+            "arc_plan_version_id": "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+            "checkpoint_decision": "NOT_EVALUATED",
+            "dependency_blockers": [],
+            "target_window_status": "UNKNOWN",
+            "target_progress_units": 9,
+            "cumulative_progress_units": 0,
+            "last_material_progress_chapter": 0
+          },
+          {
+            "score": 0,
+            "reasons": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "eligible": true,
+            "current_phase": "",
+            "obligation_debt": {
+              "due_ids": [],
+              "due_count": 0,
+              "stale_ids": [],
+              "overdue_ids": [],
+              "stale_count": 0,
+              "violated_ids": [],
+              "overdue_count": 0
+            },
+            "dormant_chapters": 0,
+            "lifecycle_status": "READY",
+            "payoff_readiness": "NOT_READY",
+            "dependency_states": {},
+            "cadence_preference": "",
+            "observation_status": "NOT_MATERIALIZED",
+            "arc_plan_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+            "checkpoint_decision": "NOT_EVALUATED",
+            "dependency_blockers": [],
+            "target_window_status": "UNKNOWN",
+            "target_progress_units": 7,
+            "cumulative_progress_units": 0,
+            "last_material_progress_chapter": 0
+          },
+          {
+            "score": 0,
+            "reasons": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "eligible": true,
+            "current_phase": "",
+            "obligation_debt": {
+              "due_ids": [],
+              "due_count": 0,
+              "stale_ids": [],
+              "overdue_ids": [],
+              "stale_count": 0,
+              "violated_ids": [],
+              "overdue_count": 0
+            },
+            "dormant_chapters": 0,
+            "lifecycle_status": "READY",
+            "payoff_readiness": "NOT_READY",
+            "dependency_states": {},
+            "cadence_preference": "",
+            "observation_status": "NOT_MATERIALIZED",
+            "arc_plan_version_id": "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+            "checkpoint_decision": "NOT_EVALUATED",
+            "dependency_blockers": [],
+            "target_window_status": "UNKNOWN",
+            "target_progress_units": 8,
+            "cumulative_progress_units": 0,
+            "last_material_progress_chapter": 0
+          }
+        ],
+        "project_id": "qid-learning-prose-01",
+        "reader_intent": {},
+        "policy_version": "accepted-reality-arc-working-set-v1",
+        "target_chapter": 4,
+        "accepted_reality": {
+          "actual_only": true,
+          "narrative_state": {
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "state_kind_counts": {},
+            "accepted_through_chapter": 0
+          },
+          "projection_hash": "",
+          "projection_set_id": "",
+          "accepted_through_chapter": 0,
+          "source_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        "contract_version": "arc-working-set-v1",
+        "planning_horizon": {
+          "scope": "CHAPTER",
+          "chapter": 4
+        },
+        "authority_boundary": {
+          "selection_is_future_intent": true,
+          "actual_progress_requires_accepted_chapter_outcome": true
+        },
+        "working_manuscript": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "sources": [
+            {
+              "status": "UNREVIEWED_WORKING_PROSE",
+              "chapter": 1,
+              "excerpt": "二行最后一笔碰到了浅痕，他挪开手，重新补清。\n\n“我原来问怎样进去，是急着想听一句行不行。”他抬头说，“现在得问怎样争取，具体要核实什么。基础学习也另外留着问，不能先算作进去以后自然就有。”\n\n许庭看了一眼他指下的两行字。\n\n“你说得清楚了。以后听到回应，仍可以这样分：已经听到什么，自己盼着什么，还缺什么。”\n\n沈砚把手放在石头边，想起开口前站在入口的那几分钟。当时他只怕没人听，真有人停下来，便盼着一次把所有事问完。如今两处空缺还在，却不必挤在同一句话里，让人猜他究竟急着问哪一件。\n\n许庭让他按自己的两行字再说一次。他没有照搬先前那句“进去以后”，而是分别复述了入门机会与基础学习的问法，说完又明确两项都待核实。许庭只依据这次复述问了一个短问题，确认他没有把问题当成已经得到的条件。\n\n十分钟到时，她收住话。\n\n“时间到了，今天这次交流结束。我现在去做自己的修炼。”\n\n沈砚站起身，向旁边让开。许庭沿路离去。他没有再把新的问题喊过去。\n\n待她走开，他又蹲回石旁，花了一小会儿把模糊的字补清。两次交谈之外，迟疑、走动和独自整理也都用了时间。石面上留下的仍是两项问题；他尚未知道自己能否入门，也没有得到基础学习的条件。\n\n但这回，轮到自己继续往下问时，他能把话说清了。\n\n沈砚将手停在两行字旁，低声复述：“怎样取得入门机会，哪些基础学习可以另行询问。”\n\n问题留在手边。他准备带着这两句，亲自核实。",
+              "text_hash": "sha256:2b91717fc80afc360c79bc0d6d39b6af99293a0a931b65b932de101f3ce5fa75",
+              "content_hash": "sha256:19ec1aaf259ad24aba278284cc619601a3d399f05bcdb7e04dfa72bfda409d8c",
+              "asset_version_id": "authority-output:df816504-1cdb-4b69-ba6a-c3e46bb6f006:chapter.draft:v1",
+              "character_knowledge": "NOT_VERIFIED"
+            },
+            {
+              "status": "UNREVIEWED_WORKING_PROSE",
+              "chapter": 2,
+              "excerpt": "么。等得越紧，他越想把呼吸做得像说明上写的那样稳。吸气时，背上不知不觉提起，呼气未尽又急着吸下一口。刚才尚能数清的一吸一呼，后来只剩胸口短短的起伏。他察觉自己在用力，想松开，却又怕一松便错过了什么。纸上的字还在手边，他没有改做别的动作，只把这一回按原说明做完。\n\n过了几分钟，许庭请他停下，说先讲他自己知道的部分。沈砚睁眼，望着纸页想了片刻。“我没有辨认出气机。”他说得慢，“起先还能留意呼吸来去，后来只顾着等有没有别的感觉。那时我自己做了什么，反倒说不全。”\n\n许庭听完才接话：“我看见你后半段肩背抬起来，呼吸也比开头短。你先别猜这和气机有什么关系。回想等结果之前和之后，哪一处是你自己能确认的？”\n\n沈砚没有马上答。他把手放回膝上，回想刚坐定时脚掌压着地的感觉，以及后来背上那股往上提的劲。方才他一心等身体里出现陌生的东西，竟把自己肩头的变化漏过去了。“开头肩是落着的，呼气能走到头。后来我急着等，肩往上提，上一口还没呼完，下一口就接进来了。”他说完又补一句，“这是不是妨碍了尝试，我现在还不知道。”\n\n“这就是你这回能带走的问题。”许庭指了指计时刻痕，“十五分钟到了，今天先到这里。”她合上说明，起身回自己的安排。沈砚没有请她多留，也没有立刻再练。入门回执还在袖中，本次仍无可辨认的气机；他却记住了自己急着等结果时，肩背从落下到提起、呼吸从完整到抢接的那个位置。下一次若要比较，便得从这里看起。",
+              "text_hash": "sha256:ae4eda88e8ce086dd9212010d04a1d630b2d64f839999c6bf71b32c22d89adde",
+              "content_hash": "sha256:4554376ed0485ccf54f6188e096d2fb263d12109813257419a1a39ac9d3aaa17",
+              "asset_version_id": "authority-output:bf1d1a39-b237-4a3c-8622-fa155e587290:chapter.draft:v1",
+              "character_knowledge": "NOT_VERIFIED"
+            },
+            {
+              "status": "UNREVIEWED_WORKING_PROSE",
+              "chapter": 3,
+              "excerpt": "，会不会就有了？\n\n肩头随之有了往上提的意思。\n\n沈砚察觉时，下一口气已经想抢进来。他没有赶着把呼气拖长，只放开肩背那点用力，让呼吸自己接续。说明就在手边，他看了一眼，又将目光收回。\n\n许庭坐在侧面，没有催问。\n\n椅面托住身体，脚掌贴着地。先前肩背悬着时，他连手掌放在膝上都觉得不够妥帖；松下来后，那点别扭渐渐淡了。他仍能听见外面的脚步，知道有人经过，却不必跟着每一声响转头。\n\n几口气过去，胸腹有轻微的起伏。吸时怎样，呼时怎样，他还能分辨。偶尔又想等一个不同的结果，便留意自己是否重新提肩，没有把每口呼吸都做成等候的架势。\n\n安静坐了一会儿，肩背比开头松了。一次呼气自然落下，下一次吸气没有抢在前头。\n\n就在这一小段里，身体内忽然有了一点细细的颤意。\n\n很轻。\n\n胸腹仍按原来的幅度起伏，那点颤意却没有随起伏一同退去。他起先以为只是坐久了觉出的细小跳动，随后又辨到两者不同：起伏宽些、清楚些，这一点却像极细的线轻轻绷了一下，短促地留在里面。\n\n这便是他第一次辨认到的气机。\n\n沈砚嘴角动了动。没有光亮，也没有什么力气涌来，周围的声音照旧。他却终于能从一吸一呼之外，指出一个此前未曾辨清的差别。\n\n那点感觉很快薄下去，似有似无地停了片刻，又微微显出一点。都在这一回里，断断续续，连一口气的工夫也难说准。\n\n他想把它留住。\n\n念头才起，注意便全追到那一小点上。方才还能顾到肩背和呼吸，此时只想知道它是不是还在。背上紧了一些，他感觉肩头向上提；下一口吸气也急了。\n\n那点颤意终于觉不出了。\n\n沈砚险些顺着刚才的感觉往下找。双手仍搁在膝上，他看见说明的页角，便停住追索，抬起眼来。他没有继续换着快慢试，也没有把肩头再放低些便算作能够找回。\n\n许庭的目光从他的肩背移到脸上，等他开口。\n\n“刚才有一点了。”沈砚说。\n\n话出口，他自己先露出一点笑意，随后将语速放慢：“里面细细地颤了一下，和胸腹随呼吸动的感觉不同。只有很短一段，中间就弱下去，断断续续的。”\n\n许庭没有抢着接话，他便继续说：“出现前肩背松着，呼吸没有抢。它开始变弱以后，我才急着想留住，后来察觉自己提肩，下一口也接急了。最后完全觉不出，和那口气抢进来的先后，我没看清。”\n\n他说到这里，手指在膝上轻轻蜷了一下。\n\n“我想说是提肩把它弄断的，可它在那之前已经弱过。我现在只能说清这些。”\n\n话说完，那点感觉没有回来。沈砚仍有些舍不得，却不必因此改掉刚才的报告。他确实辨到过，确实没能一直辨下去。这两件事都在这一回里。\n\n“您看，接下来该改哪一处？”沈砚问。\n\n他还想趁那点感觉没有忘净，再坐着试下去。桌边沙漏的上半只剩一小层沙，望过去时，心里便多了一分急。\n\n许庭没有先指他的肩。\n\n“你先比较。出现以前和后来，哪些差别是你能确认的？”\n\n沈砚原本已经准备听她列出检查项，闻言便把手从膝上移开。他看着纸上的短句，停了一会儿。\n\n“前面我还能同时留意肩背和呼吸，后来只顾找那点感觉。提肩和抢接，我都察觉到了。但开始变弱时，肩背究竟是不是仍和前面一样松，我没有一直留意。”\n\n“那么，你说‘先变弱，后提肩’，依据在哪？”\n\n“我先觉到它薄了，才想留住。想留住以后，才觉到肩在提。我能确认的是自己察觉到这些的顺序。”他想了想，又补道，“肩是不是在我察觉之前就紧了些，我说不准。”\n\n许庭点了一下头，仍没有替他把缺口补上。\n\n沈砚低头看看自己的手。刚有感觉时，他盼的是能多留一会儿；到了开口说明，才发现那一小段里，有些地方记得很清楚，有些地方竟已经空了。若只说一句“后来散了”，这些空处便都藏在里面。\n\n许庭这才说：“我看见的是你后段肩背提起，呼吸接得急。这一点和你的报告能对上。里面的颤意怎样出现、怎样变弱，我依据的是你刚才说的，不能替你补看。”\n\n她指了指说明，没有给他添新动作。\n\n“你这回已经有能分辨、能报告的感觉。但还没有一直辨下去，也不知道下一回能否照样出现。不能由这一段就说自己能稳定流转。”\n\n沈砚抬起头。“那我下一回要比较的，不只是有没有出现，还得看出现以后？”\n\n“具体看哪一段？”\n\n他将刚才漏掉的地方在心里找了一遍。\n\n“从第一次变弱，到完全觉不出的那段。那时候肩背和呼吸有没有一直照说明做，哪些变化在前，哪些只是我后来才察觉。”\n\n“把说不准的地方也留下。”许庭说，“现在这些先后，还不足以定中断的原因。”\n\n沈砚原本想问，再试一回是不是就能弄清。话到嘴边，他望见沙漏上方所剩的薄沙，又看看那几句说明，改口道：“我先记这一段。不能把没看清的地方写成看清了。”\n\n他们又用余下的工夫核对了他所说的那处缺口。许庭只问他“第一次变弱”是本人感受，还是外在动作；沈砚答是感受，便将它与提肩分开说，没有把两件事并作一个动作。\n\n最后一线细沙落尽。\n\n许庭收住话，站起身：“十分钟到了，这次指导结束。我现在回去修炼。”\n\n“好，多谢您。”\n\n沈砚也站起来，给她让出路。许庭将椅子归回桌边，随后离开，沿路走向她自己的安排。他看着她走过转角，没有把刚想到的问题喊过去。\n\n尝试与反馈所用的十分钟已经过去。他还没有把那点气机留住，许庭也已离开；眼下能做的，是整理刚才已经说出的部分。\n\n沈砚把说明拿到桌边，另外用了些工夫，在空白处写下几行。前面记肩背较松、呼吸未抢接；中间记一次细短的颤意，随后断续；末尾记自己察觉提肩、抢接，以及最后中断的先后未清。\n\n写到“先变弱”时，他停笔添上“先察觉”。两个字补完，那一处便不再像已经查明的原因。\n\n他读了一遍，还是忍不住笑了笑。那一小点感觉虽然短，回想起来却很清楚。它没有因后来中断便变成什么也没发生，也没有因写在纸上便成了随时能用的本领。\n\n沈砚将纸页拢好，没有重新坐回练习的姿势。下次若有可用的指导条件，他要带去问的地方已经留在末行：\n\n从开始变弱，到完全觉不出，该怎样比较，才能看清那一段的连续性？",
+              "text_hash": "sha256:e37b1fae5ca43006bfffe8080c311eb14e66cc82a477800a1adcc732168c221b",
+              "content_hash": "sha256:efe178f401f43a9b9c7d91c2a8c31eb21978099216e4f193674434fd51c8316b",
+              "asset_version_id": "authority-output:80f1bfab-e161-405b-a356-1119b562e0b5:chapter.draft:v1",
+              "character_knowledge": "NOT_VERIFIED"
+            }
+          ],
+          "version": "working-manuscript-context.v1",
+          "authority": "AUTHOR_WORKING_PROSE_ONLY",
+          "project_id": "qid-learning-prose-01",
+          "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+          "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+          "snapshot_hash": "sha256:005dadf4665c687d5b8e6f887d9b2da3c3cc027fa184ddecd9672c9df444f329",
+          "target_chapter": 4,
+          "structured_facts": [],
+          "accepted_through_chapter": 0
+        },
+        "working_set_digest": "sha256:d657cbed7d45b88424c15404d2940bcee31f85231aac1231afbd31cd9fa182af",
+        "schedule_correction": {
+          "status": "NO_GROUP_CADENCE",
+          "added_arc_plan_version_ids": [
+            "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+            "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+            "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          ],
+          "removed_arc_plan_version_ids": []
+        },
+        "selected_contributions": [
+          {
+            "role": "PRIMARY",
+            "score": 0,
+            "action": "ADVANCE",
+            "reason_codes": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "role": "SECONDARY",
+            "score": 0,
+            "action": "ADVANCE",
+            "reason_codes": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          },
+          {
+            "role": "TOUCH",
+            "score": 0,
+            "action": "ADVANCE",
+            "reason_codes": [
+              "LEGAL_ARC_BASELINE"
+            ],
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ],
+        "deferred_arc_plan_version_ids": [
+          "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+          "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+          "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1"
+        ]
+      },
+      "envelope_digest": "sha256:552696ce1c648e1ab26e7b7a6e9b2059644a0c953432ef0681a9c42e0d2a6a6c",
+      "parent_versions": [
+        {
+          "role": "arc_plans",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+          "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "role": "book_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "role": "canon_snapshot",
+          "asset_type": "canon_snapshot",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "role": "previous_chapter_group_outcome",
+          "asset_type": "previous_chapter_group_outcome",
+          "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+          "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+        },
+        {
+          "role": "quality_trend",
+          "asset_type": "quality_trend",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "role": "reader_state",
+          "asset_type": "reader_state",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "role": "related_arc:1",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+          "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "role": "related_arc:2",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+          "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        },
+        {
+          "role": "story_state",
+          "asset_type": "story_state_snapshot",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "role": "volume_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+          "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        }
+      ],
+      "contract_version": "planning-constraint-envelope-v2",
+      "change_governance": {
+        "requires_evidence": true,
+        "preserve_executed_history": true,
+        "wider_scope_requires_new_plan_change": true
+      },
+      "prohibited_outcomes": [],
+      "inherited_invariants": [],
+      "required_obligations": [],
+      "narrative_load_policy": {
+        "type": "NarrativeLoadPolicy",
+        "limits": {
+          "max_active_arcs": 3,
+          "max_new_concepts": 4,
+          "max_dormant_arc_age": 30,
+          "max_open_obligations": 12,
+          "max_payoff_congestion": 3,
+          "max_overdue_obligations": 0,
+          "max_major_state_transitions": 8,
+          "max_character_appearance_gap": 10
+        },
+        "book_id": "book:qinglan-wendao-20261008",
+        "policy_id": "canonical-production-narrative-load",
+        "project_id": "qid-learning-prose-01",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "source_role": "production_profile",
+        "policy_version": 1,
+        "contract_version": "narrative-load-policy-v1",
+        "governed_overrides": [],
+        "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+        "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+      },
+      "permitted_change_scope": "CHAPTER_GROUP",
+      "accepted_state_boundary": {
+        "future_plan_only": true,
+        "accepted_through_chapter": 0
+      },
+      "generation_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3",
+      "generator_operation_name": "chapter_group_plan.generate",
+      "narrative_load_projection": {
+        "type": "NarrativeLoadProjection",
+        "status": "MEASURED",
+        "metrics": {
+          "active_arc_count": 0,
+          "dormant_arc_max_age": 0,
+          "narrative_debt_score": 0,
+          "open_obligation_count": 0,
+          "payoff_congestion_count": 0,
+          "overdue_obligation_count": 0,
+          "character_appearance_max_gap": 0
+        },
+        "contract_version": "narrative-load-projection-v2",
+        "open_obligation_ids": [],
+        "overdue_obligation_ids": [],
+        "accepted_through_chapter": 0
+      },
+      "narrative_load_policy_lineage": {
+        "type": "NarrativeLoadPolicyLineage",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "inherited_from": [
+          {
+            "role": "arc_plans",
+            "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+            "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "role": "book_plan",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          },
+          {
+            "role": "related_arc:1",
+            "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+            "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          },
+          {
+            "role": "related_arc:2",
+            "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+            "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          },
+          {
+            "role": "volume_plan",
+            "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+            "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "narrative-load-policy-lineage-v1",
+        "frozen_by_generation_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "creative_requirements_contract": "work-requirements.v2"
+    },
+    "context_profile_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "information_release": [
+      "只公开人物在本组亲自观察或实际听到的内容。",
+      "区分沈砚对内在感知的报告、旁人对外在动作的观察以及二者都无法证明的因果。",
+      "到第7章可让读者知道沈砚的比较方法有所改进，但仍不能确定稳定流转。"
+    ],
+    "relationship_deltas": [
+      {
+        "change": "拟由反复求即时确认，转为沈砚带着来源清楚的记录请求许庭有限反馈；双方各自守住判断与时间范围。",
+        "subject": "沈砚与许庭"
+      },
+      {
+        "change": "拟通过一次范围明确且实际履行的外部观察建立可追踪配合，不使程观承担内在感知的判断。",
+        "subject": "沈砚与程观"
+      }
+    ],
+    "character_realization": [
+      {
+        "reach": "CURRENT_SEGMENT",
+        "scope": "CHAPTER_GROUP",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "character_id": "thread:qinglan-wendao:future-1:own-road",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "realization_level": "ACTIVE",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_SEGMENT",
+        "scope": "CHAPTER_GROUP",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "character_id": "thread:xu-ting:bounded-guidance",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "realization_level": "ACTIVE",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_SEGMENT",
+        "scope": "CHAPTER_GROUP",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "character_id": "thread:cheng-guan:traceable-negotiation:future-1",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        },
+        "realization_level": "ACTIVE",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "narrative_event_chain": [
+      {
+        "action": "沈砚带着标明空白的候选记录，提出只核对外在动作与反馈范围的请求，并主动承担下一次记录。",
+        "causes": [],
+        "decision": "先询问可比较什么，不要求他人直接断定气机中断原因。",
+        "event_id": "group4-e1",
+        "required": true,
+        "slice_id": "chapter-4",
+        "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "motivation": "希望把短暂感知之后的空白变成能亲自检验的问题。",
+        "resistance": "他最想获得的因果判断恰超出当前记录。",
+        "consequence": "请求成为可回应的具体事项，须由被询问者分别确认可用时间和可知范围。",
+        "disclosures": [
+          "沈砚把首次变弱与后来察觉提肩分开记录，二者先后仍待核实。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "候选中的问题缩为可核对的观察范围",
+            "entity_id": "thread:qinglan-wendao:future-1:own-road",
+            "from_state": "候选中的问题仍较宽泛",
+            "state_kind": "learning_question"
+          }
+        ],
+        "preconditions": [
+          "本事件以工作稿中的记录获得后续连续承接为条件，不把它写成已接受事实。",
+          "沈砚只可依据自己的记录提出问题。"
+        ],
+        "chapter_number": 4,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚主动缩小请求并承担记录，符合自主学习Arc和本组有界选择。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "记录的内在感知缺口无法由旁人的外部观察直接填补。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "提出请求本身尚未形成不可撤回的资格或资源变化。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "仅在前三章工作稿得到连续承接时，沈砚可知道自己记录了短暂感知及不确定的先后。",
+            "沈砚知道自己不能凭记录确定中断原因。"
+          ],
+          "reader_may_learn": [
+            "沈砚把首次变弱与后来察觉提肩分开记录，二者先后仍待核实。"
+          ],
+          "forbidden_disclosures": [
+            "程观的私下动机或未说明权限。",
+            "稳定基础流转已经成立。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": null
+      },
+      {
+        "action": "程观回应自己能安排的短时外部观察，只承诺报告亲眼所见的动作，不解释沈砚的内在感知。",
+        "causes": [
+          "group4-e1"
+        ],
+        "decision": "只接受自己可履行、可直接观察的有限配合。",
+        "event_id": "group4-e2",
+        "required": true,
+        "slice_id": "chapter-4",
+        "actor_ref": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "motivation": "使自己的配合有清楚用途且不挤占未承诺的事务。",
+        "resistance": "外部动作不能替代内在感知的报告。",
+        "consequence": "沈砚获得范围明确的外部核对办法；程观的实际可用时间须进入后续安排。",
+        "disclosures": [
+          "程观只能报告自己亲眼观察到的外在动作。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "候选中的配合限于约定时段和直接观察",
+            "entity_id": "thread:cheng-guan:traceable-negotiation:future-1",
+            "from_state": "候选中的配合范围未定",
+            "state_kind": "participation_scope"
+          }
+        ],
+        "preconditions": [
+          "沈砚已提出具体请求。",
+          "双方须在实际可用日程内确认观察时段。"
+        ],
+        "chapter_number": 4,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "程观主动选择配合范围和时间，推进其可追踪协商Arc。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "程观的日程和观察位置有限，不能承担无限确认。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "明确范围形成未来安排，但此刻尚未实际耗用约定的观察时间。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e3"
+        ],
+        "arc_contributions": [
+          "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "程观听到沈砚提出的具体请求。",
+            "程观知道自己可用的时间与亲眼可见的范围。"
+          ],
+          "reader_may_learn": [
+            "程观只能报告自己亲眼观察到的外在动作。"
+          ],
+          "forbidden_disclosures": [
+            "沈砚体内感知的实际连续性。",
+            "未明确的宗门职务或批准权限。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": null
+      },
+      {
+        "action": "许庭在自己确认可用的时段内听取问题，要求沈砚先独立比较；她仅保留之后核对证据缺口的有限反馈。",
+        "causes": [
+          "group4-e2"
+        ],
+        "decision": "把可由沈砚自行复查的部分交还给他，只承诺有界反馈。",
+        "event_id": "group4-e3",
+        "required": true,
+        "slice_id": "chapter-4",
+        "actor_ref": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "motivation": "让有限指导真正支持沈砚可重复的自行检验。",
+        "resistance": "增加指导时长不能自动补齐缺失的观察。",
+        "consequence": "下一次尝试有明确观察重点，许庭的指导和自身修炼不被写成同一时段无限并行。",
+        "disclosures": [
+          "许庭的反馈只覆盖她实际听取和能够判断的部分。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "候选中的反馈限于独立比较后的证据缺口",
+            "entity_id": "thread:xu-ting:bounded-guidance",
+            "from_state": "候选中的反馈请求尚未定界",
+            "state_kind": "guidance_scope"
+          }
+        ],
+        "preconditions": [
+          "沈砚已明确请求范围。",
+          "许庭须先确认有实际可用时段。"
+        ],
+        "chapter_number": 4,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "许庭主动选择指导深度与时间范围，直接推进主Arc。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "她没有亲历沈砚全部内在变化，也须保留自身安排。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "已用于听取问题的时间不能追回，但不产生永久损失或越权资格。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e4"
+        ],
+        "arc_contributions": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "许庭知道沈砚向她实际陈述的问题。",
+            "许庭知道自己能够安排的反馈时段。"
+          ],
+          "reader_may_learn": [
+            "许庭的反馈只覆盖她实际听取和能够判断的部分。"
+          ],
+          "forbidden_disclosures": [
+            "她未亲自观察的内在感知先后。",
+            "未说明的正式课程批准权。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": "本次实际听取问题所用时间已从许庭可用日程中耗去。"
+      },
+      {
+        "action": "沈砚按已知说明独自完成一次有时限的尝试，同时留意肩背、呼吸与自己开始等待结果的时刻。",
+        "causes": [
+          "group4-e3"
+        ],
+        "decision": "按既有说明完成尝试，不临时增添动作来追求感觉。",
+        "event_id": "group4-e4",
+        "required": true,
+        "slice_id": "chapter-5",
+        "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "motivation": "检验自己能否在没有即时反馈时持续观察。",
+        "resistance": "未得到期待的感觉，容易诱使他把动作观察丢掉。",
+        "consequence": "即使未再次辨清气机，他仍获得自己动作变化的可复查记录。",
+        "disclosures": [
+          "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "有一次标明未再次辨清气机的独立比较",
+            "entity_id": "thread:qinglan-wendao:future-1:own-road",
+            "from_state": "尚无本组独立比较记录",
+            "state_kind": "practice_evidence"
+          }
+        ],
+        "preconditions": [
+          "有可用且不与已确认事务重叠的练习时段。",
+          "既有说明的适用范围已在候选连续性中明确。"
+        ],
+        "chapter_number": 5,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚自主选择遵守已知说明和时间边界。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "气机不按期待重现，观察欲望又容易使呼吸变急。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "本次练习实际耗时，不要求额外伤害或重大牺牲。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e5"
+        ],
+        "arc_contributions": [
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚知道本次自己遵循的说明。",
+            "沈砚可报告本次亲自察觉的肩背与呼吸变化。"
+          ],
+          "reader_may_learn": [
+            "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+          ],
+          "forbidden_disclosures": [
+            "许庭或程观未在场时的私下判断。",
+            "没有再次感知就证明此前从未感知。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": "本次有时限练习所用时间已耗去。"
+      },
+      {
+        "action": "沈砚写下本次能确认的动作和不能确认的内在先后，把空白留在记录中。",
+        "causes": [
+          "group4-e4"
+        ],
+        "decision": "不把没有观察到的变化补写为已知原因。",
+        "event_id": "group4-e5",
+        "required": true,
+        "slice_id": "chapter-5",
+        "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "motivation": "让下一次求助建立在真实记录上。",
+        "resistance": "把空白写明会使记录看起来不够完整。",
+        "consequence": "下一次核对可以针对证据空白，而不必重演整次练习。",
+        "disclosures": [
+          "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "本次观察已分列确知与未知",
+            "entity_id": "thread:qinglan-wendao:future-1:own-road",
+            "from_state": "本次观察仍在回忆中",
+            "state_kind": "practice_record"
+          }
+        ],
+        "preconditions": [
+          "本次独立尝试已完成。"
+        ],
+        "chapter_number": 5,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "主动留下空白是一项影响后续核对方式的判断。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚希望得到原因，但现有观察不足。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "记录可修改，不能据此强行制造不可逆代价。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e6"
+        ],
+        "arc_contributions": [
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚知道自己本次实际察觉到的动作变化。",
+            "沈砚知道哪些时刻自己没有持续留意。"
+          ],
+          "reader_may_learn": [
+            "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+          ],
+          "forbidden_disclosures": [
+            "提肩已被证明是气机消失的原因。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": null
+      },
+      {
+        "action": "程观在事先确认的时段核对自己所见的外在动作，并说明与沈砚记录能够对应和不能对应的地方。",
+        "causes": [
+          "group4-e5"
+        ],
+        "decision": "只对自己可见的动作给出结论，并在约定范围完成后停止追加核对。",
+        "event_id": "group4-e6",
+        "required": true,
+        "slice_id": "chapter-6",
+        "actor_ref": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+        "motivation": "让实际投入的核对有清楚用途和结论来源。",
+        "resistance": "沈砚可能想从外部观察得到超出其证明力的答案。",
+        "consequence": "外部记录有了来源清楚的回应，程观已投入的时间不能再用于同时段其他事项。",
+        "disclosures": [
+          "程观能核对肩背与呼吸的外在表现，不能直接核对气机的内在起落。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "有限核对已执行并标明信息边界",
+            "entity_id": "thread:cheng-guan:traceable-negotiation:future-1",
+            "from_state": "有限配合尚待执行",
+            "state_kind": "participation_result"
+          }
+        ],
+        "preconditions": [
+          "观察时段和范围须已实际确认。",
+          "沈砚已提供本次记录。"
+        ],
+        "chapter_number": 6,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "程观按可追踪的约定投入时间并保持结论边界。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "外部动作与内在感知并非同一种证据。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "本次核对实际耗用了程观已确认的可用时间。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e7"
+        ],
+        "arc_contributions": [
+          "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "程观知道自己在约定观察中亲眼见到的动作。",
+            "程观知道沈砚向他展示的记录内容。"
+          ],
+          "reader_may_learn": [
+            "程观能核对肩背与呼吸的外在表现，不能直接核对气机的内在起落。"
+          ],
+          "forbidden_disclosures": [
+            "程观直接知道沈砚体内气机的连续性。",
+            "程观拥有未说明的验收或课程权限。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": "程观用于核对的实际时间已耗去。"
+      },
+      {
+        "action": "许庭读取沈砚的独立记录与程观有来源的观察，只就证据缺口追问，并让沈砚自己选定下一次较窄的比较段。",
+        "causes": [
+          "group4-e6"
+        ],
+        "decision": "减少对沈砚已能自查部分的重复指导，把有限反馈用于真实缺口。",
+        "event_id": "group4-e7",
+        "required": true,
+        "slice_id": "chapter-6",
+        "actor_ref": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "motivation": "用有限时间帮助沈砚形成能独立继续检验的问题。",
+        "resistance": "她可以核对报告的逻辑，却不能替沈砚补上缺失体验。",
+        "consequence": "下一次尝试聚焦于首次变弱后的观察连续性，许庭没有替沈砚断定原因。",
+        "disclosures": [
+          "两份观察的相合之处仍不足以确定细微感知消失的原因。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "反馈重点缩为证据缺口与下一次比较段",
+            "entity_id": "thread:xu-ting:bounded-guidance",
+            "from_state": "反馈重点仍涵盖整次尝试",
+            "state_kind": "guidance_focus"
+          }
+        ],
+        "preconditions": [
+          "沈砚和程观各自的记录及来源已向许庭实际说明。",
+          "反馈时段须与许庭自己的安排相容。"
+        ],
+        "chapter_number": 6,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "许庭依据实际记录调整反馈深度，符合主Arc的具体变化。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "已有证据仍不能覆盖内在感知开始变弱的全过程。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "本次反馈实际占用已确认时段，但没有造成永久能力或关系损失。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e8"
+        ],
+        "arc_contributions": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "许庭知道沈砚实际展示的记录。",
+            "许庭知道程观经实际交流给出的外部观察范围。"
+          ],
+          "reader_may_learn": [
+            "两份观察的相合之处仍不足以确定细微感知消失的原因。"
+          ],
+          "forbidden_disclosures": [
+            "许庭直接知道未被报告或观察到的内在先后。",
+            "稳定流转已经得到证明。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": "许庭用于本次反馈的实际时间已耗去。"
+      },
+      {
+        "action": "沈砚按已知说明进行一次更窄的针对性尝试，在短暂细微感知出现与变弱时持续留意肩背和呼吸，并如实报告仍未看清的部分。",
+        "causes": [
+          "group4-e7"
+        ],
+        "decision": "感觉变弱时继续按说明观察，不临时追索或改动作。",
+        "event_id": "group4-e8",
+        "required": true,
+        "slice_id": "chapter-7",
+        "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "motivation": "检验自己能否在感觉变弱时仍保留对动作的观察。",
+        "resistance": "短暂感知诱使他把注意全部追向结果。",
+        "consequence": "他比先前更能说明可观察的变化，但仍不能证明连续维持或因果。",
+        "disclosures": [
+          "沈砚这次更清楚地报告了细微感知前后的动作差别，却仍未能一直辨下去。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "能更清楚报告该段部分动作差别，连续性仍未证实",
+            "entity_id": "thread:qinglan-wendao:future-1:own-road",
+            "from_state": "能记录动作但难以覆盖感知变弱段",
+            "state_kind": "observation_skill"
+          }
+        ],
+        "preconditions": [
+          "有不与既有安排重叠的练习时段。",
+          "沈砚已依据上一轮反馈选定较窄的比较段。"
+        ],
+        "chapter_number": 7,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚在最想追住感觉的时刻选择继续观察，体现有成本的自主行动。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "细微感知短促且易变弱，报告的连续性仍受注意范围限制。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "本次练习时间已实际耗去；不额外要求伤害或永久损失。"
+          }
+        },
+        "next_event_ids": [
+          "group4-e9"
+        ],
+        "arc_contributions": [
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚知道上次核对后选定的比较段。",
+            "沈砚只可报告本次亲自察觉的变化。"
+          ],
+          "reader_may_learn": [
+            "沈砚这次更清楚地报告了细微感知前后的动作差别，却仍未能一直辨下去。"
+          ],
+          "forbidden_disclosures": [
+            "气机已能稳定维持。",
+            "提肩已被证明为唯一中断原因。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": "本次针对性练习所用时间已耗去。"
+      },
+      {
+        "action": "许庭只依据沈砚实际报告确认观察方法的进步，结束约定反馈；沈砚自行留下下一次要比较的连续性问题。",
+        "causes": [
+          "group4-e8"
+        ],
+        "decision": "许庭按范围收住反馈；沈砚选择自己继续记录和提问。",
+        "event_id": "group4-e9",
+        "required": true,
+        "slice_id": "chapter-7",
+        "actor_ref": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "motivation": "让有效指导留下可由沈砚继续使用的方法，同时守住有限时间。",
+        "resistance": "肯定局部进步时仍须避免夸大能力。",
+        "consequence": "本组以可辨认的小进步和未解决的问题收束，后续稳定练习仍有不同可行办法。",
+        "disclosures": [
+          "观察与报告已有进步，稳定流转仍须后续实践支持。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "已按证据给出有界反馈并结束本次安排",
+            "entity_id": "thread:xu-ting:bounded-guidance",
+            "from_state": "针对性尝试尚待反馈",
+            "state_kind": "guidance_result"
+          },
+          {
+            "to_state": "已留下关于连续性的新一轮可检验问题",
+            "entity_id": "thread:qinglan-wendao:future-1:own-road",
+            "from_state": "下一次问题尚未整理",
+            "state_kind": "learning_question"
+          }
+        ],
+        "preconditions": [
+          "沈砚已完成针对性尝试并实际报告。",
+          "许庭的反馈时段须得到确认。"
+        ],
+        "chapter_number": 7,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "双方分别承担反馈边界和后续自查，关系变化落实在行动中。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "局部进步容易被误读成稳定能力，二人须保留证据限制。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "已投入的指导时间无法追回，但本事件不宣告资格或永久关系变化。"
+          }
+        },
+        "next_event_ids": [],
+        "arc_contributions": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "许庭知道沈砚实际向她报告的本次变化。",
+            "许庭知道她自己本次反馈的范围。"
+          ],
+          "reader_may_learn": [
+            "观察与报告已有进步，稳定流转仍须后续实践支持。"
+          ],
+          "forbidden_disclosures": [
+            "下一次练习必然成功。",
+            "正式课程条件已满足。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": "本次约定反馈所用时间已耗去。"
+      }
+    ],
+    "narrative_segment_ref": {
+      "segment_id": "volume:1:segment:ordered-growth",
+      "volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+    },
+    "resistance_escalation": [
+      "第4章：请求的范围与三人的可用时间尚须确认。",
+      "第5章：独立尝试未必重现感知，沈砚必须从不完整结果中保留可用观察。",
+      "第6章：外部动作与内在感知的证据边界阻止仓促下结论。",
+      "第7章：感知短暂重现时更难持续观察，局部成功仍不足以证明稳定能力。"
+    ],
+    "chapter_function_matrix": [
+      {
+        "arc_cadence": [
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "约定的比较范围已经明确，沈砚下一次尝试能否留下比“有没有感觉”更完整的记录？",
+        "reward_action": "三人各自说清能够承担和不能替人判断的部分。",
+        "chapter_number": 4,
+        "promise_action": "把一次短暂感知转化为可检验的问题，延续观察、调整和重复的成长承诺。",
+        "primary_function": "沈砚主动提出有范围的复查请求，分别确认程观能观察什么、许庭能在何时反馈什么。",
+        "foreshadow_action": "将“首次变弱”与“后来察觉提肩”分列，预备后续核对先后。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "获得清楚、可执行的比较办法",
+          "target_emotion": "谨慎的期待"
+        },
+        "obligation_actions": [],
+        "prohibited_outcomes": [
+          "把工作稿中的首次感知视为已接受历史或稳定流转。",
+          "让程观或许庭越过未明确的权限批准资格、课位或资源。",
+          "以无界指导时间消除双方的日程限制。"
+        ],
+        "secondary_functions": [
+          "建立同一计时单位下的练习、反馈与休息安排。",
+          "区分内在感知、外在动作与他人观察。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "候选发展中，含糊的再次求证变为有范围、需自行记录的下一次尝试；任何既往感知仍待连续性确认。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "许庭选择有限反馈范围，并把可由沈砚自己复查的部分交还给他。",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "程观明确自己可用的时间和只可直接观察的事项。",
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "沈砚自己提出比较问题并承担记录工作。",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "记录中的空白恰落在他最想解释的地方，下一次核对需要怎样取舍？",
+        "reward_action": "即使未能重复辨清气机，沈砚仍准确找到自己开始追等结果的时刻。",
+        "chapter_number": 5,
+        "promise_action": "让独自练习也产生可用信息，证明进步不只取决于一次感觉是否重现。",
+        "primary_function": "沈砚独自按既有说明完成一次有时限的比较，并诚实记录未再辨清气机时仍可观察到的动作。",
+        "foreshadow_action": "保留无法确定提肩开始时刻的空格，不用推测填满。",
+        "narrative_density": "LOW",
+        "reader_experience": {
+          "reward_mode": "看见沈砚独立完成可复查的记录",
+          "target_emotion": "安静而踏实"
+        },
+        "obligation_actions": [],
+        "prohibited_outcomes": [
+          "以没有再次感知为由撤销先前候选中的观察能力。",
+          "增加未经说明的新修炼动作。",
+          "把一次比较失败写成确定的中断原因。"
+        ],
+        "secondary_functions": [
+          "以较安静的章节节奏承接前章协商。",
+          "让实际耗去的练习时间进入后续安排。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "形成一次由沈砚独立完成、标明证据空白的比较记录；稳定流转仍未获证明。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "沈砚在无人代判时坚持区分已观察到的动作与未观察到的气机连续性。",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          },
+          {
+            "action": "TOUCH",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "两种观察能够对上，却仍不能说明细微感知为何消失；沈砚决定再检验哪一小段？",
+        "reward_action": "沈砚能够说清两份观察相合之处，也能指出它们共同无法证明的部分。",
+        "chapter_number": 6,
+        "promise_action": "让实际反馈改变下一次尝试的重点。",
+        "primary_function": "程观与许庭分别核对自己可知的部分，沈砚据不一致的证据边界缩小问题。",
+        "foreshadow_action": "保留内在感知与外在提肩之间尚未查明的先后，供下一次针对性尝试。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "得到范围清楚的反馈与下一步问题",
+          "target_emotion": "理解加深后的克制"
+        },
+        "obligation_actions": [],
+        "prohibited_outcomes": [
+          "把程观的外部观察当成对沈砚内在感知的直接证明。",
+          "由许庭替沈砚补写未观察到的先后。",
+          "通过他人认可自动取得正式课程或修炼资格。"
+        ],
+        "secondary_functions": [
+          "承接程观和许庭实际投入的时间。",
+          "使信任表现为可核对的回应，而非自动放宽条件。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "候选发展中，各人的证据来源和反馈范围得到厘清，下一次尝试聚焦于感知开始变弱后的连续性。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "许庭依据沈砚的独立记录调整反馈，只核对尚未能自行复查的缺口。",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "程观完成事先明确范围内的观察核对，并说明其结论的来源和限制。",
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "沈砚保留仍未查明的连续性问题，并亲自决定下一次怎样继续比较。",
+        "reward_action": "沈砚准确指出一次细微感知前后的动作差别，同时坦承未能一直辨下去。",
+        "chapter_number": 7,
+        "promise_action": "兑现本组的局部成长：沈砚更能自行辨认与报告尝试中的变化。",
+        "primary_function": "沈砚完成一次更窄的针对性尝试；许庭依据实际报告给出有界反馈，二人区分可重复的观察与尚未稳定的气机。",
+        "foreshadow_action": "将同一观察方法留给后续稳定练习，不预告具体资格或新本领。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "以可辨认的小进步和明确余题作阶段奖励",
+          "target_emotion": "审慎的喜悦"
+        },
+        "obligation_actions": [],
+        "prohibited_outcomes": [
+          "把短暂重现直接升级为稳定基础流转或独立重复运用灵气。",
+          "让许庭无限延长指导或替沈砚完成判断。",
+          "提前进入首次结伴采药或正式课程争取的结果阶段。"
+        ],
+        "secondary_functions": [
+          "收束本组的练习与反馈时间。",
+          "为后续稳定练习留下可执行但未保证成功的问题。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "沈砚拟获得更可靠的自我观察和报告方法；气机能否稳定维持仍未解决。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "许庭按实际表现确认沈砚已能独立复查的部分，保留尚无证据的结论。",
+            "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "沈砚在更窄的比较中独立报告变化，并选择后续练习问题。",
+            "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+          }
+        ]
+      }
+    ],
+    "required_arc_contributions": [
+      "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+    ],
+    "arc_checkpoint_expectations": [
+      {
+        "expectation": "许庭依据实际记录调整反馈深度，投入有界时间，并保留自己的修炼安排；不宣称跨卷闭合条件已满足。",
+        "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+      },
+      {
+        "expectation": "程观只就亲自可观察、可安排的部分给予有范围的回应，已用时间得到承接，不取得未说明的职务或权限。",
+        "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+      },
+      {
+        "expectation": "沈砚自行比较两次尝试并据结果缩小下一步问题；短暂感知不升级为稳定流转。",
+        "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      }
+    ],
+    "narrative_search_projection": {
+      "assumptions": [
+        "前三章工作稿仅作未审定的条件性连续性材料；若其情节未获承接，本组事件须以获准的前序事实重新衔接。",
+        "程观、许庭的具体职务与权限未获说明，本组只安排本人可确认的时间、观察和反馈。",
+        "没有供应已接受的到期义务身份，因此本组不伪造义务ID或到期窗口。"
+      ],
+      "future_options": [
+        "依据后续重复结果继续比较基础流转的连续性。",
+        "在条件明确后安排首次结伴采药的准备，不预定本组已有采收或交付结果。",
+        "许庭可继续提供有界反馈，也可让沈砚先独立复查；程观可按实际时间决定是否再次配合。"
+      ],
+      "narrative_risks": [
+        "连续练习容易显得重复；各章须分别承担协商、独试、来源核对和针对性再试的不同功能。",
+        "未审定工作稿不能充当接受态事实，后续章节入口须随真实接受结果核对。",
+        "程观的外部观察容易被误写成对内在气机的证明，须维持证据边界。"
+      ],
+      "repetition_keys": [
+        "同一感觉反复出现却没有新增观察",
+        "导师逐项纠错后主角照做",
+        "以时间边界结束每章"
+      ],
+      "contract_version": "narrative-search-projection.v1",
+      "selection_summary": "在严格限定的第4—7章内，选择由沈砚主动提出有界请求、独自试验、核对证据、再作窄范围尝试的链条。代价来自真实耗时和必须自己完成的复查；所得是可辨认的方法进步，后续学习与合作路径仍保持开放。",
+      "strategy_fingerprint": "future-1:bounded-comparison:costly-agency:chapters-4-7",
+      "creative_intelligence": {
+        "arc_momentum": 0.78,
+        "setup_payoff": 0.81,
+        "reader_promise": 0.82,
+        "reversal_reveal": 0.54,
+        "character_agency": 0.88,
+        "pacing_variation": 0.79,
+        "pattern_diversity": 0.7,
+        "world_consequence": 0.64,
+        "future_optionality": 0.88,
+        "conflict_escalation": 0.58,
+        "emotional_progression": 0.77,
+        "relationship_evolution": 0.76,
+        "choice_cost_consequence": 0.8
+      },
+      "irreversible_decisions": [
+        "若事件实际发生，三人已用于练习、观察与反馈的时间不能追回。"
+      ],
+      "projected_consequences": [
+        "沈砚的下一次提问由含糊求肯定转为针对连续性缺口的具体比较。",
+        "许庭实际调整反馈深度，程观的有限时间与信息范围得到承接。",
+        "稳定流转仍是后续实践问题，正式课程与采药结果继续开放。"
+      ],
+      "narrative_opportunities": [
+        "把工作稿留下的先后缺口变成四章内可执行、可核对的成长链。",
+        "让许庭和程观通过各自有限的主动配合获得人物行动，而非只评价沈砚。",
+        "在不预授稳定能力的前提下，给读者一次具体的小幅进步。"
+      ]
+    },
+    "narrative_architecture_version": "canonical-narrative-v1"
+  },
+  "forbidden_payoffs": [
+    "以称赞或一次感觉代替可辨认的练习结果。",
+    "以程观或许庭的认可自动兑现资格、课程、资源或稳定本领。",
+    "以无条件帮助或无限指导时间消除沈砚自己的复查责任。",
+    "以提前采药交付或正式课程录入替代本组应有的局部学习进步。"
+  ],
+  "parent_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+  "realization_level": "ACTIVE",
+  "secondary_arc_ids": [
+    "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+    "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+  ],
+  "world_realization": [
+    {
+      "world_id": "青岚宗基础练习与有界答疑",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "story_state_snapshot",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "WORLD_STATE",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "authority_role": "story_state",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "visibility": "SCENE_VISIBLE",
+      "accessibility": "RESTRICTED",
+      "invariant_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_INVARIANT",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        }
+      ],
+      "structure_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STRUCTURE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+        }
+      ],
+      "realization_level": "ACTIVE",
+      "narrative_relevance": "CURRENT"
+    }
+  ],
+  "antagonist_actions": [],
+  "canon_dependencies": [
+    "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+    "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+    "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+    "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+    "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+    "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+  ],
+  "execution_evidence": {
+    "attempt_id": "48342eae-3fa3-44b2-a671-5dda96f37b4c",
+    "operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3",
+    "fencing_token": 1,
+    "commit_authority": "STORY_DESIGN_AUTHORITY",
+    "cost_receipt_ref": "authority-asset-version:b330b1a9-0524-4b9d-8131-b2b6cfbbb902",
+    "route_snapshot_id": "production_execution/routes/7a656057f98657382adc",
+    "usage_receipt_ref": "authority-asset-version:93ed1a8e-c0a9-4ccb-b3c0-9aae13e8a407",
+    "input_manifest_ref": "production_execution/inputs/7a656057f98657382adc",
+    "context_bundle_hash": "sha256:a8072ad505958c063f36bfb9818ec9d1fe30d1a71f61efae7f9f5c847b83d08f",
+    "output_manifest_ref": "authority-asset-version:0de0ae8f-5ef9-4be5-a5d6-da16df7e2e09",
+    "production_verified": false,
+    "external_receipt_ref": "4f5afffd-54dd-46d1-bef2-c82c03a60bd3",
+    "real_provider_proven": true,
+    "fixture_protocol_only": false,
+    "external_effect_backed": true,
+    "validation_manifest_ref": "authority-asset-version:5ddb1d33-8667-40b0-bae1-867192c49d0a",
+    "capability_execution_ref": "bf43b8ab-84b6-5213-b7ae-119cd72430df",
+    "capability_execution_hash": "sha256:c0ee03932d007dc3427d282df525d96ab283ef5fc60eb0872ae8a1c68bde05b6",
+    "capability_runtime_binding_ref": "sha256:f3e581b430471345c6358d53e347b1b9f581aafd126c6478dc8286413747cb5e",
+    "capability_runtime_binding_hash": "sha256:b10592c6d43f4de23c6821c93e91fcc39e88e46375dceb27e388d659c3c4a5e1",
+    "context_bundle_asset_version_id": "ca32f201-d7ce-4028-a94b-23419d2582bc",
+    "capability_pack_attempt_snapshot_id": "sha256:f3e581b430471345c6358d53e347b1b9f581aafd126c6478dc8286413747cb5e",
+    "production_execution_gateway_backed": true,
+    "capability_pack_attempt_snapshot_hash": "sha256:b10592c6d43f4de23c6821c93e91fcc39e88e46375dceb27e388d659c3c4a5e1",
+    "narrative_intelligence_selection_digest": "sha256:b6b0fa94a6f0c2908b590551ac2c864ab71d31b09bf2b134b73a487a8ec3e77c"
+  },
+  "commitment_contract": [
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "本候选只安排第4—7章；第0章以后尚无已接受正文结果，工作稿不得升级为已接受事实。",
+      "commitment_id": "group4-range-and-boundary"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "沈砚、许庭、程观的选择各有实际时间占用和信息范围；不虚构既有互斥机会、损失或权限。",
+      "commitment_id": "group4-bounded-agency"
+    },
+    {
+      "level": "SOFT_INTENT",
+      "statement": "以更可靠的自我观察与报告形成局部奖励，同时保留稳定流转的真实缺口。",
+      "commitment_id": "group4-local-payoff"
+    },
+    {
+      "level": "OPEN_DESIGN_SPACE",
+      "statement": "后续可依真实练习结果选择重复、再询问或修改比较方法；本组不预定正式课程、采药或资格结果。",
+      "commitment_id": "group4-future-route"
+    }
+  ],
+  "constraint_envelope": {
+    "type": "PlanningConstraintEnvelope",
+    "book_id": "book:qinglan-wendao-20261008",
+    "project_id": "qid-learning-prose-01",
+    "planning_scope": "CHAPTER_GROUP",
+    "arc_working_set": {
+      "type": "ArcWorkingSet",
+      "book_id": "book:qinglan-wendao-20261008",
+      "capacity": {
+        "source": "POLICY_DEFAULT",
+        "maximum_active_arcs": 3,
+        "narrative_load_policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39"
+      },
+      "candidates": [
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 9,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 7,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        },
+        {
+          "score": 0,
+          "reasons": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "eligible": true,
+          "current_phase": "",
+          "obligation_debt": {
+            "due_ids": [],
+            "due_count": 0,
+            "stale_ids": [],
+            "overdue_ids": [],
+            "stale_count": 0,
+            "violated_ids": [],
+            "overdue_count": 0
+          },
+          "dormant_chapters": 0,
+          "lifecycle_status": "READY",
+          "payoff_readiness": "NOT_READY",
+          "dependency_states": {},
+          "cadence_preference": "",
+          "observation_status": "NOT_MATERIALIZED",
+          "arc_plan_version_id": "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+          "checkpoint_decision": "NOT_EVALUATED",
+          "dependency_blockers": [],
+          "target_window_status": "UNKNOWN",
+          "target_progress_units": 8,
+          "cumulative_progress_units": 0,
+          "last_material_progress_chapter": 0
+        }
+      ],
+      "project_id": "qid-learning-prose-01",
+      "reader_intent": {},
+      "policy_version": "accepted-reality-arc-working-set-v1",
+      "target_chapter": 4,
+      "accepted_reality": {
+        "actual_only": true,
+        "narrative_state": {
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "state_kind_counts": {},
+          "accepted_through_chapter": 0
+        },
+        "projection_hash": "",
+        "projection_set_id": "",
+        "accepted_through_chapter": 0,
+        "source_story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      "contract_version": "arc-working-set-v1",
+      "planning_horizon": {
+        "scope": "CHAPTER",
+        "chapter": 4
+      },
+      "authority_boundary": {
+        "selection_is_future_intent": true,
+        "actual_progress_requires_accepted_chapter_outcome": true
+      },
+      "working_manuscript": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "sources": [
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 1,
+            "excerpt": "二行最后一笔碰到了浅痕，他挪开手，重新补清。\n\n“我原来问怎样进去，是急着想听一句行不行。”他抬头说，“现在得问怎样争取，具体要核实什么。基础学习也另外留着问，不能先算作进去以后自然就有。”\n\n许庭看了一眼他指下的两行字。\n\n“你说得清楚了。以后听到回应，仍可以这样分：已经听到什么，自己盼着什么，还缺什么。”\n\n沈砚把手放在石头边，想起开口前站在入口的那几分钟。当时他只怕没人听，真有人停下来，便盼着一次把所有事问完。如今两处空缺还在，却不必挤在同一句话里，让人猜他究竟急着问哪一件。\n\n许庭让他按自己的两行字再说一次。他没有照搬先前那句“进去以后”，而是分别复述了入门机会与基础学习的问法，说完又明确两项都待核实。许庭只依据这次复述问了一个短问题，确认他没有把问题当成已经得到的条件。\n\n十分钟到时，她收住话。\n\n“时间到了，今天这次交流结束。我现在去做自己的修炼。”\n\n沈砚站起身，向旁边让开。许庭沿路离去。他没有再把新的问题喊过去。\n\n待她走开，他又蹲回石旁，花了一小会儿把模糊的字补清。两次交谈之外，迟疑、走动和独自整理也都用了时间。石面上留下的仍是两项问题；他尚未知道自己能否入门，也没有得到基础学习的条件。\n\n但这回，轮到自己继续往下问时，他能把话说清了。\n\n沈砚将手停在两行字旁，低声复述：“怎样取得入门机会，哪些基础学习可以另行询问。”\n\n问题留在手边。他准备带着这两句，亲自核实。",
+            "text_hash": "sha256:2b91717fc80afc360c79bc0d6d39b6af99293a0a931b65b932de101f3ce5fa75",
+            "content_hash": "sha256:19ec1aaf259ad24aba278284cc619601a3d399f05bcdb7e04dfa72bfda409d8c",
+            "asset_version_id": "authority-output:df816504-1cdb-4b69-ba6a-c3e46bb6f006:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 2,
+            "excerpt": "么。等得越紧，他越想把呼吸做得像说明上写的那样稳。吸气时，背上不知不觉提起，呼气未尽又急着吸下一口。刚才尚能数清的一吸一呼，后来只剩胸口短短的起伏。他察觉自己在用力，想松开，却又怕一松便错过了什么。纸上的字还在手边，他没有改做别的动作，只把这一回按原说明做完。\n\n过了几分钟，许庭请他停下，说先讲他自己知道的部分。沈砚睁眼，望着纸页想了片刻。“我没有辨认出气机。”他说得慢，“起先还能留意呼吸来去，后来只顾着等有没有别的感觉。那时我自己做了什么，反倒说不全。”\n\n许庭听完才接话：“我看见你后半段肩背抬起来，呼吸也比开头短。你先别猜这和气机有什么关系。回想等结果之前和之后，哪一处是你自己能确认的？”\n\n沈砚没有马上答。他把手放回膝上，回想刚坐定时脚掌压着地的感觉，以及后来背上那股往上提的劲。方才他一心等身体里出现陌生的东西，竟把自己肩头的变化漏过去了。“开头肩是落着的，呼气能走到头。后来我急着等，肩往上提，上一口还没呼完，下一口就接进来了。”他说完又补一句，“这是不是妨碍了尝试，我现在还不知道。”\n\n“这就是你这回能带走的问题。”许庭指了指计时刻痕，“十五分钟到了，今天先到这里。”她合上说明，起身回自己的安排。沈砚没有请她多留，也没有立刻再练。入门回执还在袖中，本次仍无可辨认的气机；他却记住了自己急着等结果时，肩背从落下到提起、呼吸从完整到抢接的那个位置。下一次若要比较，便得从这里看起。",
+            "text_hash": "sha256:ae4eda88e8ce086dd9212010d04a1d630b2d64f839999c6bf71b32c22d89adde",
+            "content_hash": "sha256:4554376ed0485ccf54f6188e096d2fb263d12109813257419a1a39ac9d3aaa17",
+            "asset_version_id": "authority-output:bf1d1a39-b237-4a3c-8622-fa155e587290:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 3,
+            "excerpt": "，会不会就有了？\n\n肩头随之有了往上提的意思。\n\n沈砚察觉时，下一口气已经想抢进来。他没有赶着把呼气拖长，只放开肩背那点用力，让呼吸自己接续。说明就在手边，他看了一眼，又将目光收回。\n\n许庭坐在侧面，没有催问。\n\n椅面托住身体，脚掌贴着地。先前肩背悬着时，他连手掌放在膝上都觉得不够妥帖；松下来后，那点别扭渐渐淡了。他仍能听见外面的脚步，知道有人经过，却不必跟着每一声响转头。\n\n几口气过去，胸腹有轻微的起伏。吸时怎样，呼时怎样，他还能分辨。偶尔又想等一个不同的结果，便留意自己是否重新提肩，没有把每口呼吸都做成等候的架势。\n\n安静坐了一会儿，肩背比开头松了。一次呼气自然落下，下一次吸气没有抢在前头。\n\n就在这一小段里，身体内忽然有了一点细细的颤意。\n\n很轻。\n\n胸腹仍按原来的幅度起伏，那点颤意却没有随起伏一同退去。他起先以为只是坐久了觉出的细小跳动，随后又辨到两者不同：起伏宽些、清楚些，这一点却像极细的线轻轻绷了一下，短促地留在里面。\n\n这便是他第一次辨认到的气机。\n\n沈砚嘴角动了动。没有光亮，也没有什么力气涌来，周围的声音照旧。他却终于能从一吸一呼之外，指出一个此前未曾辨清的差别。\n\n那点感觉很快薄下去，似有似无地停了片刻，又微微显出一点。都在这一回里，断断续续，连一口气的工夫也难说准。\n\n他想把它留住。\n\n念头才起，注意便全追到那一小点上。方才还能顾到肩背和呼吸，此时只想知道它是不是还在。背上紧了一些，他感觉肩头向上提；下一口吸气也急了。\n\n那点颤意终于觉不出了。\n\n沈砚险些顺着刚才的感觉往下找。双手仍搁在膝上，他看见说明的页角，便停住追索，抬起眼来。他没有继续换着快慢试，也没有把肩头再放低些便算作能够找回。\n\n许庭的目光从他的肩背移到脸上，等他开口。\n\n“刚才有一点了。”沈砚说。\n\n话出口，他自己先露出一点笑意，随后将语速放慢：“里面细细地颤了一下，和胸腹随呼吸动的感觉不同。只有很短一段，中间就弱下去，断断续续的。”\n\n许庭没有抢着接话，他便继续说：“出现前肩背松着，呼吸没有抢。它开始变弱以后，我才急着想留住，后来察觉自己提肩，下一口也接急了。最后完全觉不出，和那口气抢进来的先后，我没看清。”\n\n他说到这里，手指在膝上轻轻蜷了一下。\n\n“我想说是提肩把它弄断的，可它在那之前已经弱过。我现在只能说清这些。”\n\n话说完，那点感觉没有回来。沈砚仍有些舍不得，却不必因此改掉刚才的报告。他确实辨到过，确实没能一直辨下去。这两件事都在这一回里。\n\n“您看，接下来该改哪一处？”沈砚问。\n\n他还想趁那点感觉没有忘净，再坐着试下去。桌边沙漏的上半只剩一小层沙，望过去时，心里便多了一分急。\n\n许庭没有先指他的肩。\n\n“你先比较。出现以前和后来，哪些差别是你能确认的？”\n\n沈砚原本已经准备听她列出检查项，闻言便把手从膝上移开。他看着纸上的短句，停了一会儿。\n\n“前面我还能同时留意肩背和呼吸，后来只顾找那点感觉。提肩和抢接，我都察觉到了。但开始变弱时，肩背究竟是不是仍和前面一样松，我没有一直留意。”\n\n“那么，你说‘先变弱，后提肩’，依据在哪？”\n\n“我先觉到它薄了，才想留住。想留住以后，才觉到肩在提。我能确认的是自己察觉到这些的顺序。”他想了想，又补道，“肩是不是在我察觉之前就紧了些，我说不准。”\n\n许庭点了一下头，仍没有替他把缺口补上。\n\n沈砚低头看看自己的手。刚有感觉时，他盼的是能多留一会儿；到了开口说明，才发现那一小段里，有些地方记得很清楚，有些地方竟已经空了。若只说一句“后来散了”，这些空处便都藏在里面。\n\n许庭这才说：“我看见的是你后段肩背提起，呼吸接得急。这一点和你的报告能对上。里面的颤意怎样出现、怎样变弱，我依据的是你刚才说的，不能替你补看。”\n\n她指了指说明，没有给他添新动作。\n\n“你这回已经有能分辨、能报告的感觉。但还没有一直辨下去，也不知道下一回能否照样出现。不能由这一段就说自己能稳定流转。”\n\n沈砚抬起头。“那我下一回要比较的，不只是有没有出现，还得看出现以后？”\n\n“具体看哪一段？”\n\n他将刚才漏掉的地方在心里找了一遍。\n\n“从第一次变弱，到完全觉不出的那段。那时候肩背和呼吸有没有一直照说明做，哪些变化在前，哪些只是我后来才察觉。”\n\n“把说不准的地方也留下。”许庭说，“现在这些先后，还不足以定中断的原因。”\n\n沈砚原本想问，再试一回是不是就能弄清。话到嘴边，他望见沙漏上方所剩的薄沙，又看看那几句说明，改口道：“我先记这一段。不能把没看清的地方写成看清了。”\n\n他们又用余下的工夫核对了他所说的那处缺口。许庭只问他“第一次变弱”是本人感受，还是外在动作；沈砚答是感受，便将它与提肩分开说，没有把两件事并作一个动作。\n\n最后一线细沙落尽。\n\n许庭收住话，站起身：“十分钟到了，这次指导结束。我现在回去修炼。”\n\n“好，多谢您。”\n\n沈砚也站起来，给她让出路。许庭将椅子归回桌边，随后离开，沿路走向她自己的安排。他看着她走过转角，没有把刚想到的问题喊过去。\n\n尝试与反馈所用的十分钟已经过去。他还没有把那点气机留住，许庭也已离开；眼下能做的，是整理刚才已经说出的部分。\n\n沈砚把说明拿到桌边，另外用了些工夫，在空白处写下几行。前面记肩背较松、呼吸未抢接；中间记一次细短的颤意，随后断续；末尾记自己察觉提肩、抢接，以及最后中断的先后未清。\n\n写到“先变弱”时，他停笔添上“先察觉”。两个字补完，那一处便不再像已经查明的原因。\n\n他读了一遍，还是忍不住笑了笑。那一小点感觉虽然短，回想起来却很清楚。它没有因后来中断便变成什么也没发生，也没有因写在纸上便成了随时能用的本领。\n\n沈砚将纸页拢好，没有重新坐回练习的姿势。下次若有可用的指导条件，他要带去问的地方已经留在末行：\n\n从开始变弱，到完全觉不出，该怎样比较，才能看清那一段的连续性？",
+            "text_hash": "sha256:e37b1fae5ca43006bfffe8080c311eb14e66cc82a477800a1adcc732168c221b",
+            "content_hash": "sha256:efe178f401f43a9b9c7d91c2a8c31eb21978099216e4f193674434fd51c8316b",
+            "asset_version_id": "authority-output:80f1bfab-e161-405b-a356-1119b562e0b5:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          }
+        ],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "qid-learning-prose-01",
+        "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:005dadf4665c687d5b8e6f887d9b2da3c3cc027fa184ddecd9672c9df444f329",
+        "target_chapter": 4,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      },
+      "working_set_digest": "sha256:d657cbed7d45b88424c15404d2940bcee31f85231aac1231afbd31cd9fa182af",
+      "schedule_correction": {
+        "status": "NO_GROUP_CADENCE",
+        "added_arc_plan_version_ids": [
+          "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+          "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+          "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        ],
+        "removed_arc_plan_version_ids": []
+      },
+      "selected_contributions": [
+        {
+          "role": "PRIMARY",
+          "score": 0,
+          "action": "ADVANCE",
+          "reason_codes": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "role": "SECONDARY",
+          "score": 0,
+          "action": "ADVANCE",
+          "reason_codes": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "role": "TOUCH",
+          "score": 0,
+          "action": "ADVANCE",
+          "reason_codes": [
+            "LEGAL_ARC_BASELINE"
+          ],
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "deferred_arc_plan_version_ids": [
+        "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+        "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+        "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1"
+      ]
+    },
+    "envelope_digest": "sha256:552696ce1c648e1ab26e7b7a6e9b2059644a0c953432ef0681a9c42e0d2a6a6c",
+    "parent_versions": [
+      {
+        "role": "arc_plans",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+        "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+      },
+      {
+        "role": "book_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "role": "canon_snapshot",
+        "asset_type": "canon_snapshot",
+        "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+        "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      {
+        "role": "previous_chapter_group_outcome",
+        "asset_type": "previous_chapter_group_outcome",
+        "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+        "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+      },
+      {
+        "role": "quality_trend",
+        "asset_type": "quality_trend",
+        "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+        "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+      },
+      {
+        "role": "reader_state",
+        "asset_type": "reader_state",
+        "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+        "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+      },
+      {
+        "role": "related_arc:1",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+        "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+      },
+      {
+        "role": "related_arc:2",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+        "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      },
+      {
+        "role": "story_state",
+        "asset_type": "story_state_snapshot",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      {
+        "role": "volume_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+        "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+      }
+    ],
+    "contract_version": "planning-constraint-envelope-v2",
+    "change_governance": {
+      "requires_evidence": true,
+      "preserve_executed_history": true,
+      "wider_scope_requires_new_plan_change": true
+    },
+    "prohibited_outcomes": [],
+    "inherited_invariants": [],
+    "required_obligations": [],
+    "narrative_load_policy": {
+      "type": "NarrativeLoadPolicy",
+      "limits": {
+        "max_active_arcs": 3,
+        "max_new_concepts": 4,
+        "max_dormant_arc_age": 30,
+        "max_open_obligations": 12,
+        "max_payoff_congestion": 3,
+        "max_overdue_obligations": 0,
+        "max_major_state_transitions": 8,
+        "max_character_appearance_gap": 10
+      },
+      "book_id": "book:qinglan-wendao-20261008",
+      "policy_id": "canonical-production-narrative-load",
+      "project_id": "qid-learning-prose-01",
+      "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+      "source_role": "production_profile",
+      "policy_version": 1,
+      "contract_version": "narrative-load-policy-v1",
+      "governed_overrides": [],
+      "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+      "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+    },
+    "permitted_change_scope": "CHAPTER_GROUP",
+    "accepted_state_boundary": {
+      "future_plan_only": true,
+      "accepted_through_chapter": 0
+    },
+    "generation_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3",
+    "generator_operation_name": "chapter_group_plan.generate",
+    "narrative_load_projection": {
+      "type": "NarrativeLoadProjection",
+      "status": "MEASURED",
+      "metrics": {
+        "active_arc_count": 0,
+        "dormant_arc_max_age": 0,
+        "narrative_debt_score": 0,
+        "open_obligation_count": 0,
+        "payoff_congestion_count": 0,
+        "overdue_obligation_count": 0,
+        "character_appearance_max_gap": 0
+      },
+      "contract_version": "narrative-load-projection-v2",
+      "open_obligation_ids": [],
+      "overdue_obligation_ids": [],
+      "accepted_through_chapter": 0
+    },
+    "narrative_load_policy_lineage": {
+      "type": "NarrativeLoadPolicyLineage",
+      "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+      "inherited_from": [
+        {
+          "role": "arc_plans",
+          "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+          "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "role": "book_plan",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "role": "related_arc:1",
+          "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+          "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "role": "related_arc:2",
+          "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+          "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        },
+        {
+          "role": "volume_plan",
+          "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+          "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+        }
+      ],
+      "contract_version": "narrative-load-policy-lineage-v1",
+      "frozen_by_generation_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+    },
+    "creative_requirements_contract": "work-requirements.v2"
+  },
+  "context_profile_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+  "information_release": [
+    "只公开人物在本组亲自观察或实际听到的内容。",
+    "区分沈砚对内在感知的报告、旁人对外在动作的观察以及二者都无法证明的因果。",
+    "到第7章可让读者知道沈砚的比较方法有所改进，但仍不能确定稳定流转。"
+  ],
+  "relationship_deltas": [
+    {
+      "change": "拟由反复求即时确认，转为沈砚带着来源清楚的记录请求许庭有限反馈；双方各自守住判断与时间范围。",
+      "subject": "沈砚与许庭"
+    },
+    {
+      "change": "拟通过一次范围明确且实际履行的外部观察建立可追踪配合，不使程观承担内在感知的判断。",
+      "subject": "沈砚与程观"
+    }
+  ],
+  "character_realization": [
+    {
+      "reach": "CURRENT_SEGMENT",
+      "scope": "CHAPTER_GROUP",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "story_state_snapshot",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "authority_role": "story_state",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "character_id": "thread:qinglan-wendao:future-1:own-road",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "realization_level": "ACTIVE",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "reach": "CURRENT_SEGMENT",
+      "scope": "CHAPTER_GROUP",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "story_state_snapshot",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "authority_role": "story_state",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "character_id": "thread:xu-ting:bounded-guidance",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "realization_level": "ACTIVE",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "reach": "CURRENT_SEGMENT",
+      "scope": "CHAPTER_GROUP",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "story_state_snapshot",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "authority_role": "story_state",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "character_id": "thread:cheng-guan:traceable-negotiation:future-1",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3"
+      },
+      "realization_level": "ACTIVE",
+      "narrative_relevance": "CURRENT"
+    }
+  ],
+  "narrative_event_chain": [
+    {
+      "action": "沈砚带着标明空白的候选记录，提出只核对外在动作与反馈范围的请求，并主动承担下一次记录。",
+      "causes": [],
+      "decision": "先询问可比较什么，不要求他人直接断定气机中断原因。",
+      "event_id": "group4-e1",
+      "required": true,
+      "slice_id": "chapter-4",
+      "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "motivation": "希望把短暂感知之后的空白变成能亲自检验的问题。",
+      "resistance": "他最想获得的因果判断恰超出当前记录。",
+      "consequence": "请求成为可回应的具体事项，须由被询问者分别确认可用时间和可知范围。",
+      "disclosures": [
+        "沈砚把首次变弱与后来察觉提肩分开记录，二者先后仍待核实。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "候选中的问题缩为可核对的观察范围",
+          "entity_id": "thread:qinglan-wendao:future-1:own-road",
+          "from_state": "候选中的问题仍较宽泛",
+          "state_kind": "learning_question"
+        }
+      ],
+      "preconditions": [
+        "本事件以工作稿中的记录获得后续连续承接为条件，不把它写成已接受事实。",
+        "沈砚只可依据自己的记录提出问题。"
+      ],
+      "chapter_number": 4,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "沈砚主动缩小请求并承担记录，符合自主学习Arc和本组有界选择。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "记录的内在感知缺口无法由旁人的外部观察直接填补。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "提出请求本身尚未形成不可撤回的资格或资源变化。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e2"
+      ],
+      "arc_contributions": [
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "仅在前三章工作稿得到连续承接时，沈砚可知道自己记录了短暂感知及不确定的先后。",
+          "沈砚知道自己不能凭记录确定中断原因。"
+        ],
+        "reader_may_learn": [
+          "沈砚把首次变弱与后来察觉提肩分开记录，二者先后仍待核实。"
+        ],
+        "forbidden_disclosures": [
+          "程观的私下动机或未说明权限。",
+          "稳定基础流转已经成立。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "程观回应自己能安排的短时外部观察，只承诺报告亲眼所见的动作，不解释沈砚的内在感知。",
+      "causes": [
+        "group4-e1"
+      ],
+      "decision": "只接受自己可履行、可直接观察的有限配合。",
+      "event_id": "group4-e2",
+      "required": true,
+      "slice_id": "chapter-4",
+      "actor_ref": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "motivation": "使自己的配合有清楚用途且不挤占未承诺的事务。",
+      "resistance": "外部动作不能替代内在感知的报告。",
+      "consequence": "沈砚获得范围明确的外部核对办法；程观的实际可用时间须进入后续安排。",
+      "disclosures": [
+        "程观只能报告自己亲眼观察到的外在动作。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "候选中的配合限于约定时段和直接观察",
+          "entity_id": "thread:cheng-guan:traceable-negotiation:future-1",
+          "from_state": "候选中的配合范围未定",
+          "state_kind": "participation_scope"
+        }
+      ],
+      "preconditions": [
+        "沈砚已提出具体请求。",
+        "双方须在实际可用日程内确认观察时段。"
+      ],
+      "chapter_number": 4,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "程观主动选择配合范围和时间，推进其可追踪协商Arc。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "程观的日程和观察位置有限，不能承担无限确认。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "明确范围形成未来安排，但此刻尚未实际耗用约定的观察时间。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e3"
+      ],
+      "arc_contributions": [
+        "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "程观听到沈砚提出的具体请求。",
+          "程观知道自己可用的时间与亲眼可见的范围。"
+        ],
+        "reader_may_learn": [
+          "程观只能报告自己亲眼观察到的外在动作。"
+        ],
+        "forbidden_disclosures": [
+          "沈砚体内感知的实际连续性。",
+          "未明确的宗门职务或批准权限。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "许庭在自己确认可用的时段内听取问题，要求沈砚先独立比较；她仅保留之后核对证据缺口的有限反馈。",
+      "causes": [
+        "group4-e2"
+      ],
+      "decision": "把可由沈砚自行复查的部分交还给他，只承诺有界反馈。",
+      "event_id": "group4-e3",
+      "required": true,
+      "slice_id": "chapter-4",
+      "actor_ref": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "motivation": "让有限指导真正支持沈砚可重复的自行检验。",
+      "resistance": "增加指导时长不能自动补齐缺失的观察。",
+      "consequence": "下一次尝试有明确观察重点，许庭的指导和自身修炼不被写成同一时段无限并行。",
+      "disclosures": [
+        "许庭的反馈只覆盖她实际听取和能够判断的部分。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "候选中的反馈限于独立比较后的证据缺口",
+          "entity_id": "thread:xu-ting:bounded-guidance",
+          "from_state": "候选中的反馈请求尚未定界",
+          "state_kind": "guidance_scope"
+        }
+      ],
+      "preconditions": [
+        "沈砚已明确请求范围。",
+        "许庭须先确认有实际可用时段。"
+      ],
+      "chapter_number": 4,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "许庭主动选择指导深度与时间范围，直接推进主Arc。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "她没有亲历沈砚全部内在变化，也须保留自身安排。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "已用于听取问题的时间不能追回，但不产生永久损失或越权资格。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e4"
+      ],
+      "arc_contributions": [
+        "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "许庭知道沈砚向她实际陈述的问题。",
+          "许庭知道自己能够安排的反馈时段。"
+        ],
+        "reader_may_learn": [
+          "许庭的反馈只覆盖她实际听取和能够判断的部分。"
+        ],
+        "forbidden_disclosures": [
+          "她未亲自观察的内在感知先后。",
+          "未说明的正式课程批准权。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "本次实际听取问题所用时间已从许庭可用日程中耗去。"
+    },
+    {
+      "action": "沈砚按已知说明独自完成一次有时限的尝试，同时留意肩背、呼吸与自己开始等待结果的时刻。",
+      "causes": [
+        "group4-e3"
+      ],
+      "decision": "按既有说明完成尝试，不临时增添动作来追求感觉。",
+      "event_id": "group4-e4",
+      "required": true,
+      "slice_id": "chapter-5",
+      "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "motivation": "检验自己能否在没有即时反馈时持续观察。",
+      "resistance": "未得到期待的感觉，容易诱使他把动作观察丢掉。",
+      "consequence": "即使未再次辨清气机，他仍获得自己动作变化的可复查记录。",
+      "disclosures": [
+        "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "有一次标明未再次辨清气机的独立比较",
+          "entity_id": "thread:qinglan-wendao:future-1:own-road",
+          "from_state": "尚无本组独立比较记录",
+          "state_kind": "practice_evidence"
+        }
+      ],
+      "preconditions": [
+        "有可用且不与已确认事务重叠的练习时段。",
+        "既有说明的适用范围已在候选连续性中明确。"
+      ],
+      "chapter_number": 5,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "沈砚自主选择遵守已知说明和时间边界。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "气机不按期待重现，观察欲望又容易使呼吸变急。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "本次练习实际耗时，不要求额外伤害或重大牺牲。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e5"
+      ],
+      "arc_contributions": [
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚知道本次自己遵循的说明。",
+          "沈砚可报告本次亲自察觉的肩背与呼吸变化。"
+        ],
+        "reader_may_learn": [
+          "这次尝试没有再次辨清气机，但沈砚察觉到自己何时开始急着等结果。"
+        ],
+        "forbidden_disclosures": [
+          "许庭或程观未在场时的私下判断。",
+          "没有再次感知就证明此前从未感知。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "本次有时限练习所用时间已耗去。"
+    },
+    {
+      "action": "沈砚写下本次能确认的动作和不能确认的内在先后，把空白留在记录中。",
+      "causes": [
+        "group4-e4"
+      ],
+      "decision": "不把没有观察到的变化补写为已知原因。",
+      "event_id": "group4-e5",
+      "required": true,
+      "slice_id": "chapter-5",
+      "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "motivation": "让下一次求助建立在真实记录上。",
+      "resistance": "把空白写明会使记录看起来不够完整。",
+      "consequence": "下一次核对可以针对证据空白，而不必重演整次练习。",
+      "disclosures": [
+        "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "本次观察已分列确知与未知",
+          "entity_id": "thread:qinglan-wendao:future-1:own-road",
+          "from_state": "本次观察仍在回忆中",
+          "state_kind": "practice_record"
+        }
+      ],
+      "preconditions": [
+        "本次独立尝试已完成。"
+      ],
+      "chapter_number": 5,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "主动留下空白是一项影响后续核对方式的判断。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "沈砚希望得到原因，但现有观察不足。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "记录可修改，不能据此强行制造不可逆代价。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e6"
+      ],
+      "arc_contributions": [
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚知道自己本次实际察觉到的动作变化。",
+          "沈砚知道哪些时刻自己没有持续留意。"
+        ],
+        "reader_may_learn": [
+          "沈砚的记录保留了无法确认提肩开始时刻的空白。"
+        ],
+        "forbidden_disclosures": [
+          "提肩已被证明是气机消失的原因。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "程观在事先确认的时段核对自己所见的外在动作，并说明与沈砚记录能够对应和不能对应的地方。",
+      "causes": [
+        "group4-e5"
+      ],
+      "decision": "只对自己可见的动作给出结论，并在约定范围完成后停止追加核对。",
+      "event_id": "group4-e6",
+      "required": true,
+      "slice_id": "chapter-6",
+      "actor_ref": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "motivation": "让实际投入的核对有清楚用途和结论来源。",
+      "resistance": "沈砚可能想从外部观察得到超出其证明力的答案。",
+      "consequence": "外部记录有了来源清楚的回应，程观已投入的时间不能再用于同时段其他事项。",
+      "disclosures": [
+        "程观能核对肩背与呼吸的外在表现，不能直接核对气机的内在起落。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "有限核对已执行并标明信息边界",
+          "entity_id": "thread:cheng-guan:traceable-negotiation:future-1",
+          "from_state": "有限配合尚待执行",
+          "state_kind": "participation_result"
+        }
+      ],
+      "preconditions": [
+        "观察时段和范围须已实际确认。",
+        "沈砚已提供本次记录。"
+      ],
+      "chapter_number": 6,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "程观按可追踪的约定投入时间并保持结论边界。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "外部动作与内在感知并非同一种证据。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "本次核对实际耗用了程观已确认的可用时间。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e7"
+      ],
+      "arc_contributions": [
+        "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "程观知道自己在约定观察中亲眼见到的动作。",
+          "程观知道沈砚向他展示的记录内容。"
+        ],
+        "reader_may_learn": [
+          "程观能核对肩背与呼吸的外在表现，不能直接核对气机的内在起落。"
+        ],
+        "forbidden_disclosures": [
+          "程观直接知道沈砚体内气机的连续性。",
+          "程观拥有未说明的验收或课程权限。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "程观用于核对的实际时间已耗去。"
+    },
+    {
+      "action": "许庭读取沈砚的独立记录与程观有来源的观察，只就证据缺口追问，并让沈砚自己选定下一次较窄的比较段。",
+      "causes": [
+        "group4-e6"
+      ],
+      "decision": "减少对沈砚已能自查部分的重复指导，把有限反馈用于真实缺口。",
+      "event_id": "group4-e7",
+      "required": true,
+      "slice_id": "chapter-6",
+      "actor_ref": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "motivation": "用有限时间帮助沈砚形成能独立继续检验的问题。",
+      "resistance": "她可以核对报告的逻辑，却不能替沈砚补上缺失体验。",
+      "consequence": "下一次尝试聚焦于首次变弱后的观察连续性，许庭没有替沈砚断定原因。",
+      "disclosures": [
+        "两份观察的相合之处仍不足以确定细微感知消失的原因。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "反馈重点缩为证据缺口与下一次比较段",
+          "entity_id": "thread:xu-ting:bounded-guidance",
+          "from_state": "反馈重点仍涵盖整次尝试",
+          "state_kind": "guidance_focus"
+        }
+      ],
+      "preconditions": [
+        "沈砚和程观各自的记录及来源已向许庭实际说明。",
+        "反馈时段须与许庭自己的安排相容。"
+      ],
+      "chapter_number": 6,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "许庭依据实际记录调整反馈深度，符合主Arc的具体变化。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "已有证据仍不能覆盖内在感知开始变弱的全过程。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "本次反馈实际占用已确认时段，但没有造成永久能力或关系损失。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e8"
+      ],
+      "arc_contributions": [
+        "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "许庭知道沈砚实际展示的记录。",
+          "许庭知道程观经实际交流给出的外部观察范围。"
+        ],
+        "reader_may_learn": [
+          "两份观察的相合之处仍不足以确定细微感知消失的原因。"
+        ],
+        "forbidden_disclosures": [
+          "许庭直接知道未被报告或观察到的内在先后。",
+          "稳定流转已经得到证明。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "许庭用于本次反馈的实际时间已耗去。"
+    },
+    {
+      "action": "沈砚按已知说明进行一次更窄的针对性尝试，在短暂细微感知出现与变弱时持续留意肩背和呼吸，并如实报告仍未看清的部分。",
+      "causes": [
+        "group4-e7"
+      ],
+      "decision": "感觉变弱时继续按说明观察，不临时追索或改动作。",
+      "event_id": "group4-e8",
+      "required": true,
+      "slice_id": "chapter-7",
+      "actor_ref": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "motivation": "检验自己能否在感觉变弱时仍保留对动作的观察。",
+      "resistance": "短暂感知诱使他把注意全部追向结果。",
+      "consequence": "他比先前更能说明可观察的变化，但仍不能证明连续维持或因果。",
+      "disclosures": [
+        "沈砚这次更清楚地报告了细微感知前后的动作差别，却仍未能一直辨下去。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "能更清楚报告该段部分动作差别，连续性仍未证实",
+          "entity_id": "thread:qinglan-wendao:future-1:own-road",
+          "from_state": "能记录动作但难以覆盖感知变弱段",
+          "state_kind": "observation_skill"
+        }
+      ],
+      "preconditions": [
+        "有不与既有安排重叠的练习时段。",
+        "沈砚已依据上一轮反馈选定较窄的比较段。"
+      ],
+      "chapter_number": 7,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "沈砚在最想追住感觉的时刻选择继续观察，体现有成本的自主行动。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "细微感知短促且易变弱，报告的连续性仍受注意范围限制。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "本次练习时间已实际耗去；不额外要求伤害或永久损失。"
+        }
+      },
+      "next_event_ids": [
+        "group4-e9"
+      ],
+      "arc_contributions": [
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚知道上次核对后选定的比较段。",
+          "沈砚只可报告本次亲自察觉的变化。"
+        ],
+        "reader_may_learn": [
+          "沈砚这次更清楚地报告了细微感知前后的动作差别，却仍未能一直辨下去。"
+        ],
+        "forbidden_disclosures": [
+          "气机已能稳定维持。",
+          "提肩已被证明为唯一中断原因。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "本次针对性练习所用时间已耗去。"
+    },
+    {
+      "action": "许庭只依据沈砚实际报告确认观察方法的进步，结束约定反馈；沈砚自行留下下一次要比较的连续性问题。",
+      "causes": [
+        "group4-e8"
+      ],
+      "decision": "许庭按范围收住反馈；沈砚选择自己继续记录和提问。",
+      "event_id": "group4-e9",
+      "required": true,
+      "slice_id": "chapter-7",
+      "actor_ref": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "motivation": "让有效指导留下可由沈砚继续使用的方法，同时守住有限时间。",
+      "resistance": "肯定局部进步时仍须避免夸大能力。",
+      "consequence": "本组以可辨认的小进步和未解决的问题收束，后续稳定练习仍有不同可行办法。",
+      "disclosures": [
+        "观察与报告已有进步，稳定流转仍须后续实践支持。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "已按证据给出有界反馈并结束本次安排",
+          "entity_id": "thread:xu-ting:bounded-guidance",
+          "from_state": "针对性尝试尚待反馈",
+          "state_kind": "guidance_result"
+        },
+        {
+          "to_state": "已留下关于连续性的新一轮可检验问题",
+          "entity_id": "thread:qinglan-wendao:future-1:own-road",
+          "from_state": "下一次问题尚未整理",
+          "state_kind": "learning_question"
+        }
+      ],
+      "preconditions": [
+        "沈砚已完成针对性尝试并实际报告。",
+        "许庭的反馈时段须得到确认。"
+      ],
+      "chapter_number": 7,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "双方分别承担反馈边界和后续自查，关系变化落实在行动中。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "局部进步容易被误读成稳定能力，二人须保留证据限制。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "已投入的指导时间无法追回，但本事件不宣告资格或永久关系变化。"
+        }
+      },
+      "next_event_ids": [],
+      "arc_contributions": [
+        "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "许庭知道沈砚实际向她报告的本次变化。",
+          "许庭知道她自己本次反馈的范围。"
+        ],
+        "reader_may_learn": [
+          "观察与报告已有进步，稳定流转仍须后续实践支持。"
+        ],
+        "forbidden_disclosures": [
+          "下一次练习必然成功。",
+          "正式课程条件已满足。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "本次约定反馈所用时间已耗去。"
+    }
+  ],
+  "narrative_segment_ref": {
+    "segment_id": "volume:1:segment:ordered-growth",
+    "volume_plan_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1"
+  },
+  "resistance_escalation": [
+    "第4章：请求的范围与三人的可用时间尚须确认。",
+    "第5章：独立尝试未必重现感知，沈砚必须从不完整结果中保留可用观察。",
+    "第6章：外部动作与内在感知的证据边界阻止仓促下结论。",
+    "第7章：感知短暂重现时更难持续观察，局部成功仍不足以证明稳定能力。"
+  ],
+  "chapter_function_matrix": [
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "约定的比较范围已经明确，沈砚下一次尝试能否留下比“有没有感觉”更完整的记录？",
+      "reward_action": "三人各自说清能够承担和不能替人判断的部分。",
+      "chapter_number": 4,
+      "promise_action": "把一次短暂感知转化为可检验的问题，延续观察、调整和重复的成长承诺。",
+      "primary_function": "沈砚主动提出有范围的复查请求，分别确认程观能观察什么、许庭能在何时反馈什么。",
+      "foreshadow_action": "将“首次变弱”与“后来察觉提肩”分列，预备后续核对先后。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "获得清楚、可执行的比较办法",
+        "target_emotion": "谨慎的期待"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "把工作稿中的首次感知视为已接受历史或稳定流转。",
+        "让程观或许庭越过未明确的权限批准资格、课位或资源。",
+        "以无界指导时间消除双方的日程限制。"
+      ],
+      "secondary_functions": [
+        "建立同一计时单位下的练习、反馈与休息安排。",
+        "区分内在感知、外在动作与他人观察。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "候选发展中，含糊的再次求证变为有范围、需自行记录的下一次尝试；任何既往感知仍待连续性确认。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭选择有限反馈范围，并把可由沈砚自己复查的部分交还给他。",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "程观明确自己可用的时间和只可直接观察的事项。",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚自己提出比较问题并承担记录工作。",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "记录中的空白恰落在他最想解释的地方，下一次核对需要怎样取舍？",
+      "reward_action": "即使未能重复辨清气机，沈砚仍准确找到自己开始追等结果的时刻。",
+      "chapter_number": 5,
+      "promise_action": "让独自练习也产生可用信息，证明进步不只取决于一次感觉是否重现。",
+      "primary_function": "沈砚独自按既有说明完成一次有时限的比较，并诚实记录未再辨清气机时仍可观察到的动作。",
+      "foreshadow_action": "保留无法确定提肩开始时刻的空格，不用推测填满。",
+      "narrative_density": "LOW",
+      "reader_experience": {
+        "reward_mode": "看见沈砚独立完成可复查的记录",
+        "target_emotion": "安静而踏实"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "以没有再次感知为由撤销先前候选中的观察能力。",
+        "增加未经说明的新修炼动作。",
+        "把一次比较失败写成确定的中断原因。"
+      ],
+      "secondary_functions": [
+        "以较安静的章节节奏承接前章协商。",
+        "让实际耗去的练习时间进入后续安排。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "形成一次由沈砚独立完成、标明证据空白的比较记录；稳定流转仍未获证明。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚在无人代判时坚持区分已观察到的动作与未观察到的气机连续性。",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "action": "TOUCH",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "两种观察能够对上，却仍不能说明细微感知为何消失；沈砚决定再检验哪一小段？",
+      "reward_action": "沈砚能够说清两份观察相合之处，也能指出它们共同无法证明的部分。",
+      "chapter_number": 6,
+      "promise_action": "让实际反馈改变下一次尝试的重点。",
+      "primary_function": "程观与许庭分别核对自己可知的部分，沈砚据不一致的证据边界缩小问题。",
+      "foreshadow_action": "保留内在感知与外在提肩之间尚未查明的先后，供下一次针对性尝试。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "得到范围清楚的反馈与下一步问题",
+        "target_emotion": "理解加深后的克制"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "把程观的外部观察当成对沈砚内在感知的直接证明。",
+        "由许庭替沈砚补写未观察到的先后。",
+        "通过他人认可自动取得正式课程或修炼资格。"
+      ],
+      "secondary_functions": [
+        "承接程观和许庭实际投入的时间。",
+        "使信任表现为可核对的回应，而非自动放宽条件。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "候选发展中，各人的证据来源和反馈范围得到厘清，下一次尝试聚焦于感知开始变弱后的连续性。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭依据沈砚的独立记录调整反馈，只核对尚未能自行复查的缺口。",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "程观完成事先明确范围内的观察核对，并说明其结论的来源和限制。",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "沈砚保留仍未查明的连续性问题，并亲自决定下一次怎样继续比较。",
+      "reward_action": "沈砚准确指出一次细微感知前后的动作差别，同时坦承未能一直辨下去。",
+      "chapter_number": 7,
+      "promise_action": "兑现本组的局部成长：沈砚更能自行辨认与报告尝试中的变化。",
+      "primary_function": "沈砚完成一次更窄的针对性尝试；许庭依据实际报告给出有界反馈，二人区分可重复的观察与尚未稳定的气机。",
+      "foreshadow_action": "将同一观察方法留给后续稳定练习，不预告具体资格或新本领。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "以可辨认的小进步和明确余题作阶段奖励",
+        "target_emotion": "审慎的喜悦"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "把短暂重现直接升级为稳定基础流转或独立重复运用灵气。",
+        "让许庭无限延长指导或替沈砚完成判断。",
+        "提前进入首次结伴采药或正式课程争取的结果阶段。"
+      ],
+      "secondary_functions": [
+        "收束本组的练习与反馈时间。",
+        "为后续稳定练习留下可执行但未保证成功的问题。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "沈砚拟获得更可靠的自我观察和报告方法；气机能否稳定维持仍未解决。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭按实际表现确认沈砚已能独立复查的部分，保留尚无证据的结论。",
+          "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚在更窄的比较中独立报告变化，并选择后续练习问题。",
+          "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+        }
+      ]
+    }
+  ],
+  "generator_operation_name": "chapter_group_plan.generate",
+  "required_arc_contributions": [
+    "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+    "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+    "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+  ],
+  "arc_checkpoint_expectations": [
+    {
+      "expectation": "许庭依据实际记录调整反馈深度，投入有界时间，并保留自己的修炼安排；不宣称跨卷闭合条件已满足。",
+      "arc_plan_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1"
+    },
+    {
+      "expectation": "程观只就亲自可观察、可安排的部分给予有范围的回应，已用时间得到承接，不取得未说明的职务或权限。",
+      "arc_plan_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+    },
+    {
+      "expectation": "沈砚自行比较两次尝试并据结果缩小下一步问题；短暂感知不升级为稳定流转。",
+      "arc_plan_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1"
+    }
+  ],
+  "narrative_search_projection": {
+    "assumptions": [
+      "前三章工作稿仅作未审定的条件性连续性材料；若其情节未获承接，本组事件须以获准的前序事实重新衔接。",
+      "程观、许庭的具体职务与权限未获说明，本组只安排本人可确认的时间、观察和反馈。",
+      "没有供应已接受的到期义务身份，因此本组不伪造义务ID或到期窗口。"
+    ],
+    "future_options": [
+      "依据后续重复结果继续比较基础流转的连续性。",
+      "在条件明确后安排首次结伴采药的准备，不预定本组已有采收或交付结果。",
+      "许庭可继续提供有界反馈，也可让沈砚先独立复查；程观可按实际时间决定是否再次配合。"
+    ],
+    "narrative_risks": [
+      "连续练习容易显得重复；各章须分别承担协商、独试、来源核对和针对性再试的不同功能。",
+      "未审定工作稿不能充当接受态事实，后续章节入口须随真实接受结果核对。",
+      "程观的外部观察容易被误写成对内在气机的证明，须维持证据边界。"
+    ],
+    "repetition_keys": [
+      "同一感觉反复出现却没有新增观察",
+      "导师逐项纠错后主角照做",
+      "以时间边界结束每章"
+    ],
+    "contract_version": "narrative-search-projection.v1",
+    "selection_summary": "在严格限定的第4—7章内，选择由沈砚主动提出有界请求、独自试验、核对证据、再作窄范围尝试的链条。代价来自真实耗时和必须自己完成的复查；所得是可辨认的方法进步，后续学习与合作路径仍保持开放。",
+    "strategy_fingerprint": "future-1:bounded-comparison:costly-agency:chapters-4-7",
+    "creative_intelligence": {
+      "arc_momentum": 0.78,
+      "setup_payoff": 0.81,
+      "reader_promise": 0.82,
+      "reversal_reveal": 0.54,
+      "character_agency": 0.88,
+      "pacing_variation": 0.79,
+      "pattern_diversity": 0.7,
+      "world_consequence": 0.64,
+      "future_optionality": 0.88,
+      "conflict_escalation": 0.58,
+      "emotional_progression": 0.77,
+      "relationship_evolution": 0.76,
+      "choice_cost_consequence": 0.8
+    },
+    "irreversible_decisions": [
+      "若事件实际发生，三人已用于练习、观察与反馈的时间不能追回。"
+    ],
+    "projected_consequences": [
+      "沈砚的下一次提问由含糊求肯定转为针对连续性缺口的具体比较。",
+      "许庭实际调整反馈深度，程观的有限时间与信息范围得到承接。",
+      "稳定流转仍是后续实践问题，正式课程与采药结果继续开放。"
+    ],
+    "narrative_opportunities": [
+      "把工作稿留下的先后缺口变成四章内可执行、可核对的成长链。",
+      "让许庭和程观通过各自有限的主动配合获得人物行动，而非只评价沈砚。",
+      "在不预授稳定能力的前提下，给读者一次具体的小幅进步。"
+    ]
+  },
+  "narrative_architecture_version": "canonical-narrative-v1",
+  "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+}

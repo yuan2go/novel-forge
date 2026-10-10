@@ -1,0 +1,54 @@
+{
+  "contract": {
+    "source": {
+      "content_hash": "sha256:e598dbcbf94fe4d76460bf6ebccaa885b43f02d8b6ada4c04ed30a8a7736dd0d",
+      "asset_version_id": "08e2a60c-d721-430a-99f4-f83a64d4d589"
+    },
+    "book_id": "book:qinglan-wendao-20261008",
+    "actor_id": "author-first-native-operator",
+    "authority": "PLANNING_PROPOSAL",
+    "evaluation": {
+      "content_hash": "sha256:06bd669704d854ad78d63129564dd1bd0bf01e7087a7fceea8bac2dfa50a86fc",
+      "asset_version_id": "152f826b-24cc-47f7-98f4-2304b7e6a441"
+    },
+    "generation": {
+      "content_hash": "sha256:274100712cfd0a23f3da3a437d87bcdbc5d30c5f15845c5dc039e51d74781fdc",
+      "asset_version_id": "e2f14ea6-73c9-4fec-b87a-35516d544b65"
+    },
+    "project_id": "qid-learning-prose-01",
+    "world_plan": {
+      "policy": {
+        "version": "world-production-policy.v4",
+        "max_candidates": 4,
+        "max_provider_stages": 2,
+        "context_token_budget": 226400,
+        "max_preparation_steps": 4,
+        "max_world_time_advance": 1000,
+        "max_paths_per_candidate": 3,
+        "planning_window_chapters": 4
+      },
+      "reason": "第6章须承接第5章的采药交回与质量反馈，但目前 accepted_through_chapter 为0，accepted_history 为空。第4—5章规划仍是未来提案，不能充当已接受的因果来源或人物知识；课程条件、课位和资源账目也尚未核实。待前置结果及可观察的信息来源成立后，再提出第6章的具体转移。",
+      "authority": "PLANNING_PROPOSAL",
+      "baseline_id": "foundation:sha256:18e8d6bbd381ef25647ed8d271d0fce54e7b030fa1fa46981ca4cc4f67dd0ed8",
+      "disposition": "DEFER",
+      "plan_digest": "sha256:e61250eddbc62fd8d1e461c278e4827a836cd85877a6399190690a9b473ccf9d",
+      "causal_debts": [],
+      "chapter_number": 1,
+      "rejected_paths": [],
+      "contract_version": "world-production-plan.v1",
+      "selected_path_id": "",
+      "alternative_paths": [],
+      "candidate_futures": [],
+      "intent_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+      "preparation_schedule": [],
+      "fact_mutation_allowed": false,
+      "selected_candidate_id": "",
+      "continuation_decisions": [],
+      "accepted_through_chapter": 0
+    },
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "contract_version": "world-production-action.v2",
+    "fact_mutation_allowed": false,
+    "preserve_accepted_history": true
+  }
+}

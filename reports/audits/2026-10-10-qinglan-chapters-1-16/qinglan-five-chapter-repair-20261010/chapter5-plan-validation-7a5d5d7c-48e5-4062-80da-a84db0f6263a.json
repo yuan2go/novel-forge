@@ -1,0 +1,12 @@
+[
+  [
+    {
+      "status": "FAIL",
+      "message": "a CURRENT entity cannot be less realized than its Planning horizon",
+      "error_code": "WORLD_REALIZATION_HORIZON_INVALID",
+      "validation_kind": "STRUCTURAL",
+      "candidate_asset_version_id": "authority-output:7a5d5d7c-48e5-4062-80da-a84db0f6263a:story_planning.candidate:v1"
+    },
+    "FAIL"
+  ]
+]

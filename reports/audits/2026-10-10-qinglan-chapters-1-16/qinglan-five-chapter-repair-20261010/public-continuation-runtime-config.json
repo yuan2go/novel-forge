@@ -1,0 +1,26 @@
+[
+  {
+    "service": "api-env.private.json",
+    "catalog_before_hash": "8c5bbfd3e863a792b3a67385c01d4f4f28eae3b4b9bdf2793c978b3fea7f5ee9",
+    "catalog_after_hash": "8c5bbfd3e863a792b3a67385c01d4f4f28eae3b4b9bdf2793c978b3fea7f5ee9",
+    "model": "gpt-6-sol:high",
+    "role": "PRIMARY",
+    "catalog_candidates_and_caps": "UNCHANGED",
+    "book_execution_template": "qinglan-five-existing-member-sol-20261010-v2",
+    "authorizations_and_book_cumulative_budget": "UNCHANGED",
+    "background_model_dispatch": "SUSPENDED",
+    "connection_mode": "Existing native writable authority connection"
+  },
+  {
+    "service": "recovery-env.private.json",
+    "catalog_before_hash": "8c5bbfd3e863a792b3a67385c01d4f4f28eae3b4b9bdf2793c978b3fea7f5ee9",
+    "catalog_after_hash": "8c5bbfd3e863a792b3a67385c01d4f4f28eae3b4b9bdf2793c978b3fea7f5ee9",
+    "model": "gpt-6-sol:high",
+    "role": "PRIMARY",
+    "catalog_candidates_and_caps": "UNCHANGED",
+    "book_execution_template": "qinglan-five-existing-member-sol-20261010-v2",
+    "authorizations_and_book_cumulative_budget": "UNCHANGED",
+    "background_model_dispatch": "SUSPENDED",
+    "connection_mode": "Existing native writable authority connection"
+  }
+]

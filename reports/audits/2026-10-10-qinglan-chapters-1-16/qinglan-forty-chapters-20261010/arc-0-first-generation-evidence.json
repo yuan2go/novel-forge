@@ -1,0 +1,93 @@
+{
+  "status": "APPROVAL_PENDING",
+  "book_id": "book:qinglan-wendao-20261008",
+  "version": 2,
+  "created_at": "2026-10-10T02:45:04.166337+00:00",
+  "project_id": "qid-learning-prose-01",
+  "updated_at": "2026-10-10T02:48:27.668223+00:00",
+  "logical_key": "book:book:qinglan-wendao-20261008",
+  "operation_id": "386ebc38-1367-4605-990c-eb3c76b082b6",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "generation_id": "planning-generation:386ebc38-1367-4605-990c-eb3c76b082b6",
+  "repair_number": 0,
+  "repair_reason": null,
+  "input_snapshot": [
+    {
+      "role": "book_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+      "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+    },
+    {
+      "role": "volume_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+      "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    {
+      "role": "conflict_state",
+      "asset_type": "conflict_state",
+      "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+      "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+    },
+    {
+      "role": "promise_ledger",
+      "asset_type": "promise_ledger_snapshot",
+      "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+      "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+    },
+    {
+      "role": "foreshadowing_ledger",
+      "asset_type": "foreshadowing_ledger",
+      "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+      "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+    },
+    {
+      "role": "character_arc_portfolio",
+      "asset_type": "character_arc_portfolio",
+      "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+      "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+    },
+    {
+      "role": "arc_scope_volume:1",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+      "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "role": "arc_scope_volume:2",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+      "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "role": "arc_scope_volume:3",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+      "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "role": "arc_scope_volume:4",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+      "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "role": "change_evidence:1",
+      "asset_type": "replan_request",
+      "content_hash": "sha256:0f913dc71663c8b1dc07229f454a28f25edd66cd86a1d350d82b89f9ca76af82",
+      "asset_version_id": "authority-output:72657607-4807-4178-84ff-e0eba4e3efbb:planning.change_request:v1"
+    }
+  ],
+  "planning_scope": "ARC",
+  "parent_version_id": null,
+  "input_snapshot_hash": "sha256:8e1a835e87b25c3c15260a785c1ff5e3d41569fc321afc9b3036be1dc77ae91b",
+  "narrative_search_id": null,
+  "repair_of_candidate_id": null,
+  "repair_of_operation_id": null,
+  "runtime_continuation_id": "planning-runtime-continuation:7b07a317-9d2e-41df-96a3-bf288a72e96d",
+  "generator_operation_name": "arc_plan.generate",
+  "candidate_asset_version_id": "authority-output:386ebc38-1367-4605-990c-eb3c76b082b6:story_planning.candidate:v1",
+  "narrative_search_branch_key": null,
+  "repair_result_asset_version_id": null
+}

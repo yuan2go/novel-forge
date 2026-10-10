@@ -1,0 +1,22 @@
+[
+  {
+    "operation_id": "f0356284-f661-4eeb-abda-020c91119f7f",
+    "status": "SUCCEEDED",
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "chapter": 2,
+    "recovery_asset_version_id": "dd3d32d1-af0a-4d1f-bda4-da1583a09a6c",
+    "replayed": false
+  },
+  {
+    "chapter": 2,
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "recovery_asset_version_id": "dd3d32d1-af0a-4d1f-bda4-da1583a09a6c",
+    "replayed": true
+  },
+  {
+    "chapter": 2,
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "recovery_asset_version_id": "dd3d32d1-af0a-4d1f-bda4-da1583a09a6c",
+    "replayed": true
+  }
+]

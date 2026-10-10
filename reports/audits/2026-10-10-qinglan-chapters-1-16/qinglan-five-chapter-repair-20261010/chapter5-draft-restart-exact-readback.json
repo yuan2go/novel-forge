@@ -1,0 +1,22 @@
+{
+  "successor_operation_id": "a2436f70-ec4e-4002-89bd-1a1fb676f8a9",
+  "status": "SUCCEEDED",
+  "fresh_process_exact_output_readback": "PASS",
+  "raw_output_hash": "sha256:7e7c55947fba8e8e49d7f84e53ed50a237b898bc1a1aee52e4aec63fb8f5abc7",
+  "rebuilt_native_draft_hash": "sha256:8b3d8d49b5b563b4fe4ea1875fcacea4732a68d4d6f944caaa137f04b5206650",
+  "source_union_normalization": {
+    "contract_version": "scene-evidence-union.v1",
+    "changes": [
+      {
+        "slot_id": "chapter:5:scene:delivery:skeleton",
+        "added_scene_refs": [
+          "chapter:5:fact:route"
+        ]
+      }
+    ],
+    "fact_mutation_allowed": false
+  },
+  "provider_calls_created": 0,
+  "original_two_attempts": "PRESERVED",
+  "fresh_process_dispatch_suspended": "1"
+}
