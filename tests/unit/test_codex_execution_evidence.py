@@ -833,3 +833,25 @@ def test_nullable_enum_projection_satisfies_provider_type_admission_and_retains_
     evidence['provider_schema_contract']['provider_hash'] = digest(old)
     evidence['provider_schema_contract']['equivalent_projection'] = 'codex-nullable-shared-types.v3'
     assert codex_wire_correction_evidence(evidence) is None
+
+
+@pytest.mark.parametrize('memory', [None, '', '[]', 'invalid-memory-is-optional'])
+def test_optional_working_memory_wire_preserves_domain_schema(memory):
+    from copy import deepcopy
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema, decode_codex_output
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    schema = {'$schema': 'https://json-schema.org/draft/2020-12/schema', 'type': 'object', 'properties': {'text': {'type': 'string', 'minLength': 1},
+        'working_memory_json': {'type': 'string', 'maxLength': 100000}},
+        'required': ['text'], 'additionalProperties': False}
+    original = deepcopy(schema)
+    ref = 'schema:chapter-provider-output:draft:v4:working-memory-v1'
+    wire = codex_output_schema(schema, schema_ref=ref)
+    assert schema == original
+    assert set(wire['required']) == set(wire['properties'])
+    value = {'text': 'prose', 'working_memory_json': memory}
+    validate_chapter_provider_output_against_schema('canon_extraction', wire, value)
+    decoded, proof = decode_codex_output(value, schema_ref=ref)
+    assert ('working_memory_json' in decoded) == (memory is not None)
+    validate_chapter_provider_output_against_schema('draft', schema, decoded)
+    assert decode_codex_output(value, schema_ref='legacy')[0] == value
+    assert codex_output_schema(schema)['required'] == ['text']

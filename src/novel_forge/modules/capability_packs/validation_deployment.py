@@ -185,7 +185,6 @@ def install_chapter_validation_pack(
     if prose_skill_version:
         from .artifacts import ArtifactKind
 
-        # WHY: An experiment binds exact Skill bytes without upgrading historical or default Packs.
         if not pack_id_override or not pack_version_override:
             raise ValueError("prospective prose Skill selection requires an explicit Pack identity")
         selected_skill = resolver.resolve(ArtifactKind.SKILL, "prose-generation", prose_skill_version)

@@ -942,7 +942,7 @@ class PostgresChapterExecutionContractBinder:
             )
         if stage == "canon_extraction" and graph["definition_version"] in {"3.9.5", "3.9.6", "3.9.7"} and materialization.prompt_template.version != ("v11" if graph["definition_version"]=="3.9.7" else "v10"):
             raise KernelError("CHAPTER_CANON_SCHEMA_PROJECTION_REQUIRED", "Canon requires its exact versioned Schema and transport Prompt binding")
-        if graph["definition_version"] == "3.10.0" and materialization.prompt_template.version not in {"v12", "v13"}:
+        if graph["definition_version"] in {"3.10.0", "3.10.2"} and materialization.prompt_template.version not in {"v12", "v13"}:
             raise KernelError("CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED", "Coordinated Chapter requires its exact new current prompt contract")
         provider_schema, provider_schema_ref = self._provider_output_contract(
             stage=stage,
@@ -2150,7 +2150,7 @@ class PostgresChapterExecutionContractBinder:
         compatible = compatible or (str(row[1]) == "3.10.0" and str(row[0]) in {node.definition_name for node in ChapterNode if node is not ChapterNode.PLAN})
         compatible = compatible or (
             str(row[0]) == ChapterNode.DRAFT.definition_name
-            and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
+            and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1", "3.10.2"}
         )
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
         compatible = compatible or (str(row[0]) in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and str(row[1]) in {"3.9.9", "3.9.12"})
