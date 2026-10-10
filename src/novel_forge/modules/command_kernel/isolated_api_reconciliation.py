@@ -62,7 +62,7 @@ def append_resolution(uow, effect, command):
     )
     from .generation_isolation import require_native_api_isolation_record
 
-    original_request, _ = require_native_api_isolation_record(
+    original_request, original_record = require_native_api_isolation_record(
         session,
         project_id=effect["project_id"],
         book_id=proof["book_id"],
@@ -115,6 +115,17 @@ def append_resolution(uow, effect, command):
         _invalid(
             "Trusted receipt and preserved provider record must bind the original scope and fence"
         )
+    original_provider_ids = {
+        effect.get("provider_request_id"),
+        (original_record.get("handle") or {}).get("provider_request_id"),
+        ((original_record.get("provider_result") or {}).get("handle") or {}).get(
+            "provider_request_id"
+        ),
+    } - {None, ""}
+    if original_provider_ids and original_provider_ids != {
+        receipt["provider_request_id"]
+    }:
+        _invalid("Receipt differs from the known original provider request identity")
     expected = {
         "MARK_SUCCEEDED": "success",
         "MARK_NOT_FOUND": "not_found",

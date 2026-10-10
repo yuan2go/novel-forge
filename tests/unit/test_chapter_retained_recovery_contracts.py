@@ -45,7 +45,7 @@ def test_current_graph_journal_rejects_reused_or_unknown_identity_before_acknowl
 
 
 @pytest.mark.parametrize("status,expected", [("FAILED_RETRYABLE", True), ("FAILED_FINAL", False), ("UNKNOWN", False)])
-def test_current_semantic_acknowledgement_preserves_exact_failed_attempt_status(status, expected):
+def test_current_semantic_acknowledgement_preserves_exact_failed_attempt_status(status, expected, monkeypatch):
     proof = {"contract_version": "chapter-current-semantic-repair.v2", "source_operation_id": "review",
              "source_effect_id": "effect", "source_dispatch_id": "dispatch", "source_output_hash": "hash",
              "source_request_hash": "request", "provider_invoked": True, "strict_certification_eligible": False,
@@ -58,7 +58,11 @@ def test_current_semantic_acknowledgement_preserves_exact_failed_attempt_status(
     cursor.fetchall.return_value = [("successor", {"retained_result_repair": marker})]
     effect = {"external_effect_id": "effect", "operation_id": "review", "status": "SUCCEEDED",
               "attempt_id": "attempt", "attempt_status": status}
+    from novel_forge.modules.command_kernel import retained_graph
+    draft_validation = Mock()
+    monkeypatch.setattr(retained_graph, "_require_current_completed_draft", draft_validation)
     acknowledge_retained_result(cursor, [effect], "current")
+    draft_validation.assert_called_once_with(cursor, frozen)
     assert bool(effect.get("settled_candidate_superseded")) == expected
     assert effect["attempt_status"] == status
 

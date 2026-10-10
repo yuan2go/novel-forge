@@ -31,7 +31,9 @@ def test_published_main_migration_bodies_remain_exact():
 def test_registered_forward_upgrade_uses_one_continuous_identity_chain():
     published = {migration.migration_id for migration in MIGRATIONS[:169]}
     pending = pending_migrations(published)
-    assert [migration.migration_id.split("_")[1] for migration in pending] == [str(number).zfill(4) for number in range(169, 181)]
+    assert pending == list(MIGRATIONS[169:])
+    assert pending[-1].migration_id == "20261009_0195_prose_review_generation_isolation"
+    assert all(current.down_revision == prior.migration_id for prior, current in zip(pending, pending[1:]))
     assert pending[0].down_revision == "20261007_0168_derived_step_revalidation"
 
 

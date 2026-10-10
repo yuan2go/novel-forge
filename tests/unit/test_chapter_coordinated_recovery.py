@@ -66,9 +66,11 @@ def test_objective_length_cannot_admit_other_fixture_dimensions():
 def test_retained_receipt_uses_exact_kernel_operation_scope(monkeypatch):
     from novel_forge.modules.chapter_authority import receipt_recovery
     class Cursor:
-        def execute(self, *args):
-            pass
+        def execute(self, query, *args):
+            self.query = query
         def fetchone(self):
+            if "authority_generation_isolation" in self.query:
+                return None
             return ("actor", "trace", "correlation", "FAILED_FINAL")
     class Repository:
         def get_for_update(self, effect_id):
@@ -85,9 +87,11 @@ def test_retained_receipt_rejects_provider_evidence_hash_drift(monkeypatch):
         def __init__(self):
             self.rows = iter([("actor", "trace", "correlation", "FAILED_FINAL"),
                 (1, {"result": "retained"}, "sha256:forged", {"evidence": {"result": "retained"}}, "VERIFIED")])
-        def execute(self, *args):
-            pass
+        def execute(self, query, *args):
+            self.query = query
         def fetchone(self):
+            if "authority_generation_isolation" in self.query:
+                return None
             return next(self.rows)
     class Repository:
         def get_for_update(self, effect_id):

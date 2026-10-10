@@ -444,7 +444,7 @@ def isolated_api_generation():
     dispatch = prepare_effect_dispatch(DATABASE_URL,context,effect_id=effect)
     lease = acquire_effect_dispatch(DATABASE_URL,context,dispatch_id=dispatch['dispatch_id'],worker_id='fixture',lease_seconds=30)
     submit_effect_dispatch_result(DATABASE_URL,context,dispatch_id=dispatch['dispatch_id'],worker_id='fixture',
-        fencing_token=lease['fencing_token'],outcome='unknown',evidence={'production_execution':{
+        fencing_token=lease['fencing_token'],outcome='unknown',provider_request_id='trusted-original-api',evidence={'production_execution':{
             'execution_handle':{'transport':'REMOTE_PROVIDER_API'},'execution_request':request.to_dict()}})
     resolve_provider_budget_failure(DATABASE_URL,reservation_id=reservation['reservation_id'],project_id=project,external_state_unknown=True)
     proof = {'contract_version':'pure-generation-isolation.v1','project_id':project,'workspace_id':workspace,
@@ -522,7 +522,7 @@ def test_isolated_api_late_receipt_settles_once_without_restoring_business_right
 
 @pytest.mark.parametrize('change',[{'book_id':'foreign-book'},{'project_id':'foreign-project'},
     {'generation':99},{'attempt_id':'foreign-attempt'},{'fencing_token':99},
-    {'request_hash':'sha256:foreign'},{'usage':None},{'cost':{'amount':None,'currency':'USD'}}])
+    {'request_hash':'sha256:foreign'},{'provider_request_id':'foreign-request'},{'usage':None},{'cost':{'amount':None,'currency':'USD'}}])
 def test_isolated_api_receipt_cannot_cross_original_identity_or_invent_usage(isolated_api_generation,change):
     from novel_forge.modules.command_kernel.manual_effect_resolution import resolve_external_effect_manually
     from novel_forge.modules.command_kernel.errors import KernelError

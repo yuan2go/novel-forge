@@ -14,7 +14,7 @@ def drive(monkeypatch):
     from novel_forge.modules.book_authority import retained_recovery
 
     authority = SimpleNamespace(database_url="unused", require=Mock(return_value={"state": "RUNNING", "project_id": "p"}), cancel=Mock())
-    composition = SimpleNamespace(authority=authority, principal=object(), query=SimpleNamespace(unresolved_chapter_effects=Mock(return_value=[])))
+    composition = SimpleNamespace(authority=authority, principal=Mock(), query=SimpleNamespace(unresolved_chapter_effects=Mock(return_value=[])))
     for name in (
         "recover_quality_frontier", "recover_support_frontier", "recover_information_frontier",
         "recover_review_frontier", "recover_length_frontier", "recover_length_retry_phase",
@@ -30,6 +30,10 @@ def drive(monkeypatch):
         (retained_recovery, "recover_retained_quality"),
     ):
         monkeypatch.setattr(module, name, Mock(return_value=False))
+    from novel_forge.modules.command_kernel import generation_isolation
+    from novel_forge.modules.chapter_authority import context_transport_recovery
+    monkeypatch.setattr(generation_isolation, "recover_chapter_generations", Mock(return_value=False))
+    monkeypatch.setattr(context_transport_recovery, "recover_unsent_context_transport", Mock(return_value=False))
     arguments = dict(composition=composition, chapter=object(), book_run_id="b", worker=Mock(), maximum_ticks=3, deadline=float("inf"))
     return arguments, candidate_repair, derived_recovery
 

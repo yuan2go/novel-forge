@@ -3785,7 +3785,8 @@ bind `original_remote_receipt_ref`, or supply `original_provider_record` and
 `AUTHORIZED_OPERATOR_ATTESTATION`, the authenticated `verified_by`, original Project,
 workspace, Book, Operation, Effect, dispatch generation, request hash, execution request
 hash, input manifest, execution/Attempt/fence, Provider/model and Provider request ID.
-The preserved source record must match all remote facts. Measured token totals must agree;
+The preserved source record must match all remote facts, including any Provider request ID
+already known by the original Effect or invocation handle. Measured token totals must agree;
 paid settlement requires explicit measured cost and currency. Missing measurements remain
 unresolved; no estimated usage or zero cost is manufactured. Entitlement cost remains
 UNKNOWN. Intake, reconciliation and original reservation settlement share one transaction.

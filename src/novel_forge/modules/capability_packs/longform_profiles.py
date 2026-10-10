@@ -205,7 +205,7 @@ def build_story_planning_pack_profile(
         output_schema_ref="schema:story-planning-pack-output:v1",
         system_version=STORY_PLANNING_PROMPT_VERSION if version == "1.21.0" else "v9" if version == "1.19.0" else "v8",
     )
-    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0", "1.21.0"})
+    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0", "1.21.0"}, historical_methods=version != "1.21.0")
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
         _append_capability_schemas(artifacts, capability)
@@ -712,7 +712,7 @@ def _bind_planning_qualification_skills(
     root: Path,
     manifest: dict[str, Any],
     artifacts: list[dict[str, Any]],
-    *, aligned_methods: bool = False,
+    *, aligned_methods: bool = False, historical_methods: bool = False,
 ) -> list[dict[str, Any]]:
     skill_paths = {
         "topic-development": "skills/topic-development/SKILL.md",
@@ -746,7 +746,7 @@ def _bind_planning_qualification_skills(
             continue
         path = skill_paths[skill_ref]
         version = f"{skill_ref}-qualification-v2"
-        if skill_ref == "character-design":
+        if skill_ref == "character-design" and not historical_methods:
             if aligned_methods:
                 version = f"{skill_ref}-qualification-v3"
             else:
@@ -756,7 +756,12 @@ def _bind_planning_qualification_skills(
                 version = f"{skill_ref}-qualification-v3"
             else:
                 path = "config/capability_packs/artifacts/narrative_beat_design_work_v2.md"
-        content = {"text": _text(root, path)}
+        # COMPATIBILITY: Published Planning identities retain their original Skill text and source reference.
+        snapshot_path = {
+            "skills/hot-novel-business-deconstruction/SKILL.md": "skills/hot-novel-business-deconstruction/legacy-v1.0.0.md",
+            "skills/character-design/SKILL.md": "config/capability_packs/artifacts/character_design_work_v3.md",
+        }.get(path, path) if historical_methods else path
+        content = {"text": _text(root, snapshot_path)}
         _append_artifact(
             artifacts,
             ArtifactKind.SKILL,
