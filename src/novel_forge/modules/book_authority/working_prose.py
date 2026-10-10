@@ -8,6 +8,9 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 POLICY_VERSION = "working-prose-projection.v2"
 CONTEXT_VERSION = "working-manuscript-context.v1"
+LEGACY_GUIDANCE = {
+    "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty."
+}
 CONTINUITY_INSTRUCTION = (
     "Continue only these exact selected working versions. Each passage is an attributed "
     "excerpt with Unicode positions; omitted ranges are unknown here, not evidence of absence. "

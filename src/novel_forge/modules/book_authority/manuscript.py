@@ -343,7 +343,7 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
 
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                            projection_policy: Any = "FROM_PROFILE") -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, project_working_sources, working_instruction, working_prose_policy
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, project_working_sources, working_instruction, working_prose_policy
 
     if projection_policy == "FROM_PROFILE":
         profile_id = book.get("production_profile_version")
@@ -369,7 +369,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         "accepted_through_chapter": int(book["accepted_through_chapter"]), "sources": rows,
         "authority": "AUTHOR_WORKING_PROSE_ONLY", "structured_facts": [],
         **({"projection_policy": projection_policy} if projection_policy else {}),
-        "instruction": working_instruction(projection_policy) if projection_policy else "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty."}
+        "instruction": working_instruction(projection_policy) if projection_policy else LEGACY_GUIDANCE["instruction"]}
     return {**result, "snapshot_hash": canonical_hash(result)}
 
 

@@ -166,7 +166,7 @@
         "src/novel_forge/modules/chapter_authority/current_quote_recovery.py",
         "src/novel_forge/modules/chapter_authority/current_semantic_recovery.py",
         "src/novel_forge/modules/chapter_authority/canon_support_coverage.py",
-        "src/novel_forge/modules/book_authority/manuscript.py"
+        "src/novel_forge/modules/book_authority/working_prose.py"
       ],
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
       "owner": "runtime-authorities",
