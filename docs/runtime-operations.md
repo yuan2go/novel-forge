@@ -271,8 +271,12 @@ REVOKED commit/activation decisions remain unchanged. Missing measured usage or 
 a later matching measured version can settle once. Duplicate records replay, conflicting
 results or measurements reject replacement, and actual overruns retain the existing
 budget-breach hold. This does not create a primary output, candidate, author choice or
-acceptance. An API Effect with multiple original dispatch generations fails closed for
-explicit accounting reconciliation; one receipt cannot settle other unknown generations.
+acceptance. Each original API dispatch generation has an independent immutable receipt
+lineage. One receipt never settles another unknown generation: the original Effect
+reservation stays held until every isolated dispatch has measured usage and, for a priced
+call, trusted measured cost. Only then does the existing reservation settle the sum once.
+Chapter recovery checks the original saved API response or CLI directory before isolation;
+a complete trusted result resumes its original generation without a successor or resend.
 Ordinary reconciliation of isolated work reads confirmed evidence or requests this
 original-receipt path; it cannot acquire a replacement recovery Attempt or mutate history.
 

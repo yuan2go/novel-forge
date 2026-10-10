@@ -1212,13 +1212,18 @@ def accept_external_effect_receipt(
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _validate_effect_context(context)
+        # WHY: Operator reconciliation locks the Effect before its original dispatches.
+        uow.cursor.execute("SELECT external_effect_id FROM authority_external_effect_dispatch WHERE dispatch_id=%s", [dispatch_id])
+        original = uow.cursor.fetchone()
+        if original is None:
+            raise KernelError("EFFECT_DISPATCH_NOT_FOUND", "effect dispatch does not exist")
+        effect = repository.get_for_update(original[0])
         dispatch = repository.dispatch_for_update(dispatch_id)
         _require_project(dispatch, context.project_id)
         if provider != dispatch["provider"]:
             raise KernelError(
                 "RECEIPT_PROVIDER_CONFLICT", "receipt provider is unexpected"
             )
-        effect = repository.get_for_update(dispatch["external_effect_id"])
         if effect["operation_id"] != context.operation_id or generation != dispatch["generation"]:
             raise KernelError("EFFECT_DISPATCH_CONFLICT", "Receipt must bind its original Operation and generation")
         from .generation_isolation import isolation

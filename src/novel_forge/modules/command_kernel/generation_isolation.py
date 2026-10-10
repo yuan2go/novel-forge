@@ -615,6 +615,10 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
         principal.require(permission, book["project_id"])
     request = authority.require_chapter_request(book["active_chapter_request_id"])
     root_id = request["chapter_root_operation_id"]
+    from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
+
+    recovered = recover_saved_local_results(authority.chapter_port.application._model_port.adapter,
+        database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal)
     with AuthorityUnitOfWork(authority.database_url) as uow:
         uow.cursor.execute(
             """SELECT to_jsonb(o) FROM authority_operation o
@@ -626,7 +630,7 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
             [root_id],
         )
         sources = [row[0] for row in uow.cursor.fetchall()]
-    changed = False
+    changed = recovered
     for source in sources:
         exhausted = None
         with AuthorityUnitOfWork(authority.database_url, coordinate_nested=True) as uow:

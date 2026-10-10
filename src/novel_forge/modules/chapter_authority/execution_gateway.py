@@ -5257,6 +5257,13 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         route = self.routes.get(stage)
         return "" if route is None else route.model_profile.model_id
 
+    def saved_result_evidence(self, request: ExecutionRequest, handle: ExecutionHandle, result: Any) -> dict[str, Any]:
+        session = self._session(request.project_id)
+        route = session.gateway.admission.resolve_route(request)
+        manifest = session.gateway.admission.contracts.input_manifest(request.input_manifest_ref)
+        return self._evidence(binding=ChapterExecutionBinding(request, route, manifest),
+            session=session, handle=handle, result=result)
+
     def session_for_project(self, project_id: str) -> ChapterExecutionGatewaySession:
 
         return self._session(project_id)

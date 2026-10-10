@@ -44,6 +44,8 @@ from tests.unit.test_production_execution_gateway import contracts
 @pytest.fixture
 def isolated_api(request):
     basis = getattr(request, "param", "ACCOUNT_ENTITLEMENT")
+    multiple = basis.startswith("MULTI_")
+    basis = basis.removeprefix("MULTI_")
     remote_request = identifier("remote")
     gateway = basis == "GATEWAY"
     if gateway:
@@ -185,6 +187,20 @@ def isolated_api(request):
         "route_snapshot": route.to_dict(),
         "input_manifest": manifest.to_dict(),
     }
+    dispatch_ids = [dispatch["dispatch_id"]]
+    if multiple:
+        submit_effect_dispatch_result(DATABASE_URL, context, dispatch_id=dispatch["dispatch_id"],
+            worker_id="fixture", fencing_token=lease["fencing_token"], outcome="retryable_failure",
+            provider_correlation_id=remote_request, provider_request_id=remote_request,
+            evidence={"production_execution": production})
+        dispatch = prepare_effect_dispatch(DATABASE_URL, context, effect_id=effect)
+        dispatch_ids.append(dispatch["dispatch_id"])
+        lease = acquire_effect_dispatch(DATABASE_URL, context, dispatch_id=dispatch["dispatch_id"],
+            worker_id="fixture", lease_seconds=30)
+        request = replace(request, execution_id=identifier("execution"))
+        remote_request = identifier("remote")
+        production = {**production, "execution_request": request.to_dict(),
+            "execution_handle": {"transport": "REMOTE_PROVIDER_API", "provider_request_id": remote_request}}
     submit_effect_dispatch_result(
         DATABASE_URL,
         context,
@@ -219,7 +235,7 @@ def isolated_api(request):
             business_commit_right="REVOKED",
             activation_right="REVOKED",
             continuation_id="planning-runtime-continuation:" + operation,
-            dispatch_ids=[dispatch["dispatch_id"]],
+            dispatch_ids=dispatch_ids,
             book_id=book,
             local_execution={
                 key: request.to_dict()[key]
@@ -529,7 +545,7 @@ def test_unsigned_receipt_and_reconciliation_cannot_update_isolated_effect(
     assert history(isolated_api) == before
 
 
-@pytest.mark.parametrize("isolated_api", ["GATEWAY"], indirect=True)
+@pytest.mark.parametrize("isolated_api", ["GATEWAY", "MULTI_GATEWAY"], indirect=True)
 def test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_charge(
     isolated_api,
 ):
@@ -570,13 +586,14 @@ def test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_cha
     registry.register(SignedFixture())
     service = ProviderCallbackAuthorityService(DATABASE_URL, registry)
 
-    def callback(message, evidence, invalid=False):
+    def callback(message, evidence, invalid=False, remote_request_id=None, outcome="success"):
+        message = context.project_id + ":" + message
         body = json.dumps(
             {
-                "provider_request_id": receipt["provider_request_id"],
+                "provider_request_id": remote_request_id or receipt["provider_request_id"],
                 "receipt_id": message,
                 "message_id": message,
-                "outcome": "success",
+                "outcome": outcome,
                 "payload_hash": "placeholder",
                 "evidence": evidence,
             },
@@ -601,8 +618,23 @@ def test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_cha
         )
 
     evidence = {key: receipt[key] for key in ("result", "usage", "cost")}
+    with transaction() as c:
+        originals = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation", [effect]).fetchall()
+    if len(originals) == 2:
+        prior = originals[0][0]
+        command = callback("signed-earlier-generation", {**evidence, "result": None},
+            remote_request_id=prior["evidence"]["production_execution"]["execution_handle"]["provider_request_id"], outcome="final_failure")
+        assert service.accept(command)["processing_status"] == "PROCESSED"
+        assert service.accept(command)["replayed"]
+        with transaction() as c:
+            assert c.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("HELD_UNKNOWN",)
     command = callback("signed-late", evidence)
-    assert service.accept(command)["processing_status"] == "PROCESSED"
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        pending = [pool.submit(service.accept, command),
+            pool.submit(resolve_external_effect_manually, DATABASE_URL, command_for(isolated_api))]
+        assert pending[0].result()["processing_status"] == "PROCESSED"
+        assert pending[1].result()["evidence_only"]
     assert service.accept(command)["replayed"]
     assert service.accept(callback("signed-late-new-message", evidence))[
         "effect_receipt_replayed"
@@ -620,14 +652,14 @@ def test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_cha
                 "SELECT actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s",
                 [effect],
             ).fetchone()[0]
-            == 150
+            == 150 * len(originals)
         )
         assert (
             c.execute(
                 "SELECT count(*) FROM authority_effect_reconciliation_evidence WHERE external_effect_id=%s",
                 [effect],
             ).fetchone()[0]
-            == 1
+            == len(originals)
         )
     assert history(isolated_api) == before
 
@@ -742,3 +774,79 @@ def test_missing_paid_cost_keeps_exposure_until_matching_cost_version(isolated_a
             ).fetchone()[0]
             == 2
         )
+
+
+@pytest.mark.parametrize("isolated_api", ["MULTI_ACCOUNT_ENTITLEMENT", "MULTI_PRICED"], indirect=True)
+@pytest.mark.parametrize("latest_first", [False, True])
+def test_all_original_generations_account_independently_without_reopening(isolated_api, latest_first):
+    context, effect, latest, receipt, _ = isolated_api
+    before = history(isolated_api)
+    with transaction() as c:
+        first = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation LIMIT 1", [effect]).fetchone()[0]
+        basis = c.execute("SELECT accounting_basis FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone()[0]
+    older = deepcopy(receipt)
+    production = first["evidence"]["production_execution"]
+    older.update(dispatch_id=first["dispatch_id"], generation=first["generation"],
+        execution_request_hash=_hash(production["execution_request"]),
+        provider_request_id=production["execution_handle"]["provider_request_id"],
+        outcome="final_failure", result=None,
+        **{key: production["execution_request"][key] for key in ("execution_id", "attempt_id", "fencing_token")})
+    if basis == "PRICED":
+        receipt = {**receipt, "cost": {"availability": "AVAILABLE", "measurement": "PROVIDER_REPORTED", "source": "provider_receipt", "provider_billed": True, "amount": "0.20", "currency": "USD"}}
+        older["cost"] = {"availability": "AVAILABLE", "measurement": "PROVIDER_REPORTED", "source": "provider_receipt", "provider_billed": True, "amount": "0.10", "currency": "USD"}
+    records = [receipt, older] if latest_first else [older, receipt]
+    def command(item):
+        return replace(command_for(isolated_api, item), decision="MARK_FAILED_FINAL" if item["outcome"] == "final_failure" else "MARK_SUCCEEDED")
+    resolve_external_effect_manually(DATABASE_URL, command(records[0]))
+    with transaction() as c:
+        assert c.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("HELD_UNKNOWN",)
+    resolve_external_effect_manually(DATABASE_URL, command(records[0]))
+    resolve_external_effect_manually(DATABASE_URL, command(records[1]))
+    for item in records:
+        resolve_external_effect_manually(DATABASE_URL, command(item))
+        conflict = deepcopy(item)
+        conflict["usage"]["output_tokens"] += 1
+        conflict["usage"]["total_tokens"] += 1
+        with pytest.raises(KernelError, match="ISOLATED_API_RECEIPT_CONFLICT"):
+            resolve_external_effect_manually(DATABASE_URL, command(conflict))
+    with transaction() as c:
+        from decimal import Decimal
+        assert c.execute("SELECT status,actual_tokens,settled_amount FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 300, Decimal("0.30") if basis == "PRICED" else None)
+        assert c.execute("SELECT count(DISTINCT evidence->>'dispatch_id'),count(*) FROM authority_effect_reconciliation_evidence WHERE external_effect_id=%s", [effect]).fetchone() == (2, 2)
+    assert history(isolated_api) == before
+
+
+@pytest.mark.parametrize("outcome,decision", [("success", "MARK_SUCCEEDED"), ("final_failure", "MARK_FAILED_FINAL"), ("cancelled", "MARK_CANCELLED")])
+def test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate(isolated_api, outcome, decision):
+    _, effect, _, receipt, _ = isolated_api
+    changed = {**receipt, "outcome": outcome, "usage": {"measurement": "PROVIDER_REPORTED", "input_tokens": 0, "output_tokens": 0, "total_tokens": 0}}
+    command = replace(command_for(isolated_api, changed), decision=decision)
+    resolve_external_effect_manually(DATABASE_URL, command)
+    resolve_external_effect_manually(DATABASE_URL, command)
+    with transaction() as c:
+        assert c.execute("SELECT status,actual_tokens,settled_amount FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 0, None)
+        assert c.execute("SELECT evidence->>'token_settlement_basis' FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("PROVIDER_USAGE_RECEIPT",)
+
+
+@pytest.mark.parametrize("measurement,source", [("ESTIMATED", "provider_receipt"), ("UNKNOWN", "provider_receipt"), ("PROVIDER_REPORTED", "usage_pricing"), ("PROVIDER_REPORTED", "usage_pricing_upper_bound")])
+@pytest.mark.parametrize("isolated_api", ["MULTI_PRICED"], indirect=True)
+def test_dispatch_cost_estimates_cannot_become_measured_by_aggregation(isolated_api, measurement, source):
+    _, effect, _, receipt, _ = isolated_api
+    with transaction() as c:
+        prior = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation LIMIT 1", [effect]).fetchone()[0]
+    production = prior["evidence"]["production_execution"]
+    earlier = {**receipt, "dispatch_id": prior["dispatch_id"], "generation": prior["generation"],
+        "execution_request_hash": _hash(production["execution_request"]),
+        "provider_request_id": production["execution_handle"]["provider_request_id"],
+        "outcome": "final_failure", "result": None,
+        "cost": {"availability": "AVAILABLE", "provider_billed": True, "measurement": "PROVIDER_REPORTED", "source": "provider_receipt", "amount": "0.10", "currency": "USD"},
+        **{key: production["execution_request"][key] for key in ("execution_id", "attempt_id", "fencing_token")}}
+    resolve_external_effect_manually(DATABASE_URL, replace(command_for(isolated_api, earlier), decision="MARK_FAILED_FINAL"))
+    changed = {**receipt, "cost": {"availability": "AVAILABLE", "provider_billed": True, "measurement": measurement, "source": source, "amount": "0.10", "currency": "USD"}}
+    resolve_external_effect_manually(DATABASE_URL, command_for(isolated_api, changed))
+    with transaction() as c:
+        assert c.execute("SELECT status,actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("HELD_UNKNOWN", 0)
+    measured = {**changed, "cost": {**changed["cost"], "measurement": "PROVIDER_REPORTED", "source": "provider_receipt"}}
+    resolve_external_effect_manually(DATABASE_URL, command_for(isolated_api, measured))
+    with transaction() as c:
+        assert c.execute("SELECT status,actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 300)

@@ -230,6 +230,9 @@ worker restart. Technical waits use the original frozen work; author and owner d
 stop polling until relevant persisted state changes. An active uncertain Effect requires native
 reconciliation or authorized pure-generation isolation. Isolation revokes its commit rights and
 permits one linked native successor without requiring a remote result or measured usage.
+Chapter recovery first reuses a complete trusted original API response or CLI result with
+its Gateway validation evidence. Isolated API receipts bind each original dispatch
+independently; missing measurements in any generation keep the original reservation held.
 A pre-send capacity checkpoint separately requires proof that no external intent exists. Cancellation is an immutable
 Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the

@@ -20,29 +20,27 @@ class ProviderCallbackRepository:
                    effect.status, dispatch.dispatch_id, dispatch.generation,
                    effect.provider, effect.stable_idempotency_key
             FROM authority_external_effect AS effect
-            JOIN LATERAL (
-                SELECT dispatch_id, generation
-                FROM authority_external_effect_dispatch
-                WHERE external_effect_id = effect.external_effect_id
-                ORDER BY generation DESC LIMIT 1
-            ) AS dispatch ON TRUE
-            WHERE effect.provider_request_id = %s
-              AND (
-                    effect.provider = %s
-                    OR (
-                        effect.provider = 'production_execution_gateway'
-                        AND effect.request_payload
-                            -> '_production_execution'
-                            ->> 'route_provider' = %s
-                    )
-                  )
+            JOIN authority_external_effect_dispatch AS dispatch USING(external_effect_id)
+            LEFT JOIN authority_generation_isolation AS isolation USING(external_effect_id)
+            WHERE (isolation.external_effect_id IS NULL
+                AND effect.provider_request_id = %s
+                AND dispatch.generation = (SELECT max(generation) FROM authority_external_effect_dispatch WHERE external_effect_id=effect.external_effect_id)
+                AND (effect.provider = %s OR (effect.provider = 'production_execution_gateway'
+                    AND effect.request_payload #>> '{_production_execution,route_provider}' = %s)))
+              OR (isolation.external_effect_id IS NOT NULL
+                AND dispatch.evidence #>> '{production_execution,execution_handle,provider_request_id}' = %s
+                AND dispatch.evidence #>> '{production_execution,route_snapshot,model_provider}' = %s
+                AND isolation.proof->'dispatch_ids' ? dispatch.dispatch_id)
             FOR UPDATE OF effect
             """,
-            [provider_request_id, provider, provider],
+            [provider_request_id, provider, provider, provider_request_id, provider],
         )
-        row = self.cursor.fetchone()
-        if row is None:
+        rows = self.cursor.fetchall()
+        if not rows:
             return None
+        if len(rows) != 1:
+            raise KernelError("PROVIDER_CALLBACK_BINDING_AMBIGUOUS", "Bind one immutable original dispatch; never select another Book or generation")
+        row = rows[0]
         fields = (
             "external_effect_id", "operation_id", "project_id", "status",
             "dispatch_id", "generation", "effect_provider",

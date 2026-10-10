@@ -61,24 +61,8 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
         if result.outcome != ExecutionOutcome.SUCCEEDED:
             continue
         record = session.evidence_store.get_record(identity)
-        manifest = session.gateway.admission.contracts.input_manifest(request.input_manifest_ref)
-        evidence = {
-            "provider_id": route.model_provider, "model_id": route.model_id,
-            "prompt_version": manifest.prompt_bundle_version,
-            "skill_version": manifest.skill_bundle_version,
-            "real_model_call": True, "production_verified": False,
-            "result": session.evidence_store.read_evidence(result.normalized_output_ref),
-            "production_execution": {"execution_request": request.to_dict(),
-                "execution_handle": handle.to_dict(), "execution_result": result.to_dict(),
-                "route_snapshot": route.to_dict(), "input_manifest": manifest.to_dict(),
-                "process_evidence": record.raw_evidence},
-            "recovery_action": "LOCAL_SAVED_RESULT_REUSE", "remote_query_performed": False,
-        }
-        for key, ref in (("usage", result.usage_receipt_ref), ("cost", result.cost_receipt_ref)):
-            if ref:
-                evidence[key] = session.evidence_store.read_evidence(ref)
-        if record.raw_evidence.get("capability_evidence"):
-            evidence["capability_runtime"] = record.raw_evidence["capability_evidence"]
+        evidence = {**transport.saved_result_evidence(request, handle, result),
+            "recovery_action": "LOCAL_SAVED_RESULT_REUSE", "remote_query_performed": False}
         with AuthorityUnitOfWork(database_url) as uow:
             uow.cursor.execute("""SELECT dispatch_id,generation,payload_hash,effect.request_hash
                 FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id)
