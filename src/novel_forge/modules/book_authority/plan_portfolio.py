@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -29,3 +30,24 @@ def resolve_portfolio_lineage(
             "Plan portfolio lineage does not preserve distinct portfolio members",
         )
     return resolved
+
+
+def validate_projected_design_receipt(
+    original: dict[str, Any],
+    current: dict[str, Any] | None,
+    *,
+    effective_asset_version_id: str,
+    error_code: str,
+) -> dict[str, Any]:
+    if current is None or current.get("asset_version_id") != effective_asset_version_id:
+        raise KernelError(error_code, "effective Plan has no matching current design receipt")
+    if effective_asset_version_id == original["asset_version_id"]:
+        if current != original:
+            raise KernelError(error_code, "unchanged frozen design receipt differs from current evidence")
+    else:
+        for key in ("project_id", "book_id", "design_layer", "mode", "author_id", "profile_hash"):
+            if key in original and current.get(key) != original[key]:
+                raise KernelError(error_code, "replacement receipt changes design scope or authorization")
+        if "lifecycle" in current and current["lifecycle"] != "ACTIVE":
+            raise KernelError(error_code, "replacement design receipt is not active")
+    return current

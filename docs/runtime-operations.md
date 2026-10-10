@@ -824,6 +824,10 @@ Book. The admission snapshot and past Chapter inputs remain immutable. An unappr
 replacement, ambiguous lineage, cycle, non-current endpoint or foreign Book remains
 blocked. Arc cross-volume membership follows that same proven Volume lineage for
 cursor projection without rewriting the frozen Arc document.
+Chapter admission also validates each replacement's current approval receipt through
+its existing design owner. Its admission evidence binds those effective receipts and
+the original snapshot qualification hash; it does not require a superseded receipt
+to describe the current design or upgrade the original qualification.
 Chapter Arc scheduling selects only from the frozen row's required Arc contributions.
 Other frozen Arc inputs provide context and do not require scheduling or movement.
 

@@ -1963,14 +1963,23 @@ class PostgresBookProductionQuery:
                 )
             supervised = str(snapshot[3]) == "AUTHOR_SUPERVISED_DESIGN"
             creative = str(snapshot[3]) == "CREATIVE_VALIDATION_DESIGN"
+            from .plan_portfolio import validate_projected_design_receipt
+
+            receipt_lineage = cursor_projection.get("portfolio_version_lineage") or {}
+            global_replacement_receipts = []
             if creative:
                 from novel_forge.modules.book_design_authority.creative_validation import approved_validation_book
                 from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
                 for receipt in global_receipts:
                     resolver = approved_validation_book if receipt["design_layer"] == "book_design.propose" else approved_validation_design
-                    current = resolver(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=receipt["asset_version_id"])
-                    if current is None or {**current, "design_layer": receipt["design_layer"]} != receipt:
-                        raise KernelError("CREATIVE_DESIGN_RECEIPT_STALE", receipt["asset_version_id"])
+                    effective = receipt_lineage.get(receipt["asset_version_id"], receipt["asset_version_id"])
+                    current = resolver(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=effective)
+                    projected = validate_projected_design_receipt(
+                        receipt, {**current, "design_layer": receipt["design_layer"]} if current else None,
+                        effective_asset_version_id=effective, error_code="CREATIVE_DESIGN_RECEIPT_STALE",
+                    )
+                    if effective != receipt["asset_version_id"]:
+                        global_replacement_receipts.append({"source_asset_version_id": receipt["asset_version_id"], "receipt": projected})
             elif supervised:
                 from novel_forge.modules.book_design_authority.author_supervision import (
                     approved_book_design_receipt,
@@ -1989,19 +1998,18 @@ class PostgresBookProductionQuery:
                         uow.cursor, global_qualification["book_authorization"]
                     )
                 for receipt in global_receipts:
+                    effective = receipt_lineage.get(receipt["asset_version_id"], receipt["asset_version_id"])
                     if receipt.get("mode") == "STRICT_QUALIFIED":
                         current = reusable_qualified_design_receipt(
                             uow.cursor,
                             project_id=str(snapshot[0]),
                             book_id=str(snapshot[1]),
-                            asset_version_id=receipt["asset_version_id"],
+                            asset_version_id=effective,
                             generator=receipt["design_layer"],
                         )
-                        if current != receipt:
-                            raise KernelError(
-                                "LONGFORM_DESIGN_QUALIFICATION_STALE",
-                                "Reused strict design receipt changed",
-                            )
+                        projected = validate_projected_design_receipt(receipt, current, effective_asset_version_id=effective, error_code="LONGFORM_DESIGN_QUALIFICATION_STALE")
+                        if effective != receipt["asset_version_id"]:
+                            global_replacement_receipts.append({"source_asset_version_id": receipt["asset_version_id"], "receipt": projected})
                         continue
                     resolver = (
                         approved_book_design_receipt
@@ -2012,17 +2020,11 @@ class PostgresBookProductionQuery:
                         uow.cursor,
                         project_id=str(snapshot[0]),
                         book_id=str(snapshot[1]),
-                        asset_version_id=receipt["asset_version_id"],
+                        asset_version_id=effective,
                     )
-                    if (
-                        current is None
-                        or {**current, "design_layer": receipt["design_layer"]}
-                        != receipt
-                    ):
-                        raise KernelError(
-                            "AUTHOR_SUPERVISION_APPROVAL_STALE",
-                            "Frozen author decision differs from current design",
-                        )
+                    projected = validate_projected_design_receipt(receipt, {**current, "design_layer": receipt["design_layer"]} if current else None, effective_asset_version_id=effective, error_code="AUTHOR_SUPERVISION_APPROVAL_STALE")
+                    if effective != receipt["asset_version_id"]:
+                        global_replacement_receipts.append({"source_asset_version_id": receipt["asset_version_id"], "receipt": projected})
             else:
                 uow.cursor.execute(
                     """
@@ -2036,23 +2038,26 @@ class PostgresBookProductionQuery:
                       AND qualification.freshness='CURRENT'
                       AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
                     """,
-                    [str(snapshot[0]), str(snapshot[1]), global_version_ids],
+                    [str(snapshot[0]), str(snapshot[1]), sorted({receipt_lineage.get(item, item) for item in global_version_ids})],
                 )
                 current_global = {
                     (str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
                     for row in uow.cursor.fetchall()
                 }
-                expected_global = {
-                    (
-                        str(item.get("asset_version_id") or ""),
-                        str(item.get("design_layer") or ""),
-                        str(item.get("profile_hash") or ""),
-                        str(item.get("evaluation_hash") or ""),
-                        str(item.get("qualification_hash") or ""),
-                    )
-                    for item in global_receipts
-                    if isinstance(item, dict)
-                }
+                expected_global = set()
+                for receipt in global_receipts:
+                    source = str(receipt.get("asset_version_id") or "")
+                    effective = receipt_lineage.get(source, source)
+                    original = (source, str(receipt.get("design_layer") or ""), str(receipt.get("profile_hash") or ""), str(receipt.get("evaluation_hash") or ""), str(receipt.get("qualification_hash") or ""))
+                    if effective == source:
+                        expected_global.add(original)
+                        continue
+                    matches = [row for row in current_global if row[:3] == (effective, original[1], original[2])]
+                    if len(matches) != 1:
+                        raise KernelError("LONGFORM_DESIGN_QUALIFICATION_STALE", "replacement requires one current qualification under the frozen design policy")
+                    selected = matches[0]
+                    expected_global.add(selected)
+                    global_replacement_receipts.append({"source_asset_version_id": source, "receipt": dict(zip(("asset_version_id", "design_layer", "profile_hash", "evaluation_hash", "qualification_hash"), selected, strict=True))})
                 if current_global != expected_global:
                     raise KernelError(
                         "LONGFORM_DESIGN_QUALIFICATION_STALE",
@@ -2371,6 +2376,7 @@ class PostgresBookProductionQuery:
             **({"execution_mode": "AUTHOR_SUPERVISED", "literary_qualification": "NOT_PROVEN"} if supervised else {}),
             "snapshot_id": snapshot_id,
             "longform_design_qualification_hash": str(snapshot[5]),
+            **({"global_design_replacement_receipts": global_replacement_receipts} if global_replacement_receipts else {}),
             "book_version": int(snapshot[2]),
             "chapter_number": chapter_number,
             "accepted_through_chapter": accepted_through_chapter,
