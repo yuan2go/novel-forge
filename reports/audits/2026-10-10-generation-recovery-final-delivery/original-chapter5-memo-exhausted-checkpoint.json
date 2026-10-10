@@ -1,0 +1,88 @@
+{
+  "observed_at_utc": "2026-10-09T16:28:46.392101+00:00",
+  "deployed_sha": "06f1a77931dd5795cf94653d71bc09abf131579f",
+  "project_id": "qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008",
+  "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+  "chapter": 5,
+  "operation_id": "34330928-4f50-4ca8-8f9a-6125f15bef89",
+  "error_code": "CHAPTER_MEMO_CHARACTER_DRIFT",
+  "stage": "memo.semantic_validation",
+  "cause": "Output character identity is absent from frozen Scene participants; no frozen alias binding was found",
+  "remote_result": "SUCCEEDED",
+  "content_validation": "FAILED",
+  "retryability": "EXHAUSTED_2_OF_2",
+  "recovery_action": "STOP_AT_CHECKPOINT",
+  "recovery_state": "EXHAUSTED",
+  "business_impact": "CHAPTER5_UNSAVED_CHAPTERS1_TO4_READABLE",
+  "attempts": [
+    [
+      "8e4b253c-6c43-46c8-b460-8cf2ada52fe1",
+      1,
+      "FAILED_RETRYABLE",
+      {
+        "error_code": "CHAPTER_MEMO_CHARACTER_DRIFT",
+        "error_message": "CHAPTER_MEMO_CHARACTER_DRIFT: creative choices require an exact frozen Scene participant",
+        "failure_class": "retryable",
+        "failure_details": {}
+      },
+      2
+    ],
+    [
+      "069b8bfd-bafc-49ee-af48-e746280fba2d",
+      2,
+      "FAILED_RETRYABLE",
+      {
+        "error_code": "CHAPTER_MEMO_CHARACTER_DRIFT",
+        "error_message": "CHAPTER_MEMO_CHARACTER_DRIFT: creative choices require an exact frozen Scene participant",
+        "failure_class": "retryable",
+        "failure_details": {}
+      },
+      2
+    ]
+  ],
+  "book_progress": {
+    "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+    "project_id": "qid-learning-prose-01",
+    "state": "PAUSED",
+    "state_class": "DURABLE_WAIT",
+    "accepted_through_chapter": 0,
+    "target_chapter_count": 40,
+    "last_narrative_progress_at": null,
+    "next_expected_transition": "RESUME_OR_ABORT_BOOK",
+    "blocking_class": "OPERATOR_WAIT",
+    "blocking_reason": "CHAPTER_MEMO_CHARACTER_DRIFT / CHAPTER_ATTEMPT_EXHAUSTED: chapter5 memo; attempts2/2; frozen participant 沈砚 differs from returned character:shen-yan; SEMANTIC_VALIDATION_FAILED; STOP_AT_CHECKPOINT; saved chapters1-4 retained; no further dispatch for this Book until a native validated repair",
+    "blocking_operation_id": "915771af-85c8-446e-9ef4-d4af77f7c25d",
+    "blocking_since": "2026-10-09 16:04:38.576173+00:00",
+    "wake_condition": "BOOK_RESUME_OR_ABORT_COMMAND",
+    "retry_count": 1,
+    "max_attempts": 5,
+    "next_retry_at": null,
+    "active_chapter_number": 5,
+    "active_chapter_request_id": "chapter-request:287eeb350868707c69b8373c48d0201f7f20e35ed58ce6f779d698ac51fb44eb",
+    "active_operation_id": "915771af-85c8-446e-9ef4-d4af77f7c25d",
+    "active_operation_status": "WAITING_CHILDREN",
+    "next_chapter_number": 1,
+    "next_chapter_request_id": "chapter-request:4b2c0bf8e5bba03aa3d82afe6fd22515443873867e78b3a03c4ea7c30b25fa83",
+    "next_chapter_dispatch_state": "SUCCEEDED",
+    "pending_sidecar_backlog": {
+      "blocking": false,
+      "reader_admission_pending": 0,
+      "recap_admission_pending": 0,
+      "admission_runtime_job_status_counts": {},
+      "operation_status_counts": {},
+      "total": 0
+    },
+    "authoritative_repair_status": "NOT_REQUIRED",
+    "authoritative_repair_next_chapter": null,
+    "authoritative_repair_target_chapter": null,
+    "authoritative_repair_last_error": null
+  },
+  "provider_calls_by_this_disposition": 0,
+  "author_choice": "NOT_RECORDED",
+  "formal_accepted_chapters": 0,
+  "full_book_design_chapters": 240,
+  "delivery_target_chapters": 40,
+  "saved_chapters": 4,
+  "package_complete": false
+}
