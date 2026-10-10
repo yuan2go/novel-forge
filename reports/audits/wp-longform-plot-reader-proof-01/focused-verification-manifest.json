@@ -1,6 +1,4 @@
 {
-  "source_sha": "26c5b4c11899d8efabe3e445e640d6307b311416",
-  "checked_head": "ebbc2687d7cd4ff5353cfadfc0356d6455244a50",
   "focused_unit": {
     "status": "PASS",
     "passed": 199,
@@ -124,5 +122,32 @@
     "hard_limit_and_output_reserve": "UNCHANGED",
     "original_deployment": "NOT_RUN",
     "native_writer36": "PASS; frozen inputs unchanged, 32000 output reserve, paid/entitlement reconciliation separate"
-  }
+  },
+  "initial_source_sha": "26c5b4c11899d8efabe3e445e640d6307b311416",
+  "initial_checked_head": "ebbc2687d7cd4ff5353cfadfc0356d6455244a50",
+  "final_execution_source_sha": "30647e4dc0b9df6450308da845d7b52909d44615",
+  "final_installed_wheel_cli": {
+    "build_head": "30647e4dc0b9df6450308da845d7b52909d44615",
+    "runtime_release_sha": "30647e4dc0b9df6450308da845d7b52909d44615",
+    "wheel": {
+      "filename": "novel_forge-6.0.0-py3-none-any.whl",
+      "sha256": "28ef4b8fab27f8aeaf3036852ee6e334107ac467373dadd82704df941312eff8"
+    },
+    "installed_module_origin": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/wheel-final-source/site/novel_forge/cli/manuscript.py",
+    "entrypoint": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/wheel-final-source/site/bin/novel-forge",
+    "help": "PASS",
+    "recovery_replay_returncode": 0,
+    "original_instance_mutations": 0,
+    "provider_dispatch": "NONE_REPLAY_ONLY",
+    "recovery_replay": "PASS",
+    "exact_original_operation_id": "a3faead0-28b3-482e-ac75-34af3515f436",
+    "receipt": {
+      "chapter": 19,
+      "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "recovery_asset_version_id": "a3abc392-4e85-491b-bbcc-85c4ab205082",
+      "replayed": true
+    }
+  },
+  "native_final_delivery": "PASS_SAVED_READBACK_EXACT_CURRENT_EXPORTS_17_40; LAST37_40_CONSUMED_SELECTED_PREDECESSOR_BEFORE_DISPATCH",
+  "human_review": "NOT_RUN"
 }

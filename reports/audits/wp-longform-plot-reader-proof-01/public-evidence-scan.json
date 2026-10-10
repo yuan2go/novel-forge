@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "scope": "TRACKED_REQUESTED_PUBLIC_EVIDENCE",
-  "files_checked": 418,
+  "files_checked": 428,
   "methods": [
     "exact configured private credential values",
     "credential patterns"

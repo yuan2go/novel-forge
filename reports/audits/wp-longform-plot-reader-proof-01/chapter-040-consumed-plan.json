@@ -1,0 +1,217 @@
+{
+  "asset_version_id": "authority-output:37e169cf-e1ba-45e3-ac75-864baa406973:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:e71b7f98ad88e2eab4a839026928acf5baa571386ae3472e20631f28b5decc73",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:40"
+  },
+  "expected_group": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:2408e5de26f081b85d2e1fe283e2f342185f307aaf7ed8225e5da09e63458382",
+  "chapter_root_operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 39,
+      "asset_version_id": "20920948-a60c-4801-ac9f-dc7a12664da4",
+      "content_hash": "sha256:a64be9098bd9371739ff0322be9b4d0d7e3e268b8ffed74b7bba2463c44df7c5",
+      "text_hash": "sha256:288e14d7c28052cee25027514f2e4ee954c5eca81768cbfb7608a8fe47098caa",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 40,
+    "chapter_intent": "以普通搬放的真实分量、休息和核对完成第39章已开始的限定工作；让程观的明确回应与沈砚可执行的后续选择共同收束这段任务。",
+    "scene_plan": [
+      {
+        "goal": "完成并清楚交回第39章已接下的物件范围。",
+        "beats": [
+          {
+            "beat_id": "cg40-s1-b1",
+            "ordinal": 1,
+            "function": "从架上剩余的一只盘和约定木托起笔，沈砚对照平地上已摆好的两只盘，确认余下范围。唐穗继续看盘边影子与落点，不推断材质。",
+            "expected_reader_effect": "接上上一章未完的实际工作，感到日影与余量都清楚可见。"
+          },
+          {
+            "beat_id": "cg40-s1-b2",
+            "ordinal": 2,
+            "function": "沈砚搬放时手指和肩臂紧起，辨认并收住自身气息，停手调整握法、缩短步子，安排一次短休后再搬；重量仍由双手承担。",
+            "expected_reader_effect": "体会有限本领在疲倦中的实用处与物件分量的真实存在。"
+          },
+          {
+            "beat_id": "cg40-s1-b3",
+            "ordinal": 3,
+            "function": "两人逐项对照三只盘和上半截木托，确认盘边不相碰、木托不压盘，未接下的下半截仍在架上；唐穗到自己约定的时段便收手。",
+            "expected_reader_effect": "获得物件归位的踏实感，也看见唐穗有限且自主的贡献。"
+          },
+          {
+            "beat_id": "cg40-s1-b4",
+            "ordinal": 4,
+            "function": "沈砚在日影到达约定位置时向回来的程观指出已搬与未动的部分，当面交回。",
+            "expected_reader_effect": "明确本次工作已经形成可核对的交付。"
+          }
+        ],
+        "conflict": "普通重量、反复俯身与往返使肩臂疲倦，剩余工作仍须在约定时段内稳妥完成。",
+        "scene_id": "cg40-s1",
+        "exit_state": "三只空盘与约定的上半截木托已在平地分别放稳并逐项核对，未接下的木托仍留架上；唐穗完成自选的有限互助，沈砚已向回来的程观当面交回，尚待程观回应。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter:40:day",
+          "start_ordinal": 1
+        },
+        "entry_state": "接续第39章所选工作稿：架旁约定范围内尚余一只空盘和部分木托；平地已有两只盘及部分木托。沈砚肩臂发沉，唐穗仍在自己可留的观察时段内，程观约在日影到长石时回来核对。",
+        "location_id": "location:flat-ground-rack",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:tang-sui",
+          "character:cheng-guan"
+        ],
+        "reader_effect": "在肩臂疲倦与物件逐一归位之间，感到所接工作确实做成。",
+        "scene_version": 1,
+        "scene_group_id": "cg40-delivery",
+        "obligation_refs": [
+          "cg39-light-work-delivery"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:cg40-ordinary-labor",
+          "fact:cg40-work-complete"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "cg39-light-work-delivery"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg40-e1"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "INTERIOR",
+          "DESCRIPTION",
+          "DIALOGUE",
+          "INTEGRATION"
+        ]
+      },
+      {
+        "goal": "取得对本次交付的明确回应，并把实际结果转成可执行的练习及工作安排。",
+        "beats": [
+          {
+            "beat_id": "cg40-s2-b1",
+            "ordinal": 1,
+            "function": "程观按先前说过的范围和摆放要求核对三只盘、上半截木托及未动部分，当面说明这段工作已按约定交回。",
+            "expected_reader_effect": "得到具体而可信的工作回应。"
+          },
+          {
+            "beat_id": "cg40-s2-b2",
+            "ordinal": 2,
+            "function": "沈砚回想实际往返、停手与肩臂负担，也记得许庭教出的熟悉平地短时转身；他为下一次折返练习留出明确可用时段，并把必要休息排在前面。",
+            "expected_reader_effect": "看见劳动结果怎样转成下一步可行选择。"
+          },
+          {
+            "beat_id": "cg40-s2-b3",
+            "ordinal": 3,
+            "function": "沈砚向程观说明自己下一段普通事务能够承担的范围，以本次用时为依据，不要求程观当场许诺尚未发布的工作或收益。",
+            "expected_reader_effect": "以清楚交付和边界明确的安排获得安定的收束。"
+          }
+        ],
+        "conflict": "下一次安排必须容纳已有事务、休息、练习及普通工作各自占用的时段。",
+        "scene_id": "cg40-s2",
+        "exit_state": "程观已按先前要求对完整交付给出职责内的明确回应；沈砚依据实际用时、肩臂感受与已练成的短时转身，定下下一次熟悉平地折返练习时段，并说明可承担的下一段普通事务范围。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 3,
+          "timeline_id": "chapter:40:day",
+          "start_ordinal": 3
+        },
+        "entry_state": "三只空盘与约定的上半截木托已在平地分别放稳并逐项核对，未接下的木托仍留架上；唐穗完成自选的有限互助，沈砚已向回来的程观当面交回，尚待程观回应。",
+        "location_id": "location:flat-ground-rack",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:cheng-guan"
+        ],
+        "reader_effect": "完整交付得到明确承接，疲倦与向前的笃定同时落到具体安排上。",
+        "scene_version": 1,
+        "scene_group_id": "cg40-delivery",
+        "obligation_refs": [
+          "cg39-light-work-delivery"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:cg40-response",
+          "fact:cg40-next-arrangement"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:cheng-guan:character:shen-yan",
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg40-e2"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "DIALOGUE",
+          "INTERIOR",
+          "ACTION",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "沈砚与唐穗完成第39章已经开始的限定搬放，核对三只盘和约定的上半截木托并交回。",
+      "程观依据先前说明的要求作出职责内的明确回应。",
+      "沈砚依据真实用时、身体感受和短时折返练习结果，安排下一次练习及可承担的普通事务范围。"
+    ],
+    "forbidden_events": [
+      "不凭盘边粗影推定物件材质。",
+      "不把普通物件写成灵气增力或外物检测的媒介。",
+      "不让程观承诺课程、器具、库存或未经说明的收益。",
+      "不重做第39章已经领物、划定范围并开始搬放的过程。"
+    ],
+    "hard_constraints": [
+      "接续第39章已实际开始的工作：沈砚接下三只空盘及上半截木托，两只盘及部分木托已搬至平地，仍须完成余量并核对。",
+      "程观只按先前当面说明的物件、摆放和交回要求回应经办工作。",
+      "普通物件由手搬放；沈砚的有限本领仅用于辨认与收束自身气息、调整自己的动作。",
+      "唐穗的参与受她自行选择的观察目标与可留时段限制，粗影材质仍待实际辨认。",
+      "后续时段包含劳作、往返、休息、练习及已有承诺，不重复占用互斥时间。",
+      "采用沈砚第三人称限知视角；工作经历以所选工作稿连续性呈现，不写入已接受知识标识。"
+    ],
+    "reader_experience": {
+      "reward_mode": "完整工作与明确回应带来的踏实收束",
+      "exit_question": "已有交付和真实负荷会怎样影响沈砚接下来的学习与做事？",
+      "entry_question": "日影逼近长石，沈砚能否把仍在架上的约定物件稳妥搬完并交回？",
+      "target_emotion": "劳作后的疲倦与向前的笃定"
+    },
+    "ending_hook": "沈砚定下下一次在熟悉平地练习短时折返的时段，同时明确自己能承担的下一段普通事务范围。",
+    "canon_dependencies": [
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-040-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

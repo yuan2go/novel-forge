@@ -210,6 +210,15 @@
       "export_text_digest": "sha256:a4eeb3980494a34da24a03f4e66ab88beb7a3adb596a96d2e9e53a433d20d0b3",
       "file_sha256": "a4eeb3980494a34da24a03f4e66ab88beb7a3adb596a96d2e9e53a433d20d0b3",
       "file": "reader-packet/连续阅读/第39章.txt"
+    },
+    {
+      "chapter": 40,
+      "asset_version_id": "ae60a15a-332f-4239-a835-4118932497fd",
+      "content_hash": "sha256:da4c28a6f1f66eb113082cc8547f5a5459d638dbbd4e76215816d57d802691d3",
+      "text_hash": "sha256:005ea0ba7ecdcc51a4ccbcdb234bad178095e607ce0c34368e5bdde85f67153f",
+      "export_text_digest": "sha256:c05061854f0a981663d8b097a5bfda57d1031e2562eac235afe40628ba07bbe8",
+      "file_sha256": "c05061854f0a981663d8b097a5bfda57d1031e2562eac235afe40628ba07bbe8",
+      "file": "reader-packet/连续阅读/第40章.txt"
     }
   ],
   "background": "Existing exact original selected chapters1–16",
@@ -222,7 +231,7 @@
   "adoption": "NO_HUMAN_DECISION; EXPERIMENTAL_DEFAULT_OFF",
   "reading_compilation": {
     "file": "reader-packet/连续阅读/连续阅读合订.txt",
-    "file_sha256": "25d7c3f1ee4b6465be17f70c1d452ea33e33c90feac9f30c15f6a34a35586d51",
+    "file_sha256": "61d93d18ca2f453c317befa09988bc97e888228360ff18e87ada4f456ee2e288",
     "kind": "READING_COMPILATION_OF_EXACT_CHAPTER_TEXTS",
     "background_chapters": [
       14,
@@ -252,7 +261,8 @@
       36,
       37,
       38,
-      39
+      39,
+      40
     ],
     "individual_exports_remain_authoritative": true
   }
