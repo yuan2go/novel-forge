@@ -1,0 +1,20 @@
+{
+  "source_root_operation_id": "c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "source_opening_input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+  "source_current_input_snapshot_id": "sha256:4d3ec1095c58d937ead0021bbd70285689eb4b8db1c18a79c6184bf30e9f1513",
+  "candidate_input_snapshot_id": "sha256:e3f12acc2905a8fb716757d81b531f04901833e3f36bb2a40489c1bf8c777a2c",
+  "plan_change_activation_operation_id": "ecfc2245-0eed-4c29-b7f7-e0ab6f0ad824",
+  "source_evidence_version_id": "authority-output:998eaa73-8fc8-41b1-97b5-22887f9d30e3:planning.change_request:v1",
+  "changed_plan_version_ids": [
+    "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+    "authority-output:2f266ff1-7b1e-434a-a9bd-0e8202b026e6:story_planning.candidate:v1",
+    "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1",
+    "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1",
+    "authority-output:a402e310-d630-4326-957b-e9e0b4a7df40:story_planning.candidate:v1",
+    "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+    "authority-output:f88a017c-a7a0-43f1-91e7-7671150818e8:story_planning.candidate:v1"
+  ],
+  "source_history_rewritten": false,
+  "author_adoption": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED"
+}

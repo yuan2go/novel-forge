@@ -1,0 +1,276 @@
+{
+  "work_package": "WP-SERIAL-STORY-QUALITY-REBUILD-01",
+  "base_main_sha": "baae859cf83c866cec0f25b7a346be79df10d75b",
+  "writer_source_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+  "isolated_database": {
+    "name": "nf_serial_quality_20261011_test",
+    "oid": 587914,
+    "cluster_system_identifier": "7695026994287073315"
+  },
+  "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+  "root_plan_change_proposal_id": "plan-change:7a5fa1aa-d104-4a1b-9dd7-a575a247b4cb",
+  "current_group_activation_operation_id": "5853ae69-9cb4-45ad-af8c-cde755f1bba5",
+  "body_delivery": "PASS",
+  "native_and_selected_same_text": true,
+  "selection_meaning": "Current native working revision of the old baseline; no second expression rewrite, author adoption or formal acceptance",
+  "total_han_characters": 12496,
+  "per_chapter_length_requirement": "FAIL",
+  "unit_approximate_length_scope": "PASS",
+  "full_text_sha256": "sha256:959fb7af22722764e7eca3f30b699c221d6a747a77f34e4e24c5ae6374bdfb9a",
+  "sources": [
+    {
+      "chapter": 1,
+      "native_asset_version_id": "authority-output:ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2:chapter.draft:v1",
+      "content_hash": "sha256:af5855e6ed9dfdff274130b62625fe4775fc0125aa8d141f38c0e312c808082d",
+      "text_hash": "sha256:db2b5e30c85ba4a9b5f3faef98f71e6c90fc2078a4ca694a817043aa34dbe365",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2469,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "prose_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    },
+    {
+      "chapter": 2,
+      "native_asset_version_id": "authority-output:e9ae5942-a179-4877-b8ec-9e9aa31d8c26:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:e9ae5942-a179-4877-b8ec-9e9aa31d8c26:chapter.draft:v1",
+      "content_hash": "sha256:c8a4c6549d62c9970f29750b665cff0a0d87c7fd32b9089b101393ff7956efa5",
+      "text_hash": "sha256:da9dfb72d10991fd7e10264bab37d5dbe3b57de64ca7dc0e5d28f6f6f8d1f52e",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2733,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "prose_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    },
+    {
+      "chapter": 3,
+      "native_asset_version_id": "authority-output:3e19b6f7-d98e-4e0a-8850-778c42057f89:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:3e19b6f7-d98e-4e0a-8850-778c42057f89:chapter.draft:v1",
+      "content_hash": "sha256:d6462bcf7a9246836de0dc584559062e5640dc781e817858a9a4b7ca84e6b6a5",
+      "text_hash": "sha256:d62f0869851bb4603a56278ae4e9fc985960759c4e5712eb305d9d40b567d1fc",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2135,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "prose_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    },
+    {
+      "chapter": 4,
+      "native_asset_version_id": "authority-output:5b75880d-2608-47ce-8df1-a99affea5521:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:5b75880d-2608-47ce-8df1-a99affea5521:chapter.draft:v1",
+      "content_hash": "sha256:a23e0f37613aa73057b98a4e4c2bef464609254af5ed2116e6daecc1047ddb72",
+      "text_hash": "sha256:78a3285092f10e3d932e015301f467281cef3b70fa3bf810936d7f6e82771f64",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2317,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "prose_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    },
+    {
+      "chapter": 5,
+      "native_asset_version_id": "authority-output:d3fca797-0140-49f0-91e9-50c8d30c24ac:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:d3fca797-0140-49f0-91e9-50c8d30c24ac:chapter.draft:v1",
+      "content_hash": "sha256:f6ee9c8f0acb7d2ecbd319ce6474fc8b96f2c2861db1f7c9a0d6a55b8963ab80",
+      "text_hash": "sha256:94c46e33d09ec690ea0f582c85ba108ada6608358643348fcea108956d0164ab",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2842,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "prose_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    }
+  ],
+  "frozen_writer_prompt_hash_checks": "5/5 PASS",
+  "native_handoffs": [
+    {
+      "chapter": 1,
+      "prior_native_chapters": [],
+      "working_prefix_hash": "sha256:46845d1343e8fbcf0377590f01a4afda40a66145ce9362c19ae0191554a4eabd",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "chapter": 2,
+      "prior_native_chapters": [
+        1
+      ],
+      "working_prefix_hash": "sha256:195b1ffba21432a1a62492b5f1d83abe178a43aee40d1d48ccb930e5917a9918",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "chapter": 3,
+      "prior_native_chapters": [
+        1,
+        2
+      ],
+      "working_prefix_hash": "sha256:b12f0b5a26f2b9b2fb1271a473efe7d8f71f4a2de5557c48715ea9219e97ebde",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "chapter": 4,
+      "prior_native_chapters": [
+        1,
+        2,
+        3
+      ],
+      "working_prefix_hash": "sha256:a25ec016cb128f20934c2fd6593974b1b58d93b29b09ff6c80e8a19dda8f2ab5",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "chapter": 5,
+      "prior_native_chapters": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "working_prefix_hash": "sha256:6d75e94a97d205613be52adec02c85de323d762ecb39dcc94eaeb9d1b1cae3fb",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    }
+  ],
+  "native_roots": [
+    {
+      "chapter": 1,
+      "operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    },
+    {
+      "chapter": 2,
+      "operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    },
+    {
+      "chapter": 3,
+      "operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    },
+    {
+      "chapter": 4,
+      "operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    },
+    {
+      "chapter": 5,
+      "operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    }
+  ],
+  "unsettled_new_chapter_effects": [],
+  "final_book": {
+    "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "book_design_version": "db9855a3-5d98-44ba-9f09-3ce437a9cb31",
+    "book_plan_version": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "production_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "longform_context_versions": {
+      "arc_plan_versions": [
+        "authority-output:a402e310-d630-4326-957b-e9e0b4a7df40:story_planning.candidate:v1",
+        "authority-output:f88a017c-a7a0-43f1-91e7-7671150818e8:story_planning.candidate:v1",
+        "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+        "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1",
+        "authority-output:2f266ff1-7b1e-434a-a9bd-0e8202b026e6:story_planning.candidate:v1",
+        "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+      ],
+      "volume_plan_version": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+      "quality_trend_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "reward_ledger_version": "authority-output:4be19b7c-d137-49f2-bcef-35052376fc3d:book.bootstrap.reward_ledger_snapshot:v1",
+      "promise_ledger_version": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "reader_segment_version": "authority-output:08c731aa-7360-4e22-8581-1925dadf9f7c:book.bootstrap.reader_segment_profile:v1",
+      "character_state_version": "authority-output:50789306-2be0-42e9-b936-e22010e6c63c:book.bootstrap.character_state_snapshot:v1",
+      "reader_contract_version": "authority-output:376566dd-d0ce-4769-a7c1-6960e8014c28:book.bootstrap.reader_contract:v1",
+      "platform_profile_version": "authority-output:f159c4c5-0564-45b8-9886-9a8aabacaadb:chapter.platform_profile:v1",
+      "foreshadowing_state_version": "authority-output:62bb1c79-69a4-4fe1-8240-efcdb63e8556:book.bootstrap.foreshadow_snapshot:v1"
+    },
+    "root_operation_id": "b4c256df-c822-4398-aa39-4b8a1128c189",
+    "saga_id": "3ac7bbb8-62f1-473d-ba03-65282d08e884",
+    "stable_idempotency_key": "wp-serial:initial-state-candidate:revision-origin-v1",
+    "state": "PAUSED",
+    "current_chapter": 5,
+    "target_chapter_count": 5,
+    "light_recap_cadence": 5,
+    "formal_recap_cadence": 10,
+    "active_chapter_request_id": null,
+    "version": 24,
+    "paused_reason": "完整开篇事件候选已交付5章，本次事件窗口5章；原运行40章保留，交付不等于文学或市场达标。",
+    "failure_classification": "",
+    "accepted_through_chapter": 0,
+    "active_child_delegation_id": null,
+    "active_chapter_number": null,
+    "active_plan_version_id": null,
+    "active_story_state_version_id": null,
+    "active_canon_snapshot_version_id": null,
+    "active_longform_projection_set_id": null,
+    "last_chapter_outcome_version_id": null,
+    "failure_reason": "",
+    "input_snapshot_id": "sha256:eb22e423deaee975a2fb4f2f7c4fb3815e3e7329d70fa832d47440d06bee00a1",
+    "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    "author_workflow": {
+      "mode": "AUTHOR_FIRST",
+      "version": "author-workflow.v1",
+      "deep_review": false
+    },
+    "delivery_window_policy": {
+      "asset_version_id": "1958b796-fd96-4d67-8754-8b8aeffcec77",
+      "book_id": "book:qinglan-wendao-20261008",
+      "version": "book-delivery-window-extension.v1",
+      "project_id": "qid-learning-prose-01",
+      "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "current_chapter": 0,
+      "history_rewritten": false,
+      "stop_after_chapter": 5,
+      "source_book_version": 1,
+      "source_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "accepted_through_chapter": 0,
+      "full_book_target_chapters": 240,
+      "previous_stop_after_chapter": 3,
+      "previous_policy_asset_version_id": null
+    }
+  },
+  "formal_acceptance": "NOT_GRANTED",
+  "author_feedback": "NOT_RECEIVED",
+  "independent_human_feedback": "NOT_RUN",
+  "market_effect": "NOT_PROVEN",
+  "production_qualification": "NOT_RUN",
+  "evidence_ceiling": "EXECUTABLE",
+  "assistant_reading_status": "RECORDED_NONBLIND",
+  "assistant_quality_judgment": "LIMITED_IMPROVEMENT_GOAL_NOT_MET",
+  "expression_second_revision": "NOT_RUN",
+  "judgment_record": "delivery-and-judgment.md",
+  "independent_native_blind_reading": "NOT_RUN_DESIGN_BASELINE_INCLUDED_BY_CURRENT_NATIVE_ENTRY"
+}

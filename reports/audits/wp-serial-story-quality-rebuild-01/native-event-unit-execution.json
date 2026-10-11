@@ -1,0 +1,858 @@
+{
+  "work_package": "WP-SERIAL-STORY-QUALITY-REBUILD-01",
+  "source_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+  "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+  "status": "EVENT_UNIT_DELIVERED",
+  "original_mutations": 0,
+  "author_adoption": "NOT_GRANTED",
+  "human_readers": "NOT_RUN",
+  "events": [
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_GROUP_PLAN",
+        "operation_id": "08bff9e5-2694-4c39-99a3-0250982098c2",
+        "evidence_ref": "authority-output:2657b410-5931-4b4e-b1df-fbead2c62e2a:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "QUALIFY_NARRATIVE_REALIZATION",
+        "operation_id": "ea1038cb-2c0b-40d2-bf3c-0b9f0dd38543",
+        "evidence_ref": "narrative-realization:ad1589c9a3c475c8d1cd4e299a4cbd21beea11f6b7814dc4d4f279c330dbf41c"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "ed39375e-95f1-4a2a-97fc-73dc49915568",
+        "evidence_ref": "authority-output:ed39375e-95f1-4a2a-97fc-73dc49915568:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "80349321-9f13-4366-adee-9abdebcb08ed",
+        "evidence_ref": "authority-output:ed39375e-95f1-4a2a-97fc-73dc49915568:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+        "evidence_ref": "chapter-request:5f0f64e4ea76c2fbd31a94691bfac6b4d85131baa5b07e3dbe31a7cf38dfb079"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+        "saga_id": "2a309636-260a-464c-b696-e2d330238235",
+        "saga_status": "RUNNING",
+        "operation_id": "41c4be16-7acc-413e-9cd4-7071aa6345c4",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+        "saga_id": "2a309636-260a-464c-b696-e2d330238235",
+        "saga_status": "RUNNING",
+        "operation_id": "f0e0740a-77df-4c3c-99b0-4fe42e791e2a",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+        "saga_id": "2a309636-260a-464c-b696-e2d330238235",
+        "saga_status": "RUNNING",
+        "operation_id": "67046eaa-ff16-4043-8c56-39306e5265a1",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+        "saga_id": "2a309636-260a-464c-b696-e2d330238235",
+        "saga_status": "RUNNING",
+        "operation_id": "7442c8cc-5d99-47f9-b80c-a3c6e5b7e6ba",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+        "saga_id": "2a309636-260a-464c-b696-e2d330238235",
+        "saga_status": "RUNNING",
+        "operation_id": "1312a8b2-afc1-4a02-96e6-76f09abe7fdc",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+        "saga_id": "2a309636-260a-464c-b696-e2d330238235",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 1,
+      "receipt": {
+        "operation_id": "e3f254c2-87e9-45d8-98c9-81fc132d9d67",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "chapter": 1,
+        "source_asset_version_id": "authority-output:ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2:chapter.draft:v1",
+        "source_content_hash": "sha256:af5855e6ed9dfdff274130b62625fe4775fc0125aa8d141f38c0e312c808082d",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2:chapter.draft:v1",
+      "text_digest": "sha256:2e5b82cda0c58fdfec4bf90647f60f4630baa428a369ec13d18d1dcb29b7db49",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2469,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 2,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "2d032605-c6b6-4243-8266-1c6e6a24fa03",
+        "evidence_ref": "authority-output:2d032605-c6b6-4243-8266-1c6e6a24fa03:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 2,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "9a80c8c9-ff57-4b58-89c0-8c1b06b0a1e5",
+        "evidence_ref": "authority-output:2d032605-c6b6-4243-8266-1c6e6a24fa03:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 2,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+        "evidence_ref": "chapter-request:98740aa23fae8965e69f9c877d6b0a477a17f74f900a6111faf25c67afbdae13"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+        "saga_id": "2bb8e9cf-c9bc-48da-b65f-c7dd68124db8",
+        "saga_status": "RUNNING",
+        "operation_id": "e72dd47f-df35-47ab-a2f2-4f11b1194f89",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+        "saga_id": "2bb8e9cf-c9bc-48da-b65f-c7dd68124db8",
+        "saga_status": "RUNNING",
+        "operation_id": "b27ac77a-2ac1-4bf9-b016-abd45d0f0227",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+        "saga_id": "2bb8e9cf-c9bc-48da-b65f-c7dd68124db8",
+        "saga_status": "RUNNING",
+        "operation_id": "42731656-dda5-40bc-8d66-02a4966a1447",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+        "saga_id": "2bb8e9cf-c9bc-48da-b65f-c7dd68124db8",
+        "saga_status": "RUNNING",
+        "operation_id": "c85b4d35-b448-4aba-9d6f-5ee1dc8f811c",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+        "saga_id": "2bb8e9cf-c9bc-48da-b65f-c7dd68124db8",
+        "saga_status": "RUNNING",
+        "operation_id": "ca5e9809-5ea3-49a7-afef-c875b213602c",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+        "saga_id": "2bb8e9cf-c9bc-48da-b65f-c7dd68124db8",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "e9ae5942-a179-4877-b8ec-9e9aa31d8c26",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 2,
+      "receipt": {
+        "operation_id": "1156ef56-f5b3-4fb5-b1ae-4861f7d50fb0",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "chapter": 2,
+        "source_asset_version_id": "authority-output:e9ae5942-a179-4877-b8ec-9e9aa31d8c26:chapter.draft:v1",
+        "source_content_hash": "sha256:c8a4c6549d62c9970f29750b665cff0a0d87c7fd32b9089b101393ff7956efa5",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:e9ae5942-a179-4877-b8ec-9e9aa31d8c26:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:e9ae5942-a179-4877-b8ec-9e9aa31d8c26:chapter.draft:v1",
+      "text_digest": "sha256:e74a75b5e9d718c9355dccfc073433aa4bc4cf293d08167d77aa5617dc7a6c4a",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2733,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 3,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "3182e5ed-7012-46a7-b2f4-0a8a1fe497d8",
+        "evidence_ref": "authority-output:3182e5ed-7012-46a7-b2f4-0a8a1fe497d8:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 3,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "84c6e428-a394-47c4-917b-14ed027e260d",
+        "evidence_ref": "authority-output:3182e5ed-7012-46a7-b2f4-0a8a1fe497d8:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 3,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+        "evidence_ref": "chapter-request:17ce0d8959916ca143393b847a7535046900174bb0faf8acdfd886e68100042a"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+        "saga_id": "fb02bcce-3c21-4e27-95a9-ed2860b1c1bd",
+        "saga_status": "RUNNING",
+        "operation_id": "ef41af0b-f066-4cc6-a96d-d5979908022a",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+        "saga_id": "fb02bcce-3c21-4e27-95a9-ed2860b1c1bd",
+        "saga_status": "RUNNING",
+        "operation_id": "468f1b0c-9def-47c7-b3ed-3b00e77dc5a6",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+        "saga_id": "fb02bcce-3c21-4e27-95a9-ed2860b1c1bd",
+        "saga_status": "RUNNING",
+        "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+        "saga_id": "fb02bcce-3c21-4e27-95a9-ed2860b1c1bd",
+        "saga_status": "RUNNING",
+        "operation_id": "2b2d6cae-7f23-476d-95da-adedff6f76fe",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+        "saga_id": "fb02bcce-3c21-4e27-95a9-ed2860b1c1bd",
+        "saga_status": "RUNNING",
+        "operation_id": "cb314b1b-6d04-42a0-9afd-2d548dbf0de2",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+        "saga_id": "fb02bcce-3c21-4e27-95a9-ed2860b1c1bd",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "3e19b6f7-d98e-4e0a-8850-778c42057f89",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 3,
+      "receipt": {
+        "operation_id": "809043e8-bc9c-4c25-941d-9615ad2ffeb3",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "chapter": 3,
+        "source_asset_version_id": "authority-output:3e19b6f7-d98e-4e0a-8850-778c42057f89:chapter.draft:v1",
+        "source_content_hash": "sha256:d6462bcf7a9246836de0dc584559062e5640dc781e817858a9a4b7ca84e6b6a5",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:3e19b6f7-d98e-4e0a-8850-778c42057f89:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:3e19b6f7-d98e-4e0a-8850-778c42057f89:chapter.draft:v1",
+      "text_digest": "sha256:118fdbad104f26613260dd18507e0d0642d3d8b76c0c459126f9316664f95a07",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2135,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 4,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "2caf9e51-ebdb-455b-9a2d-7d2376d9343b",
+        "evidence_ref": "authority-output:2caf9e51-ebdb-455b-9a2d-7d2376d9343b:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 4,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "adb4b2fe-aae3-4837-bb20-2fb9569db0bc",
+        "evidence_ref": "authority-output:2caf9e51-ebdb-455b-9a2d-7d2376d9343b:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 4,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+        "evidence_ref": "chapter-request:9034ec4cffd889d7e46b504080234af276cd09ce623cf0dc5af91f1ab9266835"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+        "saga_id": "5ab9d2ae-4520-49f2-86de-7b8c08451441",
+        "saga_status": "RUNNING",
+        "operation_id": "984641fe-71e1-462a-8fd1-4b7ad3a9f434",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+        "saga_id": "5ab9d2ae-4520-49f2-86de-7b8c08451441",
+        "saga_status": "RUNNING",
+        "operation_id": "949f6d43-1a54-49b7-96c0-d58415c9ce28",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+        "saga_id": "5ab9d2ae-4520-49f2-86de-7b8c08451441",
+        "saga_status": "RUNNING",
+        "operation_id": "9a3054cb-0b04-40f4-adab-8ae0e6589f68",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+        "saga_id": "5ab9d2ae-4520-49f2-86de-7b8c08451441",
+        "saga_status": "RUNNING",
+        "operation_id": "d4ef9bee-fb0a-485d-af2b-2b8ea203b593",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+        "saga_id": "5ab9d2ae-4520-49f2-86de-7b8c08451441",
+        "saga_status": "RUNNING",
+        "operation_id": "340eb2df-61fd-4695-89d0-e00a40151412",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+        "saga_id": "5ab9d2ae-4520-49f2-86de-7b8c08451441",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "5b75880d-2608-47ce-8df1-a99affea5521",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 4,
+      "receipt": {
+        "operation_id": "f114f131-6f50-43c0-b29d-ae001f359919",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "chapter": 4,
+        "source_asset_version_id": "authority-output:5b75880d-2608-47ce-8df1-a99affea5521:chapter.draft:v1",
+        "source_content_hash": "sha256:a23e0f37613aa73057b98a4e4c2bef464609254af5ed2116e6daecc1047ddb72",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:5b75880d-2608-47ce-8df1-a99affea5521:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:5b75880d-2608-47ce-8df1-a99affea5521:chapter.draft:v1",
+      "text_digest": "sha256:ce1901df125a2a0766dc5d5c9182a9c6c19f92a5fd4f74c8cc666110e23c92e6",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2317,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 5,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "1278d86a-4ad0-40a1-95f3-54e8b1be9ba9",
+        "evidence_ref": "authority-output:1278d86a-4ad0-40a1-95f3-54e8b1be9ba9:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 5,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "5d54c490-51e0-42d4-ab8b-db8994873907",
+        "evidence_ref": "authority-output:1278d86a-4ad0-40a1-95f3-54e8b1be9ba9:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 5,
+      "result": {
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+        "evidence_ref": "chapter-request:d1c9e238ee27ba093b104509dfe791002de4ebc73cb6fd5ffb036a6a9966f35c"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 5,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+        "saga_id": "4d4e04b9-63cc-4794-8c9c-b47fe8e4746f",
+        "saga_status": "RUNNING",
+        "operation_id": "7cbdbd35-f1ec-40aa-a13c-63b53e8c86df",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 5,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+        "saga_id": "4d4e04b9-63cc-4794-8c9c-b47fe8e4746f",
+        "saga_status": "RUNNING",
+        "operation_id": "1a7a60f4-47c4-4d60-bdb4-64f2b292c6ba",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 5,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+        "saga_id": "4d4e04b9-63cc-4794-8c9c-b47fe8e4746f",
+        "saga_status": "RUNNING",
+        "operation_id": "e784f814-3056-4639-b3cb-4acd413cfc2c",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 5,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+        "saga_id": "4d4e04b9-63cc-4794-8c9c-b47fe8e4746f",
+        "saga_status": "RUNNING",
+        "operation_id": "d3ab2c28-204b-42ba-81bf-884b76c710c9",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 5,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+        "saga_id": "4d4e04b9-63cc-4794-8c9c-b47fe8e4746f",
+        "saga_status": "RUNNING",
+        "operation_id": "8ff21459-80cf-4f6f-ace9-e5838096d082",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 5,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+        "saga_id": "4d4e04b9-63cc-4794-8c9c-b47fe8e4746f",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "d3fca797-0140-49f0-91e9-50c8d30c24ac",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 5,
+      "receipt": {
+        "operation_id": "bf06b8bf-b452-4b83-b416-d88028bfaeef",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+        "chapter": 5,
+        "source_asset_version_id": "authority-output:d3fca797-0140-49f0-91e9-50c8d30c24ac:chapter.draft:v1",
+        "source_content_hash": "sha256:f6ee9c8f0acb7d2ecbd319ce6474fc8b96f2c2861db1f7c9a0d6a55b8963ab80",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:d3fca797-0140-49f0-91e9-50c8d30c24ac:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:d3fca797-0140-49f0-91e9-50c8d30c24ac:chapter.draft:v1",
+      "text_digest": "sha256:237e517ef7e2a7effa3eeadcf9089e0681decf25a9c3f4857a0cad5a809c3b73",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2842,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    }
+  ],
+  "final_book": {
+    "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "book_design_version": "db9855a3-5d98-44ba-9f09-3ce437a9cb31",
+    "book_plan_version": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "production_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "longform_context_versions": {
+      "arc_plan_versions": [
+        "authority-output:a402e310-d630-4326-957b-e9e0b4a7df40:story_planning.candidate:v1",
+        "authority-output:f88a017c-a7a0-43f1-91e7-7671150818e8:story_planning.candidate:v1",
+        "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+        "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1",
+        "authority-output:2f266ff1-7b1e-434a-a9bd-0e8202b026e6:story_planning.candidate:v1",
+        "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+      ],
+      "volume_plan_version": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+      "quality_trend_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "reward_ledger_version": "authority-output:4be19b7c-d137-49f2-bcef-35052376fc3d:book.bootstrap.reward_ledger_snapshot:v1",
+      "promise_ledger_version": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "reader_segment_version": "authority-output:08c731aa-7360-4e22-8581-1925dadf9f7c:book.bootstrap.reader_segment_profile:v1",
+      "character_state_version": "authority-output:50789306-2be0-42e9-b936-e22010e6c63c:book.bootstrap.character_state_snapshot:v1",
+      "reader_contract_version": "authority-output:376566dd-d0ce-4769-a7c1-6960e8014c28:book.bootstrap.reader_contract:v1",
+      "platform_profile_version": "authority-output:f159c4c5-0564-45b8-9886-9a8aabacaadb:chapter.platform_profile:v1",
+      "foreshadowing_state_version": "authority-output:62bb1c79-69a4-4fe1-8240-efcdb63e8556:book.bootstrap.foreshadow_snapshot:v1"
+    },
+    "root_operation_id": "b4c256df-c822-4398-aa39-4b8a1128c189",
+    "saga_id": "3ac7bbb8-62f1-473d-ba03-65282d08e884",
+    "stable_idempotency_key": "wp-serial:initial-state-candidate:revision-origin-v1",
+    "state": "PAUSED",
+    "current_chapter": 5,
+    "target_chapter_count": 5,
+    "light_recap_cadence": 5,
+    "formal_recap_cadence": 10,
+    "active_chapter_request_id": null,
+    "version": 24,
+    "paused_reason": "完整开篇事件候选已交付5章，本次事件窗口5章；原运行40章保留，交付不等于文学或市场达标。",
+    "failure_classification": "",
+    "accepted_through_chapter": 0,
+    "active_child_delegation_id": null,
+    "active_chapter_number": null,
+    "active_plan_version_id": null,
+    "active_story_state_version_id": null,
+    "active_canon_snapshot_version_id": null,
+    "active_longform_projection_set_id": null,
+    "last_chapter_outcome_version_id": null,
+    "failure_reason": "",
+    "input_snapshot_id": "sha256:eb22e423deaee975a2fb4f2f7c4fb3815e3e7329d70fa832d47440d06bee00a1",
+    "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    "author_workflow": {
+      "mode": "AUTHOR_FIRST",
+      "version": "author-workflow.v1",
+      "deep_review": false
+    },
+    "delivery_window_policy": {
+      "asset_version_id": "1958b796-fd96-4d67-8754-8b8aeffcec77",
+      "book_id": "book:qinglan-wendao-20261008",
+      "version": "book-delivery-window-extension.v1",
+      "project_id": "qid-learning-prose-01",
+      "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "current_chapter": 0,
+      "history_rewritten": false,
+      "stop_after_chapter": 5,
+      "source_book_version": 1,
+      "source_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "accepted_through_chapter": 0,
+      "full_book_target_chapters": 240,
+      "previous_stop_after_chapter": 3,
+      "previous_policy_asset_version_id": null
+    }
+  }
+}

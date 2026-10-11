@@ -1,0 +1,19 @@
+{
+  "operation_id": "9a006d60-9627-4f0a-b678-851f92e46e74",
+  "asset_id": "authority-output:9a006d60-9627-4f0a-b678-851f92e46e74:planning.change_request",
+  "asset_version_id": "authority-output:9a006d60-9627-4f0a-b678-851f92e46e74:planning.change_request:v1",
+  "content_hash": "sha256:badf543685026b1baed6f5b94a975942356c3c73c4ff92a725076b58ca526ab8",
+  "output_key": "planning.change_request",
+  "replayed": false,
+  "materialized_outputs": [
+    {
+      "asset_id": "authority-output:9a006d60-9627-4f0a-b678-851f92e46e74:planning.change_request",
+      "asset_version_id": "authority-output:9a006d60-9627-4f0a-b678-851f92e46e74:planning.change_request:v1",
+      "asset_type": "replan_request",
+      "output_key": "planning.change_request",
+      "role": "primary",
+      "content_hash": "sha256:badf543685026b1baed6f5b94a975942356c3c73c4ff92a725076b58ca526ab8",
+      "replayed": false
+    }
+  ]
+}

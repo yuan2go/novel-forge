@@ -1,0 +1,10 @@
+{
+  "operation_id": "a7ca8c47-ad8d-45b1-87a8-2a2b4d101ebb",
+  "status": "SUCCEEDED",
+  "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+  "book_version": 2,
+  "policy_asset_version_id": "1958b796-fd96-4d67-8754-8b8aeffcec77",
+  "stop_after_chapter": 5,
+  "full_book_target_chapters": 240,
+  "replayed": false
+}

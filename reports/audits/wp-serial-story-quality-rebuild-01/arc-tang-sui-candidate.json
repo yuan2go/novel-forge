@@ -1,0 +1,1292 @@
+{
+  "asset_version_id": "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+  "content_hash": "sha256:98c81e85bfc23ac293ce7e5b42055f52fa80d69726820c1b58254fefb0d28e54",
+  "content": {
+    "cost": "取舍可能使唐穗放弃未经辨清的额外材料或调整自己的学习时段；具体得失只在实际任务条件明确后成立，不预置重大牺牲。",
+    "turn": "唐穗逐渐发现，自己看见材料差别只是第一步；及时说明依据、疑点和任务适用范围，才能让伙伴据此作出可靠选择。",
+    "type": "PlanningGenerationCandidate",
+    "choice": "唐穗在共同任务中把材料质量、自己的求知目标和约定范围一并说清；当额外收获无法辨清或时间不足时，选择保住可可靠交付的部分，并留下可继续核实的问题。",
+    "result": "拟使唐穗的材料判断经具体任务、反馈和重复使用成为同伴可依赖但有明确边界的信息；她既能合作，也能决定何时不同行。",
+    "book_id": "book:qinglan-wendao-20261008",
+    "arc_type": "CHARACTER",
+    "objective": "规划唐穗从首次采药中细致辨认材料，成长为能说明判断依据与不确定处、使信息真正服务共同任务的人；让她保有自己的学习目的、资源诉求与日程选择，并以有边界的合作支持沈砚最终独行。",
+    "thread_id": "thread:character:tang-sui",
+    "escalation": "她面对的材料与合作问题逐渐从一次采收的现场辨认，扩展到可复核的交付方法、变化中的伙伴日程，以及远行准备中有适用范围的信息。",
+    "project_id": "qid-learning-prose-01",
+    "resistance": "材料状态、回程条件与任务要求需要现场核实；同伴目标和日程并不总相同。唐穗的细致观察只有在把握程度与用途被说清后，才能可靠地进入共同决定。",
+    "consequence": "唐穗说清判断边界之后，伙伴能据此安排采集、保护、回程和交付；她也须承接自己选择占用的时间与放弃的可选收获。合作逐渐成为双方可协商的办法，而非谁替谁完成目标。",
+    "contract_id": "arc-plan:tang-sui:future-candidate",
+    "logical_key": "character:character:tang-sui",
+    "arc_segments": [
+      {
+        "status": "PLANNED",
+        "objective": "让唐穗为保住合用材料并弄清任务相关问题而参加采药。她核实折露草当次成熟份额，说明辨认把握；面对未经辨清的额外收获，与沈砚商量取舍，并依据实际验收追问材料用途和质量反馈。",
+        "segment_id": "v1-opening-1-5",
+        "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "exit_state_spec": {
+          "summary": "拟由首次采药的分工、现场取舍和交回反馈，使唐穗获得一次可复核的材料判断经验，也使她与沈砚形成有来源、可再协商的合作起点。"
+        },
+        "narrative_segment_id": "v1-opening-1-5",
+        "volume_plan_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "承接首次交付产生的同行机会。唐穗在约定范围内照看或复查材料，把自己能确认与不能确认的路线、天气或材料信息及时说清；沈砚承担自己的路段，双方依据实际结果调整下一次分工。",
+        "segment_id": "v1-first-road-6-12",
+        "entry_state_ref": "v1-opening-1-5",
+        "exit_state_spec": {
+          "summary": "拟在实际陌生山路同行后，唐穗能指出哪些早期辨认与保护办法经受了检验、哪些问题仍需进一步学习；她是否再次同行由自己的目的和日程决定。"
+        },
+        "narrative_segment_id": "v1-first-road-6-12",
+        "volume_plan_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在沈砚能够承担更多工作时，让唐穗提出材料复查所需时间与自己希望弄清的问题。她可以拒绝超出约定的加量，或提出较可行的复查与回程办法，促使合作方案改变。",
+        "segment_id": "v1-responsibility-25-36",
+        "entry_state_ref": "v1-first-road-6-12",
+        "exit_state_spec": {
+          "summary": "拟使唐穗的质量关注与自己的学习时段成为分工中的真实条件；已有合作经验继续有效，新的参与范围须经各人商定。"
+        },
+        "narrative_segment_id": "v1-responsibility-25-36",
+        "volume_plan_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "条件式承接卷一合作与课程回应。唐穗通过实际接触说明自己的材料学习安排和能够承担的任务范围；沈砚据此区分已有约定、可协商帮助与未经确认的资源。",
+        "segment_id": "volume:2:future-1:segment:1",
+        "entry_state_ref": "v1-responsibility-25-36",
+        "exit_state_spec": {
+          "summary": "拟依据前卷实际结果明确唐穗此时能提供的辨认与复查帮助、尚待学习的问题及可用时间；不预设前卷候选已经成为事实。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:1",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "沈砚修正任务选择时，唐穗按自己的学习用途、材料质量要求和可用时段判断是否参与。她提供有范围的建议，也要求沈砚说明自己能承担的采集或交付部分。",
+        "segment_id": "volume:2:future-1:segment:4",
+        "entry_state_ref": "volume:2:future-1:segment:1",
+        "exit_state_spec": {
+          "summary": "拟形成经双方实际确认的新合作边界：唐穗的材料判断用于限定任务范围，沈砚保留练习时间，各自未答应的事项不算共同承诺。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:4",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在受控合作交付中，让唐穗执行已商定的辨认或质量复查工作；她把不确定处及时告知沈砚和相关验收者，依据反馈调整下一次可用的判断方法。",
+        "segment_id": "volume:2:future-1:segment:6",
+        "entry_state_ref": "volume:2:future-1:segment:4",
+        "exit_state_spec": {
+          "summary": "拟使有限合作的交付和复查得到实际回应。唐穗能指出自己的判断如何帮助保住合用材料，也能说明尚不能凭现有观察断定什么。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:6",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "让唐穗因自身目标和实际时段调整参与范围，并直接说明哪些质量判断需要她复查、哪些步骤沈砚可自行完成。协商结果影响准备方案，而非只作关系表态。",
+        "segment_id": "volume:3:segment:4",
+        "entry_state_ref": "volume:2:future-1:segment:6",
+        "exit_state_spec": {
+          "summary": "拟在伙伴日程变化后形成新的分工：唐穗保留自己有价值的材料学习，沈砚接手至少一项力所能及的核实工作，双方仍可在明确范围内合作。"
+        },
+        "narrative_segment_id": "volume:3:segment:4",
+        "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在重新商定的石湾谷任务中，让唐穗核实当次可采部分并及时说明辨认边界。现场若无法兼顾可选加量与原定交付，她提出保护材料质量的办法，与沈砚共同执行各自确认的部分。",
+        "segment_id": "volume:3:segment:5",
+        "entry_state_ref": "volume:3:segment:4",
+        "exit_state_spec": {
+          "summary": "拟以当前成熟份额、材料质量和完整交付结果检验唐穗的判断。她获得与实际承担工作相称的反馈；未辨清的问题如实保留，不以猜测换取额外收获。"
+        },
+        "narrative_segment_id": "volume:3:segment:5",
+        "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "条件式承接第三卷交付经验。唐穗若参与沈砚的新学习安排，只提供她已能胜任且有时间承担的材料或携行信息；飞剑器具、练习准入及教学条件分别由实际有权者核实。",
+        "segment_id": "volume4-segment1",
+        "entry_state_ref": "volume:3:segment:5",
+        "exit_state_spec": {
+          "summary": "拟使唐穗在飞剑学习开始时保有自己的事务与判断边界；她可以帮助核对与自身经验相关的携行材料，却不因此取得飞剑教学或器具管理权限。"
+        },
+        "narrative_segment_id": "volume4-segment1",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "当沈砚准备受控短程往返时，让唐穗根据实际接触到的材料和自己可用时段，提供有限复查或指出信息过期之处。沈砚亲自完成路线、返回余地与操作判断。",
+        "segment_id": "volume4-segment4",
+        "entry_state_ref": "volume4-segment1",
+        "exit_state_spec": {
+          "summary": "拟在受控短程准备中明确唐穗能够协助核对的携行事项及不能代沈砚判断的操作事项；她的时间安排与沈砚的独立准备相容。"
+        },
+        "narrative_segment_id": "volume4-segment4",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在短程往返后的复查中，唐穗处理自己曾提供的信息或材料安排，说明哪些观察经实践支持、哪些仍只适用于受控范围。她不以一次顺利飞行推断远行补给与落脚条件已齐。",
+        "segment_id": "volume4-segment6",
+        "entry_state_ref": "volume4-segment4",
+        "exit_state_spec": {
+          "summary": "拟使唐穗与沈砚在短程实践后分别承接自己的结果：相关材料信息得到修正或保留，沈砚的可重复操控由他的实际动作证明；双方合作范围清楚。"
+        },
+        "narrative_segment_id": "volume4-segment6",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在沈砚核实山外行程时，让唐穗依据自己实际掌握的信息说明材料用途、保存或补给限制，并指出不确定处。沈砚将这些信息与路线、天气和落脚条件合并判断，不能把唐穗的局部知识当作完整远行许可。",
+        "segment_id": "volume-5:segment-4",
+        "entry_state_ref": "volume4-segment6",
+        "exit_state_spec": {
+          "summary": "拟使唐穗的材料核实方法帮助沈砚辨别可用补给、资料时效和携行余地，同时明确她已说明的范围与仍须临行复核的条件。"
+        },
+        "narrative_segment_id": "volume-5:segment-4",
+        "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "第233—234章内承接唐穗与本次行程相关的实际协作和约定，使她的帮助有来源与界限。第235—239章的飞行由沈砚独自操控和判断，唐穗不代行关键行动；第240章的收束允许关系继续开放。",
+        "segment_id": "volume-5:segment-6",
+        "entry_state_ref": "volume-5:segment-4",
+        "exit_state_spec": {
+          "summary": "拟在沈砚临行前结清唐穗参与的相关材料或合作约定。沈砚随后独自完成御剑远行与落脚；唐穗保有自己的学习方向，双方已建立的信任不以同行为条件。"
+        },
+        "narrative_segment_id": "volume-5:segment-6",
+        "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      }
+    ],
+    "dependencies": [],
+    "world_deltas": [
+      {
+        "change": "拟通过实际发布、采收与验收事件，呈现任务用途、当次成熟份额、交回要求及质量结果；本计划不预授固定库存或报酬。",
+        "subject": "石湾谷采药与交付"
+      },
+      {
+        "change": "拟使后续携行和补给判断依赖当前信息、实际材料状态及明确来源，旧经验只在经核实的范围内适用。",
+        "subject": "山路任务与远行准备"
+      }
+    ],
+    "arc_relations": [],
+    "frozen_inputs": [
+      {
+        "role": "book_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "role": "volume_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:014a589a0650586e542401e25d6df9ff5d82d7cfebee870769745db1ce216a98",
+        "asset_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+      },
+      {
+        "role": "conflict_state",
+        "asset_type": "conflict_state",
+        "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+        "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+      },
+      {
+        "role": "promise_ledger",
+        "asset_type": "promise_ledger_snapshot",
+        "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+        "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+      },
+      {
+        "role": "foreshadowing_ledger",
+        "asset_type": "foreshadowing_ledger",
+        "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+        "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+      },
+      {
+        "role": "character_arc_portfolio",
+        "asset_type": "character_arc_portfolio",
+        "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+        "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+      },
+      {
+        "role": "arc_scope_volume:1",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+        "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:2",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+        "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:3",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+        "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:4",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+        "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      }
+    ],
+    "planning_scope": "ARC",
+    "schema_version": "story_design.authority.v1",
+    "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "exit_state_spec": {
+      "summary": "拟使唐穗拥有经任务和反馈检验、能够清楚说明边界的材料判断方法，并保留自主选择的学习方向。她与沈砚的合作所得支持其准备，但沈砚的最终御剑独行由他自己完成。"
+    },
+    "quality_targets": {
+      "minimum": 85
+    },
+    "required_events": [
+      "卷一开篇首次采药中，唐穗核实当前可采材料，说明辨认把握并参与保住合用收获的现场取舍。",
+      "首次采药完整交回后，唐穗的工作、实际质量、失误与所得得到有权限者的明确反馈。",
+      "开篇交付产生的陌生山路同行在卷一及时实际发生，唐穗依据自己的目的和日程参与或明确调整参与范围。",
+      "后续至少一次任务中，唐穗及时交代不确定处，使伙伴改变采集、保护、复查或交付办法。",
+      "合作日程发生合理变化时，唐穗提出自己的界限，沈砚实际接手一项力所能及的核实或准备工作。",
+      "终局出发前，唐穗参与的相关材料与合作约定获得处理，沈砚独自完成飞行和落脚。"
+    ],
+    "character_deltas": [
+      {
+        "change": "拟从能注意材料差别、希望获得实际检验，发展为能说明判断依据、把握程度与尚待核实之处的合作者。",
+        "subject": "character:tang-sui"
+      },
+      {
+        "change": "拟在唐穗逐步说明与移交可用信息后，沈砚学会承担原先需要伙伴协助的一部分核实工作。",
+        "subject": "character:shen-yan"
+      }
+    ],
+    "forbidden_events": [
+      "把旧运行1—11或1—19章设为本隔离候选不可重写的保留段，或将旧40章写成已接受的新候选历史。",
+      "把唐穗写成只会赞叹、纠错或无条件让出时间与所得的工具性同伴。",
+      "让唐穗未经当前成熟份额核实采收折露草，采下幼芽或破坏芽根以增加交付。",
+      "把她的观察写成药材、路线、天气、课程或机构条件的全知判断。",
+      "为推动关系安排无因果背叛、永久断交、强制重大牺牲或未经授权的资源赠予。",
+      "用唐穗的材料经验直接替代沈砚的引气、飞剑操控或独立路线判断。"
+    ],
+    "hard_constraints": [
+      "本Arc仅为初始状态起笔的隔离未来候选；accepted_through_chapter为0，旧运行不成为新候选已发生事实。",
+      "卷一严格承接新Volume的第1—48章及准确叙事分段；开篇完整采药与交付产生陌生山路同行机会，随后及时实际同行。",
+      "唐穗女性，重视辨药、合用收获及任务相关问题；她有自己的时间、利益和判断，可以提出不同办法或拒绝追加范围。",
+      "折露草每次采收前核实当次成熟可采份额，只采成熟外叶并保留芽根；首次采药允许普通手工方法。",
+      "材料、报酬、库存、额度、课位及资格依实际来源、权限与核验确定，未知数值不得当作既得条件。",
+      "沈砚的初次气感不等于稳定控气；唐穗的普通辨认经验也不能替代修行、飞剑操控或路线核实。",
+      "以沈砚为主的第三人称限知呈现；唐穗的私下想法只通过沈砚实际接触到的言行进入其认识。",
+      "合作事项、劳作、学习、赶路和休息使用相容的真实日程；互斥时段不重复占用，已明确承诺须履行或协商。",
+      "唐穗的成长可以安静、逐步发生，不要求每次出场有重大反转、损失或新能力。",
+      "第五卷终局必须由沈砚在必要条件核实后亲自独行并落脚；唐穗与他的关系可以继续。"
+    ],
+    "planning_horizon": "STRATEGIC",
+    "required_payoffs": [
+      "首次采药的成熟外叶、芽根保护、材料保护和回程选择影响实际交付及下一次合作。",
+      "唐穗对一个任务相关问题的观察得到反馈、进一步核实或明确保留，读者能辨认她的判断怎样变得可用。",
+      "唐穗对时间、质量与相称所得的诉求至少一次真实改变分工；沈砚的帮助也有具体工作内容。",
+      "后续任务沿用并发展首次采药的说明核实与质量复查方法，不反复重演第一次成功。",
+      "独行准备中的局部材料信息有来源和适用范围；沈砚实际独行后，唐穗保有自己的方向与双方关系的继续空间。"
+    ],
+    "soft_constraints": [
+      "以完整任务结果和必要的时间省略推进，不为人物出场间隔或篇幅计数添加无用途动作。",
+      "唐穗的材料学习可继续深入，但具体题目和去向由后续实际条件决定。",
+      "她与沈砚的分歧可以温和而具体，重点落在材料质量、学习用途和可承担范围。",
+      "独行前的告别或协作可以安静处理，以已建立的关系为依据。"
+    ],
+    "arc_contributions": [
+      {
+        "change": "首次结伴采药中，唐穗的辨认、材料保护和对不确定处的说明影响实际交付，并为再次合作提供依据。",
+        "subject": "卷一采药与陌生山路同行"
+      },
+      {
+        "change": "唐穗逐渐把细致观察变成同伴可据以行动、也可复核的信息，同时保留自己的学习目标和日程选择。",
+        "subject": "跨卷合作"
+      },
+      {
+        "change": "沈砚准备独行时可以沿用双方共同练成的核实方法；唐穗继续自己的材料学习，关系不因未同行而失效。",
+        "subject": "终局准备与关系收束"
+      }
+    ],
+    "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "candidate_payload": {
+      "cost": "取舍可能使唐穗放弃未经辨清的额外材料或调整自己的学习时段；具体得失只在实际任务条件明确后成立，不预置重大牺牲。",
+      "turn": "唐穗逐渐发现，自己看见材料差别只是第一步；及时说明依据、疑点和任务适用范围，才能让伙伴据此作出可靠选择。",
+      "choice": "唐穗在共同任务中把材料质量、自己的求知目标和约定范围一并说清；当额外收获无法辨清或时间不足时，选择保住可可靠交付的部分，并留下可继续核实的问题。",
+      "result": "拟使唐穗的材料判断经具体任务、反馈和重复使用成为同伴可依赖但有明确边界的信息；她既能合作，也能决定何时不同行。",
+      "arc_type": "CHARACTER",
+      "objective": "规划唐穗从首次采药中细致辨认材料，成长为能说明判断依据与不确定处、使信息真正服务共同任务的人；让她保有自己的学习目的、资源诉求与日程选择，并以有边界的合作支持沈砚最终独行。",
+      "thread_id": "thread:character:tang-sui",
+      "escalation": "她面对的材料与合作问题逐渐从一次采收的现场辨认，扩展到可复核的交付方法、变化中的伙伴日程，以及远行准备中有适用范围的信息。",
+      "resistance": "材料状态、回程条件与任务要求需要现场核实；同伴目标和日程并不总相同。唐穗的细致观察只有在把握程度与用途被说清后，才能可靠地进入共同决定。",
+      "consequence": "唐穗说清判断边界之后，伙伴能据此安排采集、保护、回程和交付；她也须承接自己选择占用的时间与放弃的可选收获。合作逐渐成为双方可协商的办法，而非谁替谁完成目标。",
+      "contract_id": "arc-plan:tang-sui:future-candidate",
+      "logical_key": "character:character:tang-sui",
+      "arc_segments": [
+        {
+          "status": "PLANNED",
+          "objective": "让唐穗为保住合用材料并弄清任务相关问题而参加采药。她核实折露草当次成熟份额，说明辨认把握；面对未经辨清的额外收获，与沈砚商量取舍，并依据实际验收追问材料用途和质量反馈。",
+          "segment_id": "v1-opening-1-5",
+          "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "exit_state_spec": {
+            "summary": "拟由首次采药的分工、现场取舍和交回反馈，使唐穗获得一次可复核的材料判断经验，也使她与沈砚形成有来源、可再协商的合作起点。"
+          },
+          "narrative_segment_id": "v1-opening-1-5",
+          "volume_plan_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "承接首次交付产生的同行机会。唐穗在约定范围内照看或复查材料，把自己能确认与不能确认的路线、天气或材料信息及时说清；沈砚承担自己的路段，双方依据实际结果调整下一次分工。",
+          "segment_id": "v1-first-road-6-12",
+          "entry_state_ref": "v1-opening-1-5",
+          "exit_state_spec": {
+            "summary": "拟在实际陌生山路同行后，唐穗能指出哪些早期辨认与保护办法经受了检验、哪些问题仍需进一步学习；她是否再次同行由自己的目的和日程决定。"
+          },
+          "narrative_segment_id": "v1-first-road-6-12",
+          "volume_plan_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在沈砚能够承担更多工作时，让唐穗提出材料复查所需时间与自己希望弄清的问题。她可以拒绝超出约定的加量，或提出较可行的复查与回程办法，促使合作方案改变。",
+          "segment_id": "v1-responsibility-25-36",
+          "entry_state_ref": "v1-first-road-6-12",
+          "exit_state_spec": {
+            "summary": "拟使唐穗的质量关注与自己的学习时段成为分工中的真实条件；已有合作经验继续有效，新的参与范围须经各人商定。"
+          },
+          "narrative_segment_id": "v1-responsibility-25-36",
+          "volume_plan_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "条件式承接卷一合作与课程回应。唐穗通过实际接触说明自己的材料学习安排和能够承担的任务范围；沈砚据此区分已有约定、可协商帮助与未经确认的资源。",
+          "segment_id": "volume:2:future-1:segment:1",
+          "entry_state_ref": "v1-responsibility-25-36",
+          "exit_state_spec": {
+            "summary": "拟依据前卷实际结果明确唐穗此时能提供的辨认与复查帮助、尚待学习的问题及可用时间；不预设前卷候选已经成为事实。"
+          },
+          "narrative_segment_id": "volume:2:future-1:segment:1",
+          "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "沈砚修正任务选择时，唐穗按自己的学习用途、材料质量要求和可用时段判断是否参与。她提供有范围的建议，也要求沈砚说明自己能承担的采集或交付部分。",
+          "segment_id": "volume:2:future-1:segment:4",
+          "entry_state_ref": "volume:2:future-1:segment:1",
+          "exit_state_spec": {
+            "summary": "拟形成经双方实际确认的新合作边界：唐穗的材料判断用于限定任务范围，沈砚保留练习时间，各自未答应的事项不算共同承诺。"
+          },
+          "narrative_segment_id": "volume:2:future-1:segment:4",
+          "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在受控合作交付中，让唐穗执行已商定的辨认或质量复查工作；她把不确定处及时告知沈砚和相关验收者，依据反馈调整下一次可用的判断方法。",
+          "segment_id": "volume:2:future-1:segment:6",
+          "entry_state_ref": "volume:2:future-1:segment:4",
+          "exit_state_spec": {
+            "summary": "拟使有限合作的交付和复查得到实际回应。唐穗能指出自己的判断如何帮助保住合用材料，也能说明尚不能凭现有观察断定什么。"
+          },
+          "narrative_segment_id": "volume:2:future-1:segment:6",
+          "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "让唐穗因自身目标和实际时段调整参与范围，并直接说明哪些质量判断需要她复查、哪些步骤沈砚可自行完成。协商结果影响准备方案，而非只作关系表态。",
+          "segment_id": "volume:3:segment:4",
+          "entry_state_ref": "volume:2:future-1:segment:6",
+          "exit_state_spec": {
+            "summary": "拟在伙伴日程变化后形成新的分工：唐穗保留自己有价值的材料学习，沈砚接手至少一项力所能及的核实工作，双方仍可在明确范围内合作。"
+          },
+          "narrative_segment_id": "volume:3:segment:4",
+          "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在重新商定的石湾谷任务中，让唐穗核实当次可采部分并及时说明辨认边界。现场若无法兼顾可选加量与原定交付，她提出保护材料质量的办法，与沈砚共同执行各自确认的部分。",
+          "segment_id": "volume:3:segment:5",
+          "entry_state_ref": "volume:3:segment:4",
+          "exit_state_spec": {
+            "summary": "拟以当前成熟份额、材料质量和完整交付结果检验唐穗的判断。她获得与实际承担工作相称的反馈；未辨清的问题如实保留，不以猜测换取额外收获。"
+          },
+          "narrative_segment_id": "volume:3:segment:5",
+          "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "条件式承接第三卷交付经验。唐穗若参与沈砚的新学习安排，只提供她已能胜任且有时间承担的材料或携行信息；飞剑器具、练习准入及教学条件分别由实际有权者核实。",
+          "segment_id": "volume4-segment1",
+          "entry_state_ref": "volume:3:segment:5",
+          "exit_state_spec": {
+            "summary": "拟使唐穗在飞剑学习开始时保有自己的事务与判断边界；她可以帮助核对与自身经验相关的携行材料，却不因此取得飞剑教学或器具管理权限。"
+          },
+          "narrative_segment_id": "volume4-segment1",
+          "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "当沈砚准备受控短程往返时，让唐穗根据实际接触到的材料和自己可用时段，提供有限复查或指出信息过期之处。沈砚亲自完成路线、返回余地与操作判断。",
+          "segment_id": "volume4-segment4",
+          "entry_state_ref": "volume4-segment1",
+          "exit_state_spec": {
+            "summary": "拟在受控短程准备中明确唐穗能够协助核对的携行事项及不能代沈砚判断的操作事项；她的时间安排与沈砚的独立准备相容。"
+          },
+          "narrative_segment_id": "volume4-segment4",
+          "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在短程往返后的复查中，唐穗处理自己曾提供的信息或材料安排，说明哪些观察经实践支持、哪些仍只适用于受控范围。她不以一次顺利飞行推断远行补给与落脚条件已齐。",
+          "segment_id": "volume4-segment6",
+          "entry_state_ref": "volume4-segment4",
+          "exit_state_spec": {
+            "summary": "拟使唐穗与沈砚在短程实践后分别承接自己的结果：相关材料信息得到修正或保留，沈砚的可重复操控由他的实际动作证明；双方合作范围清楚。"
+          },
+          "narrative_segment_id": "volume4-segment6",
+          "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在沈砚核实山外行程时，让唐穗依据自己实际掌握的信息说明材料用途、保存或补给限制，并指出不确定处。沈砚将这些信息与路线、天气和落脚条件合并判断，不能把唐穗的局部知识当作完整远行许可。",
+          "segment_id": "volume-5:segment-4",
+          "entry_state_ref": "volume4-segment6",
+          "exit_state_spec": {
+            "summary": "拟使唐穗的材料核实方法帮助沈砚辨别可用补给、资料时效和携行余地，同时明确她已说明的范围与仍须临行复核的条件。"
+          },
+          "narrative_segment_id": "volume-5:segment-4",
+          "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "第233—234章内承接唐穗与本次行程相关的实际协作和约定，使她的帮助有来源与界限。第235—239章的飞行由沈砚独自操控和判断，唐穗不代行关键行动；第240章的收束允许关系继续开放。",
+          "segment_id": "volume-5:segment-6",
+          "entry_state_ref": "volume-5:segment-4",
+          "exit_state_spec": {
+            "summary": "拟在沈砚临行前结清唐穗参与的相关材料或合作约定。沈砚随后独自完成御剑远行与落脚；唐穗保有自己的学习方向，双方已建立的信任不以同行为条件。"
+          },
+          "narrative_segment_id": "volume-5:segment-6",
+          "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        }
+      ],
+      "dependencies": [],
+      "world_deltas": [
+        {
+          "change": "拟通过实际发布、采收与验收事件，呈现任务用途、当次成熟份额、交回要求及质量结果；本计划不预授固定库存或报酬。",
+          "subject": "石湾谷采药与交付"
+        },
+        {
+          "change": "拟使后续携行和补给判断依赖当前信息、实际材料状态及明确来源，旧经验只在经核实的范围内适用。",
+          "subject": "山路任务与远行准备"
+        }
+      ],
+      "arc_relations": [],
+      "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "exit_state_spec": {
+        "summary": "拟使唐穗拥有经任务和反馈检验、能够清楚说明边界的材料判断方法，并保留自主选择的学习方向。她与沈砚的合作所得支持其准备，但沈砚的最终御剑独行由他自己完成。"
+      },
+      "quality_targets": {
+        "minimum": 85
+      },
+      "required_events": [
+        "卷一开篇首次采药中，唐穗核实当前可采材料，说明辨认把握并参与保住合用收获的现场取舍。",
+        "首次采药完整交回后，唐穗的工作、实际质量、失误与所得得到有权限者的明确反馈。",
+        "开篇交付产生的陌生山路同行在卷一及时实际发生，唐穗依据自己的目的和日程参与或明确调整参与范围。",
+        "后续至少一次任务中，唐穗及时交代不确定处，使伙伴改变采集、保护、复查或交付办法。",
+        "合作日程发生合理变化时，唐穗提出自己的界限，沈砚实际接手一项力所能及的核实或准备工作。",
+        "终局出发前，唐穗参与的相关材料与合作约定获得处理，沈砚独自完成飞行和落脚。"
+      ],
+      "character_deltas": [
+        {
+          "change": "拟从能注意材料差别、希望获得实际检验，发展为能说明判断依据、把握程度与尚待核实之处的合作者。",
+          "subject": "character:tang-sui"
+        },
+        {
+          "change": "拟在唐穗逐步说明与移交可用信息后，沈砚学会承担原先需要伙伴协助的一部分核实工作。",
+          "subject": "character:shen-yan"
+        }
+      ],
+      "forbidden_events": [
+        "把旧运行1—11或1—19章设为本隔离候选不可重写的保留段，或将旧40章写成已接受的新候选历史。",
+        "把唐穗写成只会赞叹、纠错或无条件让出时间与所得的工具性同伴。",
+        "让唐穗未经当前成熟份额核实采收折露草，采下幼芽或破坏芽根以增加交付。",
+        "把她的观察写成药材、路线、天气、课程或机构条件的全知判断。",
+        "为推动关系安排无因果背叛、永久断交、强制重大牺牲或未经授权的资源赠予。",
+        "用唐穗的材料经验直接替代沈砚的引气、飞剑操控或独立路线判断。"
+      ],
+      "hard_constraints": [
+        "本Arc仅为初始状态起笔的隔离未来候选；accepted_through_chapter为0，旧运行不成为新候选已发生事实。",
+        "卷一严格承接新Volume的第1—48章及准确叙事分段；开篇完整采药与交付产生陌生山路同行机会，随后及时实际同行。",
+        "唐穗女性，重视辨药、合用收获及任务相关问题；她有自己的时间、利益和判断，可以提出不同办法或拒绝追加范围。",
+        "折露草每次采收前核实当次成熟可采份额，只采成熟外叶并保留芽根；首次采药允许普通手工方法。",
+        "材料、报酬、库存、额度、课位及资格依实际来源、权限与核验确定，未知数值不得当作既得条件。",
+        "沈砚的初次气感不等于稳定控气；唐穗的普通辨认经验也不能替代修行、飞剑操控或路线核实。",
+        "以沈砚为主的第三人称限知呈现；唐穗的私下想法只通过沈砚实际接触到的言行进入其认识。",
+        "合作事项、劳作、学习、赶路和休息使用相容的真实日程；互斥时段不重复占用，已明确承诺须履行或协商。",
+        "唐穗的成长可以安静、逐步发生，不要求每次出场有重大反转、损失或新能力。",
+        "第五卷终局必须由沈砚在必要条件核实后亲自独行并落脚；唐穗与他的关系可以继续。"
+      ],
+      "planning_horizon": "STRATEGIC",
+      "required_payoffs": [
+        "首次采药的成熟外叶、芽根保护、材料保护和回程选择影响实际交付及下一次合作。",
+        "唐穗对一个任务相关问题的观察得到反馈、进一步核实或明确保留，读者能辨认她的判断怎样变得可用。",
+        "唐穗对时间、质量与相称所得的诉求至少一次真实改变分工；沈砚的帮助也有具体工作内容。",
+        "后续任务沿用并发展首次采药的说明核实与质量复查方法，不反复重演第一次成功。",
+        "独行准备中的局部材料信息有来源和适用范围；沈砚实际独行后，唐穗保有自己的方向与双方关系的继续空间。"
+      ],
+      "soft_constraints": [
+        "以完整任务结果和必要的时间省略推进，不为人物出场间隔或篇幅计数添加无用途动作。",
+        "唐穗的材料学习可继续深入，但具体题目和去向由后续实际条件决定。",
+        "她与沈砚的分歧可以温和而具体，重点落在材料质量、学习用途和可承担范围。",
+        "独行前的告别或协作可以安静处理，以已建立的关系为依据。"
+      ],
+      "arc_contributions": [
+        {
+          "change": "首次结伴采药中，唐穗的辨认、材料保护和对不确定处的说明影响实际交付，并为再次合作提供依据。",
+          "subject": "卷一采药与陌生山路同行"
+        },
+        {
+          "change": "唐穗逐渐把细致观察变成同伴可据以行动、也可复核的信息，同时保留自己的学习目标和日程选择。",
+          "subject": "跨卷合作"
+        },
+        {
+          "change": "沈砚准备独行时可以沿用双方共同练成的核实方法；唐穗继续自己的材料学习，关系不因未同行而失效。",
+          "subject": "终局准备与关系收束"
+        }
+      ],
+      "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "forbidden_payoffs": [
+        "以一句认可、旁人赞叹或未经核实的额外收获代替实际交付与质量反馈。",
+        "以唐穗永远陪同沈砚或放弃自己的学习目标证明关系亲近。",
+        "以一次辨认正确宣告她此后对所有材料、补给和天气都能准确判断。",
+        "以她代沈砚准备、判断或操控完整行程，冒充沈砚已完成独自御剑远行。"
+      ],
+      "realization_level": "DEFINED",
+      "world_realization": [
+        {
+          "world_id": "world:qinglan-herb-tasks",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STATE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          },
+          "visibility": "VISIBLE",
+          "accessibility": "RESTRICTED",
+          "invariant_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_INVARIANT",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+            }
+          ],
+          "structure_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_STRUCTURE",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+            }
+          ],
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        }
+      ],
+      "canon_dependencies": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d"
+      ],
+      "closure_conditions": [
+        "首次采药与后续相关任务中，唐穗的辨认、说明和复查至少各有实际用途及明确反馈。",
+        "她曾经不确定的判断得到实际核实、限定适用范围，或被明确保留为未解问题；不得写成凭空全知。",
+        "与沈砚的合作形成可重新协商的信任，双方各自的工作、学习与时间边界得到尊重。",
+        "终局相关材料约定在出发前处理，沈砚完成独行后唐穗仍有自己的生活和学习方向。"
+      ],
+      "cross_volume_scope": [
+        "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      ],
+      "commitment_contract": [
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "唐穗为女性，欲把材料辨认练成任务中可用的本领；她有与分工相称的资源诉求和自己的学习问题，不充当沈砚的附属助手。",
+          "commitment_id": "tang-sui-identity"
+        },
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "卷一首次结伴采药遵循冻结顺序与新卷一开篇段落；当前成熟份额、成熟外叶、芽根保护、实际质量和交回反馈决定结果。",
+          "commitment_id": "tang-sui-first-task"
+        },
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "唐穗只依据实际观察、说明和反馈提出判断；她的材料经验不自动赋予课程、库存、飞剑、路线或机构权限。",
+          "commitment_id": "tang-sui-knowledge"
+        },
+        {
+          "level": "SOFT_INTENT",
+          "statement": "以几次有独立目的的合作，使唐穗从细致观察走向能说明和复核的判断；日程变化可改变同行方式，不抹去已建立的信任。",
+          "commitment_id": "tang-sui-development"
+        },
+        {
+          "level": "OPEN_DESIGN_SPACE",
+          "statement": "后续材料学习的具体题目、参与频率和工作安排由实际事件确立，不预定药房职位、师承或与沈砚始终同行。",
+          "commitment_id": "tang-sui-future-direction"
+        }
+      ],
+      "constraint_envelope": {
+        "type": "PlanningConstraintEnvelope",
+        "book_id": "book:qinglan-wendao-20261008",
+        "project_id": "qid-learning-prose-01",
+        "planning_scope": "ARC",
+        "envelope_digest": "sha256:b2adc8104d263e586bc74e55bcd9a78e9580d3f1e2535fb56319825f5245fd80",
+        "parent_versions": [
+          {
+            "role": "arc_scope_volume:1",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+            "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:2",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+            "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:3",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+            "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:4",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+            "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+          },
+          {
+            "role": "book_plan",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          },
+          {
+            "role": "character_arc_portfolio",
+            "asset_type": "character_arc_portfolio",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+          },
+          {
+            "role": "conflict_state",
+            "asset_type": "conflict_state",
+            "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+            "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+          },
+          {
+            "role": "foreshadowing_ledger",
+            "asset_type": "foreshadowing_ledger",
+            "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+            "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+          },
+          {
+            "role": "promise_ledger",
+            "asset_type": "promise_ledger_snapshot",
+            "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+            "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+          },
+          {
+            "role": "volume_plan",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:014a589a0650586e542401e25d6df9ff5d82d7cfebee870769745db1ce216a98",
+            "asset_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "planning-constraint-envelope-v2",
+        "change_governance": {
+          "requires_evidence": true,
+          "preserve_executed_history": true,
+          "wider_scope_requires_new_plan_change": true
+        },
+        "prohibited_outcomes": [],
+        "inherited_invariants": [],
+        "required_obligations": [],
+        "narrative_load_policy": {
+          "type": "NarrativeLoadPolicy",
+          "limits": {
+            "max_active_arcs": 3,
+            "max_new_concepts": 4,
+            "max_dormant_arc_age": 30,
+            "max_open_obligations": 12,
+            "max_payoff_congestion": 3,
+            "max_overdue_obligations": 0,
+            "max_major_state_transitions": 8,
+            "max_character_appearance_gap": 10
+          },
+          "book_id": "book:qinglan-wendao-20261008",
+          "policy_id": "canonical-production-narrative-load",
+          "project_id": "qid-learning-prose-01",
+          "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+          "source_role": "production_profile",
+          "policy_version": 1,
+          "contract_version": "narrative-load-policy-v1",
+          "governed_overrides": [],
+          "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+          "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+        },
+        "permitted_change_scope": "ARC",
+        "accepted_state_boundary": {
+          "future_plan_only": true,
+          "accepted_through_chapter": 0
+        },
+        "generation_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf",
+        "generator_operation_name": "arc_plan.generate",
+        "narrative_load_projection": {
+          "type": "NarrativeLoadProjection",
+          "status": "NOT_OBSERVED",
+          "metrics": {},
+          "contract_version": "narrative-load-projection-v2",
+          "open_obligation_ids": [],
+          "overdue_obligation_ids": [],
+          "accepted_through_chapter": 0
+        },
+        "narrative_load_policy_lineage": {
+          "type": "NarrativeLoadPolicyLineage",
+          "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+          "inherited_from": [
+            {
+              "role": "arc_scope_volume:1",
+              "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+              "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+            },
+            {
+              "role": "arc_scope_volume:2",
+              "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+              "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+            },
+            {
+              "role": "arc_scope_volume:3",
+              "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+              "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+            },
+            {
+              "role": "arc_scope_volume:4",
+              "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+              "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+            },
+            {
+              "role": "book_plan",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+            },
+            {
+              "role": "volume_plan",
+              "content_hash": "sha256:014a589a0650586e542401e25d6df9ff5d82d7cfebee870769745db1ce216a98",
+              "asset_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+            }
+          ],
+          "contract_version": "narrative-load-policy-lineage-v1",
+          "frozen_by_generation_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "creative_requirements_contract": "work-requirements.v2"
+      },
+      "context_profile_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "relationship_deltas": [
+        {
+          "change": "拟由第一次采药的实际分工与交付反馈，建立可复查、可重新协商的合作经验；后续双方互相提供自己已能承担的帮助。",
+          "subject": "唐穗与沈砚"
+        },
+        {
+          "change": "拟让唐穗与陆衡各自的质量关注、时间边界影响共同方案，分歧通过明确分工和结果承接。",
+          "subject": "唐穗与陆衡"
+        }
+      ],
+      "character_realization": [
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "ARC",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          },
+          "character_id": "character:tang-sui",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "ARC",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          },
+          "character_id": "character:shen-yan",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        }
+      ],
+      "narrative_architecture_version": "canonical-narrative-v1"
+    },
+    "forbidden_payoffs": [
+      "以一句认可、旁人赞叹或未经核实的额外收获代替实际交付与质量反馈。",
+      "以唐穗永远陪同沈砚或放弃自己的学习目标证明关系亲近。",
+      "以一次辨认正确宣告她此后对所有材料、补给和天气都能准确判断。",
+      "以她代沈砚准备、判断或操控完整行程，冒充沈砚已完成独自御剑远行。"
+    ],
+    "realization_level": "DEFINED",
+    "world_realization": [
+      {
+        "world_id": "world:qinglan-herb-tasks",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "visibility": "VISIBLE",
+        "accessibility": "RESTRICTED",
+        "invariant_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_INVARIANT",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          }
+        ],
+        "structure_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STRUCTURE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+          }
+        ],
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "canon_dependencies": [
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+      "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+      "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+      "4f94123b-a129-4975-aae7-c2fa7182b42d"
+    ],
+    "closure_conditions": [
+      "首次采药与后续相关任务中，唐穗的辨认、说明和复查至少各有实际用途及明确反馈。",
+      "她曾经不确定的判断得到实际核实、限定适用范围，或被明确保留为未解问题；不得写成凭空全知。",
+      "与沈砚的合作形成可重新协商的信任，双方各自的工作、学习与时间边界得到尊重。",
+      "终局相关材料约定在出发前处理，沈砚完成独行后唐穗仍有自己的生活和学习方向。"
+    ],
+    "cross_volume_scope": [
+      "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+      "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+      "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+      "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+      "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    ],
+    "execution_evidence": {
+      "attempt_id": "cb78851d-07ae-4bf2-8ab6-0925a580a2a4",
+      "operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:2ef464ed-86b1-43f6-8b2d-b5b0847ce5cc",
+      "route_snapshot_id": "production_execution/routes/ef8f972246c7172fabd5",
+      "usage_receipt_ref": "authority-asset-version:dd0c7fbf-10e0-41bb-8e60-6f1558dd14a1",
+      "input_manifest_ref": "production_execution/inputs/ef8f972246c7172fabd5",
+      "context_bundle_hash": "sha256:31e23d1d4cfb4e091b6cadab9dde0b0d757958e238f520f03c131527c460908e",
+      "output_manifest_ref": "authority-asset-version:5d087f22-f867-4c1b-b8dd-070d4d6fa337",
+      "production_verified": false,
+      "external_receipt_ref": "7cbe4ba1-de4b-4147-a420-6d28e10c89c5",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:c5a97284-6221-4867-b778-5d8f0f89b335",
+      "capability_execution_ref": "65973811-303d-5734-b772-3578955da7c9",
+      "capability_execution_hash": "sha256:95a1e52407ede7dfd589c39825e59256b7ce18f21b09b99fa79909d32a062956",
+      "capability_runtime_binding_ref": "sha256:c67d6b2e2be1e751f2c4aa2c07b5a79e0c4279fd7ced95181b0c49a2b96cdef8",
+      "capability_runtime_binding_hash": "sha256:a5fd12409b6b2d74ae7fcaaf29937b55ae06df105281538204dab365693855dc",
+      "context_bundle_asset_version_id": "c988d8f7-663c-44d1-9bb2-d22998ca21ba",
+      "capability_pack_attempt_snapshot_id": "sha256:c67d6b2e2be1e751f2c4aa2c07b5a79e0c4279fd7ced95181b0c49a2b96cdef8",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:a5fd12409b6b2d74ae7fcaaf29937b55ae06df105281538204dab365693855dc",
+      "narrative_intelligence_selection_digest": "sha256:16dcf71d48d22f21fec83e7da04dbeb73b9d6d47217c32ca714470a54c4e9d33"
+    },
+    "commitment_contract": [
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "唐穗为女性，欲把材料辨认练成任务中可用的本领；她有与分工相称的资源诉求和自己的学习问题，不充当沈砚的附属助手。",
+        "commitment_id": "tang-sui-identity"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "卷一首次结伴采药遵循冻结顺序与新卷一开篇段落；当前成熟份额、成熟外叶、芽根保护、实际质量和交回反馈决定结果。",
+        "commitment_id": "tang-sui-first-task"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "唐穗只依据实际观察、说明和反馈提出判断；她的材料经验不自动赋予课程、库存、飞剑、路线或机构权限。",
+        "commitment_id": "tang-sui-knowledge"
+      },
+      {
+        "level": "SOFT_INTENT",
+        "statement": "以几次有独立目的的合作，使唐穗从细致观察走向能说明和复核的判断；日程变化可改变同行方式，不抹去已建立的信任。",
+        "commitment_id": "tang-sui-development"
+      },
+      {
+        "level": "OPEN_DESIGN_SPACE",
+        "statement": "后续材料学习的具体题目、参与频率和工作安排由实际事件确立，不预定药房职位、师承或与沈砚始终同行。",
+        "commitment_id": "tang-sui-future-direction"
+      }
+    ],
+    "constraint_envelope": {
+      "type": "PlanningConstraintEnvelope",
+      "book_id": "book:qinglan-wendao-20261008",
+      "project_id": "qid-learning-prose-01",
+      "planning_scope": "ARC",
+      "envelope_digest": "sha256:b2adc8104d263e586bc74e55bcd9a78e9580d3f1e2535fb56319825f5245fd80",
+      "parent_versions": [
+        {
+          "role": "arc_scope_volume:1",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+          "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:2",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+          "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:3",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+          "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:4",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+          "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        },
+        {
+          "role": "book_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "role": "character_arc_portfolio",
+          "asset_type": "character_arc_portfolio",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        {
+          "role": "conflict_state",
+          "asset_type": "conflict_state",
+          "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+          "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+        },
+        {
+          "role": "foreshadowing_ledger",
+          "asset_type": "foreshadowing_ledger",
+          "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+          "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+        },
+        {
+          "role": "promise_ledger",
+          "asset_type": "promise_ledger_snapshot",
+          "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+          "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+        },
+        {
+          "role": "volume_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:014a589a0650586e542401e25d6df9ff5d82d7cfebee870769745db1ce216a98",
+          "asset_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+        }
+      ],
+      "contract_version": "planning-constraint-envelope-v2",
+      "change_governance": {
+        "requires_evidence": true,
+        "preserve_executed_history": true,
+        "wider_scope_requires_new_plan_change": true
+      },
+      "prohibited_outcomes": [],
+      "inherited_invariants": [],
+      "required_obligations": [],
+      "narrative_load_policy": {
+        "type": "NarrativeLoadPolicy",
+        "limits": {
+          "max_active_arcs": 3,
+          "max_new_concepts": 4,
+          "max_dormant_arc_age": 30,
+          "max_open_obligations": 12,
+          "max_payoff_congestion": 3,
+          "max_overdue_obligations": 0,
+          "max_major_state_transitions": 8,
+          "max_character_appearance_gap": 10
+        },
+        "book_id": "book:qinglan-wendao-20261008",
+        "policy_id": "canonical-production-narrative-load",
+        "project_id": "qid-learning-prose-01",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "source_role": "production_profile",
+        "policy_version": 1,
+        "contract_version": "narrative-load-policy-v1",
+        "governed_overrides": [],
+        "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+        "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+      },
+      "permitted_change_scope": "ARC",
+      "accepted_state_boundary": {
+        "future_plan_only": true,
+        "accepted_through_chapter": 0
+      },
+      "generation_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf",
+      "generator_operation_name": "arc_plan.generate",
+      "narrative_load_projection": {
+        "type": "NarrativeLoadProjection",
+        "status": "NOT_OBSERVED",
+        "metrics": {},
+        "contract_version": "narrative-load-projection-v2",
+        "open_obligation_ids": [],
+        "overdue_obligation_ids": [],
+        "accepted_through_chapter": 0
+      },
+      "narrative_load_policy_lineage": {
+        "type": "NarrativeLoadPolicyLineage",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "inherited_from": [
+          {
+            "role": "arc_scope_volume:1",
+            "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+            "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:2",
+            "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+            "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:3",
+            "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+            "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:4",
+            "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+            "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+          },
+          {
+            "role": "book_plan",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          },
+          {
+            "role": "volume_plan",
+            "content_hash": "sha256:014a589a0650586e542401e25d6df9ff5d82d7cfebee870769745db1ce216a98",
+            "asset_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "narrative-load-policy-lineage-v1",
+        "frozen_by_generation_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+      },
+      "creative_requirements_contract": "work-requirements.v2"
+    },
+    "context_profile_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "relationship_deltas": [
+      {
+        "change": "拟由第一次采药的实际分工与交付反馈，建立可复查、可重新协商的合作经验；后续双方互相提供自己已能承担的帮助。",
+        "subject": "唐穗与沈砚"
+      },
+      {
+        "change": "拟让唐穗与陆衡各自的质量关注、时间边界影响共同方案，分歧通过明确分工和结果承接。",
+        "subject": "唐穗与陆衡"
+      }
+    ],
+    "character_realization": [
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "ARC",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "character_id": "character:tang-sui",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "ARC",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "character_id": "character:shen-yan",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "2195363d-51b8-4e2f-9848-3b8c0a2864bf"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "generator_operation_name": "arc_plan.generate",
+    "narrative_architecture_version": "canonical-narrative-v1",
+    "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+  }
+}
