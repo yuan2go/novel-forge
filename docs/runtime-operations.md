@@ -2574,6 +2574,16 @@ database or change an old request. Inspect the actual deployment, activation and
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
 identities; current candidate Chapter Pack 3.0.2 binds workflow and ordinary coordinated nodes 3.10.0, including Plan materialization, with
 Template v13 with lossless joint input transport. Frozen v12 Attempts retain their original manifests. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
+For a compiled v13 or v15 Chapter Writer using a frozen working-prose v2/v3 projection, final
+request materialization uses `provider-structured-exact-reference.v1` inside the
+existing exact-reference compiler. Canonical JSON summaries retain all original
+bytes after decoding; repeated objects may refer to an earlier complete object
+with explicit field replacements and removals. The host verifies full source
+reconstruction and records source/encoded hashes and reference counts. The
+rendered stage contract explains these encodings to the Provider. Other Planning
+and legacy transports retain whole-value references. This removes repeated
+serialization without changing the frozen source window or admission limits.
+
 For an explicit prospective deployment, `install_chapter_validation_pack` accepts
 `prompt_template_version="v15"` together with a new Pack ID and version. Compilation
 freezes its template hash and compiler version. Its Provider prompt projects only the
@@ -2654,6 +2664,28 @@ Context receipt does not qualify the instructions or prove literary quality.
 For transaction errors, `DatabaseRetryClass.SAFE_RETRY` covers only explicitly safe
 SQLSTATEs. `RECONCILIATION_REQUIRED` means the commit result may be unknown and must be
 resolved from durable evidence before replay.
+
+Repeated calls of the same native CLI request retain the first actor/file/work identity
+while the native command still checks its frozen input. A restarted uncertain work uses
+its returned Project/Book/checkpoint through `continue`; changing a file is not recovery
+evidence. Existing Reader activation replay requires the exact active deployment release
+and manifest/catalog. A drifted activation is reconciled by its native owner; this does
+not impose a Reader or qualification requirement on author-first saved manuscript access.
+
+Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
+
+
+A `chapter.context.build@3.10.0` step that exhausted only local
+`TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED` or
+`TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED` checks may use the existing failed-step
+successor with `chapter-unsent-context-transport.v1` and
+`provider-working-intent-accounting.v1`. It binds every unchanged input hash to
+an active compiled v13 Chapter Pack at the executing release, requires zero
+ExternalEffects, reservations and output assets, and permits this transport
+correction once in the original step lineage. The Kernel retains the original
+Attempts and terminal state. Capacity, completion checks, Provider authorization
+and the final rendered-request admission remain authoritative; admitting a
+successor does not prove that its Context or Writer will fit.
 
 ## Evidence interpretation
 
@@ -3719,6 +3751,23 @@ manifest. Native Writer output, editing proposals, operator selections, human au
 choices and formal acceptance must remain separately identifiable. See the ordinary
 writing and author editing contracts in `docs/current-system.md`.
 
+Before a structural working-manuscript continuation, reread the actual selected prefix,
+current plan bindings, service release, original database identity and dispatch policy.
+Historical report cursors and capacity failures are not current runtime facts. Compare
+generated restrictions with the exact author Brief and Foundation before retaining them as
+story requirements. Preserve selected past prose and correct affected future parent scopes
+through native Plan Change, then bind the new input snapshot before Chapter admission.
+An original instance with dispatch disabled or no write grant stays unchanged; a disposable
+restore can validate prospective decisions and writing, explicitly marked as an isolated
+operator result awaiting original adoption. It cannot supply a human author approval.
+The checked Chapter Pack currently binds prose-generation-v4 even though the root Skill is
+v5. A prospective v5 selection requires a new exact Pack binding and admission, with the
+actual rendered Skill/hash retained in Provider evidence. Keep frozen v4 requests recoverable.
+Budget the final complete rendered request rather than summing stored Context assets.
+Optional older prose may be reallocated prospectively with explicit omissions, while required
+recent prose and causal dependencies remain intact. A pre-send failure uses its owning
+bounded continuation; it does not authorize a replacement request identity or a larger cap.
+
 For an unaccepted author-first source, pass `revision_candidate_origin` to Book start
 with version `book-working-revision-origin.v1`, `source_book_run_id`, the exact
 `source_book_version` and `plan_change_proposal_id`. Resolve the candidate at narrative
@@ -4108,52 +4157,3 @@ The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 templ
 Codex wire projection `codex-structured-schema.v6` represents the optional draft `working_memory_json` field as required and nullable only for `:working-memory-v1` contracts. Decoding null omits that metadata before the unchanged domain Schema and prose checks. Other contracts retain their existing projection. A recorded v5 protocol rejection may use the native StepSuccessor after all exact membership rejection receipts are reconciled and settled; the correction retains the coordinated OperationDefinition and binds the exact active Chapter Pack deployment, original inputs and actor. A v6 rejection cannot repeat this correction. The historical undispatched experimental 3.10.2 Pack preflight successor has a narrowly checked return to the coordinated contract; its failed Attempts remain append-only.
 
 The unsent v12-to-v13 correction binds `kernel-unsent-transport-window.v1` to the exact compiled target deployment. Native StepSuccessor atomically retains exhausted failure history, extends only a derived Root window by its original bounded duration, aligns the Saga deadline projection and registers the successor. Explicit author/business deadlines, active leases, unsettled sibling Effects and irreversible work retain their existing guards. The single correction decision and shared fault counter do not reset on restart.
-
-Repeated calls of the same native CLI request retain the first actor/file/work identity
-while the native command still checks its frozen input. A restarted uncertain work uses
-its returned Project/Book/checkpoint through `continue`; changing a file is not recovery
-evidence. Existing Reader activation replay requires the exact active deployment release
-and manifest/catalog. A drifted activation is reconciled by its native owner; this does
-not impose a Reader or qualification requirement on author-first saved manuscript access.
-
-Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
-
-
-Before a structural working-manuscript continuation, reread the actual selected prefix,
-current plan bindings, service release, original database identity and dispatch policy.
-Historical report cursors and capacity failures are not current runtime facts. Compare
-generated restrictions with the exact author Brief and Foundation before retaining them as
-story requirements. Preserve selected past prose and correct affected future parent scopes
-through native Plan Change, then bind the new input snapshot before Chapter admission.
-An original instance with dispatch disabled or no write grant stays unchanged; a disposable
-restore can validate prospective decisions and writing, explicitly marked as an isolated
-operator result awaiting original adoption. It cannot supply a human author approval.
-The checked Chapter Pack currently binds prose-generation-v4 even though the root Skill is
-v5. A prospective v5 selection requires a new exact Pack binding and admission, with the
-actual rendered Skill/hash retained in Provider evidence. Keep frozen v4 requests recoverable.
-Budget the final complete rendered request rather than summing stored Context assets.
-Optional older prose may be reallocated prospectively with explicit omissions, while required
-recent prose and causal dependencies remain intact. A pre-send failure uses its owning
-bounded continuation; it does not authorize a replacement request identity or a larger cap.
-
-A `chapter.context.build@3.10.0` step that exhausted only local
-`TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED` or
-`TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED` checks may use the existing failed-step
-successor with `chapter-unsent-context-transport.v1` and
-`provider-working-intent-accounting.v1`. It binds every unchanged input hash to
-an active compiled v13 Chapter Pack at the executing release, requires zero
-ExternalEffects, reservations and output assets, and permits this transport
-correction once in the original step lineage. The Kernel retains the original
-Attempts and terminal state. Capacity, completion checks, Provider authorization
-and the final rendered-request admission remain authoritative; admitting a
-successor does not prove that its Context or Writer will fit.
-
-For a v13 Chapter Writer using a frozen working-prose v2/v3 projection, final
-request materialization uses `provider-structured-exact-reference.v1` inside the
-existing exact-reference compiler. Canonical JSON summaries retain all original
-bytes after decoding; repeated objects may refer to an earlier complete object
-with explicit field replacements and removals. The host verifies full source
-reconstruction and records source/encoded hashes and reference counts. The
-rendered stage contract explains these encodings to the Provider. Other Planning
-and legacy transports retain whole-value references. This removes repeated
-serialization without changing the frozen source window or admission limits.
