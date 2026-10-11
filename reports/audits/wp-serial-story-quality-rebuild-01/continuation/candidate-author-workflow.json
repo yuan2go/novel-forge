@@ -1,0 +1,12 @@
+{
+  "operation_id": "5cecc67d-1bc7-4058-b2b2-6da427e03d20",
+  "status": "SUCCEEDED",
+  "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+  "policy_asset_version_id": "debda006-28ed-49e0-9ce0-73d89e6ff043",
+  "author_workflow": {
+    "version": "author-workflow.v1",
+    "mode": "AUTHOR_FIRST",
+    "deep_review": false
+  },
+  "replayed": false
+}

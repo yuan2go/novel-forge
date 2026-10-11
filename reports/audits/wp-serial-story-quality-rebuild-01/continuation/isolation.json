@@ -1,0 +1,31 @@
+{
+  "baseline_sha": "f2638df2ea0b4cf93650750dc801d8c9ebe394d9",
+  "source_database": "nf_plot_5c7f319e3331_test",
+  "database_identity": [
+    "nf_serial_quality_continuation_20261011_test",
+    727665,
+    "7695026994287073315"
+  ],
+  "books": [
+    [
+      "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+      "ABORTED",
+      4,
+      0,
+      29
+    ],
+    [
+      "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "READY",
+      40,
+      0,
+      277
+    ]
+  ],
+  "backup_sha256": "a65632da01bddc5ea43f6bd0b0d812a67ee9eab04f0a8f05980ad0338e8b4e57",
+  "backup_bytes": 470010794,
+  "restore": "PASS_DATABASE_RESTORED",
+  "object_store_restore": "NOT_VERIFIED",
+  "source_mutations": 0,
+  "provider_calls": 0
+}

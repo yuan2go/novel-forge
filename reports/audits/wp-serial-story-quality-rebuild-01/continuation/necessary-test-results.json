@@ -1,0 +1,85 @@
+{
+  "work_package": "WP-SERIAL-STORY-QUALITY-REBUILD-01",
+  "final_source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+  "final_scoped_suite": {
+    "status": "PASS",
+    "passed": 220,
+    "command": "PYTHONPATH=src python -m pytest -q tests/unit/test_work_intent_residuals.py tests/unit/test_work_intent_consistency.py tests/unit/test_prose_reviewer_sampling.py tests/unit/test_cross_chapter_prose_review.py tests/unit/test_prompt_skill_calibration.py tests/unit/test_capability_pack_artifact_materialization.py tests/unit/test_longform_capability_pack_profiles.py"
+  },
+  "ruff": "PASS",
+  "diff_check": "PASS",
+  "documentation_reality": "PASS",
+  "instruction_surface": "PASS",
+  "canonical_p0": "NOT_RUN",
+  "full_ci": "NOT_RUN",
+  "ceiling": "EXECUTABLE",
+  "preserved_initial_failures": [
+    "Existing main sampling assertion expected1.3.0 while builder actually1.4.0; assertion updated to observed current version.",
+    "New test initially used ResolvedArtifact.content instead of its content_json.",
+    "New Quality compatibility fixture lacked frozen applicability; corrected fixture retains original gate.",
+    "Checked projection initially stale after final test additions; recomputed implementation identity."
+  ],
+  "logs": [
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/focused-tests.txt",
+      "sha256": "f1d5f8dc8c3021cdf4e88fc49ae263c7b1f55883a3c736eabb76a7251b845436",
+      "status": "PASS",
+      "tail": "........................................................................ [ 54%]\n............................................................             [100%]\n132 passed in 4.82s\n"
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/template-tests.txt",
+      "sha256": "789797968c44de20b47a7e9381f80999f0dcb8014c684e134221b1d26e649cce",
+      "status": "FAIL",
+      "tail": null
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/template-tests-final.txt",
+      "sha256": "445a5cf41f52ef34b06345a7251a53cf4ba7f9ace95c69cb0b7ead807559e6d4",
+      "status": "PASS",
+      "tail": null
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/template-contract-final.txt",
+      "sha256": "6b3b8bd7c9ae0390d811411be155368ec2da80eb5c1ad72294b6fd2489346e93",
+      "status": "PASS",
+      "tail": null
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/template-contract-release.txt",
+      "sha256": "33c94957902a9137523ec4fa55d58ae84402337483be8734266efc3e8a10a6ea",
+      "status": "FAIL",
+      "tail": null
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/template-contract-release-final.txt",
+      "sha256": "a12e951f6f6e0474b17a24078fbdfb498cf5b0a0faf4355a95466748965948f5",
+      "status": "PASS",
+      "tail": null
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/final-scoped-release-tests.txt",
+      "sha256": "f3d5de823e76c5849549d85422d9c312662c641c04b2b884c8bcec014c0f8b45",
+      "status": "PASS",
+      "tail": "........................................................................ [ 32%]\n........................................................................ [ 65%]\n........................................................................ [ 98%]\n....                                                                     [100%]\n220 passed in 3.74s\n"
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/documentation-final-check.txt",
+      "sha256": "be220237b4d83e604f15d79a4b61d15d9e7b2ae653b646f0689c79209712b7f1",
+      "status": "PASS",
+      "tail": null
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/documentation-final-release-check.txt",
+      "sha256": "52c47bc1e6f4c7cdfa82e62a47336c16f2543b5a3be6104f2cd824d10f2d1d1d",
+      "status": "PASS",
+      "tail": null
+    },
+    {
+      "log": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/instruction-template-check.txt",
+      "sha256": "b2c6c6bab43085a8955545839942e418d63dbbe8c2b1e7f05239279e037902df",
+      "status": "PASS",
+      "tail": null
+    }
+  ],
+  "literary_quality_proof": false
+}

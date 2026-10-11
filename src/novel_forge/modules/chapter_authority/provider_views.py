@@ -3344,6 +3344,15 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
     if len(inputs) != 1 or inputs[0].get("asset_type") != "longform_prose_review_window":
         raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "exactly one bounded prose window is required")
     projection = inputs[0]["projection"]
+    if projection["policy"].get("reading_mode") == "BODY_FIRST":
+        if any("creative_baseline" in span or "work_intent_status" in span
+               for span in projection["window"]["spans"]):
+            raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "Body-first reading cannot receive design inputs")
+        return {
+            "contract_version": "provider-context-view-v3", "stage": "longform_prose_review",
+            "frozen_prose": projection,
+            "instruction": "先阅读所提供的正文，不推定作者设计、题材或市场目标。记录正文呈现的目标、想跳读的具体段落、人物选择、处境变化与具体续读期待；用给定维度和精确Unicode引用记录观察。区分阅读感受、客观错误和证据不足，不能把个人偏好当成文学资格门禁。不能判断未提供的设计承诺是否兑现，也不能归因于未提供的计划或Writer输入。若返回repair，无法从正文确定的源头用UNKNOWN/INVESTIGATE，不为结构不足提出扩写。所有结果为模型审读意见，不是真人反馈、作者接纳或市场效果。不得修改正文、Canon或计划。",
+        }
     if projection["schema_version"] == "longform-prose-window.v1":
         # COMPATIBILITY: queued v1 windows retain their original frozen request semantics.
         return {"contract_version": "provider-context-view-v2", "stage": "longform_prose_review", "frozen_prose": inputs[0]["projection"], "instruction": "审读实际提供的中文玄幻/武侠正文。逐项检查结构与冲突模式重复、人物目标和关系停滞、铺垫推进兑现、声线表达、弧级节奏、动机与代价。合理变化、有意重复、未到兑现期和证据不足必须区分。只引用给定原文 Unicode code-point 坐标和精确 quote；不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。若窗口含 relation_hypothesis，它只是文本锚点检索得到的未核验关系假设；ISSUE 或 INTENTIONAL 关系判断必须分别引用两个给定片段，区分因果、人物认知、承诺、伏笔与偶然重词，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见。不得修改正文、Canon 或计划。"}

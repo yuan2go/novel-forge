@@ -1,0 +1,38 @@
+{
+  "asset_version_id": "5f0908c4-1b57-4d08-9702-e051d98af5fb",
+  "details": {
+    "error_code": "PROVIDER_ROUTING_BLOCKED",
+    "stage": "PROVIDER_ROUTE_ADMISSION",
+    "task_stage": "longform_prose_review",
+    "cause": "ROUTE_CANDIDATES_REJECTED",
+    "execution_identity": {
+      "project_id": "qid-learning-prose-01",
+      "work_id": "book:qinglan-wendao-20261008",
+      "operation_id": "09641b75-77ca-4d21-b180-7a52d781bf21",
+      "attempt_id": "63933cb4-d1b7-4a52-b77a-166b16b4ed19",
+      "chain_id": "sha256:1dae405bd56afa1be138da86e86138c8c96a62df851d4244cba25bad6e6a7604"
+    },
+    "decision_id": "routing-decision:8bbbe3a20e75b69569a987c53dd9caeaf7092c27870e22764f2b1fb8897e0537",
+    "candidate_rejections": [
+      {
+        "candidate_id": "codex-cli:gpt-6.1-sol:high",
+        "rejected_reasons": [
+          "TEMPLATE_MODEL_UNAUTHORIZED"
+        ],
+        "estimated_total_tokens": 94721
+      },
+      {
+        "candidate_id": "codex-cli:gpt-6-sol:high",
+        "rejected_reasons": [
+          "PROVIDER_UNAVAILABLE:PROVIDER_RESPONSE_TIMEOUT:6559e375-1171-4ccf-834e-ff74f1422561:until:2026-10-11T04:17:07.965954+00:00"
+        ],
+        "estimated_total_tokens": 94721
+      }
+    ],
+    "retryability": "CHANGED_ADMISSION_REQUIRED",
+    "recovery_action": "INSPECT_ROUTE_ADMISSION",
+    "recovery_state": "NOT_SENT",
+    "business_impact": "NO_GENERATED_CANDIDATE",
+    "provider_invoked": false
+  }
+}

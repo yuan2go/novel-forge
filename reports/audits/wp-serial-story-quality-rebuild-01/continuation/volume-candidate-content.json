@@ -1,0 +1,1408 @@
+{
+  "asset_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+  "content_hash": "sha256:fa05e5b8bb2f53a20c8b1423c98be8015d014a9d25388644b882e768680d785b",
+  "content": {
+    "type": "PlanningGenerationCandidate",
+    "climax": "卷末以一件不同于首次采药的有限任务检验已有进步：沈砚按自己能辨认的材料、时段和路段提出办法，听取同行人的实际需要后执行并交付。结果显示他已能主动运用基础学习方法，同时保留继续学习的具体缺口。",
+    "book_id": "book:qinglan-wendao-20261008",
+    "midpoint": "在开篇事件之后的一次实际学习与劳作中，沈砚把初次气感后练出的可重复方法用于眼前工作，并依据结果调整自己的练习时段；进步表现为有用且有限的本领。",
+    "objective": "在第1至48章确立普通少年学习修行的尺度：四章内完成入门、初次气感、首次结伴采药及陌生药路同行实践，并得到正式课程请求的明确回应；随后让所得用于不同的学习和劳作，使沈砚逐渐能选择、解释并承担自己能力范围内的办法。",
+    "project_id": "qid-learning-prose-01",
+    "settlement": "本卷收束于初学本领已经能够用于有限实践：沈砚完成开篇四章的采药与陌生药路经历，并在后续不同任务中继续使用所得。他与同门形成可协商的合作关系，对正式课程及基础学习的下一步有清楚认识；独自御剑远行仍是需要逐步挣得的远期目标。",
+    "contract_id": "qinglan-volume-1-candidate",
+    "logical_key": "volume:1",
+    "world_deltas": [
+      {
+        "change": "拟通过沈砚亲历的入门、基础指导、劳动安排、采药交回和正式课程答复，逐步显出各事务的条件与负责人；具体课位和资格由当时有权者说明。",
+        "subject": "青岚宗外门"
+      },
+      {
+        "change": "拟在首次采药中呈现折露草成熟外叶采收、保留芽根与实物验收；首次交回的结果为一段陌生药路同行实践提供实际理由。",
+        "subject": "石湾谷及相关药路"
+      },
+      {
+        "change": "拟将初次气感、后续重复练习与实际运用区分，按人物所学逐步显出方法的用途和限制。",
+        "subject": "基础修炼"
+      }
+    ],
+    "chapter_range": [
+      1,
+      48
+    ],
+    "frozen_inputs": [
+      {
+        "role": "book_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "role": "story_state",
+        "asset_type": "story_state_snapshot",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      {
+        "role": "arc_portfolio",
+        "asset_type": "arc_portfolio",
+        "content_hash": "sha256:fb0b61387673372088867e07ae1754858cae4f1f03fc7793537a228dc346ccda",
+        "asset_version_id": "authority-output:67b73c55-47de-44e1-8f5d-dc77de89073a:book.bootstrap.arc_portfolio:v1"
+      },
+      {
+        "role": "canon_snapshot",
+        "asset_type": "canon_snapshot",
+        "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+        "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      {
+        "role": "ending_reachability",
+        "asset_type": "ending_reachability",
+        "content_hash": "sha256:d694bfb72b6f35b16904c8ec98db409e04d565c50810ac75ae8044c2ca6d4174",
+        "asset_version_id": "authority-output:50bb9143-40b6-43bc-9683-f80585be8aa4:book.bootstrap.ending_reachability:v1"
+      },
+      {
+        "role": "previous_volume_outcome",
+        "asset_type": "previous_volume_outcome",
+        "content_hash": "sha256:4235349467eeb7be6481c6e6b10a05eb2e1991df68c1070e0d98f891de8e28c8",
+        "asset_version_id": "authority-output:d741dfe5-0119-4801-a447-78409f291161:book.bootstrap.previous_volume_outcome:v1"
+      }
+    ],
+    "planning_scope": "VOLUME",
+    "schema_version": "story_design.authority.v1",
+    "stage_conflict": "沈砚想尽快看懂向外走的路并学到修行本领，却必须在初学能力、劳动时段、药材质量和同行人的合理目标之间选择可执行的办法；初次所得如何变成可重复、可用于生活的本领，是本卷持续的问题。",
+    "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "exit_state_spec": {
+      "summary": "拟在第48章末，沈砚已完成入门、初次气感、首次结伴采药及交回，也实际走过并能向需要的人说明一段陌生药路；正式课程请求已有权限内的清楚答复和可执行的学习安排。其后他通过不同任务继续练习，能在有限范围内运用已学方法、协商时间与分工，并知道下一阶段仍需补足什么。宗门关系仍在，远行本领尚未获得。"
+    },
+    "quality_targets": {
+      "minimum": 80
+    },
+    "required_events": [
+      "第1章：沈砚主动争取并获得入门机会；帮助陆衡，也安顿自己的劳动。日常动作只取能说明愿望、处境或人情的部分。",
+      "第2章：以数日练习的省略和许庭一次有效答疑，呈现沈砚观察、调整后获得初次气感；他知道尚不稳定，并决定参加首次结伴采药。",
+      "第3章：三人说明各自所需，分歧当场改变路线、时段或分工；依当时知识辨认并采收，保留芽根，完成回程和实物交回。实际交付产生一项明确的陌生药路同行机会。",
+      "第4章：沈砚实际参加陌生药路同行实践，在一处新方向或地形判断上先说出自己的方案，经现场指认修正，最后能向需要的人讲清走过的这一段。负责者对正式课程请求给出权限内的清楚答复及可执行的下一步。",
+      "第5至48章：承接已完成的交付、路段经验与课程答复，安排有实际用途的学习和劳作；至少一次让初学方法在工作中发挥有限作用，至少一次让同伴的时间或目标改变合作办法。",
+      "卷末：沈砚完成一件不同于首次采药、能力相称的有限任务，呈现自己提出办法、协商、执行与承接结果的过程，并辨明下一阶段仍需学习的部分。"
+    ],
+    "volume_function": "作为全书第一卷，建立入门、学习、劳作与合作的具体尺度。开篇四章完整兑现第一次采药及由此获得的陌生药路实践；余下篇幅观察这些结果如何进入持续练习和不同任务，使长期独自御剑远行愿望获得可信的初始基础。",
+    "character_deltas": [
+      {
+        "change": "从主动争取入门却不熟悉宗门生活，发展到获得初次气感、完成首次结伴采药与一段陌生药路的同行实践；卷末能说明自己尚需练习的具体部分，并依已有本领承担有限任务。",
+        "subject": "沈砚"
+      },
+      {
+        "change": "通过提出有效的时间与分担办法，让自己的练习安排得到尊重；是否继续同行由实际日程和双方需要决定。",
+        "subject": "陆衡"
+      },
+      {
+        "change": "把书面辨药知识用于现场比较与交回用途；她因所得确有帮助而选择是否继续合作。",
+        "subject": "唐穗"
+      },
+      {
+        "change": "在职责范围内给予基础指导和简短、具体的反馈，不代替课程负责者决定资格。",
+        "subject": "许庭"
+      },
+      {
+        "change": "依据实际交付处理事务与一次同行机会，明确自己能安排的事项，不越权承诺课程。",
+        "subject": "程观"
+      }
+    ],
+    "forbidden_events": [
+      "倒置或替换入门、初次引气、首次结伴采药、争取正式外门修炼课的顺序。",
+      "把第3章的首次采药交回推迟到第4章，或把第4章的陌生药路实践写成仅获同行邀约。",
+      "把短暂气感写成法术、稳定灵气运用、全知辨药或已具独自御剑能力。",
+      "在未辨明药材或成熟可采份额时乱采；损伤应保留的芽根。",
+      "让教习、事务人员或同行者越权保证课位、库存、报酬、资格或他人承诺。",
+      "以新反派、秘密传承、外挂、死亡、背叛或重大牺牲推动本卷普通学习任务。",
+      "为延长篇幅反复撤销已完成的交付、已获得的初步本领或已给出的明确答复。"
+    ],
+    "hard_constraints": [
+      "本卷范围为第1至48章；第1至4章承载完整开篇事件，后续单元从第5章开始。",
+      "沈砚起点是十六岁的普通山村少年，主动争取入门，尚不具备独自御剑远行本领。",
+      "第1章完成主动入门及帮助陆衡与自己安顿劳动；第2章以数日省略和一次有效答疑完成初次气感，并决定参加首次采药。",
+      "第3章完成首次结伴采药的辨认、采收、选择、回程、实物交回和明确机会；第4章实际完成陌生药路同行实践，并获得正式课程请求的职责内答复。",
+      "首次采药只使用人物当时具备的体力、观察、初学呼吸和合作；普通劳动经验不替代引气、药材辨认或路线核实。",
+      "采折露草前核实当前成熟可采份额，只采成熟外叶，保留芽根；验收依据事前说明和实际质量。",
+      "正式课程录入须满足当期实际可用课位及其他已明确条件；基础吐纳说明、指定答疑与正式课程各有不同门槛。",
+      "资源、时段和交付按已明确的来源、用途与限度处理；劳作、练习、赶路、休息及承诺不得重复占用同一时段。",
+      "陆衡、唐穗各有自己的目标和时间；分歧须实际改变当次方案，沈砚可以让步、提出办法并承担选择结果。",
+      "以沈砚为主的第三人称限知视角呈现人物所见所闻；机构资料、他人私下动机和未公布条件须经实际接触才进入他的知识。",
+      "后续练习承接初次气感与首次药路所得；稳定重复运用灵气需要后续实践支持，已掌握的能力不因单元转换自动消失。",
+      "每项普通任务按其完整因果呈现结果；章数本身不构成延迟交付或重复准备的理由。"
+    ],
+    "planning_horizon": "STRATEGIC",
+    "required_payoffs": [
+      "初次气感由具体观察、调整和一次清楚的体验支持；后续运用证明练习可以积累，但不把初次体验夸大为稳定操控。",
+      "首次采药在第3章取得明确交付结果；陆衡、唐穗和沈砚各自的贡献及所求影响这次结果和后续合作。",
+      "首次采药带来的陌生药路机会在第4章实际兑现；沈砚能向需要的人说明自己走过并经修正的路段。",
+      "正式课程请求得到清楚的职责内答复，已确认条件和可执行学习办法一并呈现；未入课也不能只剩含糊等待。",
+      "后续不同任务显出已有方法的实际用途、限度和继续学习的方向；卷末进步可由行动结果辨认。",
+      "保留同门各自的目标与日程，使帮助、拒绝和再次合作都有具体理由。"
+    ],
+    "soft_constraints": [
+      "主要使用简体中文及以沈砚为主的第三人称限知视角；人物可以说笑、争执和修正误会，言语随各自目的而变。",
+      "练习、往返和准备按作用分配篇幅；没有新结果的重复过程可以略过。",
+      "许庭的反馈可以短促、生活化；程观只处理自己掌握的事务与同行安排。",
+      "具体路线、材料用途和课程安排在使用前交代到足以理解选择，不一次铺陈完整制度。",
+      "第5至48章允许安静的学习和稳定日常，但每个展开的任务应有自己的用途与可见结果。"
+    ],
+    "stage_antagonist": null,
+    "arc_contributions": [],
+    "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "candidate_payload": {
+      "climax": "卷末以一件不同于首次采药的有限任务检验已有进步：沈砚按自己能辨认的材料、时段和路段提出办法，听取同行人的实际需要后执行并交付。结果显示他已能主动运用基础学习方法，同时保留继续学习的具体缺口。",
+      "midpoint": "在开篇事件之后的一次实际学习与劳作中，沈砚把初次气感后练出的可重复方法用于眼前工作，并依据结果调整自己的练习时段；进步表现为有用且有限的本领。",
+      "objective": "在第1至48章确立普通少年学习修行的尺度：四章内完成入门、初次气感、首次结伴采药及陌生药路同行实践，并得到正式课程请求的明确回应；随后让所得用于不同的学习和劳作，使沈砚逐渐能选择、解释并承担自己能力范围内的办法。",
+      "settlement": "本卷收束于初学本领已经能够用于有限实践：沈砚完成开篇四章的采药与陌生药路经历，并在后续不同任务中继续使用所得。他与同门形成可协商的合作关系，对正式课程及基础学习的下一步有清楚认识；独自御剑远行仍是需要逐步挣得的远期目标。",
+      "contract_id": "qinglan-volume-1-candidate",
+      "logical_key": "volume:1",
+      "world_deltas": [
+        {
+          "change": "拟通过沈砚亲历的入门、基础指导、劳动安排、采药交回和正式课程答复，逐步显出各事务的条件与负责人；具体课位和资格由当时有权者说明。",
+          "subject": "青岚宗外门"
+        },
+        {
+          "change": "拟在首次采药中呈现折露草成熟外叶采收、保留芽根与实物验收；首次交回的结果为一段陌生药路同行实践提供实际理由。",
+          "subject": "石湾谷及相关药路"
+        },
+        {
+          "change": "拟将初次气感、后续重复练习与实际运用区分，按人物所学逐步显出方法的用途和限制。",
+          "subject": "基础修炼"
+        }
+      ],
+      "chapter_range": [
+        1,
+        48
+      ],
+      "stage_conflict": "沈砚想尽快看懂向外走的路并学到修行本领，却必须在初学能力、劳动时段、药材质量和同行人的合理目标之间选择可执行的办法；初次所得如何变成可重复、可用于生活的本领，是本卷持续的问题。",
+      "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "exit_state_spec": {
+        "summary": "拟在第48章末，沈砚已完成入门、初次气感、首次结伴采药及交回，也实际走过并能向需要的人说明一段陌生药路；正式课程请求已有权限内的清楚答复和可执行的学习安排。其后他通过不同任务继续练习，能在有限范围内运用已学方法、协商时间与分工，并知道下一阶段仍需补足什么。宗门关系仍在，远行本领尚未获得。"
+      },
+      "quality_targets": {
+        "minimum": 80
+      },
+      "required_events": [
+        "第1章：沈砚主动争取并获得入门机会；帮助陆衡，也安顿自己的劳动。日常动作只取能说明愿望、处境或人情的部分。",
+        "第2章：以数日练习的省略和许庭一次有效答疑，呈现沈砚观察、调整后获得初次气感；他知道尚不稳定，并决定参加首次结伴采药。",
+        "第3章：三人说明各自所需，分歧当场改变路线、时段或分工；依当时知识辨认并采收，保留芽根，完成回程和实物交回。实际交付产生一项明确的陌生药路同行机会。",
+        "第4章：沈砚实际参加陌生药路同行实践，在一处新方向或地形判断上先说出自己的方案，经现场指认修正，最后能向需要的人讲清走过的这一段。负责者对正式课程请求给出权限内的清楚答复及可执行的下一步。",
+        "第5至48章：承接已完成的交付、路段经验与课程答复，安排有实际用途的学习和劳作；至少一次让初学方法在工作中发挥有限作用，至少一次让同伴的时间或目标改变合作办法。",
+        "卷末：沈砚完成一件不同于首次采药、能力相称的有限任务，呈现自己提出办法、协商、执行与承接结果的过程，并辨明下一阶段仍需学习的部分。"
+      ],
+      "volume_function": "作为全书第一卷，建立入门、学习、劳作与合作的具体尺度。开篇四章完整兑现第一次采药及由此获得的陌生药路实践；余下篇幅观察这些结果如何进入持续练习和不同任务，使长期独自御剑远行愿望获得可信的初始基础。",
+      "character_deltas": [
+        {
+          "change": "从主动争取入门却不熟悉宗门生活，发展到获得初次气感、完成首次结伴采药与一段陌生药路的同行实践；卷末能说明自己尚需练习的具体部分，并依已有本领承担有限任务。",
+          "subject": "沈砚"
+        },
+        {
+          "change": "通过提出有效的时间与分担办法，让自己的练习安排得到尊重；是否继续同行由实际日程和双方需要决定。",
+          "subject": "陆衡"
+        },
+        {
+          "change": "把书面辨药知识用于现场比较与交回用途；她因所得确有帮助而选择是否继续合作。",
+          "subject": "唐穗"
+        },
+        {
+          "change": "在职责范围内给予基础指导和简短、具体的反馈，不代替课程负责者决定资格。",
+          "subject": "许庭"
+        },
+        {
+          "change": "依据实际交付处理事务与一次同行机会，明确自己能安排的事项，不越权承诺课程。",
+          "subject": "程观"
+        }
+      ],
+      "forbidden_events": [
+        "倒置或替换入门、初次引气、首次结伴采药、争取正式外门修炼课的顺序。",
+        "把第3章的首次采药交回推迟到第4章，或把第4章的陌生药路实践写成仅获同行邀约。",
+        "把短暂气感写成法术、稳定灵气运用、全知辨药或已具独自御剑能力。",
+        "在未辨明药材或成熟可采份额时乱采；损伤应保留的芽根。",
+        "让教习、事务人员或同行者越权保证课位、库存、报酬、资格或他人承诺。",
+        "以新反派、秘密传承、外挂、死亡、背叛或重大牺牲推动本卷普通学习任务。",
+        "为延长篇幅反复撤销已完成的交付、已获得的初步本领或已给出的明确答复。"
+      ],
+      "hard_constraints": [
+        "本卷范围为第1至48章；第1至4章承载完整开篇事件，后续单元从第5章开始。",
+        "沈砚起点是十六岁的普通山村少年，主动争取入门，尚不具备独自御剑远行本领。",
+        "第1章完成主动入门及帮助陆衡与自己安顿劳动；第2章以数日省略和一次有效答疑完成初次气感，并决定参加首次采药。",
+        "第3章完成首次结伴采药的辨认、采收、选择、回程、实物交回和明确机会；第4章实际完成陌生药路同行实践，并获得正式课程请求的职责内答复。",
+        "首次采药只使用人物当时具备的体力、观察、初学呼吸和合作；普通劳动经验不替代引气、药材辨认或路线核实。",
+        "采折露草前核实当前成熟可采份额，只采成熟外叶，保留芽根；验收依据事前说明和实际质量。",
+        "正式课程录入须满足当期实际可用课位及其他已明确条件；基础吐纳说明、指定答疑与正式课程各有不同门槛。",
+        "资源、时段和交付按已明确的来源、用途与限度处理；劳作、练习、赶路、休息及承诺不得重复占用同一时段。",
+        "陆衡、唐穗各有自己的目标和时间；分歧须实际改变当次方案，沈砚可以让步、提出办法并承担选择结果。",
+        "以沈砚为主的第三人称限知视角呈现人物所见所闻；机构资料、他人私下动机和未公布条件须经实际接触才进入他的知识。",
+        "后续练习承接初次气感与首次药路所得；稳定重复运用灵气需要后续实践支持，已掌握的能力不因单元转换自动消失。",
+        "每项普通任务按其完整因果呈现结果；章数本身不构成延迟交付或重复准备的理由。"
+      ],
+      "planning_horizon": "STRATEGIC",
+      "required_payoffs": [
+        "初次气感由具体观察、调整和一次清楚的体验支持；后续运用证明练习可以积累，但不把初次体验夸大为稳定操控。",
+        "首次采药在第3章取得明确交付结果；陆衡、唐穗和沈砚各自的贡献及所求影响这次结果和后续合作。",
+        "首次采药带来的陌生药路机会在第4章实际兑现；沈砚能向需要的人说明自己走过并经修正的路段。",
+        "正式课程请求得到清楚的职责内答复，已确认条件和可执行学习办法一并呈现；未入课也不能只剩含糊等待。",
+        "后续不同任务显出已有方法的实际用途、限度和继续学习的方向；卷末进步可由行动结果辨认。",
+        "保留同门各自的目标与日程，使帮助、拒绝和再次合作都有具体理由。"
+      ],
+      "soft_constraints": [
+        "主要使用简体中文及以沈砚为主的第三人称限知视角；人物可以说笑、争执和修正误会，言语随各自目的而变。",
+        "练习、往返和准备按作用分配篇幅；没有新结果的重复过程可以略过。",
+        "许庭的反馈可以短促、生活化；程观只处理自己掌握的事务与同行安排。",
+        "具体路线、材料用途和课程安排在使用前交代到足以理解选择，不一次铺陈完整制度。",
+        "第5至48章允许安静的学习和稳定日常，但每个展开的任务应有自己的用途与可见结果。"
+      ],
+      "stage_antagonist": null,
+      "arc_contributions": [],
+      "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "forbidden_payoffs": [
+        "用称赞、讲解或未来约定代替首次采药的实物交付及其明确结果。",
+        "用宣布将去陌生药路代替第4章亲身完成的同行实践。",
+        "以获得基础指导、得到好感或听见有课位，冒充正式课程录入。",
+        "以境界名称或旁人替沈砚作全部判断，冒充他已学会说明路段和承担有限任务。",
+        "把本卷初步进步写成全书独自御剑远行愿望的提前兑现。"
+      ],
+      "parent_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "realization_level": "DEFINED",
+      "world_realization": [
+        {
+          "world_id": "青岚宗外门",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "visibility": "SCENE_VISIBLE",
+          "accessibility": "ACCESSIBLE",
+          "invariant_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_INVARIANT",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+            }
+          ],
+          "structure_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_STRUCTURE",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+            }
+          ],
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "world_id": "石湾谷及相关药路",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "visibility": "SCENE_VISIBLE",
+          "accessibility": "RESTRICTED",
+          "invariant_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_INVARIANT",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+            }
+          ],
+          "structure_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_STRUCTURE",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+            }
+          ],
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "world_id": "基础修炼与教学",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "visibility": "VISIBLE",
+          "accessibility": "ACCESSIBLE",
+          "invariant_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_INVARIANT",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+            }
+          ],
+          "structure_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_STRUCTURE",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+            }
+          ],
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        }
+      ],
+      "canon_dependencies": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "authority-output:67b73c55-47de-44e1-8f5d-dc77de89073a:book.bootstrap.arc_portfolio:v1",
+        "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+        "authority-output:50bb9143-40b6-43bc-9683-f80585be8aa4:book.bootstrap.ending_reachability:v1",
+        "authority-output:d741dfe5-0119-4801-a447-78409f291161:book.bootstrap.previous_volume_outcome:v1"
+      ],
+      "narrative_segments": [
+        {
+          "objective": "用四章完成一个由入门和学习发起、经首次合作采药产生机会、再由陌生药路实践兑现的完整事件。第1章完成入门与劳动安顿；第2章略过重复日子，写一次有效答疑和初次气感；第3章完成采收、回程、交回及机会；第4章实走新路并取得课程答复。",
+          "segment_id": "v1-opening",
+          "chapter_range": [
+            1,
+            4
+          ],
+          "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "exit_state_spec": {
+            "summary": "沈砚已入门并安顿初始劳动，获得初次气感；三人完成首次采药和交回，结果带来一次实际兑现的陌生药路同行机会。沈砚在同行中提出、修正并说明一段走过的路；正式课程请求得到明确答复及可执行的下一步。"
+          },
+          "arc_checkpoint_refs": []
+        },
+        {
+          "objective": "承接开篇已经完成的结果，安排基础学习和宗门日常中的不同实际任务。省略无变化的重复练习；当练习影响操作、时间或合作时才展开场景。课程条件若尚未满足，就让沈砚执行已获说明的学习办法并看见具体反馈。",
+          "segment_id": "v1-learning",
+          "chapter_range": [
+            5,
+            24
+          ],
+          "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "exit_state_spec": {
+            "summary": "沈砚已依第4章得到的答复采取可执行的学习办法，能够区分一次气感与较稳定的重复练习；至少一次实际工作显示新方法的用途和限度。陆衡与唐穗的后续合作由各自所得与时段决定。"
+          },
+          "arc_checkpoint_refs": []
+        },
+        {
+          "objective": "以若干目的不同的任务检验初学方法、时间安排与合作能否持续使用。卷末完成一件能力相称的有限任务及其结果，明确下一阶段的学习缺口；每个任务按自身因果收束，章节范围不要求拉长任何单次劳作。",
+          "segment_id": "v1-consolidation",
+          "chapter_range": [
+            25,
+            48
+          ],
+          "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "exit_state_spec": {
+            "summary": "沈砚在不同于首次采药的有限任务中，能够按已知条件提出办法、与同伴协商并完成交付；他知道哪些判断可由自己承担，哪些仍需学习或请教。与同门的关系保留各自选择余地，为下一卷连续学习和任务比较留下具体起点。"
+          },
+          "arc_checkpoint_refs": []
+        }
+      ],
+      "next_volume_bridge": "第二卷从本卷已经得到的课程答复、可执行学习安排与实际任务反馈继续：沈砚可比较不同差事是否有助于当前技术缺口，同时保有本卷获得的气感练习方法、药路经验和可协商的同门关系。",
+      "commitment_contract": [
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "第1至4章依次完成入门、初次气感、首次结伴采药及交回、陌生药路同行实践与正式课程请求的职责内答复；每章承接前章结果。",
+          "commitment_id": "v1-opening-order"
+        },
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "首次采药在第3章完成回程和实物交回；第4章实际走完一次陌生药路同行实践，不能仅约定未来出发。",
+          "commitment_id": "v1-opening-completion"
+        },
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "初次气感不等于稳定重复运用灵气，更不产生采药术法、全知辨药或独自御剑能力；后续能力须由观察、调整和练习支持。",
+          "commitment_id": "v1-learning-boundary"
+        },
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "课程请求获得负责者权限内的明确答复，说明当时已确认的条件与可执行的下一步；基础指导、课位和正式录入分别处理。",
+          "commitment_id": "v1-course-answer"
+        },
+        {
+          "level": "SOFT_INTENT",
+          "statement": "第5至48章用于若干各有实际用途的学习、劳作与合作单元；重复练习和路程可略写，不以拆分普通任务填充章数。",
+          "commitment_id": "v1-later-space"
+        },
+        {
+          "level": "OPEN_DESIGN_SPACE",
+          "statement": "具体材料用途、同行药路、课程可行办法及卷末有限任务，待相应世界条件明确后选择；不预设库存、课位数量、报酬或路线时长。",
+          "commitment_id": "v1-local-detail"
+        }
+      ],
+      "constraint_envelope": {
+        "type": "PlanningConstraintEnvelope",
+        "book_id": "book:qinglan-wendao-20261008",
+        "project_id": "qid-learning-prose-01",
+        "planning_scope": "VOLUME",
+        "envelope_digest": "sha256:5ad251a919b7b023983bfadc0cd78f0d9f7b2c5da76f9f350dea7e6472595af4",
+        "parent_versions": [
+          {
+            "role": "arc_portfolio",
+            "asset_type": "arc_portfolio",
+            "content_hash": "sha256:fb0b61387673372088867e07ae1754858cae4f1f03fc7793537a228dc346ccda",
+            "asset_version_id": "authority-output:67b73c55-47de-44e1-8f5d-dc77de89073a:book.bootstrap.arc_portfolio:v1"
+          },
+          {
+            "role": "book_plan",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          },
+          {
+            "role": "canon_snapshot",
+            "asset_type": "canon_snapshot",
+            "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+            "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+          },
+          {
+            "role": "ending_reachability",
+            "asset_type": "ending_reachability",
+            "content_hash": "sha256:d694bfb72b6f35b16904c8ec98db409e04d565c50810ac75ae8044c2ca6d4174",
+            "asset_version_id": "authority-output:50bb9143-40b6-43bc-9683-f80585be8aa4:book.bootstrap.ending_reachability:v1"
+          },
+          {
+            "role": "previous_volume_outcome",
+            "asset_type": "previous_volume_outcome",
+            "content_hash": "sha256:4235349467eeb7be6481c6e6b10a05eb2e1991df68c1070e0d98f891de8e28c8",
+            "asset_version_id": "authority-output:d741dfe5-0119-4801-a447-78409f291161:book.bootstrap.previous_volume_outcome:v1"
+          },
+          {
+            "role": "story_state",
+            "asset_type": "story_state_snapshot",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+          }
+        ],
+        "contract_version": "planning-constraint-envelope-v2",
+        "change_governance": {
+          "requires_evidence": true,
+          "preserve_executed_history": true,
+          "wider_scope_requires_new_plan_change": true
+        },
+        "prohibited_outcomes": [],
+        "inherited_invariants": [],
+        "required_obligations": [],
+        "narrative_load_policy": {
+          "type": "NarrativeLoadPolicy",
+          "limits": {
+            "max_active_arcs": 3,
+            "max_new_concepts": 4,
+            "max_dormant_arc_age": 30,
+            "max_open_obligations": 12,
+            "max_payoff_congestion": 3,
+            "max_overdue_obligations": 0,
+            "max_major_state_transitions": 8,
+            "max_character_appearance_gap": 10
+          },
+          "book_id": "book:qinglan-wendao-20261008",
+          "policy_id": "canonical-production-narrative-load",
+          "project_id": "qid-learning-prose-01",
+          "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+          "source_role": "production_profile",
+          "policy_version": 1,
+          "contract_version": "narrative-load-policy-v1",
+          "governed_overrides": [],
+          "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+          "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+        },
+        "permitted_change_scope": "VOLUME",
+        "accepted_state_boundary": {
+          "future_plan_only": true,
+          "accepted_through_chapter": 0
+        },
+        "generation_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478",
+        "generator_operation_name": "volume_plan.generate",
+        "narrative_load_projection": {
+          "type": "NarrativeLoadProjection",
+          "status": "MEASURED",
+          "metrics": {
+            "active_arc_count": 0,
+            "dormant_arc_max_age": 0,
+            "narrative_debt_score": 0,
+            "open_obligation_count": 0,
+            "payoff_congestion_count": 0,
+            "overdue_obligation_count": 0,
+            "character_appearance_max_gap": 0
+          },
+          "contract_version": "narrative-load-projection-v2",
+          "open_obligation_ids": [],
+          "overdue_obligation_ids": [],
+          "accepted_through_chapter": 0
+        },
+        "narrative_load_policy_lineage": {
+          "type": "NarrativeLoadPolicyLineage",
+          "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+          "inherited_from": [
+            {
+              "role": "book_plan",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+            }
+          ],
+          "contract_version": "narrative-load-policy-lineage-v1",
+          "frozen_by_generation_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "creative_requirements_contract": "work-requirements.v2"
+      },
+      "context_profile_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "irreversible_change": "首次采药的实物已经交回，随后的一次陌生药路同行实践已经实际完成；这两次经历改变沈砚、陆衡与唐穗能够据以商量的下一步，不能再作为尚未发生的机会重复叙述。",
+      "relationship_deltas": [
+        {
+          "change": "从初次相助发展为能商量时间和分担的合作；陆衡提出的有效办法改变首次路线或工作分配，沈砚承认并实际照顾他的练习安排。",
+          "subject": "沈砚与陆衡"
+        },
+        {
+          "change": "唐穗的现场比较得到实际用途，沈砚的选择也为她保留所需观察；后续是否同行出于双方各自的学习所得。",
+          "subject": "沈砚与唐穗"
+        },
+        {
+          "change": "三人通过采药交付和一次陌生药路实践形成有具体依据的合作经验；后来可以重新分工或暂不同行，不把日程不同写成失信。",
+          "subject": "沈砚、陆衡与唐穗"
+        }
+      ],
+      "character_realization": [
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "VOLUME",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "character_id": "沈砚",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "VOLUME",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "character_id": "陆衡",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "VOLUME",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "character_id": "唐穗",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "VOLUME",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "character_id": "许庭",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "VOLUME",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "story_state_snapshot",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+            "authority_role": "story_state",
+            "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "character_id": "程观",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        }
+      ],
+      "narrative_architecture_version": "canonical-narrative-v1"
+    },
+    "forbidden_payoffs": [
+      "用称赞、讲解或未来约定代替首次采药的实物交付及其明确结果。",
+      "用宣布将去陌生药路代替第4章亲身完成的同行实践。",
+      "以获得基础指导、得到好感或听见有课位，冒充正式课程录入。",
+      "以境界名称或旁人替沈砚作全部判断，冒充他已学会说明路段和承担有限任务。",
+      "把本卷初步进步写成全书独自御剑远行愿望的提前兑现。"
+    ],
+    "parent_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "realization_level": "DEFINED",
+    "world_realization": [
+      {
+        "world_id": "青岚宗外门",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "visibility": "SCENE_VISIBLE",
+        "accessibility": "ACCESSIBLE",
+        "invariant_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_INVARIANT",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          }
+        ],
+        "structure_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STRUCTURE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          }
+        ],
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "world_id": "石湾谷及相关药路",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "visibility": "SCENE_VISIBLE",
+        "accessibility": "RESTRICTED",
+        "invariant_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_INVARIANT",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          }
+        ],
+        "structure_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STRUCTURE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          }
+        ],
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "world_id": "基础修炼与教学",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "visibility": "VISIBLE",
+        "accessibility": "ACCESSIBLE",
+        "invariant_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_INVARIANT",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          }
+        ],
+        "structure_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STRUCTURE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+          }
+        ],
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "canon_dependencies": [
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:67b73c55-47de-44e1-8f5d-dc77de89073a:book.bootstrap.arc_portfolio:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:50bb9143-40b6-43bc-9683-f80585be8aa4:book.bootstrap.ending_reachability:v1",
+      "authority-output:d741dfe5-0119-4801-a447-78409f291161:book.bootstrap.previous_volume_outcome:v1"
+    ],
+    "execution_evidence": {
+      "attempt_id": "e9def6e2-4b0b-4988-bb21-a08e72c12f70",
+      "operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:e0c8c4b6-68e7-49e2-9eb7-91feda953933",
+      "route_snapshot_id": "production_execution/routes/776ffa5b6ada56ce1a6d",
+      "usage_receipt_ref": "authority-asset-version:8298f7a5-2712-4a8d-ad74-637a845f2698",
+      "input_manifest_ref": "production_execution/inputs/776ffa5b6ada56ce1a6d",
+      "context_bundle_hash": "sha256:84ebbf3ce10085955dc62bac3eb348174b4a6e766c0362c224b69b1771d6feb2",
+      "output_manifest_ref": "authority-asset-version:db16fdc6-31af-443c-8e96-7162052194b5",
+      "production_verified": false,
+      "external_receipt_ref": "cc86770c-9bdd-4919-b0c2-b86d52fcd706",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:c19c51cf-fbf2-423c-9776-d37e5a9fe0d2",
+      "capability_execution_ref": "deacca8c-e5e8-5acb-9487-0b0a6b823f36",
+      "capability_execution_hash": "sha256:c2488cc06813aa7e6e59f9e9f079cf8670f3948fa17bc232ac177162206b0747",
+      "capability_runtime_binding_ref": "sha256:8610cd7516875ab1895d7ad2ac87e4c273388beda79872a1856afe6730fbe27e",
+      "capability_runtime_binding_hash": "sha256:3200ef4ce0d6b8af509bd9363b629c3531bde9c778c4222d3d3f46d4ceaa85e8",
+      "context_bundle_asset_version_id": "ec562863-6191-490a-8311-8f8f90effdfc",
+      "capability_pack_attempt_snapshot_id": "sha256:8610cd7516875ab1895d7ad2ac87e4c273388beda79872a1856afe6730fbe27e",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:3200ef4ce0d6b8af509bd9363b629c3531bde9c778c4222d3d3f46d4ceaa85e8",
+      "narrative_intelligence_selection_digest": "sha256:0fd09df140a6875211f9ab06348a4c70b11190cab3cac860c09f766ae6baee57"
+    },
+    "narrative_segments": [
+      {
+        "objective": "用四章完成一个由入门和学习发起、经首次合作采药产生机会、再由陌生药路实践兑现的完整事件。第1章完成入门与劳动安顿；第2章略过重复日子，写一次有效答疑和初次气感；第3章完成采收、回程、交回及机会；第4章实走新路并取得课程答复。",
+        "segment_id": "v1-opening",
+        "chapter_range": [
+          1,
+          4
+        ],
+        "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "exit_state_spec": {
+          "summary": "沈砚已入门并安顿初始劳动，获得初次气感；三人完成首次采药和交回，结果带来一次实际兑现的陌生药路同行机会。沈砚在同行中提出、修正并说明一段走过的路；正式课程请求得到明确答复及可执行的下一步。"
+        },
+        "arc_checkpoint_refs": []
+      },
+      {
+        "objective": "承接开篇已经完成的结果，安排基础学习和宗门日常中的不同实际任务。省略无变化的重复练习；当练习影响操作、时间或合作时才展开场景。课程条件若尚未满足，就让沈砚执行已获说明的学习办法并看见具体反馈。",
+        "segment_id": "v1-learning",
+        "chapter_range": [
+          5,
+          24
+        ],
+        "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "exit_state_spec": {
+          "summary": "沈砚已依第4章得到的答复采取可执行的学习办法，能够区分一次气感与较稳定的重复练习；至少一次实际工作显示新方法的用途和限度。陆衡与唐穗的后续合作由各自所得与时段决定。"
+        },
+        "arc_checkpoint_refs": []
+      },
+      {
+        "objective": "以若干目的不同的任务检验初学方法、时间安排与合作能否持续使用。卷末完成一件能力相称的有限任务及其结果，明确下一阶段的学习缺口；每个任务按自身因果收束，章节范围不要求拉长任何单次劳作。",
+        "segment_id": "v1-consolidation",
+        "chapter_range": [
+          25,
+          48
+        ],
+        "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+        "exit_state_spec": {
+          "summary": "沈砚在不同于首次采药的有限任务中，能够按已知条件提出办法、与同伴协商并完成交付；他知道哪些判断可由自己承担，哪些仍需学习或请教。与同门的关系保留各自选择余地，为下一卷连续学习和任务比较留下具体起点。"
+        },
+        "arc_checkpoint_refs": []
+      }
+    ],
+    "next_volume_bridge": "第二卷从本卷已经得到的课程答复、可执行学习安排与实际任务反馈继续：沈砚可比较不同差事是否有助于当前技术缺口，同时保有本卷获得的气感练习方法、药路经验和可协商的同门关系。",
+    "commitment_contract": [
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "第1至4章依次完成入门、初次气感、首次结伴采药及交回、陌生药路同行实践与正式课程请求的职责内答复；每章承接前章结果。",
+        "commitment_id": "v1-opening-order"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "首次采药在第3章完成回程和实物交回；第4章实际走完一次陌生药路同行实践，不能仅约定未来出发。",
+        "commitment_id": "v1-opening-completion"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "初次气感不等于稳定重复运用灵气，更不产生采药术法、全知辨药或独自御剑能力；后续能力须由观察、调整和练习支持。",
+        "commitment_id": "v1-learning-boundary"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "课程请求获得负责者权限内的明确答复，说明当时已确认的条件与可执行的下一步；基础指导、课位和正式录入分别处理。",
+        "commitment_id": "v1-course-answer"
+      },
+      {
+        "level": "SOFT_INTENT",
+        "statement": "第5至48章用于若干各有实际用途的学习、劳作与合作单元；重复练习和路程可略写，不以拆分普通任务填充章数。",
+        "commitment_id": "v1-later-space"
+      },
+      {
+        "level": "OPEN_DESIGN_SPACE",
+        "statement": "具体材料用途、同行药路、课程可行办法及卷末有限任务，待相应世界条件明确后选择；不预设库存、课位数量、报酬或路线时长。",
+        "commitment_id": "v1-local-detail"
+      }
+    ],
+    "constraint_envelope": {
+      "type": "PlanningConstraintEnvelope",
+      "book_id": "book:qinglan-wendao-20261008",
+      "project_id": "qid-learning-prose-01",
+      "planning_scope": "VOLUME",
+      "envelope_digest": "sha256:5ad251a919b7b023983bfadc0cd78f0d9f7b2c5da76f9f350dea7e6472595af4",
+      "parent_versions": [
+        {
+          "role": "arc_portfolio",
+          "asset_type": "arc_portfolio",
+          "content_hash": "sha256:fb0b61387673372088867e07ae1754858cae4f1f03fc7793537a228dc346ccda",
+          "asset_version_id": "authority-output:67b73c55-47de-44e1-8f5d-dc77de89073a:book.bootstrap.arc_portfolio:v1"
+        },
+        {
+          "role": "book_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "role": "canon_snapshot",
+          "asset_type": "canon_snapshot",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "role": "ending_reachability",
+          "asset_type": "ending_reachability",
+          "content_hash": "sha256:d694bfb72b6f35b16904c8ec98db409e04d565c50810ac75ae8044c2ca6d4174",
+          "asset_version_id": "authority-output:50bb9143-40b6-43bc-9683-f80585be8aa4:book.bootstrap.ending_reachability:v1"
+        },
+        {
+          "role": "previous_volume_outcome",
+          "asset_type": "previous_volume_outcome",
+          "content_hash": "sha256:4235349467eeb7be6481c6e6b10a05eb2e1991df68c1070e0d98f891de8e28c8",
+          "asset_version_id": "authority-output:d741dfe5-0119-4801-a447-78409f291161:book.bootstrap.previous_volume_outcome:v1"
+        },
+        {
+          "role": "story_state",
+          "asset_type": "story_state_snapshot",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        }
+      ],
+      "contract_version": "planning-constraint-envelope-v2",
+      "change_governance": {
+        "requires_evidence": true,
+        "preserve_executed_history": true,
+        "wider_scope_requires_new_plan_change": true
+      },
+      "prohibited_outcomes": [],
+      "inherited_invariants": [],
+      "required_obligations": [],
+      "narrative_load_policy": {
+        "type": "NarrativeLoadPolicy",
+        "limits": {
+          "max_active_arcs": 3,
+          "max_new_concepts": 4,
+          "max_dormant_arc_age": 30,
+          "max_open_obligations": 12,
+          "max_payoff_congestion": 3,
+          "max_overdue_obligations": 0,
+          "max_major_state_transitions": 8,
+          "max_character_appearance_gap": 10
+        },
+        "book_id": "book:qinglan-wendao-20261008",
+        "policy_id": "canonical-production-narrative-load",
+        "project_id": "qid-learning-prose-01",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "source_role": "production_profile",
+        "policy_version": 1,
+        "contract_version": "narrative-load-policy-v1",
+        "governed_overrides": [],
+        "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+        "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+      },
+      "permitted_change_scope": "VOLUME",
+      "accepted_state_boundary": {
+        "future_plan_only": true,
+        "accepted_through_chapter": 0
+      },
+      "generation_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478",
+      "generator_operation_name": "volume_plan.generate",
+      "narrative_load_projection": {
+        "type": "NarrativeLoadProjection",
+        "status": "MEASURED",
+        "metrics": {
+          "active_arc_count": 0,
+          "dormant_arc_max_age": 0,
+          "narrative_debt_score": 0,
+          "open_obligation_count": 0,
+          "payoff_congestion_count": 0,
+          "overdue_obligation_count": 0,
+          "character_appearance_max_gap": 0
+        },
+        "contract_version": "narrative-load-projection-v2",
+        "open_obligation_ids": [],
+        "overdue_obligation_ids": [],
+        "accepted_through_chapter": 0
+      },
+      "narrative_load_policy_lineage": {
+        "type": "NarrativeLoadPolicyLineage",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "inherited_from": [
+          {
+            "role": "book_plan",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "narrative-load-policy-lineage-v1",
+        "frozen_by_generation_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+      },
+      "creative_requirements_contract": "work-requirements.v2"
+    },
+    "context_profile_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "irreversible_change": "首次采药的实物已经交回，随后的一次陌生药路同行实践已经实际完成；这两次经历改变沈砚、陆衡与唐穗能够据以商量的下一步，不能再作为尚未发生的机会重复叙述。",
+    "relationship_deltas": [
+      {
+        "change": "从初次相助发展为能商量时间和分担的合作；陆衡提出的有效办法改变首次路线或工作分配，沈砚承认并实际照顾他的练习安排。",
+        "subject": "沈砚与陆衡"
+      },
+      {
+        "change": "唐穗的现场比较得到实际用途，沈砚的选择也为她保留所需观察；后续是否同行出于双方各自的学习所得。",
+        "subject": "沈砚与唐穗"
+      },
+      {
+        "change": "三人通过采药交付和一次陌生药路实践形成有具体依据的合作经验；后来可以重新分工或暂不同行，不把日程不同写成失信。",
+        "subject": "沈砚、陆衡与唐穗"
+      }
+    ],
+    "character_realization": [
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "VOLUME",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "character_id": "沈砚",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "VOLUME",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "character_id": "陆衡",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "VOLUME",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "character_id": "唐穗",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "VOLUME",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "character_id": "许庭",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "VOLUME",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "story_state_snapshot",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "authority_role": "story_state",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "character_id": "程观",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "generator_operation_name": "volume_plan.generate",
+    "narrative_architecture_version": "canonical-narrative-v1",
+    "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+  }
+}

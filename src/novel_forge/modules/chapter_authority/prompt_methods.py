@@ -74,3 +74,11 @@ def project_planning_system(text: str, *, stage: str, narrative_intent_boundary:
         if stage.startswith("world_candidates."):
             headings.append("World agency")
     return project_sections(text, *headings)
+
+
+def project_chapter_template(text: str, *, stage: str) -> str:
+    method = ("Review" if stage in {"review", "rereview", "longform_prose_review"}
+              else "Revision" if stage == "revision"
+              else "Canon" if stage in {"canon_extraction", "canon_support"}
+              else "Quality" if stage.startswith("quality_") else None)
+    return project_sections(text, "Shared rules", *([method] if method else []))

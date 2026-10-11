@@ -1,0 +1,255 @@
+{
+  "work_package": "WP-SERIAL-STORY-QUALITY-REBUILD-01",
+  "base_main_sha": "f2638df2ea0b4cf93650750dc801d8c9ebe394d9",
+  "writer_source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+  "isolated_database": {
+    "name": "nf_serial_quality_continuation_20261011_test",
+    "oid": 727665,
+    "cluster_system_identifier": "7695026994287073315"
+  },
+  "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+  "root_plan_change_proposal_id": "plan-change:fb7fa0de-481f-45e7-a3b5-0d10a61c8a97",
+  "root_plan_change_activation_operation_id": "057ae77e-fcef-444a-b053-ca3fc42960a5",
+  "current_group_activation_operation_id": "05dccd8c-3eaa-45b7-844b-cb078bc2cf3b",
+  "body_delivery": "PASS",
+  "native_and_selected_same_text": false,
+  "selection_meaning": "Event-level structural revision through native Plan Change and Writer; four exact local assistant expression edits through native editor. No author adoption or formal acceptance.",
+  "native_total_han_characters": 9496,
+  "selected_total_han_characters": 9452,
+  "per_chapter_length_requirement": "FAIL",
+  "unit_approximate_length_scope": "FAIL",
+  "native_full_text_sha256": "sha256:a9454bebb94194a3c0b2682e84b13065aa9edb0e88e0a1daf6f53c7a33fe0e3e",
+  "selected_full_text_sha256": "sha256:a01196b87359576dd1d5bb885958656815584e04eda92524327df8ad9ae4f980",
+  "sources": [
+    {
+      "chapter": 1,
+      "title": "入门的第一天",
+      "native_asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+      "native_content_hash": "sha256:bdf6d79b755871ec3e1983e5ffd04216af2b4b27954f419e238d38dd03044a24",
+      "native_han": 1990,
+      "selected_asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+      "content_hash": "sha256:054c415fbb5d92474fb83261036e93b8b0774fe8d5ee8c875fd0ec7894ada613",
+      "text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 1977,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "selection_source": "ASSISTANT_REVISION_PROPOSAL_THROUGH_NATIVE_EDITOR",
+      "prose_provider_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    },
+    {
+      "chapter": 2,
+      "title": "初识气息",
+      "native_asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "native_content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+      "native_han": 2278,
+      "selected_asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+      "text_hash": "sha256:22fa4bb440ce3ce99caa2dec99d649104871fa28c9786c2c4a8b1ec91ece81cb",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2278,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "selection_source": "NATIVE_DRAFT",
+      "prose_provider_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    },
+    {
+      "chapter": 3,
+      "title": "石湾谷采药",
+      "native_asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "native_content_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+      "native_han": 2670,
+      "selected_asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "content_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+      "text_hash": "sha256:deffc36b57fa7a2e7e011f8d1a4f717928a55576ed483f565fbe9b8a7a89aad2",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2670,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "selection_source": "NATIVE_DRAFT",
+      "prose_provider_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    },
+    {
+      "chapter": 4,
+      "title": "走过的路",
+      "native_asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+      "native_content_hash": "sha256:5d114e3c04a85b02d52a6ba8fddd29050f69c138c61a4598d5620ad6fdaedfc2",
+      "native_han": 2558,
+      "selected_asset_version_id": "87be8930-26fe-4aef-93ee-b5f29620dc8f",
+      "content_hash": "sha256:ff126ed42f45b43170c1f4d6f889645bd8a214070f0a54330d7606889394a1d7",
+      "text_hash": "sha256:bbc54b8239e47262c0643b0c75242e397995d0e4fc658ac54a23440c73950a72",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2527,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "selection_source": "ASSISTANT_REVISION_PROPOSAL_THROUGH_NATIVE_EDITOR",
+      "prose_provider_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED"
+    }
+  ],
+  "frozen_writer_prompt_hash_checks": "4/4 PASS",
+  "native_handoffs": [
+    {
+      "chapter": 1,
+      "prior_selected_chapters": [],
+      "working_prefix_hash": "sha256:6a2f9d1d0c6b37e28b6a36ffb29e4995ed73efced93553f550cf8fe3fd7adfb2",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "chapter": 2,
+      "prior_selected_chapters": [
+        1
+      ],
+      "working_prefix_hash": "sha256:dbecbf2b4a45aedc62443ee66a2944a1c1395487b0bf862eb4489255a74abe20",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "chapter": 3,
+      "prior_selected_chapters": [
+        1,
+        2
+      ],
+      "working_prefix_hash": "sha256:17dcb130498f0a26953f7cd624d9bae6efc1a00c4fda7477643d3a0e51f39892",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "chapter": 4,
+      "prior_selected_chapters": [
+        1,
+        2,
+        3
+      ],
+      "working_prefix_hash": "sha256:dd555c3d7273310fe78b42b68bad0b241c23d510ff354a11f12c5cee0c69d238",
+      "authority": "AUTHOR_WORKING_PROSE_ONLY",
+      "status": "PASS"
+    }
+  ],
+  "native_roots": [
+    {
+      "chapter": 1,
+      "operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    },
+    {
+      "chapter": 2,
+      "operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    },
+    {
+      "chapter": 3,
+      "operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    },
+    {
+      "chapter": 4,
+      "operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+      "operation_status": "SUCCEEDED",
+      "saga_status": "SUCCEEDED"
+    }
+  ],
+  "unsettled_new_chapter_effects": [],
+  "final_book": {
+    "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "book_design_version": "db9855a3-5d98-44ba-9f09-3ce437a9cb31",
+    "book_plan_version": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "production_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "longform_context_versions": {
+      "arc_plan_versions": [
+        "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1",
+        "authority-output:9bccf7e9-bd03-4acc-b76c-241fd2085934:story_planning.candidate:v1",
+        "authority-output:7c0c0c3e-2a3b-4472-9814-8d825617916c:story_planning.candidate:v1",
+        "authority-output:e8c62976-75a1-4208-86fc-563161f4b27c:story_planning.candidate:v1",
+        "authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1",
+        "authority-output:b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f:story_planning.candidate:v1"
+      ],
+      "volume_plan_version": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+      "quality_trend_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "reward_ledger_version": "authority-output:4be19b7c-d137-49f2-bcef-35052376fc3d:book.bootstrap.reward_ledger_snapshot:v1",
+      "promise_ledger_version": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "reader_segment_version": "authority-output:08c731aa-7360-4e22-8581-1925dadf9f7c:book.bootstrap.reader_segment_profile:v1",
+      "character_state_version": "authority-output:50789306-2be0-42e9-b936-e22010e6c63c:book.bootstrap.character_state_snapshot:v1",
+      "reader_contract_version": "authority-output:376566dd-d0ce-4769-a7c1-6960e8014c28:book.bootstrap.reader_contract:v1",
+      "platform_profile_version": "authority-output:f159c4c5-0564-45b8-9886-9a8aabacaadb:chapter.platform_profile:v1",
+      "foreshadowing_state_version": "authority-output:62bb1c79-69a4-4fe1-8240-efcdb63e8556:book.bootstrap.foreshadow_snapshot:v1"
+    },
+    "root_operation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+    "saga_id": "15f74198-1ae9-4063-9e25-b470431c2011",
+    "stable_idempotency_key": "wp-serial:continuation:initial-state-candidate:revision-origin-v1",
+    "state": "PAUSED",
+    "current_chapter": 4,
+    "target_chapter_count": 4,
+    "light_recap_cadence": 5,
+    "formal_recap_cadence": 10,
+    "active_chapter_request_id": null,
+    "version": 24,
+    "paused_reason": "完整开篇事件候选已交付4章，本次事件窗口4章；原运行40章保留，交付不等于文学或市场达标。",
+    "failure_classification": "",
+    "accepted_through_chapter": 0,
+    "active_child_delegation_id": null,
+    "active_chapter_number": null,
+    "active_plan_version_id": null,
+    "active_story_state_version_id": null,
+    "active_canon_snapshot_version_id": null,
+    "active_longform_projection_set_id": null,
+    "last_chapter_outcome_version_id": null,
+    "failure_reason": "",
+    "input_snapshot_id": "sha256:eb84c5dc037fdaed802e6998c19d6ea002030c3dbe0a1ebf03265cc9a17dcde6",
+    "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    "author_workflow": {
+      "mode": "AUTHOR_FIRST",
+      "version": "author-workflow.v1",
+      "deep_review": false
+    },
+    "delivery_window_policy": {
+      "asset_version_id": "88f6373f-ef4a-44fe-af8c-b6dbd8d74b42",
+      "book_id": "book:qinglan-wendao-20261008",
+      "version": "book-delivery-window-extension.v1",
+      "project_id": "qid-learning-prose-01",
+      "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "current_chapter": 0,
+      "history_rewritten": false,
+      "stop_after_chapter": 4,
+      "source_book_version": 1,
+      "source_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "accepted_through_chapter": 0,
+      "full_book_target_chapters": 240,
+      "previous_stop_after_chapter": 3,
+      "previous_policy_asset_version_id": null
+    }
+  },
+  "formal_acceptance": "NOT_GRANTED",
+  "author_feedback": "NOT_RECEIVED",
+  "independent_human_feedback": "NOT_RUN",
+  "market_effect": "NOT_PROVEN",
+  "production_qualification": "NOT_RUN",
+  "evidence_ceiling": "EXECUTABLE"
+}

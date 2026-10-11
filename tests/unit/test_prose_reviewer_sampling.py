@@ -62,7 +62,7 @@ def test_sample_pack_keeps_formal_producer_artifacts_and_ineligible_output():
     formal = build_longform_prose_review_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=definition_hash(formal_definition))
     sample = build_longform_prose_review_sample_pack_profile(formal, operation_definition_hash=definition_hash(definition))
     assert sample.artifact_catalog == formal.artifact_catalog
-    assert sample.manifest["identity"]["version"] == formal.manifest["identity"]["version"] == "1.3.0"
+    assert sample.manifest["identity"]["version"] == formal.manifest["identity"]["version"] == "1.4.0"
     assert sample.manifest["workflow_template"]["workflow_version"] == "1.0.0"
     assert sample.workflow_ref != formal.workflow_ref
     assert definition["completion_contract"]["required_asset_selectors"][0]["eligibility"] == "INELIGIBLE"

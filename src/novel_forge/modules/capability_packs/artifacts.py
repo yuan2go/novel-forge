@@ -420,6 +420,12 @@ def default_chapter_artifact_resolver(
             "config/capability_packs/artifacts/chapter_generation_template_v13.md",
         ),
         (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v15",
+            "config/capability_packs/artifacts/chapter_generation_template_v15.md",
+        ),
+        (
             ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
             "prompt-system:model-reference-creation",
             "v1",
@@ -432,7 +438,7 @@ def default_chapter_artifact_resolver(
             "config/capability_packs/artifacts/model_reference_template_v1.md",
         ),
     ):
-        if not include_current_contracts and ref == "prompt-template:chapter-generation-pack" and version in {"v12", "v13"}:
+        if not include_current_contracts and ref == "prompt-template:chapter-generation-pack" and version in {"v12", "v13", "v15"}:
             continue
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
         artifacts.append(

@@ -1,0 +1,51 @@
+{
+  "run_id": "65657d05-e153-41ef-8178-4b2f6484c58d",
+  "operation_id": "bd7976db-a5f5-44b4-98e2-cf3857783863",
+  "effect_id": "88d5c97c-eabc-4dd4-8e79-e396f77dc530",
+  "frozen_prompt_hash": "sha256:6872aaa909dc5dcac257e1204e0b1045f7bb109368f886059a6d6e74991fa7c2",
+  "rendered_prompt_hash": "sha256:6872aaa909dc5dcac257e1204e0b1045f7bb109368f886059a6d6e74991fa7c2",
+  "hash_match": "PASS",
+  "pack_ref": "longform_prose_review_pack.serial_quality_continuation_01@1.4.2301",
+  "materialization_asset_version_id": "06a5a2ec-ea34-43bf-9aa6-534afd5a831f",
+  "materialization_content_hash": "sha256:6681278f1c632aa3fe0061fc721c604dec69c4baa9175afa876ace3c220017a4",
+  "reading_mode": "BODY_FIRST",
+  "span_count": 4,
+  "design_inputs_withheld": "PASS",
+  "frozen_selected_sources": [
+    {
+      "asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+      "text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+      "start": 0,
+      "end": 2327
+    },
+    {
+      "asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "text_hash": "sha256:22fa4bb440ce3ce99caa2dec99d649104871fa28c9786c2c4a8b1ec91ece81cb",
+      "start": 0,
+      "end": 2674
+    },
+    {
+      "asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "text_hash": "sha256:deffc36b57fa7a2e7e011f8d1a4f717928a55576ed483f565fbe9b8a7a89aad2",
+      "start": 0,
+      "end": 3086
+    },
+    {
+      "asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+      "text_hash": "sha256:3fd5eee5a767364d98cf46df3c4d013636437fab7bd2e89e1b9b5cc2cf8215ce",
+      "start": 0,
+      "end": 2941
+    }
+  ],
+  "source_phase": "Before later Chapter4 local expression edits",
+  "method_selection": {
+    "contract_version": "production-stage-methods.v1",
+    "skill_sections": [
+      "Shared rules",
+      "Longform review"
+    ],
+    "system_sections": []
+  },
+  "model_opinion_only": true,
+  "independent_human_feedback": "NOT_RUN"
+}

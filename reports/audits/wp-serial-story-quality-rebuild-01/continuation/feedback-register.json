@@ -1,0 +1,60 @@
+{
+  "work_package": "WP-SERIAL-STORY-QUALITY-REBUILD-01",
+  "author_feedback": {
+    "status": "NOT_RECEIVED",
+    "note": "The current user request supplies creative goals and authorization; it is not feedback on these delivered bodies or adoption of a candidate."
+  },
+  "assistant_reading": {
+    "status": "COMPLETE_FOR_THIS_FOUR_CHAPTER_UNIT",
+    "identity": "CURRENT_EXECUTING_ASSISTANT",
+    "independence": "NONINDEPENDENT_FOR_NEW_UNIT",
+    "record": "assistant-body-reading.md",
+    "score_used_as_quality_proof": false
+  },
+  "native_body_first_model_reading": {
+    "baseline_status": "NOT_COMPLETED",
+    "baseline_run_id": "2abb465e-0f57-4396-be0d-a9a17412e33a",
+    "original_timeout_and_business_deadline": "PRESERVED",
+    "new_unit_status": "COMPLETE",
+    "note": "A design-withheld model report is still model opinion, not a human reader.",
+    "new_unit_run_id": "65657d05-e153-41ef-8178-4b2f6484c58d",
+    "source_current_after_later_expression_selection": false,
+    "frozen_sources": "Selected Chapter1 local revision plus native Chapters2–4; before final Chapter4 local edits",
+    "report_asset_version_id": "authority-output:bd7976db-a5f5-44b4-98e2-cf3857783863:longform.prose_review.report:v1",
+    "claim": "Model found one minor closing-summary repetition and affirmed two on-page continuations and distinct trio goals; no literary or market proof"
+  },
+  "independent_human_reader_feedback": {
+    "status": "NOT_RUN",
+    "people_contacted": 0,
+    "note": "Missing human feedback does not block ordinary draft delivery."
+  },
+  "market_effect": {
+    "status": "NOT_PROVEN",
+    "retention_or_subscription_data": "NOT_AVAILABLE"
+  },
+  "formal_acceptance": "NOT_GRANTED",
+  "native_design_aware_model_reading": {
+    "status": "NOT_COMPLETED",
+    "run_id": "8abdb0d4-bda5-4a4b-90eb-cc7ecd8a3dbc",
+    "original_stop": {
+      "run_id": "8abdb0d4-bda5-4a4b-90eb-cc7ecd8a3dbc",
+      "original_advance_key": "wp-serial:continuation:design-aware:review:advance:0",
+      "error_type": "KernelError",
+      "code": "PROVIDER_ROUTING_BLOCKED",
+      "message": "PROVIDER_ROUTING_BLOCKED: routing-decision:aecb014e99e8984fb62a07b916d9008973f93bc79ff5758fd32049da26d91c4c",
+      "new_run_for_same_unknown_outcome": false
+    },
+    "source_current_after_expression_selection": false,
+    "timeout_recovery_and_usage_history": "PRESERVED_NO_FRESH_BLIND_RUN"
+  },
+  "expression_revisions": {
+    "source": "ASSISTANT_PROPOSALS_THROUGH_NATIVE_EDITOR",
+    "edits": 4,
+    "chapter1_edits": 1,
+    "chapter4_edits": 3,
+    "native_provider_second_revision": "NOT_RUN",
+    "full_external_rewrite": false,
+    "issue_closed": "NOT_PROVEN",
+    "remaining_chapter2_wrong_pronouns": "UNREPAIRED"
+  }
+}

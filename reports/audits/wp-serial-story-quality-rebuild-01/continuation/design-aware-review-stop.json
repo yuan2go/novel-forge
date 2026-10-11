@@ -1,0 +1,8 @@
+{
+  "run_id": "8abdb0d4-bda5-4a4b-90eb-cc7ecd8a3dbc",
+  "original_advance_key": "wp-serial:continuation:design-aware:review:advance:0",
+  "error_type": "KernelError",
+  "code": "PROVIDER_ROUTING_BLOCKED",
+  "message": "PROVIDER_ROUTING_BLOCKED: routing-decision:aecb014e99e8984fb62a07b916d9008973f93bc79ff5758fd32049da26d91c4c",
+  "new_run_for_same_unknown_outcome": false
+}

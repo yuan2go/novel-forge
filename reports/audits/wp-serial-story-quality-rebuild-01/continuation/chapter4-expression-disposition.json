@@ -1,0 +1,17 @@
+{
+  "operation_id": "a0e8ae57-044c-42bb-83de-8833403ea7b9",
+  "status": "DISPOSITION_RECORDED",
+  "event_id": "1ea7a853-01ac-497f-b053-9a2a2408b2eb",
+  "lineage_id": "window-35a1145f-closing-summary-repetition",
+  "finding_digest": "sha256:a33444eb662f6c1e58c83f24fd24785daa6ccc48459a0116d9cfab4fdb70dda5",
+  "decision": "CURRENT_CANDIDATE_REVISION",
+  "rationale": "只保存局部表达提案；不以候选保存宣称文学问题已关闭或作者接纳。",
+  "consumer_asset_version_id": "87be8930-26fe-4aef-93ee-b5f29620dc8f",
+  "resolution_evidence": {
+    "resolution": "UNRESOLVED",
+    "authority": "PROPOSAL_OR_HISTORY_ONLY"
+  },
+  "manifest_digest": "sha256:b1e83953b328474a8fef63ded90d0049d348a60198ac8998e29936f3ba9caa16",
+  "review_digest": "sha256:72b015d76d03fd0b92deb341959acfcabc8244fe1e5356267074bdcd07b573cd",
+  "replayed": false
+}

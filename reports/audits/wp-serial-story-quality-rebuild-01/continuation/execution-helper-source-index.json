@@ -1,0 +1,145 @@
+{
+  "scope": "Reproducibility helpers only; environment files remain private",
+  "sources": [
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/adopt.py",
+      "sha256": "83cc70efabcc7b1cebac390d6261d8108a1febed725659e626b62d52aa1b9414",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/all_receipts.py",
+      "sha256": "62fe8e58459c861c4f857f1a88157f3626b1d7c1a2374dd3888acc210cf3d588",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/arcs.py",
+      "sha256": "bbaf30c07df1556b315ba8fea7d311c16ad122cc7ee209db1478c7462baf875c",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/asset.py",
+      "sha256": "62837ea195f868f7aa1ab0594a0c08a0d0d35a4aa1e96bd243aefeade45e2382",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/baseline_trace.py",
+      "sha256": "bd1c2132276e58f4767dac79d195f9986544fad1752d9be2f2ef37fd07c6c27e",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/bind_group.py",
+      "sha256": "1c3383c5d1a1fa23b26dd1cf9180a2920b92534859190ded3f689ba76118b31b",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/clone.py",
+      "sha256": "e1fd3ac30371fd2ec2e214dea36f12750b8695aaacefb243f4830d87201616c1",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/close_clone_baseline.py",
+      "sha256": "c7bd9a2abf425ed2d588909e5fad5b0c043115ec437b47ce3ec9446910f44d04",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/common.py",
+      "sha256": "def4ee9f2d33120ab5b15373c8d275abc156d522ffac7bb33bed72560d407032",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/deploy.py",
+      "sha256": "a11ee24390c194640aa30a5b296e048aa6d73984faa576eaa1b87b3f126e6e27",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/deploy_v15.py",
+      "sha256": "0e08b1a5f5301d8d0eb15486df362d06955a499bbc2f16eab40a9524767d9a28",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/final_feedback_and_future.py",
+      "sha256": "a952fab51a4f85bc109d1b0af0662067b724aec6947cea2bc44e8a0a0ff0c517",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/finalize_delivery.py",
+      "sha256": "334c98038682d1f2ae20598a5f92b54ea9c9959f80ab628ddacf25e6fffc8d83",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/group.py",
+      "sha256": "cc621aca8b86a0f9e540268a92f08860b0815f0571cf7cab6e3cdb7976900833",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/lineage.py",
+      "sha256": "1569c24fc6301f693c9b362989c99a3ca396feb6808ed547a25ace5ac9a85f49",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/new_prompt_trace.py",
+      "sha256": "c57906363235709cb782d316c1700b896221d63fcb13b80c02b896f12292e5e2",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/new_receipts.py",
+      "sha256": "53db62f93b24d57e88ee95e1605978005e4b8779f427881e08d839a8eedcaf3e",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/read_body_first.py",
+      "sha256": "fe9cd8bc1df9830d5b5486cc90e4e321835ae15a112a2568363b12f4bc2d81e3",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/read_inputs.py",
+      "sha256": "f3d4fb5d1c90b91410becb8547332357c1417acf5c4e257a2a7be1aa9796f566",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/review_input_proof.py",
+      "sha256": "edd11f4a108d14d32b1216660d0d3c6dd33dbea064c2d63af835f27bfad4eabe",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/select_expression_revision.py",
+      "sha256": "d0ed5cf70c481e46143878a2b62b72ea874fb44e00fae9db4fb8305fd20d6ab5",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/select_expression_revision4.py",
+      "sha256": "e49ad6f7236e45166dd57e982a1bce4f55e198339366b4e50272ffd3261a6201",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/start_v3.py",
+      "sha256": "178e1fcee40fb94db3e4dea19314be80634af6342d0ae6f017cdbc338e1279d1",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/storage.py",
+      "sha256": "406b940b5e72ee33ceca16c5b0bdb96c6d85931e845b128b4e8eef8ebf4e538a",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/verify_baseline.py",
+      "sha256": "6859954193781c6045b67b3fd0770c56c551e43f3fe3ebe93b4fb042af50459b",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/verify_sources.py",
+      "sha256": "7df692018834543e34cc7c8dac8e5e281835c956c4c1823b598604a8595e361c",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/volume.py",
+      "sha256": "3fac138e4ee66f8778b366127d5d01266d805eae51cf5db543206fd890ca8448",
+      "role": "Local adapter to existing authorities; not a production owner"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/write_unit.py",
+      "sha256": "ec9246be4aaa9db961e558a7f01fe4b188039e34eb49fe4ff6fa9b713c823d0a",
+      "role": "Local adapter to existing authorities; not a production owner"
+    }
+  ]
+}

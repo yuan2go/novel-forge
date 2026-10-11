@@ -1,0 +1,19 @@
+{
+  "chapter": 2,
+  "frozen_prompt_hash_match": "PASS",
+  "exact_transport_decoded": "PASS",
+  "identity_records": [
+    {
+      "path": "/context_bundle/segments/3/structured_facts/3",
+      "character_id": "character:xu-ting",
+      "canonical_name": "许庭",
+      "pronouns": [
+        "她"
+      ],
+      "source_asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+    }
+  ],
+  "native_wrong_expression": "沈砚等他放好",
+  "fact": "Frozen Writer input reconstructs female pronouns; the prose uses male pronouns",
+  "root_cause_boundary": "Input identity is present. Writer failed the identity in prose; whether reference presentation contributed is UNPROVEN. Existing identity/recovery mechanisms are not rebuilt."
+}

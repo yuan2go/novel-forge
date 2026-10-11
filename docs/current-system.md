@@ -386,6 +386,11 @@ the input evidence additionally retains the exact PASS result, native APPROVE re
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
 that chain.
 
+Prospective Chapter template v15 requires an explicit compiled Pack identity. It projects
+only shared rules and the active stage method while retaining the v13 output contracts
+and lossless input transport. Source identity and frozen full template hashes remain in
+the execution manifest; this selection does not alter historical Attempts or defaults.
+
 Current Chapter workflow 3.10.0 and candidate Pack 3.0.2/template v13 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
 corrections. The Pack binds ordinary coordinated nodes to their exact 3.10.0 definition hashes. ExecutionIntent 3.10.1, Memo 3.10.1/3.10.2 and Draft 3.10.1 remain separately journal-bound recovery definitions. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
@@ -1378,6 +1383,14 @@ ExternalEffect path. Recaps are navigation, never evidence of full prose reading
 cover structural repetition, character/relationship movement, setup/progression/payoff,
 voice/expression, arc pacing and motivated/costly turns. Located model claims remain
 observations; matching text coordinates do not prove their semantic correctness.
+
+An explicit manual `reading_mode=BODY_FIRST` freezes exact prose without creative
+baselines or design-status fields in its source windows. Its Provider view records
+text-visible goals, choices, situation changes, skip locations and concrete next-reading
+expectations. It cannot assess withheld design commitments or establish market effects.
+Design-aware review remains the default; examining design afterwards creates a separate
+versioned review, never enriches the completed body-first request. Neither mode adds a
+manuscript delivery gate.
 
 Stopped read-only prose review uses the Kernel isolation journal and existing native
 root/Saga admission. A linked root successor preserves its frozen window and source

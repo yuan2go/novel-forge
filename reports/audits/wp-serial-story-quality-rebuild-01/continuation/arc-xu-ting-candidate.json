@@ -1,0 +1,1156 @@
+{
+  "asset_version_id": "authority-output:b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f:story_planning.candidate:v1",
+  "content_hash": "sha256:4236f46e8ca1ad5497e68ca2af328ae9d54baa7f597cd88185a9ad34afb54084",
+  "content": {
+    "cost": "每次实际答疑占用许庭有限的教学时间；她须按已明确的安排取舍指导深度，但无需为此承担预设的重大损失。",
+    "turn": "当沈砚能够带着可复核的实践结果求教，许庭便从指出眼前动作差别，转向帮助他辨认验证范围和下一项具体缺口。",
+    "type": "PlanningGenerationCandidate",
+    "choice": "许庭选择把有限答疑用于沈砚能够描述和再次检验的具体问题，并依据后续结果调整指导深度。",
+    "result": "许庭逐步见到沈砚从依赖即时答疑，发展为能够提出具体问题、亲自验证结果并承担远行准备的人；她保有教学原则与自身生活。",
+    "book_id": "book:qinglan-wendao-20261008",
+    "arc_type": "CHARACTER",
+    "objective": "使许庭作为有自身时间与教学原则的教习，通过针对实际问题的有限指导，支持沈砚把观察和重复练习发展成可用本领；随着他能够自行检验、准备和选择，师生关系转为更有边界的信任。",
+    "thread_id": "xu-ting-teaching-thread",
+    "escalation": "随着沈砚从初次气感走向任务运用、复杂准备和飞剑实践，向许庭提出的问题需要越来越具体；她能够提供的反馈也越来越依赖他亲自带回的结果。",
+    "project_id": "qid-learning-prose-01",
+    "resistance": "沈砚急于知道自己能否继续向外走，初期经验不足；许庭的教学时间有限，也无法凭一次气感或单次顺利操作判断长期能力。",
+    "consequence": "许庭的指导逐渐成为沈砚自己观察、检验和修正办法时能够使用的经验；她无需代替他完成任务或远行判断，仍可保有自己的生活节奏。",
+    "contract_id": "xu-ting-character-arc-candidate",
+    "logical_key": "character:character:xu-ting",
+    "arc_segments": [
+      {
+        "status": "PLANNED",
+        "objective": "在开篇完整事件中，让许庭以简短、具体的回应帮助沈砚辨认一次练习差别；答疑之后仍由沈砚亲自尝试、决定参加采药，并在实际行动中检验所得。",
+        "segment_id": "xu-ting-segment-01",
+        "entry_state_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "exit_state_spec": {
+          "summary": "许庭针对沈砚的具体疑问作出一次有效答疑；沈砚凭观察和调整获得初次气感，也明白这尚非稳定运用。许庭没有替正式课程作出越权承诺。"
+        },
+        "narrative_segment_id": "v1-opening",
+        "volume_plan_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "承接开篇已经完成的气感、采药交付和陌生药路实践，让许庭针对后续实际运用回应一个新问题；沈砚用结果说明所得和缺口，不重演初次引气。",
+        "segment_id": "xu-ting-segment-02",
+        "entry_state_ref": "xu-ting-segment-01",
+        "exit_state_spec": {
+          "summary": "许庭看到沈砚能够说出练习中的具体差别，给予与观察结果相称的下一步反馈；答疑没有变成反复判定天赋的请求。"
+        },
+        "narrative_segment_id": "v1-consolidation",
+        "volume_plan_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "让许庭把反馈落到沈砚下一次能够亲自检验的动作或条件，同时明确答疑所占的实际时段，不把教学反馈写成课程录入或能力跃升。",
+        "segment_id": "xu-ting-segment-03",
+        "entry_state_ref": "xu-ting-segment-02",
+        "exit_state_spec": {
+          "summary": "在明确的学习安排内，许庭依据数次可比较的练习结果调整指导重点；沈砚只在已有实践支持的范围内重复运用基础流转。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:2",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在沈砚修正任务选择后，让许庭看到安排是否真正支持连续学习；若结果显示新的不足，她提出有范围的练习建议，由沈砚决定如何纳入日程。",
+        "segment_id": "xu-ting-segment-04",
+        "entry_state_ref": "xu-ting-segment-03",
+        "exit_state_spec": {
+          "summary": "沈砚按修正后的日程完成练习和有限交付；许庭的反馈针对新结果，而非要求他再次证明已经稳定掌握的部分。她保留自己的教学与修炼时段。"
+        },
+        "narrative_segment_id": "volume:2:future-1:segment:5",
+        "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "使许庭的教学原则进入更复杂的实践：她回应沈砚提出的具体技术问题，不替他核实工具、伙伴承诺或交付条件。",
+        "segment_id": "xu-ting-segment-05",
+        "entry_state_ref": "xu-ting-segment-04",
+        "exit_state_spec": {
+          "summary": "许庭在自己能够观察和指导的范围内指出单项熟练与整体准备的区别；沈砚据实际用时和质量反馈修改职责范围，既有本领继续有效。"
+        },
+        "narrative_segment_id": "volume:3:segment:2",
+        "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "承接修改后方案的执行与验收，让许庭只针对与教学有关的可见结果作回应；任务质量、资源和合作结果仍由各自相关行动决定。",
+        "segment_id": "xu-ting-segment-06",
+        "entry_state_ref": "xu-ting-segment-05",
+        "exit_state_spec": {
+          "summary": "沈砚能够带着已完成任务的实际结果说明下一轮学习需要；许庭依据这些结果决定后续答疑深度，双方的时间安排更清楚。"
+        },
+        "narrative_segment_id": "volume:3:segment:5",
+        "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "让许庭的既有指导在飞剑学习中产生可辨认的延续，同时避免凭她的好意授予器具、资格或未明确的专业权限。",
+        "segment_id": "xu-ting-segment-07",
+        "entry_state_ref": "xu-ting-segment-06",
+        "exit_state_spec": {
+          "summary": "沈砚把早期观察、调整和重复的方法用于新的操作学习；许庭在其实际教学范围内回应方法问题，器具准入与具体飞剑条件仍由相应来源明确。"
+        },
+        "narrative_segment_id": "volume4-segment2",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "承接受控实践中的条件差别，以一次有实际结果的交流呈现指导深度的变化；许庭不替沈砚操控飞剑或决定返回时机。",
+        "segment_id": "xu-ting-segment-08",
+        "entry_state_ref": "xu-ting-segment-07",
+        "exit_state_spec": {
+          "summary": "许庭见到沈砚能够根据实际操作区分已掌握的部分和仍需验证的条件；她的回应更加简短具体，沈砚继续亲自承担范围判断。"
+        },
+        "narrative_segment_id": "volume4-segment5",
+        "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在远行准备起点，让许庭与沈砚的交流显示其学习方法已可独立使用；路线天气、补给、落脚和器具状态仍须分别从实际来源核实。",
+        "segment_id": "xu-ting-segment-09",
+        "entry_state_ref": "xu-ting-segment-08",
+        "exit_state_spec": {
+          "summary": "沈砚能够自行列出远行仍待核实的条件，并就真正涉及练习的疑问向许庭请教；许庭维持有边界的指导，双方没有把短程成功当作完整出行准备。"
+        },
+        "narrative_segment_id": "volume-5:segment-1",
+        "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      },
+      {
+        "status": "PLANNED",
+        "objective": "在沈砚汇合远行条件时完成师生关系的本书内收束：许庭不替他作最终行程判断，也无需以离别或关系断绝证明其独立。",
+        "segment_id": "xu-ting-segment-10",
+        "entry_state_ref": "xu-ting-segment-09",
+        "exit_state_spec": {
+          "summary": "出行前，许庭已对自己能够判断的学习与操控表现给出有范围的回应；沈砚亲自完成其余必要核实、选择行程并处理相关承诺。许庭继续自己的教学与修炼生活。"
+        },
+        "narrative_segment_id": "volume-5:segment-5",
+        "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      }
+    ],
+    "dependencies": [],
+    "world_deltas": [],
+    "arc_relations": [],
+    "frozen_inputs": [
+      {
+        "role": "book_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "role": "volume_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:fa05e5b8bb2f53a20c8b1423c98be8015d014a9d25388644b882e768680d785b",
+        "asset_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+      },
+      {
+        "role": "conflict_state",
+        "asset_type": "conflict_state",
+        "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+        "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+      },
+      {
+        "role": "promise_ledger",
+        "asset_type": "promise_ledger_snapshot",
+        "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+        "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+      },
+      {
+        "role": "foreshadowing_ledger",
+        "asset_type": "foreshadowing_ledger",
+        "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+        "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+      },
+      {
+        "role": "character_arc_portfolio",
+        "asset_type": "character_arc_portfolio",
+        "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+        "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+      },
+      {
+        "role": "arc_scope_volume:1",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+        "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:2",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+        "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:3",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+        "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      {
+        "role": "arc_scope_volume:4",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+        "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      }
+    ],
+    "planning_scope": "ARC",
+    "schema_version": "story_design.authority.v1",
+    "entry_state_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "exit_state_spec": {
+      "summary": "许庭保有重视辨认与重复验证的教学原则，并能依据沈砚的实际表现给出有边界的指导。沈砚最终将这种方法用于自己的远行准备和判断；许庭不代他完成独行，也不必退出他的生活。"
+    },
+    "quality_targets": {
+      "minimum": 80
+    },
+    "required_events": [
+      "卷一开篇，许庭针对沈砚引气练习中的具体差别给予一次有效答疑；沈砚亲自调整并获得初次气感。",
+      "首次采药与陌生药路实践完成后，沈砚以实际所得继续练习；许庭的后续反馈承接新结果，不重做初次气感。",
+      "连续学习阶段，许庭根据数次可比较的练习表现调整建议，沈砚在已验证范围内实际运用基础流转。",
+      "任务与职责变复杂时，许庭在教学范围内回应具体技术问题；沈砚自行处理任务条件、日程和伙伴协商。",
+      "飞剑学习阶段，早期辨认、调整和重复的方法在新操作中实际有用；许庭不越权授予器具或代替操控。",
+      "远行前，沈砚能够说明自己的能力范围和待核实条件；许庭给出有范围的回应，沈砚亲自完成准备与行程判断。"
+    ],
+    "character_deltas": [
+      {
+        "change": "许庭从回答初学者眼前的具体疑问，逐渐转为依据可重复的实际表现决定指导深度；她始终保有有限教学时间和自身修炼节奏。",
+        "subject": "character:xu-ting"
+      },
+      {
+        "change": "沈砚逐渐能够带着观察结果、实际运用和明确缺口求教，最终自行核实并承担远行判断。",
+        "subject": "character:shen-yan"
+      }
+    ],
+    "forbidden_events": [
+      "许庭凭好感、教学反馈或未明确权限保证正式课位、器具、库存、资格或远行条件。",
+      "许庭替沈砚完成关键练习、任务判断、飞剑操控或最终行程决定。",
+      "为制造师生冲突而让许庭无故羞辱、阻挠或反复否定沈砚已经证明的进步。",
+      "通过突然赐能、秘密传承或无条件赠予替代沈砚的观察、练习与实际选择。"
+    ],
+    "hard_constraints": [
+      "许庭是女性教习，重视让弟子亲自辨认和重复验证；她也有有限的教学安排及自己的修炼节奏。",
+      "卷一开篇顺序为主动入门、初次引气、首次结伴采药、陌生药路同行实践及正式课程请求的职责内答复；许庭的答疑服务于完整事件，不拖延采药交回或第四章实践。",
+      "初次气感不等于稳定灵气运用；后续独立重复运用须有持续练习的实际支持。",
+      "基础吐纳说明、指定答疑和正式外门课程各有条件；正式课程录入须由有权者核实当期课位与全部明确条件。",
+      "许庭只能依据实际接触得知沈砚的表现；未公布的机构条件、他人私下动机和远行信息不会自动进入她或沈砚的知识。",
+      "沈砚已有的能力随经验累积继续有效；判断修正不得写成能力归零。",
+      "远行所需能力、器具、路线天气、补给和落脚须分别得到实际支持；许庭的指导不能替代其中任何一项核实。",
+      "以沈砚为主的第三人称限知视角呈现许庭言行，不直接宣告她未向沈砚表露的内心活动。"
+    ],
+    "planning_horizon": "STRATEGIC",
+    "required_payoffs": [
+      "初次答疑带来的观察方法须在后续稳定练习和实际操作中再次发挥作用。",
+      "许庭指导深度的变化须由沈砚可见的实践结果支持，而非只靠师长宣布他已经成长。",
+      "许庭的有限时间和自身修炼节奏须实际影响答疑方式，同时不把合理边界写成敌意。",
+      "沈砚最终独自行事时，读者能够认出早期教学方法的作用，而关键判断和完成行动仍归于他自己。"
+    ],
+    "soft_constraints": [
+      "许庭的回应可简短、生活化，允许幽默或普通人情，不把每次相遇写成训诫。",
+      "只在练习结果或实际选择需要她的反馈时安排相关互动；安静练习及其他人物的独立行动可以占据篇幅。",
+      "师生信任可以增长，但不预定收徒、特批或始终同行。"
+    ],
+    "arc_contributions": [
+      {
+        "change": "通过有边界的答疑和后续反馈，支持沈砚把初次气感发展为可重复、可实际运用的方法。",
+        "subject": "沈砚的学习"
+      },
+      {
+        "change": "许庭逐渐依据弟子的实际运用调整指导深度，同时保留自己的教学安排和修炼时间。",
+        "subject": "许庭的教学方式"
+      }
+    ],
+    "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "candidate_payload": {
+      "cost": "每次实际答疑占用许庭有限的教学时间；她须按已明确的安排取舍指导深度，但无需为此承担预设的重大损失。",
+      "turn": "当沈砚能够带着可复核的实践结果求教，许庭便从指出眼前动作差别，转向帮助他辨认验证范围和下一项具体缺口。",
+      "choice": "许庭选择把有限答疑用于沈砚能够描述和再次检验的具体问题，并依据后续结果调整指导深度。",
+      "result": "许庭逐步见到沈砚从依赖即时答疑，发展为能够提出具体问题、亲自验证结果并承担远行准备的人；她保有教学原则与自身生活。",
+      "arc_type": "CHARACTER",
+      "objective": "使许庭作为有自身时间与教学原则的教习，通过针对实际问题的有限指导，支持沈砚把观察和重复练习发展成可用本领；随着他能够自行检验、准备和选择，师生关系转为更有边界的信任。",
+      "thread_id": "xu-ting-teaching-thread",
+      "escalation": "随着沈砚从初次气感走向任务运用、复杂准备和飞剑实践，向许庭提出的问题需要越来越具体；她能够提供的反馈也越来越依赖他亲自带回的结果。",
+      "resistance": "沈砚急于知道自己能否继续向外走，初期经验不足；许庭的教学时间有限，也无法凭一次气感或单次顺利操作判断长期能力。",
+      "consequence": "许庭的指导逐渐成为沈砚自己观察、检验和修正办法时能够使用的经验；她无需代替他完成任务或远行判断，仍可保有自己的生活节奏。",
+      "contract_id": "xu-ting-character-arc-candidate",
+      "logical_key": "character:character:xu-ting",
+      "arc_segments": [
+        {
+          "status": "PLANNED",
+          "objective": "在开篇完整事件中，让许庭以简短、具体的回应帮助沈砚辨认一次练习差别；答疑之后仍由沈砚亲自尝试、决定参加采药，并在实际行动中检验所得。",
+          "segment_id": "xu-ting-segment-01",
+          "entry_state_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "exit_state_spec": {
+            "summary": "许庭针对沈砚的具体疑问作出一次有效答疑；沈砚凭观察和调整获得初次气感，也明白这尚非稳定运用。许庭没有替正式课程作出越权承诺。"
+          },
+          "narrative_segment_id": "v1-opening",
+          "volume_plan_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "承接开篇已经完成的气感、采药交付和陌生药路实践，让许庭针对后续实际运用回应一个新问题；沈砚用结果说明所得和缺口，不重演初次引气。",
+          "segment_id": "xu-ting-segment-02",
+          "entry_state_ref": "xu-ting-segment-01",
+          "exit_state_spec": {
+            "summary": "许庭看到沈砚能够说出练习中的具体差别，给予与观察结果相称的下一步反馈；答疑没有变成反复判定天赋的请求。"
+          },
+          "narrative_segment_id": "v1-consolidation",
+          "volume_plan_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "让许庭把反馈落到沈砚下一次能够亲自检验的动作或条件，同时明确答疑所占的实际时段，不把教学反馈写成课程录入或能力跃升。",
+          "segment_id": "xu-ting-segment-03",
+          "entry_state_ref": "xu-ting-segment-02",
+          "exit_state_spec": {
+            "summary": "在明确的学习安排内，许庭依据数次可比较的练习结果调整指导重点；沈砚只在已有实践支持的范围内重复运用基础流转。"
+          },
+          "narrative_segment_id": "volume:2:future-1:segment:2",
+          "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在沈砚修正任务选择后，让许庭看到安排是否真正支持连续学习；若结果显示新的不足，她提出有范围的练习建议，由沈砚决定如何纳入日程。",
+          "segment_id": "xu-ting-segment-04",
+          "entry_state_ref": "xu-ting-segment-03",
+          "exit_state_spec": {
+            "summary": "沈砚按修正后的日程完成练习和有限交付；许庭的反馈针对新结果，而非要求他再次证明已经稳定掌握的部分。她保留自己的教学与修炼时段。"
+          },
+          "narrative_segment_id": "volume:2:future-1:segment:5",
+          "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "使许庭的教学原则进入更复杂的实践：她回应沈砚提出的具体技术问题，不替他核实工具、伙伴承诺或交付条件。",
+          "segment_id": "xu-ting-segment-05",
+          "entry_state_ref": "xu-ting-segment-04",
+          "exit_state_spec": {
+            "summary": "许庭在自己能够观察和指导的范围内指出单项熟练与整体准备的区别；沈砚据实际用时和质量反馈修改职责范围，既有本领继续有效。"
+          },
+          "narrative_segment_id": "volume:3:segment:2",
+          "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "承接修改后方案的执行与验收，让许庭只针对与教学有关的可见结果作回应；任务质量、资源和合作结果仍由各自相关行动决定。",
+          "segment_id": "xu-ting-segment-06",
+          "entry_state_ref": "xu-ting-segment-05",
+          "exit_state_spec": {
+            "summary": "沈砚能够带着已完成任务的实际结果说明下一轮学习需要；许庭依据这些结果决定后续答疑深度，双方的时间安排更清楚。"
+          },
+          "narrative_segment_id": "volume:3:segment:5",
+          "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "让许庭的既有指导在飞剑学习中产生可辨认的延续，同时避免凭她的好意授予器具、资格或未明确的专业权限。",
+          "segment_id": "xu-ting-segment-07",
+          "entry_state_ref": "xu-ting-segment-06",
+          "exit_state_spec": {
+            "summary": "沈砚把早期观察、调整和重复的方法用于新的操作学习；许庭在其实际教学范围内回应方法问题，器具准入与具体飞剑条件仍由相应来源明确。"
+          },
+          "narrative_segment_id": "volume4-segment2",
+          "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "承接受控实践中的条件差别，以一次有实际结果的交流呈现指导深度的变化；许庭不替沈砚操控飞剑或决定返回时机。",
+          "segment_id": "xu-ting-segment-08",
+          "entry_state_ref": "xu-ting-segment-07",
+          "exit_state_spec": {
+            "summary": "许庭见到沈砚能够根据实际操作区分已掌握的部分和仍需验证的条件；她的回应更加简短具体，沈砚继续亲自承担范围判断。"
+          },
+          "narrative_segment_id": "volume4-segment5",
+          "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在远行准备起点，让许庭与沈砚的交流显示其学习方法已可独立使用；路线天气、补给、落脚和器具状态仍须分别从实际来源核实。",
+          "segment_id": "xu-ting-segment-09",
+          "entry_state_ref": "xu-ting-segment-08",
+          "exit_state_spec": {
+            "summary": "沈砚能够自行列出远行仍待核实的条件，并就真正涉及练习的疑问向许庭请教；许庭维持有边界的指导，双方没有把短程成功当作完整出行准备。"
+          },
+          "narrative_segment_id": "volume-5:segment-1",
+          "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        },
+        {
+          "status": "PLANNED",
+          "objective": "在沈砚汇合远行条件时完成师生关系的本书内收束：许庭不替他作最终行程判断，也无需以离别或关系断绝证明其独立。",
+          "segment_id": "xu-ting-segment-10",
+          "entry_state_ref": "xu-ting-segment-09",
+          "exit_state_spec": {
+            "summary": "出行前，许庭已对自己能够判断的学习与操控表现给出有范围的回应；沈砚亲自完成其余必要核实、选择行程并处理相关承诺。许庭继续自己的教学与修炼生活。"
+          },
+          "narrative_segment_id": "volume-5:segment-5",
+          "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        }
+      ],
+      "dependencies": [],
+      "world_deltas": [],
+      "arc_relations": [],
+      "entry_state_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "exit_state_spec": {
+        "summary": "许庭保有重视辨认与重复验证的教学原则，并能依据沈砚的实际表现给出有边界的指导。沈砚最终将这种方法用于自己的远行准备和判断；许庭不代他完成独行，也不必退出他的生活。"
+      },
+      "quality_targets": {
+        "minimum": 80
+      },
+      "required_events": [
+        "卷一开篇，许庭针对沈砚引气练习中的具体差别给予一次有效答疑；沈砚亲自调整并获得初次气感。",
+        "首次采药与陌生药路实践完成后，沈砚以实际所得继续练习；许庭的后续反馈承接新结果，不重做初次气感。",
+        "连续学习阶段，许庭根据数次可比较的练习表现调整建议，沈砚在已验证范围内实际运用基础流转。",
+        "任务与职责变复杂时，许庭在教学范围内回应具体技术问题；沈砚自行处理任务条件、日程和伙伴协商。",
+        "飞剑学习阶段，早期辨认、调整和重复的方法在新操作中实际有用；许庭不越权授予器具或代替操控。",
+        "远行前，沈砚能够说明自己的能力范围和待核实条件；许庭给出有范围的回应，沈砚亲自完成准备与行程判断。"
+      ],
+      "character_deltas": [
+        {
+          "change": "许庭从回答初学者眼前的具体疑问，逐渐转为依据可重复的实际表现决定指导深度；她始终保有有限教学时间和自身修炼节奏。",
+          "subject": "character:xu-ting"
+        },
+        {
+          "change": "沈砚逐渐能够带着观察结果、实际运用和明确缺口求教，最终自行核实并承担远行判断。",
+          "subject": "character:shen-yan"
+        }
+      ],
+      "forbidden_events": [
+        "许庭凭好感、教学反馈或未明确权限保证正式课位、器具、库存、资格或远行条件。",
+        "许庭替沈砚完成关键练习、任务判断、飞剑操控或最终行程决定。",
+        "为制造师生冲突而让许庭无故羞辱、阻挠或反复否定沈砚已经证明的进步。",
+        "通过突然赐能、秘密传承或无条件赠予替代沈砚的观察、练习与实际选择。"
+      ],
+      "hard_constraints": [
+        "许庭是女性教习，重视让弟子亲自辨认和重复验证；她也有有限的教学安排及自己的修炼节奏。",
+        "卷一开篇顺序为主动入门、初次引气、首次结伴采药、陌生药路同行实践及正式课程请求的职责内答复；许庭的答疑服务于完整事件，不拖延采药交回或第四章实践。",
+        "初次气感不等于稳定灵气运用；后续独立重复运用须有持续练习的实际支持。",
+        "基础吐纳说明、指定答疑和正式外门课程各有条件；正式课程录入须由有权者核实当期课位与全部明确条件。",
+        "许庭只能依据实际接触得知沈砚的表现；未公布的机构条件、他人私下动机和远行信息不会自动进入她或沈砚的知识。",
+        "沈砚已有的能力随经验累积继续有效；判断修正不得写成能力归零。",
+        "远行所需能力、器具、路线天气、补给和落脚须分别得到实际支持；许庭的指导不能替代其中任何一项核实。",
+        "以沈砚为主的第三人称限知视角呈现许庭言行，不直接宣告她未向沈砚表露的内心活动。"
+      ],
+      "planning_horizon": "STRATEGIC",
+      "required_payoffs": [
+        "初次答疑带来的观察方法须在后续稳定练习和实际操作中再次发挥作用。",
+        "许庭指导深度的变化须由沈砚可见的实践结果支持，而非只靠师长宣布他已经成长。",
+        "许庭的有限时间和自身修炼节奏须实际影响答疑方式，同时不把合理边界写成敌意。",
+        "沈砚最终独自行事时，读者能够认出早期教学方法的作用，而关键判断和完成行动仍归于他自己。"
+      ],
+      "soft_constraints": [
+        "许庭的回应可简短、生活化，允许幽默或普通人情，不把每次相遇写成训诫。",
+        "只在练习结果或实际选择需要她的反馈时安排相关互动；安静练习及其他人物的独立行动可以占据篇幅。",
+        "师生信任可以增长，但不预定收徒、特批或始终同行。"
+      ],
+      "arc_contributions": [
+        {
+          "change": "通过有边界的答疑和后续反馈，支持沈砚把初次气感发展为可重复、可实际运用的方法。",
+          "subject": "沈砚的学习"
+        },
+        {
+          "change": "许庭逐渐依据弟子的实际运用调整指导深度，同时保留自己的教学安排和修炼时间。",
+          "subject": "许庭的教学方式"
+        }
+      ],
+      "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "forbidden_payoffs": [
+        "以许庭的一句天赋评价代替初次气感和后续能力的实际证据。",
+        "以师长批准、旁人赞叹或告别仪式代替沈砚真实完成的独自御剑远行与落脚。",
+        "以切断师生关系或许庭作出重大牺牲证明沈砚已经独立。"
+      ],
+      "realization_level": "DEFINED",
+      "world_realization": [
+        {
+          "world_id": "world:qinglan-teaching-context",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STATE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          },
+          "visibility": "PARTIAL",
+          "accessibility": "RESTRICTED",
+          "invariant_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_INVARIANT",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+            }
+          ],
+          "structure_refs": [
+            {
+              "book_id": "book:qinglan-wendao-20261008",
+              "freshness": "CURRENT",
+              "asset_type": "planning_generation_candidate",
+              "project_id": "qid-learning-prose-01",
+              "domain_type": "WORLD_STRUCTURE",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "authority_role": "book_plan",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+              "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+            }
+          ],
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        }
+      ],
+      "canon_dependencies": [
+        "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+        "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+        "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+        "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+        "4f94123b-a129-4975-aae7-c2fa7182b42d"
+      ],
+      "closure_conditions": [
+        "沈砚能够凭实际观察和重复结果说明已会之处与仍待验证之处。",
+        "许庭的指导具有可见用途，也保持明确的时间与权限边界。",
+        "终局行程的关键判断由沈砚自己完成；师生关系可以继续。"
+      ],
+      "cross_volume_scope": [
+        "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+        "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      ],
+      "commitment_contract": [
+        {
+          "level": "HARD_CONSTRAINT",
+          "statement": "许庭只能依据自己实际掌握的信息和权限答疑；她的反馈不能自动授予正式课位、器具或远行资格。",
+          "commitment_id": "xu-ting-teaching-boundary"
+        },
+        {
+          "level": "SOFT_INTENT",
+          "statement": "以短促、生活化、针对实际表现的互动呈现她重视亲自辨认与重复验证的教学原则。",
+          "commitment_id": "xu-ting-method"
+        },
+        {
+          "level": "OPEN_DESIGN_SPACE",
+          "statement": "后续具体答疑次数、所见练习和她自身修炼安排，依据各卷实际事件与已明确的教学条件确定。",
+          "commitment_id": "xu-ting-later-role"
+        }
+      ],
+      "constraint_envelope": {
+        "type": "PlanningConstraintEnvelope",
+        "book_id": "book:qinglan-wendao-20261008",
+        "project_id": "qid-learning-prose-01",
+        "planning_scope": "ARC",
+        "envelope_digest": "sha256:84fc6e8f4fb5d01ad94f51f206409ae3c0889685ab7d0fd2173f336f404850f6",
+        "parent_versions": [
+          {
+            "role": "arc_scope_volume:1",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+            "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:2",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+            "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:3",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+            "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:4",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+            "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+          },
+          {
+            "role": "book_plan",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          },
+          {
+            "role": "character_arc_portfolio",
+            "asset_type": "character_arc_portfolio",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+          },
+          {
+            "role": "conflict_state",
+            "asset_type": "conflict_state",
+            "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+            "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+          },
+          {
+            "role": "foreshadowing_ledger",
+            "asset_type": "foreshadowing_ledger",
+            "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+            "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+          },
+          {
+            "role": "promise_ledger",
+            "asset_type": "promise_ledger_snapshot",
+            "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+            "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+          },
+          {
+            "role": "volume_plan",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:fa05e5b8bb2f53a20c8b1423c98be8015d014a9d25388644b882e768680d785b",
+            "asset_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "planning-constraint-envelope-v2",
+        "change_governance": {
+          "requires_evidence": true,
+          "preserve_executed_history": true,
+          "wider_scope_requires_new_plan_change": true
+        },
+        "prohibited_outcomes": [],
+        "inherited_invariants": [],
+        "required_obligations": [],
+        "narrative_load_policy": {
+          "type": "NarrativeLoadPolicy",
+          "limits": {
+            "max_active_arcs": 3,
+            "max_new_concepts": 4,
+            "max_dormant_arc_age": 30,
+            "max_open_obligations": 12,
+            "max_payoff_congestion": 3,
+            "max_overdue_obligations": 0,
+            "max_major_state_transitions": 8,
+            "max_character_appearance_gap": 10
+          },
+          "book_id": "book:qinglan-wendao-20261008",
+          "policy_id": "canonical-production-narrative-load",
+          "project_id": "qid-learning-prose-01",
+          "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+          "source_role": "production_profile",
+          "policy_version": 1,
+          "contract_version": "narrative-load-policy-v1",
+          "governed_overrides": [],
+          "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+          "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+        },
+        "permitted_change_scope": "ARC",
+        "accepted_state_boundary": {
+          "future_plan_only": true,
+          "accepted_through_chapter": 0
+        },
+        "generation_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f",
+        "generator_operation_name": "arc_plan.generate",
+        "narrative_load_projection": {
+          "type": "NarrativeLoadProjection",
+          "status": "NOT_OBSERVED",
+          "metrics": {},
+          "contract_version": "narrative-load-projection-v2",
+          "open_obligation_ids": [],
+          "overdue_obligation_ids": [],
+          "accepted_through_chapter": 0
+        },
+        "narrative_load_policy_lineage": {
+          "type": "NarrativeLoadPolicyLineage",
+          "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+          "inherited_from": [
+            {
+              "role": "arc_scope_volume:1",
+              "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+              "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+            },
+            {
+              "role": "arc_scope_volume:2",
+              "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+              "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+            },
+            {
+              "role": "arc_scope_volume:3",
+              "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+              "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+            },
+            {
+              "role": "arc_scope_volume:4",
+              "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+              "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+            },
+            {
+              "role": "book_plan",
+              "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+              "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+            },
+            {
+              "role": "volume_plan",
+              "content_hash": "sha256:fa05e5b8bb2f53a20c8b1423c98be8015d014a9d25388644b882e768680d785b",
+              "asset_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+            }
+          ],
+          "contract_version": "narrative-load-policy-lineage-v1",
+          "frozen_by_generation_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "creative_requirements_contract": "work-requirements.v2"
+      },
+      "context_profile_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "relationship_deltas": [
+        {
+          "change": "由初学者提出具体疑问、教习作有限答疑，逐渐发展为沈砚带回实践结果并据此获得更有针对性的反馈；最终双方承认关键行程由沈砚自己判断。",
+          "subject": "许庭与沈砚"
+        }
+      ],
+      "character_realization": [
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "ARC",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          },
+          "character_id": "character:xu-ting",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        },
+        {
+          "reach": "CURRENT_VOLUME",
+          "scope": "ARC",
+          "state_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_STATE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          },
+          "character_id": "character:shen-yan",
+          "identity_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_IDENTITY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          },
+          "trajectory_ref": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "character_arc_portfolio",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "CHARACTER_TRAJECTORY",
+            "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+            "authority_role": "character_arc_portfolio",
+            "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          },
+          "realization_level": "DEFINED",
+          "narrative_relevance": "CURRENT"
+        }
+      ],
+      "narrative_architecture_version": "canonical-narrative-v1"
+    },
+    "forbidden_payoffs": [
+      "以许庭的一句天赋评价代替初次气感和后续能力的实际证据。",
+      "以师长批准、旁人赞叹或告别仪式代替沈砚真实完成的独自御剑远行与落脚。",
+      "以切断师生关系或许庭作出重大牺牲证明沈砚已经独立。"
+    ],
+    "realization_level": "DEFINED",
+    "world_realization": [
+      {
+        "world_id": "world:qinglan-teaching-context",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "visibility": "PARTIAL",
+        "accessibility": "RESTRICTED",
+        "invariant_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_INVARIANT",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          }
+        ],
+        "structure_refs": [
+          {
+            "book_id": "book:qinglan-wendao-20261008",
+            "freshness": "CURRENT",
+            "asset_type": "planning_generation_candidate",
+            "project_id": "qid-learning-prose-01",
+            "domain_type": "WORLD_STRUCTURE",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "authority_role": "book_plan",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+            "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+          }
+        ],
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "canon_dependencies": [
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+      "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1",
+      "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1",
+      "4f94123b-a129-4975-aae7-c2fa7182b42d"
+    ],
+    "closure_conditions": [
+      "沈砚能够凭实际观察和重复结果说明已会之处与仍待验证之处。",
+      "许庭的指导具有可见用途，也保持明确的时间与权限边界。",
+      "终局行程的关键判断由沈砚自己完成；师生关系可以继续。"
+    ],
+    "cross_volume_scope": [
+      "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+      "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+      "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+      "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+      "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    ],
+    "execution_evidence": {
+      "attempt_id": "ee3a1e99-3248-44cb-825b-079774452865",
+      "operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f",
+      "fencing_token": 1,
+      "commit_authority": "STORY_DESIGN_AUTHORITY",
+      "cost_receipt_ref": "authority-asset-version:7ff3f924-1fc1-4836-a317-b22a532c1d9b",
+      "route_snapshot_id": "production_execution/routes/6681ee882ec00a8e71ff",
+      "usage_receipt_ref": "authority-asset-version:a1f893ad-3689-41be-964a-783669a1c783",
+      "input_manifest_ref": "production_execution/inputs/6681ee882ec00a8e71ff",
+      "context_bundle_hash": "sha256:4937ab6355cafd5748fd6b97fe0e00cf5a1788c730900645d940a8d045ddd161",
+      "output_manifest_ref": "authority-asset-version:e322be83-0b43-4f5b-a104-367ed226fc76",
+      "production_verified": false,
+      "external_receipt_ref": "d182c928-a6dc-47de-90e2-7563e973b00b",
+      "real_provider_proven": true,
+      "fixture_protocol_only": false,
+      "external_effect_backed": true,
+      "validation_manifest_ref": "authority-asset-version:afcbcf63-37da-446f-8f92-882587c32f20",
+      "capability_execution_ref": "09ef8a8c-b343-5a26-8ca1-6b4f332f8aa7",
+      "capability_execution_hash": "sha256:15ac8b011e8fce2793afe625ef6fd4b4ca94db6464e1dbb7c83ff26e287a0d12",
+      "capability_runtime_binding_ref": "sha256:d4a5afdce42b1ae571ae85f37c5e5e39cb74cda32f734f6d8a4898f534c9b906",
+      "capability_runtime_binding_hash": "sha256:ca4721ad06d591d9e3441c096b8138c297473a51f273393bd3939e24032959c4",
+      "context_bundle_asset_version_id": "e7e2dd55-9139-4586-862c-58c4659117c9",
+      "capability_pack_attempt_snapshot_id": "sha256:d4a5afdce42b1ae571ae85f37c5e5e39cb74cda32f734f6d8a4898f534c9b906",
+      "production_execution_gateway_backed": true,
+      "capability_pack_attempt_snapshot_hash": "sha256:ca4721ad06d591d9e3441c096b8138c297473a51f273393bd3939e24032959c4",
+      "narrative_intelligence_selection_digest": "sha256:24ec5a397c4050c115d9d6aeece662fbcf175b46b4f122a9a6fb721ddf300e27"
+    },
+    "commitment_contract": [
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "许庭只能依据自己实际掌握的信息和权限答疑；她的反馈不能自动授予正式课位、器具或远行资格。",
+        "commitment_id": "xu-ting-teaching-boundary"
+      },
+      {
+        "level": "SOFT_INTENT",
+        "statement": "以短促、生活化、针对实际表现的互动呈现她重视亲自辨认与重复验证的教学原则。",
+        "commitment_id": "xu-ting-method"
+      },
+      {
+        "level": "OPEN_DESIGN_SPACE",
+        "statement": "后续具体答疑次数、所见练习和她自身修炼安排，依据各卷实际事件与已明确的教学条件确定。",
+        "commitment_id": "xu-ting-later-role"
+      }
+    ],
+    "constraint_envelope": {
+      "type": "PlanningConstraintEnvelope",
+      "book_id": "book:qinglan-wendao-20261008",
+      "project_id": "qid-learning-prose-01",
+      "planning_scope": "ARC",
+      "envelope_digest": "sha256:84fc6e8f4fb5d01ad94f51f206409ae3c0889685ab7d0fd2173f336f404850f6",
+      "parent_versions": [
+        {
+          "role": "arc_scope_volume:1",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+          "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:2",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+          "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:3",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+          "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+        },
+        {
+          "role": "arc_scope_volume:4",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+          "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+        },
+        {
+          "role": "book_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "role": "character_arc_portfolio",
+          "asset_type": "character_arc_portfolio",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d"
+        },
+        {
+          "role": "conflict_state",
+          "asset_type": "conflict_state",
+          "content_hash": "sha256:4dd9acd963a65620568d994c8b25259a534224b2c493f1b1ee54349c15b4b30e",
+          "asset_version_id": "authority-output:3c87aec8-718a-42aa-b281-0e2d56d86487:book.bootstrap.conflict_state:v1"
+        },
+        {
+          "role": "foreshadowing_ledger",
+          "asset_type": "foreshadowing_ledger",
+          "content_hash": "sha256:2b20b491c01c98706b9eda99a6d719ac25e14d24ea9ec9172f896ff34cc21235",
+          "asset_version_id": "authority-output:04dbca88-ddbf-43fc-b91f-2a72ed6a634d:book.bootstrap.foreshadowing_ledger:v1"
+        },
+        {
+          "role": "promise_ledger",
+          "asset_type": "promise_ledger_snapshot",
+          "content_hash": "sha256:0d25ae7aec5a891db945be064a6fd834397f067337ddd2582e84c1395ae62b89",
+          "asset_version_id": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1"
+        },
+        {
+          "role": "volume_plan",
+          "asset_type": "planning_generation_candidate",
+          "content_hash": "sha256:fa05e5b8bb2f53a20c8b1423c98be8015d014a9d25388644b882e768680d785b",
+          "asset_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+        }
+      ],
+      "contract_version": "planning-constraint-envelope-v2",
+      "change_governance": {
+        "requires_evidence": true,
+        "preserve_executed_history": true,
+        "wider_scope_requires_new_plan_change": true
+      },
+      "prohibited_outcomes": [],
+      "inherited_invariants": [],
+      "required_obligations": [],
+      "narrative_load_policy": {
+        "type": "NarrativeLoadPolicy",
+        "limits": {
+          "max_active_arcs": 3,
+          "max_new_concepts": 4,
+          "max_dormant_arc_age": 30,
+          "max_open_obligations": 12,
+          "max_payoff_congestion": 3,
+          "max_overdue_obligations": 0,
+          "max_major_state_transitions": 8,
+          "max_character_appearance_gap": 10
+        },
+        "book_id": "book:qinglan-wendao-20261008",
+        "policy_id": "canonical-production-narrative-load",
+        "project_id": "qid-learning-prose-01",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "source_role": "production_profile",
+        "policy_version": 1,
+        "contract_version": "narrative-load-policy-v1",
+        "governed_overrides": [],
+        "source_content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+        "source_asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1"
+      },
+      "permitted_change_scope": "ARC",
+      "accepted_state_boundary": {
+        "future_plan_only": true,
+        "accepted_through_chapter": 0
+      },
+      "generation_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f",
+      "generator_operation_name": "arc_plan.generate",
+      "narrative_load_projection": {
+        "type": "NarrativeLoadProjection",
+        "status": "NOT_OBSERVED",
+        "metrics": {},
+        "contract_version": "narrative-load-projection-v2",
+        "open_obligation_ids": [],
+        "overdue_obligation_ids": [],
+        "accepted_through_chapter": 0
+      },
+      "narrative_load_policy_lineage": {
+        "type": "NarrativeLoadPolicyLineage",
+        "policy_hash": "sha256:4fe5c6f501acc235c9a2328a5dbc01ce103967fd20d38a103ec054aaf9e25d39",
+        "inherited_from": [
+          {
+            "role": "arc_scope_volume:1",
+            "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+            "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:2",
+            "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+            "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:3",
+            "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+            "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+          },
+          {
+            "role": "arc_scope_volume:4",
+            "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+            "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+          },
+          {
+            "role": "book_plan",
+            "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+            "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+          },
+          {
+            "role": "volume_plan",
+            "content_hash": "sha256:fa05e5b8bb2f53a20c8b1423c98be8015d014a9d25388644b882e768680d785b",
+            "asset_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "narrative-load-policy-lineage-v1",
+        "frozen_by_generation_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+      },
+      "creative_requirements_contract": "work-requirements.v2"
+    },
+    "context_profile_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "relationship_deltas": [
+      {
+        "change": "由初学者提出具体疑问、教习作有限答疑，逐渐发展为沈砚带回实践结果并据此获得更有针对性的反馈；最终双方承认关键行程由沈砚自己判断。",
+        "subject": "许庭与沈砚"
+      }
+    ],
+    "character_realization": [
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "ARC",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "character_id": "character:xu-ting",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      },
+      {
+        "reach": "CURRENT_VOLUME",
+        "scope": "ARC",
+        "state_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_STATE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "character_id": "character:shen-yan",
+        "identity_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_IDENTITY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "trajectory_ref": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "character_arc_portfolio",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "CHARACTER_TRAJECTORY",
+          "content_hash": "sha256:51745719f19d606de7a89185f17e2a167ad0fe94a6a333ffce68c87ed266b9e3",
+          "authority_role": "character_arc_portfolio",
+          "asset_version_id": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+          "frozen_by_operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f"
+        },
+        "realization_level": "DEFINED",
+        "narrative_relevance": "CURRENT"
+      }
+    ],
+    "generator_operation_name": "arc_plan.generate",
+    "narrative_architecture_version": "canonical-narrative-v1",
+    "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+  }
+}

@@ -1,0 +1,85 @@
+................................................FFFFF................... [ 90%]
+........                                                                 [100%]
+=================================== FAILURES ===================================
+_ test_prospective_template_renders_only_active_method_with_lossless_inputs[draft-None] _
+
+stage = 'draft', heading = None
+
+    @pytest.mark.parametrize("stage,heading", [("draft", None), ("review", "Review"), ("revision", "Revision"), ("canon_extraction", "Canon"), ("quality_structural", "Quality")])
+    def test_prospective_template_renders_only_active_method_with_lossless_inputs(stage, heading):
+        resolver = default_chapter_artifact_resolver(ROOT)
+        template = resolver.resolve(ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v15")
+        from novel_forge.modules.chapter_authority.prompt_methods import project_chapter_template
+    
+>       projected = project_chapter_template(template.content["text"], stage=stage)
+                                             ^^^^^^^^^^^^^^^^
+E       AttributeError: 'ResolvedArtifact' object has no attribute 'content'
+
+tests/unit/test_capability_pack_artifact_materialization.py:214: AttributeError
+_ test_prospective_template_renders_only_active_method_with_lossless_inputs[review-Review] _
+
+stage = 'review', heading = 'Review'
+
+    @pytest.mark.parametrize("stage,heading", [("draft", None), ("review", "Review"), ("revision", "Revision"), ("canon_extraction", "Canon"), ("quality_structural", "Quality")])
+    def test_prospective_template_renders_only_active_method_with_lossless_inputs(stage, heading):
+        resolver = default_chapter_artifact_resolver(ROOT)
+        template = resolver.resolve(ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v15")
+        from novel_forge.modules.chapter_authority.prompt_methods import project_chapter_template
+    
+>       projected = project_chapter_template(template.content["text"], stage=stage)
+                                             ^^^^^^^^^^^^^^^^
+E       AttributeError: 'ResolvedArtifact' object has no attribute 'content'
+
+tests/unit/test_capability_pack_artifact_materialization.py:214: AttributeError
+_ test_prospective_template_renders_only_active_method_with_lossless_inputs[revision-Revision] _
+
+stage = 'revision', heading = 'Revision'
+
+    @pytest.mark.parametrize("stage,heading", [("draft", None), ("review", "Review"), ("revision", "Revision"), ("canon_extraction", "Canon"), ("quality_structural", "Quality")])
+    def test_prospective_template_renders_only_active_method_with_lossless_inputs(stage, heading):
+        resolver = default_chapter_artifact_resolver(ROOT)
+        template = resolver.resolve(ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v15")
+        from novel_forge.modules.chapter_authority.prompt_methods import project_chapter_template
+    
+>       projected = project_chapter_template(template.content["text"], stage=stage)
+                                             ^^^^^^^^^^^^^^^^
+E       AttributeError: 'ResolvedArtifact' object has no attribute 'content'
+
+tests/unit/test_capability_pack_artifact_materialization.py:214: AttributeError
+_ test_prospective_template_renders_only_active_method_with_lossless_inputs[canon_extraction-Canon] _
+
+stage = 'canon_extraction', heading = 'Canon'
+
+    @pytest.mark.parametrize("stage,heading", [("draft", None), ("review", "Review"), ("revision", "Revision"), ("canon_extraction", "Canon"), ("quality_structural", "Quality")])
+    def test_prospective_template_renders_only_active_method_with_lossless_inputs(stage, heading):
+        resolver = default_chapter_artifact_resolver(ROOT)
+        template = resolver.resolve(ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v15")
+        from novel_forge.modules.chapter_authority.prompt_methods import project_chapter_template
+    
+>       projected = project_chapter_template(template.content["text"], stage=stage)
+                                             ^^^^^^^^^^^^^^^^
+E       AttributeError: 'ResolvedArtifact' object has no attribute 'content'
+
+tests/unit/test_capability_pack_artifact_materialization.py:214: AttributeError
+_ test_prospective_template_renders_only_active_method_with_lossless_inputs[quality_structural-Quality] _
+
+stage = 'quality_structural', heading = 'Quality'
+
+    @pytest.mark.parametrize("stage,heading", [("draft", None), ("review", "Review"), ("revision", "Revision"), ("canon_extraction", "Canon"), ("quality_structural", "Quality")])
+    def test_prospective_template_renders_only_active_method_with_lossless_inputs(stage, heading):
+        resolver = default_chapter_artifact_resolver(ROOT)
+        template = resolver.resolve(ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v15")
+        from novel_forge.modules.chapter_authority.prompt_methods import project_chapter_template
+    
+>       projected = project_chapter_template(template.content["text"], stage=stage)
+                                             ^^^^^^^^^^^^^^^^
+E       AttributeError: 'ResolvedArtifact' object has no attribute 'content'
+
+tests/unit/test_capability_pack_artifact_materialization.py:214: AttributeError
+=========================== short test summary info ============================
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_prospective_template_renders_only_active_method_with_lossless_inputs[draft-None]
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_prospective_template_renders_only_active_method_with_lossless_inputs[review-Review]
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_prospective_template_renders_only_active_method_with_lossless_inputs[revision-Revision]
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_prospective_template_renders_only_active_method_with_lossless_inputs[canon_extraction-Canon]
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_prospective_template_renders_only_active_method_with_lossless_inputs[quality_structural-Quality]
+5 failed, 75 passed in 5.87s

@@ -1,0 +1,1415 @@
+{
+  "asset_version_id": "authority-output:212b8f7f-beb3-49b1-af65-cc276bce17f8:chapter.memo:v1",
+  "content_hash": "sha256:16af203c9f6afce729627b2013b29a3fb39aa19355a05d5f13cb3ac430cc55bc",
+  "content": {
+    "type": "ChapterMemo",
+    "chapter": 2,
+    "arc_actions": [
+      {
+        "action": "推进沈砚的基础修炼：由数日练习中的具体障碍，引出许庭答疑、一次短暂气感和可继续观察的动作差别。",
+        "arc_plan_version_id": "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1"
+      },
+      {
+        "action": "铺垫首次采药：让唐穗说出比较书面辨认与实物的目标，三人据各自目标决定同行。",
+        "arc_plan_version_id": "authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1"
+      }
+    ],
+    "hook_intent": {
+      "ending_hook": "",
+      "unresolved_exit_question": "这次短暂的学习结果，到了首次采药的山路上能帮沈砚做什么？"
+    },
+    "qualification": "QUALIFIED",
+    "reader_effect": {
+      "reward_mode": "初次气感的具体体验",
+      "exit_question": "这次短暂的学习结果，到了首次采药的山路上能帮沈砚做什么？",
+      "entry_question": "数日练习之后，沈砚能否弄清自己为什么仍抓不住气感？",
+      "target_emotion": "安静而踏实的惊喜"
+    },
+    "stop_conditions": [
+      "沈砚完成一次短暂、可辨认的气感，并在重试未果后留下继续观察的办法。",
+      "唐穗与陆衡各自说出目标，三人决定参加首次采药。",
+      "结尾停在出发前的同行约定，不提前确认药材成熟份额或山路实况。"
+    ],
+    "contract_version": "chapter-memo-v2",
+    "event_directives": [
+      {
+        "event_id": "scene:chapter:2:practice",
+        "causal_intent": {
+          "goal": "在日常劳动之外持续练习，并找出值得请教的具体问题。",
+          "conflict": "他已有练习时段，却仍会在用力留意时扰乱原本能观察的呼吸。",
+          "exit_state": "数日劳动与另行留出的练习时段已经过去；沈砚仍无气感，但能说清自己一用力留意便使肩背和呼吸绷紧的障碍，准备向许庭请教。",
+          "entry_state": "沈砚已领木牌入门，与陆衡约定早间柴棚劳动的分担，也听过基础吐纳说明；他尚未实际感到气。"
+        },
+        "arc_contributions": [
+          "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1"
+        ],
+        "narrative_functions": [
+          "CHARACTER",
+          "PLOT",
+          "READER_EXPERIENCE"
+        ]
+      },
+      {
+        "event_id": "scene:chapter:2:answer",
+        "causal_intent": {
+          "goal": "依有效答疑改正练习动作，辨认自己实际感到的变化。",
+          "conflict": "急于捕捉变化的动作本身扰乱了观察；一次短暂感觉也不能保证马上重现。",
+          "exit_state": "沈砚经许庭针对具体障碍的答疑，调整呼吸与注意后有过一次短暂气感；感觉未能立即稳定重现，他记住了可继续观察的动作差别。",
+          "entry_state": "数日劳动与另行留出的练习时段已经过去；沈砚仍无气感，但能说清自己一用力留意便使肩背和呼吸绷紧的障碍，准备向许庭请教。"
+        },
+        "arc_contributions": [
+          "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1"
+        ],
+        "narrative_functions": [
+          "CHARACTER",
+          "MYSTERY_DISCLOSURE",
+          "PLOT",
+          "READER_EXPERIENCE"
+        ]
+      },
+      {
+        "event_id": "scene:chapter:2:herb",
+        "causal_intent": {
+          "goal": "决定是否参加首次采药，并让同行安排容纳三人的不同目标。",
+          "conflict": "三人愿意同行的理由不同，往返时间也不能任由一人的目标占满。",
+          "exit_state": "沈砚保有一次短暂气感和继续练习的观察办法；他与唐穗、陆衡已说清各自的山路、材料与时段目标，并决定参加首次采药，现场药材与路况尚未接触。",
+          "entry_state": "沈砚经许庭针对具体障碍的答疑，调整呼吸与注意后有过一次短暂气感；感觉未能立即稳定重现，他记住了可继续观察的动作差别。"
+        },
+        "arc_contributions": [
+          "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1",
+          "authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1"
+        ],
+        "narrative_functions": [
+          "CHARACTER",
+          "MYSTERY_DISCLOSURE",
+          "PLOT",
+          "READER_EXPERIENCE"
+        ]
+      }
+    ],
+    "memo_fingerprint": "sha256:fe445ee57f3cdd34f4c50e0246d11b3316340cf94fbcd05d5cdd284c0c537345",
+    "scene_directives": [
+      {
+        "scene_id": "scene:chapter:2:practice",
+        "directive": "略过数日柴棚劳动及另行留出的练习时段，只选几次动作差别让沈砚发现问题；以他准备向许庭请教结束场景。",
+        "transition": "让沈砚带着自己能说清的动作差别走向练习角。",
+        "emotional_change": "困惑逐渐变得具体，求教有了着落。",
+        "information_release": "呈现沈砚观察到的呼吸和身体反应；此时仍无气感。",
+        "conflict_progression": "从练习无结果，收束为一用力留意就使肩背和呼吸绷紧的可描述障碍。"
+      },
+      {
+        "scene_id": "scene:chapter:2:answer",
+        "directive": "让沈砚先说具体障碍，许庭据此指导他放松多余用力、辨认原有呼吸并调整注意。细写一次与平常喘息不同的短暂感知，再让重试显示其限度。",
+        "transition": "沈砚带着尚不稳定的学习结果回到日常，在首次采药的话题中想到认识山路。",
+        "emotional_change": "由专注求解转为安静惊喜，随后沉下心记住可继续尝试的差别。",
+        "information_release": "通过许庭答疑与沈砚动作确认有效调整；只通过沈砚实际感知确认一次短暂气感。",
+        "conflict_progression": "急于捕捉感觉的用力妨碍观察；短暂成功后仍无法立刻照样重现。"
+      },
+      {
+        "scene_id": "scene:chapter:2:herb",
+        "directive": "沈砚提出想认识山路；唐穗说明要比较书面辨认与实物；陆衡问清往返对练习时段的影响。让三人决定参加，把具体采收和回程办法留待任务条件明确后商量。",
+        "transition": "以三人已决定同行、各自想从山路得到什么收束，承接下一章现场任务。",
+        "emotional_change": "个人期待转为有边界的同行约定。",
+        "information_release": "由唐穗和陆衡亲口说明各自目标；保留现场药材与路况的未知。",
+        "conflict_progression": "三人愿意参加的理由各异，陆衡的回程时段限制需要进入共同安排。"
+      }
+    ],
+    "tension_strategy": "把悬念放在具体动作能否调整成功，以及三人的目标能否容纳于同一趟采药；用未能立即重现的反馈保持学习的真实限度。",
+    "accepted_boundary": {
+      "accepted_through_chapter": 0,
+      "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    "creative_guidance": {
+      "pov": "沈砚为主的第三人称限知视角，紧贴他所做、所感和当下能理解的部分。",
+      "voice": "叙述朴素清楚，以呼吸、肩背和注意的细微差别承载情绪；对话围绕眼前的问题与各自的实际安排展开。",
+      "constraints": [
+        "以沈砚为主的第三人称限知视角；他人未说出的想法只由言行供读者判断。",
+        "正文主要使用简体中文，单章2500—3500中文字；以动作、感官差别和实际反馈呈现进步。",
+        "初次气感必须在本章发生，且短暂、不能立即稳定重现；不得写成稳定运用灵气、辨药术或御剑能力。",
+        "唐穗的材料目标与陆衡的时段边界须由本人向同伴说出；三人决定同行，但尚未接触现场药材、成熟份额或陌生路况。",
+        "承接所给第一章工作稿中的木牌、基础吐纳说明与柴棚分工时，保留其工作稿范围，不将其表述为已接受正典。",
+        "不以准备物件或逐项询问取代答疑、动作调整和初次气感。"
+      ],
+      "chapter_goal": "回答沈砚为何始终抓不住气感，并以一次有效答疑完成初次、短暂的气感；章末使沈砚、唐穗和陆衡说清目标，决定参加首次采药。",
+      "ending_change": "沈砚已有一次短暂气感；三人带着认识山路、核对材料和保留练习时段的不同目标，决定参加首次采药。",
+      "emotional_turn": "从能描述却无法解决的困惑，转为对短暂气感的安静惊喜；未能重现时，沈砚仍握有继续观察的办法。",
+      "reader_promise": "让读者看见观察、请教和调整如何产生第一次可辨认的学习结果。",
+      "character_choices": [
+        {
+          "cost": null,
+          "choice": "把肩背绷紧、呼吸变急的具体障碍告诉许庭，依答疑重试；随后提出同行采药以认识山路。",
+          "motivation": "他想弄清练习哪里出了偏差，并在实际任务中逐步认识宗门外的路。",
+          "character_id": "character:shen-yan"
+        },
+        {
+          "cost": null,
+          "choice": "说明自己想把书上的材料辨认与现场实物相比较，并同意与两人同行。",
+          "motivation": "她想检验所学，同时知道目标药材仍须到现场辨认。",
+          "character_id": "character:tang-sui"
+        },
+        {
+          "cost": null,
+          "choice": "先提出往返不能挤掉自己的练习时段，再同意参加，待任务条件明确后商量具体安排。",
+          "motivation": "他愿意合作，也要守住此前为练习留出的时间。",
+          "character_id": "character:lu-heng"
+        }
+      ]
+    },
+    "forbidden_changes": {
+      "forbidden_events": [],
+      "hard_constraints": [],
+      "forbidden_payoffs": [],
+      "prohibited_outcomes": [
+        "把初次气感写成稳定运用灵气、辨药术或御剑能力。",
+        "用准备物件和逐项询问占满一章，却不完成初次气感。"
+      ]
+    },
+    "retrieval_queries": [
+      "已接受初始正典中，青岚宗外门的基础吐纳、日常劳作与首次采药任务有哪些明确规则？",
+      "已接受角色与世界设定中，许庭、唐穗、陆衡各自已确定的职责、能力边界和与沈砚的关系是什么？"
+    ],
+    "execution_evidence": {
+      "cost": {
+        "model": "gpt-6-sol",
+        "reason": "monetary_cost_not_observable",
+        "currency": "UNKNOWN",
+        "measurement": "UNKNOWN",
+        "availability": "UNAVAILABLE",
+        "provider_billed": "UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+        "entitlement_snapshot": {
+          "cli_version": "codex-cli 0.159.2",
+          "billing_identity": {
+            "version": "codex-membership-identity.v1",
+            "auth_mode": "chatgpt",
+            "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+            "billing_channel": "ACCOUNT_ENTITLEMENT"
+          },
+          "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+          "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+          "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+        },
+        "entitlement_snapshot_hash": "sha256:5cf47cc5901f73363c45d9aa8634f819e4a1ac401b3882a1237f3379193ac02a"
+      },
+      "tools": {
+        "denied": [
+          "storage.object.put"
+        ],
+        "policy": "DEFAULT_DENY",
+        "allowed": [
+          "model.provider.invoke"
+        ],
+        "invoked": [
+          "model.provider.invoke"
+        ],
+        "invocations": [
+          {
+            "event": "provider_execution",
+            "status": "completed",
+            "call_id": "",
+            "tool_ref": "model.provider.invoke"
+          }
+        ]
+      },
+      "usage": {
+        "model": "gpt-6-sol",
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 30674,
+        "total_tokens": 33047,
+        "output_tokens": 2373,
+        "cached_input_tokens": 0,
+        "uncached_input_tokens": 30674,
+        "reasoning_output_tokens": 441
+      },
+      "model_id": "gpt-6-sol",
+      "provider_id": "codex-cli",
+      "skill_version": "chapter-plan-skill-v3",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "real_model_call": true,
+      "capability_runtime": {
+        "skill": {
+          "ref": "chapter-outline",
+          "version": "chapter-plan-skill-v3",
+          "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+        },
+        "allowed_tools": [
+          "model.provider.invoke"
+        ],
+        "provider_view": {
+          "component_hashes": {
+            "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "output_schema": "sha256:7bb24dd470c49283fbb937fe29acf60967bb3913a464c4af7ccb3c093f896f35",
+            "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:e2617142680d7c48fb5e60d4ddae02bd37d2bead8da53fca38ae54ddb461a65a",
+            "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+            "fully_rendered_prompt": "sha256:4dea2e0832a00b5461dcec20f382786255cd7c43c55265a23726626d3f1b2ec3",
+            "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+            "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+          },
+          "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+          "component_characters": {
+            "tool_policy": 0,
+            "output_schema": 2953,
+            "governed_skill": 894,
+            "provider_knowledge": 559,
+            "provider_task_view": 38217,
+            "system_instruction": 619,
+            "fully_rendered_prompt": 45860,
+            "provider_context_view": 417,
+            "stage_semantic_contract": 900
+          },
+          "representation_policy": "authority-projection-task-provider-v2",
+          "selection_explanation": {
+            "policy": "accepted-boundary-only",
+            "omitted_count": 0,
+            "selected_count": 1
+          },
+          "task_contract_version": "provider-task-view-v1",
+          "context_contract_version": "provider-context-view-v2",
+          "context_projection_ratio": 139.0,
+          "exact_context_references": {
+            "source_scope": "provider_data_envelope",
+            "decoded_equal": true,
+            "reference_count": 3,
+            "contract_version": "provider-context-exact-value-reference.v1",
+            "source_context_hash": "sha256:2c23364610ef3662ff04dc9115e8293b4bdd2355b4429f3061d747033e6ee149",
+            "encoded_context_hash": "sha256:5501ea18b6e1d37bbd56dc7f8e4700d0828211931ad742432c9f71a899ce7860"
+          },
+          "component_estimated_tokens": {
+            "tool_policy": 0,
+            "output_schema": 985,
+            "governed_skill": 298,
+            "provider_knowledge": 187,
+            "provider_task_view": 18701,
+            "system_instruction": 207,
+            "fully_rendered_prompt": 21248,
+            "provider_context_view": 139,
+            "stage_semantic_contract": 300
+          },
+          "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+          "component_utf8_byte_upper_bounds": {
+            "tool_policy": 0,
+            "output_schema": 2953,
+            "governed_skill": 894,
+            "provider_knowledge": 559,
+            "provider_task_view": 56101,
+            "system_instruction": 619,
+            "fully_rendered_prompt": 63744,
+            "provider_context_view": 417,
+            "stage_semantic_contract": 900
+          },
+          "provider_context_estimated_tokens": 139,
+          "authority_context_estimated_tokens": 0,
+          "rendered_prompt_to_semantic_input_ratio": 1.116729,
+          "provider_admission_uses_component_estimates": false
+        },
+        "prompt_template": {
+          "ref": "prompt-template:chapter-generation-pack",
+          "version": "v15",
+          "content_hash": "sha256:beb328b411e0c2133feea2c82ebbabd828edc2f60d99893afca28579e80fc59a"
+        },
+        "method_selection": {
+          "skill_sections": [
+            "Shared rules",
+            "Memo"
+          ],
+          "system_sections": [],
+          "contract_version": "production-stage-methods.v1"
+        },
+        "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+        "output_schema_hash": "sha256:7bb24dd470c49283fbb937fe29acf60967bb3913a464c4af7ccb3c093f896f35",
+        "provider_admission": {
+          "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+          "status": "ADMITTED",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "envelope_hash": "sha256:1ffd82f1ce241a7efc0a0901498c535f8fc7a5df894e3fad9e32891443ba159c",
+          "total_reserved": 96016,
+          "component_usage": {
+            "safety_margin": 256,
+            "output_reserve": 32000,
+            "provider_input": 63744,
+            "request_framing": 16
+          },
+          "applicable_limit": 258400,
+          "contract_version": "provider-token-admission-v1",
+          "accounting_contract": {
+            "model": "gpt-6-sol",
+            "provider": "codex-cli",
+            "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+            "meter_version": "v1",
+            "safety_margin": 256,
+            "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+            "output_reserve": 32000,
+            "route_identity": "routing-decision:14ebee17d8d41fec048d3b59af31e4af7237ec9893b116ddc284f6150b6031b6",
+            "contract_version": "provider-token-accounting-v3",
+            "framing_overhead": 16,
+            "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+            "model_context_limit": 258400,
+            "execution_token_limit": 258400,
+            "serialization_contract": "codex-cli-application-stdin-v1"
+          },
+          "context_bundle_status": "VALID",
+          "context_bundle_tokens": 0,
+          "input_component_hashes": {
+            "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "output_schema": "sha256:7bb24dd470c49283fbb937fe29acf60967bb3913a464c4af7ccb3c093f896f35",
+            "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:e2617142680d7c48fb5e60d4ddae02bd37d2bead8da53fca38ae54ddb461a65a",
+            "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+            "fully_rendered_prompt": "sha256:4dea2e0832a00b5461dcec20f382786255cd7c43c55265a23726626d3f1b2ec3",
+            "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+            "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+          },
+          "complete_request_coverage": [
+            "system_runtime_instructions",
+            "prompt_template",
+            "skill_instructions",
+            "tool_policy_and_schemas",
+            "structured_output_schema",
+            "context_bundle",
+            "knowledge_inputs",
+            "request_envelope_and_framing",
+            "output_reserve",
+            "safety_margin"
+          ]
+        },
+        "system_instruction": {
+          "ref": "prompt-system:chapter-generation-pack",
+          "version": "v3",
+          "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "materialization_hash": "sha256:380019d9d5472eabf4f2da6a930cd90d6d5f0a7e013d4badccde125504ab34c0",
+        "rendered_prompt_bytes": 63744,
+        "reusable_prefix_bytes": 1593,
+        "knowledge_content_hashes": [
+          "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+        ],
+        "context_asset_version_ids": [
+          "authority-output:0a53efff-abfe-44e9-a922-aba704b84b30:chapter.execution_intent:v1"
+        ],
+        "embedding_output_contract": null,
+        "fully_rendered_prompt_hash": "sha256:4dea2e0832a00b5461dcec20f382786255cd7c43c55265a23726626d3f1b2ec3",
+        "provider_request_envelope_hash": "sha256:1ffd82f1ce241a7efc0a0901498c535f8fc7a5df894e3fad9e32891443ba159c",
+        "required_reader_facing_language": null,
+        "rendered_prompt_estimated_tokens": 21248,
+        "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+        "provider_admission_asset_version_id": "9dbf074a-fc2f-4247-baae-e5a6638ea6f8"
+      },
+      "production_execution": {
+        "input_manifest": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "read_set": [
+            "asset-version:authority-output:68dfc68e-6108-4597-9662-2d019317ab34:chapter.plan:v1",
+            "asset-version:authority-output:0a53efff-abfe-44e9-a922-aba704b84b30:chapter.execution_intent:v1",
+            "asset-version:f9cb7186-9615-47f9-9cbf-1019d1963fc2",
+            "asset-version:9dbf074a-fc2f-4247-baae-e5a6638ea6f8"
+          ],
+          "attempt_id": "1bb2280a-d173-43d4-89a2-2a523343969a",
+          "project_id": "qid-learning-prose-01",
+          "manifest_id": "production_execution/inputs/192f1933838fd8d8da7e",
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:2",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 2
+          },
+          "fencing_token": 1,
+          "input_artifacts": [
+            {
+              "artifact_ref": "asset-version:authority-output:68dfc68e-6108-4597-9662-2d019317ab34:chapter.plan:v1",
+              "content_hash": "sha256:824aeb6d09f415969ed743425931b68bc18ace80cc745924cae2e714ccdf6a72",
+              "artifact_type": "chapter_plan",
+              "schema_version": "authoritative-chapter-plan-v5",
+              "asset_version_id": "authority-output:68dfc68e-6108-4597-9662-2d019317ab34:chapter.plan:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:0a53efff-abfe-44e9-a922-aba704b84b30:chapter.execution_intent:v1",
+              "content_hash": "sha256:3028a1f3100ea9484ed002af47e03a97d7eba6d7b924b5a1d82456a919207c28",
+              "artifact_type": "chapter_execution_intent",
+              "schema_version": "chapter-execution-intent-v4",
+              "asset_version_id": "authority-output:0a53efff-abfe-44e9-a922-aba704b84b30:chapter.execution_intent:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:f9cb7186-9615-47f9-9cbf-1019d1963fc2",
+              "content_hash": "sha256:198ec46ddc5dd02392d726b249ad1faf7cf1b210d26c98c8f24177ba43654ac1",
+              "artifact_type": "capability_materialization_manifest",
+              "schema_version": "novelos.chapter_capability_materialization.v1",
+              "asset_version_id": "f9cb7186-9615-47f9-9cbf-1019d1963fc2",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            },
+            {
+              "artifact_ref": "asset-version:9dbf074a-fc2f-4247-baae-e5a6638ea6f8",
+              "content_hash": "sha256:f1aacc209d695f1824c79b6c46b64ad349615c7db5b8989fef03d76f10919a29",
+              "artifact_type": "provider_request_admission_manifest",
+              "schema_version": "novelos.provider_request_admission.v1",
+              "asset_version_id": "9dbf074a-fc2f-4247-baae-e5a6638ea6f8",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            }
+          ],
+          "arc_version_refs": [],
+          "planning_version": "authority-output:68dfc68e-6108-4597-9662-2d019317ab34:chapter.plan:v1",
+          "skill_bundle_ref": "production_execution/skill_bundles/192f1933838fd8d8da7e",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/192f1933838fd8d8da7e",
+          "source_policy_ref": "source:planning-chapter-memo:v1",
+          "canon_version_refs": [],
+          "context_bundle_ref": "context:none:212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "source_eligibility": "PRODUCTION_ELIGIBLE",
+          "story_state_version": "story-state:none:212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "skill_bundle_version": "chapter-plan-skill-v3",
+          "prompt_bundle_version": "prompt-system:chapter-generation-pack@v3",
+          "canon_snapshot_version": "canon:none:212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "context_bundle_version": "context:none:212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "quality_profile_version": "quality-profile:none:212b8f7f-beb3-49b1-af65-cc276bce17f8"
+        },
+        "route_snapshot": {
+          "model_id": "gpt-6-sol",
+          "policy_id": "chapter.memo.route.d2197ad06183f26bd186",
+          "attempt_id": "1bb2280a-d173-43d4-89a2-2a523343969a",
+          "backend_id": "codex-cli",
+          "release_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+          "approval_ref": "",
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "model_provider": "codex-cli",
+          "policy_version": 1,
+          "backend_version": "1.0.0",
+          "runtime_host_id": "host:author-first-live-isolated",
+          "auth_profile_ref": "auth:current-chatgpt-member:codex:f44c8a92519f0b8580c24ff252423ec611484df68305f4646b907721f2829bea",
+          "credential_scope": "",
+          "fallback_trigger": "",
+          "model_profile_id": "chapter.memo.default.d2197ad06183f26bd186",
+          "reasoning_effort": "high",
+          "route_generation": 1,
+          "skill_bundle_ref": "production_execution/skill_bundles/192f1933838fd8d8da7e",
+          "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/192f1933838fd8d8da7e",
+          "route_decision_id": "routing-decision:14ebee17d8d41fec048d3b59af31e4af7237ec9893b116ddc284f6150b6031b6",
+          "route_policy_hash": "8fb0b5f9d6e169821307bbff23b05b187cf3caf10da39d6ce82bf90542b96544",
+          "route_snapshot_id": "production_execution/routes/192f1933838fd8d8da7e",
+          "context_bundle_ref": "context:none:212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "model_profile_hash": "2551edc5f0cc2f6fb1a5cdc4d9add0f169af2fc5cf8b138e177ec84f79ed4cf4",
+          "route_change_index": 0,
+          "secret_version_ref": "",
+          "fallback_policy_ref": "chapter.memo.fail-closed",
+          "model_profile_version": 2,
+          "fallback_policy_version": 1,
+          "parent_route_snapshot_id": "",
+          "quality_revalidation_ref": "",
+          "requested_reasoning_effort": "high"
+        },
+        "output_manifest": {
+          "files": [],
+          "attempt_id": "1bb2280a-d173-43d4-89a2-2a523343969a",
+          "stderr_ref": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/executions/chapter-execution-49e22f45-308c-4c19-b8c8-075148-d9d7a04e01e0f779/stderr.log",
+          "stdout_ref": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/executions/chapter-execution-49e22f45-308c-4c19-b8c8-075148-d9d7a04e01e0f779/stdout.log",
+          "manifest_id": "output-manifest:chapter-execution:49e22f45-308c-4c19-b8c8-0751488124b3",
+          "output_hash": "sha256:ed804c2688629c36e7d1edaa1cdca962631a0e586d7ba12511caabce11736bec",
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:2868a02d-4668-43d2-8793-25ff184faf37",
+          "schema_version": "schema:chapter-provider-output:memo:v3",
+          "normalized_output_ref": "authority-asset-version:34cb981a-7dc2-4960-9746-8537ac13e10b"
+        },
+        "execution_handle": {
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "attempt_id": "1bb2280a-d173-43d4-89a2-2a523343969a",
+          "backend_id": "codex-cli",
+          "execution_id": "chapter-execution:49e22f45-308c-4c19-b8c8-0751488124b3",
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "fencing_token": 1,
+          "completion_mode": "PROCESS_EXIT",
+          "local_process_id": 53670,
+          "query_capability": "SUPPORTED",
+          "cancel_capability": "SUPPORTED",
+          "callback_capability": "UNSUPPORTED",
+          "external_request_id": null,
+          "provider_request_id": null,
+          "backend_execution_id": "process-receipt:9a82551d77c56821fcc628d1",
+          "local_process_group_id": 53670,
+          "local_process_start_time": "Sun Oct 11 12:35:28 2026",
+          "local_execution_receipt_id": "process-receipt:9a82551d77c56821fcc628d1"
+        },
+        "execution_result": {
+          "error": null,
+          "outcome": "SUCCEEDED",
+          "attempt_id": "1bb2280a-d173-43d4-89a2-2a523343969a",
+          "started_at": "2026-10-11T04:35:28.949807Z",
+          "completed_at": "2026-10-11T04:36:18.591242Z",
+          "execution_id": "chapter-execution:49e22f45-308c-4c19-b8c8-0751488124b3",
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:2868a02d-4668-43d2-8793-25ff184faf37",
+          "cost_receipt_ref": "authority-asset-version:df9e8fa4-7a4f-40e8-a306-29c7ad933849",
+          "usage_receipt_ref": "authority-asset-version:4a9e434e-e330-4d20-9bc8-4769a4f28efa",
+          "output_manifest_ref": "authority-asset-version:f4879d8a-74a5-4c6e-929d-ce43ec6e0a55",
+          "process_receipt_ref": "authority-asset-version:e8edac66-5924-465b-a0bd-45b8ad81d2e4",
+          "external_receipt_ref": null,
+          "provider_receipt_ref": null,
+          "normalized_output_ref": "authority-asset-version:34cb981a-7dc2-4960-9746-8537ac13e10b",
+          "validation_report_ref": "authority-asset-version:4b8d2098-433a-49a9-a8b2-6e763de0a6c2"
+        },
+        "process_evidence": {
+          "cost": {
+            "model": "gpt-6-sol",
+            "reason": "monetary_cost_not_observable",
+            "currency": "UNKNOWN",
+            "measurement": "UNKNOWN",
+            "availability": "UNAVAILABLE",
+            "provider_billed": "UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "entitlement_snapshot": {
+              "cli_version": "codex-cli 0.159.2",
+              "billing_identity": {
+                "version": "codex-membership-identity.v1",
+                "auth_mode": "chatgpt",
+                "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+                "billing_channel": "ACCOUNT_ENTITLEMENT"
+              },
+              "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+              "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+              "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+              "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+            },
+            "entitlement_snapshot_hash": "sha256:5cf47cc5901f73363c45d9aa8634f819e4a1ac401b3882a1237f3379193ac02a"
+          },
+          "stage": "memo",
+          "tools": {
+            "denied": [
+              "storage.object.put"
+            ],
+            "policy": "DEFAULT_DENY",
+            "allowed": [
+              "model.provider.invoke"
+            ],
+            "invoked": [
+              "model.provider.invoke"
+            ],
+            "invocations": [
+              {
+                "event": "provider_execution",
+                "status": "completed",
+                "call_id": "",
+                "tool_ref": "model.provider.invoke"
+              }
+            ]
+          },
+          "usage": {
+            "model": "gpt-6-sol",
+            "measurement": "MEASURED",
+            "availability": "AVAILABLE",
+            "input_tokens": 30674,
+            "total_tokens": 33047,
+            "output_tokens": 2373,
+            "cached_input_tokens": 0,
+            "uncached_input_tokens": 30674,
+            "reasoning_output_tokens": 441
+          },
+          "result": {
+            "arc_actions": [
+              {
+                "action": "推进沈砚的基础修炼：由数日练习中的具体障碍，引出许庭答疑、一次短暂气感和可继续观察的动作差别。",
+                "arc_plan_version_id": "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1"
+              },
+              {
+                "action": "铺垫首次采药：让唐穗说出比较书面辨认与实物的目标，三人据各自目标决定同行。",
+                "arc_plan_version_id": "authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1"
+              }
+            ],
+            "stop_conditions": [
+              "沈砚完成一次短暂、可辨认的气感，并在重试未果后留下继续观察的办法。",
+              "唐穗与陆衡各自说出目标，三人决定参加首次采药。",
+              "结尾停在出发前的同行约定，不提前确认药材成熟份额或山路实况。"
+            ],
+            "scene_directives": [
+              {
+                "scene_id": "scene:chapter:2:practice",
+                "directive": "略过数日柴棚劳动及另行留出的练习时段，只选几次动作差别让沈砚发现问题；以他准备向许庭请教结束场景。",
+                "transition": "让沈砚带着自己能说清的动作差别走向练习角。",
+                "emotional_change": "困惑逐渐变得具体，求教有了着落。",
+                "information_release": "呈现沈砚观察到的呼吸和身体反应；此时仍无气感。",
+                "conflict_progression": "从练习无结果，收束为一用力留意就使肩背和呼吸绷紧的可描述障碍。"
+              },
+              {
+                "scene_id": "scene:chapter:2:answer",
+                "directive": "让沈砚先说具体障碍，许庭据此指导他放松多余用力、辨认原有呼吸并调整注意。细写一次与平常喘息不同的短暂感知，再让重试显示其限度。",
+                "transition": "沈砚带着尚不稳定的学习结果回到日常，在首次采药的话题中想到认识山路。",
+                "emotional_change": "由专注求解转为安静惊喜，随后沉下心记住可继续尝试的差别。",
+                "information_release": "通过许庭答疑与沈砚动作确认有效调整；只通过沈砚实际感知确认一次短暂气感。",
+                "conflict_progression": "急于捕捉感觉的用力妨碍观察；短暂成功后仍无法立刻照样重现。"
+              },
+              {
+                "scene_id": "scene:chapter:2:herb",
+                "directive": "沈砚提出想认识山路；唐穗说明要比较书面辨认与实物；陆衡问清往返对练习时段的影响。让三人决定参加，把具体采收和回程办法留待任务条件明确后商量。",
+                "transition": "以三人已决定同行、各自想从山路得到什么收束，承接下一章现场任务。",
+                "emotional_change": "个人期待转为有边界的同行约定。",
+                "information_release": "由唐穗和陆衡亲口说明各自目标；保留现场药材与路况的未知。",
+                "conflict_progression": "三人愿意参加的理由各异，陆衡的回程时段限制需要进入共同安排。"
+              }
+            ],
+            "tension_strategy": "把悬念放在具体动作能否调整成功，以及三人的目标能否容纳于同一趟采药；用未能立即重现的反馈保持学习的真实限度。",
+            "creative_guidance": {
+              "pov": "沈砚为主的第三人称限知视角，紧贴他所做、所感和当下能理解的部分。",
+              "voice": "叙述朴素清楚，以呼吸、肩背和注意的细微差别承载情绪；对话围绕眼前的问题与各自的实际安排展开。",
+              "constraints": [
+                "以沈砚为主的第三人称限知视角；他人未说出的想法只由言行供读者判断。",
+                "正文主要使用简体中文，单章2500—3500中文字；以动作、感官差别和实际反馈呈现进步。",
+                "初次气感必须在本章发生，且短暂、不能立即稳定重现；不得写成稳定运用灵气、辨药术或御剑能力。",
+                "唐穗的材料目标与陆衡的时段边界须由本人向同伴说出；三人决定同行，但尚未接触现场药材、成熟份额或陌生路况。",
+                "承接所给第一章工作稿中的木牌、基础吐纳说明与柴棚分工时，保留其工作稿范围，不将其表述为已接受正典。",
+                "不以准备物件或逐项询问取代答疑、动作调整和初次气感。"
+              ],
+              "chapter_goal": "回答沈砚为何始终抓不住气感，并以一次有效答疑完成初次、短暂的气感；章末使沈砚、唐穗和陆衡说清目标，决定参加首次采药。",
+              "ending_change": "沈砚已有一次短暂气感；三人带着认识山路、核对材料和保留练习时段的不同目标，决定参加首次采药。",
+              "emotional_turn": "从能描述却无法解决的困惑，转为对短暂气感的安静惊喜；未能重现时，沈砚仍握有继续观察的办法。",
+              "reader_promise": "让读者看见观察、请教和调整如何产生第一次可辨认的学习结果。",
+              "character_choices": [
+                {
+                  "cost": null,
+                  "choice": "把肩背绷紧、呼吸变急的具体障碍告诉许庭，依答疑重试；随后提出同行采药以认识山路。",
+                  "motivation": "他想弄清练习哪里出了偏差，并在实际任务中逐步认识宗门外的路。",
+                  "character_id": "character:shen-yan"
+                },
+                {
+                  "cost": null,
+                  "choice": "说明自己想把书上的材料辨认与现场实物相比较，并同意与两人同行。",
+                  "motivation": "她想检验所学，同时知道目标药材仍须到现场辨认。",
+                  "character_id": "character:tang-sui"
+                },
+                {
+                  "cost": null,
+                  "choice": "先提出往返不能挤掉自己的练习时段，再同意参加，待任务条件明确后商量具体安排。",
+                  "motivation": "他愿意合作，也要守住此前为练习留出的时间。",
+                  "character_id": "character:lu-heng"
+                }
+              ]
+            },
+            "retrieval_queries": [
+              "已接受初始正典中，青岚宗外门的基础吐纳、日常劳作与首次采药任务有哪些明确规则？",
+              "已接受角色与世界设定中，许庭、唐穗、陆衡各自已确定的职责、能力边界和与沈砚的关系是什么？"
+            ],
+            "execution_strategy": "先用几次有代表性的练习动作带过数日，明确沈砚一用力留意便绷紧的障碍。许庭针对这一点让他辨认原有呼吸，再调整注意；气感出现后安排一次未能重现的尝试。转至外院，以采药话题让三人分别说出目标并作出同行决定。",
+            "obligation_actions": [],
+            "composition_strategy": "按练习、答疑、约定同行的因果顺序推进。用少量有差别的动作概括数日重复，把篇幅集中在提问、调整、短暂气感及未能立即重现；再让这次学习经历自然引出沈砚认识山路的愿望。"
+          },
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "event_count": 7,
+          "denied_tools": [
+            "storage.object.put"
+          ],
+          "allowed_tools": [
+            "model.provider.invoke"
+          ],
+          "output_schema": {
+            "type": "object",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "required": [
+              "execution_strategy",
+              "tension_strategy",
+              "composition_strategy",
+              "creative_guidance",
+              "scene_directives",
+              "retrieval_queries",
+              "obligation_actions",
+              "arc_actions",
+              "stop_conditions"
+            ],
+            "properties": {
+              "arc_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "arc_plan_version_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "arc_plan_version_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "stop_conditions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 16
+              },
+              "scene_directives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "scene_id",
+                    "directive",
+                    "conflict_progression",
+                    "information_release",
+                    "emotional_change",
+                    "transition"
+                  ],
+                  "properties": {
+                    "scene_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "directive": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "transition": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "emotional_change": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "information_release": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "conflict_progression": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "tension_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "creative_guidance": {
+                "type": "object",
+                "required": [
+                  "chapter_goal",
+                  "pov",
+                  "voice",
+                  "emotional_turn",
+                  "reader_promise",
+                  "ending_change",
+                  "character_choices",
+                  "constraints"
+                ],
+                "properties": {
+                  "pov": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "voice": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "constraints": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "maxItems": 32
+                  },
+                  "chapter_goal": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "ending_change": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "emotional_turn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reader_promise": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "character_choices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "character_id",
+                        "choice",
+                        "motivation",
+                        "cost"
+                      ],
+                      "properties": {
+                        "cost": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "choice": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "motivation": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "character_id": {
+                          "enum": [
+                            "character:lu-heng",
+                            "character:shen-yan",
+                            "character:tang-sui",
+                            "character:xu-ting"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 32
+                  }
+                },
+                "additionalProperties": false
+              },
+              "retrieval_queries": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 8,
+                "minItems": 1
+              },
+              "execution_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "obligation_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "obligation_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "obligation_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "composition_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "model_authority": {
+            "schema_version": "novelos.model_authority_evidence.v1",
+            "route_policy_id": "chapter.memo.route.d2197ad06183f26bd186",
+            "invocation_model": "gpt-6-sol",
+            "model_profile_id": "chapter.memo.default.d2197ad06183f26bd186",
+            "route_policy_hash": "8fb0b5f9d6e169821307bbff23b05b187cf3caf10da39d6ce82bf90542b96544",
+            "route_snapshot_id": "production_execution/routes/192f1933838fd8d8da7e",
+            "frozen_route_model": "gpt-6-sol",
+            "model_profile_hash": "2551edc5f0cc2f6fb1a5cdc4d9add0f169af2fc5cf8b138e177ec84f79ed4cf4",
+            "route_snapshot_hash": "58c538ebc06b2e7b6f87b1b52589ba9784d830ee5769b8a514f18decd575dfa3",
+            "route_policy_version": 1,
+            "model_profile_version": 2,
+            "policy_requested_model": "gpt-6-sol",
+            "invocation_command_hash": "sha256:d972d59ba09fd60e46c246b9e54201b006b0101866a0ec74a06a9684dd767ca8",
+            "provider_observed_model": "unavailable",
+            "session_recovery_policy": "codex-local-session-evidence.v1",
+            "local_session_persistence": "DURABLE",
+            "local_user_config_ignored": true,
+            "invocation_reasoning_effort": "high",
+            "frozen_route_reasoning_effort": "high",
+            "policy_requested_reasoning_effort": "high",
+            "provider_observed_reasoning_effort": "unavailable",
+            "local_user_config_is_model_authority": false
+          },
+          "submission_phase": "PROCESS_RESULT_RECORDED",
+          "validation_checks": {
+            "tool_policy": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7",
+            "output_schema": "schema:chapter-provider-output:memo:v3",
+            "stage_semantics": "chapter-stage:memo:semantic-validation",
+            "capability_materialization": "sha256:380019d9d5472eabf4f2da6a930cd90d6d5f0a7e013d4badccde125504ab34c0"
+          },
+          "stream_diagnostics": {
+            "version": "codex-stream-diagnostics.v1",
+            "event_counts": {
+              "turn.started": 1,
+              "item.completed": 4,
+              "thread.started": 1,
+              "turn.completed": 1
+            },
+            "stdout_bytes": 8253,
+            "stdout_sha256": "8c28100b08817914de3b188a9c97d7bfd94ef63f3c38baef1ef7164463972776",
+            "usage_present": true,
+            "remote_outcome": "UNESTABLISHED",
+            "scan_truncated": false,
+            "turn_completed": true,
+            "local_thread_id": "01a1293e-926b-78e1-bed4-23ff31a8993b",
+            "stream_disconnected": false,
+            "response_body_decode_failed": false
+          },
+          "unauthorized_tools": [],
+          "capability_evidence": {
+            "skill": {
+              "ref": "chapter-outline",
+              "version": "chapter-plan-skill-v3",
+              "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+            },
+            "allowed_tools": [
+              "model.provider.invoke"
+            ],
+            "provider_view": {
+              "component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:7bb24dd470c49283fbb937fe29acf60967bb3913a464c4af7ccb3c093f896f35",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:e2617142680d7c48fb5e60d4ddae02bd37d2bead8da53fca38ae54ddb461a65a",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:4dea2e0832a00b5461dcec20f382786255cd7c43c55265a23726626d3f1b2ec3",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+              "component_characters": {
+                "tool_policy": 0,
+                "output_schema": 2953,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 38217,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 45860,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "representation_policy": "authority-projection-task-provider-v2",
+              "selection_explanation": {
+                "policy": "accepted-boundary-only",
+                "omitted_count": 0,
+                "selected_count": 1
+              },
+              "task_contract_version": "provider-task-view-v1",
+              "context_contract_version": "provider-context-view-v2",
+              "context_projection_ratio": 139.0,
+              "exact_context_references": {
+                "source_scope": "provider_data_envelope",
+                "decoded_equal": true,
+                "reference_count": 3,
+                "contract_version": "provider-context-exact-value-reference.v1",
+                "source_context_hash": "sha256:2c23364610ef3662ff04dc9115e8293b4bdd2355b4429f3061d747033e6ee149",
+                "encoded_context_hash": "sha256:5501ea18b6e1d37bbd56dc7f8e4700d0828211931ad742432c9f71a899ce7860"
+              },
+              "component_estimated_tokens": {
+                "tool_policy": 0,
+                "output_schema": 985,
+                "governed_skill": 298,
+                "provider_knowledge": 187,
+                "provider_task_view": 18701,
+                "system_instruction": 207,
+                "fully_rendered_prompt": 21248,
+                "provider_context_view": 139,
+                "stage_semantic_contract": 300
+              },
+              "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+              "component_utf8_byte_upper_bounds": {
+                "tool_policy": 0,
+                "output_schema": 2953,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 56101,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 63744,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "provider_context_estimated_tokens": 139,
+              "authority_context_estimated_tokens": 0,
+              "rendered_prompt_to_semantic_input_ratio": 1.116729,
+              "provider_admission_uses_component_estimates": false
+            },
+            "prompt_template": {
+              "ref": "prompt-template:chapter-generation-pack",
+              "version": "v15",
+              "content_hash": "sha256:beb328b411e0c2133feea2c82ebbabd828edc2f60d99893afca28579e80fc59a"
+            },
+            "method_selection": {
+              "skill_sections": [
+                "Shared rules",
+                "Memo"
+              ],
+              "system_sections": [],
+              "contract_version": "production-stage-methods.v1"
+            },
+            "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+            "output_schema_hash": "sha256:7bb24dd470c49283fbb937fe29acf60967bb3913a464c4af7ccb3c093f896f35",
+            "provider_admission": {
+              "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+              "status": "ADMITTED",
+              "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+              "envelope_hash": "sha256:1ffd82f1ce241a7efc0a0901498c535f8fc7a5df894e3fad9e32891443ba159c",
+              "total_reserved": 96016,
+              "component_usage": {
+                "safety_margin": 256,
+                "output_reserve": 32000,
+                "provider_input": 63744,
+                "request_framing": 16
+              },
+              "applicable_limit": 258400,
+              "contract_version": "provider-token-admission-v1",
+              "accounting_contract": {
+                "model": "gpt-6-sol",
+                "provider": "codex-cli",
+                "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+                "meter_version": "v1",
+                "safety_margin": 256,
+                "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                "output_reserve": 32000,
+                "route_identity": "routing-decision:14ebee17d8d41fec048d3b59af31e4af7237ec9893b116ddc284f6150b6031b6",
+                "contract_version": "provider-token-accounting-v3",
+                "framing_overhead": 16,
+                "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                "model_context_limit": 258400,
+                "execution_token_limit": 258400,
+                "serialization_contract": "codex-cli-application-stdin-v1"
+              },
+              "context_bundle_status": "VALID",
+              "context_bundle_tokens": 0,
+              "input_component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:7bb24dd470c49283fbb937fe29acf60967bb3913a464c4af7ccb3c093f896f35",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:e2617142680d7c48fb5e60d4ddae02bd37d2bead8da53fca38ae54ddb461a65a",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:4dea2e0832a00b5461dcec20f382786255cd7c43c55265a23726626d3f1b2ec3",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "complete_request_coverage": [
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "knowledge_inputs",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin"
+              ]
+            },
+            "system_instruction": {
+              "ref": "prompt-system:chapter-generation-pack",
+              "version": "v3",
+              "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+            },
+            "materialization_hash": "sha256:380019d9d5472eabf4f2da6a930cd90d6d5f0a7e013d4badccde125504ab34c0",
+            "rendered_prompt_bytes": 63744,
+            "reusable_prefix_bytes": 1593,
+            "knowledge_content_hashes": [
+              "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+            ],
+            "context_asset_version_ids": [
+              "authority-output:0a53efff-abfe-44e9-a922-aba704b84b30:chapter.execution_intent:v1"
+            ],
+            "embedding_output_contract": null,
+            "fully_rendered_prompt_hash": "sha256:4dea2e0832a00b5461dcec20f382786255cd7c43c55265a23726626d3f1b2ec3",
+            "provider_request_envelope_hash": "sha256:1ffd82f1ce241a7efc0a0901498c535f8fc7a5df894e3fad9e32891443ba159c",
+            "required_reader_facing_language": null,
+            "rendered_prompt_estimated_tokens": 21248,
+            "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+            "provider_admission_asset_version_id": "9dbf074a-fc2f-4247-baae-e5a6638ea6f8"
+          },
+          "provider_request_id": null,
+          "output_schema_version": "schema:chapter-provider-output:memo:v3",
+          "transport_retry_policy": {
+            "version": "codex-no-transport-retry.v1",
+            "stream_max_retries": 0,
+            "request_max_retries": 0,
+            "invocation_overrides": [
+              "model_provider=\"novel_forge_openai_no_retry\"",
+              "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+              "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+              "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+              "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+              "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+            ]
+          },
+          "terminal_event_observed": true,
+          "provider_schema_contract": {
+            "version": "codex-structured-schema.v6",
+            "provider_hash": "sha256:ddf46149819f15fe5d11804d9a43f87e5f71e803f94d31990568f6885d28ecf9",
+            "canonical_hash": "sha256:7bb24dd470c49283fbb937fe29acf60967bb3913a464c4af7ccb3c093f896f35",
+            "equivalent_projection": "codex-nullable-shared-types.v3",
+            "local_constraints_retained": [
+              "uniqueItems"
+            ]
+          },
+          "local_execution_receipt_id": "process-receipt:9a82551d77c56821fcc628d1",
+          "reconciliation_fingerprint": "sha256:4294fcb21d8d083a2111a0d246a8ea6188712910eef5d23f1a0936b2b18a9817"
+        },
+        "execution_request": {
+          "stage": "memo",
+          "domain": "planning",
+          "book_id": "book:qinglan-wendao-20261008",
+          "saga_id": "6746e810-06c7-41a7-ba04-417a7b24ae9e",
+          "trace_id": "01f1cb37-2be1-458b-be67-63424a519bca:chapter:2",
+          "task_kind": "chapter.memo.generate",
+          "attempt_id": "1bb2280a-d173-43d4-89a2-2a523343969a",
+          "capability": "planning.chapter.memo",
+          "project_id": "qid-learning-prose-01",
+          "risk_class": "high",
+          "execution_id": "chapter-execution:49e22f45-308c-4c19-b8c8-0751488124b3",
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "origin_chain": [
+            "chapter.slice.run",
+            "chapter.memo.generate"
+          ],
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:2",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 2
+          },
+          "workspace_id": "workspace:qid-learning-prose-01",
+          "fencing_token": 1,
+          "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+          "agent_hop_count": 0,
+          "resource_claims": [
+            "chapter:2",
+            "stage:memo"
+          ],
+          "importance_class": "HIGH",
+          "budget_policy_ref": "budget:planning-chapter-memo:v1",
+          "commit_policy_ref": "commit:planning-chapter-memo:v1",
+          "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+          "route_snapshot_id": "production_execution/routes/192f1933838fd8d8da7e",
+          "external_effect_id": "49e22f45-308c-4c19-b8c8-0751488124b3",
+          "input_manifest_ref": "production_execution/inputs/192f1933838fd8d8da7e",
+          "timeout_policy_ref": "timeout:planning-chapter-memo:v1",
+          "budget_reservation_id": "fff0c003-a4ba-41b8-add8-d5f70758d6c7",
+          "permission_policy_ref": "permission:planning-chapter-memo:v1",
+          "validation_policy_ref": "validation:planning-chapter-memo:v1",
+          "stable_idempotency_key": "212b8f7f-beb3-49b1-af65-cc276bce17f8:1bb2280a-d173-43d4-89a2-2a523343969a:memo:attempt-v1",
+          "workspace_snapshot_ref": "workspace:qid-learning-prose-01"
+        },
+        "validation_manifest": {
+          "checks": [
+            {
+              "status": "PASSED",
+              "check_kind": "structured_object",
+              "evidence_ref": "authority-asset-version:34cb981a-7dc2-4960-9746-8537ac13e10b"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "fencing",
+              "evidence_ref": "authority-attempt:1bb2280a-d173-43d4-89a2-2a523343969a:fence:1"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "route_snapshot",
+              "evidence_ref": "production_execution/routes/192f1933838fd8d8da7e"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "capability_materialization",
+              "evidence_ref": "sha256:380019d9d5472eabf4f2da6a930cd90d6d5f0a7e013d4badccde125504ab34c0"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "output_schema",
+              "evidence_ref": "schema:chapter-provider-output:memo:v3"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "stage_semantics",
+              "evidence_ref": "chapter-stage:memo:semantic-validation"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "tool_policy",
+              "evidence_ref": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7"
+            }
+          ],
+          "decision": "ACCEPTED",
+          "attempt_id": "1bb2280a-d173-43d4-89a2-2a523343969a",
+          "manifest_id": "validation-manifest:chapter-execution:49e22f45-308c-4c19-b8c8-0751488124b3",
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "fencing_token": 1,
+          "output_manifest_ref": "authority-asset-version:f4879d8a-74a5-4c6e-929d-ce43ec6e0a55",
+          "required_check_kinds": [
+            "structured_object",
+            "fencing",
+            "route_snapshot",
+            "capability_materialization",
+            "output_schema",
+            "stage_semantics",
+            "tool_policy"
+          ],
+          "validation_policy_ref": "validation:planning-chapter-memo:v1"
+        },
+        "validation_manifest_ref": "authority-asset-version:4b8d2098-433a-49a9-a8b2-6e763de0a6c2",
+        "commit_manifest_required": true
+      }
+    },
+    "execution_strategy": "先用几次有代表性的练习动作带过数日，明确沈砚一用力留意便绷紧的障碍。许庭针对这一点让他辨认原有呼吸，再调整注意；气感出现后安排一次未能重现的尝试。转至外院，以采药话题让三人分别说出目标并作出同行决定。",
+    "obligation_actions": [],
+    "mission_fingerprint": "sha256:3c94a9898976c7e8802e1f0d83ac0df42bbd49199cb1f8a4ec7402b2d5d9a415",
+    "source_chapter_plan": {
+      "locked": true,
+      "content_hash": "sha256:824aeb6d09f415969ed743425931b68bc18ace80cc745924cae2e714ccdf6a72",
+      "asset_version_id": "authority-output:68dfc68e-6108-4597-9662-2d019317ab34:chapter.plan:v1"
+    },
+    "composition_strategy": "按练习、答疑、约定同行的因果顺序推进。用少量有差别的动作概括数日重复，把篇幅集中在提问、调整、短暂气感及未能立即重现；再让这次学习经历自然引出沈砚认识山路的愿望。",
+    "narrative_realization": {
+      "events": [
+        {
+          "action": "略过数日无变化的练习；沈砚向许庭请教具体障碍，按答疑调整呼吸与注意的配合，首次感到短暂气感，并与唐穗、陆衡决定参加采药。",
+          "causes": [
+            "opening-1"
+          ],
+          "decision": "沈砚继续按答疑所得练习，并参加首次采药，以实际任务认识山路。",
+          "event_id": "opening-2",
+          "required": true,
+          "slice_id": "v1-opening",
+          "actor_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "motivation": "沈砚希望把初学所得用于认识山路；唐穗、陆衡各自希望任务服务材料学习和可持续的劳作安排。",
+          "resistance": "短暂气感尚不能稳定重复；共同采药必须容纳不同目标。",
+          "consequence": "沈砚获得可继续练习的观察方法和一次短暂气感；三人因各自目标组成首次采药的同行安排。",
+          "disclosures": [
+            "沈砚的初次气感来自数日练习及一次针对具体障碍的调整。",
+            "唐穗想检验材料知识，陆衡在意采药往返与练习时段。"
+          ],
+          "state_deltas": [
+            {
+              "to_state": "有过一次短暂气感，知道继续观察和调整的方法",
+              "entity_id": "沈砚",
+              "from_state": "尚无气感",
+              "state_kind": "基础练习"
+            }
+          ],
+          "preconditions": [
+            "沈砚已入门并获得基础吐纳说明。",
+            "初始劳动已有安排，数日练习有实际可用时段。"
+          ],
+          "chapter_number": 2,
+          "feature_status": {
+            "decision": {
+              "status": "APPLICABLE",
+              "rationale": "沈砚选择依答疑调整练习，并主动参加采药。"
+            },
+            "resistance": {
+              "status": "APPLICABLE",
+              "rationale": "初学动作不稳，三人参加任务的目标和时段也不同。"
+            },
+            "irreversible_change": {
+              "status": "APPLICABLE",
+              "rationale": "首次气感成为后续可承接的学习经历，但尚未形成稳定运用。"
+            }
+          },
+          "next_event_ids": [
+            "opening-3"
+          ],
+          "arc_contributions": [
+            "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1",
+            "authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1",
+            "authority-output:7c0c0c3e-2a3b-4472-9814-8d825617916c:story_planning.candidate:v1"
+          ],
+          "knowledge_boundary": {
+            "actor_knows": [
+              "沈砚知道自己练习时的动作差别及许庭当面给出的答疑。",
+              "三人知道彼此已说出的采药目标和时段。"
+            ],
+            "reader_may_learn": [
+              "沈砚的初次气感来自数日练习及一次针对具体障碍的调整。",
+              "唐穗想检验材料知识，陆衡在意采药往返与练习时段。"
+            ],
+            "forbidden_disclosures": [
+              "把短暂气感解释为稳定灵气操控。",
+              "三人尚未见到的药材成熟份额和陌生路况。"
+            ]
+          },
+          "obligation_actions": [],
+          "irreversible_change": "沈砚已有一次短暂气感和由此获得的练习反馈。"
+        }
+      ],
+      "slice_id": "v1-opening",
+      "event_ids": [
+        "opening-2"
+      ],
+      "proof_hash": "sha256:67608dded233c69de3d567137bbd74559e11624a64767199911be4106eea8b73",
+      "chapter_number": 2,
+      "realization_id": "narrative-realization:08149464ac157cb8558e3183f5aa77e8538f6083fec3d7c880c377e2bf14a38e",
+      "contract_digest": "sha256:f78e6b7449d3190e798f7de5af815f2ef48bbfe4ee27c7328965b7b2883a9ef9",
+      "foundation_set_digest": "sha256:00e78821a055e905a55475313f3209cc1eb5d0af07dfef25ca87249946c92b37",
+      "arc_working_set_digest": "sha256:23ddbd00e7e263b7859ab3c7fad3ce7b34d7975c88b512844f4da02ae8f54e08",
+      "proof_asset_version_id": "authority-output:d133857a-213a-4fd2-8e4b-858222208482:story_design.transition.receipt:v1",
+      "accepted_through_chapter": 0,
+      "chapter_group_content_hash": "sha256:4d05a31fc27c288d6bfb738d551afb9f90e95bd530578a1548fb56ef6cd8d0da",
+      "chapter_group_plan_version_id": "authority-output:b829549c-4bda-48c3-9a76-1d202dda6a5f:story_planning.candidate:v1"
+    },
+    "creative_contract_version": "creative-memo.v1",
+    "source_chapter_execution_intent_asset_version_id": "authority-output:0a53efff-abfe-44e9-a922-aba704b84b30:chapter.execution_intent:v1"
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "chapter": 4,
+  "frozen_prompt_hash_match": "PASS",
+  "decoded_equal": "PASS",
+  "input_course_and_repetition_sources": [
+    {
+      "path": "/context_bundle/frozen_intent/chapter_mission/forbidden_changes/prohibited_outcomes/2",
+      "value": "以基础答疑、好感或未核实的课位冒充正式课程录入。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/chapter_mission/narrative_composition/events/2/causal_intent/conflict",
+      "value": "短暂气感能够说明沈砚已经开始练习，却不能自动满足正式课程的课位和其他录入条件。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/chapter_mission/narrative_composition/events/2/causal_intent/exit_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/chapter_mission/narrative_composition/events/3/causal_intent/entry_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/chapter_mission/narrative_composition/events/3/causal_intent/exit_state",
+      "value": "陌生药路同行已完成，沈砚能说明自己走过并经修正的一段。正式课程请求已有职责内答复；许庭已说明可执行的基础练习与指定答疑办法，沈砚决定继续重复练习，不把一次气感当作稳定运用。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/chapter_mission/narrative_realization/events/0/action",
+      "value": "沈砚随知路同行者实际走完此前安排的一段陌生药路。在岔口，他先依据所见坡势提出走法，经同行者现场指认修正；走完后向需要使用这段路的人说明自己走过的标记和转折。随后，他向课程负责者提出正式课程请求，得到关于当期课位及其他明确条件的职责内答复；许庭说明可继续执行的基础练习和指定答疑办法。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/character_situation/participants/4/goal",
+      "value": "帮助沈砚把短暂气感后的观察和重复练习安排清楚。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/creative_requirements/prohibited_outcomes/2",
+      "value": "以基础答疑、好感或未核实的课位冒充正式课程录入。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/creative_requirements/style/policies/0/structured_facts/5/guidance/2/utterance",
+      "value": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/required_beats/6/function",
+      "value": "负责人核明当期课位并当面说明其他录入条件及当前是否录入；沈砚听清答复与后续可采取的步骤。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/scene_plans/2/conflict",
+      "value": "短暂气感能够说明沈砚已经开始练习，却不能自动满足正式课程的课位和其他录入条件。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/scene_plans/2/exit_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/scene_plans/2/beats/1/function",
+      "value": "负责人核明当期课位并当面说明其他录入条件及当前是否录入；沈砚听清答复与后续可采取的步骤。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/scene_plans/3/entry_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/context_bundle/frozen_intent/scene_plans/3/exit_state",
+      "value": "陌生药路同行已完成，沈砚能说明自己走过并经修正的一段。正式课程请求已有职责内答复；许庭已说明可执行的基础练习与指定答疑办法，沈砚决定继续重复练习，不把一次气感当作稳定运用。"
+    },
+    {
+      "path": "/context_bundle/segments/0/safe_summary",
+      "value": "{\"accepted_boundary\":{\"accepted_through_chapter\":0,\"canon_snapshot_asset_version_id\":\"authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1\",\"story_state_asset_version_id\":\"authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1\"},\"contract_version\":\"chapter-retrieval-result-v6\",\"intent_asset_version_id\":\"authority-output:6d76565e-8b45-477d-b918-af696ad8d3e4:chapter.execution_intent:v1\",\"intent_fingerprint\":\"sha256:2a2ffa4e6dce4430e279f7266b86e2c6155cdca65a5d53958fa4741d9ff5c35d\",\"memo_asset_version_id\":\"authority-output:9e64360f-854b-4c00-b8fa-da4a772c3fdf:chapter.memo:v1\",\"memo_fingerprint\":\"sha256:46fa7e1037e040911b7245938c659b981d5f2da61490e387d2a4b8eba4425939\",\"query_plan\":{\"accepted_boundary\":{\"accepted_through_chapter\":0,\"canon_snapshot_asset_version_id\":\"authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1\",\"story_state_asset_version_id\":\"authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1\"},\"arc_plan_version_ids\":[\"authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1\",\"authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1\",\"authority-output:7c0c0c3e-2a3b-4472-9814-8d825617916c:story_planning.candidate:v1\"],\"campaign_policy\":{\"additional_round_limit\":2,\"candidates_per_round_limit\":256,\"cost_limit\":\"1.00\",\"fallback_mode\":\"DETERMINISTIC_FALLBACK\",\"model_token_limit\":4096,\"policy_version\":\"minimum-sufficient-retrieval-campaign-v1\",\"provider_call_limit\":4,\"queries_per_round_limit\":4,\"result_limit\":24,\"total_candidate_limit\":768,\"total_query_limit\":10,\"total_round_limit\":3},\"candidate_limit\":256,\"candidate_projection_cutoff\":\"2026-10-11T04:51:08.071288+00:00\",\"character_ids\":[],\"contract_version\":\"retrieval-query-plan-v6\",\"coverage_contract\":{\"accepted_boundary\":{\"accepted_through_chapter\":0,\"canon_snapshot_asset_version_id\":\"authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1\",\"story_state_asset_version_id\":\"authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1\"},\"chapter\":4,\"contract_version\":\"retrieval-coverage-contract-v1\",\"coverage_contract_fingerprint\":\"sha256:3a06e6fccd858b1c2a61bb83018766fe441182f51b5cd746db8b78ad93355340\",\"intent_fingerprint\":\"sha256:2a2ffa4e6dce4430e279f7266b86e2c6155cdca65a5d53958fa4741d9ff5c35d\",\"memo_fingerprint\":\"sha256:46fa7e1037e040911b7245938c659b981d5f2d"
+    },
+    {
+      "path": "/context_bundle/segments/1/safe_summary",
+      "value": "{\"accepted_boundary\":{\"accepted_through_chapter\":0,\"canon_snapshot_asset_version_id\":\"authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1\",\"story_state_asset_version_id\":\"authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1\"},\"arc_actions\":[{\"action\":\"兑现陌生药路同行：沈砚亲身走完约定路段，修正岔口判断，向程观讲清所见；再取得课程请求的职责内答复与练习办法。\",\"arc_plan_version_id\":\"authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1\"},{\"action\":\"让唐穗指出值得日后复看的材料位置，保留尚未核实的疑点。\",\"arc_plan_version_id\":\"authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1\"},{\"action\":\"让陆衡走完商定路段并按时离开，延续三人按约协作的关系。\",\"arc_plan_version_id\":\"authority-output:7c0c0c3e-2a3b-4472-9814-8d825617916c:story_planning.candidate:v1\"}],\"chapter\":4,\"composition_strategy\":\"以一次完整同行贯穿前两场：路上的误判与修正，成为回院说明时可供程观追问的具体内容。后两场依次处理正式课程请求和眼下练习，使本章从亲历所得走到下一步行动。\",\"contract_version\":\"chapter-memo-v2\",\"creative_contract_version\":\"creative-memo.v1\",\"creative_guidance\":{\"chapter_goal\":\"让沈砚把昨日获准的同行机会变成能说明的有限路段经验，并取得正式课程请求的明确答复与可执行的基础练习办法。\",\"character_choices\":[{\"character_id\":\"character:shen-yan\",\"choice\":\"在岔口说出依据坡势作出的初判，听过知路者指认后回看标记并修正；回院时只说明自己实际走过的范围。\",\"cost\":null,\"motivation\":\"他想从跟着别人走，进到能凭亲眼所见向别人讲清一段路。\"},{\"character_id\":\"character:tang-sui\",\"choice\":\"记下沿途值得复看的材料位置，将未核实的差别留作问题。\",\"cost\":null,\"motivation\":\"她想继续检验首次采药留下的材料疑点，也遵守共同回程安排。\"},{\"character_id\":\"character:lu-heng\",\"choice\":\"完成约定范围内的同行，并在说定的时刻转去午后练习。\",\"cost\":null,\"motivation\":\"他愿意履行同行约定，也要守住事先说明的练习时间。\"},{\"character_id\":\"character:shen-yan\",\"choice\":\"向课程负责人如实说出短暂气感及重试未能重现的情况，听清答复后向许庭询问眼下怎么练。\",\"cost\":null,\"motivation\":\"他要弄清正式入课的实际条件，以及自己现在能做的事。\"}],\"constraints\":[\"三人须在约定晨间随知路者亲身走完陌生药路的一段并折回，不能以约定或听讲代替实践。\",\"岔口初判须经现场指认修正；沈砚只能说明实际走过、观察过的路段。\",\"唐穗的材料观察保留未核实范围；陆衡的午后练习时间按既定安排得到照顾。\",\"正式课程请求须由职责相符的负责人当面答复，明确当期课位、其他录入条件及当前是否录入；许庭的基础答疑不能替代该决定。\",\"沈砚的一次短暂气感尚不能写成稳定运用。\",\"正文遵循以沈砚为主的第三人称限知视角、简体中文及单章2500—3500中文字的既定风格。\"],\"emotional_turn\":\"沈砚出发时怕自己只会跟随；经一次可指出依据的修正，又能接受程观追问后，他对所认得的一段路感到踏实。课程答复让期待落到明确条件和练习步骤上。\",\"ending_change\":\"同行已完成，沈砚能说明经修正的有限路段；正式课程请求已有职责内答复，他知道下一次基础练习要观察什么、如何带问题答疑。\",\"pov\":\"以沈砚为主的第三人称限知视角；沿路标记、岔口误判和课程答复均通过他的所见所闻呈现。\",\"reader_promise\":\"昨日交付换来的同行机会会在本章实际兑现；读者能看见沈砚讲清一段新路，并听到正式课程请求的明确结果。\",\"voice\":\"朴素、清楚、有分寸。用脚下坡势、石痕、观察位置和呼吸先后等可感知差别呈现学习；对话围绕各人当下要办的事。\"},\"event_directives\":[{\"arc_contributions\":[\"authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1\",\"authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1\",\"authority-output:7c0c0c3e-2a3b-447"
+    },
+    {
+      "path": "/context_bundle/segments/2/structured_facts/0/promise",
+      "value": "这部故事承诺让读者陪一个普通山村少年，把陌生的修行本领逐渐练成自己能用、敢用的能力。入门、引气、劳作与山谷采药都有具体目的，行动之后能看见能力、资源或合作条件发生了什么变化。持续的期待来自沈砚接下来需要补足什么、会争取哪种机会，以及已有本领能否帮助他胜任自己选择的事情。读者将体验练习终于有用的踏实喜悦、争取机会时的紧张，以及与各有打算的同门协商、合作和相互理解的摩擦与温暖。沈砚可以判断失误、接受建议并调整做法，但这些结果需要被后续行动承接。长期愿望须由修炼、飞剑操控、路线判断和远行准备共同挣得，最终兑现为有本领支撑的独自御剑远行。用突来的力量替代积累、让他长期被动等待，或反复抹去进步拖延出发，都会背叛这份承诺。"
+    },
+    {
+      "path": "/context_bundle/segments/3/structured_facts/0/stable_characterization/capability",
+      "value": "起点具备普通劳作、负重分配和留意地面变化的生活经验，愿意重复尝试。尚未预置稳定引气、入门完成、正式课位、飞剑所有权或独行能力；未来本领须经练习与实际运用建立。"
+    },
+    {
+      "path": "/context_bundle/segments/3/structured_facts/2/stable_characterization/arc_direction",
+      "value": "拟把细致观察发展为可说明、可复核的判断，在共同任务中学会及时交代不确定处并尊重回程安排；可以继续探索材料相关的修行方向，不预定药房职位或传承。"
+    },
+    {
+      "path": "/context_bundle/segments/3/structured_facts/3/stable_characterization/agency",
+      "value": "在实际授予的教学职责内提供基础说明、观察练习并安排有限反馈；可以要求问题更具体，也可以结束超时答疑。正式课程安排只按后续明确的权限处理，不以个人好感承诺课位或绕过条件。"
+    },
+    {
+      "path": "/context_bundle/segments/3/structured_facts/3/stable_characterization/voice",
+      "value": "平静、准确，常以一个短问题把谈话拉回刚才的动作。少讲训词，不反复赞叹；解释会指出可验证的部分，也会说清暂时不能判断什么。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/prohibited_outcomes/2",
+      "value": "以基础答疑、好感或未核实的课位冒充正式课程录入。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/character_participation/4/goal",
+      "value": "帮助沈砚把短暂气感后的观察和重复练习安排清楚。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/narrative_realization_slice/events/0/action",
+      "value": "沈砚随知路同行者实际走完此前安排的一段陌生药路。在岔口，他先依据所见坡势提出走法，经同行者现场指认修正；走完后向需要使用这段路的人说明自己走过的标记和转折。随后，他向课程负责者提出正式课程请求，得到关于当期课位及其他明确条件的职责内答复；许庭说明可继续执行的基础练习和指定答疑办法。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_plan/2/conflict",
+      "value": "短暂气感能够说明沈砚已经开始练习，却不能自动满足正式课程的课位和其他录入条件。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_plan/2/exit_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_plan/2/beats/1/function",
+      "value": "负责人核明当期课位并当面说明其他录入条件及当前是否录入；沈砚听清答复与后续可采取的步骤。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_plan/3/entry_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_plan/3/exit_state",
+      "value": "陌生药路同行已完成，沈砚能说明自己走过并经修正的一段。正式课程请求已有职责内答复；许庭已说明可执行的基础练习与指定答疑办法，沈砚决定继续重复练习，不把一次气感当作稳定运用。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_sequence/2/conflict",
+      "value": "短暂气感能够说明沈砚已经开始练习，却不能自动满足正式课程的课位和其他录入条件。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_sequence/2/exit_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_sequence/2/beats/1/function",
+      "value": "负责人核明当期课位并当面说明其他录入条件及当前是否录入；沈砚听清答复与后续可采取的步骤。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_sequence/3/entry_state",
+      "value": "沈砚已向职责相符的课程负责人提出正式请求，并得到关于当期课位、其他明确条件及当前录入结果的当面答复；他尚待把答复接成自己的基础练习办法。"
+    },
+    {
+      "path": "/input_manifest/chapter_plan/scene_sequence/3/exit_state",
+      "value": "陌生药路同行已完成，沈砚能说明自己走过并经修正的一段。正式课程请求已有职责内答复；许庭已说明可执行的基础练习与指定答疑办法，沈砚决定继续重复练习，不把一次气感当作稳定运用。"
+    },
+    {
+      "path": "/input_manifest/creative_memo/guidance/constraints/3",
+      "value": "正式课程请求须由职责相符的负责人当面答复，明确当期课位、其他录入条件及当前是否录入；许庭的基础答疑不能替代该决定。"
+    },
+    {
+      "path": "/input_manifest/creative_memo/scene_directives/2/conflict_progression",
+      "value": "沈砚已有短暂气感，但负责人核对当期课位与其他条件后，明确说明这次能否录入。"
+    },
+    {
+      "path": "/input_manifest/creative_memo/scene_directives/2/directive",
+      "value": "写出沈砚的正式请求、对自身练习程度的如实描述，以及负责人的当面答复；答复应具体到课位、条件、当前录入结果和后续可采取的步骤。"
+    },
+    {
+      "path": "/input_manifest/realization_contract/craft_tasks/tasks/3/voice_sources/3/guidance/2/utterance",
+      "value": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。"
+    },
+    {
+      "path": "/input_manifest/realization_contract/voices/5/guidance/2/utterance",
+      "value": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。"
+    },
+    {
+      "path": "/input_manifest/style/policies/0/structured_facts/5/guidance/2/utterance",
+      "value": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。"
+    }
+  ],
+  "specific_new_prose_claims": [
+    {
+      "phrase": "本期课位已经排定，没有余位",
+      "present_in_decoded_writer_input": false
+    },
+    {
+      "phrase": "基础吐纳复核",
+      "present_in_decoded_writer_input": false
+    },
+    {
+      "phrase": "独自把基础吐纳的次序做稳",
+      "present_in_decoded_writer_input": false
+    }
+  ],
+  "boundary": "The plan requires a responsible yes/no course response and a return to basic practice; specific closed-seat and retest details must not be mislabeled as author or original World hard requirements."
+}

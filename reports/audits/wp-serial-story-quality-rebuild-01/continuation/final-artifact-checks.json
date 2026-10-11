@@ -1,0 +1,13 @@
+{
+  "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+  "native_and_selected_export_hash_check": "PASS",
+  "export_checks": {
+    "native-event-unit.txt": true,
+    "selected-rebuilt-event-unit.txt": true
+  },
+  "report_local_links": "PASS",
+  "public_credential_scan": "PASS",
+  "credential_values_printed": false,
+  "production_calls": 0,
+  "scope": "Artifact checks only; no expanded test matrix"
+}
