@@ -1,0 +1,667 @@
+{
+  "full_evidence_location": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01-continuation/real-inputs.full.private.json",
+  "sha256": "2e48b3244e16ffe60e82ae5507a7736a91f59dd1226377dd3414793f4d90d797",
+  "bytes": 41766614,
+  "records": [
+    {
+      "role": "ARC:book:book:qinglan-wendao-20261008:authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+      "content_hash": "sha256:6b985245237d4bfa8b8b013a65376762be0be260dde11926a02b2a26cfac71d2",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:book:book:qinglan-wendao-20261008:authority-output:a5e2da85-3bcd-4790-bc20-c98b05035f3e:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a5e2da85-3bcd-4790-bc20-c98b05035f3e:story_planning.candidate:v1",
+      "content_hash": "sha256:868f6d5b0069447aa1f448315fb2c0695ae77c28b8f6d310265b26f96dd24148",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:book:book:qinglan-wendao-20261008:authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "ARC:book:book:qinglan-wendao-20261008:authority-output:7f77bbfc-f8e0-4629-8fb6-5a7c34e9f8da:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:7f77bbfc-f8e0-4629-8fb6-5a7c34e9f8da:story_planning.candidate:v1",
+      "content_hash": "sha256:490775075ec3113ea9ff739e097cc85714bf61eeb6280d9cb4e8683ff23ba9af",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:cheng-guan:authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1",
+      "content_hash": "sha256:859bf567e58148388d09cebba861a12025ae1681c5ac9ab0e8cbc2db1e76f4c1",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:cheng-guan:authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+      "content_hash": "sha256:f992a3778907880295fa2cc2dd0b81330fca74f5cdb19b73901a41b27ea5b027",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "ARC:character:character:cheng-guan:authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1",
+      "content_hash": "sha256:d7a3b3a757c247b4174c07c14e1b5678896c36991156080ebd4aeafb72772ac5",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:lu-heng:authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1",
+      "content_hash": "sha256:6558d6ef5c24b4467d2bff73dc2e546d40faf8906ea29b73d6633b1a86d21ef6",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:lu-heng:authority-output:7f027d4e-484b-440b-8ba8-d388bc1d9479:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:7f027d4e-484b-440b-8ba8-d388bc1d9479:story_planning.candidate:v1",
+      "content_hash": "sha256:550b767994a8aa6301a48de6e198174db017826ad76a851923cfcd226a9b3264",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "ARC:character:character:lu-heng:authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+      "content_hash": "sha256:8564589fb77ad1e6094b0667d4ff8c9897540a72cce34ae199d830c7bf2271eb",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:shen-yan:authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+      "content_hash": "sha256:a2c7962b7b1e92baf3c2b7dd844f4d268c12c7be3bafd250b1793557b2d169dc",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:shen-yan:authority-output:f25e1cb0-6271-447e-bbc9-66b3aab5a923:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:f25e1cb0-6271-447e-bbc9-66b3aab5a923:story_planning.candidate:v1",
+      "content_hash": "sha256:8b896eb3757f6809620c8a2aab57ef46dab46d5caef7756b9a279c9ca9be2c1e",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "ARC:character:character:shen-yan:authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+      "content_hash": "sha256:485dbcadd121176df0155fc040c55e9a99791def228d182ee3d779f55dff496c",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:tang-sui:authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+      "content_hash": "sha256:d44b22af43d6a098a619a8e6317da99ff46e21c31cc6a3a380677420d76ae532",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:tang-sui:authority-output:c41cccd8-414f-4636-8eed-2bc74e46f109:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:c41cccd8-414f-4636-8eed-2bc74e46f109:story_planning.candidate:v1",
+      "content_hash": "sha256:5641d5883215fb02e7a880ad3e79bb5b6e4d9cb07dfc1273d66bc593ffb5e6dc",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "ARC:character:character:tang-sui:authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+      "content_hash": "sha256:cefbd8d2e8d5c96b687e7376fbf7b9e42c4eab44f945d886c29f82d42dec6ae6",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:xu-ting:authority-output:fa705fe0-820b-4b99-85ef-d053bb620784:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:fa705fe0-820b-4b99-85ef-d053bb620784:story_planning.candidate:v1",
+      "content_hash": "sha256:8612f1e98974352c9db4eeb9e0153d85dd305c5dd8dc8dca48a1382a552580a3",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:xu-ting:authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+      "content_hash": "sha256:47164b49bc7a25a00d10e9ef2fd5d772acd3a97cefcffaf1e987efbf176d7a92",
+      "freshness": "STALE"
+    },
+    {
+      "role": "ARC:character:character:xu-ting:authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "ARC:character:character:xu-ting:authority-output:d0ee7f69-473e-4328-bfa9-bf9f56145831:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:d0ee7f69-473e-4328-bfa9-bf9f56145831:story_planning.candidate:v1",
+      "content_hash": "sha256:dd9a2c190b097a9301bd4b6d60be3d08b0e5d37dba943292acb61a62beb280b8",
+      "freshness": "STALE"
+    },
+    {
+      "role": "BOOK:book:main:authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:1:authority-output:d7dc6a75-84fb-4001-aac9-b0130c9d23c9:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:d7dc6a75-84fb-4001-aac9-b0130c9d23c9:story_planning.candidate:v1",
+      "content_hash": "sha256:554387d6795239e4293fcac7d563def755e0d40f2a635f17c8000516c5f46bb3",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:1:authority-output:a64c95a2-e763-48d6-813f-4a4d3a22c3f0:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a64c95a2-e763-48d6-813f-4a4d3a22c3f0:story_planning.candidate:v1",
+      "content_hash": "sha256:6243dad5c4935b8363edb510ac916b4d5adf9b9c2c087f53db2bce28fcef339f",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:10:authority-output:39f2e9c8-1cc4-42a4-a0d3-1001bbd23578:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:39f2e9c8-1cc4-42a4-a0d3-1001bbd23578:story_planning.candidate:v1",
+      "content_hash": "sha256:f1a9e6ebe8e007f80944bee13d02eac88c2ad8fd660f8a48f376e04687468edf",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:11:authority-output:20ffdfdd-33fa-42e5-a03c-20c2ffda7517:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:20ffdfdd-33fa-42e5-a03c-20c2ffda7517:story_planning.candidate:v1",
+      "content_hash": "sha256:651e5aa0ad9540106b786734ae723db87da75c4f2186176f4c46c5d66af6318c",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:12:authority-output:50cf8170-515f-46ee-9e42-616a851246db:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:50cf8170-515f-46ee-9e42-616a851246db:story_planning.candidate:v1",
+      "content_hash": "sha256:616ae749d4832e1a8b433e14f60eb428ac4f30be99719a324dd09151ff765457",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:13:authority-output:1c162850-a1af-487e-bf04-897ec035ab72:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:1c162850-a1af-487e-bf04-897ec035ab72:story_planning.candidate:v1",
+      "content_hash": "sha256:385c6931354d66e7d17175c917aac2dd9c22e8ec642f04e235cdb60a62370bc3",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:14:authority-output:3229515d-a556-41eb-8063-9b7de7283bb2:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:3229515d-a556-41eb-8063-9b7de7283bb2:story_planning.candidate:v1",
+      "content_hash": "sha256:43cecbf6f79b8bd45c2d7c7d4d1e0f8ba00120df080d18150a4815289291f3f4",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:15:authority-output:a83db086-b69f-4f62-96c5-f1788f3f88d0:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a83db086-b69f-4f62-96c5-f1788f3f88d0:story_planning.candidate:v1",
+      "content_hash": "sha256:29b8e95b75ea252459f70a98d6e8bee357ca4833a98a21452175edd821ddf102",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:16:authority-output:c7b8c981-c26c-4b65-ae97-f87424583553:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:c7b8c981-c26c-4b65-ae97-f87424583553:story_planning.candidate:v1",
+      "content_hash": "sha256:27d084e2d80eb8558f2a3bd1a55a36e5270ae1e2278c2eafbba3df809e0d0fbf",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:17:authority-output:b992277a-1d21-4d02-9c64-9b402b0ede6c:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:b992277a-1d21-4d02-9c64-9b402b0ede6c:story_planning.candidate:v1",
+      "content_hash": "sha256:93c7892017ac5b61a866672a62d5dfc3e3df2a5f72bd69163cc8dcb9b7a7aef0",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:18:authority-output:1a7213c2-74f9-4229-8d1b-9c658c4923e6:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:1a7213c2-74f9-4229-8d1b-9c658c4923e6:story_planning.candidate:v1",
+      "content_hash": "sha256:b829ee414f391ff426059b86f090bd4d0e99c74993ead55404dc30fe907f6a56",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:19:authority-output:92208e51-5528-4eb4-beaf-f678bfdf4746:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:92208e51-5528-4eb4-beaf-f678bfdf4746:story_planning.candidate:v1",
+      "content_hash": "sha256:27856d367d1eca8bee9dfb103d34f74844c6a6a44ee3c4c801b82f160c4c0670",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:19:authority-output:7318ea12-0494-4603-936d-5fae43e11f6f:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:7318ea12-0494-4603-936d-5fae43e11f6f:story_planning.candidate:v1",
+      "content_hash": "sha256:9fd31a450e12ae6aa59b73d19dd235673d239929cfa86fe44f043cbb24adc4a2",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:2:authority-output:22fe2b57-3958-4f44-94dd-3bc95efdc88f:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:22fe2b57-3958-4f44-94dd-3bc95efdc88f:story_planning.candidate:v1",
+      "content_hash": "sha256:4fca40b3e4e812c47de68518793d84e889c88d28185838c99064866fee5c41f6",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:2:authority-output:91633b20-242c-48ce-adbf-f799e41ae03d:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:91633b20-242c-48ce-adbf-f799e41ae03d:story_planning.candidate:v1",
+      "content_hash": "sha256:20dfe057c856b870dc0d44f67a7c195399b25ab14bc8e12316d152ac7da5b325",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER:chapter:2:authority-output:3fc933aa-ea9d-4cb6-9588-694b7baf3a9a:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:3fc933aa-ea9d-4cb6-9588-694b7baf3a9a:story_planning.candidate:v1",
+      "content_hash": "sha256:9b74b55e88cb89293da3426d15a655b39ded6c589f8595a0bf1696662f457dde",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:2:authority-output:a161a426-f093-4f9b-988b-049bcf9fa836:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a161a426-f093-4f9b-988b-049bcf9fa836:story_planning.candidate:v1",
+      "content_hash": "sha256:781b977150d002cf5cf050a6af77068a80e8efb97fdd5f08d6ea7c9fed7b7f3d",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:20:authority-output:b0f4f107-b799-4983-af51-6b79e4ca3eb4:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:b0f4f107-b799-4983-af51-6b79e4ca3eb4:story_planning.candidate:v1",
+      "content_hash": "sha256:0f537dc1e2570cd726b84eb133ae1b3b52164f897c41757dd084a8bf53d2ed41",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:21:authority-output:d3997f0d-6276-4921-9b65-7e9e07a9fb4b:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:d3997f0d-6276-4921-9b65-7e9e07a9fb4b:story_planning.candidate:v1",
+      "content_hash": "sha256:c4d4c48a05af305534b57de08c243c5ed67161695f62e70cec222ea51bbf3c68",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:21:authority-output:9225fd7c-5fbc-4e10-b455-e9af2fa8d920:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:9225fd7c-5fbc-4e10-b455-e9af2fa8d920:story_planning.candidate:v1",
+      "content_hash": "sha256:ba95283bfa60f50a60853e2389b4f541096d4db4bd5448a950f29a1b75cd8239",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER:chapter:22:authority-output:9e962d49-ce84-491d-88e4-b540069bce17:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:9e962d49-ce84-491d-88e4-b540069bce17:story_planning.candidate:v1",
+      "content_hash": "sha256:66cbc823f97e7ed2d2ccb0ae29a75a7512926c6f3cccef36d322195cd98cfefc",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:23:authority-output:3f4fe5f7-0ac2-479e-afaf-00cf16b93fc7:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:3f4fe5f7-0ac2-479e-afaf-00cf16b93fc7:story_planning.candidate:v1",
+      "content_hash": "sha256:cfd19570948d1ba1005865d05f66a96ccf6bd461263129004124404d8efad70f",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:24:authority-output:0b0f87ef-8429-412e-9ce1-538164b63f3f:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:0b0f87ef-8429-412e-9ce1-538164b63f3f:story_planning.candidate:v1",
+      "content_hash": "sha256:909270720ecb1ef7712e4323a54846bb8458887d6f75fc01f65eddf015c66a99",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:25:authority-output:f832134b-abf6-4ecb-8124-f16283a34c6a:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:f832134b-abf6-4ecb-8124-f16283a34c6a:story_planning.candidate:v1",
+      "content_hash": "sha256:2dcc09b1db58d32c32fbab7b9f573722b6ef232935c2559e823cfdea7ff0a8ea",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:26:authority-output:6649dfd3-cd01-46ca-ab00-4a4dc139e0fb:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:6649dfd3-cd01-46ca-ab00-4a4dc139e0fb:story_planning.candidate:v1",
+      "content_hash": "sha256:03ff1624dec98ff9d4b6f8a2173becc882eae8e1ec8b5cfba1b7d52b27714a0f",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:27:authority-output:380b5313-2676-47d4-8147-cdbf41db9857:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:380b5313-2676-47d4-8147-cdbf41db9857:story_planning.candidate:v1",
+      "content_hash": "sha256:b80db99329d1a7dfdf97711aced4585c6e66252802db588acf2b670286d3f389",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:28:authority-output:0c1f94d7-7ed2-4f79-a947-59eb654c0d42:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:0c1f94d7-7ed2-4f79-a947-59eb654c0d42:story_planning.candidate:v1",
+      "content_hash": "sha256:1f150c59844d25941f45db68c67849b65dee579c78d7313693bf2de6505a1637",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:29:authority-output:1597477c-0e20-4ac5-9c62-a98deb99202b:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:1597477c-0e20-4ac5-9c62-a98deb99202b:story_planning.candidate:v1",
+      "content_hash": "sha256:cd013f3a1268714c0db3f93ea9a77b315ddf25c640ef7f25ea28f1289b20de11",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:3:authority-output:32fd81fe-6737-4389-bfbc-181c9aa55f20:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:32fd81fe-6737-4389-bfbc-181c9aa55f20:story_planning.candidate:v1",
+      "content_hash": "sha256:7c1237d8f3b5f83509a5fc0f1eb3a14df73d8d58fe077d0a472b790ab6287c03",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:3:authority-output:776b7613-983e-4d50-91eb-4b59d9c35dca:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:776b7613-983e-4d50-91eb-4b59d9c35dca:story_planning.candidate:v1",
+      "content_hash": "sha256:9cf991ce7af6d16852851df1fbadaf7e554c0551071f3e10e6fb42e787493438",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:30:authority-output:32149f21-398a-4057-a473-19b03cbb04a6:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:32149f21-398a-4057-a473-19b03cbb04a6:story_planning.candidate:v1",
+      "content_hash": "sha256:2a8123cfa4f48b02bbe1588dbcae813fa4e183a9d591f1c3b54165dcf8badb3e",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:31:authority-output:ca24a5e2-6d8e-4ba2-98a0-b21066a5831a:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:ca24a5e2-6d8e-4ba2-98a0-b21066a5831a:story_planning.candidate:v1",
+      "content_hash": "sha256:428794d0a55f2b41c14a1093e84283982f076866f6487aa2284df560d0fc508b",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:32:authority-output:cfc52316-c16a-4971-9430-8c00286bf68d:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:cfc52316-c16a-4971-9430-8c00286bf68d:story_planning.candidate:v1",
+      "content_hash": "sha256:fad131062a9185032ca766899ca24eea92d61c670c14ad6b96ea397b129109ff",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:33:authority-output:4c730b1d-4e29-49ce-a0ac-db5e1165ed5b:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:4c730b1d-4e29-49ce-a0ac-db5e1165ed5b:story_planning.candidate:v1",
+      "content_hash": "sha256:89fb2591cd569a10480f4ac67f3850623a676a77ba5c48cacfeeb9993629fbbb",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:34:authority-output:888c3a40-b2f5-467d-91b3-62e557fb5634:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:888c3a40-b2f5-467d-91b3-62e557fb5634:story_planning.candidate:v1",
+      "content_hash": "sha256:30b26dbe661957e608073276646859cd32947c8cffc3ac85e93fbcd1f1d36d20",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:35:authority-output:a68391ea-272d-482a-9712-e9dff8311171:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a68391ea-272d-482a-9712-e9dff8311171:story_planning.candidate:v1",
+      "content_hash": "sha256:18622fd306085f7a074d58b7de29bb21f1f700dd52f7a2329c2ff20f3d609741",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:36:authority-output:ec72063c-7f9a-43e3-84f8-be1475efa0ad:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:ec72063c-7f9a-43e3-84f8-be1475efa0ad:story_planning.candidate:v1",
+      "content_hash": "sha256:584d9f4b983ba0f6b3ee85177b47c4a6f4263bb40125daec20fc4cdffff891fc",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:37:authority-output:847e3d39-a158-42ba-ac15-4fcd58e903cb:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:847e3d39-a158-42ba-ac15-4fcd58e903cb:story_planning.candidate:v1",
+      "content_hash": "sha256:5d279dba0619c1c23542651b1bc4cbfe55fc75a1282a1558e209c14f88aa397e",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:37:authority-output:1d40ad93-db37-4a91-a4cb-cfb75d5e647c:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:1d40ad93-db37-4a91-a4cb-cfb75d5e647c:story_planning.candidate:v1",
+      "content_hash": "sha256:41ad9806ca92483cbd98ec486b8fc3d4702c9b7f325c9013a33564054e5845b1",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER:chapter:38:authority-output:457e761c-316e-4bd1-934d-b67d0ff530c9:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:457e761c-316e-4bd1-934d-b67d0ff530c9:story_planning.candidate:v1",
+      "content_hash": "sha256:b3567132f10e4f2e24f60dd16e2a8d60c336ad1d1abf21a06b53054b4169af9c",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:39:authority-output:59548f20-b8e3-4d6f-9220-5067820c59b9:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:59548f20-b8e3-4d6f-9220-5067820c59b9:story_planning.candidate:v1",
+      "content_hash": "sha256:a208b656aa2862d9a89b3bbddbf62dbf45bb68d266973340e91197e43446fcb9",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:4:authority-output:cd0453ae-c6e1-456b-843e-5726c17b9ccf:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:cd0453ae-c6e1-456b-843e-5726c17b9ccf:story_planning.candidate:v1",
+      "content_hash": "sha256:66131ba8a8fe70467f666b054dc63527d0bb9aea2aa9a2366df5530b92e07dac",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:4:authority-output:9f11dffa-a1d6-463b-a08b-3f4273f3ff02:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:9f11dffa-a1d6-463b-a08b-3f4273f3ff02:story_planning.candidate:v1",
+      "content_hash": "sha256:959452439d16bbebff5bc7b477413e01771726dd8cc736ab28ef84d9c7d840cf",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:40:authority-output:37e169cf-e1ba-45e3-ac75-864baa406973:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:37e169cf-e1ba-45e3-ac75-864baa406973:story_planning.candidate:v1",
+      "content_hash": "sha256:e71b7f98ad88e2eab4a839026928acf5baa571386ae3472e20631f28b5decc73",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER:chapter:5:authority-output:a7009ade-d065-4f7c-bb24-633e6eca22bd:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a7009ade-d065-4f7c-bb24-633e6eca22bd:story_planning.candidate:v1",
+      "content_hash": "sha256:07222b2d225489e74619e8941ed349649634701455d144bfd481933be3efccb7",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:5:authority-output:9391c807-7a7b-4cc2-93c4-78d3bfb387d3:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:9391c807-7a7b-4cc2-93c4-78d3bfb387d3:story_planning.candidate:v1",
+      "content_hash": "sha256:ce1e9b33fbdba4d9c3e3be0791b5d8ab8119eceaa1115e87bca7fa1b7725e5db",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:6:authority-output:573b699f-46ae-4f00-a7be-77962862296f:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:573b699f-46ae-4f00-a7be-77962862296f:story_planning.candidate:v1",
+      "content_hash": "sha256:d3015bae9f266926a39288c17d296fa67862a5b24f214b87b459ce84a1a89469",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER:chapter:6:authority-output:d4164a42-f645-4ba4-9d97-cb48eaeeb76d:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:d4164a42-f645-4ba4-9d97-cb48eaeeb76d:story_planning.candidate:v1",
+      "content_hash": "sha256:684e5c9279ead7e5f57cb47b2741702d56311af9580d31f6f9ee3d9bc23ba33c",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:7:authority-output:1068bd83-a0b1-41df-8a00-4ec62352f236:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:1068bd83-a0b1-41df-8a00-4ec62352f236:story_planning.candidate:v1",
+      "content_hash": "sha256:f5005e10a869eb6cacea553cb29d76c9b50043394a589b99fcc54c9943a4e3fc",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:7:authority-output:8349dd15-8f90-41f1-a39f-770077303453:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:8349dd15-8f90-41f1-a39f-770077303453:story_planning.candidate:v1",
+      "content_hash": "sha256:5c8bfc277ae79cc35edb657ec1737d105b66d15a9e3ed77a01103431eaf1e683",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER:chapter:8:authority-output:eac20efe-e197-4fcd-813e-dacbc84dd446:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:eac20efe-e197-4fcd-813e-dacbc84dd446:story_planning.candidate:v1",
+      "content_hash": "sha256:487652bad30368502004e61ae33f751185a6e5cf0b015581941ca1f9d669e8ac",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER:chapter:8:authority-output:befbacf2-9a1d-4f40-89de-00f2b756dcd2:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:befbacf2-9a1d-4f40-89de-00f2b756dcd2:story_planning.candidate:v1",
+      "content_hash": "sha256:24154b12b3255e1c09c33bc6b1431ffac8323327ebadf0d877426f2bf1b75563",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER:chapter:9:authority-output:1731ce8e-768e-4e59-885a-0f83762ff9b2:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:1731ce8e-768e-4e59-885a-0f83762ff9b2:story_planning.candidate:v1",
+      "content_hash": "sha256:a7a3bd7636b4b03193f52428b2bc98823c09af0fdec40a5bc69535806377eba5",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:1:authority-output:4abb3a34-ff7b-4af9-8bc5-d1f836b0f2eb:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:4abb3a34-ff7b-4af9-8bc5-d1f836b0f2eb:story_planning.candidate:v1",
+      "content_hash": "sha256:419144c1fb569995e68025c777cc25b59b02b5465b9232c8b470ca01d7aa4f91",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:1:authority-output:dbdaaf28-a4d9-445e-8ab6-da6b34f1f769:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:dbdaaf28-a4d9-445e-8ab6-da6b34f1f769:story_planning.candidate:v1",
+      "content_hash": "sha256:2be44d02544856c1dae0b37dc18471b49a3a2fe5ad50f119b36126167d7f8109",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:12:authority-output:5ab4e0fd-7e4c-4209-a828-80f587d3649d:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:5ab4e0fd-7e4c-4209-a828-80f587d3649d:story_planning.candidate:v1",
+      "content_hash": "sha256:373837eed654a2167daeef94071e1b0614179441a3284c10777422b187b489f1",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:12:authority-output:94bdd690-21bb-44e3-a2e1-f76949100a28:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:94bdd690-21bb-44e3-a2e1-f76949100a28:story_planning.candidate:v1",
+      "content_hash": "sha256:226a17637ce40261c06b9cb56e53a8194a7e14c90535a0c6eab58ee561a2e546",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:12:authority-output:45d18f5b-ca55-4aae-b5e4-ff5aae43d26c:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:45d18f5b-ca55-4aae-b5e4-ff5aae43d26c:story_planning.candidate:v1",
+      "content_hash": "sha256:799da434966678232890b1e14c4e4b69e8e5e45eef9d0363087ea9fdabca9d69",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:16:authority-output:3a9860a9-5b2c-4cde-92de-ba68c62c8c1c:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:3a9860a9-5b2c-4cde-92de-ba68c62c8c1c:story_planning.candidate:v1",
+      "content_hash": "sha256:a95b8eda23c5f92ed80447388182e20b4efa6a05a1aa05a8d3906862a22fb541",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:16:authority-output:9bd6978c-a121-42e0-84b7-4414ed8b1dac:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:9bd6978c-a121-42e0-84b7-4414ed8b1dac:story_planning.candidate:v1",
+      "content_hash": "sha256:c8717ab34fb3a7b20391dd77cd31f1f8fbb92a7174e4c266622d9c42efc0ce5c",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:16:authority-output:2d58ca81-c656-4c53-a28a-15d97d01852f:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:2d58ca81-c656-4c53-a28a-15d97d01852f:story_planning.candidate:v1",
+      "content_hash": "sha256:1faa7f9f6ef8134dcc2950bd3d0aea8750fa1109d46d931b725696565ada870d",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:19:authority-output:658a24bd-7f0d-448b-8f26-0aa382c8d6e8:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:658a24bd-7f0d-448b-8f26-0aa382c8d6e8:story_planning.candidate:v1",
+      "content_hash": "sha256:185058cd2179dce5fab574523217b155286ad488d717713c985b210b1fcfcb69",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:24:authority-output:ec53f418-9484-4e0e-bb96-d24f230b3eed:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:ec53f418-9484-4e0e-bb96-d24f230b3eed:story_planning.candidate:v1",
+      "content_hash": "sha256:ad1b648357e882454b8943bf1c5c385c00ca4abeee92e587576983fa6398cb41",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:24:authority-output:7b8b3945-594f-4e22-b637-7985059c3ff8:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:7b8b3945-594f-4e22-b637-7985059c3ff8:story_planning.candidate:v1",
+      "content_hash": "sha256:787e0272f83bc82463eb44d66594def59804d520a9cee85a5582d86c4eb60473",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:28:authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+      "content_hash": "sha256:9eb858dcfa3483101e3a9e5a729756eeaff1fd32c1aa27aaa320eef9c4aa180c",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:28:authority-output:79d42e95-ce53-43a9-a628-cb8a8ededda3:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:79d42e95-ce53-43a9-a628-cb8a8ededda3:story_planning.candidate:v1",
+      "content_hash": "sha256:5f1fdf5c3ff6cc6410afb0baed62735b2a6a1740473aaa09f9e1dac55e91f092",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:33:authority-output:e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6:story_planning.candidate:v1",
+      "content_hash": "sha256:b54535c557ae9d89d56eec91d54448dc8b868c292f5300f9f32abdb79052b4b5",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:33:authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+      "content_hash": "sha256:6bb95c46d45d7c1858fc4d44c5aaccc4b06601a542298b234466fbaf2bac2b9e",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:37:authority-output:7643460d-85ba-4dd8-a3cf-3ea582756123:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:7643460d-85ba-4dd8-a3cf-3ea582756123:story_planning.candidate:v1",
+      "content_hash": "sha256:77f325bf48033e2b567d5f864c588b3f95ce867a3751af96217b502acd86e5c5",
+      "freshness": "STALE"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:37:authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "content_hash": "sha256:3ac5361f90f04657f9c971d37defa15149bf8c2672d56cd95b50e56cf423daff",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:4:authority-output:a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3:story_planning.candidate:v1",
+      "content_hash": "sha256:050928f617302350954c01bb753c104ffea9622380939a56eaeeb95e5c28fd7a",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:4:authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:8c90e704-6d6c-492e-a47b-709d30107714:story_planning.candidate:v1",
+      "content_hash": "sha256:f409cbc1254032b155921afde1d6e7a72f5f4add28a65f861f685606652ec062",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:8:authority-output:df0c1389-7965-44b8-8da1-c7b6d87ebdd8:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:df0c1389-7965-44b8-8da1-c7b6d87ebdd8:story_planning.candidate:v1",
+      "content_hash": "sha256:bb3a3e39d4b127ed418bd3b72d8524d77621b8c5f9439ab9b9a94ed6b4fc7243",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "CHAPTER_GROUP:chapter-group:containing:8:authority-output:3a60468b-f5f4-4933-921d-7d53c3d8333d:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:3a60468b-f5f4-4933-921d-7d53c3d8333d:story_planning.candidate:v1",
+      "content_hash": "sha256:8247cffafbf18b3318f1233dd1a9edd76ced9c2a61eeb8c4ee478f4eecea5637",
+      "freshness": "IMPACTED"
+    },
+    {
+      "role": "VOLUME:volume:1:authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+      "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+      "freshness": "STALE"
+    },
+    {
+      "role": "VOLUME:volume:1:authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+      "content_hash": "sha256:e9fbf369870d42127653546c739d299988d22f6a1ff98c1212eb2680b86a0ea0",
+      "freshness": "STALE"
+    },
+    {
+      "role": "VOLUME:volume:1:authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "VOLUME:volume:2:authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+      "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "VOLUME:volume:3:authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+      "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "VOLUME:volume:4:authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+      "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "VOLUME:volume:5:authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+      "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+      "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+      "freshness": "CURRENT"
+    },
+    {
+      "role": "CREATIVE_FOUNDATION",
+      "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+      "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+      "freshness": null
+    },
+    {
+      "role": "THEME_CONTRACT",
+      "asset_version_id": "authority-output:01d50954-728c-47bb-85fb-06fd785130e0:story_planning.candidate:v1",
+      "content_hash": "sha256:2675b7877af6f6cce0e11301031fa9d16930416fec74ba856ec5d071716387b6",
+      "freshness": null
+    },
+    {
+      "role": "ENDING_INTENT",
+      "asset_version_id": "authority-output:847cd4f1-7763-473d-8c46-0785ffa7b1f3:story_planning.candidate:v1",
+      "content_hash": "sha256:d9f50e929ae9d09537c95ae88d54afe4b29ec019fcc9d5586d776d8adacbcba8",
+      "freshness": null
+    },
+    {
+      "role": "READER_PROMISE",
+      "asset_version_id": "authority-output:6b3fab3d-e978-45b0-a1d6-97df7254d134:story_planning.candidate:v1",
+      "content_hash": "sha256:a47a74192fa9c6f53e92c6a892ed357860826895b0364940c66da65a3f36d626",
+      "freshness": null
+    },
+    {
+      "role": "WORLD_BIBLE",
+      "asset_version_id": "authority-output:bd11fa76-a76e-4b65-8e32-093f8f6e6bac:story_planning.candidate:v1",
+      "content_hash": "sha256:7ef530a1dd5335664a8bfffede178ad5c612ba1a4009473e461f02d104ecbb15",
+      "freshness": null
+    },
+    {
+      "role": "CHARACTER_CAST",
+      "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+      "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+      "freshness": null
+    },
+    {
+      "role": "creative_brief",
+      "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1",
+      "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+      "freshness": null
+    },
+    {
+      "role": "production_profile",
+      "asset_version_id": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "content_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+      "freshness": null
+    }
+  ]
+}

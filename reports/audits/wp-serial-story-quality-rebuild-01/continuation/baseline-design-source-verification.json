@@ -1,0 +1,121 @@
+[
+  {
+    "role": "creative_brief",
+    "chapter": null,
+    "asset_version_id": "authority-output:8bb703c5-c9fc-4027-80f3-c781cc7332cf:creative.brief:v1",
+    "content_hash": "sha256:774b6cc3015f656bd81feef5ccf369e3ee3823840a36033ce34c56946ac5d55e",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CREATIVE_FOUNDATION",
+    "chapter": null,
+    "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+    "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "THEME_CONTRACT",
+    "chapter": null,
+    "asset_version_id": "authority-output:01d50954-728c-47bb-85fb-06fd785130e0:story_planning.candidate:v1",
+    "content_hash": "sha256:2675b7877af6f6cce0e11301031fa9d16930416fec74ba856ec5d071716387b6",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "ENDING_INTENT",
+    "chapter": null,
+    "asset_version_id": "authority-output:847cd4f1-7763-473d-8c46-0785ffa7b1f3:story_planning.candidate:v1",
+    "content_hash": "sha256:d9f50e929ae9d09537c95ae88d54afe4b29ec019fcc9d5586d776d8adacbcba8",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "READER_PROMISE",
+    "chapter": null,
+    "asset_version_id": "authority-output:6b3fab3d-e978-45b0-a1d6-97df7254d134:story_planning.candidate:v1",
+    "content_hash": "sha256:a47a74192fa9c6f53e92c6a892ed357860826895b0364940c66da65a3f36d626",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "WORLD_BIBLE",
+    "chapter": null,
+    "asset_version_id": "authority-output:bd11fa76-a76e-4b65-8e32-093f8f6e6bac:story_planning.candidate:v1",
+    "content_hash": "sha256:7ef530a1dd5335664a8bfffede178ad5c612ba1a4009473e461f02d104ecbb15",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHARACTER_CAST",
+    "chapter": null,
+    "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+    "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 1,
+    "asset_version_id": "authority-output:d7dc6a75-84fb-4001-aac9-b0130c9d23c9:story_planning.candidate:v1",
+    "content_hash": "sha256:554387d6795239e4293fcac7d563def755e0d40f2a635f17c8000516c5f46bb3",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 2,
+    "asset_version_id": "authority-output:22fe2b57-3958-4f44-94dd-3bc95efdc88f:story_planning.candidate:v1",
+    "content_hash": "sha256:4fca40b3e4e812c47de68518793d84e889c88d28185838c99064866fee5c41f6",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 3,
+    "asset_version_id": "authority-output:32fd81fe-6737-4389-bfbc-181c9aa55f20:story_planning.candidate:v1",
+    "content_hash": "sha256:7c1237d8f3b5f83509a5fc0f1eb3a14df73d8d58fe077d0a472b790ab6287c03",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 4,
+    "asset_version_id": "authority-output:9f11dffa-a1d6-463b-a08b-3f4273f3ff02:story_planning.candidate:v1",
+    "content_hash": "sha256:959452439d16bbebff5bc7b477413e01771726dd8cc736ab28ef84d9c7d840cf",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 5,
+    "asset_version_id": "authority-output:9391c807-7a7b-4cc2-93c4-78d3bfb387d3:story_planning.candidate:v1",
+    "content_hash": "sha256:ce1e9b33fbdba4d9c3e3be0791b5d8ab8119eceaa1115e87bca7fa1b7725e5db",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 6,
+    "asset_version_id": "authority-output:d4164a42-f645-4ba4-9d97-cb48eaeeb76d:story_planning.candidate:v1",
+    "content_hash": "sha256:684e5c9279ead7e5f57cb47b2741702d56311af9580d31f6f9ee3d9bc23ba33c",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 17,
+    "asset_version_id": "authority-output:b992277a-1d21-4d02-9c64-9b402b0ede6c:story_planning.candidate:v1",
+    "content_hash": "sha256:93c7892017ac5b61a866672a62d5dfc3e3df2a5f72bd69163cc8dcb9b7a7aef0",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 18,
+    "asset_version_id": "authority-output:1a7213c2-74f9-4229-8d1b-9c658c4923e6:story_planning.candidate:v1",
+    "content_hash": "sha256:b829ee414f391ff426059b86f090bd4d0e99c74993ead55404dc30fe907f6a56",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 19,
+    "asset_version_id": "authority-output:92208e51-5528-4eb4-beaf-f678bfdf4746:story_planning.candidate:v1",
+    "content_hash": "sha256:27856d367d1eca8bee9dfb103d34f74844c6a6a44ee3c4c801b82f160c4c0670",
+    "same_frozen_source_hash": true
+  },
+  {
+    "role": "CHAPTER",
+    "chapter": 20,
+    "asset_version_id": "authority-output:b0f4f107-b799-4983-af51-6b79e4ca3eb4:story_planning.candidate:v1",
+    "content_hash": "sha256:0f537dc1e2570cd726b84eb133ae1b3b52164f897c41757dd084a8bf53d2ed41",
+    "same_frozen_source_hash": true
+  }
+]

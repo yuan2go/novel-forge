@@ -1,0 +1,1821 @@
+{
+  "scope": "All effects bound to this candidate Book correlation or this work package continuation trace; original frozen definition source SHAs remain separate",
+  "initial_source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+  "final_runtime_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+  "records": [
+    {
+      "operation_id": "93acb27b-984e-4dab-a712-d2fe9e830478",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "cc86770c-9bdd-4919-b0c2-b86d52fcd706",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:fdd77fd39a97121618f2daea2613c85787280b42861aff49cc3192af7adb3fdc",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "3c76993e-8161-4977-b5a3-ea4cb5d36c0e",
+          "status": "SETTLED",
+          "estimated_tokens": 96879,
+          "actual_tokens": 40008,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "3c76993e-8161-4977-b5a3-ea4cb5d36c0e",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "b7f59f3e-3054-4c07-8a6a-cfb3cdbe99dd",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:071530eddc4a091b37e993cb631e9b154214232f864029af0c3649e2a74e58f2"
+        },
+        {
+          "asset_version_id": "0a4003f5-1427-4426-8093-f7729eb903f3",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:f8f5617726645047018ffd4259b5cd3fd6f94d4664001f19b6f1a653efffde4e"
+        }
+      ]
+    },
+    {
+      "operation_id": "10661879-059c-4115-88bc-c978dd18f952",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "12a13d4d-a71a-4bdb-9edb-4a6a9398a080",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:aaa574b93df0233f4e7107576f691099159a2090707033d59565422536fe42aa",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "911ef6b4-147b-4860-b652-9a9c53af292b",
+          "status": "SETTLED",
+          "estimated_tokens": 171373,
+          "actual_tokens": 63806,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "911ef6b4-147b-4860-b652-9a9c53af292b",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "87536780-66d9-4ba6-887b-2396a7fa9fc5",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:268214113b33da439cb8cf70cef7009626a2e3ad9b4ecb242a3bf0196938922f"
+        },
+        {
+          "asset_version_id": "ea28d6e7-9deb-4e94-9b19-5d9312311501",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:3f7d27ac4864d74f6620c00e32918bce60b36fd5cc56ab566aecadb119462991"
+        }
+      ]
+    },
+    {
+      "operation_id": "9bccf7e9-bd03-4acc-b76c-241fd2085934",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "951a855d-b781-4dbe-89ba-0d2f306608c5",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:078b9d83db36122337be52dd6046bde1b2593e72966688513477852e054621df",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "d896fc68-c4df-4f56-b982-b3c25f8d3964",
+          "status": "SETTLED",
+          "estimated_tokens": 171355,
+          "actual_tokens": 58767,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "d896fc68-c4df-4f56-b982-b3c25f8d3964",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "5b686611-2bc0-474e-b26e-81d31ecc4c18",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:9606a5e4ec2e64ff50561cce1f23376badef8c52fb4ba3087a6898a1f8013fb6"
+        },
+        {
+          "asset_version_id": "b2367c27-9651-45a4-a7f2-b71ddada92d5",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:ab40047b940f2f0385ad4f3e0260bc1b77aa5ffd52ca283d9c92c1ce0843ec62"
+        }
+      ]
+    },
+    {
+      "operation_id": "7c0c0c3e-2a3b-4472-9814-8d825617916c",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "e901bbbd-fa7f-4ae5-a098-5470ae8b2d06",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:753ef351d5ef10ef8a125d92ce0e5d5fb4fd6d7a4efa696b9dfc73900aa5f9de",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "b132bca6-12b5-4c33-ad9f-9a5dbb836dcd",
+          "status": "SETTLED",
+          "estimated_tokens": 171337,
+          "actual_tokens": 62980,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "b132bca6-12b5-4c33-ad9f-9a5dbb836dcd",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "fd8565e2-f04e-4956-94dd-4cc398ddff73",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:701dc860f9441bbe3a7d8098892ac3a86cdeaf4e97c5c710a104cc6b581291c7"
+        },
+        {
+          "asset_version_id": "2efc5c86-47e6-45bb-9994-8c5087414f27",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:5ec2b71cd67dbbc2253a3cc0c19d0c7e62c7cc055d625f7770bd4813f134d228"
+        }
+      ]
+    },
+    {
+      "operation_id": "e8c62976-75a1-4208-86fc-563161f4b27c",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "03f759cd-4992-4588-8f5b-938c35eed248",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:924114eccc5d01d0461c4053d11c8ee82a552ab25abccddd41c7f31bc6ec8262",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "9911ddee-c6ef-4b22-92fb-e5f6dca08aea",
+          "status": "SETTLED",
+          "estimated_tokens": 171343,
+          "actual_tokens": 60528,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "9911ddee-c6ef-4b22-92fb-e5f6dca08aea",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "cd0b168a-ad18-4e92-a712-5a874ceb0401",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:4ddbda6777089821bf4484e25ff005752efd52da89fefa5e8d48b4157e68ad9b"
+        },
+        {
+          "asset_version_id": "ef647da8-d932-41fe-9a86-db00da0173cc",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:a922575549842c64a8ad5a56c6f76363d6763be3629af39caa5e3a6a41581357"
+        }
+      ]
+    },
+    {
+      "operation_id": "243b760b-c574-45e6-bead-f7653f953f73",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "57a7e760-d233-4813-935c-f6e71a03cc19",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:d0bb6a7edc573af8243ef4948989e51be29e3e97ee7633eef43ad6235a0f1790",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "3fc84621-7fc9-4bff-980e-f3632f69ff80",
+          "status": "SETTLED",
+          "estimated_tokens": 171343,
+          "actual_tokens": 61256,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "3fc84621-7fc9-4bff-980e-f3632f69ff80",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "ab60aa2c-dc07-488e-adb4-5684cfbe68d2",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:a5a94a33bb2ba905fd0d0faf6ed56f5e255cb9d35c0791cf62e44718d93cc708"
+        },
+        {
+          "asset_version_id": "f8a92394-bcb9-4f5d-9e8a-18737e691e87",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:134ffca4ab2d3b2156900cc189fbd7660da7b8442c9c7e1962ac76e0541917ec"
+        }
+      ]
+    },
+    {
+      "operation_id": "b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "57c46682add4a58cf95c7b82388592aabbdc0376",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "d182c928-a6dc-47de-90e2-7563e973b00b",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:5660ffeae4137326416a6367446b47eda7e997cde60f1c72848f0557f675cf7c",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "bc90d97d-556e-491c-813f-f81c66678177",
+          "status": "SETTLED",
+          "estimated_tokens": 171337,
+          "actual_tokens": 58899,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "bc90d97d-556e-491c-813f-f81c66678177",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "2ebb9ebf-00f5-4264-af3b-309f0e23bd44",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:6c93c330b2123fef581ea14eb233f1f203c1f345eec53e8cda950eab95b5d7cc"
+        },
+        {
+          "asset_version_id": "9744606b-c1a2-4df3-978e-f9a08a08f794",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:55b462cd5f0ff1699da734abfbb274ca20ea3b57b94e5a0f367d37d4800fabe9"
+        }
+      ]
+    },
+    {
+      "operation_id": "b829549c-4bda-48c3-9a76-1d202dda6a5f",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "c4a2d2ec-60d6-4aff-95d9-04c7cd2d85e8",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:8dbc2fa257ce930a30bcffe8ff3dad304260e8a1ead2013c8693b844a319d9d3",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "21b1f55c-fd9c-4f4e-8221-c8dd847e25e9",
+          "status": "SETTLED",
+          "estimated_tokens": 186028,
+          "actual_tokens": 72700,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "21b1f55c-fd9c-4f4e-8221-c8dd847e25e9",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "9d4e9d91-5a4a-45eb-8c3e-c753a408f84f",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:4b7b891b7be0565a02314c81e8a01fc7d865fdc3dbfeb8d92aa91b73b03ab588"
+        },
+        {
+          "asset_version_id": "be7274ea-bbad-4a6b-9016-b0c1c0797be0",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:c263eb2e4d7fce71f8adfaecee2fd9498733863cabbdf709d7e8646d23fcf14d"
+        }
+      ]
+    },
+    {
+      "operation_id": "a2790583-6489-4749-8262-ec36a5ada15e",
+      "definition_name": "longform.prose_review",
+      "status": "FAILED_FINAL",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "effects": [
+        {
+          "effect_id": "6559e375-1171-4ccf-834e-ff74f1422561",
+          "status": "UNKNOWN",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:2f46395d7dfddb56855f454f6cf00e19639402a4ba5ee47dd87631683151049e",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "bcfe34c0-0352-4119-a1a0-1959a6d0ced4",
+          "status": "HELD_UNKNOWN",
+          "estimated_tokens": 94721,
+          "actual_tokens": 0,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "effect_status": "UNKNOWN",
+            "budget_scope_id": "",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "external_state_unknown": true,
+            "resource_control_version": "billing-channel-resources.v1",
+            "started_cli_usage_unmeasured": true
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "9e9134af-73e5-434b-814d-b99abba1fef1",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:01dce87600ccc307045126b94b07a5b618baeee8d1dc4f80802ad1c2e6c269e3"
+        }
+      ]
+    },
+    {
+      "operation_id": "aaf6978c-d6fe-41d7-aad3-dbe92ba1ca33",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "0fd320b6-1381-4f5d-aaec-c20b3e6d788b",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:90d6f82de7fa6483d95fb573c70afb564293af48d6134f5f9abdabd9fbcae61f",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "bbcd6463-d5f3-4b84-bef9-615cf31ae1b6",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:4ea417e933d38878b631bbd70a189ad5f228f5fc1e9bb5905929100c9c95ef00",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "b4f5c0e0-0d10-4cbe-a462-6f9c6525ef8d",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:fef4f5b06fc0919b4e3517783c69e1ad511e65acc12d0249658b92019d7b25f2",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "c02c3ff9-0fc4-406a-b7d2-f905530b2916",
+          "status": "SETTLED",
+          "estimated_tokens": 191374,
+          "actual_tokens": 62782,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "c02c3ff9-0fc4-406a-b7d2-f905530b2916",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "3ec7f5dd-1552-49e3-81fc-a623de5906f9",
+          "status": "SETTLED",
+          "estimated_tokens": 178438,
+          "actual_tokens": 51807,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "3ec7f5dd-1552-49e3-81fc-a623de5906f9",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "3ded4c6b-8f59-4854-8976-5d40a1d900f3",
+          "status": "SETTLED",
+          "estimated_tokens": 158410,
+          "actual_tokens": 65435,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "3ded4c6b-8f59-4854-8976-5d40a1d900f3",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "82fc9956-48dd-4081-8295-903f847d456c",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:bc117d4a31c79867814cc287daa8893d2994ea28dc83325cbdb9e9a95c4976e1"
+        },
+        {
+          "asset_version_id": "1a1f982e-39ef-4741-920e-a3c27db7c547",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:3f55a72e0d203c876474e542ae0dc94aa8d8778b517659e904cafb8114bde0d4"
+        },
+        {
+          "asset_version_id": "0e0d417d-06f9-4c9d-a5ae-2996ea8126b8",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:1b4ac0af5cb4277016857aa1312d8e46b4a19838bb2e915ee64dd6a7515657e5"
+        },
+        {
+          "asset_version_id": "df811a42-7e0a-49bb-9cf9-c633901b1a6d",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:954e49daf2a403fb002a80181755669b8fd6c0eef2e957c5535ec1bc81cc8a1f"
+        },
+        {
+          "asset_version_id": "5b1c02a6-087d-4151-870d-b4a13e22121d",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:d3695f156ea6125c04865e7a362d3de704819649d967f6730ba049773cf2246f"
+        },
+        {
+          "asset_version_id": "71a16cf2-1391-4fd6-90f0-e98194a8b2b6",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:09e06cd97add028d1dd72918eef0120139e1f9e1eb417346584a35a89ecae200"
+        }
+      ]
+    },
+    {
+      "operation_id": "2035804d-99f1-4247-8886-8aef7a0ce3dc",
+      "definition_name": "chapter.memo.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "16ae444e-425d-4c69-a44e-d0f61c315555",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:c712fc6c559b12c0021e5aa868aebe1833e602c9d4276e0852c1f6c2a0356821",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "26037911-e947-449d-be0d-bc04cc813e27",
+          "status": "SETTLED",
+          "estimated_tokens": 77365,
+          "actual_tokens": 26309,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "26037911-e947-449d-be0d-bc04cc813e27",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "b574bddb-bc00-476a-b26c-c8e5a9df949b",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:426aa43a07e1c8e855f643d82627c9771a849c8b294a0f3e5118a23779a1101d"
+        },
+        {
+          "asset_version_id": "786cb3ca-223d-4770-9859-dc3bca5fca48",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:79357f07db7a809322ceb6f1941c37a1f766e0083e799a1b83c75284e3900e7d"
+        }
+      ]
+    },
+    {
+      "operation_id": "4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f",
+      "definition_name": "chapter.draft.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "8e093705-5de6-47aa-9e5b-46f6d810bb0b",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:271da521184304212ba73ada005a637cc9697ea941dbdb6f245751861af4969e",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "f89328eb-eb4e-43be-894f-37cfaddea91a",
+          "status": "SETTLED",
+          "estimated_tokens": 126631,
+          "actual_tokens": 41945,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "f89328eb-eb4e-43be-894f-37cfaddea91a",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "9f4eec53-0338-4e60-aa4c-f8cfd4872d63",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:951f05ba4df23b4f78b89f581d2858e97343f5668808eddcfb0a979058ab1cd7"
+        },
+        {
+          "asset_version_id": "606781ef-3878-43d7-a36a-a7d3c0dee480",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:5b9d746ef879a327627f8520d57d67474d5869928b7f28f0960f3b5643f75416"
+        }
+      ]
+    },
+    {
+      "operation_id": "d7264f00-3a4f-4d2e-a8f4-f5721f8bbe80",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "a51757b4-03a6-49c8-b4ce-0c85b1f5116c",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:b8e93c9210338fc22589c0559c0c090d2653c13df4d4406e37d29a4e913d178c",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "91b78b75-424f-4eda-ba97-2c9edebe13ca",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:ee406ca54a58292656cb208f1b1b65bf6e4a26435e6abcdb67ee4a9ebb75fdae",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "9207dd02-a293-4588-bd2a-5b84030898d5",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:0f51bf613670637f20f96612abc6bd240566d5cdb3ce49ca8be46e54a2d148c6",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "2637efc3-1ecd-496d-8b98-79d9e242e108",
+          "status": "SETTLED",
+          "estimated_tokens": 191947,
+          "actual_tokens": 59232,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "2637efc3-1ecd-496d-8b98-79d9e242e108",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "a05403f2-0795-4267-aa5e-a2ae7a10ae14",
+          "status": "SETTLED",
+          "estimated_tokens": 177330,
+          "actual_tokens": 50744,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "a05403f2-0795-4267-aa5e-a2ae7a10ae14",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "ccb3ba66-09b3-41c0-ab08-ff97dbe84597",
+          "status": "SETTLED",
+          "estimated_tokens": 166584,
+          "actual_tokens": 70500,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "ccb3ba66-09b3-41c0-ab08-ff97dbe84597",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "97f3c684-99b4-4e4f-8ee3-f9cec8058a65",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:095d70ca43605aa6ad999b09ce1a790983291c39c0cd7224e5f530690356e7fe"
+        },
+        {
+          "asset_version_id": "43faee89-6a00-42db-a337-67d1edc8e699",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:dd6a9d70f0e6d418491aadc18f17cc374b43a856f947f7fa8e736e8e5d6228cb"
+        },
+        {
+          "asset_version_id": "66c4ff5c-6eb9-40dc-becf-07a4f72891a2",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:9cd222130c114b1de341f0490a76a1c718995f2c7c78144df3a76dc99cee202a"
+        },
+        {
+          "asset_version_id": "639d5243-c20a-4547-b9fe-9dada3d0bb87",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:5c3c10e5f5f466a80f659a326fde761c47d7a45c5cdd5e3dfe3af0f31790b32c"
+        },
+        {
+          "asset_version_id": "94fb8f6a-5dc0-4e7c-9a2f-86fbdac3c743",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:b345855a3b6082913ccb53d795bf5c65ddd3476871be055d5990540f72a843ec"
+        },
+        {
+          "asset_version_id": "23a28341-2997-402c-86a2-33557f974c79",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:02edf47aab149c745d6194e2c8d4f88a7760c4baedbaab49447fe84c5644acbb"
+        }
+      ]
+    },
+    {
+      "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+      "definition_name": "chapter.memo.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "49e22f45-308c-4c19-b8c8-0751488124b3",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:8a71d8eb01ce4aa90ca1630bc10a4423777b744fee53539032c32b3d960aa68e",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "fff0c003-a4ba-41b8-add8-d5f70758d6c7",
+          "status": "SETTLED",
+          "estimated_tokens": 96016,
+          "actual_tokens": 33047,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "fff0c003-a4ba-41b8-add8-d5f70758d6c7",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "91d2d68d-8ce7-4887-8460-fa70410de4fa",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:c996fb78b19bc3dc6580a1215dab6c72f440c579d655b7ec2adab67f41c6363c"
+        },
+        {
+          "asset_version_id": "f520a716-7c36-4d7c-8e60-ab4fa9c02d63",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:48b49f53d2f310680a511d285b1aee969781b32414cc19a2e889af0da9296b06"
+        }
+      ]
+    },
+    {
+      "operation_id": "dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e",
+      "definition_name": "chapter.draft.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "6ab064db-969c-47fd-90c4-3c80d838147b",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:11567cc59feaedd573476e0603fef5a50a463af36c4eefc1caca390d8296e965",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "b3ace555-cdea-4807-854c-2565722b1910",
+          "status": "SETTLED",
+          "estimated_tokens": 149709,
+          "actual_tokens": 49383,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "b3ace555-cdea-4807-854c-2565722b1910",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "51240098-8649-42c5-af8f-5542e996c3a9",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:48c1a0222d6aa112e82e87c8eab270c7b5a30aebd87d99268f39bf353e1b477c"
+        },
+        {
+          "asset_version_id": "52ff6d1c-edf0-4c31-a6c2-4a8d03a734a1",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:5830dbd70c142dbd581da2e0b3053006525395b1971be157eef1c60a90961621"
+        }
+      ]
+    },
+    {
+      "operation_id": "48049ebb-455c-4975-97d1-b93063c38a77",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "ea4309e6-e8b3-4e29-a16e-a3f2801646cd",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:5b3824b4ec0539b275096dbc0b6659121076bdc15e3e70bc8ae23214fda9d205",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "128dbc18-6c9b-40aa-8582-a9663bc4ec30",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:ff3929a8197a3aab52b96bc701e026a7a2a71f44000eb87d49731275b65a40c1",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "75a2467d-2063-45b9-b0a3-ab09ba877fc8",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:40b4c76a0dc310a9a510e470b46dc484e130855d1b61e0e8f129277baf121adf",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "de95b318-44ef-4226-b5a6-c6f4a141c4b3",
+          "status": "SETTLED",
+          "estimated_tokens": 199214,
+          "actual_tokens": 65558,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "de95b318-44ef-4226-b5a6-c6f4a141c4b3",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "35024105-e6b4-4e3a-9686-c703c1cd467e",
+          "status": "SETTLED",
+          "estimated_tokens": 185900,
+          "actual_tokens": 53716,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "35024105-e6b4-4e3a-9686-c703c1cd467e",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "2687b53e-5c88-4296-b60c-61dc739fb01b",
+          "status": "SETTLED",
+          "estimated_tokens": 177349,
+          "actual_tokens": 75509,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "2687b53e-5c88-4296-b60c-61dc739fb01b",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "108d7dda-f2e2-4a7f-994e-9e1e51b1c098",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:3248126a30f51b8b34e6a089c8c6cdee7478062f5f15a0bf696ca19233c9b150"
+        },
+        {
+          "asset_version_id": "161c601c-4718-4bf7-b969-600ffcbf5a9a",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:6350070568e12b475b8421402f0f45a9c54e173d340c0e18fa60f1182da10faf"
+        },
+        {
+          "asset_version_id": "f03d3f89-faa7-49c5-90e1-4cf60187ba7e",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:61a1cf73d452965bfe2600b4622d42230ee89c4f869d34ba38b09ed2c52ff525"
+        },
+        {
+          "asset_version_id": "01a19d09-a40c-49df-8632-31bfb56db9a6",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:ba011254a2038cc726d7ed05c9582a794895fe3b7f956d5667ac8c6fa3374bf3"
+        },
+        {
+          "asset_version_id": "2957899a-d1c8-4bfc-8343-ee22b38e35dd",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:a716777e2ae157af8378dce6f7a9d5483f7a0b424c8bf585b5c30a8f17f05c00"
+        },
+        {
+          "asset_version_id": "961d5ad5-fb6a-423a-a025-443ec4834e6a",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:e1273afcd99512b9a76be173b8d50e0bf4c84cb7861ba44f523b54e23825cfe8"
+        }
+      ]
+    },
+    {
+      "operation_id": "ff9c5f15-a54f-4c0e-a1eb-3f0acc14390c",
+      "definition_name": "chapter.memo.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "cc888452-d960-4287-9725-bbca89fb05a6",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:f086c9930980def8cf84b89f47879bec1cde38e324a82550bf5944553055575e",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "2d994d35-e643-4ad3-b852-c07aa9fe4b8a",
+          "status": "SETTLED",
+          "estimated_tokens": 116174,
+          "actual_tokens": 40053,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "2d994d35-e643-4ad3-b852-c07aa9fe4b8a",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "5c485deb-d7b4-4d53-9d77-8a55f0e24308",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:749d57d76d54a76c3445d5398346bc352144bdc3981d6e320dac8920866448b2"
+        },
+        {
+          "asset_version_id": "1fefbe0c-066a-4730-b1fe-c478be69ad18",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:64c4757de42d41c2003ec64c85a9e0b41d20a0d15c70a8b84a79bbfe9889f33e"
+        }
+      ]
+    },
+    {
+      "operation_id": "86348ae4-6885-4d29-9ccf-e90012590c20",
+      "definition_name": "chapter.draft.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "6850ff71-e2be-43af-968c-f687f6394bd0",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:a4c41105bbb1189bd245d1532548eedcf2085d45b6719425ae2286d10d82ad02",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "d0805b0f-c522-4519-8208-6ce9a7a9f599",
+          "status": "SETTLED",
+          "estimated_tokens": 169365,
+          "actual_tokens": 55666,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "d0805b0f-c522-4519-8208-6ce9a7a9f599",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "8b33b984-ba4b-4b78-abab-a8cbe329a72b",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:de9ac00c5fd5009fed4380d016958426066c6160a15415ca95c94edd084a09f0"
+        },
+        {
+          "asset_version_id": "771fe5ef-905d-4236-9a74-a5320f06fa64",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:01fdf95bb3435e94cd1c4c4d68d4e7856bc38e2bf7c32f59c1eb4ca091a9226f"
+        }
+      ]
+    },
+    {
+      "operation_id": "a420ce0b-4273-44ad-a9cf-5753b63e06b6",
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "9fe0b957-7ac8-4eb2-b08d-0c1232674334",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:e1558a7fc90b3102ead61aaabc3385abdbc7d42af15aa82bb914bc10d5ea1918",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "12dca739-4978-4cec-a8fa-46f1b88981dd",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:b4116412a9c03e43b13bbdccd34567a3544726646b5ae055966266797af202fd",
+          "provider_request_id": ""
+        },
+        {
+          "effect_id": "65beecd9-f993-4ed5-a08d-1a866dabc5fa",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:394cd0e04b94470616dc02bc8a791e8f61ab46ac80924c80895bc49b1ae4344a",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "c48004d3-7462-49ba-b451-2eeb00e91580",
+          "status": "SETTLED",
+          "estimated_tokens": 199214,
+          "actual_tokens": 60291,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "c48004d3-7462-49ba-b451-2eeb00e91580",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "8581828e-866d-4daf-a454-346ed23250dd",
+          "status": "SETTLED",
+          "estimated_tokens": 184525,
+          "actual_tokens": 52731,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "8581828e-866d-4daf-a454-346ed23250dd",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        },
+        {
+          "reservation_id": "7943f65e-b5eb-4c8d-85ac-4537298ebc57",
+          "status": "SETTLED",
+          "estimated_tokens": 180192,
+          "actual_tokens": 78897,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "7943f65e-b5eb-4c8d-85ac-4537298ebc57",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "usage_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false,
+            "provider_reported_cost_amount": null
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "905e4322-475a-425f-9396-51b2a0937c4f",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:5e18b339b3a1055d446c07e1a57016677bb20138092a44441c8c20e06c797bb1"
+        },
+        {
+          "asset_version_id": "1ec95cec-df28-4a8e-9f18-8cc560fdb593",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:64d64a5b88c6f8351173be761220555fb2d657e02190392aa68a436bc84dc818"
+        },
+        {
+          "asset_version_id": "436e0894-8df0-4491-b721-cb16fc6b544f",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:deafcba4b37dbfa85aa4d0667b544249939dcad236c0604524f8cee51223dccb"
+        },
+        {
+          "asset_version_id": "29849509-b57a-4f9c-b652-d04d57b614eb",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:3d4a91587c085d10803d737b3c3b72be5f8f3ca6747ee8153c60503cb25566c9"
+        },
+        {
+          "asset_version_id": "b0874293-039f-4539-86b9-e8a44bd0c0d2",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:945e15702574ec6c283a1d9ae7e88e67792772c330e59994afeadeef6622975e"
+        },
+        {
+          "asset_version_id": "3de1741a-4dfd-4395-a64a-88ab6cc6e1b7",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:d5f8c00537e23657d82cde98419e63c12014011c813575726db9468bf1330b85"
+        }
+      ]
+    },
+    {
+      "operation_id": "9e64360f-854b-4c00-b8fa-da4a772c3fdf",
+      "definition_name": "chapter.memo.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "9b9eb23d-d630-4dfa-8f0f-2cdc74492273",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:3b6393b437fdd91f9782671a95f7a3d5f202a6b4e2fffefc6fe844bd1734a0d5",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "e78977a7-0130-4966-8869-8add0289255e",
+          "status": "SETTLED",
+          "estimated_tokens": 131459,
+          "actual_tokens": 45309,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "e78977a7-0130-4966-8869-8add0289255e",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "b8b94a20-39ef-44e9-bd1d-83fe8b304d3f",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:7e4a9230bbd4c94f8489641f81eee31f2589a5643c75526357b9fb6e1b1fd35a"
+        },
+        {
+          "asset_version_id": "b2237fdc-9e91-4f67-ad58-9ab73506bd79",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:e0c1357edb291da39fa22ebb245dcbfa14f0b3e8aaad9c03c62a91d8a3eff362"
+        }
+      ]
+    },
+    {
+      "operation_id": "ba65ecc2-bafe-4ee9-9911-86d15324d1cd",
+      "definition_name": "chapter.draft.generate",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "f1e84420-6a13-48be-a63e-b96082939919",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:dcf5d3bc45bfde5df819c1f4d4524a659b3b29fdca1c5d49e5f360bb6da963a7",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "655cd3f4-e05e-4b5f-9c32-f60ab3c25e69",
+          "status": "SETTLED",
+          "estimated_tokens": 192132,
+          "actual_tokens": 63112,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "655cd3f4-e05e-4b5f-9c32-f60ab3c25e69",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "4791b44f-1898-4bb6-868b-fc4aba1e367c",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:9927f1161aea4c77c2bfc4dd2fdbb358454fe943ad0a5f886df80c31a4e1b766"
+        },
+        {
+          "asset_version_id": "bb1a3067-8453-407e-a65e-6e70d2c4d53f",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:48010a15a330250e775184446d8c9926ea5b8048805e8525c510447fb4d201c1"
+        }
+      ]
+    },
+    {
+      "operation_id": "bd7976db-a5f5-44b4-98e2-cf3857783863",
+      "definition_name": "longform.prose_review",
+      "status": "SUCCEEDED",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "88d5c97c-eabc-4dd4-8e79-e396f77dc530",
+          "status": "SUCCEEDED",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:db5bf7cf84c2ffb533ccfddbe56ec16b563fa2fad490a5ee2a3c7a5405172646",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "8cfa14f9-5459-46b8-8b87-2dd059858014",
+          "status": "SETTLED",
+          "estimated_tokens": 75933,
+          "actual_tokens": 32223,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "cost_status": "UNKNOWN",
+            "provider_id": "codex-cli",
+            "reservation_id": "8cfa14f9-5459-46b8-8b87-2dd059858014",
+            "budget_scope_id": "",
+            "real_model_call": true,
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "cost_settlement_basis": "ACCOUNT_ENTITLEMENT_UNKNOWN",
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "token_settlement_basis": "PROVIDER_USAGE_RECEIPT",
+            "resource_control_version": "billing-channel-resources.v1",
+            "entitlement_usage_reconciled": false
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "a0eb5e47-304a-4d2c-937f-fc3349eef1e0",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:8521e1938a54388768597744288792792ae3b90d49a9d02fd1e152c996ce329a"
+        },
+        {
+          "asset_version_id": "23794d9c-2103-41cc-bf07-4e7f433629e1",
+          "asset_type": "cost_ledger",
+          "content_hash": "sha256:d4c98cdfdc2f0e2d31249848626adf69b13c2b3eff906755e136facf8e020439"
+        }
+      ]
+    },
+    {
+      "operation_id": "ee74290a-fcf7-43d3-a6d0-31dd9343937a",
+      "definition_name": "longform.prose_review",
+      "status": "FAILED_FINAL",
+      "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+      "correlation_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+      "effects": [
+        {
+          "effect_id": "d54e4a8a-09ec-4396-b343-2126c5389afe",
+          "status": "UNKNOWN",
+          "provider": "production_execution_gateway",
+          "model_id": "gpt-6-sol",
+          "request_hash": "sha256:bef0d9ffcda09ae65f50b33c832b6f5b0c0101e3ba8515b7e77b90152696b384",
+          "provider_request_id": ""
+        }
+      ],
+      "reservations": [
+        {
+          "reservation_id": "a3bec1fa-c960-4701-b80a-df2a6d0e98dd",
+          "status": "HELD_UNKNOWN",
+          "estimated_tokens": 139256,
+          "actual_tokens": 0,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "effect_status": "UNKNOWN",
+            "budget_scope_id": "",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "external_state_unknown": true,
+            "resource_control_version": "billing-channel-resources.v1",
+            "started_cli_usage_unmeasured": true
+          }
+        }
+      ],
+      "model_call_and_cost_assets": [
+        {
+          "asset_version_id": "0623f49b-011d-4e04-97d7-ddd56c2e6425",
+          "asset_type": "model_call_log",
+          "content_hash": "sha256:ad1165fc26360f3de40abc49a2c07dd017480d179ffe325d03593c6c48100554"
+        }
+      ]
+    }
+  ],
+  "monetary_claim": "Missing or null settled amounts are not measured zero cost. actual_tokens=0 on HELD_UNKNOWN is a placeholder, not measured zero usage. The numeric accounted sum excludes unmeasured external usage and is not a complete billing total.",
+  "effect_count": 31,
+  "accounted_actual_tokens_field_sum": 1613193,
+  "unknown_token_reservations": [
+    "bcfe34c0-0352-4119-a1a0-1959a6d0ced4",
+    "a3bec1fa-c960-4701-b80a-df2a6d0e98dd"
+  ],
+  "unsettled_effects": [
+    {
+      "effect_id": "6559e375-1171-4ccf-834e-ff74f1422561",
+      "status": "UNKNOWN",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "request_hash": "sha256:2f46395d7dfddb56855f454f6cf00e19639402a4ba5ee47dd87631683151049e",
+      "provider_request_id": ""
+    },
+    {
+      "effect_id": "d54e4a8a-09ec-4396-b343-2126c5389afe",
+      "status": "UNKNOWN",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "request_hash": "sha256:bef0d9ffcda09ae65f50b33c832b6f5b0c0101e3ba8515b7e77b90152696b384",
+      "provider_request_id": ""
+    }
+  ]
+}

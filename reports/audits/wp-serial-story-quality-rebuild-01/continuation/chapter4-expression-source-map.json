@@ -1,0 +1,37 @@
+{
+  "native_asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+  "selected_asset_version_id": "87be8930-26fe-4aef-93ee-b5f29620dc8f",
+  "before_text_hash": "sha256:3fd5eee5a767364d98cf46df3c4d013636437fab7bd2e89e1b9b5cc2cf8215ce",
+  "after_text_hash": "sha256:bbc54b8239e47262c0643b0c75242e397995d0e4fc658ac54a23440c73950a72",
+  "edits": [
+    {
+      "start": 2552,
+      "end": 2562,
+      "before": "他让沈砚把练习分开做",
+      "after": "她让沈砚把练习分开做"
+    },
+    {
+      "start": 2742,
+      "end": 2752,
+      "before": "照他说的试了几口呼吸",
+      "after": "照她说的试了几口呼吸"
+    },
+    {
+      "start": 2907,
+      "end": 2941,
+      "before": "他已能说清那段亲身走过的路；下一段练习，也有了可以一回回核对的起点。",
+      "after": ""
+    }
+  ],
+  "source": "ASSISTANT_REVISION_PROPOSAL_THROUGH_NATIVE_EDITOR",
+  "source_review_run_id": "65657d05-e153-41ef-8178-4b2f6484c58d",
+  "source_lineage_id": "window-35a1145f-closing-summary-repetition",
+  "source_finding_digest": "sha256:a33444eb662f6c1e58c83f24fd24785daa6ccc48459a0116d9cfab4fdb70dda5",
+  "source_review_report_asset_version_id": "authority-output:bd7976db-a5f5-44b4-98e2-cf3857783863:longform.prose_review.report:v1",
+  "full_external_rewrite": false,
+  "expansion": false,
+  "native_provider_second_revision": "NOT_RUN",
+  "author_adoption": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "original_expression_failure_preserved": true
+}

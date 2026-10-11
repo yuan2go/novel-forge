@@ -1,0 +1,1473 @@
+{
+  "work_package": "WP-SERIAL-STORY-QUALITY-REBUILD-01",
+  "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+  "original_baseline_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "original40_preserved": true,
+  "root_plan_change": {
+    "proposal_id": "plan-change:fb7fa0de-481f-45e7-a3b5-0d10a61c8a97",
+    "source_type": "QUALITY_ISSUE",
+    "source_evidence_version_id": "authority-output:c8c4fc61-b982-4aa3-924e-97d10b85cb49:planning.change_request:v1",
+    "target_asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+    "proposed_asset_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+    "proposal_operation_id": "fb7fa0de-481f-45e7-a3b5-0d10a61c8a97",
+    "approval_operation_id": "bbc2c303-b468-4117-8d7d-436ef1814c82",
+    "activation_operation_id": "057ae77e-fcef-444a-b053-ca3fc42960a5",
+    "status": "ACTIVE"
+  },
+  "author_adoption": "NOT_GRANTED",
+  "isolated_operator_activation": "Native decision to execute a candidate, not a human literary acceptance",
+  "six_arc_successors": {
+    "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1": "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1",
+    "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1": "authority-output:9bccf7e9-bd03-4acc-b76c-241fd2085934:story_planning.candidate:v1",
+    "authority-output:7f027d4e-484b-440b-8ba8-d388bc1d9479:story_planning.candidate:v1": "authority-output:7c0c0c3e-2a3b-4472-9814-8d825617916c:story_planning.candidate:v1",
+    "authority-output:f25e1cb0-6271-447e-bbc9-66b3aab5a923:story_planning.candidate:v1": "authority-output:e8c62976-75a1-4208-86fc-563161f4b27c:story_planning.candidate:v1",
+    "authority-output:c41cccd8-414f-4636-8eed-2bc74e46f109:story_planning.candidate:v1": "authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1",
+    "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1": "authority-output:b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f:story_planning.candidate:v1"
+  },
+  "group_binding": {
+    "binding_id": "plan-binding:qid-learning-prose-01:authority-output:b829549c-4bda-48c3-9a76-1d202dda6a5f:story_planning.candidate:v1",
+    "project_id": "qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "contract_type": "CHAPTER_GROUP",
+    "logical_key": "chapter-group:containing:1",
+    "asset_version_id": "authority-output:b829549c-4bda-48c3-9a76-1d202dda6a5f:story_planning.candidate:v1",
+    "parent_version_id": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+    "execution_scope": "PLANNED",
+    "freshness": "CURRENT",
+    "created_by_operation_id": "05dccd8c-3eaa-45b7-844b-cb078bc2cf3b",
+    "version": 0,
+    "operation_id": "05dccd8c-3eaa-45b7-844b-cb078bc2cf3b",
+    "replayed": false
+  },
+  "chapters": [
+    {
+      "chapter": 1,
+      "request_id": "chapter-request:efd017b112e36856f077ffdba96a4c6a50fc4a40f676750010efc3e955ef7985",
+      "root_operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+      "stage_outputs": [
+        {
+          "operation_id": "8dda26c0-fbb7-4596-8b5b-c90e5f6417fc",
+          "definition_name": "chapter.plan.materialize",
+          "asset_version_id": "authority-output:8dda26c0-fbb7-4596-8b5b-c90e5f6417fc:chapter.plan:v1",
+          "content_hash": "sha256:6408a0092ddf91aad2177ac37c20932ead409a095b2e41cf43972d8a393cc93f"
+        },
+        {
+          "operation_id": "b73a7746-2105-4b8e-ad24-b7ea139273c9",
+          "definition_name": "chapter.execution_intent.prepare",
+          "asset_version_id": "authority-output:b73a7746-2105-4b8e-ad24-b7ea139273c9:chapter.execution_intent:v1",
+          "content_hash": "sha256:f4ebc4b5e9768ca33b70a4e7b1a36839dc8d34e94679191424708e1715315a0f"
+        },
+        {
+          "operation_id": "2035804d-99f1-4247-8886-8aef7a0ce3dc",
+          "definition_name": "chapter.memo.generate",
+          "asset_version_id": "authority-output:2035804d-99f1-4247-8886-8aef7a0ce3dc:chapter.memo:v1",
+          "content_hash": "sha256:f51cde8c3437e7a6a2f812e4d94bd3c28d6405694d765b4a5d0fc82c30714379"
+        },
+        {
+          "operation_id": "7bc73c12-84ac-47ca-a2c5-295ffd123dd1",
+          "definition_name": "chapter.context.retrieve",
+          "asset_version_id": "authority-output:7bc73c12-84ac-47ca-a2c5-295ffd123dd1:chapter.retrieval:v1",
+          "content_hash": "sha256:296f18e8454b26b7b5cf19e5cb55ad83c97cd612220a879164b8790c95db284c"
+        },
+        {
+          "operation_id": "f59d139d-93f4-4417-a43f-04a4e77335c5",
+          "definition_name": "chapter.context.build",
+          "asset_version_id": "authority-output:f59d139d-93f4-4417-a43f-04a4e77335c5:chapter.context:v1",
+          "content_hash": "sha256:0b9892038cac8af16ecaa264bb9d13fd4f2b3ec474999172c0dff521e98058cc"
+        },
+        {
+          "operation_id": "4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f",
+          "definition_name": "chapter.draft.generate",
+          "asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+          "content_hash": "sha256:bdf6d79b755871ec3e1983e5ffd04216af2b4b27954f419e238d38dd03044a24"
+        }
+      ],
+      "memo_asset_version_id": "authority-output:2035804d-99f1-4247-8886-8aef7a0ce3dc:chapter.memo:v1",
+      "memo_content_hash": "sha256:f51cde8c3437e7a6a2f812e4d94bd3c28d6405694d765b4a5d0fc82c30714379",
+      "native_asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+      "native_content_hash": "sha256:bdf6d79b755871ec3e1983e5ffd04216af2b4b27954f419e238d38dd03044a24",
+      "selected_asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+      "selected_content_hash": "sha256:054c415fbb5d92474fb83261036e93b8b0774fe8d5ee8c875fd0ec7894ada613",
+      "writer_effect_id": "8e093705-5de6-47aa-9e5b-46f6d810bb0b",
+      "frozen_prompt_hash": "sha256:7de4df9438a351b21bdc714cedb438a24769878fc6048a43f3001e6ca4778a03",
+      "working_predecessor_sources": []
+    },
+    {
+      "chapter": 2,
+      "request_id": "chapter-request:b9f7ea12ac720f64fab4fe6814708b2fe1d60641a3bd42c4e56889d224a44802",
+      "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+      "stage_outputs": [
+        {
+          "operation_id": "68dfc68e-6108-4597-9662-2d019317ab34",
+          "definition_name": "chapter.plan.materialize",
+          "asset_version_id": "authority-output:68dfc68e-6108-4597-9662-2d019317ab34:chapter.plan:v1",
+          "content_hash": "sha256:824aeb6d09f415969ed743425931b68bc18ace80cc745924cae2e714ccdf6a72"
+        },
+        {
+          "operation_id": "0a53efff-abfe-44e9-a922-aba704b84b30",
+          "definition_name": "chapter.execution_intent.prepare",
+          "asset_version_id": "authority-output:0a53efff-abfe-44e9-a922-aba704b84b30:chapter.execution_intent:v1",
+          "content_hash": "sha256:3028a1f3100ea9484ed002af47e03a97d7eba6d7b924b5a1d82456a919207c28"
+        },
+        {
+          "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+          "definition_name": "chapter.memo.generate",
+          "asset_version_id": "authority-output:212b8f7f-beb3-49b1-af65-cc276bce17f8:chapter.memo:v1",
+          "content_hash": "sha256:16af203c9f6afce729627b2013b29a3fb39aa19355a05d5f13cb3ac430cc55bc"
+        },
+        {
+          "operation_id": "a66f6f9f-04f4-4dc7-aa00-4eeca8967277",
+          "definition_name": "chapter.context.retrieve",
+          "asset_version_id": "authority-output:a66f6f9f-04f4-4dc7-aa00-4eeca8967277:chapter.retrieval:v1",
+          "content_hash": "sha256:2b7b2fdc805ac772d9cfc8eb30a6c10ae17393a93d709e997b0fdce88fb68bc4"
+        },
+        {
+          "operation_id": "81f7fa8b-56f8-4e4e-9292-dada7fca7605",
+          "definition_name": "chapter.context.build",
+          "asset_version_id": "authority-output:81f7fa8b-56f8-4e4e-9292-dada7fca7605:chapter.context:v1",
+          "content_hash": "sha256:3e54a7df04b6b6b36d252a246f88caedb31e556a66d499c495b9f5f68895d069"
+        },
+        {
+          "operation_id": "dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e",
+          "definition_name": "chapter.draft.generate",
+          "asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+          "content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa"
+        }
+      ],
+      "memo_asset_version_id": "authority-output:212b8f7f-beb3-49b1-af65-cc276bce17f8:chapter.memo:v1",
+      "memo_content_hash": "sha256:16af203c9f6afce729627b2013b29a3fb39aa19355a05d5f13cb3ac430cc55bc",
+      "native_asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "native_content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+      "selected_asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "selected_content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+      "writer_effect_id": "6ab064db-969c-47fd-90c4-3c80d838147b",
+      "frozen_prompt_hash": "sha256:66471c038fd7fcb90d2c34f7b010488c2698a148fb1f682403003d508814a134",
+      "working_predecessor_sources": [
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 1,
+          "passages": [
+            {
+              "end": 89,
+              "text": "清晨的山气还没有散，沈砚走到青岚宗外门时，鞋底沾着一层薄泥。他在山村走惯了土路，到了这里，仍先看脚下：石阶边缘磨得发亮，往上是外门的院墙；另一条路绕过墙角，顺着山脊伸向雾里。\n\n",
+              "start": 0,
+              "text_hash": "sha256:22890953b9291dd9a826b72a95a654c100dcab3ed8902e01f97054b7f5586876"
+            },
+            {
+              "end": 140,
+              "text": "他沿那条路望了一会儿。山外还有多远，他不知道。真有一日能凭自己的本领出去，也得先从眼前这道门进去。\n\n",
+              "start": 89,
+              "text_hash": "sha256:18e74d942908adb7e435ddcfbc4a045a6379ec780218ef4beb3e081c67292799"
+            },
+            {
+              "end": 247,
+              "text": "门边设着一张长桌，几名来人依次向桌后的人报上姓名。轮到沈砚，桌后的人抬头等着，他却先看见名册上密密的字，喉咙有些发紧。他把包袱往肩上提稳，开口道：“我叫沈砚，十六岁，从山村来。我想入青岚宗外门，该从哪里办起？”\n\n",
+              "start": 140,
+              "text_hash": "sha256:a898d6a9e193ae41fddff4210404be2032a2da4037abcdc9d7e1c12b41395ec5"
+            },
+            {
+              "end": 357,
+              "text": "那人让他把姓名、年岁和来处再说一遍，听清后落笔，接着指给他看名册旁留出的地方。沈砚照着指示按下指印。墨色沾在指腹，他等纸上的印记干了些，才收回手。桌后的人又从一排木牌里取下一块，把名册上的名字与牌上的字对过，递给他。\n\n",
+              "start": 247,
+              "text_hash": "sha256:ad9e191ec3009b3887fbc9266f2b5e9143bffcc8add9d7a8b82e080c28a132a8"
+            },
+            {
+              "end": 402,
+              "text": "“收好。进去后先到东边的劳作院报到，住处也在那里问清。今天该做的事，到了有人告诉你。”\n\n",
+              "start": 357,
+              "text_hash": "sha256:cbe822a4ef6e2f93c18ade87639ef796881ed56614e11539fd75c0fc7f326738"
+            },
+            {
+              "end": 429,
+              "text": "沈砚握住木牌，没有马上走：“这样就算办完入门了？”\n\n",
+              "start": 402,
+              "text_hash": "sha256:97afda1d9a1e6ee0bc12db491f5e6f87442c5cb46106547d0d45a6f8c211e62a"
+            },
+            {
+              "end": 480,
+              "text": "“名已记下，牌也领了。你现在是外门弟子。”那人看了一眼他背上的包袱，“去吧，别让下一处等到午后。”\n\n",
+              "start": 429,
+              "text_hash": "sha256:b7e2e2d45983207d62bbc01efdf34912ae9a685d855aba0aae4dc053282451be"
+            },
+            {
+              "end": 570,
+              "text": "沈砚让开桌前的位置，把木牌翻过来看了看。上面的名字确是自己的，指腹还留着一点未擦净的墨。他从山村带来的东西仍只有一只包袱；可下次有人问起他为何站在院里，他已有了能拿出来的凭据。\n\n",
+              "start": 480,
+              "text_hash": "sha256:2feffc7ffd7f8367db153bef664eb58753f1e97102c10f376216e27219a36301"
+            },
+            {
+              "end": 628,
+              "text": "穿过门洞时，他回头看了一眼。那条通向山外的路已经被墙角挡住。沈砚把木牌放进衣襟，照着刚才听到的方向，先往东边去。\n\n",
+              "start": 570,
+              "text_hash": "sha256:46cb43755c11513905f13e67635c87104eab8e1c8b53eca127141c31af1c07a3"
+            },
+            {
+              "end": 754,
+              "text": "劳作院里有人正在把木柴从露天场地挪进棚下。沈砚出示木牌，问清住处，把包袱放到指定的床位，再回来听今日的活。负责分派的人指着柴棚说，今日有十八捆柴须搬进去，绳子不能散，码好后要留出通道；往后几日，这处柴棚的早间收拾由他和陆衡一道做，做完须回来报一声。\n\n",
+              "start": 628,
+              "text_hash": "sha256:abc45c85b4ff7ba3be59608d1883f7dceaebaa975a9e812cdbc6564b3f12e861"
+            },
+            {
+              "end": 799,
+              "text": "沈砚走到柴堆旁，陆衡正蹲着检查一捆柴的绳结。他把松出的绳头重新穿过结眼，拉紧了才起身。\n\n",
+              "start": 754,
+              "text_hash": "sha256:fd99c81b80ed046c1d40bbe19fb9c3f2d333c82ef51f10520272947ed1563abd"
+            },
+            {
+              "end": 868,
+              "text": "“你是沈砚？”陆衡看了一眼他胸前露出的木牌，“十八捆都在这儿。先说怎么分。我午后有自己的练习，日头过了那边檐角，我就得收手去做准备。”\n\n",
+              "start": 799,
+              "text_hash": "sha256:f2e7897b53d67b4021f42aa63ea3650f6e1e0024db4d4f421144c736a5e9f129"
+            },
+            {
+              "end": 941,
+              "text": "沈砚顺着他指的方向看去。院墙的影子还短，时间却不是可以随便拖的。他也想知道明日何时能开始学，便问：“今天搬完就算完？往后早间也只管这处柴棚？”\n\n",
+              "start": 868,
+              "text_hash": "sha256:7e74d5efc4afb8b0d6940625888e0de058d2caf344d97a400b5fb1e76be80102"
+            },
+            {
+              "end": 1008,
+              "text": "“分派的人说的是这处。来多少要看当天。”陆衡用脚尖点了点地上两捆较粗的柴，“要是每回都等搬到一半才说加活，我没法留住练习的工夫。”\n\n",
+              "start": 941,
+              "text_hash": "sha256:3ee8d1966b028a33164bc228d6c373d37e5fed765a23a997718953b07629f94b"
+            },
+            {
+              "end": 1100,
+              "text": "沈砚想了想：“今天我搬十捆，你搬八捆。你会看绳结，棚里怎么码稳也由你先定，我照着放。往后早间我先把柴运到棚口，你收进去码好；若哪天多得做不完，就当面重新分，别算成谁悄悄欠了谁的。”\n\n",
+              "start": 1008,
+              "text_hash": "sha256:6608f254508d0f7220bc48e4e3d4bde707913d4a38ba1b688a1a7f7bb2a7bbde"
+            },
+            {
+              "end": 1150,
+              "text": "陆衡没有立刻应。他抬起一捆试了试重量，又看向棚内的空位：“十捆你扛得住？山路不远，来回也费腿。”\n\n",
+              "start": 1100,
+              "text_hash": "sha256:1cc2e45ec9ef2f3479d54c4290e9ad83bed1f1c17177fe59a547447a45c40e0d"
+            },
+            {
+              "end": 1187,
+              "text": "“先走两趟，看我能不能照这个数做。”沈砚说，“要是做不到，我当场说。”\n\n",
+              "start": 1150,
+              "text_hash": "sha256:04a8439774a8b7da7d767af92d7062d4b39b8eda2a5ce05891aff8c6cad7e926"
+            },
+            {
+              "end": 1233,
+              "text": "“行。”陆衡把那捆柴放回去，“我先把棚里空出来。你别只图快，绳子磨断了，散柴还得重捆。”\n\n",
+              "start": 1187,
+              "text_hash": "sha256:362eec34ff2671eba0601d122a07d63859b77328aeecc0ba36f5ae58c6f71017"
+            },
+            {
+              "end": 1365,
+              "text": "沈砚挑了两捆绳结紧的，从柴堆到棚口走了一趟。场地有一小段斜坡，清晨的湿土踩上去发滑。他下坡时把步子放短，到平地再加快。第二趟，他发现两捆柴一大一小，肩上的木棍总向一边歪，便停下调换位置。棚里传来木柴落地的声响，陆衡已把通道旁的杂物移走，在最下层摆出平整的一排。\n\n",
+              "start": 1233,
+              "text_hash": "sha256:4978464d932f19bd64d78a5031677e57816e0080e6f8c2173c26092abf110ca3"
+            },
+            {
+              "end": 1397,
+              "text": "“先放这里。”陆衡指着棚口一块干地，“我来收，别把路堵了。”\n\n",
+              "start": 1365,
+              "text_hash": "sha256:ed4a37297f52e0a9c5d5190dab838e9cfe1d65438d4ecb8683e78fdaa8bbddd4"
+            },
+            {
+              "end": 1530,
+              "text": "沈砚照做。等他搬来第五捆，陆衡已经把自己的头两捆也送到棚内，还抽紧了一道将松未松的绳。两人各做各的份，经过棚口时却都得看对方留下的地方够不够用。沈砚后来把柴放得太靠外，陆衡叫住他，示意他往里挪半臂；下一趟陆衡又把最下层的一捆转了方向，好让沈砚带来的粗柴有地方落。\n\n",
+              "start": 1397,
+              "text_hash": "sha256:9e3e3b831fe72346254bb2d9bc1357b83345b6270e54c5d33ff2a446307fd79c"
+            },
+            {
+              "end": 1668,
+              "text": "临近午间，十八捆都进了棚。沈砚扛完自己说定的十捆，肩膀被木棍压得发酸，最后一趟仍先把柴放稳，才松开手。陆衡搬了八捆，随后沿着柴垛检查，抽出一根横在通道里的短枝，发现上层有两捆压得不齐，便叫沈砚扶住一侧，两人把它们重新码好。陆衡退开一步看，才说：“这样能走人，也不容易塌。”\n\n",
+              "start": 1530,
+              "text_hash": "sha256:940651cced69527feb25eff5bb33d2ecc95dfc9d2e7c150d832dc49c973ded24"
+            },
+            {
+              "end": 1761,
+              "text": "沈砚从棚口走了一遍，衣袖没有擦到柴垛。场地上的柴已经清空，背绳和木棍也归回原处。他们一道向分派的人报了数。那人到棚前看过通道和柴垛，在今日的记录上划下完成的一笔，问起往后早间如何做。\n\n",
+              "start": 1668,
+              "text_hash": "sha256:3e9a71d039574990e8df9e583acb0833ccc3dce31028645546d40442d498a737"
+            },
+            {
+              "end": 1801,
+              "text": "“我先搬到棚口，陆衡收进去、码稳。”沈砚说，“多出来的量，我们当日再商量。”\n\n",
+              "start": 1761,
+              "text_hash": "sha256:c0b614c4efa95f1e5a32084909bca0aa3228ab21613a32494492d7fb521fec73"
+            },
+            {
+              "end": 1836,
+              "text": "陆衡接道：“午后那段我要留给练习。早间若有变动，请早些告诉我们。”\n\n",
+              "start": 1801,
+              "text_hash": "sha256:46c6038344fe1e4e99974a97ae2ff61e4391537672238233665ba46a9a3dde05"
+            },
+            {
+              "end": 1870,
+              "text": "分派的人点头，把两人的分担记在旁边：“照这个做。今天的活完了。”\n\n",
+              "start": 1836,
+              "text_hash": "sha256:c3429726050bf3b8ee005507d3e9795c72ec63ae447640f21cd238a2ca386c4f"
+            },
+            {
+              "end": 1911,
+              "text": "出了柴棚，陆衡看了看院墙上的日影，眉头松了些。“我得走了。明早先到这儿会合。”\n\n",
+              "start": 1870,
+              "text_hash": "sha256:1ba781292985160f0f6b0de5427b33ccd7395c496585902efaca2ae686c64f55"
+            },
+            {
+              "end": 2013,
+              "text": "“好。”沈砚答应下来。他知道陆衡赶的是自己说过的时段，没有再拉着他闲谈。沈砚回到住处洗净手上的木屑，衣襟里的木牌碰着胸口；床位找到了，第一天的活也有了结果。明日早间该往哪里走、和谁一道做，他已能说清。\n\n",
+              "start": 1911,
+              "text_hash": "sha256:0bc435550949882e894c7f7da2f6e0263710c44a34b168a8a9acef56fbaf901d"
+            },
+            {
+              "end": 2176,
+              "text": "傍晚，新入门的人被叫到廊下，听基础吐纳的讲解。讲解的人先让他们记住坐姿和呼吸的次序：背要放直，呼吸放缓，注意气息出入时身体哪里先动、哪里跟着动；急着憋气，反而容易把原本能察觉的变化弄乱。他说得不快，示范了一遍，才让众人记着明日有空时自行开始尝试。有人问多久能感到气，他只答，先照着做，再分清实际感觉到的与自己盼着感觉到的。\n\n",
+              "start": 2013,
+              "text_hash": "sha256:0ed25b28b5600e8b60c56a0ef8d7a4234d06608c03af0c9209da997e91872f59"
+            },
+            {
+              "end": 2327,
+              "text": "沈砚站在廊下，默默把次序记了一遍。他今日扛柴时也曾靠调匀呼吸走完斜坡，但那只是寻常喘息，不能拿来回答刚才的问题。他没有坐下来试，明日的早间劳动和练习时间都已说定，不必在疲倦时抢这一回。夜色渐深，他摸了摸洗净的指腹，想到清早名册上的指印，又想到明日坐下后要数清自己的呼吸。那时能不能感觉到气，他还不知道。",
+              "start": 2176,
+              "text_hash": "sha256:659b93248e95366da7b0d226f15be06972535660bb319395ea2554e3a0d6c8b4"
+            }
+          ],
+          "text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+          "content_hash": "sha256:054c415fbb5d92474fb83261036e93b8b0774fe8d5ee8c875fd0ec7894ada613",
+          "omitted_ranges": [],
+          "asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+          "source_characters": 2327,
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "chapter": 3,
+      "request_id": "chapter-request:272171f731e99573517d071662e1bff46e7d56d8e2fcf0871ed3ebf6fac80885",
+      "root_operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+      "stage_outputs": [
+        {
+          "operation_id": "5689b5da-7efa-4d2e-9de1-1130849a1b54",
+          "definition_name": "chapter.plan.materialize",
+          "asset_version_id": "authority-output:5689b5da-7efa-4d2e-9de1-1130849a1b54:chapter.plan:v1",
+          "content_hash": "sha256:6bb6fff4c50b6dc054ebf49d1a3f5e09758fb145ee396d58b2ddc0b983a1872d"
+        },
+        {
+          "operation_id": "21f69203-fff8-44a8-b07f-d692d4c15531",
+          "definition_name": "chapter.execution_intent.prepare",
+          "asset_version_id": "authority-output:21f69203-fff8-44a8-b07f-d692d4c15531:chapter.execution_intent:v1",
+          "content_hash": "sha256:e18b35b87201a3aaf9b21a0fdc230ba7b5733eab7cab71ca4f1b5306c1db79ec"
+        },
+        {
+          "operation_id": "ff9c5f15-a54f-4c0e-a1eb-3f0acc14390c",
+          "definition_name": "chapter.memo.generate",
+          "asset_version_id": "authority-output:ff9c5f15-a54f-4c0e-a1eb-3f0acc14390c:chapter.memo:v1",
+          "content_hash": "sha256:e12279d423f050b6ed4875157aae592c82bdc681e615c26f8eae95060ffba477"
+        },
+        {
+          "operation_id": "de37cbd4-f96f-459d-b6ec-b5de2c25325d",
+          "definition_name": "chapter.context.retrieve",
+          "asset_version_id": "authority-output:de37cbd4-f96f-459d-b6ec-b5de2c25325d:chapter.retrieval:v1",
+          "content_hash": "sha256:61d813dedb072a941ed959c2714d5a1b04f8a3e3901b01344dc8e0417b8a2c78"
+        },
+        {
+          "operation_id": "41edb50b-67ea-4557-a0f9-98222ddec6d1",
+          "definition_name": "chapter.context.build",
+          "asset_version_id": "authority-output:41edb50b-67ea-4557-a0f9-98222ddec6d1:chapter.context:v1",
+          "content_hash": "sha256:90ea6e13c140dd734a5beb4eb5c88c5601d9cd3a165bc336801ded50cc7140c8"
+        },
+        {
+          "operation_id": "86348ae4-6885-4d29-9ccf-e90012590c20",
+          "definition_name": "chapter.draft.generate",
+          "asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+          "content_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946"
+        }
+      ],
+      "memo_asset_version_id": "authority-output:ff9c5f15-a54f-4c0e-a1eb-3f0acc14390c:chapter.memo:v1",
+      "memo_content_hash": "sha256:e12279d423f050b6ed4875157aae592c82bdc681e615c26f8eae95060ffba477",
+      "native_asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "native_content_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+      "selected_asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "selected_content_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+      "writer_effect_id": "6850ff71-e2be-43af-968c-f687f6394bd0",
+      "frozen_prompt_hash": "sha256:090bddc024479f37d21703477e1c227ad25c62930d62c1c030431fb110cb4caf",
+      "working_predecessor_sources": [
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 1,
+          "passages": [
+            {
+              "end": 89,
+              "text": "清晨的山气还没有散，沈砚走到青岚宗外门时，鞋底沾着一层薄泥。他在山村走惯了土路，到了这里，仍先看脚下：石阶边缘磨得发亮，往上是外门的院墙；另一条路绕过墙角，顺着山脊伸向雾里。\n\n",
+              "start": 0,
+              "text_hash": "sha256:22890953b9291dd9a826b72a95a654c100dcab3ed8902e01f97054b7f5586876"
+            },
+            {
+              "end": 140,
+              "text": "他沿那条路望了一会儿。山外还有多远，他不知道。真有一日能凭自己的本领出去，也得先从眼前这道门进去。\n\n",
+              "start": 89,
+              "text_hash": "sha256:18e74d942908adb7e435ddcfbc4a045a6379ec780218ef4beb3e081c67292799"
+            },
+            {
+              "end": 247,
+              "text": "门边设着一张长桌，几名来人依次向桌后的人报上姓名。轮到沈砚，桌后的人抬头等着，他却先看见名册上密密的字，喉咙有些发紧。他把包袱往肩上提稳，开口道：“我叫沈砚，十六岁，从山村来。我想入青岚宗外门，该从哪里办起？”\n\n",
+              "start": 140,
+              "text_hash": "sha256:a898d6a9e193ae41fddff4210404be2032a2da4037abcdc9d7e1c12b41395ec5"
+            },
+            {
+              "end": 357,
+              "text": "那人让他把姓名、年岁和来处再说一遍，听清后落笔，接着指给他看名册旁留出的地方。沈砚照着指示按下指印。墨色沾在指腹，他等纸上的印记干了些，才收回手。桌后的人又从一排木牌里取下一块，把名册上的名字与牌上的字对过，递给他。\n\n",
+              "start": 247,
+              "text_hash": "sha256:ad9e191ec3009b3887fbc9266f2b5e9143bffcc8add9d7a8b82e080c28a132a8"
+            },
+            {
+              "end": 402,
+              "text": "“收好。进去后先到东边的劳作院报到，住处也在那里问清。今天该做的事，到了有人告诉你。”\n\n",
+              "start": 357,
+              "text_hash": "sha256:cbe822a4ef6e2f93c18ade87639ef796881ed56614e11539fd75c0fc7f326738"
+            },
+            {
+              "end": 429,
+              "text": "沈砚握住木牌，没有马上走：“这样就算办完入门了？”\n\n",
+              "start": 402,
+              "text_hash": "sha256:97afda1d9a1e6ee0bc12db491f5e6f87442c5cb46106547d0d45a6f8c211e62a"
+            },
+            {
+              "end": 480,
+              "text": "“名已记下，牌也领了。你现在是外门弟子。”那人看了一眼他背上的包袱，“去吧，别让下一处等到午后。”\n\n",
+              "start": 429,
+              "text_hash": "sha256:b7e2e2d45983207d62bbc01efdf34912ae9a685d855aba0aae4dc053282451be"
+            },
+            {
+              "end": 570,
+              "text": "沈砚让开桌前的位置，把木牌翻过来看了看。上面的名字确是自己的，指腹还留着一点未擦净的墨。他从山村带来的东西仍只有一只包袱；可下次有人问起他为何站在院里，他已有了能拿出来的凭据。\n\n",
+              "start": 480,
+              "text_hash": "sha256:2feffc7ffd7f8367db153bef664eb58753f1e97102c10f376216e27219a36301"
+            },
+            {
+              "end": 628,
+              "text": "穿过门洞时，他回头看了一眼。那条通向山外的路已经被墙角挡住。沈砚把木牌放进衣襟，照着刚才听到的方向，先往东边去。\n\n",
+              "start": 570,
+              "text_hash": "sha256:46cb43755c11513905f13e67635c87104eab8e1c8b53eca127141c31af1c07a3"
+            },
+            {
+              "end": 754,
+              "text": "劳作院里有人正在把木柴从露天场地挪进棚下。沈砚出示木牌，问清住处，把包袱放到指定的床位，再回来听今日的活。负责分派的人指着柴棚说，今日有十八捆柴须搬进去，绳子不能散，码好后要留出通道；往后几日，这处柴棚的早间收拾由他和陆衡一道做，做完须回来报一声。\n\n",
+              "start": 628,
+              "text_hash": "sha256:abc45c85b4ff7ba3be59608d1883f7dceaebaa975a9e812cdbc6564b3f12e861"
+            },
+            {
+              "end": 799,
+              "text": "沈砚走到柴堆旁，陆衡正蹲着检查一捆柴的绳结。他把松出的绳头重新穿过结眼，拉紧了才起身。\n\n",
+              "start": 754,
+              "text_hash": "sha256:fd99c81b80ed046c1d40bbe19fb9c3f2d333c82ef51f10520272947ed1563abd"
+            },
+            {
+              "end": 868,
+              "text": "“你是沈砚？”陆衡看了一眼他胸前露出的木牌，“十八捆都在这儿。先说怎么分。我午后有自己的练习，日头过了那边檐角，我就得收手去做准备。”\n\n",
+              "start": 799,
+              "text_hash": "sha256:f2e7897b53d67b4021f42aa63ea3650f6e1e0024db4d4f421144c736a5e9f129"
+            },
+            {
+              "end": 941,
+              "text": "沈砚顺着他指的方向看去。院墙的影子还短，时间却不是可以随便拖的。他也想知道明日何时能开始学，便问：“今天搬完就算完？往后早间也只管这处柴棚？”\n\n",
+              "start": 868,
+              "text_hash": "sha256:7e74d5efc4afb8b0d6940625888e0de058d2caf344d97a400b5fb1e76be80102"
+            },
+            {
+              "end": 1008,
+              "text": "“分派的人说的是这处。来多少要看当天。”陆衡用脚尖点了点地上两捆较粗的柴，“要是每回都等搬到一半才说加活，我没法留住练习的工夫。”\n\n",
+              "start": 941,
+              "text_hash": "sha256:3ee8d1966b028a33164bc228d6c373d37e5fed765a23a997718953b07629f94b"
+            },
+            {
+              "end": 1100,
+              "text": "沈砚想了想：“今天我搬十捆，你搬八捆。你会看绳结，棚里怎么码稳也由你先定，我照着放。往后早间我先把柴运到棚口，你收进去码好；若哪天多得做不完，就当面重新分，别算成谁悄悄欠了谁的。”\n\n",
+              "start": 1008,
+              "text_hash": "sha256:6608f254508d0f7220bc48e4e3d4bde707913d4a38ba1b688a1a7f7bb2a7bbde"
+            },
+            {
+              "end": 1150,
+              "text": "陆衡没有立刻应。他抬起一捆试了试重量，又看向棚内的空位：“十捆你扛得住？山路不远，来回也费腿。”\n\n",
+              "start": 1100,
+              "text_hash": "sha256:1cc2e45ec9ef2f3479d54c4290e9ad83bed1f1c17177fe59a547447a45c40e0d"
+            },
+            {
+              "end": 1187,
+              "text": "“先走两趟，看我能不能照这个数做。”沈砚说，“要是做不到，我当场说。”\n\n",
+              "start": 1150,
+              "text_hash": "sha256:04a8439774a8b7da7d767af92d7062d4b39b8eda2a5ce05891aff8c6cad7e926"
+            },
+            {
+              "end": 1233,
+              "text": "“行。”陆衡把那捆柴放回去，“我先把棚里空出来。你别只图快，绳子磨断了，散柴还得重捆。”\n\n",
+              "start": 1187,
+              "text_hash": "sha256:362eec34ff2671eba0601d122a07d63859b77328aeecc0ba36f5ae58c6f71017"
+            },
+            {
+              "end": 1365,
+              "text": "沈砚挑了两捆绳结紧的，从柴堆到棚口走了一趟。场地有一小段斜坡，清晨的湿土踩上去发滑。他下坡时把步子放短，到平地再加快。第二趟，他发现两捆柴一大一小，肩上的木棍总向一边歪，便停下调换位置。棚里传来木柴落地的声响，陆衡已把通道旁的杂物移走，在最下层摆出平整的一排。\n\n",
+              "start": 1233,
+              "text_hash": "sha256:4978464d932f19bd64d78a5031677e57816e0080e6f8c2173c26092abf110ca3"
+            },
+            {
+              "end": 1397,
+              "text": "“先放这里。”陆衡指着棚口一块干地，“我来收，别把路堵了。”\n\n",
+              "start": 1365,
+              "text_hash": "sha256:ed4a37297f52e0a9c5d5190dab838e9cfe1d65438d4ecb8683e78fdaa8bbddd4"
+            },
+            {
+              "end": 1530,
+              "text": "沈砚照做。等他搬来第五捆，陆衡已经把自己的头两捆也送到棚内，还抽紧了一道将松未松的绳。两人各做各的份，经过棚口时却都得看对方留下的地方够不够用。沈砚后来把柴放得太靠外，陆衡叫住他，示意他往里挪半臂；下一趟陆衡又把最下层的一捆转了方向，好让沈砚带来的粗柴有地方落。\n\n",
+              "start": 1397,
+              "text_hash": "sha256:9e3e3b831fe72346254bb2d9bc1357b83345b6270e54c5d33ff2a446307fd79c"
+            },
+            {
+              "end": 1668,
+              "text": "临近午间，十八捆都进了棚。沈砚扛完自己说定的十捆，肩膀被木棍压得发酸，最后一趟仍先把柴放稳，才松开手。陆衡搬了八捆，随后沿着柴垛检查，抽出一根横在通道里的短枝，发现上层有两捆压得不齐，便叫沈砚扶住一侧，两人把它们重新码好。陆衡退开一步看，才说：“这样能走人，也不容易塌。”\n\n",
+              "start": 1530,
+              "text_hash": "sha256:940651cced69527feb25eff5bb33d2ecc95dfc9d2e7c150d832dc49c973ded24"
+            },
+            {
+              "end": 1761,
+              "text": "沈砚从棚口走了一遍，衣袖没有擦到柴垛。场地上的柴已经清空，背绳和木棍也归回原处。他们一道向分派的人报了数。那人到棚前看过通道和柴垛，在今日的记录上划下完成的一笔，问起往后早间如何做。\n\n",
+              "start": 1668,
+              "text_hash": "sha256:3e9a71d039574990e8df9e583acb0833ccc3dce31028645546d40442d498a737"
+            },
+            {
+              "end": 1801,
+              "text": "“我先搬到棚口，陆衡收进去、码稳。”沈砚说，“多出来的量，我们当日再商量。”\n\n",
+              "start": 1761,
+              "text_hash": "sha256:c0b614c4efa95f1e5a32084909bca0aa3228ab21613a32494492d7fb521fec73"
+            },
+            {
+              "end": 1836,
+              "text": "陆衡接道：“午后那段我要留给练习。早间若有变动，请早些告诉我们。”\n\n",
+              "start": 1801,
+              "text_hash": "sha256:46c6038344fe1e4e99974a97ae2ff61e4391537672238233665ba46a9a3dde05"
+            },
+            {
+              "end": 1870,
+              "text": "分派的人点头，把两人的分担记在旁边：“照这个做。今天的活完了。”\n\n",
+              "start": 1836,
+              "text_hash": "sha256:c3429726050bf3b8ee005507d3e9795c72ec63ae447640f21cd238a2ca386c4f"
+            },
+            {
+              "end": 1911,
+              "text": "出了柴棚，陆衡看了看院墙上的日影，眉头松了些。“我得走了。明早先到这儿会合。”\n\n",
+              "start": 1870,
+              "text_hash": "sha256:1ba781292985160f0f6b0de5427b33ccd7395c496585902efaca2ae686c64f55"
+            },
+            {
+              "end": 2013,
+              "text": "“好。”沈砚答应下来。他知道陆衡赶的是自己说过的时段，没有再拉着他闲谈。沈砚回到住处洗净手上的木屑，衣襟里的木牌碰着胸口；床位找到了，第一天的活也有了结果。明日早间该往哪里走、和谁一道做，他已能说清。\n\n",
+              "start": 1911,
+              "text_hash": "sha256:0bc435550949882e894c7f7da2f6e0263710c44a34b168a8a9acef56fbaf901d"
+            },
+            {
+              "end": 2176,
+              "text": "傍晚，新入门的人被叫到廊下，听基础吐纳的讲解。讲解的人先让他们记住坐姿和呼吸的次序：背要放直，呼吸放缓，注意气息出入时身体哪里先动、哪里跟着动；急着憋气，反而容易把原本能察觉的变化弄乱。他说得不快，示范了一遍，才让众人记着明日有空时自行开始尝试。有人问多久能感到气，他只答，先照着做，再分清实际感觉到的与自己盼着感觉到的。\n\n",
+              "start": 2013,
+              "text_hash": "sha256:0ed25b28b5600e8b60c56a0ef8d7a4234d06608c03af0c9209da997e91872f59"
+            },
+            {
+              "end": 2327,
+              "text": "沈砚站在廊下，默默把次序记了一遍。他今日扛柴时也曾靠调匀呼吸走完斜坡，但那只是寻常喘息，不能拿来回答刚才的问题。他没有坐下来试，明日的早间劳动和练习时间都已说定，不必在疲倦时抢这一回。夜色渐深，他摸了摸洗净的指腹，想到清早名册上的指印，又想到明日坐下后要数清自己的呼吸。那时能不能感觉到气，他还不知道。",
+              "start": 2176,
+              "text_hash": "sha256:659b93248e95366da7b0d226f15be06972535660bb319395ea2554e3a0d6c8b4"
+            }
+          ],
+          "text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+          "content_hash": "sha256:054c415fbb5d92474fb83261036e93b8b0774fe8d5ee8c875fd0ec7894ada613",
+          "omitted_ranges": [],
+          "asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+          "source_characters": 2327,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 2,
+          "passages": [
+            {
+              "end": 130,
+              "text": "第二天早间，沈砚按昨日说定的分担把柴送到棚口。陆衡收进去码放，两人做完便一道报了数。此后几日，柴的多少不尽相同，早间那段活却有了熟悉的次序。沈砚收拾好手上的木屑，才去练习角坐下；若肩头还被担柴的木棍压得发酸，他便先活动一会儿，不拿那股酸劲当作练习中的变化。\n\n",
+              "start": 0,
+              "text_hash": "sha256:ff7bcc07a370d095388a75c9191dd269e25d5459ba6f563893be189b9a720630"
+            },
+            {
+              "end": 304,
+              "text": "廊下讲过的次序，他记得清楚：背放直，呼吸放缓，留意气息出入时身体哪里先动。头一回坐下，他听见院里有人走过，等脚步声远了，才发觉自己一直憋着半口气。第二回，他不数呼吸，只看胸口起伏，倒能分出吸气时肋下先微微撑开，随后肩头才有一点动静。可一想到要在这变化里找到别的东西，他就不由自主地抬起肩，吸得更深。那点原本能辨出的先后，反而混成一阵急促的喘息。\n\n",
+              "start": 130,
+              "text_hash": "sha256:151a7592878d83897751ce140958023e22b6af57ff67dc59fd6a355be409a035"
+            },
+            {
+              "end": 422,
+              "text": "他试过换个时辰坐，也试过在劳作后多歇片刻。歇足了，呼吸平稳些；只要急着盯住它，肩背照样绷紧。几日过去，他仍没感到廊下讲解的人所说的气。沈砚没有把扛柴时胸口发热、坐久后腿脚发麻算进去。那些感觉各有来处，不能因为他盼着有进展就换个名字。\n\n",
+              "start": 304,
+              "text_hash": "sha256:c2883461b376f384b74a0df44455a5eb8378b324f1ba264f64cc29ddf94422e2"
+            },
+            {
+              "end": 570,
+              "text": "这日收了练习，他起身时又做了一次深吸，肩膀立刻随之提起。他放下胳膊，照平常的快慢呼出一口气，心里终于有了能拿去问人的话：不是自己全无感觉，而是越想抓住细微变化，越把原来的呼吸弄乱。他把这两种动作在心里对了一遍，往许庭答疑的练习角走去。过去几日坐过的工夫没有白费，至少他现在知道该从哪一步问起。\n\n",
+              "start": 422,
+              "text_hash": "sha256:18981de7a74d3ed253d700dc38f3908c1a0109e5ca874e89bf8b22adc6a429e7"
+            },
+            {
+              "end": 621,
+              "text": "许庭正在练习角收拢几张坐垫。沈砚等他放好，才说自己照着廊下所教练了几日，却总在留意呼吸时失了分寸。\n\n",
+              "start": 570,
+              "text_hash": "sha256:55d0e06ea4ba24fce9c1c77d6712aba528d39ee5ea7540b24fcb9dc411895f87"
+            },
+            {
+              "end": 635,
+              "text": "“失在哪一步？”许庭问。\n\n",
+              "start": 621,
+              "text_hash": "sha256:2bcd8ac1cbf3740dea863a039bec822b932def51837967c43c8b499c66d5560c"
+            },
+            {
+              "end": 711,
+              "text": "“原本能分清肋下先动，肩头后动。”沈砚把手搭在自己的肋边，“我一想看清还有没有别的变化，肩背就紧，气也吸得深了。越想慢下来，越像在追着下一口气走。”\n\n",
+              "start": 635,
+              "text_hash": "sha256:4a38a60b3e56ba83bc92fc536251a5a165286b0ef36386701de5c795bed255dc"
+            },
+            {
+              "end": 774,
+              "text": "许庭让他坐下，先照刚才说的做一遍。沈砚直起背，把注意放到吸气上。才过两口，他便觉得许庭在看，胸口不觉用力，肩头也抬了起来。\n\n",
+              "start": 711,
+              "text_hash": "sha256:993bbee97366a7d02679f7ea28bcc9b890e42670e46d62f459a66eaed1713f09"
+            },
+            {
+              "end": 807,
+              "text": "“停在这里。”许庭没有叫他继续，“你现在能说出哪一处先动吗？”\n\n",
+              "start": 774,
+              "text_hash": "sha256:768dc206672b1e58a24377fdbe03ec5ba1d7082db8bd2b5b7adb47b09a16e7ca"
+            },
+            {
+              "end": 821,
+              "text": "沈砚又呼出一口气，摇头。\n\n",
+              "start": 807,
+              "text_hash": "sha256:6b4b5732f3848b7b6bea2bd9b5bcfcfb209dc20feab3ad4f884cc3c5180e9e1d"
+            },
+            {
+              "end": 924,
+              "text": "“先把这口气放完。背直着就够了，别拿肩膀撑着背。等下一口气自己进来，看看肋下怎样动。”许庭在旁边坐下，放缓自己的呼吸，让沈砚看见肩背并不跟着起伏，“你要留意的是已经发生的动作，不必替它添一口更长的气。”\n\n",
+              "start": 821,
+              "text_hash": "sha256:822e4baad373ad8269b5ddc580587804574aff0e80a1a6dfc8baf6d8be6d45f8"
+            },
+            {
+              "end": 1026,
+              "text": "沈砚照着放松肩头。第一回，他只顾着检查肩膀，仍错过了肋下的起伏。许庭叫他先把手垂下来，容他按平常的快慢呼吸。第二回，沈砚察觉肋下轻轻向外一张，呼气时又落回去。他没有立刻去等下一处，只把这一个来回看完。\n\n",
+              "start": 924,
+              "text_hash": "sha256:416ca25da5f2372517c29acfb5d3bf390777473764e0cbf94d449aabd2e8e3a0"
+            },
+            {
+              "end": 1038,
+              "text": "“刚才呢？”许庭问。\n\n",
+              "start": 1026,
+              "text_hash": "sha256:1369ec01a8b07cbbd2f408fd2e2334eab99c5e24b577ff52d6a1c33d196284e7"
+            },
+            {
+              "end": 1057,
+              "text": "“看得清。可一问，我又想用力了。”\n\n",
+              "start": 1038,
+              "text_hash": "sha256:ec335967716929f170e934aa2163e0fe798c7d9e804f6ff33a052e83280c961e"
+            },
+            {
+              "end": 1115,
+              "text": "“知道什么时候用力，就是下一回能停住的地方。”许庭说，“别赶着把感觉留住。若呼吸变急，先退回你能分清的那一步。”\n\n",
+              "start": 1057,
+              "text_hash": "sha256:7ff9f1c1d8e005b95b16d9a5e920c5a52bafda8a6b63f74377c5a71861835a8e"
+            },
+            {
+              "end": 1279,
+              "text": "沈砚重新坐稳。院里偶有声响，他听见了，也没急着逐一分辨。他让呼吸照自己的快慢往来，肋下起伏时便留意那里；落回去时，注意也随之放轻。几口之后，他才发觉肩背一直没有再提起来。就在一次平常的呼气将尽时，腹中有一点极细的温意，像隔着衣料碰到一缕日光，又比皮肤受暖更深些。它没有随着他下一口吸气涨大，只清清楚楚地停了短短一瞬，便淡了。\n\n",
+              "start": 1115,
+              "text_hash": "sha256:ee223ccabb8360ca8fb81cb22ea7effe9f067abf09465bca7378c3a664f2fb3c"
+            },
+            {
+              "end": 1371,
+              "text": "沈砚仍坐着，等那口气自然出去。方才的感觉与扛柴后的热、憋气后的发胀都不同；来得轻，却不容他拿寻常喘息搪塞。他看向许庭，声音压得很低：“刚才腹中有一点温意。不是我把气吸深了才有的。”\n\n",
+              "start": 1279,
+              "text_hash": "sha256:63ac3cbeecdea4edc1e66702de78ff3552b8a72aca7e033b8a8c534d807bb096"
+            },
+            {
+              "end": 1428,
+              "text": "许庭看了看他的肩：“我能看见你这回没有再提肩。你说的那一点，先记住它出现前自己怎样呼吸。歇一歇，再照那样试。”\n\n",
+              "start": 1371,
+              "text_hash": "sha256:317b2fb4aad37b3b6609488824a9272a8eb9f950adb0d28aa3a4f8d2339229bc"
+            },
+            {
+              "end": 1526,
+              "text": "沈砚依言停了片刻。重试时，他忍不住候着那点温意，肋下才动，心思已跑到呼气之后。肩膀虽没有像先前那样猛地抬起，呼吸却快了一些。等他察觉，便把注意退回肋下的起落。又坐了几回，那点温意始终没有重现。\n\n",
+              "start": 1428,
+              "text_hash": "sha256:e9e43ee59dc6e7986076206544113c2ff646446ec772ebe05ccafd414c3a3955"
+            },
+            {
+              "end": 1635,
+              "text": "他起初有些不甘，想再多坐一阵，随后却记起许庭方才问的那句“哪一处先动”。若连此刻呼吸变快都没察觉，坐得更久也只是继续追赶。他停下来，说出两次的差别：刚才看完一个来回，感觉才出现；后来只等它来，连原有的起伏都看乱了。\n\n",
+              "start": 1526,
+              "text_hash": "sha256:549afe3c38cc545dc39e36c5a976e71bd1db238d81dd92a34cf141d966a2d58f"
+            },
+            {
+              "end": 1692,
+              "text": "“就从这个差别接着练。”许庭说，“有过一回，知道它可能是什么样；能不能再辨出来，还得看下一回。今日先到这里。”\n\n",
+              "start": 1635,
+              "text_hash": "sha256:8425843dbcaae28dd01843dbf46eecf54e2e4261f216319438d847940ddc3453"
+            },
+            {
+              "end": 1777,
+              "text": "沈砚起身时，练习角与来时并无两样。他仍不能让那点感觉应念而来，却知道下次坐下该先放松哪里、看清什么。那短短一瞬已过去，留在身上的不是热意，而是一条能够重新试走的次序。\n\n",
+              "start": 1692,
+              "text_hash": "sha256:a46077a969cb89df8af503c2df075d98704ac45fd5888969249baac21f2e14ee"
+            },
+            {
+              "end": 1863,
+              "text": "从练习角回到外院，沈砚在院门旁见到陆衡。陆衡正把手上的绳头绕齐，唐穗站在一旁，与他说起外门将安排的首次采药。沈砚走近，听见“同行”二字，便停下问：“这趟会走哪段山路？”\n\n",
+              "start": 1777,
+              "text_hash": "sha256:172bfd41c1a03bc9be5afbf1dab05866784130299d0659cfd6b268571e6f2a00"
+            },
+            {
+              "end": 1888,
+              "text": "“还没问清。”陆衡把绳头握在掌中，“你想去？”\n\n",
+              "start": 1863,
+              "text_hash": "sha256:dfe6297c8d22acef56effd1396e54ce74ac234e440ad38f168f9cd85ae5b124f"
+            },
+            {
+              "end": 2014,
+              "text": "沈砚点头。他清早搬柴时仍会先看脚下，再稳稳落步；到了不熟悉的山路，这点习惯能帮多少忙，他并不知道。方才在练习角有过的一瞬气感，更不能拿来认路或认药。他说：“我想参加。总得从一趟有人同行的任务开始，看看自己认得住多少路。去处和该做的事，得先问明白。”\n\n",
+              "start": 1888,
+              "text_hash": "sha256:d5a0241e6009acd89a4bc24d33daedaa3c986012b6875a6327239359eeb8399c"
+            },
+            {
+              "end": 2135,
+              "text": "唐穗转向他：“我也想去，不过我想看的恐怕与你不同。我读过些材料辨认的说明，写在纸上的叶形、触感，到手里未必像我想的一样。到了现场，我想把书上记的和实物逐处比一比。若看不准，就照采收说明再核实，不能凭我以前分拣普通草药的经验叫你们跟着采。”\n\n",
+              "start": 2014,
+              "text_hash": "sha256:4a615d882d757150f3e0ac52b20edc9e7d7ffcb5506da7c70d98a72801992cfe"
+            },
+            {
+              "end": 2226,
+              "text": "她说到“逐处比一比”时，手指在另一只手掌上点了两下，像在对照尚未摊开的字。沈砚听得出，她要的不是多走几步便算见识，而是能停下来认真看。但若每一处都停，往返就可能拖长。他看向陆衡。\n\n",
+              "start": 2135,
+              "text_hash": "sha256:93e03f4f4012304515e3de27f5ed44e7c7915219a8125e3ee7e1e0abc606b20a"
+            },
+            {
+              "end": 2294,
+              "text": "陆衡先问：“采药从什么时候走，什么时候回？我午后那段要练习，先前柴棚的活也是照这个时段分的。若进了山才说还要往远处找，我没法答应。”\n\n",
+              "start": 2226,
+              "text_hash": "sha256:113f6fad78d98b5d3fd2cc2378ddc59a8bf61bfc6b09a4bf3f3e353183f63718"
+            },
+            {
+              "end": 2347,
+              "text": "沈砚记得他们第一天搬柴时便把这话说给分派的人听过。陆衡此刻把绳头收进袖里，等他们回应，并没有转身离开。\n\n",
+              "start": 2294,
+              "text_hash": "sha256:6fb519fae9ad33a16e474efc94dbc36bf61039a47bfc1c987a762bbb993fc789"
+            },
+            {
+              "end": 2414,
+              "text": "“我想多认一段路，”沈砚说，“但不能拿你的练习工夫去换。先问清任务给的去处与时限，再留够回程的工夫。余下能看多少，我们到时商量。”\n\n",
+              "start": 2347,
+              "text_hash": "sha256:20dafed200157a3583f97f076312747bd96a6c08dd6a04aa8f1ac52dc85581f8"
+            },
+            {
+              "end": 2488,
+              "text": "唐穗接道：“能停下核实的地方我会说清为什么值得看；若时间不够，我先记住问题，不拖着大家走。采什么、怎样采，也要看说明，不能在这里先替现场定好。”\n\n",
+              "start": 2414,
+              "text_hash": "sha256:9479771cad88db992bb60962f5508bf2c3d7ec1750766cce3307072f7463a6b0"
+            },
+            {
+              "end": 2537,
+              "text": "陆衡想了想，说：“这样我能同行。问清条件后，若一趟容不下这些事，就按条件收住，别临时往外加。”\n\n",
+              "start": 2488,
+              "text_hash": "sha256:21097710ff912d47e2dc5f893ca81bd7055375a37c6b3a64588d98d3907d98ef"
+            },
+            {
+              "end": 2674,
+              "text": "三人把参加首次采药的事说定。至于具体往哪里走、现场有什么可采，以及怎样分配路上停留的工夫，他们还要等任务条件明白后再定。沈砚没有再猜那点短暂的气感到了山里能派什么用场。他记住许庭教他的次序，也记住眼前三人各自想从这一趟得到的东西；等真正踏上山路，这些打算才有机会受一次检验。",
+              "start": 2537,
+              "text_hash": "sha256:10c77975b5e653157d30770cdfa2a8f6d936106584be69ed882ea2d436cc000a"
+            }
+          ],
+          "text_hash": "sha256:22fa4bb440ce3ce99caa2dec99d649104871fa28c9786c2c4a8b1ec91ece81cb",
+          "content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+          "omitted_ranges": [],
+          "asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+          "source_characters": 2674,
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "chapter": 4,
+      "request_id": "chapter-request:16b99b3e0cd19ec45a5ddea7087c9b83113dcd4332ffc1934d467cc635ce392d",
+      "root_operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+      "stage_outputs": [
+        {
+          "operation_id": "da58499e-5f62-47ed-a95a-2b86890f5948",
+          "definition_name": "chapter.plan.materialize",
+          "asset_version_id": "authority-output:da58499e-5f62-47ed-a95a-2b86890f5948:chapter.plan:v1",
+          "content_hash": "sha256:1bbd43e25b4c821f67f9d355c3a0699a7c5dba1456191149a5aba9833fe582ad"
+        },
+        {
+          "operation_id": "6d76565e-8b45-477d-b918-af696ad8d3e4",
+          "definition_name": "chapter.execution_intent.prepare",
+          "asset_version_id": "authority-output:6d76565e-8b45-477d-b918-af696ad8d3e4:chapter.execution_intent:v1",
+          "content_hash": "sha256:97feb19d1b79b35594798577fbd9f62457a57c35775bd342bbf48d647abdd980"
+        },
+        {
+          "operation_id": "9e64360f-854b-4c00-b8fa-da4a772c3fdf",
+          "definition_name": "chapter.memo.generate",
+          "asset_version_id": "authority-output:9e64360f-854b-4c00-b8fa-da4a772c3fdf:chapter.memo:v1",
+          "content_hash": "sha256:7656af2787d22b42068385e8171fcbdca5f8010871581ed76ab2f2658b484107"
+        },
+        {
+          "operation_id": "6b71187b-0726-4f88-9b41-4dc1e58b5593",
+          "definition_name": "chapter.context.retrieve",
+          "asset_version_id": "authority-output:6b71187b-0726-4f88-9b41-4dc1e58b5593:chapter.retrieval:v1",
+          "content_hash": "sha256:42ad2fe93bfb7a9014a071202a87913aade055813a40979f6160db1184dce979"
+        },
+        {
+          "operation_id": "d9e85666-f774-4c49-8bf2-5ab392b86cda",
+          "definition_name": "chapter.context.build",
+          "asset_version_id": "authority-output:d9e85666-f774-4c49-8bf2-5ab392b86cda:chapter.context:v1",
+          "content_hash": "sha256:22b92686fb5b0bcff67aebd8b090f27838851894446af326174b6960ff0c9238"
+        },
+        {
+          "operation_id": "ba65ecc2-bafe-4ee9-9911-86d15324d1cd",
+          "definition_name": "chapter.draft.generate",
+          "asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+          "content_hash": "sha256:5d114e3c04a85b02d52a6ba8fddd29050f69c138c61a4598d5620ad6fdaedfc2"
+        }
+      ],
+      "memo_asset_version_id": "authority-output:9e64360f-854b-4c00-b8fa-da4a772c3fdf:chapter.memo:v1",
+      "memo_content_hash": "sha256:7656af2787d22b42068385e8171fcbdca5f8010871581ed76ab2f2658b484107",
+      "native_asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+      "native_content_hash": "sha256:5d114e3c04a85b02d52a6ba8fddd29050f69c138c61a4598d5620ad6fdaedfc2",
+      "selected_asset_version_id": "87be8930-26fe-4aef-93ee-b5f29620dc8f",
+      "selected_content_hash": "sha256:ff126ed42f45b43170c1f4d6f889645bd8a214070f0a54330d7606889394a1d7",
+      "writer_effect_id": "f1e84420-6a13-48be-a63e-b96082939919",
+      "frozen_prompt_hash": "sha256:f6e47a4efa3c2b4ba2c1664e8b4037ac744d5eae4114b643734e3bb32e99f651",
+      "working_predecessor_sources": [
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 1,
+          "passages": [
+            {
+              "end": 89,
+              "text": "清晨的山气还没有散，沈砚走到青岚宗外门时，鞋底沾着一层薄泥。他在山村走惯了土路，到了这里，仍先看脚下：石阶边缘磨得发亮，往上是外门的院墙；另一条路绕过墙角，顺着山脊伸向雾里。\n\n",
+              "start": 0,
+              "text_hash": "sha256:22890953b9291dd9a826b72a95a654c100dcab3ed8902e01f97054b7f5586876"
+            },
+            {
+              "end": 140,
+              "text": "他沿那条路望了一会儿。山外还有多远，他不知道。真有一日能凭自己的本领出去，也得先从眼前这道门进去。\n\n",
+              "start": 89,
+              "text_hash": "sha256:18e74d942908adb7e435ddcfbc4a045a6379ec780218ef4beb3e081c67292799"
+            },
+            {
+              "end": 247,
+              "text": "门边设着一张长桌，几名来人依次向桌后的人报上姓名。轮到沈砚，桌后的人抬头等着，他却先看见名册上密密的字，喉咙有些发紧。他把包袱往肩上提稳，开口道：“我叫沈砚，十六岁，从山村来。我想入青岚宗外门，该从哪里办起？”\n\n",
+              "start": 140,
+              "text_hash": "sha256:a898d6a9e193ae41fddff4210404be2032a2da4037abcdc9d7e1c12b41395ec5"
+            },
+            {
+              "end": 357,
+              "text": "那人让他把姓名、年岁和来处再说一遍，听清后落笔，接着指给他看名册旁留出的地方。沈砚照着指示按下指印。墨色沾在指腹，他等纸上的印记干了些，才收回手。桌后的人又从一排木牌里取下一块，把名册上的名字与牌上的字对过，递给他。\n\n",
+              "start": 247,
+              "text_hash": "sha256:ad9e191ec3009b3887fbc9266f2b5e9143bffcc8add9d7a8b82e080c28a132a8"
+            },
+            {
+              "end": 402,
+              "text": "“收好。进去后先到东边的劳作院报到，住处也在那里问清。今天该做的事，到了有人告诉你。”\n\n",
+              "start": 357,
+              "text_hash": "sha256:cbe822a4ef6e2f93c18ade87639ef796881ed56614e11539fd75c0fc7f326738"
+            },
+            {
+              "end": 429,
+              "text": "沈砚握住木牌，没有马上走：“这样就算办完入门了？”\n\n",
+              "start": 402,
+              "text_hash": "sha256:97afda1d9a1e6ee0bc12db491f5e6f87442c5cb46106547d0d45a6f8c211e62a"
+            },
+            {
+              "end": 480,
+              "text": "“名已记下，牌也领了。你现在是外门弟子。”那人看了一眼他背上的包袱，“去吧，别让下一处等到午后。”\n\n",
+              "start": 429,
+              "text_hash": "sha256:b7e2e2d45983207d62bbc01efdf34912ae9a685d855aba0aae4dc053282451be"
+            },
+            {
+              "end": 570,
+              "text": "沈砚让开桌前的位置，把木牌翻过来看了看。上面的名字确是自己的，指腹还留着一点未擦净的墨。他从山村带来的东西仍只有一只包袱；可下次有人问起他为何站在院里，他已有了能拿出来的凭据。\n\n",
+              "start": 480,
+              "text_hash": "sha256:2feffc7ffd7f8367db153bef664eb58753f1e97102c10f376216e27219a36301"
+            },
+            {
+              "end": 628,
+              "text": "穿过门洞时，他回头看了一眼。那条通向山外的路已经被墙角挡住。沈砚把木牌放进衣襟，照着刚才听到的方向，先往东边去。\n\n",
+              "start": 570,
+              "text_hash": "sha256:46cb43755c11513905f13e67635c87104eab8e1c8b53eca127141c31af1c07a3"
+            },
+            {
+              "end": 754,
+              "text": "劳作院里有人正在把木柴从露天场地挪进棚下。沈砚出示木牌，问清住处，把包袱放到指定的床位，再回来听今日的活。负责分派的人指着柴棚说，今日有十八捆柴须搬进去，绳子不能散，码好后要留出通道；往后几日，这处柴棚的早间收拾由他和陆衡一道做，做完须回来报一声。\n\n",
+              "start": 628,
+              "text_hash": "sha256:abc45c85b4ff7ba3be59608d1883f7dceaebaa975a9e812cdbc6564b3f12e861"
+            },
+            {
+              "end": 799,
+              "text": "沈砚走到柴堆旁，陆衡正蹲着检查一捆柴的绳结。他把松出的绳头重新穿过结眼，拉紧了才起身。\n\n",
+              "start": 754,
+              "text_hash": "sha256:fd99c81b80ed046c1d40bbe19fb9c3f2d333c82ef51f10520272947ed1563abd"
+            },
+            {
+              "end": 868,
+              "text": "“你是沈砚？”陆衡看了一眼他胸前露出的木牌，“十八捆都在这儿。先说怎么分。我午后有自己的练习，日头过了那边檐角，我就得收手去做准备。”\n\n",
+              "start": 799,
+              "text_hash": "sha256:f2e7897b53d67b4021f42aa63ea3650f6e1e0024db4d4f421144c736a5e9f129"
+            },
+            {
+              "end": 941,
+              "text": "沈砚顺着他指的方向看去。院墙的影子还短，时间却不是可以随便拖的。他也想知道明日何时能开始学，便问：“今天搬完就算完？往后早间也只管这处柴棚？”\n\n",
+              "start": 868,
+              "text_hash": "sha256:7e74d5efc4afb8b0d6940625888e0de058d2caf344d97a400b5fb1e76be80102"
+            },
+            {
+              "end": 1008,
+              "text": "“分派的人说的是这处。来多少要看当天。”陆衡用脚尖点了点地上两捆较粗的柴，“要是每回都等搬到一半才说加活，我没法留住练习的工夫。”\n\n",
+              "start": 941,
+              "text_hash": "sha256:3ee8d1966b028a33164bc228d6c373d37e5fed765a23a997718953b07629f94b"
+            },
+            {
+              "end": 1100,
+              "text": "沈砚想了想：“今天我搬十捆，你搬八捆。你会看绳结，棚里怎么码稳也由你先定，我照着放。往后早间我先把柴运到棚口，你收进去码好；若哪天多得做不完，就当面重新分，别算成谁悄悄欠了谁的。”\n\n",
+              "start": 1008,
+              "text_hash": "sha256:6608f254508d0f7220bc48e4e3d4bde707913d4a38ba1b688a1a7f7bb2a7bbde"
+            },
+            {
+              "end": 1150,
+              "text": "陆衡没有立刻应。他抬起一捆试了试重量，又看向棚内的空位：“十捆你扛得住？山路不远，来回也费腿。”\n\n",
+              "start": 1100,
+              "text_hash": "sha256:1cc2e45ec9ef2f3479d54c4290e9ad83bed1f1c17177fe59a547447a45c40e0d"
+            },
+            {
+              "end": 1187,
+              "text": "“先走两趟，看我能不能照这个数做。”沈砚说，“要是做不到，我当场说。”\n\n",
+              "start": 1150,
+              "text_hash": "sha256:04a8439774a8b7da7d767af92d7062d4b39b8eda2a5ce05891aff8c6cad7e926"
+            },
+            {
+              "end": 1233,
+              "text": "“行。”陆衡把那捆柴放回去，“我先把棚里空出来。你别只图快，绳子磨断了，散柴还得重捆。”\n\n",
+              "start": 1187,
+              "text_hash": "sha256:362eec34ff2671eba0601d122a07d63859b77328aeecc0ba36f5ae58c6f71017"
+            },
+            {
+              "end": 1365,
+              "text": "沈砚挑了两捆绳结紧的，从柴堆到棚口走了一趟。场地有一小段斜坡，清晨的湿土踩上去发滑。他下坡时把步子放短，到平地再加快。第二趟，他发现两捆柴一大一小，肩上的木棍总向一边歪，便停下调换位置。棚里传来木柴落地的声响，陆衡已把通道旁的杂物移走，在最下层摆出平整的一排。\n\n",
+              "start": 1233,
+              "text_hash": "sha256:4978464d932f19bd64d78a5031677e57816e0080e6f8c2173c26092abf110ca3"
+            },
+            {
+              "end": 1397,
+              "text": "“先放这里。”陆衡指着棚口一块干地，“我来收，别把路堵了。”\n\n",
+              "start": 1365,
+              "text_hash": "sha256:ed4a37297f52e0a9c5d5190dab838e9cfe1d65438d4ecb8683e78fdaa8bbddd4"
+            },
+            {
+              "end": 1530,
+              "text": "沈砚照做。等他搬来第五捆，陆衡已经把自己的头两捆也送到棚内，还抽紧了一道将松未松的绳。两人各做各的份，经过棚口时却都得看对方留下的地方够不够用。沈砚后来把柴放得太靠外，陆衡叫住他，示意他往里挪半臂；下一趟陆衡又把最下层的一捆转了方向，好让沈砚带来的粗柴有地方落。\n\n",
+              "start": 1397,
+              "text_hash": "sha256:9e3e3b831fe72346254bb2d9bc1357b83345b6270e54c5d33ff2a446307fd79c"
+            },
+            {
+              "end": 1668,
+              "text": "临近午间，十八捆都进了棚。沈砚扛完自己说定的十捆，肩膀被木棍压得发酸，最后一趟仍先把柴放稳，才松开手。陆衡搬了八捆，随后沿着柴垛检查，抽出一根横在通道里的短枝，发现上层有两捆压得不齐，便叫沈砚扶住一侧，两人把它们重新码好。陆衡退开一步看，才说：“这样能走人，也不容易塌。”\n\n",
+              "start": 1530,
+              "text_hash": "sha256:940651cced69527feb25eff5bb33d2ecc95dfc9d2e7c150d832dc49c973ded24"
+            },
+            {
+              "end": 1761,
+              "text": "沈砚从棚口走了一遍，衣袖没有擦到柴垛。场地上的柴已经清空，背绳和木棍也归回原处。他们一道向分派的人报了数。那人到棚前看过通道和柴垛，在今日的记录上划下完成的一笔，问起往后早间如何做。\n\n",
+              "start": 1668,
+              "text_hash": "sha256:3e9a71d039574990e8df9e583acb0833ccc3dce31028645546d40442d498a737"
+            },
+            {
+              "end": 1801,
+              "text": "“我先搬到棚口，陆衡收进去、码稳。”沈砚说，“多出来的量，我们当日再商量。”\n\n",
+              "start": 1761,
+              "text_hash": "sha256:c0b614c4efa95f1e5a32084909bca0aa3228ab21613a32494492d7fb521fec73"
+            },
+            {
+              "end": 1836,
+              "text": "陆衡接道：“午后那段我要留给练习。早间若有变动，请早些告诉我们。”\n\n",
+              "start": 1801,
+              "text_hash": "sha256:46c6038344fe1e4e99974a97ae2ff61e4391537672238233665ba46a9a3dde05"
+            },
+            {
+              "end": 1870,
+              "text": "分派的人点头，把两人的分担记在旁边：“照这个做。今天的活完了。”\n\n",
+              "start": 1836,
+              "text_hash": "sha256:c3429726050bf3b8ee005507d3e9795c72ec63ae447640f21cd238a2ca386c4f"
+            },
+            {
+              "end": 1911,
+              "text": "出了柴棚，陆衡看了看院墙上的日影，眉头松了些。“我得走了。明早先到这儿会合。”\n\n",
+              "start": 1870,
+              "text_hash": "sha256:1ba781292985160f0f6b0de5427b33ccd7395c496585902efaca2ae686c64f55"
+            },
+            {
+              "end": 2013,
+              "text": "“好。”沈砚答应下来。他知道陆衡赶的是自己说过的时段，没有再拉着他闲谈。沈砚回到住处洗净手上的木屑，衣襟里的木牌碰着胸口；床位找到了，第一天的活也有了结果。明日早间该往哪里走、和谁一道做，他已能说清。\n\n",
+              "start": 1911,
+              "text_hash": "sha256:0bc435550949882e894c7f7da2f6e0263710c44a34b168a8a9acef56fbaf901d"
+            },
+            {
+              "end": 2176,
+              "text": "傍晚，新入门的人被叫到廊下，听基础吐纳的讲解。讲解的人先让他们记住坐姿和呼吸的次序：背要放直，呼吸放缓，注意气息出入时身体哪里先动、哪里跟着动；急着憋气，反而容易把原本能察觉的变化弄乱。他说得不快，示范了一遍，才让众人记着明日有空时自行开始尝试。有人问多久能感到气，他只答，先照着做，再分清实际感觉到的与自己盼着感觉到的。\n\n",
+              "start": 2013,
+              "text_hash": "sha256:0ed25b28b5600e8b60c56a0ef8d7a4234d06608c03af0c9209da997e91872f59"
+            },
+            {
+              "end": 2327,
+              "text": "沈砚站在廊下，默默把次序记了一遍。他今日扛柴时也曾靠调匀呼吸走完斜坡，但那只是寻常喘息，不能拿来回答刚才的问题。他没有坐下来试，明日的早间劳动和练习时间都已说定，不必在疲倦时抢这一回。夜色渐深，他摸了摸洗净的指腹，想到清早名册上的指印，又想到明日坐下后要数清自己的呼吸。那时能不能感觉到气，他还不知道。",
+              "start": 2176,
+              "text_hash": "sha256:659b93248e95366da7b0d226f15be06972535660bb319395ea2554e3a0d6c8b4"
+            }
+          ],
+          "text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+          "content_hash": "sha256:054c415fbb5d92474fb83261036e93b8b0774fe8d5ee8c875fd0ec7894ada613",
+          "omitted_ranges": [],
+          "asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+          "source_characters": 2327,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 2,
+          "passages": [
+            {
+              "end": 130,
+              "text": "第二天早间，沈砚按昨日说定的分担把柴送到棚口。陆衡收进去码放，两人做完便一道报了数。此后几日，柴的多少不尽相同，早间那段活却有了熟悉的次序。沈砚收拾好手上的木屑，才去练习角坐下；若肩头还被担柴的木棍压得发酸，他便先活动一会儿，不拿那股酸劲当作练习中的变化。\n\n",
+              "start": 0,
+              "text_hash": "sha256:ff7bcc07a370d095388a75c9191dd269e25d5459ba6f563893be189b9a720630"
+            },
+            {
+              "end": 304,
+              "text": "廊下讲过的次序，他记得清楚：背放直，呼吸放缓，留意气息出入时身体哪里先动。头一回坐下，他听见院里有人走过，等脚步声远了，才发觉自己一直憋着半口气。第二回，他不数呼吸，只看胸口起伏，倒能分出吸气时肋下先微微撑开，随后肩头才有一点动静。可一想到要在这变化里找到别的东西，他就不由自主地抬起肩，吸得更深。那点原本能辨出的先后，反而混成一阵急促的喘息。\n\n",
+              "start": 130,
+              "text_hash": "sha256:151a7592878d83897751ce140958023e22b6af57ff67dc59fd6a355be409a035"
+            },
+            {
+              "end": 422,
+              "text": "他试过换个时辰坐，也试过在劳作后多歇片刻。歇足了，呼吸平稳些；只要急着盯住它，肩背照样绷紧。几日过去，他仍没感到廊下讲解的人所说的气。沈砚没有把扛柴时胸口发热、坐久后腿脚发麻算进去。那些感觉各有来处，不能因为他盼着有进展就换个名字。\n\n",
+              "start": 304,
+              "text_hash": "sha256:c2883461b376f384b74a0df44455a5eb8378b324f1ba264f64cc29ddf94422e2"
+            },
+            {
+              "end": 570,
+              "text": "这日收了练习，他起身时又做了一次深吸，肩膀立刻随之提起。他放下胳膊，照平常的快慢呼出一口气，心里终于有了能拿去问人的话：不是自己全无感觉，而是越想抓住细微变化，越把原来的呼吸弄乱。他把这两种动作在心里对了一遍，往许庭答疑的练习角走去。过去几日坐过的工夫没有白费，至少他现在知道该从哪一步问起。\n\n",
+              "start": 422,
+              "text_hash": "sha256:18981de7a74d3ed253d700dc38f3908c1a0109e5ca874e89bf8b22adc6a429e7"
+            },
+            {
+              "end": 621,
+              "text": "许庭正在练习角收拢几张坐垫。沈砚等他放好，才说自己照着廊下所教练了几日，却总在留意呼吸时失了分寸。\n\n",
+              "start": 570,
+              "text_hash": "sha256:55d0e06ea4ba24fce9c1c77d6712aba528d39ee5ea7540b24fcb9dc411895f87"
+            },
+            {
+              "end": 635,
+              "text": "“失在哪一步？”许庭问。\n\n",
+              "start": 621,
+              "text_hash": "sha256:2bcd8ac1cbf3740dea863a039bec822b932def51837967c43c8b499c66d5560c"
+            },
+            {
+              "end": 711,
+              "text": "“原本能分清肋下先动，肩头后动。”沈砚把手搭在自己的肋边，“我一想看清还有没有别的变化，肩背就紧，气也吸得深了。越想慢下来，越像在追着下一口气走。”\n\n",
+              "start": 635,
+              "text_hash": "sha256:4a38a60b3e56ba83bc92fc536251a5a165286b0ef36386701de5c795bed255dc"
+            },
+            {
+              "end": 774,
+              "text": "许庭让他坐下，先照刚才说的做一遍。沈砚直起背，把注意放到吸气上。才过两口，他便觉得许庭在看，胸口不觉用力，肩头也抬了起来。\n\n",
+              "start": 711,
+              "text_hash": "sha256:993bbee97366a7d02679f7ea28bcc9b890e42670e46d62f459a66eaed1713f09"
+            },
+            {
+              "end": 807,
+              "text": "“停在这里。”许庭没有叫他继续，“你现在能说出哪一处先动吗？”\n\n",
+              "start": 774,
+              "text_hash": "sha256:768dc206672b1e58a24377fdbe03ec5ba1d7082db8bd2b5b7adb47b09a16e7ca"
+            },
+            {
+              "end": 821,
+              "text": "沈砚又呼出一口气，摇头。\n\n",
+              "start": 807,
+              "text_hash": "sha256:6b4b5732f3848b7b6bea2bd9b5bcfcfb209dc20feab3ad4f884cc3c5180e9e1d"
+            },
+            {
+              "end": 924,
+              "text": "“先把这口气放完。背直着就够了，别拿肩膀撑着背。等下一口气自己进来，看看肋下怎样动。”许庭在旁边坐下，放缓自己的呼吸，让沈砚看见肩背并不跟着起伏，“你要留意的是已经发生的动作，不必替它添一口更长的气。”\n\n",
+              "start": 821,
+              "text_hash": "sha256:822e4baad373ad8269b5ddc580587804574aff0e80a1a6dfc8baf6d8be6d45f8"
+            },
+            {
+              "end": 1026,
+              "text": "沈砚照着放松肩头。第一回，他只顾着检查肩膀，仍错过了肋下的起伏。许庭叫他先把手垂下来，容他按平常的快慢呼吸。第二回，沈砚察觉肋下轻轻向外一张，呼气时又落回去。他没有立刻去等下一处，只把这一个来回看完。\n\n",
+              "start": 924,
+              "text_hash": "sha256:416ca25da5f2372517c29acfb5d3bf390777473764e0cbf94d449aabd2e8e3a0"
+            },
+            {
+              "end": 1038,
+              "text": "“刚才呢？”许庭问。\n\n",
+              "start": 1026,
+              "text_hash": "sha256:1369ec01a8b07cbbd2f408fd2e2334eab99c5e24b577ff52d6a1c33d196284e7"
+            },
+            {
+              "end": 1057,
+              "text": "“看得清。可一问，我又想用力了。”\n\n",
+              "start": 1038,
+              "text_hash": "sha256:ec335967716929f170e934aa2163e0fe798c7d9e804f6ff33a052e83280c961e"
+            },
+            {
+              "end": 1115,
+              "text": "“知道什么时候用力，就是下一回能停住的地方。”许庭说，“别赶着把感觉留住。若呼吸变急，先退回你能分清的那一步。”\n\n",
+              "start": 1057,
+              "text_hash": "sha256:7ff9f1c1d8e005b95b16d9a5e920c5a52bafda8a6b63f74377c5a71861835a8e"
+            },
+            {
+              "end": 1279,
+              "text": "沈砚重新坐稳。院里偶有声响，他听见了，也没急着逐一分辨。他让呼吸照自己的快慢往来，肋下起伏时便留意那里；落回去时，注意也随之放轻。几口之后，他才发觉肩背一直没有再提起来。就在一次平常的呼气将尽时，腹中有一点极细的温意，像隔着衣料碰到一缕日光，又比皮肤受暖更深些。它没有随着他下一口吸气涨大，只清清楚楚地停了短短一瞬，便淡了。\n\n",
+              "start": 1115,
+              "text_hash": "sha256:ee223ccabb8360ca8fb81cb22ea7effe9f067abf09465bca7378c3a664f2fb3c"
+            },
+            {
+              "end": 1371,
+              "text": "沈砚仍坐着，等那口气自然出去。方才的感觉与扛柴后的热、憋气后的发胀都不同；来得轻，却不容他拿寻常喘息搪塞。他看向许庭，声音压得很低：“刚才腹中有一点温意。不是我把气吸深了才有的。”\n\n",
+              "start": 1279,
+              "text_hash": "sha256:63ac3cbeecdea4edc1e66702de78ff3552b8a72aca7e033b8a8c534d807bb096"
+            },
+            {
+              "end": 1428,
+              "text": "许庭看了看他的肩：“我能看见你这回没有再提肩。你说的那一点，先记住它出现前自己怎样呼吸。歇一歇，再照那样试。”\n\n",
+              "start": 1371,
+              "text_hash": "sha256:317b2fb4aad37b3b6609488824a9272a8eb9f950adb0d28aa3a4f8d2339229bc"
+            },
+            {
+              "end": 1526,
+              "text": "沈砚依言停了片刻。重试时，他忍不住候着那点温意，肋下才动，心思已跑到呼气之后。肩膀虽没有像先前那样猛地抬起，呼吸却快了一些。等他察觉，便把注意退回肋下的起落。又坐了几回，那点温意始终没有重现。\n\n",
+              "start": 1428,
+              "text_hash": "sha256:e9e43ee59dc6e7986076206544113c2ff646446ec772ebe05ccafd414c3a3955"
+            },
+            {
+              "end": 1635,
+              "text": "他起初有些不甘，想再多坐一阵，随后却记起许庭方才问的那句“哪一处先动”。若连此刻呼吸变快都没察觉，坐得更久也只是继续追赶。他停下来，说出两次的差别：刚才看完一个来回，感觉才出现；后来只等它来，连原有的起伏都看乱了。\n\n",
+              "start": 1526,
+              "text_hash": "sha256:549afe3c38cc545dc39e36c5a976e71bd1db238d81dd92a34cf141d966a2d58f"
+            },
+            {
+              "end": 1692,
+              "text": "“就从这个差别接着练。”许庭说，“有过一回，知道它可能是什么样；能不能再辨出来，还得看下一回。今日先到这里。”\n\n",
+              "start": 1635,
+              "text_hash": "sha256:8425843dbcaae28dd01843dbf46eecf54e2e4261f216319438d847940ddc3453"
+            },
+            {
+              "end": 1777,
+              "text": "沈砚起身时，练习角与来时并无两样。他仍不能让那点感觉应念而来，却知道下次坐下该先放松哪里、看清什么。那短短一瞬已过去，留在身上的不是热意，而是一条能够重新试走的次序。\n\n",
+              "start": 1692,
+              "text_hash": "sha256:a46077a969cb89df8af503c2df075d98704ac45fd5888969249baac21f2e14ee"
+            },
+            {
+              "end": 1863,
+              "text": "从练习角回到外院，沈砚在院门旁见到陆衡。陆衡正把手上的绳头绕齐，唐穗站在一旁，与他说起外门将安排的首次采药。沈砚走近，听见“同行”二字，便停下问：“这趟会走哪段山路？”\n\n",
+              "start": 1777,
+              "text_hash": "sha256:172bfd41c1a03bc9be5afbf1dab05866784130299d0659cfd6b268571e6f2a00"
+            },
+            {
+              "end": 1888,
+              "text": "“还没问清。”陆衡把绳头握在掌中，“你想去？”\n\n",
+              "start": 1863,
+              "text_hash": "sha256:dfe6297c8d22acef56effd1396e54ce74ac234e440ad38f168f9cd85ae5b124f"
+            },
+            {
+              "end": 2014,
+              "text": "沈砚点头。他清早搬柴时仍会先看脚下，再稳稳落步；到了不熟悉的山路，这点习惯能帮多少忙，他并不知道。方才在练习角有过的一瞬气感，更不能拿来认路或认药。他说：“我想参加。总得从一趟有人同行的任务开始，看看自己认得住多少路。去处和该做的事，得先问明白。”\n\n",
+              "start": 1888,
+              "text_hash": "sha256:d5a0241e6009acd89a4bc24d33daedaa3c986012b6875a6327239359eeb8399c"
+            },
+            {
+              "end": 2135,
+              "text": "唐穗转向他：“我也想去，不过我想看的恐怕与你不同。我读过些材料辨认的说明，写在纸上的叶形、触感，到手里未必像我想的一样。到了现场，我想把书上记的和实物逐处比一比。若看不准，就照采收说明再核实，不能凭我以前分拣普通草药的经验叫你们跟着采。”\n\n",
+              "start": 2014,
+              "text_hash": "sha256:4a615d882d757150f3e0ac52b20edc9e7d7ffcb5506da7c70d98a72801992cfe"
+            },
+            {
+              "end": 2226,
+              "text": "她说到“逐处比一比”时，手指在另一只手掌上点了两下，像在对照尚未摊开的字。沈砚听得出，她要的不是多走几步便算见识，而是能停下来认真看。但若每一处都停，往返就可能拖长。他看向陆衡。\n\n",
+              "start": 2135,
+              "text_hash": "sha256:93e03f4f4012304515e3de27f5ed44e7c7915219a8125e3ee7e1e0abc606b20a"
+            },
+            {
+              "end": 2294,
+              "text": "陆衡先问：“采药从什么时候走，什么时候回？我午后那段要练习，先前柴棚的活也是照这个时段分的。若进了山才说还要往远处找，我没法答应。”\n\n",
+              "start": 2226,
+              "text_hash": "sha256:113f6fad78d98b5d3fd2cc2378ddc59a8bf61bfc6b09a4bf3f3e353183f63718"
+            },
+            {
+              "end": 2347,
+              "text": "沈砚记得他们第一天搬柴时便把这话说给分派的人听过。陆衡此刻把绳头收进袖里，等他们回应，并没有转身离开。\n\n",
+              "start": 2294,
+              "text_hash": "sha256:6fb519fae9ad33a16e474efc94dbc36bf61039a47bfc1c987a762bbb993fc789"
+            },
+            {
+              "end": 2414,
+              "text": "“我想多认一段路，”沈砚说，“但不能拿你的练习工夫去换。先问清任务给的去处与时限，再留够回程的工夫。余下能看多少，我们到时商量。”\n\n",
+              "start": 2347,
+              "text_hash": "sha256:20dafed200157a3583f97f076312747bd96a6c08dd6a04aa8f1ac52dc85581f8"
+            },
+            {
+              "end": 2488,
+              "text": "唐穗接道：“能停下核实的地方我会说清为什么值得看；若时间不够，我先记住问题，不拖着大家走。采什么、怎样采，也要看说明，不能在这里先替现场定好。”\n\n",
+              "start": 2414,
+              "text_hash": "sha256:9479771cad88db992bb60962f5508bf2c3d7ec1750766cce3307072f7463a6b0"
+            },
+            {
+              "end": 2537,
+              "text": "陆衡想了想，说：“这样我能同行。问清条件后，若一趟容不下这些事，就按条件收住，别临时往外加。”\n\n",
+              "start": 2488,
+              "text_hash": "sha256:21097710ff912d47e2dc5f893ca81bd7055375a37c6b3a64588d98d3907d98ef"
+            },
+            {
+              "end": 2674,
+              "text": "三人把参加首次采药的事说定。至于具体往哪里走、现场有什么可采，以及怎样分配路上停留的工夫，他们还要等任务条件明白后再定。沈砚没有再猜那点短暂的气感到了山里能派什么用场。他记住许庭教他的次序，也记住眼前三人各自想从这一趟得到的东西；等真正踏上山路，这些打算才有机会受一次检验。",
+              "start": 2537,
+              "text_hash": "sha256:10c77975b5e653157d30770cdfa2a8f6d936106584be69ed882ea2d436cc000a"
+            }
+          ],
+          "text_hash": "sha256:22fa4bb440ce3ce99caa2dec99d649104871fa28c9786c2c4a8b1ec91ece81cb",
+          "content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+          "omitted_ranges": [],
+          "asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+          "source_characters": 2674,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 3,
+          "passages": [
+            {
+              "end": 105,
+              "text": "石湾谷的石壁一层层向里收，谷底却不平。沈砚跟着唐穗、陆衡走过浅溪时，看见水边两块灰白的石头夹出一道窄口，便回头记了一眼。进谷时脚下是湿沙，过了窄口，碎石里掺着红土；若回程只顾看坡上的草，未必认得出这处转折。\n\n",
+              "start": 0,
+              "text_hash": "sha256:11c9c4e12e5fc09f2e75ef96149ff2252bb89e2ca68d1144838134fdd23b6bc1"
+            },
+            {
+              "end": 255,
+              "text": "唐穗在一片矮草前蹲下，没有伸手就摘。她展开带来的采收说明，又把纸移开，对着草叶看了片刻：“上面说，折露草的外叶长成后，边缘会舒展开，背面摸着不那么软。可这里有几片颜色深，未必就长足了。”她用指腹轻轻托起一片叶，叫沈砚看叶缘，再让他摸另一片较嫩的。两者沾着一样的露水，嫩叶却薄，指腹一松便贴回叶心。\n\n",
+              "start": 105,
+              "text_hash": "sha256:5a90bde8d364922f014b45e4dbd3724a2a2585fe696b3388557a4dfde9a8aefd"
+            },
+            {
+              "end": 269,
+              "text": "“颜色靠不住？”沈砚问。\n\n",
+              "start": 255,
+              "text_hash": "sha256:8c5f1baa5fbc08d571dfedc763aeb34743135bfe2122b7f465d50f6dbad5e6a1"
+            },
+            {
+              "end": 339,
+              "text": "“单看颜色靠不住。”唐穗指了指叶心，“还得看它从哪里长出来。靠里的新叶和底下的芽根要留着。我以前分拣过别的草药，到了这里不能凭那个认。”\n\n",
+              "start": 269,
+              "text_hash": "sha256:6704055be6af3bb0b152ae95adc33c95f99bb3aba10fba75d903d91b99071815"
+            },
+            {
+              "end": 443,
+              "text": "沈砚照她指出的地方看，才分清外圈一片舒展的叶与挤在当中的嫩尖。他原想顺着谷壁再往里走，认一认上方那道岔口，此时却先取出空篓，让唐穗把眼前一处看完。陆衡没有催，只把背带重系了一扣，抬头看了看谷口照进来的光。\n\n",
+              "start": 339,
+              "text_hash": "sha256:2e773caa7953e9d1a2bf83d9789ba204fc2ac9580a07da6b0ffb1eddafe30edd"
+            },
+            {
+              "end": 624,
+              "text": "三人沿着近坡逐处查过去。第一丛外圈有四片叶，摸过叶背、看清叶柄与芽根之间的空隙后，唐穗确认三片可采，留下一片拿不准的。第二丛只有两片外叶长足，里头的嫩叶都不动。第三处草长在石缝里，叶片虽大，根边却被泥水糊住；唐穗拨开浮泥看了两回，仍说不清哪片下手才不会牵到芽根，三人便把这一处留在原地。沈砚在一旁逐片复看，数得清楚：今天确认能取的，只有前两丛的五片成熟外叶。\n\n",
+              "start": 443,
+              "text_hash": "sha256:d8226f978ac312473a8871a4aaba8d9de97c76dec6b1748c3745b1521d0eab84"
+            },
+            {
+              "end": 715,
+              "text": "“再往里也许还有。”他望向坡上的岔口，话说到一半便停了。也许有，并不等于眼下已经核实。唐穗把那片未确认的叶形记在纸角：“我还想拿它和石缝里的比一比，若多留些时候，或许能看明白。”\n\n",
+              "start": 624,
+              "text_hash": "sha256:e3b9a7708c92ad6e06f224f8bde3788bf319065fa2bbf6bede26d8dcb831fe3f"
+            },
+            {
+              "end": 872,
+              "text": "陆衡把水囊收回腰侧：“我们进谷用的工夫，我记着。按原路绕回去，还要过溪、到外院交东西。现在走里面那道岔口，就算只看一眼，回来也得重新找路。”他指向近坡背后一道低坎，“采完从这里下，能接上刚才的窄口。我背篓走前面，腾出两只手扶稳篓；唐穗管分开已确认和有疑处的叶，沈砚认回程的转折。别把采药的工夫花在往里试路上。”\n\n",
+              "start": 715,
+              "text_hash": "sha256:bcbef07979f0ca3824812cc466086c08b06baaee6603b3416a94eb9f47812494"
+            },
+            {
+              "end": 969,
+              "text": "唐穗看了看纸角，又看向那两丛已经核实的草：“五片也够验我们认得对不对。疑处我记下，不混进去。”沈砚望着岔口。那段路离得不远，走过去却得占用三人同一段回程工夫。陆衡把背带交到他手里，等他答话。\n\n",
+              "start": 872,
+              "text_hash": "sha256:c30933d0dcefaa4de1b8073861ae0ab16a1c4d2d15b4df1012cf6af760709d7f"
+            },
+            {
+              "end": 1038,
+              "text": "“就照你说的走。”沈砚接住背带，又把它递回陆衡，“里头那道岔口今天不去。我采第一丛，第二丛你来帮唐穗核对；回程过了低坎，我来找窄口。”\n\n",
+              "start": 969,
+              "text_hash": "sha256:b27fab51bad881094585d69fe8e0035e0edad229cc38b1dcc4aef5d4c861eacb"
+            },
+            {
+              "end": 1195,
+              "text": "唐穗没有立刻点头，先指给他看第一丛那片尚未确认的叶：“这一片别算进去。你下手前再看叶柄，别把当中的芽带动。”沈砚应了一声，蹲到草旁。靠近了才看见外圈三片叶的柄各自伸出，嫩叶却紧紧靠在芽根上。他扶住一片成熟外叶的叶柄，在能看清的接处折下；断处留在外侧，叶心没有跟着晃。他把叶平放在掌心，等唐穗复看，才去取下一片。\n\n",
+              "start": 1038,
+              "text_hash": "sha256:9318e86f5c302343ea9c22caefe66c6aa2643e94d5fceb9b2e888328c7d19a10"
+            },
+            {
+              "end": 1349,
+              "text": "取第三片时，叶背的露水沾湿了他的指尖。他先在衣袖干处擦了擦手，换了一个能托住叶片的位置，才折下去。唐穗铺开一小片干净的布，让他把叶摊着放，不压在湿石上。她俯身再看原处，轻拨外圈余下的叶，芽根仍稳稳留在土里。沈砚收手时发现自己刚才扶叶的位置离嫩尖太近，便记下了这个差别；若只求快，下一片未必还能折得这么稳。\n\n",
+              "start": 1195,
+              "text_hash": "sha256:2fe08d909d69053e32b7ad624742ec7b64c199b997fdcbac3ab4558972c6c756"
+            },
+            {
+              "end": 1526,
+              "text": "另一边，陆衡按唐穗指出的两片逐一托起，等她确认，才从外侧取叶。他手稳，却不自作主张去碰石缝里那丛。唐穗将第二丛采得的两片同前三片放在一处，又把纸角上记的疑处给两人看：“这片颜色深、摸着软，我没采；石缝里的根边看不清，也没采。交回时照实说。”她只在纸上留下叶形和位置，不带走拿不准的叶作样品。五片外叶在布上铺得开，压合之前，她又查了一遍有没有嫩尖混入。\n\n",
+              "start": 1349,
+              "text_hash": "sha256:81c2a9ff657b5406caf29d6586135d544e5e0cd3b4a776fa120e21e2816ed635"
+            },
+            {
+              "end": 1554,
+              "text": "陆衡把布包放进篓里，调紧背带。“现在回，还赶得及。”\n\n",
+              "start": 1526,
+              "text_hash": "sha256:c480edefb3e4342b576d932cf512ff57a9e788ddf6a834b938faac9fd5bfefd0"
+            },
+            {
+              "end": 1683,
+              "text": "沈砚抬头时，坡上的岔口正露在石壁之间。他原本只想多走到那里，看一眼转过去是什么；若现在迈步，陆衡不会替他把失去的时间找回来。他转身随陆衡下了低坎。那道坎从上面看是两块挨着的石头，落脚后才知道右边一块会轻轻摇。他提醒唐穗踩左侧，自己也把右侧石头的裂纹记住。\n\n",
+              "start": 1554,
+              "text_hash": "sha256:02f11d234e6cec68821b845670c4998937a08ddd2b167176083db33ea80c15fe"
+            },
+            {
+              "end": 1807,
+              "text": "低坎下的路一度分成两条。左边有踩平的草，像来时走过；右边碎石稀些，却通向溪声。沈砚停住，想起入谷时先踩到湿沙，随后才见掺红土的碎石。他往右走几步，看见泥里那点红色，再从石间望见两块灰白石头夹成的窄口。“是这边。”他说，“过窄口才到溪旁的湿沙。”\n\n",
+              "start": 1683,
+              "text_hash": "sha256:cbb96e192b3c58aed3e4bcb1b7f0a4ee2e125334009406bea071a4ffb3782598"
+            },
+            {
+              "end": 1985,
+              "text": "陆衡没有催他们跑，只在窄处把背篓卸下一侧，侧身通过，再重新背稳。唐穗看布包没有滑到篓底，才跟上。过溪时水声盖住说话，沈砚先站到对岸，回身指给两人看一块不生滑苔的落脚石。三人沿原先认过的坡道出了谷。外院的屋檐还未把影子投过约定的那段石阶，陆衡抬眼看过，脚步才放缓。沈砚也看见交回处的门已近；篓里的五片叶完整带到了，接下来还要交到程观手里，才算做完这趟事。\n\n",
+              "start": 1807,
+              "text_hash": "sha256:5b8525aa640e6fad91ad2da5b79a4cd4b43c9e28bd1f309cb111b69fcee8d23e"
+            },
+            {
+              "end": 2100,
+              "text": "程观正在外院交回处核对记录。陆衡卸下药篓，唐穗先把布包放到案上，解开一角，让叶片平平露出来。沈砚没有等程观发问，先说：“我们在近坡逐处核过。第一丛确认三片，第二丛两片，共采五片成熟外叶。拿不准的两处留着没动，芽根也留在原地。”\n\n",
+              "start": 1985,
+              "text_hash": "sha256:2a95c6f6d4a9d16d74742a3d65cfe93f6bb61fa82af732ae343b5af07f2c15c1"
+            },
+            {
+              "end": 2173,
+              "text": "唐穗把纸角递过去：“这片色深，却偏软；石缝那丛根边被泥糊住，我没法看清采处。纸上记的是位置和疑点，不算交回的东西。布里只有我们能确认的五片。”\n\n",
+              "start": 2100,
+              "text_hash": "sha256:4178c8d6800f85ffb154e6bd940e82b8184827cf6c41e79b8e4268f707619f6b"
+            },
+            {
+              "end": 2311,
+              "text": "程观先听完，才拿起一片叶，对照案边的采收说明看叶形，又翻到背面，用指腹试过叶片是否受压。他把五片逐一摊开，拨去其中一片叶面沾的细沙，检查叶柄断处与叶心是否混入。唐穗在旁看着，没有替他的查验下结论。沈砚留意到程观看第二丛的叶时停得较久，想起那处石缝边浮泥多，心里也跟着一紧。\n\n",
+              "start": 2173,
+              "text_hash": "sha256:2de4d6f15fbcf133d0f88d8d92c022c446e9d094b610d58fdfd842cfcc769298"
+            },
+            {
+              "end": 2437,
+              "text": "“叶片没有压烂，收的都是可交的成熟外叶。”程观把第五片放回布上，又指了指纸角，“疑处说清了，没有混在里面。按这次事先说明的采法和交回要求，实物合格，五片收讫；这趟采药我给你们记为完成。”他在记录上写下交回的数量与结果，收起布包，才把记录转给三人看。\n\n",
+              "start": 2311,
+              "text_hash": "sha256:599f9de3cd8030652b6d78f98ef4ada0ed4cabded597685334f43a9b51fd885c"
+            },
+            {
+              "end": 2566,
+              "text": "陆衡问：“时段呢？我们没有越过说定的回程时候。”程观抬头看了一眼门外的日影，在记录旁补下到达的时刻：“我记在这里。你们按时回来，实物也在这儿，这两件都对得上。”陆衡看清那一笔，松开了方才一直捏着的背带。唐穗则问起石缝边那丛：“没采的疑处，今日也该报吗？”\n\n",
+              "start": 2437,
+              "text_hash": "sha256:a02f1bd3015a8a202e01aaffd8feda4d6d996b6aa93a6b344f8944f29c4f47be"
+            },
+            {
+              "end": 2784,
+              "text": "“该报你们看见了什么，别替没看清的部分下断语。”程观把纸角还给她，“这次按交回的叶片验。你记的差别，往后若再走到那里，可以照着复看。”唐穗把纸折好，没有再争取把未采的部分算进今日成果。沈砚想到自己在低坎下差点认错的那条草路，便说回程是从近坡下到窄口，转弯时凭红土和两块灰白石头定的方向。陆衡接道：“绕里面的路没走，篓子由我背，才留出了查叶和交回的工夫。”程观听过，将三人所说与已记下的交回结果对上，没有把认路的话写成采得更多的数目。\n\n",
+              "start": 2566,
+              "text_hash": "sha256:72c0c5169cc984c660a957ebbabeb71109a77fa3b1e14aceabecbc58539e10b2"
+            },
+            {
+              "end": 2948,
+              "text": "案上事务办妥后，程观才取出次日的同行安排：“明日晨间，三人到外院门前会合，随药路带队人走一趟你们尚未走过的路。这是一次同行实践，去时听清转折，回来时各说自己记住的地方。沈砚，你想认新路，就亲自走那段，别只听旁人讲。”他说明了会合处和回返时段，让陆衡确认不会挤掉已说定的午后练习。至于正式修炼课程，程观没有替教习组作任何决定。\n\n",
+              "start": 2784,
+              "text_hash": "sha256:d8d0a882725eb3058d42076ed325e3c533e66e65345e8f2b5a13eba2f852cdcf"
+            },
+            {
+              "end": 3086,
+              "text": "三人从交回处出来，篓子已经空了。唐穗边走边看自己纸角上的两处记号，陆衡则把背带绕好，准备回去按时练习。沈砚走到院门前，回望来路。今天他放下了坡上那道岔口，却能说清低坎、红土和窄口怎样一段接着一段。明日的药路，他还未踏过；等真正走上去，哪些转折能靠自己认住，便有机会亲眼试一试。",
+              "start": 2948,
+              "text_hash": "sha256:2428e2596711ee759531adee0702c260b89b078d575e64765de1b0d741e8151f"
+            }
+          ],
+          "text_hash": "sha256:deffc36b57fa7a2e7e011f8d1a4f717928a55576ed483f565fbe9b8a7a89aad2",
+          "content_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+          "omitted_ranges": [],
+          "asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+          "source_characters": 3086,
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    }
+  ],
+  "local_expression_revisions": [
+    {
+      "native_asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+      "selected_asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+      "before_text_hash": "sha256:c1d7efcbaf9ba49303560f9c42d214ab8fa65251ba2407984cefce03826dcd86",
+      "after_text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+      "edits": [
+        {
+          "start": 540,
+          "end": 555,
+          "before": "，身上也没有忽然多出什么本领；",
+          "after": "；"
+        }
+      ],
+      "source": "ASSISTANT_REVISION_PROPOSAL_THROUGH_NATIVE_EDITOR",
+      "full_external_rewrite": false,
+      "expansion": false,
+      "native_production_quality_hidden": false,
+      "author_adoption": "NOT_GRANTED",
+      "formal_acceptance": "NOT_GRANTED"
+    },
+    {
+      "native_asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+      "selected_asset_version_id": "87be8930-26fe-4aef-93ee-b5f29620dc8f",
+      "before_text_hash": "sha256:3fd5eee5a767364d98cf46df3c4d013636437fab7bd2e89e1b9b5cc2cf8215ce",
+      "after_text_hash": "sha256:bbc54b8239e47262c0643b0c75242e397995d0e4fc658ac54a23440c73950a72",
+      "edits": [
+        {
+          "start": 2552,
+          "end": 2562,
+          "before": "他让沈砚把练习分开做",
+          "after": "她让沈砚把练习分开做"
+        },
+        {
+          "start": 2742,
+          "end": 2752,
+          "before": "照他说的试了几口呼吸",
+          "after": "照她说的试了几口呼吸"
+        },
+        {
+          "start": 2907,
+          "end": 2941,
+          "before": "他已能说清那段亲身走过的路；下一段练习，也有了可以一回回核对的起点。",
+          "after": ""
+        }
+      ],
+      "source": "ASSISTANT_REVISION_PROPOSAL_THROUGH_NATIVE_EDITOR",
+      "source_review_run_id": "65657d05-e153-41ef-8178-4b2f6484c58d",
+      "source_lineage_id": "window-35a1145f-closing-summary-repetition",
+      "source_finding_digest": "sha256:a33444eb662f6c1e58c83f24fd24785daa6ccc48459a0116d9cfab4fdb70dda5",
+      "source_review_report_asset_version_id": "authority-output:bd7976db-a5f5-44b4-98e2-cf3857783863:longform.prose_review.report:v1",
+      "full_external_rewrite": false,
+      "expansion": false,
+      "native_provider_second_revision": "NOT_RUN",
+      "author_adoption": "NOT_GRANTED",
+      "formal_acceptance": "NOT_GRANTED",
+      "original_expression_failure_preserved": true
+    }
+  ],
+  "formal_acceptance": "NOT_GRANTED"
+}

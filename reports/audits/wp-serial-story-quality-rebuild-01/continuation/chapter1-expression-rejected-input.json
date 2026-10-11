@@ -1,0 +1,8 @@
+{
+  "original_idempotency_key": "wp-serial:continuation:chapter1:expression-save:v1",
+  "error": "AUTHOR_BASE_HASH_CONFLICT",
+  "persisted_operations": [],
+  "transaction": "ROLLED_BACK",
+  "correction": "Supply exact owner-returned base hashes; original rejection retained",
+  "external_effects": 0
+}

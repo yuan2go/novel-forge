@@ -1,0 +1,708 @@
+{
+  "work_package": "WP-SERIAL-STORY-QUALITY-REBUILD-01",
+  "source_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+  "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+  "status": "EVENT_UNIT_DELIVERED",
+  "original_mutations": 0,
+  "author_adoption": "NOT_GRANTED",
+  "human_readers": "NOT_RUN",
+  "events": [
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_GROUP_PLAN",
+        "operation_id": "81d726e4-e651-4b5b-9547-9acf4fbe22d5",
+        "evidence_ref": "authority-output:b829549c-4bda-48c3-9a76-1d202dda6a5f:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "QUALIFY_NARRATIVE_REALIZATION",
+        "operation_id": "edd4f9c2-aaf8-425b-9f09-f3f0cc226557",
+        "evidence_ref": "narrative-realization:08149464ac157cb8558e3183f5aa77e8538f6083fec3d7c880c377e2bf14a38e"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "aaf6978c-d6fe-41d7-aad3-dbe92ba1ca33",
+        "evidence_ref": "authority-output:aaf6978c-d6fe-41d7-aad3-dbe92ba1ca33:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "a1ca5bdf-d953-4d18-afdf-d44ba6e17e1f",
+        "evidence_ref": "authority-output:aaf6978c-d6fe-41d7-aad3-dbe92ba1ca33:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 1,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+        "evidence_ref": "chapter-request:efd017b112e36856f077ffdba96a4c6a50fc4a40f676750010efc3e955ef7985"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+        "saga_id": "33ce903d-ee60-4d4a-908a-b18b8ae6c3c1",
+        "saga_status": "RUNNING",
+        "operation_id": "8dda26c0-fbb7-4596-8b5b-c90e5f6417fc",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+        "saga_id": "33ce903d-ee60-4d4a-908a-b18b8ae6c3c1",
+        "saga_status": "RUNNING",
+        "operation_id": "b73a7746-2105-4b8e-ad24-b7ea139273c9",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+        "saga_id": "33ce903d-ee60-4d4a-908a-b18b8ae6c3c1",
+        "saga_status": "RUNNING",
+        "operation_id": "2035804d-99f1-4247-8886-8aef7a0ce3dc",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+        "saga_id": "33ce903d-ee60-4d4a-908a-b18b8ae6c3c1",
+        "saga_status": "RUNNING",
+        "operation_id": "7bc73c12-84ac-47ca-a2c5-295ffd123dd1",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+        "saga_id": "33ce903d-ee60-4d4a-908a-b18b8ae6c3c1",
+        "saga_status": "RUNNING",
+        "operation_id": "f59d139d-93f4-4417-a43f-04a4e77335c5",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 1,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "fa4da578-126a-46f4-94d4-b6d7df4dcf88",
+        "saga_id": "33ce903d-ee60-4d4a-908a-b18b8ae6c3c1",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 1,
+      "receipt": {
+        "operation_id": "cf80a33e-4b90-4e24-a624-a19ae57ddfa1",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "chapter": 1,
+        "source_asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+        "source_content_hash": "sha256:bdf6d79b755871ec3e1983e5ffd04216af2b4b27954f419e238d38dd03044a24",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+      "text_digest": "sha256:5be046b714ef5b86a68ffdf95937bdfd5b51ceb024afd4c8125252f753e2b7b2",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 1990,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 2,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "d7264f00-3a4f-4d2e-a8f4-f5721f8bbe80",
+        "evidence_ref": "authority-output:d7264f00-3a4f-4d2e-a8f4-f5721f8bbe80:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 2,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "6f974ae5-c372-4b88-ad52-cc49ab47e007",
+        "evidence_ref": "authority-output:d7264f00-3a4f-4d2e-a8f4-f5721f8bbe80:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 2,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+        "evidence_ref": "chapter-request:b9f7ea12ac720f64fab4fe6814708b2fe1d60641a3bd42c4e56889d224a44802"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+        "saga_id": "6746e810-06c7-41a7-ba04-417a7b24ae9e",
+        "saga_status": "RUNNING",
+        "operation_id": "68dfc68e-6108-4597-9662-2d019317ab34",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+        "saga_id": "6746e810-06c7-41a7-ba04-417a7b24ae9e",
+        "saga_status": "RUNNING",
+        "operation_id": "0a53efff-abfe-44e9-a922-aba704b84b30",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+        "saga_id": "6746e810-06c7-41a7-ba04-417a7b24ae9e",
+        "saga_status": "RUNNING",
+        "operation_id": "212b8f7f-beb3-49b1-af65-cc276bce17f8",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+        "saga_id": "6746e810-06c7-41a7-ba04-417a7b24ae9e",
+        "saga_status": "RUNNING",
+        "operation_id": "a66f6f9f-04f4-4dc7-aa00-4eeca8967277",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+        "saga_id": "6746e810-06c7-41a7-ba04-417a7b24ae9e",
+        "saga_status": "RUNNING",
+        "operation_id": "81f7fa8b-56f8-4e4e-9292-dada7fca7605",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 2,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "c53290f7-f183-4919-a3c2-ca768983ec0b",
+        "saga_id": "6746e810-06c7-41a7-ba04-417a7b24ae9e",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 2,
+      "receipt": {
+        "operation_id": "914ce90f-db88-46dd-8045-b7052041a5ba",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "chapter": 2,
+        "source_asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+        "source_content_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "text_digest": "sha256:4a914f52e1e9bfa8e2e9b0058eaed128ebf01a3a3a0628df0e642820e1eba722",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2278,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 3,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "48049ebb-455c-4975-97d1-b93063c38a77",
+        "evidence_ref": "authority-output:48049ebb-455c-4975-97d1-b93063c38a77:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 3,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "16f28387-f93d-4d4b-a9d5-8464598a01b1",
+        "evidence_ref": "authority-output:48049ebb-455c-4975-97d1-b93063c38a77:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 3,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+        "evidence_ref": "chapter-request:272171f731e99573517d071662e1bff46e7d56d8e2fcf0871ed3ebf6fac80885"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+        "saga_id": "8c784b24-4621-41d5-9e36-edc266cca93f",
+        "saga_status": "RUNNING",
+        "operation_id": "5689b5da-7efa-4d2e-9de1-1130849a1b54",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+        "saga_id": "8c784b24-4621-41d5-9e36-edc266cca93f",
+        "saga_status": "RUNNING",
+        "operation_id": "21f69203-fff8-44a8-b07f-d692d4c15531",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+        "saga_id": "8c784b24-4621-41d5-9e36-edc266cca93f",
+        "saga_status": "RUNNING",
+        "operation_id": "ff9c5f15-a54f-4c0e-a1eb-3f0acc14390c",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+        "saga_id": "8c784b24-4621-41d5-9e36-edc266cca93f",
+        "saga_status": "RUNNING",
+        "operation_id": "de37cbd4-f96f-459d-b6ec-b5de2c25325d",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+        "saga_id": "8c784b24-4621-41d5-9e36-edc266cca93f",
+        "saga_status": "RUNNING",
+        "operation_id": "41edb50b-67ea-4557-a0f9-98222ddec6d1",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 3,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "5f5e3427-0c09-4667-8473-5e5ffa382f3a",
+        "saga_id": "8c784b24-4621-41d5-9e36-edc266cca93f",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "86348ae4-6885-4d29-9ccf-e90012590c20",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 3,
+      "receipt": {
+        "operation_id": "f2234897-c2d3-41bb-8b7e-76d723b2904b",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "chapter": 3,
+        "source_asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+        "source_content_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "text_digest": "sha256:000ae44e4f35455e2006d31fe5b3279a76ef5aa6df2f9c051a65278c6219b932",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2670,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 4,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "a420ce0b-4273-44ad-a9cf-5753b63e06b6",
+        "evidence_ref": "authority-output:a420ce0b-4273-44ad-a9cf-5753b63e06b6:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 4,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "f60891c7-49f9-48db-91d6-00f9dcebe279",
+        "evidence_ref": "authority-output:a420ce0b-4273-44ad-a9cf-5753b63e06b6:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 4,
+      "result": {
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+        "evidence_ref": "chapter-request:16b99b3e0cd19ec45a5ddea7087c9b83113dcd4332ffc1934d467cc635ce392d"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+        "saga_id": "043fe9b5-8547-4cf5-bc26-9cba1ede9840",
+        "saga_status": "RUNNING",
+        "operation_id": "da58499e-5f62-47ed-a95a-2b86890f5948",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+        "saga_id": "043fe9b5-8547-4cf5-bc26-9cba1ede9840",
+        "saga_status": "RUNNING",
+        "operation_id": "6d76565e-8b45-477d-b918-af696ad8d3e4",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+        "saga_id": "043fe9b5-8547-4cf5-bc26-9cba1ede9840",
+        "saga_status": "RUNNING",
+        "operation_id": "9e64360f-854b-4c00-b8fa-da4a772c3fdf",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+        "saga_id": "043fe9b5-8547-4cf5-bc26-9cba1ede9840",
+        "saga_status": "RUNNING",
+        "operation_id": "6b71187b-0726-4f88-9b41-4dc1e58b5593",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+        "saga_id": "043fe9b5-8547-4cf5-bc26-9cba1ede9840",
+        "saga_status": "RUNNING",
+        "operation_id": "d9e85666-f774-4c49-8bf2-5ab392b86cda",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 4,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "0f1d6551-5e85-4fac-917a-d157dae94543",
+        "saga_id": "043fe9b5-8547-4cf5-bc26-9cba1ede9840",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "ba65ecc2-bafe-4ee9-9911-86d15324d1cd",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 4,
+      "receipt": {
+        "operation_id": "f86ee4fc-ca64-4dfc-bca3-7cde7a6c76f9",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+        "chapter": 4,
+        "source_asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+        "source_content_hash": "sha256:5d114e3c04a85b02d52a6ba8fddd29050f69c138c61a4598d5620ad6fdaedfc2",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "native_asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+      "selected_asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+      "text_digest": "sha256:f4d225f9cfe0aeb0143822ee86a4928f235ab40d43253d05e71f3b0925cf1fd3",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2558,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": []
+    }
+  ],
+  "final_book": {
+    "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "book_design_version": "db9855a3-5d98-44ba-9f09-3ce437a9cb31",
+    "book_plan_version": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "production_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "longform_context_versions": {
+      "arc_plan_versions": [
+        "authority-output:10661879-059c-4115-88bc-c978dd18f952:story_planning.candidate:v1",
+        "authority-output:9bccf7e9-bd03-4acc-b76c-241fd2085934:story_planning.candidate:v1",
+        "authority-output:7c0c0c3e-2a3b-4472-9814-8d825617916c:story_planning.candidate:v1",
+        "authority-output:e8c62976-75a1-4208-86fc-563161f4b27c:story_planning.candidate:v1",
+        "authority-output:243b760b-c574-45e6-bead-f7653f953f73:story_planning.candidate:v1",
+        "authority-output:b8e45da9-dc73-4f1d-8fa3-c6d2ae66581f:story_planning.candidate:v1"
+      ],
+      "volume_plan_version": "authority-output:93acb27b-984e-4dab-a712-d2fe9e830478:story_planning.candidate:v1",
+      "quality_trend_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "reward_ledger_version": "authority-output:4be19b7c-d137-49f2-bcef-35052376fc3d:book.bootstrap.reward_ledger_snapshot:v1",
+      "promise_ledger_version": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "reader_segment_version": "authority-output:08c731aa-7360-4e22-8581-1925dadf9f7c:book.bootstrap.reader_segment_profile:v1",
+      "character_state_version": "authority-output:50789306-2be0-42e9-b936-e22010e6c63c:book.bootstrap.character_state_snapshot:v1",
+      "reader_contract_version": "authority-output:376566dd-d0ce-4769-a7c1-6960e8014c28:book.bootstrap.reader_contract:v1",
+      "platform_profile_version": "authority-output:f159c4c5-0564-45b8-9886-9a8aabacaadb:chapter.platform_profile:v1",
+      "foreshadowing_state_version": "authority-output:62bb1c79-69a4-4fe1-8240-efcdb63e8556:book.bootstrap.foreshadow_snapshot:v1"
+    },
+    "root_operation_id": "01f1cb37-2be1-458b-be67-63424a519bca",
+    "saga_id": "15f74198-1ae9-4063-9e25-b470431c2011",
+    "stable_idempotency_key": "wp-serial:continuation:initial-state-candidate:revision-origin-v1",
+    "state": "PAUSED",
+    "current_chapter": 4,
+    "target_chapter_count": 4,
+    "light_recap_cadence": 5,
+    "formal_recap_cadence": 10,
+    "active_chapter_request_id": null,
+    "version": 23,
+    "paused_reason": "完整开篇事件候选已交付4章，本次事件窗口4章；原运行40章保留，交付不等于文学或市场达标。",
+    "failure_classification": "",
+    "accepted_through_chapter": 0,
+    "active_child_delegation_id": null,
+    "active_chapter_number": null,
+    "active_plan_version_id": null,
+    "active_story_state_version_id": null,
+    "active_canon_snapshot_version_id": null,
+    "active_longform_projection_set_id": null,
+    "last_chapter_outcome_version_id": null,
+    "failure_reason": "",
+    "input_snapshot_id": "sha256:eb84c5dc037fdaed802e6998c19d6ea002030c3dbe0a1ebf03265cc9a17dcde6",
+    "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    "author_workflow": {
+      "mode": "AUTHOR_FIRST",
+      "version": "author-workflow.v1",
+      "deep_review": false
+    },
+    "delivery_window_policy": {
+      "asset_version_id": "88f6373f-ef4a-44fe-af8c-b6dbd8d74b42",
+      "book_id": "book:qinglan-wendao-20261008",
+      "version": "book-delivery-window-extension.v1",
+      "project_id": "qid-learning-prose-01",
+      "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "current_chapter": 0,
+      "history_rewritten": false,
+      "stop_after_chapter": 4,
+      "source_book_version": 1,
+      "source_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "accepted_through_chapter": 0,
+      "full_book_target_chapters": 240,
+      "previous_stop_after_chapter": 3,
+      "previous_policy_asset_version_id": null
+    }
+  }
+}

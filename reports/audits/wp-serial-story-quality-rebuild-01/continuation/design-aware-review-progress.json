@@ -1,0 +1,3399 @@
+{
+  "manifest_digest": "sha256:579367a36bc5b10ddcc744c34f486deb4f12394f4a982c7f0facf8a3d7e79a89",
+  "completed_window_ids": [],
+  "total_windows": 1,
+  "uncovered_ranges": [
+    {
+      "asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+      "start": 0,
+      "end": 2327
+    },
+    {
+      "asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+      "start": 0,
+      "end": 2674
+    },
+    {
+      "asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+      "start": 0,
+      "end": 3086
+    },
+    {
+      "asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+      "start": 0,
+      "end": 2941
+    }
+  ],
+  "coverage_complete": false,
+  "review_complete": false,
+  "findings": [],
+  "relation_verification": {
+    "retrieval": {
+      "status": "NOT_REQUESTED"
+    },
+    "completed_hypothesis_ids": [],
+    "paired_evidence_hypothesis_ids": [],
+    "global_relationships_verified": false
+  },
+  "quality_absence_proven": false,
+  "independent_human_review": "NOT_RUN",
+  "run_id": "8abdb0d4-bda5-4a4b-90eb-cc7ecd8a3dbc",
+  "source_current": false,
+  "paused": false,
+  "operations": [
+    {
+      "window_id": "sha256:5c0497e5cee53a3148ebf8e8b45b49935488ecc8a489d33f88d98e71152abb68",
+      "operation_id": "72306677-18f9-4122-b1d7-ae95f30d84a4",
+      "source_operation_id": "ee74290a-fcf7-43d3-a6d0-31dd9343937a",
+      "status": "FAILED_RETRYABLE",
+      "external_effects": [],
+      "generation_recovery": [
+        {
+          "external_effect_id": "d54e4a8a-09ec-4396-b343-2126c5389afe",
+          "source_operation_id": "ee74290a-fcf7-43d3-a6d0-31dd9343937a",
+          "observed_failure": {
+            "phase": "RESPONSE_WAIT",
+            "scope": "ORIGINAL_LOGICAL_TASK",
+            "stage": "RESPONSE_WAIT",
+            "causes": [],
+            "identity": {
+              "book_id": "book:qinglan-wendao-20261008",
+              "attempt_id": "22ed0d2c-a96d-4d20-95a4-284c0d379eb4",
+              "project_id": "qid-learning-prose-01",
+              "execution_id": "chapter-execution:d54e4a8a-09ec-4396-b343-2126c5389afe",
+              "operation_id": "ee74290a-fcf7-43d3-a6d0-31dd9343937a",
+              "fencing_token": 1
+            },
+            "retryable": true,
+            "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+            "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+            "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+            "recovery_state": "REQUIRED",
+            "remote_outcome": "UNESTABLISHED",
+            "business_impact": "CURRENT_TASK_BLOCKED",
+            "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+            "contract_version": "provider-failure.v1",
+            "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+          },
+          "business_commit_right": "REVOKED",
+          "activation_right": "REVOKED",
+          "original_remote_outcome": "UNKNOWN",
+          "original_effect_status": "UNKNOWN",
+          "original_budget_status": "HELD_UNKNOWN",
+          "original_usage": "UNKNOWN",
+          "usage_basis": null,
+          "current_accounting": {
+            "usage": null,
+            "cost": null
+          },
+          "continuation_id": "followup-generation-successor:ee74290a-fcf7-43d3-a6d0-31dd9343937a",
+          "successor_operation_id": "72306677-18f9-4122-b1d7-ae95f30d84a4",
+          "successor_status": "FAILED_RETRYABLE",
+          "successor_failure": {
+            "error_code": "PROVIDER_ROUTING_BLOCKED",
+            "error_message": "PROVIDER_ROUTING_BLOCKED: routing-decision:aecb014e99e8984fb62a07b916d9008973f93bc79ff5758fd32049da26d91c4c",
+            "failure_class": "retryable",
+            "failure_details": {
+              "cause": "ROUTE_CANDIDATES_REJECTED",
+              "stage": "PROVIDER_ROUTE_ADMISSION",
+              "error_code": "PROVIDER_ROUTING_BLOCKED",
+              "task_stage": "longform_prose_review",
+              "decision_id": "routing-decision:aecb014e99e8984fb62a07b916d9008973f93bc79ff5758fd32049da26d91c4c",
+              "retryability": "CHANGED_ADMISSION_REQUIRED",
+              "recovery_state": "NOT_SENT",
+              "business_impact": "NO_GENERATED_CANDIDATE",
+              "recovery_action": "INSPECT_ROUTE_ADMISSION",
+              "provider_invoked": false,
+              "execution_identity": {
+                "work_id": "book:qinglan-wendao-20261008",
+                "chain_id": "sha256:6e66ac0c19a144f1a34bdac0f91da08e0f9662f5275d454052b76b494c1fc806",
+                "attempt_id": "42999451-bc4a-4f49-9f1e-39e804e6984c",
+                "project_id": "qid-learning-prose-01",
+                "operation_id": "72306677-18f9-4122-b1d7-ae95f30d84a4"
+              },
+              "candidate_rejections": [
+                {
+                  "candidate_id": "codex-cli:gpt-6.1-sol:high",
+                  "rejected_reasons": [
+                    "TEMPLATE_MODEL_UNAUTHORIZED"
+                  ],
+                  "estimated_total_tokens": 139256
+                },
+                {
+                  "candidate_id": "codex-cli:gpt-6-sol:high",
+                  "rejected_reasons": [
+                    "PROVIDER_UNAVAILABLE:PROVIDER_RESPONSE_TIMEOUT:d54e4a8a-09ec-4396-b343-2126c5389afe:until:2026-10-11T04:59:30.417947+00:00"
+                  ],
+                  "estimated_total_tokens": 139256
+                }
+              ]
+            }
+          },
+          "recovery_exhaustion": null,
+          "recovery_action": "NATIVE_CONTINUATION",
+          "recovery_state": "SUCCESSOR_RUNNING"
+        }
+      ],
+      "budget_receipts": [],
+      "execution_evidence": []
+    }
+  ],
+  "expected_version": 1,
+  "manifest": {
+    "policy": {
+      "reading_mode": "DESIGN_AWARE",
+      "execution_mode": "MANUAL",
+      "policy_version": "serial-design-review-v1",
+      "maximum_windows": 40,
+      "window_selection": "EXPLICIT_RANGES_ONLY",
+      "window_codepoints": 25000,
+      "diagnosis_contract": "prose-root-cause.v1",
+      "overlap_codepoints": 0,
+      "context_token_budget": 100000
+    },
+    "sources": [
+      {
+        "text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+        "asset_hash": "sha256:054c415fbb5d92474fb83261036e93b8b0774fe8d5ee8c875fd0ec7894ada613",
+        "codepoints": 2327,
+        "acceptance_id": "",
+        "chapter_number": 1,
+        "asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+        "creative_baseline": {
+          "style": {
+            "policies": [
+              {
+                "constraints": null,
+                "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                "structured_facts": [
+                  {
+                    "kind": "voice_contract",
+                    "layer": "NARRATOR",
+                    "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "GENRE",
+                    "guidance": [
+                      "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                      "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                      "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                      "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                      "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "问询一项尚未接受的劳作安排时。",
+                        "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                        "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                      },
+                      {
+                        "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                        "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                        "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                      },
+                      {
+                        "situation": "协商首次结伴采药的路线时。",
+                        "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                        "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                    "character_id": "character:shen-yan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "收到尚未说明回程安排的采药邀请时。",
+                        "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                        "motivation": "在答应同行前保留自己的时间边界。"
+                      },
+                      {
+                        "situation": "检查拟用于同行的携行工具时。",
+                        "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                        "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                      },
+                      {
+                        "situation": "同行者提出在任务途中多看一处观察点时。",
+                        "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                        "motivation": "让额外学习进入协商，而非一概拒绝。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                    "character_id": "character:lu-heng",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "准备采药时，有人询问她是否认识目标药材。",
+                        "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                        "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                      },
+                      {
+                        "situation": "商定材料保管办法时。",
+                        "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                        "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                      },
+                      {
+                        "situation": "任务途中发现值得核实的细小差别时。",
+                        "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                        "motivation": "争取观察机会，同时承认同行者的安排。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                    "character_id": "character:tang-sui",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "有人只说引气练习没有进展时。",
+                        "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                        "motivation": "让求助者提供可用于指导的观察。"
+                      },
+                      {
+                        "situation": "未来观察到弟子一次短暂成功后。",
+                        "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                        "motivation": "区分一次感觉与可重复的操作能力。"
+                      },
+                      {
+                        "situation": "沈砚询问自己是否能够参加正式课程时。",
+                        "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                        "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                    "character_id": "character:xu-ting",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                        "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                        "motivation": "让调整请求能够被具体处理。"
+                      },
+                      {
+                        "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                        "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                        "motivation": "区分任务报酬与兑换对象的实际供给。"
+                      },
+                      {
+                        "situation": "有人要求他直接确认正式课程资格时。",
+                        "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                        "motivation": "在部门职责边界内给出下一步回应。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                    "character_id": "character:cheng-guan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "key": "work_applicability",
+                    "value": {
+                      "scope": "BOOK",
+                      "book_id": "book:qinglan-wendao-20261008",
+                      "declarations": [
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                          "field_path": "$.subgenre"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                          "field_path": "$.core_desire"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                          "field_path": "$.core_fear"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                          "field_path": "$.core_conflict"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                          "field_path": "$.serialization_potential"
+                        }
+                      ],
+                      "source_bindings": [
+                        {
+                          "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                          "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                        },
+                        {
+                          "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        },
+                        {
+                          "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                          "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                        }
+                      ],
+                      "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                      "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                    }
+                  },
+                  {
+                    "key": "creative_style",
+                    "value": {
+                      "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                      "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                      "constraints": [
+                        "正文主要使用简体中文，单章2500—3500中文字。",
+                        "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                        "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                        "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                        "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                        "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                        "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                        "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                      ],
+                      "genre_conventions": [
+                        "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                        "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                        "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                        "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                        "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                      ],
+                      "original_examples": [
+                        {
+                          "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                          "purpose": "呈现扎实练习中的可见变化。",
+                          "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                        },
+                        {
+                          "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                          "purpose": "让同门利益参与任务选择。",
+                          "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                        },
+                        {
+                          "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                          "purpose": "通过具体取舍表现主角主动性。",
+                          "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                        },
+                        {
+                          "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                          "purpose": "建立章际承接与节奏变化。",
+                          "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "creative_direction",
+                    "value": {
+                      "genre": "传统修仙",
+                      "subgenre": "宗门成长与任务历练",
+                      "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                      "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                    }
+                  },
+                  {
+                    "key": "realization_policy",
+                    "value": {
+                      "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                      "contract_version": "scene-craft-tasks.v2"
+                    }
+                  }
+                ]
+              }
+            ],
+            "contract_version": "draft-style-view-v2",
+            "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+          },
+          "chapter": 1,
+          "source_plan": {
+            "content_hash": "sha256:21794454bf856a87142f180f13f3359b8c6c669a43ab69aa91e7f6c714d24751",
+            "asset_version_id": "eab97c88-4f27-436d-b8c0-070ccf02dee0"
+          },
+          "point_of_view": null,
+          "author_guidance": {},
+          "baseline_digest": "sha256:c4f8c7b8af5dc15d4d5ac7ca17f13cc3e2cd2ea591299aaa13ffbdc4e8d617cf",
+          "contract_version": "creative-baseline.v1",
+          "style_constraints": [],
+          "target_word_count": null,
+          "method_requirements": {
+            "reward": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": "入门及当日劳动安顿完成。",
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": "安顿下来的沈砚听见基础吐纳的讲解，知道明日能开始练，却还不知道自己能否感觉到气。",
+                "chapter_hook": "安顿下来的沈砚听见基础吐纳的讲解，知道明日能开始练，却还不知道自己能否感觉到气。"
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "沈砚主动争取并完成外门入门，同时与陆衡把两人的初始劳动安顿妥当。"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "普通少年以自己的行动取得开始学习的立足之处。",
+                "reader_promise_actions": [
+                  "入门及当日劳动安顿完成。"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": "以沈砚第三人称限知视角完整写出当日入门、协商和劳动结果；章末由基础吐纳讲解引向明日练习的具体期待。"
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "APPLICABLE",
+                "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "入门当天即获得气感或正式课程资格。",
+            "把劳动安顿留作下一章的未完成手续。"
+          ]
+        },
+        "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+      },
+      {
+        "text_hash": "sha256:22fa4bb440ce3ce99caa2dec99d649104871fa28c9786c2c4a8b1ec91ece81cb",
+        "asset_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+        "codepoints": 2674,
+        "acceptance_id": "",
+        "chapter_number": 2,
+        "asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+        "creative_baseline": {
+          "style": {
+            "policies": [
+              {
+                "constraints": null,
+                "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                "structured_facts": [
+                  {
+                    "kind": "voice_contract",
+                    "layer": "NARRATOR",
+                    "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "GENRE",
+                    "guidance": [
+                      "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                      "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                      "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                      "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                      "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "问询一项尚未接受的劳作安排时。",
+                        "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                        "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                      },
+                      {
+                        "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                        "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                        "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                      },
+                      {
+                        "situation": "协商首次结伴采药的路线时。",
+                        "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                        "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                    "character_id": "character:shen-yan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "收到尚未说明回程安排的采药邀请时。",
+                        "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                        "motivation": "在答应同行前保留自己的时间边界。"
+                      },
+                      {
+                        "situation": "检查拟用于同行的携行工具时。",
+                        "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                        "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                      },
+                      {
+                        "situation": "同行者提出在任务途中多看一处观察点时。",
+                        "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                        "motivation": "让额外学习进入协商，而非一概拒绝。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                    "character_id": "character:lu-heng",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "准备采药时，有人询问她是否认识目标药材。",
+                        "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                        "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                      },
+                      {
+                        "situation": "商定材料保管办法时。",
+                        "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                        "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                      },
+                      {
+                        "situation": "任务途中发现值得核实的细小差别时。",
+                        "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                        "motivation": "争取观察机会，同时承认同行者的安排。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                    "character_id": "character:tang-sui",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "有人只说引气练习没有进展时。",
+                        "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                        "motivation": "让求助者提供可用于指导的观察。"
+                      },
+                      {
+                        "situation": "未来观察到弟子一次短暂成功后。",
+                        "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                        "motivation": "区分一次感觉与可重复的操作能力。"
+                      },
+                      {
+                        "situation": "沈砚询问自己是否能够参加正式课程时。",
+                        "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                        "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                    "character_id": "character:xu-ting",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                        "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                        "motivation": "让调整请求能够被具体处理。"
+                      },
+                      {
+                        "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                        "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                        "motivation": "区分任务报酬与兑换对象的实际供给。"
+                      },
+                      {
+                        "situation": "有人要求他直接确认正式课程资格时。",
+                        "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                        "motivation": "在部门职责边界内给出下一步回应。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                    "character_id": "character:cheng-guan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "key": "work_applicability",
+                    "value": {
+                      "scope": "BOOK",
+                      "book_id": "book:qinglan-wendao-20261008",
+                      "declarations": [
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                          "field_path": "$.subgenre"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                          "field_path": "$.core_desire"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                          "field_path": "$.core_fear"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                          "field_path": "$.core_conflict"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                          "field_path": "$.serialization_potential"
+                        }
+                      ],
+                      "source_bindings": [
+                        {
+                          "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                          "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                        },
+                        {
+                          "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        },
+                        {
+                          "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                          "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                        }
+                      ],
+                      "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                      "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                    }
+                  },
+                  {
+                    "key": "creative_style",
+                    "value": {
+                      "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                      "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                      "constraints": [
+                        "正文主要使用简体中文，单章2500—3500中文字。",
+                        "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                        "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                        "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                        "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                        "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                        "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                        "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                      ],
+                      "genre_conventions": [
+                        "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                        "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                        "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                        "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                        "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                      ],
+                      "original_examples": [
+                        {
+                          "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                          "purpose": "呈现扎实练习中的可见变化。",
+                          "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                        },
+                        {
+                          "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                          "purpose": "让同门利益参与任务选择。",
+                          "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                        },
+                        {
+                          "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                          "purpose": "通过具体取舍表现主角主动性。",
+                          "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                        },
+                        {
+                          "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                          "purpose": "建立章际承接与节奏变化。",
+                          "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "creative_direction",
+                    "value": {
+                      "genre": "传统修仙",
+                      "subgenre": "宗门成长与任务历练",
+                      "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                      "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                    }
+                  },
+                  {
+                    "key": "realization_policy",
+                    "value": {
+                      "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                      "contract_version": "scene-craft-tasks.v2"
+                    }
+                  }
+                ]
+              }
+            ],
+            "contract_version": "draft-style-view-v2",
+            "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+          },
+          "chapter": 2,
+          "source_plan": {
+            "content_hash": "sha256:0ab3931135c9a484520435cc1995993e7b2e4928f629a4d3d4d0b52b8d3ce9bc",
+            "asset_version_id": "3dae4da2-0744-47f4-8732-2e7baaaba976"
+          },
+          "point_of_view": null,
+          "author_guidance": {},
+          "baseline_digest": "sha256:7773316fbaca30891fc3787f888b7dd5aa5e95098235a5ad678be8eb659ecfe7",
+          "contract_version": "creative-baseline.v1",
+          "style_constraints": [],
+          "target_word_count": null,
+          "method_requirements": {
+            "reward": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": "答疑使沈砚调整呼吸与注意的配合，数日练习首次得到气感。",
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": "三人决定参加首次采药；他们想从这一趟得到的东西并不相同。",
+                "chapter_hook": "三人决定参加首次采药；他们想从这一趟得到的东西并不相同。"
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "略过数日重复练习，以一次有效答疑和动作调整完成沈砚的初次气感，并决定参加首次采药。"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "让读者看见观察、调整与重复怎样产生第一次可辨认的学习结果。",
+                "reader_promise_actions": [
+                  "沈砚经数日练习和一次针对具体障碍的答疑，首次获得短暂、可辨认的气感。"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": "本章以具体动作和短暂气感兑现一次清楚的学习进展，章末让三人带着不同目标决定同行首次采药，顺势承接下一章的现场任务。"
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "APPLICABLE",
+                "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "把初次气感写成稳定运用灵气、辨药术或御剑能力。",
+            "用准备物件和逐项询问占满一章，却不完成初次气感。"
+          ]
+        },
+        "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+      },
+      {
+        "text_hash": "sha256:deffc36b57fa7a2e7e011f8d1a4f717928a55576ed483f565fbe9b8a7a89aad2",
+        "asset_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+        "codepoints": 3086,
+        "acceptance_id": "",
+        "chapter_number": 3,
+        "asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+        "creative_baseline": {
+          "style": {
+            "policies": [
+              {
+                "constraints": null,
+                "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                "structured_facts": [
+                  {
+                    "kind": "voice_contract",
+                    "layer": "NARRATOR",
+                    "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "GENRE",
+                    "guidance": [
+                      "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                      "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                      "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                      "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                      "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "问询一项尚未接受的劳作安排时。",
+                        "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                        "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                      },
+                      {
+                        "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                        "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                        "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                      },
+                      {
+                        "situation": "协商首次结伴采药的路线时。",
+                        "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                        "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                    "character_id": "character:shen-yan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "收到尚未说明回程安排的采药邀请时。",
+                        "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                        "motivation": "在答应同行前保留自己的时间边界。"
+                      },
+                      {
+                        "situation": "检查拟用于同行的携行工具时。",
+                        "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                        "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                      },
+                      {
+                        "situation": "同行者提出在任务途中多看一处观察点时。",
+                        "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                        "motivation": "让额外学习进入协商，而非一概拒绝。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                    "character_id": "character:lu-heng",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "准备采药时，有人询问她是否认识目标药材。",
+                        "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                        "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                      },
+                      {
+                        "situation": "商定材料保管办法时。",
+                        "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                        "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                      },
+                      {
+                        "situation": "任务途中发现值得核实的细小差别时。",
+                        "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                        "motivation": "争取观察机会，同时承认同行者的安排。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                    "character_id": "character:tang-sui",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "有人只说引气练习没有进展时。",
+                        "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                        "motivation": "让求助者提供可用于指导的观察。"
+                      },
+                      {
+                        "situation": "未来观察到弟子一次短暂成功后。",
+                        "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                        "motivation": "区分一次感觉与可重复的操作能力。"
+                      },
+                      {
+                        "situation": "沈砚询问自己是否能够参加正式课程时。",
+                        "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                        "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                    "character_id": "character:xu-ting",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                        "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                        "motivation": "让调整请求能够被具体处理。"
+                      },
+                      {
+                        "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                        "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                        "motivation": "区分任务报酬与兑换对象的实际供给。"
+                      },
+                      {
+                        "situation": "有人要求他直接确认正式课程资格时。",
+                        "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                        "motivation": "在部门职责边界内给出下一步回应。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                    "character_id": "character:cheng-guan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "key": "work_applicability",
+                    "value": {
+                      "scope": "BOOK",
+                      "book_id": "book:qinglan-wendao-20261008",
+                      "declarations": [
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                          "field_path": "$.subgenre"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                          "field_path": "$.core_desire"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                          "field_path": "$.core_fear"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                          "field_path": "$.core_conflict"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                          "field_path": "$.serialization_potential"
+                        }
+                      ],
+                      "source_bindings": [
+                        {
+                          "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                          "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                        },
+                        {
+                          "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        },
+                        {
+                          "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                          "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                        }
+                      ],
+                      "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                      "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                    }
+                  },
+                  {
+                    "key": "creative_style",
+                    "value": {
+                      "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                      "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                      "constraints": [
+                        "正文主要使用简体中文，单章2500—3500中文字。",
+                        "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                        "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                        "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                        "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                        "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                        "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                        "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                      ],
+                      "genre_conventions": [
+                        "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                        "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                        "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                        "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                        "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                      ],
+                      "original_examples": [
+                        {
+                          "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                          "purpose": "呈现扎实练习中的可见变化。",
+                          "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                        },
+                        {
+                          "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                          "purpose": "让同门利益参与任务选择。",
+                          "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                        },
+                        {
+                          "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                          "purpose": "通过具体取舍表现主角主动性。",
+                          "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                        },
+                        {
+                          "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                          "purpose": "建立章际承接与节奏变化。",
+                          "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "creative_direction",
+                    "value": {
+                      "genre": "传统修仙",
+                      "subgenre": "宗门成长与任务历练",
+                      "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                      "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                    }
+                  },
+                  {
+                    "key": "realization_policy",
+                    "value": {
+                      "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                      "contract_version": "scene-craft-tasks.v2"
+                    }
+                  }
+                ]
+              }
+            ],
+            "contract_version": "draft-style-view-v2",
+            "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+          },
+          "chapter": 3,
+          "source_plan": {
+            "content_hash": "sha256:3d05dcab0c7e64e5891a1636dcf8dec3a5857a90101a82fb3d2cf47efe0dced2",
+            "asset_version_id": "36f2dd74-b3cd-4653-9e7e-09a74a0e7d5f"
+          },
+          "point_of_view": null,
+          "author_guidance": {},
+          "baseline_digest": "sha256:443ef18be949d2ae0dcad72a98f3aca4089a234dbc7b8278533dbce6ceccebdd",
+          "contract_version": "creative-baseline.v1",
+          "style_constraints": [],
+          "target_word_count": null,
+          "method_requirements": {
+            "reward": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": "程观按事先说明与实际质量办理交回，并在职责内安排一次陌生药路同行实践。",
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": "实物交付带来一次明确的陌生药路同行机会，沈砚明日将亲自走那段路。",
+                "chapter_hook": "实物交付带来一次明确的陌生药路同行机会，沈砚明日将亲自走那段路。"
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "完整完成首次结伴采药：现场辨认与可采份额核实、有限采收、分歧下的取舍、回程、实物交回及明确机会。"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "让三人的不同目标真正改变办法，并以实物交付检验合作。",
+                "reader_promise_actions": [
+                  "首次采药在本章取得明确的实物交回结果。",
+                  "唐穗与陆衡的办法在采收质量、回程时段和交付结果中显示作用。",
+                  "沈砚获得来源清楚、日期明确的陌生药路同行机会。"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": "在第3章内完成首次采药与实物交付的完整行动和结果；章末以交付换来的次日陌生药路同行安排，承接第4章的亲身实践。"
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "APPLICABLE",
+                "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "将采收、回程或实物交回拖到第4章。",
+            "未核实成熟可采份额便采折露草，或损伤芽根。",
+            "仅凭称赞或未来邀约替代交付结果。"
+          ]
+        },
+        "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+      },
+      {
+        "text_hash": "sha256:3fd5eee5a767364d98cf46df3c4d013636437fab7bd2e89e1b9b5cc2cf8215ce",
+        "asset_hash": "sha256:5d114e3c04a85b02d52a6ba8fddd29050f69c138c61a4598d5620ad6fdaedfc2",
+        "codepoints": 2941,
+        "acceptance_id": "",
+        "chapter_number": 4,
+        "asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+        "creative_baseline": {
+          "style": {
+            "policies": [
+              {
+                "constraints": null,
+                "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                "structured_facts": [
+                  {
+                    "kind": "voice_contract",
+                    "layer": "NARRATOR",
+                    "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "GENRE",
+                    "guidance": [
+                      "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                      "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                      "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                      "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                      "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "问询一项尚未接受的劳作安排时。",
+                        "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                        "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                      },
+                      {
+                        "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                        "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                        "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                      },
+                      {
+                        "situation": "协商首次结伴采药的路线时。",
+                        "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                        "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                    "character_id": "character:shen-yan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "收到尚未说明回程安排的采药邀请时。",
+                        "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                        "motivation": "在答应同行前保留自己的时间边界。"
+                      },
+                      {
+                        "situation": "检查拟用于同行的携行工具时。",
+                        "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                        "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                      },
+                      {
+                        "situation": "同行者提出在任务途中多看一处观察点时。",
+                        "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                        "motivation": "让额外学习进入协商，而非一概拒绝。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                    "character_id": "character:lu-heng",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "准备采药时，有人询问她是否认识目标药材。",
+                        "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                        "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                      },
+                      {
+                        "situation": "商定材料保管办法时。",
+                        "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                        "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                      },
+                      {
+                        "situation": "任务途中发现值得核实的细小差别时。",
+                        "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                        "motivation": "争取观察机会，同时承认同行者的安排。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                    "character_id": "character:tang-sui",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "有人只说引气练习没有进展时。",
+                        "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                        "motivation": "让求助者提供可用于指导的观察。"
+                      },
+                      {
+                        "situation": "未来观察到弟子一次短暂成功后。",
+                        "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                        "motivation": "区分一次感觉与可重复的操作能力。"
+                      },
+                      {
+                        "situation": "沈砚询问自己是否能够参加正式课程时。",
+                        "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                        "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                    "character_id": "character:xu-ting",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                        "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                        "motivation": "让调整请求能够被具体处理。"
+                      },
+                      {
+                        "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                        "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                        "motivation": "区分任务报酬与兑换对象的实际供给。"
+                      },
+                      {
+                        "situation": "有人要求他直接确认正式课程资格时。",
+                        "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                        "motivation": "在部门职责边界内给出下一步回应。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                    "character_id": "character:cheng-guan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "key": "work_applicability",
+                    "value": {
+                      "scope": "BOOK",
+                      "book_id": "book:qinglan-wendao-20261008",
+                      "declarations": [
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                          "field_path": "$.subgenre"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                          "field_path": "$.core_desire"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                          "field_path": "$.core_fear"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                          "field_path": "$.core_conflict"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                          "field_path": "$.serialization_potential"
+                        }
+                      ],
+                      "source_bindings": [
+                        {
+                          "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                          "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                        },
+                        {
+                          "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        },
+                        {
+                          "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                          "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                        }
+                      ],
+                      "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                      "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                    }
+                  },
+                  {
+                    "key": "creative_style",
+                    "value": {
+                      "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                      "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                      "constraints": [
+                        "正文主要使用简体中文，单章2500—3500中文字。",
+                        "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                        "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                        "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                        "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                        "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                        "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                        "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                      ],
+                      "genre_conventions": [
+                        "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                        "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                        "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                        "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                        "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                      ],
+                      "original_examples": [
+                        {
+                          "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                          "purpose": "呈现扎实练习中的可见变化。",
+                          "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                        },
+                        {
+                          "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                          "purpose": "让同门利益参与任务选择。",
+                          "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                        },
+                        {
+                          "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                          "purpose": "通过具体取舍表现主角主动性。",
+                          "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                        },
+                        {
+                          "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                          "purpose": "建立章际承接与节奏变化。",
+                          "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "creative_direction",
+                    "value": {
+                      "genre": "传统修仙",
+                      "subgenre": "宗门成长与任务历练",
+                      "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                      "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                    }
+                  },
+                  {
+                    "key": "realization_policy",
+                    "value": {
+                      "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                      "contract_version": "scene-craft-tasks.v2"
+                    }
+                  }
+                ]
+              }
+            ],
+            "contract_version": "draft-style-view-v2",
+            "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+          },
+          "chapter": 4,
+          "source_plan": {
+            "content_hash": "sha256:0d78bd1cf2d16edafdf08dec6556295f350017c3dff2d758bba3a18840688ebe",
+            "asset_version_id": "e7b3fb9c-0c6d-4474-aee5-847ffbb9341f"
+          },
+          "point_of_view": null,
+          "author_guidance": {},
+          "baseline_digest": "sha256:e2be9c235d2b95b758c8f74f65c207d65159afa7ed0b24a56452cc92a0e807f8",
+          "contract_version": "creative-baseline.v1",
+          "style_constraints": [],
+          "target_word_count": null,
+          "method_requirements": {
+            "reward": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": "沈砚把所走路段的岔口与地形依据讲给需要使用这段路的人，并据反馈修正说法。",
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": "沈砚已经能说明这段走过的路，下一步要把短暂气感练得更稳，并按课程答复继续学习。",
+                "chapter_hook": "沈砚已经能说明这段走过的路，下一步要把短暂气感练得更稳，并按课程答复继续学习。"
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "实际走完首次交付换来的陌生药路同行实践；沈砚提出方向判断，经现场指认修正并向需要的人说明所走路段，同时得到正式课程请求的职责内答复。"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "以实际同行兑现采药结果，再把课程答复转成可执行的学习办法。",
+                "reader_promise_actions": [
+                  "陌生药路机会在第4章兑现为实际走过、现场修正和事后说明。",
+                  "正式课程请求获得清楚回应；未满足录入条件时仍有可执行的基础学习办法。"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": "以一次完整的陌生药路同行和一次明确的课程答复收束开篇四章的连续事件；章末由沈砚可执行的基础练习承接第5章以后的学习。"
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "APPLICABLE",
+                "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "只约定日后同行，或只听人讲解而未亲身走过。",
+            "把经指认的一段路写成沈砚已通晓整条陌生路线。",
+            "以基础答疑、好感或未核实的课位冒充正式课程录入。"
+          ]
+        },
+        "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+      }
+    ],
+    "windows": [
+      {
+        "spans": [
+          {
+            "end": 2327,
+            "text": "清晨的山气还没有散，沈砚走到青岚宗外门时，鞋底沾着一层薄泥。他在山村走惯了土路，到了这里，仍先看脚下：石阶边缘磨得发亮，往上是外门的院墙；另一条路绕过墙角，顺着山脊伸向雾里。\n\n他沿那条路望了一会儿。山外还有多远，他不知道。真有一日能凭自己的本领出去，也得先从眼前这道门进去。\n\n门边设着一张长桌，几名来人依次向桌后的人报上姓名。轮到沈砚，桌后的人抬头等着，他却先看见名册上密密的字，喉咙有些发紧。他把包袱往肩上提稳，开口道：“我叫沈砚，十六岁，从山村来。我想入青岚宗外门，该从哪里办起？”\n\n那人让他把姓名、年岁和来处再说一遍，听清后落笔，接着指给他看名册旁留出的地方。沈砚照着指示按下指印。墨色沾在指腹，他等纸上的印记干了些，才收回手。桌后的人又从一排木牌里取下一块，把名册上的名字与牌上的字对过，递给他。\n\n“收好。进去后先到东边的劳作院报到，住处也在那里问清。今天该做的事，到了有人告诉你。”\n\n沈砚握住木牌，没有马上走：“这样就算办完入门了？”\n\n“名已记下，牌也领了。你现在是外门弟子。”那人看了一眼他背上的包袱，“去吧，别让下一处等到午后。”\n\n沈砚让开桌前的位置，把木牌翻过来看了看。上面的名字确是自己的，指腹还留着一点未擦净的墨。他从山村带来的东西仍只有一只包袱；可下次有人问起他为何站在院里，他已有了能拿出来的凭据。\n\n穿过门洞时，他回头看了一眼。那条通向山外的路已经被墙角挡住。沈砚把木牌放进衣襟，照着刚才听到的方向，先往东边去。\n\n劳作院里有人正在把木柴从露天场地挪进棚下。沈砚出示木牌，问清住处，把包袱放到指定的床位，再回来听今日的活。负责分派的人指着柴棚说，今日有十八捆柴须搬进去，绳子不能散，码好后要留出通道；往后几日，这处柴棚的早间收拾由他和陆衡一道做，做完须回来报一声。\n\n沈砚走到柴堆旁，陆衡正蹲着检查一捆柴的绳结。他把松出的绳头重新穿过结眼，拉紧了才起身。\n\n“你是沈砚？”陆衡看了一眼他胸前露出的木牌，“十八捆都在这儿。先说怎么分。我午后有自己的练习，日头过了那边檐角，我就得收手去做准备。”\n\n沈砚顺着他指的方向看去。院墙的影子还短，时间却不是可以随便拖的。他也想知道明日何时能开始学，便问：“今天搬完就算完？往后早间也只管这处柴棚？”\n\n“分派的人说的是这处。来多少要看当天。”陆衡用脚尖点了点地上两捆较粗的柴，“要是每回都等搬到一半才说加活，我没法留住练习的工夫。”\n\n沈砚想了想：“今天我搬十捆，你搬八捆。你会看绳结，棚里怎么码稳也由你先定，我照着放。往后早间我先把柴运到棚口，你收进去码好；若哪天多得做不完，就当面重新分，别算成谁悄悄欠了谁的。”\n\n陆衡没有立刻应。他抬起一捆试了试重量，又看向棚内的空位：“十捆你扛得住？山路不远，来回也费腿。”\n\n“先走两趟，看我能不能照这个数做。”沈砚说，“要是做不到，我当场说。”\n\n“行。”陆衡把那捆柴放回去，“我先把棚里空出来。你别只图快，绳子磨断了，散柴还得重捆。”\n\n沈砚挑了两捆绳结紧的，从柴堆到棚口走了一趟。场地有一小段斜坡，清晨的湿土踩上去发滑。他下坡时把步子放短，到平地再加快。第二趟，他发现两捆柴一大一小，肩上的木棍总向一边歪，便停下调换位置。棚里传来木柴落地的声响，陆衡已把通道旁的杂物移走，在最下层摆出平整的一排。\n\n“先放这里。”陆衡指着棚口一块干地，“我来收，别把路堵了。”\n\n沈砚照做。等他搬来第五捆，陆衡已经把自己的头两捆也送到棚内，还抽紧了一道将松未松的绳。两人各做各的份，经过棚口时却都得看对方留下的地方够不够用。沈砚后来把柴放得太靠外，陆衡叫住他，示意他往里挪半臂；下一趟陆衡又把最下层的一捆转了方向，好让沈砚带来的粗柴有地方落。\n\n临近午间，十八捆都进了棚。沈砚扛完自己说定的十捆，肩膀被木棍压得发酸，最后一趟仍先把柴放稳，才松开手。陆衡搬了八捆，随后沿着柴垛检查，抽出一根横在通道里的短枝，发现上层有两捆压得不齐，便叫沈砚扶住一侧，两人把它们重新码好。陆衡退开一步看，才说：“这样能走人，也不容易塌。”\n\n沈砚从棚口走了一遍，衣袖没有擦到柴垛。场地上的柴已经清空，背绳和木棍也归回原处。他们一道向分派的人报了数。那人到棚前看过通道和柴垛，在今日的记录上划下完成的一笔，问起往后早间如何做。\n\n“我先搬到棚口，陆衡收进去、码稳。”沈砚说，“多出来的量，我们当日再商量。”\n\n陆衡接道：“午后那段我要留给练习。早间若有变动，请早些告诉我们。”\n\n分派的人点头，把两人的分担记在旁边：“照这个做。今天的活完了。”\n\n出了柴棚，陆衡看了看院墙上的日影，眉头松了些。“我得走了。明早先到这儿会合。”\n\n“好。”沈砚答应下来。他知道陆衡赶的是自己说过的时段，没有再拉着他闲谈。沈砚回到住处洗净手上的木屑，衣襟里的木牌碰着胸口；床位找到了，第一天的活也有了结果。明日早间该往哪里走、和谁一道做，他已能说清。\n\n傍晚，新入门的人被叫到廊下，听基础吐纳的讲解。讲解的人先让他们记住坐姿和呼吸的次序：背要放直，呼吸放缓，注意气息出入时身体哪里先动、哪里跟着动；急着憋气，反而容易把原本能察觉的变化弄乱。他说得不快，示范了一遍，才让众人记着明日有空时自行开始尝试。有人问多久能感到气，他只答，先照着做，再分清实际感觉到的与自己盼着感觉到的。\n\n沈砚站在廊下，默默把次序记了一遍。他今日扛柴时也曾靠调匀呼吸走完斜坡，但那只是寻常喘息，不能拿来回答刚才的问题。他没有坐下来试，明日的早间劳动和练习时间都已说定，不必在疲倦时抢这一回。夜色渐深，他摸了摸洗净的指腹，想到清早名册上的指印，又想到明日坐下后要数清自己的呼吸。那时能不能感觉到气，他还不知道。",
+            "start": 0,
+            "text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+            "asset_hash": "sha256:054c415fbb5d92474fb83261036e93b8b0774fe8d5ee8c875fd0ec7894ada613",
+            "codepoints": 2327,
+            "acceptance_id": "",
+            "chapter_number": 1,
+            "asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+            "creative_baseline": {
+              "style": {
+                "policies": [
+                  {
+                    "constraints": null,
+                    "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                    "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                    "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                    "structured_facts": [
+                      {
+                        "kind": "voice_contract",
+                        "layer": "NARRATOR",
+                        "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "GENRE",
+                        "guidance": [
+                          "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                          "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                          "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                          "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                          "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "问询一项尚未接受的劳作安排时。",
+                            "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                            "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                          },
+                          {
+                            "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                            "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                            "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                          },
+                          {
+                            "situation": "协商首次结伴采药的路线时。",
+                            "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                            "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                        "character_id": "character:shen-yan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "收到尚未说明回程安排的采药邀请时。",
+                            "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                            "motivation": "在答应同行前保留自己的时间边界。"
+                          },
+                          {
+                            "situation": "检查拟用于同行的携行工具时。",
+                            "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                            "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                          },
+                          {
+                            "situation": "同行者提出在任务途中多看一处观察点时。",
+                            "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                            "motivation": "让额外学习进入协商，而非一概拒绝。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                        "character_id": "character:lu-heng",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "准备采药时，有人询问她是否认识目标药材。",
+                            "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                            "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                          },
+                          {
+                            "situation": "商定材料保管办法时。",
+                            "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                            "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                          },
+                          {
+                            "situation": "任务途中发现值得核实的细小差别时。",
+                            "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                            "motivation": "争取观察机会，同时承认同行者的安排。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                        "character_id": "character:tang-sui",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "有人只说引气练习没有进展时。",
+                            "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                            "motivation": "让求助者提供可用于指导的观察。"
+                          },
+                          {
+                            "situation": "未来观察到弟子一次短暂成功后。",
+                            "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                            "motivation": "区分一次感觉与可重复的操作能力。"
+                          },
+                          {
+                            "situation": "沈砚询问自己是否能够参加正式课程时。",
+                            "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                            "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                        "character_id": "character:xu-ting",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                            "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                            "motivation": "让调整请求能够被具体处理。"
+                          },
+                          {
+                            "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                            "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                            "motivation": "区分任务报酬与兑换对象的实际供给。"
+                          },
+                          {
+                            "situation": "有人要求他直接确认正式课程资格时。",
+                            "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                            "motivation": "在部门职责边界内给出下一步回应。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                        "character_id": "character:cheng-guan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "key": "work_applicability",
+                        "value": {
+                          "scope": "BOOK",
+                          "book_id": "book:qinglan-wendao-20261008",
+                          "declarations": [
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                              "field_path": "$.subgenre"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                              "field_path": "$.core_desire"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                              "field_path": "$.core_fear"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                              "field_path": "$.core_conflict"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                              "field_path": "$.serialization_potential"
+                            }
+                          ],
+                          "source_bindings": [
+                            {
+                              "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                              "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                            },
+                            {
+                              "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                              "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                            },
+                            {
+                              "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                              "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                            }
+                          ],
+                          "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        }
+                      },
+                      {
+                        "key": "creative_style",
+                        "value": {
+                          "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                          "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                          "constraints": [
+                            "正文主要使用简体中文，单章2500—3500中文字。",
+                            "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                            "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                            "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                            "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                            "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                            "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                            "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                          ],
+                          "genre_conventions": [
+                            "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                            "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                            "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                            "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                            "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                          ],
+                          "original_examples": [
+                            {
+                              "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                              "purpose": "呈现扎实练习中的可见变化。",
+                              "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                            },
+                            {
+                              "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                              "purpose": "让同门利益参与任务选择。",
+                              "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                            },
+                            {
+                              "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                              "purpose": "通过具体取舍表现主角主动性。",
+                              "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                            },
+                            {
+                              "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                              "purpose": "建立章际承接与节奏变化。",
+                              "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "creative_direction",
+                        "value": {
+                          "genre": "传统修仙",
+                          "subgenre": "宗门成长与任务历练",
+                          "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                          "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                        }
+                      },
+                      {
+                        "key": "realization_policy",
+                        "value": {
+                          "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                          "contract_version": "scene-craft-tasks.v2"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "contract_version": "draft-style-view-v2",
+                "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+              },
+              "chapter": 1,
+              "source_plan": {
+                "content_hash": "sha256:21794454bf856a87142f180f13f3359b8c6c669a43ab69aa91e7f6c714d24751",
+                "asset_version_id": "eab97c88-4f27-436d-b8c0-070ccf02dee0"
+              },
+              "point_of_view": null,
+              "author_guidance": {},
+              "baseline_digest": "sha256:c4f8c7b8af5dc15d4d5ac7ca17f13cc3e2cd2ea591299aaa13ffbdc4e8d617cf",
+              "contract_version": "creative-baseline.v1",
+              "style_constraints": [],
+              "target_word_count": null,
+              "method_requirements": {
+                "reward": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "reward_action",
+                    "reward_setup",
+                    "reward_payoff"
+                  ],
+                  "selected_values": {
+                    "reward_setup": [],
+                    "reward_action": "入门及当日劳动安顿完成。",
+                    "reward_payoff": []
+                  }
+                },
+                "chapter_hook": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "ending_hook",
+                    "chapter_hook"
+                  ],
+                  "selected_values": {
+                    "ending_hook": "安顿下来的沈砚听见基础吐纳的讲解，知道明日能开始练，却还不知道自己能否感觉到气。",
+                    "chapter_hook": "安顿下来的沈砚听见基础吐纳的讲解，知道明日能开始练，却还不知道自己能否感觉到气。"
+                  }
+                },
+                "golden_opening": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "primary_function"
+                  ],
+                  "selected_values": {
+                    "primary_function": "沈砚主动争取并完成外门入门，同时与陆衡把两人的初始劳动安顿妥当。"
+                  }
+                },
+                "reader_promise": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "promise_action",
+                    "reader_promise_actions"
+                  ],
+                  "selected_values": {
+                    "promise_action": "普通少年以自己的行动取得开始学习的立足之处。",
+                    "reader_promise_actions": [
+                      "入门及当日劳动安顿完成。"
+                    ]
+                  }
+                },
+                "emotional_curve": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "emotional_curve"
+                  ],
+                  "selected_values": {
+                    "emotional_curve": []
+                  }
+                },
+                "protagonist_charm": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "protagonist_charm_mechanism"
+                  ],
+                  "selected_values": {
+                    "protagonist_charm_mechanism": null
+                  }
+                },
+                "antagonist_pressure": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "antagonist_pressure"
+                  ],
+                  "selected_values": {
+                    "antagonist_pressure": null
+                  }
+                },
+                "suspense_progression": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "suspense_curve"
+                  ],
+                  "selected_values": {
+                    "suspense_curve": []
+                  }
+                },
+                "serialization_function": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "serialization_function"
+                  ],
+                  "selected_values": {
+                    "serialization_function": "以沈砚第三人称限知视角完整写出当日入门、协商和劳动结果；章末由基础吐纳讲解引向明日练习的具体期待。"
+                  },
+                  "work_requirement": {
+                    "scope": "BOOK",
+                    "status": "APPLICABLE",
+                    "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                    "field_path": "$.serialization_potential",
+                    "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                    "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                  }
+                }
+              },
+              "prohibited_outcomes": [
+                "入门当天即获得气感或正式课程资格。",
+                "把劳动安顿留作下一章的未完成手续。"
+              ]
+            },
+            "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+          },
+          {
+            "end": 2674,
+            "text": "第二天早间，沈砚按昨日说定的分担把柴送到棚口。陆衡收进去码放，两人做完便一道报了数。此后几日，柴的多少不尽相同，早间那段活却有了熟悉的次序。沈砚收拾好手上的木屑，才去练习角坐下；若肩头还被担柴的木棍压得发酸，他便先活动一会儿，不拿那股酸劲当作练习中的变化。\n\n廊下讲过的次序，他记得清楚：背放直，呼吸放缓，留意气息出入时身体哪里先动。头一回坐下，他听见院里有人走过，等脚步声远了，才发觉自己一直憋着半口气。第二回，他不数呼吸，只看胸口起伏，倒能分出吸气时肋下先微微撑开，随后肩头才有一点动静。可一想到要在这变化里找到别的东西，他就不由自主地抬起肩，吸得更深。那点原本能辨出的先后，反而混成一阵急促的喘息。\n\n他试过换个时辰坐，也试过在劳作后多歇片刻。歇足了，呼吸平稳些；只要急着盯住它，肩背照样绷紧。几日过去，他仍没感到廊下讲解的人所说的气。沈砚没有把扛柴时胸口发热、坐久后腿脚发麻算进去。那些感觉各有来处，不能因为他盼着有进展就换个名字。\n\n这日收了练习，他起身时又做了一次深吸，肩膀立刻随之提起。他放下胳膊，照平常的快慢呼出一口气，心里终于有了能拿去问人的话：不是自己全无感觉，而是越想抓住细微变化，越把原来的呼吸弄乱。他把这两种动作在心里对了一遍，往许庭答疑的练习角走去。过去几日坐过的工夫没有白费，至少他现在知道该从哪一步问起。\n\n许庭正在练习角收拢几张坐垫。沈砚等他放好，才说自己照着廊下所教练了几日，却总在留意呼吸时失了分寸。\n\n“失在哪一步？”许庭问。\n\n“原本能分清肋下先动，肩头后动。”沈砚把手搭在自己的肋边，“我一想看清还有没有别的变化，肩背就紧，气也吸得深了。越想慢下来，越像在追着下一口气走。”\n\n许庭让他坐下，先照刚才说的做一遍。沈砚直起背，把注意放到吸气上。才过两口，他便觉得许庭在看，胸口不觉用力，肩头也抬了起来。\n\n“停在这里。”许庭没有叫他继续，“你现在能说出哪一处先动吗？”\n\n沈砚又呼出一口气，摇头。\n\n“先把这口气放完。背直着就够了，别拿肩膀撑着背。等下一口气自己进来，看看肋下怎样动。”许庭在旁边坐下，放缓自己的呼吸，让沈砚看见肩背并不跟着起伏，“你要留意的是已经发生的动作，不必替它添一口更长的气。”\n\n沈砚照着放松肩头。第一回，他只顾着检查肩膀，仍错过了肋下的起伏。许庭叫他先把手垂下来，容他按平常的快慢呼吸。第二回，沈砚察觉肋下轻轻向外一张，呼气时又落回去。他没有立刻去等下一处，只把这一个来回看完。\n\n“刚才呢？”许庭问。\n\n“看得清。可一问，我又想用力了。”\n\n“知道什么时候用力，就是下一回能停住的地方。”许庭说，“别赶着把感觉留住。若呼吸变急，先退回你能分清的那一步。”\n\n沈砚重新坐稳。院里偶有声响，他听见了，也没急着逐一分辨。他让呼吸照自己的快慢往来，肋下起伏时便留意那里；落回去时，注意也随之放轻。几口之后，他才发觉肩背一直没有再提起来。就在一次平常的呼气将尽时，腹中有一点极细的温意，像隔着衣料碰到一缕日光，又比皮肤受暖更深些。它没有随着他下一口吸气涨大，只清清楚楚地停了短短一瞬，便淡了。\n\n沈砚仍坐着，等那口气自然出去。方才的感觉与扛柴后的热、憋气后的发胀都不同；来得轻，却不容他拿寻常喘息搪塞。他看向许庭，声音压得很低：“刚才腹中有一点温意。不是我把气吸深了才有的。”\n\n许庭看了看他的肩：“我能看见你这回没有再提肩。你说的那一点，先记住它出现前自己怎样呼吸。歇一歇，再照那样试。”\n\n沈砚依言停了片刻。重试时，他忍不住候着那点温意，肋下才动，心思已跑到呼气之后。肩膀虽没有像先前那样猛地抬起，呼吸却快了一些。等他察觉，便把注意退回肋下的起落。又坐了几回，那点温意始终没有重现。\n\n他起初有些不甘，想再多坐一阵，随后却记起许庭方才问的那句“哪一处先动”。若连此刻呼吸变快都没察觉，坐得更久也只是继续追赶。他停下来，说出两次的差别：刚才看完一个来回，感觉才出现；后来只等它来，连原有的起伏都看乱了。\n\n“就从这个差别接着练。”许庭说，“有过一回，知道它可能是什么样；能不能再辨出来，还得看下一回。今日先到这里。”\n\n沈砚起身时，练习角与来时并无两样。他仍不能让那点感觉应念而来，却知道下次坐下该先放松哪里、看清什么。那短短一瞬已过去，留在身上的不是热意，而是一条能够重新试走的次序。\n\n从练习角回到外院，沈砚在院门旁见到陆衡。陆衡正把手上的绳头绕齐，唐穗站在一旁，与他说起外门将安排的首次采药。沈砚走近，听见“同行”二字，便停下问：“这趟会走哪段山路？”\n\n“还没问清。”陆衡把绳头握在掌中，“你想去？”\n\n沈砚点头。他清早搬柴时仍会先看脚下，再稳稳落步；到了不熟悉的山路，这点习惯能帮多少忙，他并不知道。方才在练习角有过的一瞬气感，更不能拿来认路或认药。他说：“我想参加。总得从一趟有人同行的任务开始，看看自己认得住多少路。去处和该做的事，得先问明白。”\n\n唐穗转向他：“我也想去，不过我想看的恐怕与你不同。我读过些材料辨认的说明，写在纸上的叶形、触感，到手里未必像我想的一样。到了现场，我想把书上记的和实物逐处比一比。若看不准，就照采收说明再核实，不能凭我以前分拣普通草药的经验叫你们跟着采。”\n\n她说到“逐处比一比”时，手指在另一只手掌上点了两下，像在对照尚未摊开的字。沈砚听得出，她要的不是多走几步便算见识，而是能停下来认真看。但若每一处都停，往返就可能拖长。他看向陆衡。\n\n陆衡先问：“采药从什么时候走，什么时候回？我午后那段要练习，先前柴棚的活也是照这个时段分的。若进了山才说还要往远处找，我没法答应。”\n\n沈砚记得他们第一天搬柴时便把这话说给分派的人听过。陆衡此刻把绳头收进袖里，等他们回应，并没有转身离开。\n\n“我想多认一段路，”沈砚说，“但不能拿你的练习工夫去换。先问清任务给的去处与时限，再留够回程的工夫。余下能看多少，我们到时商量。”\n\n唐穗接道：“能停下核实的地方我会说清为什么值得看；若时间不够，我先记住问题，不拖着大家走。采什么、怎样采，也要看说明，不能在这里先替现场定好。”\n\n陆衡想了想，说：“这样我能同行。问清条件后，若一趟容不下这些事，就按条件收住，别临时往外加。”\n\n三人把参加首次采药的事说定。至于具体往哪里走、现场有什么可采，以及怎样分配路上停留的工夫，他们还要等任务条件明白后再定。沈砚没有再猜那点短暂的气感到了山里能派什么用场。他记住许庭教他的次序，也记住眼前三人各自想从这一趟得到的东西；等真正踏上山路，这些打算才有机会受一次检验。",
+            "start": 0,
+            "text_hash": "sha256:22fa4bb440ce3ce99caa2dec99d649104871fa28c9786c2c4a8b1ec91ece81cb",
+            "asset_hash": "sha256:26f48f0747a395ebfbe1dec12c062ede0a37eefd5250356701180e906cd32baa",
+            "codepoints": 2674,
+            "acceptance_id": "",
+            "chapter_number": 2,
+            "asset_version_id": "authority-output:dd9d7ea2-d7f1-446e-a3e0-886ec5f6e19e:chapter.draft:v1",
+            "creative_baseline": {
+              "style": {
+                "policies": [
+                  {
+                    "constraints": null,
+                    "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                    "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                    "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                    "structured_facts": [
+                      {
+                        "kind": "voice_contract",
+                        "layer": "NARRATOR",
+                        "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "GENRE",
+                        "guidance": [
+                          "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                          "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                          "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                          "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                          "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "问询一项尚未接受的劳作安排时。",
+                            "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                            "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                          },
+                          {
+                            "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                            "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                            "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                          },
+                          {
+                            "situation": "协商首次结伴采药的路线时。",
+                            "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                            "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                        "character_id": "character:shen-yan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "收到尚未说明回程安排的采药邀请时。",
+                            "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                            "motivation": "在答应同行前保留自己的时间边界。"
+                          },
+                          {
+                            "situation": "检查拟用于同行的携行工具时。",
+                            "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                            "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                          },
+                          {
+                            "situation": "同行者提出在任务途中多看一处观察点时。",
+                            "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                            "motivation": "让额外学习进入协商，而非一概拒绝。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                        "character_id": "character:lu-heng",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "准备采药时，有人询问她是否认识目标药材。",
+                            "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                            "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                          },
+                          {
+                            "situation": "商定材料保管办法时。",
+                            "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                            "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                          },
+                          {
+                            "situation": "任务途中发现值得核实的细小差别时。",
+                            "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                            "motivation": "争取观察机会，同时承认同行者的安排。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                        "character_id": "character:tang-sui",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "有人只说引气练习没有进展时。",
+                            "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                            "motivation": "让求助者提供可用于指导的观察。"
+                          },
+                          {
+                            "situation": "未来观察到弟子一次短暂成功后。",
+                            "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                            "motivation": "区分一次感觉与可重复的操作能力。"
+                          },
+                          {
+                            "situation": "沈砚询问自己是否能够参加正式课程时。",
+                            "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                            "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                        "character_id": "character:xu-ting",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                            "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                            "motivation": "让调整请求能够被具体处理。"
+                          },
+                          {
+                            "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                            "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                            "motivation": "区分任务报酬与兑换对象的实际供给。"
+                          },
+                          {
+                            "situation": "有人要求他直接确认正式课程资格时。",
+                            "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                            "motivation": "在部门职责边界内给出下一步回应。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                        "character_id": "character:cheng-guan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "key": "work_applicability",
+                        "value": {
+                          "scope": "BOOK",
+                          "book_id": "book:qinglan-wendao-20261008",
+                          "declarations": [
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                              "field_path": "$.subgenre"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                              "field_path": "$.core_desire"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                              "field_path": "$.core_fear"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                              "field_path": "$.core_conflict"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                              "field_path": "$.serialization_potential"
+                            }
+                          ],
+                          "source_bindings": [
+                            {
+                              "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                              "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                            },
+                            {
+                              "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                              "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                            },
+                            {
+                              "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                              "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                            }
+                          ],
+                          "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        }
+                      },
+                      {
+                        "key": "creative_style",
+                        "value": {
+                          "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                          "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                          "constraints": [
+                            "正文主要使用简体中文，单章2500—3500中文字。",
+                            "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                            "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                            "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                            "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                            "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                            "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                            "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                          ],
+                          "genre_conventions": [
+                            "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                            "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                            "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                            "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                            "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                          ],
+                          "original_examples": [
+                            {
+                              "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                              "purpose": "呈现扎实练习中的可见变化。",
+                              "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                            },
+                            {
+                              "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                              "purpose": "让同门利益参与任务选择。",
+                              "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                            },
+                            {
+                              "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                              "purpose": "通过具体取舍表现主角主动性。",
+                              "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                            },
+                            {
+                              "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                              "purpose": "建立章际承接与节奏变化。",
+                              "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "creative_direction",
+                        "value": {
+                          "genre": "传统修仙",
+                          "subgenre": "宗门成长与任务历练",
+                          "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                          "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                        }
+                      },
+                      {
+                        "key": "realization_policy",
+                        "value": {
+                          "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                          "contract_version": "scene-craft-tasks.v2"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "contract_version": "draft-style-view-v2",
+                "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+              },
+              "chapter": 2,
+              "source_plan": {
+                "content_hash": "sha256:0ab3931135c9a484520435cc1995993e7b2e4928f629a4d3d4d0b52b8d3ce9bc",
+                "asset_version_id": "3dae4da2-0744-47f4-8732-2e7baaaba976"
+              },
+              "point_of_view": null,
+              "author_guidance": {},
+              "baseline_digest": "sha256:7773316fbaca30891fc3787f888b7dd5aa5e95098235a5ad678be8eb659ecfe7",
+              "contract_version": "creative-baseline.v1",
+              "style_constraints": [],
+              "target_word_count": null,
+              "method_requirements": {
+                "reward": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "reward_action",
+                    "reward_setup",
+                    "reward_payoff"
+                  ],
+                  "selected_values": {
+                    "reward_setup": [],
+                    "reward_action": "答疑使沈砚调整呼吸与注意的配合，数日练习首次得到气感。",
+                    "reward_payoff": []
+                  }
+                },
+                "chapter_hook": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "ending_hook",
+                    "chapter_hook"
+                  ],
+                  "selected_values": {
+                    "ending_hook": "三人决定参加首次采药；他们想从这一趟得到的东西并不相同。",
+                    "chapter_hook": "三人决定参加首次采药；他们想从这一趟得到的东西并不相同。"
+                  }
+                },
+                "golden_opening": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "primary_function"
+                  ],
+                  "selected_values": {
+                    "primary_function": "略过数日重复练习，以一次有效答疑和动作调整完成沈砚的初次气感，并决定参加首次采药。"
+                  }
+                },
+                "reader_promise": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "promise_action",
+                    "reader_promise_actions"
+                  ],
+                  "selected_values": {
+                    "promise_action": "让读者看见观察、调整与重复怎样产生第一次可辨认的学习结果。",
+                    "reader_promise_actions": [
+                      "沈砚经数日练习和一次针对具体障碍的答疑，首次获得短暂、可辨认的气感。"
+                    ]
+                  }
+                },
+                "emotional_curve": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "emotional_curve"
+                  ],
+                  "selected_values": {
+                    "emotional_curve": []
+                  }
+                },
+                "protagonist_charm": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "protagonist_charm_mechanism"
+                  ],
+                  "selected_values": {
+                    "protagonist_charm_mechanism": null
+                  }
+                },
+                "antagonist_pressure": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "antagonist_pressure"
+                  ],
+                  "selected_values": {
+                    "antagonist_pressure": null
+                  }
+                },
+                "suspense_progression": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "suspense_curve"
+                  ],
+                  "selected_values": {
+                    "suspense_curve": []
+                  }
+                },
+                "serialization_function": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "serialization_function"
+                  ],
+                  "selected_values": {
+                    "serialization_function": "本章以具体动作和短暂气感兑现一次清楚的学习进展，章末让三人带着不同目标决定同行首次采药，顺势承接下一章的现场任务。"
+                  },
+                  "work_requirement": {
+                    "scope": "BOOK",
+                    "status": "APPLICABLE",
+                    "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                    "field_path": "$.serialization_potential",
+                    "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                    "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                  }
+                }
+              },
+              "prohibited_outcomes": [
+                "把初次气感写成稳定运用灵气、辨药术或御剑能力。",
+                "用准备物件和逐项询问占满一章，却不完成初次气感。"
+              ]
+            },
+            "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+          },
+          {
+            "end": 3086,
+            "text": "石湾谷的石壁一层层向里收，谷底却不平。沈砚跟着唐穗、陆衡走过浅溪时，看见水边两块灰白的石头夹出一道窄口，便回头记了一眼。进谷时脚下是湿沙，过了窄口，碎石里掺着红土；若回程只顾看坡上的草，未必认得出这处转折。\n\n唐穗在一片矮草前蹲下，没有伸手就摘。她展开带来的采收说明，又把纸移开，对着草叶看了片刻：“上面说，折露草的外叶长成后，边缘会舒展开，背面摸着不那么软。可这里有几片颜色深，未必就长足了。”她用指腹轻轻托起一片叶，叫沈砚看叶缘，再让他摸另一片较嫩的。两者沾着一样的露水，嫩叶却薄，指腹一松便贴回叶心。\n\n“颜色靠不住？”沈砚问。\n\n“单看颜色靠不住。”唐穗指了指叶心，“还得看它从哪里长出来。靠里的新叶和底下的芽根要留着。我以前分拣过别的草药，到了这里不能凭那个认。”\n\n沈砚照她指出的地方看，才分清外圈一片舒展的叶与挤在当中的嫩尖。他原想顺着谷壁再往里走，认一认上方那道岔口，此时却先取出空篓，让唐穗把眼前一处看完。陆衡没有催，只把背带重系了一扣，抬头看了看谷口照进来的光。\n\n三人沿着近坡逐处查过去。第一丛外圈有四片叶，摸过叶背、看清叶柄与芽根之间的空隙后，唐穗确认三片可采，留下一片拿不准的。第二丛只有两片外叶长足，里头的嫩叶都不动。第三处草长在石缝里，叶片虽大，根边却被泥水糊住；唐穗拨开浮泥看了两回，仍说不清哪片下手才不会牵到芽根，三人便把这一处留在原地。沈砚在一旁逐片复看，数得清楚：今天确认能取的，只有前两丛的五片成熟外叶。\n\n“再往里也许还有。”他望向坡上的岔口，话说到一半便停了。也许有，并不等于眼下已经核实。唐穗把那片未确认的叶形记在纸角：“我还想拿它和石缝里的比一比，若多留些时候，或许能看明白。”\n\n陆衡把水囊收回腰侧：“我们进谷用的工夫，我记着。按原路绕回去，还要过溪、到外院交东西。现在走里面那道岔口，就算只看一眼，回来也得重新找路。”他指向近坡背后一道低坎，“采完从这里下，能接上刚才的窄口。我背篓走前面，腾出两只手扶稳篓；唐穗管分开已确认和有疑处的叶，沈砚认回程的转折。别把采药的工夫花在往里试路上。”\n\n唐穗看了看纸角，又看向那两丛已经核实的草：“五片也够验我们认得对不对。疑处我记下，不混进去。”沈砚望着岔口。那段路离得不远，走过去却得占用三人同一段回程工夫。陆衡把背带交到他手里，等他答话。\n\n“就照你说的走。”沈砚接住背带，又把它递回陆衡，“里头那道岔口今天不去。我采第一丛，第二丛你来帮唐穗核对；回程过了低坎，我来找窄口。”\n\n唐穗没有立刻点头，先指给他看第一丛那片尚未确认的叶：“这一片别算进去。你下手前再看叶柄，别把当中的芽带动。”沈砚应了一声，蹲到草旁。靠近了才看见外圈三片叶的柄各自伸出，嫩叶却紧紧靠在芽根上。他扶住一片成熟外叶的叶柄，在能看清的接处折下；断处留在外侧，叶心没有跟着晃。他把叶平放在掌心，等唐穗复看，才去取下一片。\n\n取第三片时，叶背的露水沾湿了他的指尖。他先在衣袖干处擦了擦手，换了一个能托住叶片的位置，才折下去。唐穗铺开一小片干净的布，让他把叶摊着放，不压在湿石上。她俯身再看原处，轻拨外圈余下的叶，芽根仍稳稳留在土里。沈砚收手时发现自己刚才扶叶的位置离嫩尖太近，便记下了这个差别；若只求快，下一片未必还能折得这么稳。\n\n另一边，陆衡按唐穗指出的两片逐一托起，等她确认，才从外侧取叶。他手稳，却不自作主张去碰石缝里那丛。唐穗将第二丛采得的两片同前三片放在一处，又把纸角上记的疑处给两人看：“这片颜色深、摸着软，我没采；石缝里的根边看不清，也没采。交回时照实说。”她只在纸上留下叶形和位置，不带走拿不准的叶作样品。五片外叶在布上铺得开，压合之前，她又查了一遍有没有嫩尖混入。\n\n陆衡把布包放进篓里，调紧背带。“现在回，还赶得及。”\n\n沈砚抬头时，坡上的岔口正露在石壁之间。他原本只想多走到那里，看一眼转过去是什么；若现在迈步，陆衡不会替他把失去的时间找回来。他转身随陆衡下了低坎。那道坎从上面看是两块挨着的石头，落脚后才知道右边一块会轻轻摇。他提醒唐穗踩左侧，自己也把右侧石头的裂纹记住。\n\n低坎下的路一度分成两条。左边有踩平的草，像来时走过；右边碎石稀些，却通向溪声。沈砚停住，想起入谷时先踩到湿沙，随后才见掺红土的碎石。他往右走几步，看见泥里那点红色，再从石间望见两块灰白石头夹成的窄口。“是这边。”他说，“过窄口才到溪旁的湿沙。”\n\n陆衡没有催他们跑，只在窄处把背篓卸下一侧，侧身通过，再重新背稳。唐穗看布包没有滑到篓底，才跟上。过溪时水声盖住说话，沈砚先站到对岸，回身指给两人看一块不生滑苔的落脚石。三人沿原先认过的坡道出了谷。外院的屋檐还未把影子投过约定的那段石阶，陆衡抬眼看过，脚步才放缓。沈砚也看见交回处的门已近；篓里的五片叶完整带到了，接下来还要交到程观手里，才算做完这趟事。\n\n程观正在外院交回处核对记录。陆衡卸下药篓，唐穗先把布包放到案上，解开一角，让叶片平平露出来。沈砚没有等程观发问，先说：“我们在近坡逐处核过。第一丛确认三片，第二丛两片，共采五片成熟外叶。拿不准的两处留着没动，芽根也留在原地。”\n\n唐穗把纸角递过去：“这片色深，却偏软；石缝那丛根边被泥糊住，我没法看清采处。纸上记的是位置和疑点，不算交回的东西。布里只有我们能确认的五片。”\n\n程观先听完，才拿起一片叶，对照案边的采收说明看叶形，又翻到背面，用指腹试过叶片是否受压。他把五片逐一摊开，拨去其中一片叶面沾的细沙，检查叶柄断处与叶心是否混入。唐穗在旁看着，没有替他的查验下结论。沈砚留意到程观看第二丛的叶时停得较久，想起那处石缝边浮泥多，心里也跟着一紧。\n\n“叶片没有压烂，收的都是可交的成熟外叶。”程观把第五片放回布上，又指了指纸角，“疑处说清了，没有混在里面。按这次事先说明的采法和交回要求，实物合格，五片收讫；这趟采药我给你们记为完成。”他在记录上写下交回的数量与结果，收起布包，才把记录转给三人看。\n\n陆衡问：“时段呢？我们没有越过说定的回程时候。”程观抬头看了一眼门外的日影，在记录旁补下到达的时刻：“我记在这里。你们按时回来，实物也在这儿，这两件都对得上。”陆衡看清那一笔，松开了方才一直捏着的背带。唐穗则问起石缝边那丛：“没采的疑处，今日也该报吗？”\n\n“该报你们看见了什么，别替没看清的部分下断语。”程观把纸角还给她，“这次按交回的叶片验。你记的差别，往后若再走到那里，可以照着复看。”唐穗把纸折好，没有再争取把未采的部分算进今日成果。沈砚想到自己在低坎下差点认错的那条草路，便说回程是从近坡下到窄口，转弯时凭红土和两块灰白石头定的方向。陆衡接道：“绕里面的路没走，篓子由我背，才留出了查叶和交回的工夫。”程观听过，将三人所说与已记下的交回结果对上，没有把认路的话写成采得更多的数目。\n\n案上事务办妥后，程观才取出次日的同行安排：“明日晨间，三人到外院门前会合，随药路带队人走一趟你们尚未走过的路。这是一次同行实践，去时听清转折，回来时各说自己记住的地方。沈砚，你想认新路，就亲自走那段，别只听旁人讲。”他说明了会合处和回返时段，让陆衡确认不会挤掉已说定的午后练习。至于正式修炼课程，程观没有替教习组作任何决定。\n\n三人从交回处出来，篓子已经空了。唐穗边走边看自己纸角上的两处记号，陆衡则把背带绕好，准备回去按时练习。沈砚走到院门前，回望来路。今天他放下了坡上那道岔口，却能说清低坎、红土和窄口怎样一段接着一段。明日的药路，他还未踏过；等真正走上去，哪些转折能靠自己认住，便有机会亲眼试一试。",
+            "start": 0,
+            "text_hash": "sha256:deffc36b57fa7a2e7e011f8d1a4f717928a55576ed483f565fbe9b8a7a89aad2",
+            "asset_hash": "sha256:2cfcf49666193f6b5ad2f0ab6a6f574dd0e9e56d4767442475c7427671047946",
+            "codepoints": 3086,
+            "acceptance_id": "",
+            "chapter_number": 3,
+            "asset_version_id": "authority-output:86348ae4-6885-4d29-9ccf-e90012590c20:chapter.draft:v1",
+            "creative_baseline": {
+              "style": {
+                "policies": [
+                  {
+                    "constraints": null,
+                    "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                    "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                    "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                    "structured_facts": [
+                      {
+                        "kind": "voice_contract",
+                        "layer": "NARRATOR",
+                        "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "GENRE",
+                        "guidance": [
+                          "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                          "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                          "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                          "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                          "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "问询一项尚未接受的劳作安排时。",
+                            "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                            "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                          },
+                          {
+                            "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                            "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                            "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                          },
+                          {
+                            "situation": "协商首次结伴采药的路线时。",
+                            "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                            "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                        "character_id": "character:shen-yan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "收到尚未说明回程安排的采药邀请时。",
+                            "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                            "motivation": "在答应同行前保留自己的时间边界。"
+                          },
+                          {
+                            "situation": "检查拟用于同行的携行工具时。",
+                            "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                            "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                          },
+                          {
+                            "situation": "同行者提出在任务途中多看一处观察点时。",
+                            "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                            "motivation": "让额外学习进入协商，而非一概拒绝。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                        "character_id": "character:lu-heng",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "准备采药时，有人询问她是否认识目标药材。",
+                            "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                            "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                          },
+                          {
+                            "situation": "商定材料保管办法时。",
+                            "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                            "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                          },
+                          {
+                            "situation": "任务途中发现值得核实的细小差别时。",
+                            "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                            "motivation": "争取观察机会，同时承认同行者的安排。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                        "character_id": "character:tang-sui",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "有人只说引气练习没有进展时。",
+                            "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                            "motivation": "让求助者提供可用于指导的观察。"
+                          },
+                          {
+                            "situation": "未来观察到弟子一次短暂成功后。",
+                            "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                            "motivation": "区分一次感觉与可重复的操作能力。"
+                          },
+                          {
+                            "situation": "沈砚询问自己是否能够参加正式课程时。",
+                            "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                            "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                        "character_id": "character:xu-ting",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                            "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                            "motivation": "让调整请求能够被具体处理。"
+                          },
+                          {
+                            "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                            "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                            "motivation": "区分任务报酬与兑换对象的实际供给。"
+                          },
+                          {
+                            "situation": "有人要求他直接确认正式课程资格时。",
+                            "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                            "motivation": "在部门职责边界内给出下一步回应。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                        "character_id": "character:cheng-guan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "key": "work_applicability",
+                        "value": {
+                          "scope": "BOOK",
+                          "book_id": "book:qinglan-wendao-20261008",
+                          "declarations": [
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                              "field_path": "$.subgenre"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                              "field_path": "$.core_desire"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                              "field_path": "$.core_fear"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                              "field_path": "$.core_conflict"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                              "field_path": "$.serialization_potential"
+                            }
+                          ],
+                          "source_bindings": [
+                            {
+                              "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                              "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                            },
+                            {
+                              "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                              "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                            },
+                            {
+                              "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                              "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                            }
+                          ],
+                          "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        }
+                      },
+                      {
+                        "key": "creative_style",
+                        "value": {
+                          "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                          "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                          "constraints": [
+                            "正文主要使用简体中文，单章2500—3500中文字。",
+                            "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                            "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                            "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                            "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                            "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                            "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                            "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                          ],
+                          "genre_conventions": [
+                            "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                            "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                            "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                            "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                            "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                          ],
+                          "original_examples": [
+                            {
+                              "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                              "purpose": "呈现扎实练习中的可见变化。",
+                              "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                            },
+                            {
+                              "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                              "purpose": "让同门利益参与任务选择。",
+                              "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                            },
+                            {
+                              "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                              "purpose": "通过具体取舍表现主角主动性。",
+                              "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                            },
+                            {
+                              "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                              "purpose": "建立章际承接与节奏变化。",
+                              "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "creative_direction",
+                        "value": {
+                          "genre": "传统修仙",
+                          "subgenre": "宗门成长与任务历练",
+                          "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                          "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                        }
+                      },
+                      {
+                        "key": "realization_policy",
+                        "value": {
+                          "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                          "contract_version": "scene-craft-tasks.v2"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "contract_version": "draft-style-view-v2",
+                "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+              },
+              "chapter": 3,
+              "source_plan": {
+                "content_hash": "sha256:3d05dcab0c7e64e5891a1636dcf8dec3a5857a90101a82fb3d2cf47efe0dced2",
+                "asset_version_id": "36f2dd74-b3cd-4653-9e7e-09a74a0e7d5f"
+              },
+              "point_of_view": null,
+              "author_guidance": {},
+              "baseline_digest": "sha256:443ef18be949d2ae0dcad72a98f3aca4089a234dbc7b8278533dbce6ceccebdd",
+              "contract_version": "creative-baseline.v1",
+              "style_constraints": [],
+              "target_word_count": null,
+              "method_requirements": {
+                "reward": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "reward_action",
+                    "reward_setup",
+                    "reward_payoff"
+                  ],
+                  "selected_values": {
+                    "reward_setup": [],
+                    "reward_action": "程观按事先说明与实际质量办理交回，并在职责内安排一次陌生药路同行实践。",
+                    "reward_payoff": []
+                  }
+                },
+                "chapter_hook": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "ending_hook",
+                    "chapter_hook"
+                  ],
+                  "selected_values": {
+                    "ending_hook": "实物交付带来一次明确的陌生药路同行机会，沈砚明日将亲自走那段路。",
+                    "chapter_hook": "实物交付带来一次明确的陌生药路同行机会，沈砚明日将亲自走那段路。"
+                  }
+                },
+                "golden_opening": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "primary_function"
+                  ],
+                  "selected_values": {
+                    "primary_function": "完整完成首次结伴采药：现场辨认与可采份额核实、有限采收、分歧下的取舍、回程、实物交回及明确机会。"
+                  }
+                },
+                "reader_promise": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "promise_action",
+                    "reader_promise_actions"
+                  ],
+                  "selected_values": {
+                    "promise_action": "让三人的不同目标真正改变办法，并以实物交付检验合作。",
+                    "reader_promise_actions": [
+                      "首次采药在本章取得明确的实物交回结果。",
+                      "唐穗与陆衡的办法在采收质量、回程时段和交付结果中显示作用。",
+                      "沈砚获得来源清楚、日期明确的陌生药路同行机会。"
+                    ]
+                  }
+                },
+                "emotional_curve": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "emotional_curve"
+                  ],
+                  "selected_values": {
+                    "emotional_curve": []
+                  }
+                },
+                "protagonist_charm": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "protagonist_charm_mechanism"
+                  ],
+                  "selected_values": {
+                    "protagonist_charm_mechanism": null
+                  }
+                },
+                "antagonist_pressure": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "antagonist_pressure"
+                  ],
+                  "selected_values": {
+                    "antagonist_pressure": null
+                  }
+                },
+                "suspense_progression": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "suspense_curve"
+                  ],
+                  "selected_values": {
+                    "suspense_curve": []
+                  }
+                },
+                "serialization_function": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "serialization_function"
+                  ],
+                  "selected_values": {
+                    "serialization_function": "在第3章内完成首次采药与实物交付的完整行动和结果；章末以交付换来的次日陌生药路同行安排，承接第4章的亲身实践。"
+                  },
+                  "work_requirement": {
+                    "scope": "BOOK",
+                    "status": "APPLICABLE",
+                    "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                    "field_path": "$.serialization_potential",
+                    "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                    "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                  }
+                }
+              },
+              "prohibited_outcomes": [
+                "将采收、回程或实物交回拖到第4章。",
+                "未核实成熟可采份额便采折露草，或损伤芽根。",
+                "仅凭称赞或未来邀约替代交付结果。"
+              ]
+            },
+            "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+          },
+          {
+            "end": 2941,
+            "text": "次日晨间，沈砚到外院门前时，唐穗已经把昨日记疑处的纸折好，收进袖中。陆衡看了看院墙上的日影，向带路的人确认回返时刻。对方说只走约定的那一段，到了尽头便原路折回。陆衡点头，三人跟着出了门。\n\n新路起初贴着缓坡走，脚下有一层细碎的石子。沈砚回头看外院的屋檐，直到它被一排松树遮住，才把目光落回近处。他记下树根横过路面的地方，又看见坡边一块灰石，石面有一道斜斜的白痕。若回程只认远处的山形，雾一起便难分辨；这块石头离路近，从另一面走来也能看见。\n\n带路的人并不一路讲解，只在难落脚处稍停，等他们跟上。唐穗走到一处石缝旁，低头看了看夹在枯叶间的草，没伸手去碰。陆衡提醒她，回来还会经过这里。她应了一声，在纸边添了个记号，脚步没有慢下来。\n\n前方的坡势渐渐向左低去，两道踩出来的路在一丛矮树后分开。沈砚停在岔口，先看左边：碎石顺坡散下去，路面宽些，像是人常走的方向。他指给带路的人看：“照这道坡走，是往下接药路吧？”\n\n带路的人没有立刻带他们走，叫他退回灰石旁，再从石头朝岔口望。沈砚照做，这才看见矮树右侧的坡面向外鼓出，挡住了后面一截窄路。带路的人走到树旁，拨开垂下的枝条，指着树后石沿上的两处旧踏痕：“这一段从这里绕过去。左边虽顺坡，走下去接的是另一道沟。人在岔口正前方，看不见右边的转折。”\n\n沈砚走近踏痕，又退回灰石处看了一遍。刚才他把坡向当成了去向，连树后的路口都没看全。他说：“从白痕石往前，先认矮树。到树前不能顺左坡下，得贴右边石沿绕过去。”带路的人让他自己走在前头试一段。沈砚沿石沿过去，回身时，左边那条宽路反而被矮树遮住了。他记下这两面所见的差别，才继续跟上。\n\n他们走到说定的路段尽头，带路的人指出此处为今日折返点，后面的药路不在这次同行范围内。唐穗在附近又看见一丛叶色较深的草，叶根藏在湿泥里。她蹲着看了片刻，说形状使她想起昨日留下的疑处，却隔着泥看不清接处，不能就此认定是同一种。她把所在位置记在纸上，留待有采收说明、也有工夫时复看。\n\n折回时，带路的人让三人按来路认标记。沈砚先从反面找到矮树，绕过石沿后才看见灰石的白痕；那道痕仍在，位置却与来时所见不同。他又认出横过路面的树根，走到松树外才望见院墙。三人确实走完了约定的一段，也在约定时刻回到外院。陆衡看清日影，说午后的练习还赶得上，便与他们道别。沈砚没有留他帮忙复述：路上该修正的地方，自己已经用脚走过一回。\n\n沈砚和唐穗到了交回处，程观正整理几份同行记录。他问起今日走到哪里，手指停在预留给这段药路的空处：“说清起止和岔口。下回有人问路，我得知道你们实际认过哪一段。”\n\n沈砚从外院门前说起，说过松树后路边的横根、带白痕的灰石，又说到矮树前的岔口。他讲到这里，顺手朝院外一指：“坡往左低，路却得从右边绕。”\n\n“从哪里看见右边？”程观问，“人若已经站到岔口前，照你这句话，未必找得到。”\n\n沈砚的手停在半空。他想起自己最初正是站在岔口前，才只看见左边宽路，便把说法重新排过：“先在白痕石旁停下。从那里朝矮树看，右侧坡面挡着一截路。走到树前，找树后石沿上的两处踏痕，再沿石沿绕过去。站在岔口正前方只看坡向，容易往左边那道沟走。”他又补上折返点的位置，以及回程从反面认出矮树后怎样找到灰石。\n\n程观照着他的次序复述了一遍，在岔口处停下来问：“石沿过去以后，你们走到哪儿折回？”沈砚指出带路人叫他们停下的地方，接着说：“再往后的路，我今天没走，不能告诉别人怎么转。”程观这才在记录上写下这次同行的起止范围和那处需从灰石旁辨认的转折，没有把后段接进去。\n\n唐穗将纸边的记号指给他看。她记的是路段尽头附近那处湿泥中的草，想以后带着昨日的疑问再看；眼下叶根没看清，她没有把它记成已辨认的材料。程观听完，把位置与疑处分开记下：“复看时照这个位置找，辨认结果等看清再说。”\n\n从案前退开，沈砚又在心里走了一遍那处岔口。他先前能跟着带路人绕过去，如今程观不在现场，他也能说出该从哪块石头旁看、为什么不能只顺着坡走。这份把握只到今日的折返点为止。\n\n交回处的事办完，沈砚去了教习组的课程办事处。案后负责当期正式课程录入的教习正在核对名册，他等对方放下笔，递上自己的弟子牌，说明来意：“我想申请正式外门修炼课。基础吐纳我已照着练过，曾有一回短暂的气感；歇过再试，没能重现。我想知道这一期还能不能录入，若不能，还差什么。”\n\n教习核过他的姓名，又翻到当期课位那页，手指沿着已填满的栏格逐一看过，才答他：“本期课位已经排定，没有余位。正式录入还要在教习组复核时，独自把基础吐纳的次序做稳，并核对上课时段。你目前没有经过这项复核；这一回有过感觉，也不能代替它。今日不录入。”\n\n沈砚听到“没有余位”时，原先准备再说的练习经过便停在口边。他看了一眼名册上排满的栏格，问：“下次有课位时，我是直接来这里，还是先请许庭替我说一声？”\n\n“下期课位与申请时段公布后，你自己来登记，再按安排参加复核。”教习把弟子牌还给他，“许庭能指导你现在的练习，也能说亲眼见过你怎样做；录入仍由这里依当期课位和复核结果办理。劳作时段若有冲突，到时也要核清。”\n\n沈砚接过木牌，把步骤问得更明白：等下期安排公布，再来登记，参加复核，届时核对课时。他复述一遍，教习点头，便继续看案上的名册。沈砚走出门时，手里的牌没有多一道正式课程的记录，心里那件悬着的请求却已有了答复。他不必拿山路上认住一处转折，或那一瞬温意，去猜自己是否已经够格。\n\n沈砚带着弟子牌来到基础练习的廊下。许庭正收起一张坐垫，见他过来，示意他把要问的事说清。沈砚将教习组的答复照原意转述：这一期没有余位，自己尚未参加基础吐纳复核，今日没有录入；下期公布安排后可再登记。他没有请许庭替自己争一个名额，只问：“眼下照原来的办法练，怎样才知道那点气感不是碰巧来一回？我该什么时候带问题来问？”\n\n许庭把坐垫放回地上，让他先说上次两回尝试的差别。沈砚记得第一次是把呼吸的一个来回看完，肩背没提，温意在呼气将尽时短暂出现；重试时，他先等着它，呼吸反倒快了。许庭听完，说：“你已经能说出从哪里开始乱。下一次先守住原来的次序：背放直，肩松开，等气自己进出。肋下的起落看得清，再留意别的变化。若又急着等那点温意，就退回能分清的一步。”\n\n他让沈砚把练习分开做，每回结束后只记三件事：呼吸何时仍平稳，若有气感是在怎样的呼吸之后出现，又在何时淡去；没有出现，也记下是一直平稳，还是中途因追候而变快。练完先歇，不靠延长一回坐着的工夫逼它重来。\n\n“明日午后我在这里答疑。”许庭说，“带你记下的两次差别来，挑一处说不清的问。若明日仍没有那点感觉，也能问呼吸从哪一步乱了。到时我看你实际怎样做，再说下一步。”\n\n沈砚在廊边坐下，照他说的试了几口呼吸。山路走了半日，腿脚还带着疲意，他先把坐姿安稳下来；肋下轻轻张开，又随呼气落回去。那点温意没有出现。他觉出自己将要盯着下一口气等，便松开肩，重新看清眼前这一个来回，随后起身，没有硬坐下去。\n\n回住处前，他在纸上写下明日要带来的问题：呼气将尽时，注意何时从观察变成了等候。纸角另一侧还留着今日药路的白痕石与矮树。他已能说清那段亲身走过的路；下一段练习，也有了可以一回回核对的起点。",
+            "start": 0,
+            "text_hash": "sha256:3fd5eee5a767364d98cf46df3c4d013636437fab7bd2e89e1b9b5cc2cf8215ce",
+            "asset_hash": "sha256:5d114e3c04a85b02d52a6ba8fddd29050f69c138c61a4598d5620ad6fdaedfc2",
+            "codepoints": 2941,
+            "acceptance_id": "",
+            "chapter_number": 4,
+            "asset_version_id": "authority-output:ba65ecc2-bafe-4ee9-9911-86d15324d1cd:chapter.draft:v1",
+            "creative_baseline": {
+              "style": {
+                "policies": [
+                  {
+                    "constraints": null,
+                    "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                    "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                    "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                    "structured_facts": [
+                      {
+                        "kind": "voice_contract",
+                        "layer": "NARRATOR",
+                        "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "GENRE",
+                        "guidance": [
+                          "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                          "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                          "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                          "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                          "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "问询一项尚未接受的劳作安排时。",
+                            "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                            "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                          },
+                          {
+                            "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                            "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                            "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                          },
+                          {
+                            "situation": "协商首次结伴采药的路线时。",
+                            "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                            "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                        "character_id": "character:shen-yan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "收到尚未说明回程安排的采药邀请时。",
+                            "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                            "motivation": "在答应同行前保留自己的时间边界。"
+                          },
+                          {
+                            "situation": "检查拟用于同行的携行工具时。",
+                            "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                            "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                          },
+                          {
+                            "situation": "同行者提出在任务途中多看一处观察点时。",
+                            "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                            "motivation": "让额外学习进入协商，而非一概拒绝。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                        "character_id": "character:lu-heng",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "准备采药时，有人询问她是否认识目标药材。",
+                            "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                            "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                          },
+                          {
+                            "situation": "商定材料保管办法时。",
+                            "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                            "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                          },
+                          {
+                            "situation": "任务途中发现值得核实的细小差别时。",
+                            "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                            "motivation": "争取观察机会，同时承认同行者的安排。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                        "character_id": "character:tang-sui",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "有人只说引气练习没有进展时。",
+                            "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                            "motivation": "让求助者提供可用于指导的观察。"
+                          },
+                          {
+                            "situation": "未来观察到弟子一次短暂成功后。",
+                            "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                            "motivation": "区分一次感觉与可重复的操作能力。"
+                          },
+                          {
+                            "situation": "沈砚询问自己是否能够参加正式课程时。",
+                            "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                            "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                        "character_id": "character:xu-ting",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                            "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                            "motivation": "让调整请求能够被具体处理。"
+                          },
+                          {
+                            "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                            "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                            "motivation": "区分任务报酬与兑换对象的实际供给。"
+                          },
+                          {
+                            "situation": "有人要求他直接确认正式课程资格时。",
+                            "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                            "motivation": "在部门职责边界内给出下一步回应。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                        "character_id": "character:cheng-guan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "key": "work_applicability",
+                        "value": {
+                          "scope": "BOOK",
+                          "book_id": "book:qinglan-wendao-20261008",
+                          "declarations": [
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                              "field_path": "$.subgenre"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                              "field_path": "$.core_desire"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                              "field_path": "$.core_fear"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                              "field_path": "$.core_conflict"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                              "field_path": "$.serialization_potential"
+                            }
+                          ],
+                          "source_bindings": [
+                            {
+                              "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                              "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                            },
+                            {
+                              "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                              "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                            },
+                            {
+                              "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                              "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                            }
+                          ],
+                          "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        }
+                      },
+                      {
+                        "key": "creative_style",
+                        "value": {
+                          "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                          "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                          "constraints": [
+                            "正文主要使用简体中文，单章2500—3500中文字。",
+                            "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                            "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                            "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                            "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                            "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                            "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                            "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                          ],
+                          "genre_conventions": [
+                            "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                            "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                            "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                            "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                            "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                          ],
+                          "original_examples": [
+                            {
+                              "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                              "purpose": "呈现扎实练习中的可见变化。",
+                              "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                            },
+                            {
+                              "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                              "purpose": "让同门利益参与任务选择。",
+                              "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                            },
+                            {
+                              "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                              "purpose": "通过具体取舍表现主角主动性。",
+                              "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                            },
+                            {
+                              "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                              "purpose": "建立章际承接与节奏变化。",
+                              "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "creative_direction",
+                        "value": {
+                          "genre": "传统修仙",
+                          "subgenre": "宗门成长与任务历练",
+                          "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                          "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                        }
+                      },
+                      {
+                        "key": "realization_policy",
+                        "value": {
+                          "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                          "contract_version": "scene-craft-tasks.v2"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "contract_version": "draft-style-view-v2",
+                "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+              },
+              "chapter": 4,
+              "source_plan": {
+                "content_hash": "sha256:0d78bd1cf2d16edafdf08dec6556295f350017c3dff2d758bba3a18840688ebe",
+                "asset_version_id": "e7b3fb9c-0c6d-4474-aee5-847ffbb9341f"
+              },
+              "point_of_view": null,
+              "author_guidance": {},
+              "baseline_digest": "sha256:e2be9c235d2b95b758c8f74f65c207d65159afa7ed0b24a56452cc92a0e807f8",
+              "contract_version": "creative-baseline.v1",
+              "style_constraints": [],
+              "target_word_count": null,
+              "method_requirements": {
+                "reward": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "reward_action",
+                    "reward_setup",
+                    "reward_payoff"
+                  ],
+                  "selected_values": {
+                    "reward_setup": [],
+                    "reward_action": "沈砚把所走路段的岔口与地形依据讲给需要使用这段路的人，并据反馈修正说法。",
+                    "reward_payoff": []
+                  }
+                },
+                "chapter_hook": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "ending_hook",
+                    "chapter_hook"
+                  ],
+                  "selected_values": {
+                    "ending_hook": "沈砚已经能说明这段走过的路，下一步要把短暂气感练得更稳，并按课程答复继续学习。",
+                    "chapter_hook": "沈砚已经能说明这段走过的路，下一步要把短暂气感练得更稳，并按课程答复继续学习。"
+                  }
+                },
+                "golden_opening": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "primary_function"
+                  ],
+                  "selected_values": {
+                    "primary_function": "实际走完首次交付换来的陌生药路同行实践；沈砚提出方向判断，经现场指认修正并向需要的人说明所走路段，同时得到正式课程请求的职责内答复。"
+                  }
+                },
+                "reader_promise": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "promise_action",
+                    "reader_promise_actions"
+                  ],
+                  "selected_values": {
+                    "promise_action": "以实际同行兑现采药结果，再把课程答复转成可执行的学习办法。",
+                    "reader_promise_actions": [
+                      "陌生药路机会在第4章兑现为实际走过、现场修正和事后说明。",
+                      "正式课程请求获得清楚回应；未满足录入条件时仍有可执行的基础学习办法。"
+                    ]
+                  }
+                },
+                "emotional_curve": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "emotional_curve"
+                  ],
+                  "selected_values": {
+                    "emotional_curve": []
+                  }
+                },
+                "protagonist_charm": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "protagonist_charm_mechanism"
+                  ],
+                  "selected_values": {
+                    "protagonist_charm_mechanism": null
+                  }
+                },
+                "antagonist_pressure": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "antagonist_pressure"
+                  ],
+                  "selected_values": {
+                    "antagonist_pressure": null
+                  }
+                },
+                "suspense_progression": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "suspense_curve"
+                  ],
+                  "selected_values": {
+                    "suspense_curve": []
+                  }
+                },
+                "serialization_function": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "serialization_function"
+                  ],
+                  "selected_values": {
+                    "serialization_function": "以一次完整的陌生药路同行和一次明确的课程答复收束开篇四章的连续事件；章末由沈砚可执行的基础练习承接第5章以后的学习。"
+                  },
+                  "work_requirement": {
+                    "scope": "BOOK",
+                    "status": "APPLICABLE",
+                    "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                    "field_path": "$.serialization_potential",
+                    "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                    "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                  }
+                }
+              },
+              "prohibited_outcomes": [
+                "只约定日后同行，或只听人讲解而未亲身走过。",
+                "把经指认的一段路写成沈砚已通晓整条陌生路线。",
+                "以基础答疑、好感或未核实的课位冒充正式课程录入。"
+              ]
+            },
+            "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+          }
+        ],
+        "window_id": "sha256:5c0497e5cee53a3148ebf8e8b45b49935488ecc8a489d33f88d98e71152abb68",
+        "input_asset": {
+          "content_hash": "sha256:878915d8a8c7ba4974a6c8c5fbbcc663ad312418aaa6a757c65ee43cc96acb27",
+          "asset_version_id": "2ca69927-89d9-47d9-8459-87edfbe3f7a3"
+        }
+      }
+    ],
+    "project_id": "qid-learning-prose-01",
+    "book_run_id": "book-run:01f1cb37-2be1-458b-be67-63424a519bca",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "schema_version": "longform-prose-manifest.v3",
+    "manifest_digest": "sha256:579367a36bc5b10ddcc744c34f486deb4f12394f4a982c7f0facf8a3d7e79a89",
+    "source_isolation": "AUTHOR_SELECTED_UNREVIEWED_PROSE"
+  },
+  "exact_release_sha": "8cd29ce94b1a319de3293404d539a725947c41a7",
+  "review_digest": "sha256:719bfbbf06606ee5c2bddaf88f534f003e22aea30460d31e4bb033ce8013e921",
+  "implementation_current": true
+}

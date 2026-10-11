@@ -1,0 +1,16 @@
+{
+  "failures": [
+    {
+      "collector": "select_expression_revision.py",
+      "error": "AUTHOR_BASE_HASH_CONFLICT",
+      "correction": "Supplied exact owner-returned base hashes after confirming original transaction rolled back and created no operation or external effect",
+      "original_log": "select_expression_revision-continuation.private.log"
+    },
+    {
+      "collector": "review_input_proof.py",
+      "error": "Rendered prompt reconstruction hash mismatch with a guessed Context target",
+      "correction": "Read exact target_scope from original native execution_request; corrected frozen admission hash MATCH",
+      "mutation": false
+    }
+  ]
+}

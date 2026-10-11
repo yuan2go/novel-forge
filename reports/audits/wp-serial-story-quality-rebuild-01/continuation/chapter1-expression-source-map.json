@@ -1,0 +1,20 @@
+{
+  "native_asset_version_id": "authority-output:4d875a15-4ce2-4b6a-a68e-73a9d5b8fd8f:chapter.draft:v1",
+  "selected_asset_version_id": "0d1fb7ad-cc4f-428f-a76a-3e33d155c666",
+  "before_text_hash": "sha256:c1d7efcbaf9ba49303560f9c42d214ab8fa65251ba2407984cefce03826dcd86",
+  "after_text_hash": "sha256:34bcb7a4c6f342c157f44df1167da24ae0a64f2baca954a4bc81a3862d2e413f",
+  "edits": [
+    {
+      "start": 540,
+      "end": 555,
+      "before": "，身上也没有忽然多出什么本领；",
+      "after": "；"
+    }
+  ],
+  "source": "ASSISTANT_REVISION_PROPOSAL_THROUGH_NATIVE_EDITOR",
+  "full_external_rewrite": false,
+  "expansion": false,
+  "native_production_quality_hidden": false,
+  "author_adoption": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED"
+}
