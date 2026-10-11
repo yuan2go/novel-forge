@@ -190,7 +190,10 @@ and its result before distributing it across the existing chapter matrix. It
 permits compression and time omission inside the frozen scope; a scope or active
 commitment change still belongs to native Plan Change. Work-specific commercial
 purposes and intermediate desires come from the Book's input, never this common
-method. It adds no Schema fields, acceptance stage or literary delivery gate.
+method. The frozen v5 binding also annotates the actual `hard_constraints`,
+`required_events` and `forbidden_events` output fields with their fictional meaning;
+historical approval and execution statements stay protocol evidence. It adds no
+Schema fields, acceptance stage or literary delivery gate.
 Compilation, deployment and actual Attempt consumption remain separate evidence.
 
 ## Generated Foundation formation

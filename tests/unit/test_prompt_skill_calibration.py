@@ -406,3 +406,36 @@ def test_historical_planning_profile_retains_previous_skill_bytes_and_new_schema
             except KernelError:
                 return False
         assert valid(schema) == valid(revised)
+
+
+def test_event_first_schema_hints_reach_nested_plan_fields_without_changing_validation():
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+
+    fields = {key: {"type": "array", "items": {"type": "string"}} for key in
+              ("hard_constraints", "required_events", "forbidden_events")}
+    schema = {"type": "object", "additionalProperties": False, "required": ["plan"],
+              "properties": {"plan": {"type": "object", "additionalProperties": False,
+                  "required": list(fields), "properties": fields}}}
+    original = deepcopy(schema)
+    legacy = bind_narrative_intent_schema(schema)
+    revised = bind_narrative_intent_schema(schema, event_first_planning=True)
+    assert schema == original
+    assert legacy == bind_narrative_intent_schema(schema, event_first_planning=False)
+    assert legacy["properties"]["plan"]["properties"] == fields
+    for field in fields:
+        assert "fictional" in revised["properties"]["plan"]["properties"][field]["description"].lower()
+    samples = [
+        {"plan": {"hard_constraints": ["Keep this work's ordinary protagonist."], "required_events": ["Complete the agreed delivery."], "forbidden_events": []}},
+        {"plan": {**{key: [] for key in fields}, "hard_constraints": 3}},
+        {"plan": {"required_events": [], "forbidden_events": []}},
+        {"plan": {**{key: [] for key in fields}, "new_gate": True}},
+    ]
+    for sample in samples:
+        def valid(contract):
+            try:
+                validate_chapter_provider_output_against_schema("chapter_group_plan.generate", contract, sample)
+                return True
+            except KernelError:
+                return False
+        assert valid(schema) == valid(legacy) == valid(revised)

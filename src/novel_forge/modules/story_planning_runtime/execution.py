@@ -4452,7 +4452,11 @@ class PostgresPlanningExecutionPreparer:
         if (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
             from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
 
-            output_schema = bind_narrative_intent_schema(output_schema)
+            output_schema = bind_narrative_intent_schema(
+                output_schema,
+                event_first_planning=(pack_materialization.skill.ref, pack_materialization.skill.version)
+                == ("long-outline", "long-outline-v5"),
+            )
             output_schema_ref += ":narrative-intent-v1"
         context_selection = [
             {
