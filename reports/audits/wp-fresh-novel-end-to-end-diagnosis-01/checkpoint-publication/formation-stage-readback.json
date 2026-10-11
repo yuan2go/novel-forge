@@ -1,0 +1,274 @@
+[
+  [
+    "CREATIVE_SEARCH",
+    "ACTIVE",
+    "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+    "sha256:d3372827071cdfd6d3108353bb20cab6125b91320f39031743750e0fb2dd344f",
+    {
+      "comparison": "FROZEN",
+      "selection_basis": "AUTO_COMPARISON",
+      "narrative_search": {
+        "search_id": "narrative-search:0d9bfe6680187fd792addc7dc9f9c0714906adddd2c748869cb5b8bb13aafcc1",
+        "comparison": {
+          "policy_version": "narrative-search-comparison.v2",
+          "contract_version": "narrative-search.v1",
+          "ranked_candidates": [
+            {
+              "rank": 1,
+              "risks": [
+                "修船与航路元素若占据过多篇幅，可能削弱传统修仙的修炼、斗法与境界吸引力；每个大阶段都需明确新能力及其打开的行动范围，航路只承担相应阶段的作用。",
+                "失联诸域若写成连续修复设施，会导致同质任务；应让不同地域拥有自己的生活、人物诉求和探索问题，不能以反复寻找阵眼代替事件设计。",
+                "程砚重视同伴可能滑向无边界照顾；需让他表达个人愿望，拒绝不合理要求，并承认别人有能力承担自己的选择。",
+                "朋友分途后容易失去长期存在感；重逢要带回可见的变化，必要的短篇幅异地视角只呈现正在发生的重要选择，不用近况汇报填量。",
+                "终局的分汛争议可能被宏观解释淹没；决定应落实到已认识的人、真实居住的地方和能够执行的方案，并通过行动呈现结果。",
+                "600章的固定总量容易诱发中段拖延；阶段章数应随事件容量调整，提前兑现的目标直接进入新问题，不重复铺垫已经获得的能力或关系。"
+              ],
+              "score": 0.8515384615384616,
+              "branch_key": "future-2",
+              "assumptions": [
+                "依据作者Brief，采用传统修仙的境界成长、宗门生活与未知地域探索，辅以普通人的生计和长期关系变化。",
+                "作者没有指定人物、世界或结局；程砚、邵荻、喻临、寒汀镇、青岚宗及灵潮迁徙规则均为本方向新提出的设计。",
+                "以程砚为主要视角，伙伴保持独立目标；关系可以通过合作、分途和重逢发展，不把永久组队作为必要条件。",
+                "600章适合容纳多次境界与生活范围变化，但远端只确定阶段功能、人物发展和伏笔去向，近端按事件容量展开。",
+                "所列比较数值估计本方向对作者目标的支持程度，不表示已经完成的文学质量或已经发生的故事事实。"
+              ],
+              "future_options": [
+                "青岚宗阶段可选择程砚正式入门或成为有稳定师承的外修，依前100章形成的能力与关系确定，不改变离乡和获得自主修行路径的阶段兑现。",
+                "邵荻可以先留在内陆经营，也可以率自己的船队进入外海；两种路径都使她拥有独立事业，而非始终替程砚管理物资。",
+                "喻临可以成为宗门内坚持改革的剑修，也可以因理念分歧离宗；选择必须由其争取承认的愿望与具体遭遇推动。",
+                "外海探索可分别侧重群岛生活、异族交往、古代遗迹或潮境生灵，依已形成的角色关系与未偿伏笔安排先后。",
+                "终局保留程砚继续越界远游或在新航路间建立修行之所的空间，但本书必须兑现他的自主去留与主要关系归宿。"
+              ],
+              "selection_summary": "本候选选择从人物愿望与关系变化展开的江河游历方向。它用修船学徒的具体经验建立普通人起步的可信感，用宗门修行维持传统修仙体验，用同伴分途和失联水域探索支撑600章的变化。主要取舍是减少开篇惨祸与隐藏身份带来的即时刺激，增加离乡、练功、合作和远行本身的吸引力。比较估计偏重人物主动性、关系演变与阶段兑现；反转和冲突强度服务于具体事件，不作为逐章指标。",
+              "qualification_hash": "sha256:df425a10e30e4d00c764865cdf316f9e4090304a6caeb41888b86afa72850491",
+              "strategy_fingerprint": "creative-foundation:relationship-led:river-voyage:ordinary-shipwright:diverging-companions:migrating-spiritual-tides:v1",
+              "generation_operation_id": "ecd7cdad-6051-4659-9b91-737bcdc9b862",
+              "candidate_asset_version_id": "authority-output:ecd7cdad-6051-4659-9b91-737bcdc9b862:story_planning.candidate:v1"
+            },
+            {
+              "rank": 2,
+              "risks": [
+                "陶窑与灵脉题材可能挤压传统修仙的个人成长乐趣。后续需让术法、斗法、功法取舍和境界能力承担独立事件，设施探索只占合适比例。",
+                "裂纹陶片可能演变成随时给答案的工具。后续应持续区分它显示的现象、主角的解释与实际结果，并让成熟能力逐步摆脱对工具的依赖。",
+                "长线灵脉问题可能被写成不断前往一地修好一处设施。各阶段需改变目标、阻力和解决方式，允许夺取机会、避险、谈判、探索与放弃形成不同事件结构。",
+                "后期规模扩大可能使普通人物只剩回忆用途。家人、同乡和低阶修士应有符合其处境的持续生活变化，不必强行把所有人提升到主角境界。",
+                "600章容量可能导致前期目标拖延。首100章必须兑现稳定修行、独立谋生和家乡支脉事件，后续通过能力、地域与关系拓展容量。",
+                "终局容易被简化为主角提出方案、所有人接受。后续设计应保留受益者与受损者的具体差异，以及伙伴能够承担的独立行动，但不把争议拖成反复议论。"
+              ],
+              "score": 0.8307692307692308,
+              "branch_key": "future-1",
+              "assumptions": [
+                "作者未指定书名、人物或机缘；《山河有路》、徐照、茶溪镇及裂纹陶片均为本候选提出的原生设计。",
+                "采用练气、筑基、金丹、元婴、化神的传统境界序列，以便读者理解成长跨度；具体功法和各境界表现留待世界与人物设计展开。",
+                "以宗门作为前期资源与关系中心，以远游和不同地域作为中后期空间拓展方式，不预设主角必须脱离所有组织。",
+                "选择以山河灵脉变化提供长线探索问题，同时容纳独立的修行、斗法与关系事件，避免单一谜题承担全部篇幅。",
+                "各阶段章节区间只标明长篇容量与主要兑现位置，具体事件应按内容滚动组合；600章总量与单章正文汉字要求保持不变。"
+              ],
+              "future_options": [
+                "前期宗门方向可选择偏重野外实践的师承，使主角具备斗法、行路与阵基观察三方面基础，而非长期锁定在生产岗位。",
+                "中期可发展为固定小队远游，也可在一段共同旅程后让伙伴分开成长，随后因具体目标重聚；两者都保留共同经历的影响。",
+                "孟青禾与徐照的关系可发展为爱情或长期知交；本阶段仅确定彼此有独立追求，不提前把她的行动附属于主角。",
+                "外部地域可分别采用山岭、荒原、海域等不同条件，让修为提升产生不同用途，避免地图更换而任务结构不变。",
+                "最终改变灵脉利用方式可以由多方协作完成；徐照的独特贡献在发现、贯通与承担关键行动，不必独占全部知识和成果。"
+              ],
+              "selection_summary": "本方向以作者要求的普通人成长、未知探索和关系变化为核心，将前期可触及的谋生目标与后期山河探索接成一条因果线。优势是起步具体、伙伴有独立欲望、修行能力能持续改变行动；主要取舍是需要控制技艺与设施题材的篇幅，让传统修仙的斗法、境界与远游保持吸引力。各项数值只表示该方向的预估潜力，其中反转和冲突升级采用较克制的预期；不据此要求每章增加反转、代价或升级。",
+              "qualification_hash": "sha256:e44120c6cf0d9b058be215c6afc351e06d9b4cc1649fbcd1e753bffe77ac9bd2",
+              "strategy_fingerprint": "creative-foundation:ordinary-kiln-apprentice:sect-to-open-world:limited-spirit-trace:relationship-divergence:river-network-discovery:v1",
+              "generation_operation_id": "0c749b31-d386-4911-9413-6234805de176",
+              "candidate_asset_version_id": "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1"
+            }
+          ],
+          "selection_reasons": [
+            "AUTHORIZED_STABLE_TIE_BREAK",
+            "本方向以作者要求的普通人成长、未知探索和关系变化为核心，将前期可触及的谋生目标与后期山河探索接成一条因果线。优势是起步具体、伙伴有独立欲望、修行能力能持续改变行动；主要取舍是需要控制技艺与设施题材的篇幅，让传统修仙的斗法、境界与远游保持吸引力。各项数值只表示该方向的预估潜力，其中反转和冲突升级采用较克制的预期；不据此要求每章增加反转、代价或升级。",
+            "Model judgment is uncertain evidence; this selection does not prove literary superiority."
+          ],
+          "selection_evidence": {
+            "policy": {
+              "tie_break": "STABLE_ID",
+              "contract_version": "narrative-search-comparison.v2",
+              "dimension_weights": {
+                "arc_momentum": 1,
+                "setup_payoff": 1,
+                "reader_promise": 1,
+                "reversal_reveal": 1,
+                "character_agency": 1,
+                "pacing_variation": 1,
+                "pattern_diversity": 1,
+                "world_consequence": 1,
+                "future_optionality": 1,
+                "conflict_escalation": 1,
+                "emotional_progression": 1,
+                "relationship_evolution": 1,
+                "choice_cost_consequence": 1
+              },
+              "uncertainty_margin": 0.05
+            },
+            "score_gap": 0.020769230769230762,
+            "uncertainty": "INSUFFICIENT_MARGIN",
+            "evidence_class": "MODEL_ESTIMATES_AND_CANDIDATE_PROJECTIONS",
+            "selection_basis": "AUTHORIZED_STABLE_TIE_BREAK",
+            "literary_superiority": "NOT_PROVEN",
+            "indistinguishable_candidate_asset_version_ids": [
+              "authority-output:ecd7cdad-6051-4659-9b91-737bcdc9b862:story_planning.candidate:v1",
+              "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1"
+            ]
+          },
+          "selected_candidate_asset_version_id": "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+          "rejected_candidate_asset_version_ids": [
+            "authority-output:ecd7cdad-6051-4659-9b91-737bcdc9b862:story_planning.candidate:v1"
+          ]
+        },
+        "comparison_hash": "sha256:da6c95f48d8120f93f915d8fccd05855d1a8924d3ac5ea14d395191e48e9371a"
+      },
+      "literary_qualification": "NOT_PROVEN"
+    },
+    {
+      "selection_reason": [
+        "AUTHORIZED_STABLE_TIE_BREAK",
+        "本方向以作者要求的普通人成长、未知探索和关系变化为核心，将前期可触及的谋生目标与后期山河探索接成一条因果线。优势是起步具体、伙伴有独立欲望、修行能力能持续改变行动；主要取舍是需要控制技艺与设施题材的篇幅，让传统修仙的斗法、境界与远游保持吸引力。各项数值只表示该方向的预估潜力，其中反转和冲突升级采用较克制的预期；不据此要求每章增加反转、代价或升级。",
+        "Model judgment is uncertain evidence; this selection does not prove literary superiority."
+      ],
+      "selected_asset_version_id": "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+      "candidate_asset_version_ids": [
+        "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+        "authority-output:ecd7cdad-6051-4659-9b91-737bcdc9b862:story_planning.candidate:v1"
+      ]
+    }
+  ],
+  [
+    "CREATIVE_FOUNDATION",
+    "ACTIVE",
+    "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+    "sha256:d3372827071cdfd6d3108353bb20cab6125b91320f39031743750e0fb2dd344f",
+    {
+      "role": "CREATIVE_FOUNDATION",
+      "structural": "PASS",
+      "cross_layer": "PASS",
+      "parent_roles": [],
+      "schema_version": "foundation-layer-validation.v2",
+      "generated_layer": {
+        "role": "CREATIVE_FOUNDATION",
+        "content_hash": "sha256:d3372827071cdfd6d3108353bb20cab6125b91320f39031743750e0fb2dd344f",
+        "schema_version": "planning-generation-candidate.v1",
+        "selection_basis": "AUTO_COMPARISON",
+        "asset_version_id": "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+        "selection_reason": [
+          "AUTHORIZED_STABLE_TIE_BREAK",
+          "本方向以作者要求的普通人成长、未知探索和关系变化为核心，将前期可触及的谋生目标与后期山河探索接成一条因果线。优势是起步具体、伙伴有独立欲望、修行能力能持续改变行动；主要取舍是需要控制技艺与设施题材的篇幅，让传统修仙的斗法、境界与远游保持吸引力。各项数值只表示该方向的预估潜力，其中反转和冲突升级采用较克制的预期；不据此要求每章增加反转、代价或升级。",
+          "Model judgment is uncertain evidence; this selection does not prove literary superiority."
+        ],
+        "qualification_hash": "sha256:8dcd9c794bf6237d3226c4733b2dcad17eedd47fd2e3ee8203f9155028c01ada",
+        "activation_operation_id": "be59b059-37da-4713-9992-d701bc826eb6",
+        "generation_operation_id": "0c749b31-d386-4911-9413-6234805de176",
+        "candidate_asset_version_ids": [
+          "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+          "authority-output:ecd7cdad-6051-4659-9b91-737bcdc9b862:story_planning.candidate:v1"
+        ],
+        "qualification_evidence_asset_version_id": "authority-output:ea2df093-2e3f-413f-a836-0c4883261b18:story_design.transition.receipt:v1"
+      },
+      "upstream_digest": ""
+    },
+    {
+      "role": "CREATIVE_FOUNDATION",
+      "authority": "STORY_DESIGN_AUTHORITY",
+      "content_hash": "sha256:d3372827071cdfd6d3108353bb20cab6125b91320f39031743750e0fb2dd344f",
+      "activation_id": "be59b059-37da-4713-9992-d701bc826eb6",
+      "schema_version": "planning-generation-candidate.v1",
+      "upstream_digest": "",
+      "asset_version_id": "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1",
+      "qualification_hash": "sha256:8dcd9c794bf6237d3226c4733b2dcad17eedd47fd2e3ee8203f9155028c01ada",
+      "qualification_evidence_asset_version_id": "authority-output:ea2df093-2e3f-413f-a836-0c4883261b18:story_design.transition.receipt:v1"
+    }
+  ],
+  [
+    "THEME_CONTRACT",
+    "ACTIVE",
+    "authority-output:94a3b51e-ceb7-40e5-9c1c-02f2ea0d8b70:story_planning.candidate:v1",
+    "sha256:e0a461d86767606d1c487779dbae90d2e1b845822741fc1893a3d8df9722bce5",
+    {
+      "role": "THEME_CONTRACT",
+      "structural": "PASS",
+      "cross_layer": "PASS",
+      "parent_roles": [
+        "CREATIVE_FOUNDATION"
+      ],
+      "schema_version": "foundation-layer-validation.v2",
+      "generated_layer": {
+        "role": "THEME_CONTRACT",
+        "content_hash": "sha256:e0a461d86767606d1c487779dbae90d2e1b845822741fc1893a3d8df9722bce5",
+        "schema_version": "planning-generation-candidate.v1",
+        "selection_basis": "TEMPLATE_VALIDATION",
+        "asset_version_id": "authority-output:94a3b51e-ceb7-40e5-9c1c-02f2ea0d8b70:story_planning.candidate:v1",
+        "selection_reason": [
+          "FIRST_TEMPLATE_VALIDATED_BRANCH",
+          "Frozen brief and parent constraints passed; literary qualification NOT_RUN"
+        ],
+        "qualification_hash": "sha256:75ed821a8b3c9a65d445d6953916b67a29ca7b4beac781080db2620115e95b24",
+        "activation_operation_id": "6f6adf19-65b0-4bf6-9353-8c961aa38242",
+        "generation_operation_id": "94a3b51e-ceb7-40e5-9c1c-02f2ea0d8b70",
+        "candidate_asset_version_ids": [
+          "authority-output:94a3b51e-ceb7-40e5-9c1c-02f2ea0d8b70:story_planning.candidate:v1"
+        ],
+        "qualification_evidence_asset_version_id": "authority-output:f97ec03b-bde9-43b8-98d8-7237f4a90b2e:story_design.transition.receipt:v1"
+      },
+      "upstream_digest": "sha256:6c51b0b8595fc93effae672a44d3cab749ea45a70f5b40e4d39720f776da9dfd"
+    },
+    {
+      "role": "THEME_CONTRACT",
+      "authority": "STORY_DESIGN_AUTHORITY",
+      "content_hash": "sha256:e0a461d86767606d1c487779dbae90d2e1b845822741fc1893a3d8df9722bce5",
+      "activation_id": "6f6adf19-65b0-4bf6-9353-8c961aa38242",
+      "schema_version": "planning-generation-candidate.v1",
+      "upstream_digest": "sha256:6c51b0b8595fc93effae672a44d3cab749ea45a70f5b40e4d39720f776da9dfd",
+      "asset_version_id": "authority-output:94a3b51e-ceb7-40e5-9c1c-02f2ea0d8b70:story_planning.candidate:v1",
+      "qualification_hash": "sha256:75ed821a8b3c9a65d445d6953916b67a29ca7b4beac781080db2620115e95b24",
+      "qualification_evidence_asset_version_id": "authority-output:f97ec03b-bde9-43b8-98d8-7237f4a90b2e:story_design.transition.receipt:v1"
+    }
+  ],
+  [
+    "ENDING_INTENT",
+    "ACTIVE",
+    "authority-output:908c7246-2849-46aa-860d-d9d7d92e19ef:story_planning.candidate:v1",
+    "sha256:fe4b50e0f7991cb3b6a3e3fcfb61adfb9a859b70e1856643bccffbb7cc5fef81",
+    {
+      "role": "ENDING_INTENT",
+      "structural": "PASS",
+      "cross_layer": "PASS",
+      "parent_roles": [
+        "CREATIVE_FOUNDATION"
+      ],
+      "schema_version": "foundation-layer-validation.v2",
+      "generated_layer": {
+        "role": "ENDING_INTENT",
+        "content_hash": "sha256:fe4b50e0f7991cb3b6a3e3fcfb61adfb9a859b70e1856643bccffbb7cc5fef81",
+        "schema_version": "planning-generation-candidate.v1",
+        "selection_basis": "TEMPLATE_VALIDATION",
+        "asset_version_id": "authority-output:908c7246-2849-46aa-860d-d9d7d92e19ef:story_planning.candidate:v1",
+        "selection_reason": [
+          "FIRST_TEMPLATE_VALIDATED_BRANCH",
+          "Frozen brief and parent constraints passed; literary qualification NOT_RUN"
+        ],
+        "qualification_hash": "sha256:cb104bd074e6880658b04a377b384bb116c522656d740d580368e289647facdc",
+        "activation_operation_id": "9e0898a1-41dc-4ed4-9679-e242a5f6520e",
+        "generation_operation_id": "908c7246-2849-46aa-860d-d9d7d92e19ef",
+        "candidate_asset_version_ids": [
+          "authority-output:908c7246-2849-46aa-860d-d9d7d92e19ef:story_planning.candidate:v1"
+        ],
+        "qualification_evidence_asset_version_id": "authority-output:89aa69d9-79fe-422d-881a-605f0600ac5a:story_design.transition.receipt:v1"
+      },
+      "upstream_digest": "sha256:6c51b0b8595fc93effae672a44d3cab749ea45a70f5b40e4d39720f776da9dfd"
+    },
+    {
+      "role": "ENDING_INTENT",
+      "authority": "STORY_DESIGN_AUTHORITY",
+      "content_hash": "sha256:fe4b50e0f7991cb3b6a3e3fcfb61adfb9a859b70e1856643bccffbb7cc5fef81",
+      "activation_id": "9e0898a1-41dc-4ed4-9679-e242a5f6520e",
+      "schema_version": "planning-generation-candidate.v1",
+      "upstream_digest": "sha256:6c51b0b8595fc93effae672a44d3cab749ea45a70f5b40e4d39720f776da9dfd",
+      "asset_version_id": "authority-output:908c7246-2849-46aa-860d-d9d7d92e19ef:story_planning.candidate:v1",
+      "qualification_hash": "sha256:cb104bd074e6880658b04a377b384bb116c522656d740d580368e289647facdc",
+      "qualification_evidence_asset_version_id": "authority-output:89aa69d9-79fe-422d-881a-605f0600ac5a:story_design.transition.receipt:v1"
+    }
+  ]
+]

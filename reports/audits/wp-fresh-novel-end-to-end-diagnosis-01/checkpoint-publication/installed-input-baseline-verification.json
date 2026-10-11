@@ -1,0 +1,117 @@
+{
+  "installed_wheel": [
+    {
+      "path": "modules/book_authority/creation_runtime.py",
+      "source_exists": true,
+      "installed_exists": true,
+      "sha256": "797f6cac21f6f028e91d9ac9c89e505004377820bd3370924436c7c6eef9f4c7",
+      "matching": true
+    },
+    {
+      "path": "modules/book_design_authority/formation.py",
+      "source_exists": true,
+      "installed_exists": true,
+      "sha256": "334f99d5660b74ff16ab359db08dcd3ea8d51e2b16c3a5d05a43202ed0cfcc37",
+      "matching": true
+    },
+    {
+      "path": "modules/chapter_authority/provider_handlers.py",
+      "source_exists": false,
+      "installed_exists": false,
+      "sha256": null,
+      "matching": false
+    },
+    {
+      "path": "modules/book_followup_authority/prose_coordinator.py",
+      "source_exists": true,
+      "installed_exists": true,
+      "sha256": "117d45ccaaba7d67b98c795549ea84349edad1273b01ecb5b52cee481040b6bd",
+      "matching": true
+    },
+    {
+      "path": "cli/creation.py",
+      "source_exists": true,
+      "installed_exists": true,
+      "sha256": "3e9c5e7d6b111de58691b933954a22a0c90159ece5038141e6acc8608dda3887",
+      "matching": true
+    }
+  ],
+  "input_isolation": [
+    {
+      "asset_type": "creative_brief",
+      "asset_version_id": "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1",
+      "content_hash": "sha256:f456466c6dc0358e5498fb0dd9c356881231e8e3a358593435bfe444f2f69f21",
+      "old_work_matches": [],
+      "top_level_fields": [
+        "audience",
+        "constraints",
+        "creative_brief_contract_version",
+        "creative_input_selection",
+        "genre",
+        "idea",
+        "project_id",
+        "source_boundaries"
+      ]
+    },
+    {
+      "asset_type": "context_bundle",
+      "asset_version_id": "53c30739-e8c8-4994-b3dc-37c34ef97872",
+      "content_hash": "sha256:0d2fb3be177d0594d0b514c68426eb207b66bc39eb1a3167b92e1a124ddf0658",
+      "old_work_matches": [],
+      "top_level_fields": [
+        "arc_working_set",
+        "book_id",
+        "context_manifest",
+        "estimated_tokens",
+        "foundation_task",
+        "input_versions",
+        "knowledge_access_policy",
+        "language_contract",
+        "logical_key",
+        "narrative_intelligence",
+        "narrative_qualification_profiles",
+        "narrative_search",
+        "planning_context_policy_version",
+        "planning_contract_version",
+        "planning_empty_query_projection_version",
+        "planning_scope",
+        "project_id",
+        "schema_version",
+        "source_isolation",
+        "token_budget",
+        "trace_id",
+        "workspace_id"
+      ]
+    },
+    {
+      "asset_type": "capability_materialization_manifest",
+      "asset_version_id": "352c7248-6efc-4cbf-87c6-11f30de16adb",
+      "content_hash": "sha256:8bf7a2f3b55a815bcda29d5d2b518f8ca51cc634174024546226b37034388a29",
+      "old_work_matches": [],
+      "top_level_fields": [
+        "contract"
+      ]
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "asset_version_id": "c219fcb6-49b8-4efd-8eb5-ea32b19b4fed",
+      "content_hash": "sha256:3cb5dd74fbdeb4efb7f2b5ad56ea204585a00575fbd9ad6616181f96b6dc63a9",
+      "old_work_matches": [],
+      "top_level_fields": [
+        "contract"
+      ]
+    },
+    {
+      "asset_type": "input_manifest",
+      "asset_version_id": "8259a48f-fe05-41d3-8aec-ed40e945d42c",
+      "content_hash": "sha256:3e083f5c7c11b9050b95ab3fea7830e08c6e84c07013f9b8da1622d7fdc67454",
+      "old_work_matches": [],
+      "top_level_fields": [
+        "contract"
+      ]
+    }
+  ],
+  "old_book_imported": false,
+  "scope": "FIRST_ACTUAL_CREATIVE_CANDIDATE_REQUEST_ONLY",
+  "downstream_sources": "NOT_RUN"
+}

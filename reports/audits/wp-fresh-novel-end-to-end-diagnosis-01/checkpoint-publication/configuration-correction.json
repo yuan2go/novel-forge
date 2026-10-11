@@ -1,0 +1,9 @@
+{
+  "initial_attempt": "start.log",
+  "error": "controlled Authority runtime requires the MinIO object-store backend",
+  "corrected_before_business_creation": true,
+  "backend": "minio",
+  "existing_object_service": true,
+  "new_project_keys": true,
+  "old_content_imported": 0
+}
