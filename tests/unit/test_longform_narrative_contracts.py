@@ -637,3 +637,93 @@ def test_arc_working_set_rejects_a_stale_narrative_state_boundary() -> None:
             },
             narrative_load_policy={"limits": {"max_active_arcs": 1}},
         )
+
+
+def _frozen_chapter_working_set(*, row=None, projection=None, maximum=3):
+    return build_arc_working_set(
+        project_id="project:1", book_id="book:1", chapter_number=1,
+        arc_plan_snapshots={
+            "arc:hero": {"objective": "earn wages", "closure_conditions": ["paid"]},
+            "arc:teacher": {"objective": "teach later", "closure_conditions": ["taught"]},
+        },
+        accepted_projection=projection or {"accepted_boundary": {"chapter_number": 0}},
+        accepted_narrative_state={
+            "asset_version_id": "story-state:v0", "content_hash": "sha256:" + "a" * 64,
+            "content": {"accepted_through_chapter": 0, "current_state": {}},
+        },
+        narrative_load_policy={"limits": {"max_active_arcs": maximum}},
+        schedule_row=row,
+    )
+
+
+def _labor_chapter_row():
+    return {
+        "chapter_number": 1, "narrative_density": "MEDIUM",
+        "required_arc_contributions": [{"arc_plan_version_id": "arc:hero", "contribution": "finish work"}],
+        "arc_cadence": [{"arc_plan_version_id": "arc:hero", "action": "ADVANCE"}],
+    }
+
+
+def test_frozen_chapter_scope_does_not_fill_unused_capacity_or_pay_unplanned_debt():
+    projection = {
+        "accepted_boundary": {"chapter_number": 0},
+        "arc_states": [{"arc_plan_version_id": "arc:hero", "current_phase": "CLIMAX"}],
+        "obligation_states": [{"state": {
+            "obligation_id": "promise:teacher", "linked_arc_ids": ["arc:teacher"],
+            "accepted_evaluation": {"overdue": True},
+        }}],
+    }
+    row = _labor_chapter_row()
+    working = _frozen_chapter_working_set(row=row, projection=projection)
+    assert [(x["arc_plan_version_id"], x["action"]) for x in working["selected_contributions"]] == [("arc:hero", "ADVANCE")]
+    assert working["deferred_arc_plan_version_ids"] == ["arc:teacher"]
+    assert working["policy_version"] == "frozen-chapter-arc-working-set-v2"
+    assert working["capacity"]["source"] == "FROZEN_CHAPTER_SCHEDULE"
+    assert working["schedule_correction"]["added_arc_plan_version_ids"] == []
+    assert row == _labor_chapter_row()
+    teacher = next(x for x in working["candidates"] if x["arc_plan_version_id"] == "arc:teacher")
+    assert teacher["obligation_debt"]["overdue_count"] == 1
+
+
+def test_frozen_chapter_contributions_are_not_dropped_by_density_hint():
+    row = _labor_chapter_row()
+    row["narrative_density"] = "LOW"
+    row["required_arc_contributions"].append({"arc_plan_version_id": "arc:teacher", "contribution": "limited contact"})
+    row["arc_cadence"].append({"arc_plan_version_id": "arc:teacher", "action": "TOUCH"})
+    working = _frozen_chapter_working_set(row=row)
+    assert {x["arc_plan_version_id"] for x in working["selected_contributions"]} == {"arc:hero", "arc:teacher"}
+    with pytest.raises(KernelError, match="governed active-Arc capacity"):
+        _frozen_chapter_working_set(row=row, maximum=1)
+
+
+@pytest.mark.parametrize("defect", ["wrong_chapter", "foreign", "duplicate", "dormant", "extra_cadence"])
+def test_invalid_frozen_chapter_scope_requires_planning_instead_of_rank_correction(defect):
+    row = _labor_chapter_row()
+    if defect == "wrong_chapter":
+        row["chapter_number"] = 2
+    elif defect == "foreign":
+        row["required_arc_contributions"][0]["arc_plan_version_id"] = "arc:foreign"
+    elif defect == "duplicate":
+        row["required_arc_contributions"] *= 2
+    elif defect == "dormant":
+        row["arc_cadence"][0]["action"] = "DORMANT"
+    else:
+        row["arc_cadence"].append({"arc_plan_version_id": "arc:teacher", "action": "ADVANCE"})
+    with pytest.raises(KernelError) as error:
+        _frozen_chapter_working_set(row=row)
+    assert error.value.code == "ARC_WORKING_SET_CHAPTER_SCHEDULE_INVALID"
+
+
+def test_frozen_chapter_illegal_arc_cannot_be_replaced_with_another_portfolio_arc():
+    with pytest.raises(KernelError) as error:
+        _frozen_chapter_working_set(row=_labor_chapter_row(), projection={
+            "accepted_boundary": {"chapter_number": 0},
+            "arc_states": [{"arc_plan_version_id": "arc:hero", "lifecycle_status": "COMPLETED"}],
+        })
+    assert error.value.code == "ARC_WORKING_SET_CHAPTER_ARC_ILLEGAL"
+
+
+def test_unfrozen_group_selection_keeps_v1_capacity_ranking():
+    working = _frozen_chapter_working_set(row={"narrative_density": "MEDIUM"})
+    assert working["policy_version"] == "accepted-reality-arc-working-set-v1"
+    assert len(working["selected_contributions"]) == 2

@@ -1659,6 +1659,14 @@ Realization is classified as an execution contract; ChapterGroup is an execution
 window. Foundation ownership is retained: the binding-set owner does not become the
 owner of the semantic assets it references.
 
+A newly computed Chapter Arc Working Set uses `frozen-chapter-arc-working-set-v2`
+when its frozen matrix row declares required contributions. The row owns which Arcs
+move in that Chapter; available portfolio capacity, accepted debt and starvation
+ranking cannot insert another contribution. Contradictory, illegal or over-capacity
+rows require Planning/Plan Change. Group-window ranking and already frozen v1
+requests keep their existing contracts and evidence. This is a future-input
+projection correction, not a new semantic Authority or a waiver of Scene coverage.
+
 Current Chapter activation requires the current Mission/Scene contract and exact Frozen
 realization even for imported candidates. Older binding definitions support frozen
 receipt replay, not new production admission. Mission, scene, obligation, Arc schedule,
