@@ -36,7 +36,7 @@ def project_sections(text: str, *headings: str) -> str:
 
 
 def project_skill_method(text: str, *, ref: str, version: str, stage: str, targeted: bool) -> str:
-    calibrated = version == _VERSIONS.get(ref) or (ref == "long-outline" and version in {"long-outline-v3", "long-outline-v4"}) or (ref == "narrative-beat-design" and version == "narrative-beat-design-qualification-v3") or (ref in _METHODS and version == ref + "-qualification-v2")
+    calibrated = version == _VERSIONS.get(ref) or (ref == "long-outline" and version in {"long-outline-v3", "long-outline-v4", "long-outline-v5"}) or (ref == "narrative-beat-design" and version == "narrative-beat-design-qualification-v3") or (ref in _METHODS and version == ref + "-qualification-v2")
     calibrated = calibrated or (ref in _METHODS and version == ref + "-qualification-v4")
     calibrated = calibrated or (ref == "quality-review" and version in {"quality-review-v3", "quality-review-v4"})
     calibrated = calibrated or (ref == "prose-generation" and version == "prose-generation-v5")

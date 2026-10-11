@@ -165,6 +165,34 @@ execution controls and selection metadata remain host evidence. Legacy frozen Fo
 and Content replay retain their original inputs and identities. These executable input
 boundaries do not establish literary conformity or longform quality.
 
+New Story Planning Pack 2.14 binds System v12, template v3 and stage-specific Skill
+versions to `planning-narrative-intent-projection.v1`. The existing generation
+preparer versions the sent output Schema instructions without changing the domain
+JSON shape or storage contract. The gateway first verifies the frozen Task/Context
+and source identities, then separates narrative direction from output protocol.
+Execution topology budgets, comparison weights, retry metadata and Context selection
+audits stay in durable source/projection receipts outside the narrative data.
+Exact matrix and literal pointers, accepted knowledge and working-manuscript
+continuity remain intact. Story constraints concern the author intent or selected
+fictional design; host approval and evidence status do not prescribe character action.
+Search defaults permit quiet or stable situations and author-selected procedural plots.
+An inherited structural conflict requires existing author/Plan Change and edition
+candidate decisions; this projection does not rewrite or activate old plans or prose.
+Historical Planning Packs keep their original bindings and rendering. Installing new
+code alone does not replace a Book's frozen Pack, grant a Provider task or prove
+literary improvement.
+
+
+Story Planning can explicitly select `event_first_planning=True` when compiling its
+current 1.21 contract. Pack 2.15 freezes `long-outline-v5`; the default Pack 2.14
+continues to bind the exact retained v4 bytes. The method designs a complete event
+and its result before distributing it across the existing chapter matrix. It
+permits compression and time omission inside the frozen scope; a scope or active
+commitment change still belongs to native Plan Change. Work-specific commercial
+purposes and intermediate desires come from the Book's input, never this common
+method. It adds no Schema fields, acceptance stage or literary delivery gate.
+Compilation, deployment and actual Attempt consumption remain separate evidence.
+
 ## Generated Foundation formation
 
 The existing Formation API accepts either six exact qualified layer references or one
@@ -2500,21 +2528,3 @@ exact native 1.21 ChapterGroup generation. It reuses the existing deterministic 
 chapter slice and retains every frozen event; historical single-slice contracts keep their guard.
 Membership retry compatibility excludes durably isolated historical execution rows while
 retaining current leases, cancellation, identity checks and paid accounting exposure.
-
-
-New Story Planning Pack 2.14 binds System v12, template v3 and stage-specific Skill
-versions to `planning-narrative-intent-projection.v1`. The existing generation
-preparer versions the sent output Schema instructions without changing the domain
-JSON shape or storage contract. The gateway first verifies the frozen Task/Context
-and source identities, then separates narrative direction from output protocol.
-Execution topology budgets, comparison weights, retry metadata and Context selection
-audits stay in durable source/projection receipts outside the narrative data.
-Exact matrix and literal pointers, accepted knowledge and working-manuscript
-continuity remain intact. Story constraints concern the author intent or selected
-fictional design; host approval and evidence status do not prescribe character action.
-Search defaults permit quiet or stable situations and author-selected procedural plots.
-An inherited structural conflict requires existing author/Plan Change and edition
-candidate decisions; this projection does not rewrite or activate old plans or prose.
-Historical Planning Packs keep their original bindings and rendering. Installing new
-code alone does not replace a Book's frozen Pack, grant a Provider task or prove
-literary improvement.
