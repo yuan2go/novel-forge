@@ -3704,6 +3704,17 @@ manifest. Native Writer output, editing proposals, operator selections, human au
 choices and formal acceptance must remain separately identifiable. See the ordinary
 writing and author editing contracts in `docs/current-system.md`.
 
+For an unaccepted author-first source, pass `revision_candidate_origin` to Book start
+with version `book-working-revision-origin.v1`, `source_book_run_id`, the exact
+`source_book_version` and `plan_change_proposal_id`. Resolve the candidate at narrative
+cursor 1 with the retained initial state and current activated portfolio. A source
+must be settled READY or PAUSED without active Chapter work or delegation. Book
+Authority derives and freezes provenance and rechecks it inside the admission UoW;
+callers cannot grant adoption by supplying evidence. A source with accepted chapters
+uses the existing edition process. Adopt author-first delivery and adjust the event
+window through their existing commands; do not alter the frozen profile or original
+run. This is candidate generation authorization, not literary or market qualification.
+
 ## Controlled deployment and Book edition operations
 
 Keep `NOVEL_FORGE_NO_MODEL_DISPATCH=1` while restoring/upgrading and checking a release.

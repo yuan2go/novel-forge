@@ -196,6 +196,16 @@ historical approval and execution statements stay protocol evidence. It adds no
 Schema fields, acceptance stage or literary delivery gate.
 Compilation, deployment and actual Attempt consumption remain separate evidence.
 
+An unaccepted author-first Book can explicitly start a genesis working revision
+through `revision_candidate_origin` on the existing Book start command. Book Authority
+locks the exact settled source-run version, verifies its original completed Opening,
+retains the same Foundation, Book plan, initial state and policy identities, and binds
+the new portfolio to an activated Plan Change and its dependent activations. The
+candidate starts at chapter 1 under a newly resolved snapshot; its root freezes the
+source and activation evidence. The source run, manuscripts and terminal history are
+preserved. This path grants neither author adoption nor formal acceptance and cannot
+replace the accepted-edition workflow. Ordinary starts retain exact Opening binding.
+
 ## Generated Foundation formation
 
 The existing Formation API accepts either six exact qualified layer references or one
