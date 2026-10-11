@@ -1379,6 +1379,14 @@ cover structural repetition, character/relationship movement, setup/progression/
 voice/expression, arc pacing and motivated/costly turns. Located model claims remain
 observations; matching text coordinates do not prove their semantic correctness.
 
+An explicit manual `reading_mode=BODY_FIRST` freezes exact prose without creative
+baselines or design-status fields in its source windows. Its Provider view records
+text-visible goals, choices, situation changes, skip locations and concrete next-reading
+expectations. It cannot assess withheld design commitments or establish market effects.
+Design-aware review remains the default; examining design afterwards creates a separate
+versioned review, never enriches the completed body-first request. Neither mode adds a
+manuscript delivery gate.
+
 Stopped read-only prose review uses the Kernel isolation journal and existing native
 root/Saga admission. A linked root successor preserves its frozen window and source
 versions, while the old attempt loses commit rights and retains remote uncertainty and

@@ -2407,6 +2407,15 @@ and a rationale. It creates a proposal, retaining the existing approval and futu
 invalidation boundary. A new source or policy requires a new frozen review run; identical
 valid windows can be reused without pretending unreviewed text was read.
 
+For reading before inspecting design, select manual `reading_mode=BODY_FIRST` in a
+new frozen policy. The existing start/advance/report commands retain exact prose hashes
+and Unicode evidence while excluding creative baselines from all dispatched windows.
+Automatic execution, follow-acceptance and accepted-state relation enrichment are
+incompatible with this mode. Afterwards start a separate default `DESIGN_AWARE` review
+to compare design and input evidence; do not label either model report as human feedback.
+Focused checks include `test_work_intent_residuals.py`, `test_work_intent_consistency.py`,
+prose sampling contracts and the native manuscript review currentness/admission path.
+
 Select `NOVEL_FORGE_COORDINATED_READER_CONTRACT=reader-accepted-context.v3` for the
 current Reader, Plan Change and Book Replan owners in production or validation. This
 selection retains the runtime environment and each owner's exact frozen Book template

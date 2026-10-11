@@ -147,7 +147,7 @@ def freeze_manifest(
         "context_token_budget",
         "maximum_windows",
     }
-    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract"}
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode"}
     if (
         not required <= set(policy)
         or set(policy) - required - optional
@@ -196,6 +196,14 @@ def freeze_manifest(
         raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")
     if policy.get("diagnosis_contract") not in {None, "prose-root-cause.v1"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown root-cause diagnosis contract")
+    if policy.get("reading_mode", "DESIGN_AWARE") not in {"DESIGN_AWARE", "BODY_FIRST"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown reading mode")
+    if policy.get("reading_mode") == "BODY_FIRST":
+        if (policy.get("execution_mode", "MANUAL") != "MANUAL"
+            or policy.get("follow_acceptance", False)
+            or policy.get("relation_retrieval_version") == "accepted-state-relations.v2"):
+            raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Body-first reading is manual and uses prose alone")
+        work_intent = False
     records, windows = [], []
     previous_tail = None
     for source in sources:

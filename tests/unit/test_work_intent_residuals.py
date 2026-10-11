@@ -906,3 +906,49 @@ def test_foundation_actual_final_assembly_uses_work_methods(stage, author, old_m
     assert author in prompt and old_method not in prompt
     assert "when selected" in prompt and "foundation-generation.v3" in prompt
     assert "## Beat planning" not in prompt and "## Book planning" not in prompt
+
+
+@pytest.mark.parametrize("working", [False, True])
+def test_body_first_review_withholds_design_and_keeps_exact_prose(working):
+    source = {
+        "chapter_number": 1, "acceptance_id": "source", "asset_version_id": "draft:1",
+        "asset_hash": "hash", "text": "她选择回家，明日才去渡河。",
+        "creative_baseline": work_input("不应透露的设计")[2]["creative_baseline"],
+    }
+    if working:
+        source["source_isolation"] = "AUTHOR_SELECTED_UNREVIEWED_PROSE"
+    policy = {"policy_version": "body-first.v1", "window_codepoints": 1000,
+              "overlap_codepoints": 0, "context_token_budget": 2048,
+              "maximum_windows": 1, "reading_mode": "BODY_FIRST"}
+    args = dict(project_id="p", workspace_id="w", book_run_id="book", sources=[source], policy=policy)
+    manifest = freeze_manifest(**args)
+    window = manifest["windows"][0]
+    assert window["spans"][0]["text"] == source["text"]
+    assert "creative_baseline" not in manifest["sources"][0]
+    assert "不应透露的设计" not in str(manifest)
+    source["creative_baseline"] = None
+    assert freeze_manifest(**args) == manifest
+    projection = {"schema_version": "longform-prose-window.v3" if working else "longform-prose-window.v1",
+                  "manifest_digest": manifest["manifest_digest"], "window": window,
+                  "policy": policy, "source_isolation": "AUTHOR_SELECTED_UNREVIEWED_PROSE" if working else "ACCEPTED_PROSE_ONLY"}
+    context = {"schema_version": "novelos.longform_prose_review_context_bundle.v2",
+               "selected_inputs": [{"asset_type": "longform_prose_review_window", "projection": projection}]}
+    view = build_provider_context_view("longform_prose_review", context, {})
+    assert "具体续读期待" in view["instruction"]
+    assert "中文玄幻/武侠" not in str(view)
+    window["spans"][0]["creative_baseline"] = None
+    with pytest.raises(KernelError, match="LONGFORM_PROSE_CONTEXT_INVALID"):
+        build_provider_context_view("longform_prose_review", context, {})
+
+
+@pytest.mark.parametrize("extra", [
+    {"reading_mode": "UNKNOWN"},
+    {"reading_mode": "BODY_FIRST", "execution_mode": "AUTOMATIC"},
+    {"reading_mode": "BODY_FIRST", "follow_acceptance": True},
+    {"reading_mode": "BODY_FIRST", "relation_retrieval_version": "accepted-state-relations.v2"},
+])
+def test_body_first_review_rejects_invalid_or_design_enriched_policy(extra):
+    policy = {"policy_version": "test", "window_codepoints": 1000, "overlap_codepoints": 0,
+              "context_token_budget": 2048, "maximum_windows": 1, **extra}
+    with pytest.raises(KernelError, match="LONGFORM_PROSE_POLICY_INVALID"):
+        freeze_manifest(project_id="p", workspace_id="w", book_run_id="b", sources=[], policy=policy)
