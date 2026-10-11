@@ -1,0 +1,1099 @@
+{
+  "scope": "PRIVATE_OPERATIONAL_EVIDENCE_NOT_NEW_PRODUCTION_OWNER",
+  "status": "CURRENT_HELPER_SNAPSHOTS_RETAINED",
+  "directory": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/execution-helpers",
+  "records": [
+    {
+      "name": "nf_plot_activate.py",
+      "sha256": "fe19dffb505ad27f8944e436edda2286143d0068e7a205e66b7ee91364cc310b",
+      "bytes": 2209
+    },
+    {
+      "name": "nf_plot_activate_v2.py",
+      "sha256": "890aab8e8f4e0c6c68953d2f7930880e267dc1eb8614f993e5fd5124e8355866",
+      "bytes": 2221
+    },
+    {
+      "name": "nf_plot_after36_resume.py",
+      "sha256": "7ad4df2b0d2bd9b9376f6c7ef3957fb8f24b7301a614f1c003ef53eb4dea9873",
+      "bytes": 721
+    },
+    {
+      "name": "nf_plot_after37_resume.py",
+      "sha256": "2ab3b8abe7527fd03b10c6a7728bc49cd72c178b20b3320501caca7c067e33b4",
+      "bytes": 721
+    },
+    {
+      "name": "nf_plot_after38_resume.py",
+      "sha256": "5ca741b5ad9cbe14881cd3838b9e4c872e4ed9e57aec0fb1081966395e8a41ea",
+      "bytes": 721
+    },
+    {
+      "name": "nf_plot_after39_resume.py",
+      "sha256": "53698ed8f71f700351086319784f177c65117ebfc4aed42e690c842f3aaf1c7c",
+      "bytes": 721
+    },
+    {
+      "name": "nf_plot_after_revision_resume.py",
+      "sha256": "7d8369db83dbe1a197b20a296e0ab585676580b3ae599ac4f9e6ca749fbf3abc",
+      "bytes": 718
+    },
+    {
+      "name": "nf_plot_arc_adopt.py",
+      "sha256": "19983348067ddc74b92348aed7f111054fbd2e8017893ac0fbb1f91ccbdf7938",
+      "bytes": 1457
+    },
+    {
+      "name": "nf_plot_archive_helpers.py",
+      "sha256": "b69c45745b1df33694cada05ef8e4efeed5d1a27cf4dc506aeb0a3c6da227555",
+      "bytes": 1038
+    },
+    {
+      "name": "nf_plot_arcs_replan.py",
+      "sha256": "9ca435db35bba33da7f60fca59d5f9d70615da03b17b923ab4da4a4024508db7",
+      "bytes": 6479
+    },
+    {
+      "name": "nf_plot_backup.py",
+      "sha256": "9c76aaa664af209ee5ec94514d1206914773b8762a5e40cd65fba8a64266b1c4",
+      "bytes": 1501
+    },
+    {
+      "name": "nf_plot_call_ledger.py",
+      "sha256": "0dbc2ce1ecf0b72c2df33a54de52665a53942eecd58d4abf034aec58eb14f644",
+      "bytes": 1075
+    },
+    {
+      "name": "nf_plot_candidate.py",
+      "sha256": "96590409c1f3cf8113703514f65d375f1ade9ddfd6010ac4f7a087b2d7943d40",
+      "bytes": 480
+    },
+    {
+      "name": "nf_plot_candidate_v2.py",
+      "sha256": "99ccb65c115ad6bc1bd6ad3693766c484a79221fcc1d529af2261b04e6769401",
+      "bytes": 1067
+    },
+    {
+      "name": "nf_plot_capacity.py",
+      "sha256": "d6bc864ab34590459b72d56e96e574e46acf89793cf2febbe9c392bde20e7644",
+      "bytes": 3338
+    },
+    {
+      "name": "nf_plot_capacity36_record.py",
+      "sha256": "73329874ad06243e0ac9a9e0d0e78fac523cbeafa463605cd2c20e584931dcfe",
+      "bytes": 2460
+    },
+    {
+      "name": "nf_plot_capacity_evidence_record.py",
+      "sha256": "8cb6cc6a8c7fa49410889c21f007767aedf8ed6d4b9d7ad0b3016f8d748b42ed",
+      "bytes": 1273
+    },
+    {
+      "name": "nf_plot_capacity_guard_inspect.py",
+      "sha256": "dbd7dd68c2419a6ebcc71edb077cfca68a5ec5290f89c1859f0725e8be58f2fb",
+      "bytes": 768
+    },
+    {
+      "name": "nf_plot_capacity_guard_inspect2.py",
+      "sha256": "aa624ca8e44856fb4b848305e110228f6ed42e7f6138b1dbfedf7d8833926b0b",
+      "bytes": 735
+    },
+    {
+      "name": "nf_plot_capacity_guard_values.py",
+      "sha256": "8c156d91a791c209fa661de05ad94e864f282997c5c3f51231bc2c5fd2783235",
+      "bytes": 1366
+    },
+    {
+      "name": "nf_plot_capacity_tests.py",
+      "sha256": "8056d8ad38ad9d58bf9d5e0a82dcfa5d9515e8d7ca9e20303028a2f4d6755c99",
+      "bytes": 643
+    },
+    {
+      "name": "nf_plot_cast.py",
+      "sha256": "ecf0e6997635985d6b52f8f2b674663222a2b3bd734db31909217f4461dc6daf",
+      "bytes": 629
+    },
+    {
+      "name": "nf_plot_change_source_keys.py",
+      "sha256": "fbbc3bee371f3acdb68339a8314d60b24832fbc68005e64187a459a153593588",
+      "bytes": 464
+    },
+    {
+      "name": "nf_plot_chapter19_plan.py",
+      "sha256": "a67e215e1bd73b0edce83aee520c669acb62eb20e4bb42e02f639a925c1bcd22",
+      "bytes": 1237
+    },
+    {
+      "name": "nf_plot_chapter19_recover.py",
+      "sha256": "fb3948509fbffeab1a502e089a6c12570f615b6deae64d5f7cc0d845cd3c9bb8",
+      "bytes": 1174
+    },
+    {
+      "name": "nf_plot_chapter19_replay.py",
+      "sha256": "cd3710ae15d7c54e853a74d1a4907a71dd97d5477fdcbdc2c757ec232b5b48da",
+      "bytes": 725
+    },
+    {
+      "name": "nf_plot_choose_queued_revisions.py",
+      "sha256": "04c912fdfadd75e7a22aad93a3b09548a6cac7e2254a622ffe9a1a668ad1b6ee",
+      "bytes": 2215
+    },
+    {
+      "name": "nf_plot_choose_revisions.py",
+      "sha256": "4e30aa4b2c125ea3f3ff7d9844837ca466373c8cf92021f72a455cddcb14f9e4",
+      "bytes": 1479
+    },
+    {
+      "name": "nf_plot_clone.py",
+      "sha256": "c818cf44e8a5546161f648e601e71ff67152d86ff63857443027a8d4549f3602",
+      "bytes": 3447
+    },
+    {
+      "name": "nf_plot_columns.py",
+      "sha256": "b47d69e73e904c4c75ff24b24030391de1edea500e4d817210d187fedcf22b46",
+      "bytes": 449
+    },
+    {
+      "name": "nf_plot_command_diff.py",
+      "sha256": "1bbd538e9438b99f07f60bb38d9d99091d01e2436626d9308e2e7f299a428433",
+      "bytes": 822
+    },
+    {
+      "name": "nf_plot_common.py",
+      "sha256": "63fed249d0cbcda8f368b441330c1ddef6f074caaf4d6a888fe13e64c3ac8420",
+      "bytes": 1247
+    },
+    {
+      "name": "nf_plot_compact_review_evidence.py",
+      "sha256": "67a190fb24fd2bcd36cd96b4964723db87d3518303b072ac5de0c8820fbc2c8e",
+      "bytes": 2016
+    },
+    {
+      "name": "nf_plot_compress_group.py",
+      "sha256": "004fc086926cee6a34bf8128a398095ccc70003dd70da1e3944d6448d572fa03",
+      "bytes": 4818
+    },
+    {
+      "name": "nf_plot_compressed_group_read.py",
+      "sha256": "5d5a9e6615bebe4c0cab1a2fa64e44b1114bf39b96058e5d1c4843dd20a39126",
+      "bytes": 789
+    },
+    {
+      "name": "nf_plot_consumption25.py",
+      "sha256": "4130cab52fdfab0b97180e9f2e2270a79f7c4dce17c17c1c573766d06d1bddfb",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption29.py",
+      "sha256": "bc3056a782d50566e3c074bb4f26fc5b23f6b79f3c2b77259d170bd107b53d3f",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption30.py",
+      "sha256": "4be609a9fd016c1017bf2b5bb28257c397389c28348879db9a69ed1160d9d53d",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption31.py",
+      "sha256": "9db2a7500d70f32a48bf87cf1093505a82ed05451b01992aa6d5820d4e697aa1",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption32.py",
+      "sha256": "61f6adc33f8f3b861c025aa2153c6b5c3c3bd58042b8598380d607e044afdbbd",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption33.py",
+      "sha256": "8103424eeb7fde400f4d0738ad2769bb7c632b028088fe901fb27939ceaf731e",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption36.py",
+      "sha256": "aafe45ff05adb26a44308eab51f615c763f8e00a324e620b5e6096abc1744133",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption37.py",
+      "sha256": "8721176c5417bdd288b3748ab6c3f97ad9a8b809abe8948ab283362d5941d67f",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption38.py",
+      "sha256": "3984ecdca09b0660c5e5161ceaa31e7e2a3ca9cc2b10905e03e859d3ebfa15cb",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption39.py",
+      "sha256": "b9f26fce6e91cd321eeccdde93277c9eac6f95d4b8a6805677a61c3c2a6c8803",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_consumption40.py",
+      "sha256": "8b5f0624d4274476ab4d97170d7a12b9e7776673b82790a061e4f8da31983143",
+      "bytes": 2194
+    },
+    {
+      "name": "nf_plot_context36_successor.py",
+      "sha256": "e217ab0bf2df0891ade3fdfde8e4e21bb131623ca384475444df9b190bbcd9c5",
+      "bytes": 2414
+    },
+    {
+      "name": "nf_plot_context_duplicate_deep.py",
+      "sha256": "7b801b4bcc479cba5a7b6c915e3fdc46dd952000e00ae92501c1089d444c5840",
+      "bytes": 1201
+    },
+    {
+      "name": "nf_plot_context_duplicate_inspect.py",
+      "sha256": "6fa66b62d2351d2069c8f24e61ee277105a7a48c69411760d47e924e4f135b3b",
+      "bytes": 931
+    },
+    {
+      "name": "nf_plot_context_readonly_budget.py",
+      "sha256": "1bf4af801467f885e5a25d1dc7b7db27b4d61a3efacb996afb2230d8a2be0b7f",
+      "bytes": 2617
+    },
+    {
+      "name": "nf_plot_correct_arc.py",
+      "sha256": "f1284f43b73a32deb97dd20b7ae7b4470f05b4dba2c95535422f927d93976f75",
+      "bytes": 4317
+    },
+    {
+      "name": "nf_plot_correction_adopt.py",
+      "sha256": "5e9f4c5be11cc0f99c2625e83cc38c4e8554e2d23a22c5ed9f4451fd7fb54a60",
+      "bytes": 2964
+    },
+    {
+      "name": "nf_plot_correction_read.py",
+      "sha256": "9e2032a07ab7c887fd4429db8f27cbb8153a2fc0b311b011019e5aee7fe3422b",
+      "bytes": 1010
+    },
+    {
+      "name": "nf_plot_current_group.py",
+      "sha256": "916dc65a73837948283f3ae6b444683242fb2dda3cfec6268fa853b3e8b2b878",
+      "bytes": 1423
+    },
+    {
+      "name": "nf_plot_deadline.py",
+      "sha256": "70ab1e3667f487b8a32665ab6e60f4417dfa7af60a61cbc829369bbe987b5df4",
+      "bytes": 344
+    },
+    {
+      "name": "nf_plot_delivery22_resume.py",
+      "sha256": "cce3fb328dfb062466a7a0411df6a9976f4bbf67e2df19788107c1095064e82f",
+      "bytes": 1050
+    },
+    {
+      "name": "nf_plot_delivery_report.py",
+      "sha256": "5114599ab7901ac871f91673466e8ddc59af4923f94dfb0dd223588f5af5cf4c",
+      "bytes": 10982
+    },
+    {
+      "name": "nf_plot_delta_probe.py",
+      "sha256": "c9f4963e8dfead824494e217e80b9dbc7f60b8158acbd652e9e1d876bf8f9c20",
+      "bytes": 1685
+    },
+    {
+      "name": "nf_plot_deploy.py",
+      "sha256": "370a37ea07a0d845896662b28ea0047e57a881d9254c50107c588fec28d063cf",
+      "bytes": 3132
+    },
+    {
+      "name": "nf_plot_deploy16.py",
+      "sha256": "ba12833fd965868dfb51e589eaabf7edfbc921c1084ead6a17bbab58d19ce40c",
+      "bytes": 3132
+    },
+    {
+      "name": "nf_plot_deploy17.py",
+      "sha256": "947e12b0fdab01167cb973658784a0ac9838fc02b90e02792dfd444124c63695",
+      "bytes": 3132
+    },
+    {
+      "name": "nf_plot_deploy18.py",
+      "sha256": "62a2690427641382b9caa49d5d5b71e23fb15d4db2632897553505312f763f49",
+      "bytes": 3132
+    },
+    {
+      "name": "nf_plot_deploy19.py",
+      "sha256": "053641820bcc844641168a32ef768333fa50267c986b6ba64c8857fbeda8e404",
+      "bytes": 3132
+    },
+    {
+      "name": "nf_plot_edit_recovery.py",
+      "sha256": "abb5f544d206c9290954bf6ac26798e2e2d8e75846ff72339d5a9560837d29e5",
+      "bytes": 8587
+    },
+    {
+      "name": "nf_plot_evidence_inspect.py",
+      "sha256": "dbb994b8713740af666dd738ae26efe3d89449d336a90d36854537dbdc3f2eab",
+      "bytes": 502
+    },
+    {
+      "name": "nf_plot_exact_codec_edit.py",
+      "sha256": "ada0010c5e005ad94dbd3c80de9c665def942d8b00a85602b1b591aa245dce54",
+      "bytes": 8402
+    },
+    {
+      "name": "nf_plot_final_delivery.py",
+      "sha256": "377c75dc7bc0365f439c1a1a8574dafed71d80bd9c1c6ff89a5327ff24891d45",
+      "bytes": 4949
+    },
+    {
+      "name": "nf_plot_frontier.py",
+      "sha256": "2d4f0b05faa70e2e0e6d6c03bcc19f870f01ffa1e5df4283ae69d2bb2058b628",
+      "bytes": 1260
+    },
+    {
+      "name": "nf_plot_future_group.py",
+      "sha256": "ba689a057c867c4cd54409de73f530b15f624ff5fd6a2b2d0a2dc9a9ee415911",
+      "bytes": 6690
+    },
+    {
+      "name": "nf_plot_future_group_adopt.py",
+      "sha256": "c986208b4b1d346507df70aab98b2d1fec859d533fc00b4147416a605d4807b9",
+      "bytes": 1573
+    },
+    {
+      "name": "nf_plot_future_group_read.py",
+      "sha256": "fd33bb653e54c6410607fcb2f9173798d3ea27c921a4c35d42cff90f1311960f",
+      "bytes": 725
+    },
+    {
+      "name": "nf_plot_future_group_retry.py",
+      "sha256": "26e4335a4a4f0535f9b97aa53e52fe2749ebb5417029b04a905f5f4f56ee7e15",
+      "bytes": 1194
+    },
+    {
+      "name": "nf_plot_graph.py",
+      "sha256": "b3744513e00d2e87c6030de306bef13a2b6eefa3a32c39e0b9aa1ffa3d9ad73d",
+      "bytes": 441
+    },
+    {
+      "name": "nf_plot_group25.py",
+      "sha256": "ed8df55de5eec577077b13eb03d8e0b873ac0b68922299b548146d79866fd2eb",
+      "bytes": 4256
+    },
+    {
+      "name": "nf_plot_group25_adopt.py",
+      "sha256": "881a8cd540f4e93599551f679b17a8698d0f990ca5702ba6e849df5f2eec6fcf",
+      "bytes": 3150
+    },
+    {
+      "name": "nf_plot_group25_compare.py",
+      "sha256": "d0894548732837a515a568ce670497e85659e5f1bfe320b3e2ab81e006a4ecf0",
+      "bytes": 1659
+    },
+    {
+      "name": "nf_plot_group25_generate.py",
+      "sha256": "d7523ce480bbe5ab45b70db51217112f36b7f4b8156f2dc631de47f64d272694",
+      "bytes": 6748
+    },
+    {
+      "name": "nf_plot_group25_read.py",
+      "sha256": "8e2cf9159f603647bbb660985019be07cef148c16322ceac65f57d7a54eb6284",
+      "bytes": 783
+    },
+    {
+      "name": "nf_plot_group25_scope_correct.py",
+      "sha256": "6a57157846894b590aad7aa7a0a3c653ed5599c77b33ed6bebb859742ed68888",
+      "bytes": 2086
+    },
+    {
+      "name": "nf_plot_group25_status.py",
+      "sha256": "ef96b747a3696ee3e01f7eff88cca6551ce5eb62e5080f3b3a8eadb96f8a48cd",
+      "bytes": 1028
+    },
+    {
+      "name": "nf_plot_group28_read.py",
+      "sha256": "506f523a07636816edcbd6f6fb779374043cbbdcc54ef51472ad5d524c771ad1",
+      "bytes": 1469
+    },
+    {
+      "name": "nf_plot_group29_adopt.py",
+      "sha256": "c284415903d1299d550e10dab9a9ef920147cd171b22901b3fa9dad89964127f",
+      "bytes": 3313
+    },
+    {
+      "name": "nf_plot_group29_generate.py",
+      "sha256": "2b1179ed368739f59203864cc6c47a700bbef2203254c885a1c7bc197e3dadd3",
+      "bytes": 8764
+    },
+    {
+      "name": "nf_plot_group29_read.py",
+      "sha256": "fab8154691e3e2ea9cb72eec6b678f4086e61d1b91680b9ee22643f34522384f",
+      "bytes": 783
+    },
+    {
+      "name": "nf_plot_group36_adopt.py",
+      "sha256": "1cd69bacc448e56e9b319fea96612a37a5b57cdd288a783c3c01c06a89986afd",
+      "bytes": 3336
+    },
+    {
+      "name": "nf_plot_group36_budget_generate.py",
+      "sha256": "d8752bf638e3002ce3b2d9249f2b5c8a995d7e14305d93565ebb830307c67f9c",
+      "bytes": 6676
+    },
+    {
+      "name": "nf_plot_group36_capacity_recover.py",
+      "sha256": "efa07da4d0f5c3843c824bc29fec7bfd4b4fbbb5c4ce744ea5915ac80c68bc69",
+      "bytes": 1497
+    },
+    {
+      "name": "nf_plot_group36_capacity_recover2.py",
+      "sha256": "29413f94e60316dd48b3a261851bf51499f4cdd219cdc3770bb069f2fc97a913",
+      "bytes": 1544
+    },
+    {
+      "name": "nf_plot_group36_compact_generate.py",
+      "sha256": "856403ed4d73f93b7ae84ca395a8e7097d8f2377574cc791c0bb2f80cc64a611",
+      "bytes": 6247
+    },
+    {
+      "name": "nf_plot_group36_final_failure.py",
+      "sha256": "966b1f54dae21ce424f03f63e9e032f439be31d31955c96247fce8f7326b8b30",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_group36_generate.py",
+      "sha256": "6fb9e55325d9c793b2516888acf22bdab8ad2dc225f841ab3c21d1f78bc28d2b",
+      "bytes": 8793
+    },
+    {
+      "name": "nf_plot_group36_read.py",
+      "sha256": "7150022460aa78c01459ae2929d43f176d852bc89d5a82cb56ca657cae256da6",
+      "bytes": 804
+    },
+    {
+      "name": "nf_plot_group36_status.py",
+      "sha256": "6d38b1e37ffc3c582e15a250434ac8dd606d1ae2c90e7274c1379c9e17dbed3c",
+      "bytes": 483
+    },
+    {
+      "name": "nf_plot_group37_adopt.py",
+      "sha256": "1a4c4e304e9d7516e911581d924c7721ce53547c3ea0476369c606d7907db5a3",
+      "bytes": 3406
+    },
+    {
+      "name": "nf_plot_group37_generate.py",
+      "sha256": "345b9bb34c37c881b4c9c4cb85f470fc161d954b81d97a4f60154f0cf30ad127",
+      "bytes": 8527
+    },
+    {
+      "name": "nf_plot_group_working_compare.py",
+      "sha256": "bfb0155319773c947299303a7d0f2347dd2e6652e4a16fa2c185ec9dc0cb5022",
+      "bytes": 538
+    },
+    {
+      "name": "nf_plot_history_diagnostic.py",
+      "sha256": "6caed3d528e6e8053e951009391bfe88e9e268e8091131c320b30e481dd30806",
+      "bytes": 1069
+    },
+    {
+      "name": "nf_plot_indirect_memo_repair.py",
+      "sha256": "94e4c59a82aed32b90665279996f02e3f09cea3e4aa528ec48c4a2b864eabaa8",
+      "bytes": 2283
+    },
+    {
+      "name": "nf_plot_inflight_status.py",
+      "sha256": "a9c359888e2e2db69b089fd3e85893bcaa1cde6e7307ad05c25102b79eedba5b",
+      "bytes": 611
+    },
+    {
+      "name": "nf_plot_inspect.py",
+      "sha256": "68e7f865b272db736b10126f74819168de2780392f8a7ea10c508bfd870e7fb7",
+      "bytes": 786
+    },
+    {
+      "name": "nf_plot_length_input.py",
+      "sha256": "5a75e6232485ea1767aca6b61d76dbd0042624fb7b128c6c6caede96b4d59eb0",
+      "bytes": 1413
+    },
+    {
+      "name": "nf_plot_length_input2.py",
+      "sha256": "c8170fc981f54814df6bf5d905755290063697d9e369bc573eae62bd6d45aa3e",
+      "bytes": 1673
+    },
+    {
+      "name": "nf_plot_length_input3.py",
+      "sha256": "b930855d9a5ce3fc15d38d96fbebb8ecb2df1096832ef490bc9cc7f38e6b987d",
+      "bytes": 1623
+    },
+    {
+      "name": "nf_plot_lineage.py",
+      "sha256": "c0b2d43edc250effc76131f10fa141d5e4cd6cc4c73ff9d8986c40d0b58f3fb2",
+      "bytes": 2356
+    },
+    {
+      "name": "nf_plot_memo_failure.py",
+      "sha256": "c40f4d42c252454ac8e1ef5564604066666e98fe68b8ef8e089754ad94a59af0",
+      "bytes": 315
+    },
+    {
+      "name": "nf_plot_migrate199.py",
+      "sha256": "e79a89337ae51100eb8cd5fdca30858fff786fda41ae8935af9777a3e781f9f9",
+      "bytes": 513
+    },
+    {
+      "name": "nf_plot_original_final.py",
+      "sha256": "4c9aff1895e073f21b5725d684a6da25139fe38ff2ba89c4df6f17efe0e6bb41",
+      "bytes": 1526
+    },
+    {
+      "name": "nf_plot_pack_frontier_recover.py",
+      "sha256": "78e96fe653d0fdef110dabae48a999ce7b3cc506ed8165c0d0bb8f138b5c3b8f",
+      "bytes": 2475
+    },
+    {
+      "name": "nf_plot_parent37_constraints.py",
+      "sha256": "f32df80e3562c2da4aafd13aaff055ae9ca3be3baac5c3974360389170245163",
+      "bytes": 855
+    },
+    {
+      "name": "nf_plot_pause37_structure.py",
+      "sha256": "cade519d1c7aa9ec09ba2f117f5001192007c188c698396a45f1918ec32ade99",
+      "bytes": 664
+    },
+    {
+      "name": "nf_plot_pause_boundary.py",
+      "sha256": "66baa5a85db8247b67d71ca7455757360fd395d4a3727e2a463be8f0f4daa812",
+      "bytes": 676
+    },
+    {
+      "name": "nf_plot_prepare_group29.py",
+      "sha256": "9fabd88984dd608abb4ea7ec808d8a83368e4477c83a69917c650fc6c50eb197",
+      "bytes": 6297
+    },
+    {
+      "name": "nf_plot_prepare_group37.py",
+      "sha256": "f531fa26be5366bfa0c86f06666cbe15e1844ea4b6e76033607a6aaf2b45dfa1",
+      "bytes": 5513
+    },
+    {
+      "name": "nf_plot_prepare_revision20.py",
+      "sha256": "191ecac8f7e4ad54152424cefcef0b10d8e22752f030b8b17cbde39497d2a26e",
+      "bytes": 2936
+    },
+    {
+      "name": "nf_plot_prepare_revision21.py",
+      "sha256": "7a208aff0862359031cb6d0315077fff2dad97f8c6f47e47ab5263449800bee4",
+      "bytes": 2653
+    },
+    {
+      "name": "nf_plot_prepare_revision22.py",
+      "sha256": "bad0cac20c175c8bc3c6346efdb3cae13f803d38611e88665b2ed2a0410c2728",
+      "bytes": 4847
+    },
+    {
+      "name": "nf_plot_prepare_revision23.py",
+      "sha256": "0e30f5599a52b2fc7580c6bc2a3d6d110c308f9a4fb52d18a2024046103dc398",
+      "bytes": 3603
+    },
+    {
+      "name": "nf_plot_prepare_revision24.py",
+      "sha256": "d03e7e7e513f777c0a9aac79734d08c3ebc781be0ef33b10ec4be80bcd04a08c",
+      "bytes": 2658
+    },
+    {
+      "name": "nf_plot_prepare_revision25.py",
+      "sha256": "2272bd0c5b5e98b3252fa2bd180244630e9e6a8b580e07f372e8962d1125470a",
+      "bytes": 4067
+    },
+    {
+      "name": "nf_plot_prepare_revision26.py",
+      "sha256": "26b9a33ceb1b716b779ee0a1b1fb84636f91ab4031d6dde1354d4adfd6ae51a8",
+      "bytes": 2864
+    },
+    {
+      "name": "nf_plot_prepare_revision27.py",
+      "sha256": "4bb3ba9c3e4bab13341f4a7a78bc590b50866eb1134572f7b82117a6b03e3be8",
+      "bytes": 5898
+    },
+    {
+      "name": "nf_plot_prepare_revision28.py",
+      "sha256": "c19f0a41982f2d6de34739d9ae60e52d27895158a55c4134c18ceecaf98f79a6",
+      "bytes": 2659
+    },
+    {
+      "name": "nf_plot_prepare_revisions.py",
+      "sha256": "02a5c1e35b3a1a44de5ca2a50d9d20a4e4583073e56a45b2f97be2b347840bde",
+      "bytes": 7530
+    },
+    {
+      "name": "nf_plot_propose.py",
+      "sha256": "939c352108549837f3efcf8dcdcbf2f7138a198bd602767a4476ee2d60f5d35b",
+      "bytes": 1142
+    },
+    {
+      "name": "nf_plot_propose_v2.py",
+      "sha256": "ec0b04df97b314b6ab97b3dc4969c0e77c9816680e3323ff3d547206adfe356b",
+      "bytes": 1168
+    },
+    {
+      "name": "nf_plot_prose_requirements.py",
+      "sha256": "547dcbff0309114647827ab3a69ba20b90b796d686fdedd3a65edb677c8b389c",
+      "bytes": 1292
+    },
+    {
+      "name": "nf_plot_public_scan.py",
+      "sha256": "96bf07b78590709e3ae421c6fefea042285e71c035975f9e7f2137beb35e783e",
+      "bytes": 1761
+    },
+    {
+      "name": "nf_plot_queue_expression.py",
+      "sha256": "7e9923bd9e02720aeaedd8d59d6cc04d43df40f554d09f0546d85aed75dfbcaa",
+      "bytes": 866
+    },
+    {
+      "name": "nf_plot_read_chapter19_plan.py",
+      "sha256": "c57243d874b41b282e75aec1debaf6d43bda226e6e4bcdc49ac5bdadc02a4186",
+      "bytes": 612
+    },
+    {
+      "name": "nf_plot_reader_continuous.py",
+      "sha256": "8a865cc92847d0be50a02f1ef7837a1dc85f71ffe4ad2b4c4d6390a706e3126a",
+      "bytes": 4068
+    },
+    {
+      "name": "nf_plot_reader_packet.py",
+      "sha256": "49668101d8b0ffd16ec0a6707a8c6ac1e0bd07ee683d5dc2f667154ca6bd9135",
+      "bytes": 4460
+    },
+    {
+      "name": "nf_plot_readonly.py",
+      "sha256": "372a4eceaba087b43aa0e9b3bc807fe35d2820aedf5a4247a16fe8b41a1a3371",
+      "bytes": 4133
+    },
+    {
+      "name": "nf_plot_repair_binding.py",
+      "sha256": "1ac9c85975d428b26c418a956bbbe1cb42146bcbd2a0dd2833031d2ac291b7ea",
+      "bytes": 2545
+    },
+    {
+      "name": "nf_plot_replan.py",
+      "sha256": "be0a9c1353ad727c60504b2787aad06a3959ceeac25ecc6390b40e891a63b040",
+      "bytes": 6037
+    },
+    {
+      "name": "nf_plot_replan_v2.py",
+      "sha256": "bde1b913f9e56739762c4b6ab9da041d26547f6e13c63a1dedccc0a0fc5ad718",
+      "bytes": 6752
+    },
+    {
+      "name": "nf_plot_replay_payload.py",
+      "sha256": "e46272941add8e7b32e611e7b327677d47a5bc6c5b030e0cb515b6f063352288",
+      "bytes": 364
+    },
+    {
+      "name": "nf_plot_review_current_plan.py",
+      "sha256": "38a8420ca5d3e1b6bda2fde16396b3ca35a6180782d8d3a311bce17a669e4596",
+      "bytes": 600
+    },
+    {
+      "name": "nf_plot_review_native_plan.py",
+      "sha256": "04feb049db7c8e378e74658133ac3fb89b06061131b2c9a61cf0128ffa22adcd",
+      "bytes": 1162
+    },
+    {
+      "name": "nf_plot_revision19_20_choose.py",
+      "sha256": "b6644b03c2abf91263b40fd6214aac356ac0578dccd96b53653a8d62df7e0613",
+      "bytes": 1485
+    },
+    {
+      "name": "nf_plot_revision19_checkpoint.py",
+      "sha256": "7609d4ff2ba7e48a8f33e5a267f564c252f1cf3621dbaf9413faca94c8e99032",
+      "bytes": 737
+    },
+    {
+      "name": "nf_plot_revision19_choose.py",
+      "sha256": "912b6dcd587ca3da84b38e0860b003890cf8b4a5561ead65ad9d7ee01473a8d8",
+      "bytes": 1459
+    },
+    {
+      "name": "nf_plot_revision19_inspect.py",
+      "sha256": "5fa98d2d1779796a6358569f65171d106f73adb1ad2001c18cbb8e38a7b100d5",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision19_save.py",
+      "sha256": "0cdc1592c1e9f08799acbf5053fcf25f2d38c1159ee263270ef58370c16250fc",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision20_inspect.py",
+      "sha256": "eb67e68aa1ce823b6e463ac0739d5a5e4bc9b495d392caf769ccd4b8ebcbddd1",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision20_save.py",
+      "sha256": "21629ad9a9696335f1ff58e0b9d480c2816f76aab264c7d8ecfb94bcfa17faea",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision21_checkpoint.py",
+      "sha256": "60066db0418996dbd38a07083033e0ee920a1f14a2f26e49be401aa016073129",
+      "bytes": 733
+    },
+    {
+      "name": "nf_plot_revision21_choose.py",
+      "sha256": "e8d60a4b0f64d916e2f63432c94bcf5a53f491ec8a23611c17411e5ef14c8d00",
+      "bytes": 1480
+    },
+    {
+      "name": "nf_plot_revision21_inspect.py",
+      "sha256": "a9881313498842517144be588b363c9975240c2e516e04842596db93323d5a86",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision21_save.py",
+      "sha256": "a4e2397746c56cb5032b30c34ee977b7bd2b0b8cfca4d395b8169cb870013c57",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision21_save2.py",
+      "sha256": "65a14ea5b5d9080d3ae402c4c4720e0354cfcd30142b31bbd249830e37db962e",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision22_choose.py",
+      "sha256": "82b515c9ef250660e91b129fd8cbef6468ee69ca2f25bbc91c93eeb651caf94d",
+      "bytes": 1486
+    },
+    {
+      "name": "nf_plot_revision22_inspect.py",
+      "sha256": "bf0544e3b364a3257c9880f42eee4eb385306cf417ce09f3bd1d80295f60402b",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision22_save.py",
+      "sha256": "fa208b7ca93ef04e1d620d3145868199481a34d010fc45ae673e9bdd3cfe0058",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision23_inspect.py",
+      "sha256": "634ca7b39c7239f9ad804718dbfc62db775f8dafab8942e5c5ed097b9a67d945",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision23_save.py",
+      "sha256": "74e56ad2e40ecaa0be241772db25f7c8728cadfac0a8b7b4b096acf1ac28e391",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision24_inspect.py",
+      "sha256": "4858981b16b3a49836d5eca6f3369ae1eb0ed6e89af902a60280b6dc5671d8e5",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision24_save.py",
+      "sha256": "910de0dc103367efb5df267a094c754cde49006d756a2bd416f9a6c778d8b662",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision25_inspect.py",
+      "sha256": "9470aa9c2b6cff64ac97049966a35b19bc257539046f73e99b691a7438bf51af",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision25_save.py",
+      "sha256": "8e58cfff2d35fae02990ce99c8d23cdd0d933fc1d5c6e5e9e853d569de29c040",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision26_inspect.py",
+      "sha256": "e8e047f1cf59f4b92a56959990373f3f39e4e1d8534ef1b147020e5d674bd721",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision26_save.py",
+      "sha256": "067efdd59f81151d61d40cb9bd4ac38610107b79bedffbaa5a4b2b8a021d054b",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision27_inspect.py",
+      "sha256": "0f11ee6ef893524265632da8c313c4b692b3069193c3ce87c5df96966ceff733",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision27_save.py",
+      "sha256": "8e53f4e0fbb2e9585727c174e5a98d2405c8f3c6a4a809babbd436414dce4baa",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision28_inspect.py",
+      "sha256": "17e7fce00624407876af7dc9bd39471f70905f55a1ac15f64912d6f1a9de7cf3",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision28_save.py",
+      "sha256": "4f49ed833c11d0cd1860e0756a6a2aeccf4da723ceffbaf7e188c472d84f24e3",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision29_inspect.py",
+      "sha256": "2f67d3c652e21d394b7526454cec4d5ae7c332365460abf12575e85ae356e643",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision29_save.py",
+      "sha256": "d7b7ba3c71af37356323ca7e50460cd01006527129eddac3300b3d9dac15e7f2",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision30_inspect.py",
+      "sha256": "8fa8254f78396909ea6bc5bb1cf891105d01212621e40426a8aba65060a750a4",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision30_save.py",
+      "sha256": "2a369e0f7263e7b861fc703e452c775573db32fe66f15fca2d8250bf92a8df91",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision31_inspect.py",
+      "sha256": "536f3f9fc9629e7bd1c8817c5ede19c54f9420afa4616d649a5df98f44991203",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision31_save.py",
+      "sha256": "10f626c5d890b3375eff49d551cb071b639e1adddc01e485a3116bf248d0b8f6",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision32_inspect.py",
+      "sha256": "aecf93cc257c80a56241ee2dd3dae43b13466e83330ea39e61bb22520b2b4990",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision32_save.py",
+      "sha256": "7e59cf9123ceab89c33ea976f8d4789d5b8b196fd08e6cd9931d94392d0d819c",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision33_inspect.py",
+      "sha256": "0da6a8f9cc70a310215200150f2550e3aa55a1bcb9acc15126b8621057adcfc4",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision33_save.py",
+      "sha256": "adca1c72e9ecde710c36f72e656d7e1b5e5ca3497f6dde2833874fadebea602b",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision33_save2.py",
+      "sha256": "6fc56605b91df12ba9ae664834f42c10b8b2b36a7c59657afd9268d661b98bfe",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision34_inspect.py",
+      "sha256": "4f5352979c4ec0b9633a797b06a9e2786fa3182f15986ad3d4f1c8052da0c1ed",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision34_save.py",
+      "sha256": "e5e9aac6527d451eca353e014c30aa1b8924f5ec96861c79d2dbdc2035e95925",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision35_inspect.py",
+      "sha256": "40bd3981063a3814e8b15ec4d7157e227d2db4e4cb5cb21a4b586e8c4f045efb",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision35_save.py",
+      "sha256": "59c40f7868b181ede3477eabec22474f44053c6d880f2811275bde5a4d22102c",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision36_inspect.py",
+      "sha256": "0d025153220538674dba481c4d7c1d3188b97050a07b117e3ddb124f59a383ca",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision36_prepare.py",
+      "sha256": "126a4828d8239c4ebaa1896deedaf23acc635b176e35ba42ce3707ed276d7fea",
+      "bytes": 4930
+    },
+    {
+      "name": "nf_plot_revision36_save.py",
+      "sha256": "4b33bb312a9979892d3f69120a6a72967469c6c6a2e17f986f3dee351ec093b4",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision36_save_v2.py",
+      "sha256": "1252bf1d68fff497b8de9e4e37a2489cfa7ed6cedb4515edbc6e7783c63e3770",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision37_inspect.py",
+      "sha256": "ae185979f5489b0d29df172dbe40988da57791c59074bc83efaa5171f2571d27",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision37_prepare.py",
+      "sha256": "bf09d8db13f21ff860a3d469edb5b78db3437089c850b1bab1c5f4859192107c",
+      "bytes": 5433
+    },
+    {
+      "name": "nf_plot_revision37_save.py",
+      "sha256": "61a3d2d0f6a6fb9fb438d1c29fa785f4328005166c61126e036c0ac544aa57c8",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision38_inspect.py",
+      "sha256": "0c15b099af6dedd2288cc96a4de820e3189c2a7eaee015896ec2d552925a0ead",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision38_prepare.py",
+      "sha256": "abd473b662f90da689fc05c04957ecf26f5530a0bad6b10aa96cd4b99a1a542c",
+      "bytes": 4004
+    },
+    {
+      "name": "nf_plot_revision38_save.py",
+      "sha256": "ba8b3ba2bdc723f19f647afac731b8e17ec83c94e4dfe3e3c067d0bd2c86fd77",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision39_inspect.py",
+      "sha256": "5ac1228c3bce4b4fdd77f63deb74ec899b65e22fbf60e5fc2fe9390bdda61aa1",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision39_prepare.py",
+      "sha256": "d34e4bf9fa590bc88af8c39c6ff686dd05e9d4e50e98883e6e36ad5c97b82fe2",
+      "bytes": 5054
+    },
+    {
+      "name": "nf_plot_revision39_save.py",
+      "sha256": "c7391df7b2cc997e724249fa50da9645ec7ae6a2236e9ecae5a0b7ba8af35eb2",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision40_inspect.py",
+      "sha256": "9a976e5d030c7fa75f900499e85f7d81200cfc8ab44ae31ed2955777914242ce",
+      "bytes": 602
+    },
+    {
+      "name": "nf_plot_revision40_prepare.py",
+      "sha256": "700931352c76f322251f2ad0250b9c5d9ca234ecdd5bd1f181447aebf49b4855",
+      "bytes": 6038
+    },
+    {
+      "name": "nf_plot_revision40_save.py",
+      "sha256": "9a26f80e0195e49c7dc28281de9ccb92f41c9779d6a6c7ef15911431e45286bd",
+      "bytes": 2080
+    },
+    {
+      "name": "nf_plot_revision_inspect.py",
+      "sha256": "73c0c68e50826917ddb9443bb7570a403a0cd4b8b85f5597636abd69a197cda4",
+      "bytes": 604
+    },
+    {
+      "name": "nf_plot_run.py",
+      "sha256": "e6f41cef19f5b8af0cd04bbcdf0a70c91d0226da7e583a7d0428e95f0b7031c2",
+      "bytes": 6092
+    },
+    {
+      "name": "nf_plot_save_revisions.py",
+      "sha256": "742d187cb9ebad5fac7c341a90c08c75c5d3a972c9b992c1da2b611358202e75",
+      "bytes": 2082
+    },
+    {
+      "name": "nf_plot_schema_inspect.py",
+      "sha256": "81fb7a4fa2a087784e15ba1f698bb447da1c7b157c1b9bf26c1320911613cf33",
+      "bytes": 1058
+    },
+    {
+      "name": "nf_plot_schema_recover.py",
+      "sha256": "9a85aad82e6e22c32531576e62474fe4faf1639b20ba578853933cfef72611b7",
+      "bytes": 756
+    },
+    {
+      "name": "nf_plot_snapshot.py",
+      "sha256": "e2c73a625a402a9cbb418d59735da46260b909c1b5a30703a82c8f75162c8ca8",
+      "bytes": 873
+    },
+    {
+      "name": "nf_plot_stage_bindings.py",
+      "sha256": "c7603a07c3ed5f3cb9c79f76dee807bfe7bfc3225745b15a6a4e48110bd20246",
+      "bytes": 2607
+    },
+    {
+      "name": "nf_plot_stale_proof.py",
+      "sha256": "a5e66b343ddf0ae066adf6ed00eea9395482aaa77cd8985eed5e047431c1aee3",
+      "bytes": 690
+    },
+    {
+      "name": "nf_plot_status.py",
+      "sha256": "42b85f8ffa092d94301b56b36061d185a40f80b78cafe0b90e406e3db6bb55a0",
+      "bytes": 199
+    },
+    {
+      "name": "nf_plot_test_one.py",
+      "sha256": "61d42b277fde644b3ba2e863dc4cb8b890ba45e517f04113d8a48a7b424e7516",
+      "bytes": 935
+    },
+    {
+      "name": "nf_plot_tests.py",
+      "sha256": "90640b76e04887fd95f459766aec4f114eae263a8458101d1259471a2124fd56",
+      "bytes": 1303
+    },
+    {
+      "name": "nf_plot_upper_adopt.py",
+      "sha256": "4955fe3e16060bed7c75ec942d1c9a9d19926cf7224aff86431fe87c188e453a",
+      "bytes": 3101
+    },
+    {
+      "name": "nf_plot_upper_inspect.py",
+      "sha256": "3f053bb41af2c52913d4d325870a7bbc198fb4e9c4bbaceb28e6aed32c23ab7f",
+      "bytes": 572
+    },
+    {
+      "name": "nf_plot_upper_snapshot.py",
+      "sha256": "1f3aafcc81d5511f5ae3fa30c39ad7ecd3466fd488095f27757e04426958d7aa",
+      "bytes": 1985
+    },
+    {
+      "name": "nf_plot_usage_evidence.py",
+      "sha256": "c4dbf46b4b179f3108c764f4790f01bbaaecec02faa3978a5d402bdfa4f92c13",
+      "bytes": 829
+    },
+    {
+      "name": "nf_plot_volume_candidate.py",
+      "sha256": "6b8b9b7bfa7c0eb248886a6c699307fe84ae062d14bb474bd439e37ff22d6e38",
+      "bytes": 769
+    },
+    {
+      "name": "nf_plot_volume_replan.py",
+      "sha256": "191de8af03c2800d2eff51fef8aec27f7ab0aecf0d9c40c9d57d5ca6fdc94e7e",
+      "bytes": 6498
+    },
+    {
+      "name": "nf_plot_wheel199_smoke.py",
+      "sha256": "338ce7d88737ffed0099aa684b4a5c962b4344906af7b37a161b6b92226b426c",
+      "bytes": 1238
+    },
+    {
+      "name": "nf_plot_wheel_final_smoke.py",
+      "sha256": "46216dd65bc71f00da14e8f564c2b461acdfacf0f46583d55c78d4112f28d0b4",
+      "bytes": 2684
+    },
+    {
+      "name": "nf_plot_wheel_smoke.py",
+      "sha256": "c9f4b27747ba3cad008f7180dfbd3cce97267e79cb694bd694888231ff73ca80",
+      "bytes": 2643
+    },
+    {
+      "name": "nf_plot_writer36_view.py",
+      "sha256": "5fb02ec090ed55cd60b1fcf7b6b573ee97d94810e5415d826cce511dcd70259e",
+      "bytes": 2490
+    },
+    {
+      "name": "nf_plot_writer_shape.py",
+      "sha256": "9a1c3dc0884919e2ac46e1d102495069ebf3665540483a7c129e9afeb43a449e",
+      "bytes": 1000
+    }
+  ],
+  "historical_script_versions": "NOT_ALL_RECONSTRUCTED; immutable native records, frozen contracts and original logs remain authoritative",
+  "credentials": "private env remains separate, not copied into public evidence"
+}

@@ -1,0 +1,22 @@
+{
+  "observed_at": "2026-10-10T23:30:29.847689+00:00",
+  "database": "nf_qidian_learning_20261008_test",
+  "oid": 16384,
+  "cluster": "7694308142111706022",
+  "read_only": true,
+  "original_mutations": 0,
+  "configured_no_model_dispatch": "1",
+  "configured_sha": "d13e13b2b240d44da7c2864a16a5c7311d971629",
+  "book": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "book_id": "book:qinglan-wendao-20261008",
+    "state": "PAUSED",
+    "current_chapter": 16,
+    "accepted_through_chapter": 0,
+    "version": 114,
+    "input_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+    "active_chapter_request_id": null,
+    "paused_reason": "Requested manuscript round reached chapter 16; frozen delivery window retained",
+    "target_chapter_count": 40
+  }
+}

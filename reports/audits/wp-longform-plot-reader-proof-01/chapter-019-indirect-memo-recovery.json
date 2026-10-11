@@ -1,0 +1,28 @@
+{
+  "result": {
+    "operation_id": "fe8a3643-4af0-4894-98bb-79a0fb8ddd63",
+    "replayed": false
+  },
+  "policy_evidence": {
+    "contract_version": "chapter-historical-input-scope-repair.v1",
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "chapter_request_id": "chapter-request:8048c1a93bad5f1b4feacbc96f54c5d63d9e8228eba1513835fb25b269e2bbac",
+    "input_snapshot": [
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:634390e903deb041a40573356c211b9012ff5ad21f57f73e33de703fad08543d",
+        "asset_version_id": "authority-output:69b55411-ad98-4a68-aa17-b8820a21f659:chapter.plan:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:9c292a948ba9d2076b635f4ccf17ceb45341231a344a1e1b94473e356f4e74e8",
+        "asset_version_id": "authority-output:7c136610-b4d2-4648-837e-76c04ae7f4b8:chapter.execution_intent:v1"
+      }
+    ],
+    "target_deployment_id": "deployment:quality:chapter_generation_pack.plot_reader_01:ea17db89b850429943e8",
+    "release_sha": "2843d74f7bca65f90250b56436e1e01199ca7aa7",
+    "provider_dispatches": 0,
+    "completion_checks": "UNCHANGED",
+    "reason": "Memo consumes current Intent indirectly; preserve exact source and correct only the preflight interpreter scope"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "predecessor_operation_id": "8cfc7533-b6dd-4a57-978a-8da17aad48dc",
+  "successor_operation_id": "fc4e9699-c1ab-41cd-b02d-db5a3dd08728",
+  "policy_evidence": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "release_sha": "1c3004a880fdbc670678c127b44c9e6c52d3f334",
+    "domain_schema": "UNCHANGED",
+    "input_snapshot": [
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:04eb8c819ce3432bdb71886dd1edb1459e57eb548ed7ed7b0070b8e74fe4c07d",
+        "asset_version_id": "authority-output:7553ff7b-ad44-4672-beaa-2132f03ac350:chapter.plan:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:a67cd358669e28cd71b4633e7975d173c39ca2f65debf4735065708855cbefaa",
+        "asset_version_id": "authority-output:a786c94f-dc03-4367-be9f-5453de142bb8:chapter.execution_intent:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:67dbfabfcacf1e8a6d782e535b95e765f338ea8c5dcfbeb52c8a95ce92e085fc",
+        "asset_version_id": "authority-output:948b701f-a70d-4e08-bbb2-2dc749116e68:chapter.memo:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:5bce7f441b237f842cd34bec8ee1bbe8805efa7fee4755c54ed1e3aa5de35a8b",
+        "asset_version_id": "authority-output:7b2c091c-e64e-4607-b135-e93da11df819:chapter.context:v1"
+      }
+    ],
+    "contract_version": "chapter-optional-memory-transport.v1",
+    "completion_checks": "UNCHANGED",
+    "chapter_request_id": "chapter-request:6112a301ffee1406e2bc619f3887602f2e1541d87b3cd5f892b4a96ac0898a64",
+    "target_deployment_id": "deployment:quality:chapter_generation_pack.plot_reader_01:f2ea3aff7064f3193e6e",
+    "transport_projection": "codex-optional-working-memory.v1",
+    "schema_rejection_receipts": []
+  }
+}

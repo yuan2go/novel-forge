@@ -53,3 +53,86 @@ def recover_unsent_context_transport(authority, *, book_run_id, principal):
         window_successor={'contract_version':'kernel-unsent-transport-window.v1',
             'target_deployment_id':policy['target_deployment_id'],'release_sha':policy['release_sha']})
     return True
+
+def require_optional_memory_transport(cursor, source, policy, target_version):
+    if policy.get('contract_version') != 'chapter-optional-memory-transport.v1':
+        return False
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION
+    if (CODEX_SCHEMA_PROJECTION_VERSION != 'codex-structured-schema.v6' or target_version != '3.10.0'
+        or source['definition_name'] != 'chapter.draft.generate' or source['definition_version'] not in {'3.10.0', '3.10.2'}
+        or policy.get('transport_projection') != 'codex-optional-working-memory.v1'
+        or policy.get('input_snapshot') != source['input_asset_snapshot']):
+        raise KernelError('CHAPTER_MEMORY_TRANSPORT_INVALID', 'Bind only the exact optional memory wire correction')
+    cursor.execute("""SELECT d.deployment_id FROM authority_capability_pack_deployment d
+        JOIN authority_capability_pack_compilation compilation USING(compilation_id)
+        JOIN authority_capability_pack_activation activation ON activation.active_deployment_id=d.deployment_id
+        WHERE d.deployment_id=%s AND d.deployment_status='ACTIVE' AND activation.project_id=%s
+        AND activation.book_id=%s AND activation.workflow_definition_ref='chapter_authority_slice@3.10.0'
+        AND compilation.release_sha=%s""", [policy.get('target_deployment_id'), source['project_id'], source['command_payload'].get('book_id'), policy.get('release_sha')])
+    if not cursor.fetchone():
+        raise KernelError('CHAPTER_MEMORY_TRANSPORT_INVALID', 'Require the exact active coordinated Pack')
+    cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [source['operation_id']])
+    failures = [row[0] for row in cursor.fetchall()]
+    if source['definition_version'] == '3.10.0':
+        cursor.execute("SELECT request_payload #>> '{_production_execution,capability_runtime,output_schema_ref}',last_error #>> '{production_execution,process_evidence,provider_schema_contract,version}' FROM authority_external_effect WHERE operation_id=%s", [source['operation_id']])
+        schemas = cursor.fetchall()
+        if (not failures or any(code != 'MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED' for code in failures)
+            or not schemas or any(row != ('schema:chapter-provider-output:draft:v4:working-memory-v1', 'codex-structured-schema.v5') for row in schemas)
+            or len(policy.get('schema_rejection_receipts', [])) != len(schemas)):
+            raise KernelError('CHAPTER_MEMORY_TRANSPORT_INVALID', 'Require exact settled optional memory Schema rejection')
+    else:
+        cursor.execute("SELECT policy_evidence->>'contract_version' FROM authority_saga_step_successor WHERE successor_operation_id=%s", [source['operation_id']])
+        prior = cursor.fetchone()
+        cursor.execute('SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)', [source['operation_id']])
+        if (prior != ('chapter-optional-memory-transport.v1',) or cursor.fetchone()[0]
+            or failures != ['CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED', 'CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT']):
+            raise KernelError('CHAPTER_MEMORY_TRANSPORT_INVALID', 'Only the retained undispatched Pack preflight successor may continue')
+    return True
+
+
+def recover_optional_memory_transport(authority, *, book_run_id, principal):
+    book = authority.require(book_run_id)
+    principal.require('book.authority.execute', book['project_id'])
+    principal.require('chapter.authority.execute', book['project_id'])
+    if not book.get('active_chapter_request_id'):
+        return False
+    request = authority.require_chapter_request(book['active_chapter_request_id'])
+    with AuthorityUnitOfWork(authority.database_url) as u:
+        u.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step step USING(operation_id)
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.draft.generate'
+            AND o.definition_version IN ('3.10.0','3.10.2') AND o.status='FAILED_FINAL'
+            AND EXISTS(SELECT 1 FROM authority_attempt a WHERE a.operation_id=o.operation_id
+                AND a.result->>'error_code' IN ('MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED','CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT'))
+            AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor edge WHERE edge.predecessor_operation_id=o.operation_id)""",
+            [request['chapter_root_operation_id'], book['project_id']])
+        rows = u.cursor.fetchall()
+        if len(rows) != 1:
+            return False
+        source = rows[0][0]
+        u.cursor.execute("""SELECT d.deployment_id FROM authority_capability_pack_activation a
+            JOIN authority_capability_pack_deployment d ON d.deployment_id=a.active_deployment_id
+            JOIN authority_capability_pack_compilation c USING(compilation_id)
+            WHERE a.project_id=%s AND a.book_id=%s AND a.workflow_definition_ref='chapter_authority_slice@3.10.0'
+            AND c.release_sha=%s AND d.deployment_status='ACTIVE'""", [book['project_id'],book['book_id'],authority.commit_sha])
+        deployments = u.cursor.fetchall()
+        if len(deployments) != 1:
+            return False
+    from .canon_contract_recovery import schema_rejection_receipts
+    identities, proofs = schema_rejection_receipts(authority.database_url, source) if source['definition_version']=='3.10.0' else ((), [])
+    evidence = {'contract_version': 'chapter-optional-memory-transport.v1', 'book_run_id': book_run_id,
+        'chapter_request_id': request['chapter_request_id'], 'schema_rejection_receipts': proofs,
+        'transport_projection': 'codex-optional-working-memory.v1', 'input_snapshot': source['input_asset_snapshot'],
+        'target_deployment_id': deployments[0][0], 'release_sha': authority.commit_sha,
+        'completion_checks': 'UNCHANGED', 'domain_schema': 'UNCHANGED'}
+    def guard(u):
+        u.cursor.execute('SELECT version,active_chapter_request_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE', [book_run_id])
+        if u.cursor.fetchone() != (book['version'], book['active_chapter_request_id']):
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError('CHAPTER_MEMORY_TRANSPORT_FRONTIER_CHANGED', 'Reload the exact Book frontier')
+    replace_failed_step(authority.database_url, predecessor_id=source['operation_id'], target_version='3.10.0',
+        context=AdmissionContext(principal.principal_id, principal.permissions, authority.chapter_port.application.registry.available_handler_keys,
+            authority.application_build_id, authority.commit_sha), policy_evidence=evidence,
+        expected_failure_code='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED' if identities else 'CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT',
+        known_rejected_effects=identities, transaction_guard=guard)
+    return True

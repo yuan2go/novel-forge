@@ -1,0 +1,370 @@
+{
+  "objective": "规划许庭从基础指导到终局前能力反馈的跨卷人物轨迹：让他以具体、有限且可持续的教学帮助沈砚练成本领，同时保有自己的时间与原则；沈砚最终凭亲身积累独自远行。",
+  "hard_constraints": [
+    "本Arc为未来规划候选；accepted_through_chapter为0，不批准、激活或修改Authority状态。",
+    "卷一绑定已提供的新Volume版本及其真实Narrative Segment身份；第1—19章保持所选或冻结工作，第20—48章承接新版卷一功能。",
+    "卷一第20—25章保留有共同目标的山林行动和结果，第26—32章以真实教学与多次成功支持有限可重复运用，第33—40章完成任务交付，第41—48章承接结果。",
+    "许庭的欲望与轨迹依冻结人物组合：使有限指导真正有用，同时维持教学安排及自身修炼节奏；不预设收徒、特批、职位或错误信念。",
+    "入门、初次引气、首次结伴山谷采药和争取正式外门修炼课的顺序不变；基础指导与正式课程条件分开。",
+    "正式课程录入须由有权者核实当期实际课位和全部其他明确条件；许庭的反馈不能自动换成资格。",
+    "独立重复运用灵气须有稳定维持基础流转的实践支持；已掌握本领在后续任务和卷次继续有效。",
+    "许庭只知道经实际接触可知的信息，只能在确有能力、时间和权限的范围内指导；任务管理、资源和验收由相应主体处理。",
+    "日程与资源须有真实来源、用途和限度；不得重叠占用时段、透支余额或把未知库存视为既得。",
+    "终局的能力、器具、路线天气、补给和落脚分别核实，持续操控、起降、失稳处置与独立判断由前文积累支持。",
+    "遵守冻结叙事负载与人物出场间隔限制；出场须有教学、生活或关系上的实际用途，不为计数插入露面。"
+  ],
+  "forbidden_events": [
+    "改写第1—19章所选正文或冻结任务，或把候选进展宣称为已接受历史。",
+    "将卷一所有可用本领绝对延期至卷二，或让第20—25章只剩询问、许可和空试而缺少共同山林行动。",
+    "让许庭越过未明确权限批准课位、库存、器具使用、收益或任务验收。",
+    "把许庭写成只会拒绝、审核、纠错或赞叹的工具人物，或强制他每章出现。",
+    "未核实许庭的飞剑教学能力与权限，就让他教授专门操作或担保远行安全。",
+    "以临时赐能、无条件资源、能力反复归零或无因果重大损失代替练习与选择。"
+  ],
+  "required_events": [
+    "保留第1—19章工作连续性，不为许庭补造其间未给定的经历。",
+    "卷一第20—25章的共同山林行动之后，沈砚可以带着实际问题求教；许庭不替代交付判定。",
+    "卷一第26—32章安排许庭权限内的具体教学，沈砚通过观察、调整和多次成功形成有限可重复运用。",
+    "卷一第33—40章让沈砚在完整任务中使用已得本领并完成交付，第41—48章承接真实结果与下一步教学需要。",
+    "卷二让许庭依据重复表现调整指导深度，同时让沈砚实际执行修正后的任务与练习安排。",
+    "卷三让许庭的反馈帮助区分单项熟练与整体准备，沈砚自行处理职责、时间和伙伴分工。",
+    "卷四先核实飞剑相关教学条件，再让许庭仅在胜任且获允许的范围内提供反馈；沈砚亲自完成受控操作。",
+    "卷五在出发前处理相关约定与能力反馈，随后由沈砚独自操控、判断、远行并落脚。"
+  ],
+  "arc_segments": [
+    {
+      "status": "PLANNED",
+      "objective": "保存既定工作连续性，特别保留第18章主动收势仍不稳定这一后续教学可承接的问题。",
+      "segment_id": "arc:xu-ting:01",
+      "entry_state_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "exit_state_spec": {
+        "summary": "第1—19章的所选正文与冻结任务保持原状；许庭后续指导只能从实际呈现的接触与表现接续，不补造已接受经历。"
+      },
+      "narrative_segment_id": "v1-01-19-preserved",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让教学与真实共同目标相接，保留山林行动、伙伴分工和结果处理的主体地位。",
+      "segment_id": "arc:xu-ting:02",
+      "entry_state_ref": "v1-01-19-preserved",
+      "exit_state_spec": {
+        "summary": "沈砚在共同山林任务中实际使用已有观察方法；许庭若参与答疑，只针对沈砚带回的具体操作问题回应，不替任务管理者判定交付。"
+      },
+      "narrative_segment_id": "v1-20-25-common-task",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "落实卷一的新教学与有限能力进步，使许庭的反馈有具体内容，也让沈砚亲自完成重复验证。",
+      "segment_id": "arc:xu-ting:03",
+      "entry_state_ref": "v1-20-25-common-task",
+      "exit_state_spec": {
+        "summary": "许庭在已明确的指导范围内指出可比较的动作差别；沈砚经观察、调整和多次成功，获得有适用边界的基础可重复运用。"
+      },
+      "narrative_segment_id": "v1-26-32-repeatable-foundation",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让教学所得进入沈砚主动选择的任务，不让许庭替代同行者分工或有权者的交付回应。",
+      "segment_id": "arc:xu-ting:04",
+      "entry_state_ref": "v1-26-32-repeatable-foundation",
+      "exit_state_spec": {
+        "summary": "沈砚在完整任务中使用已练成的有限本领并得到明确交付结果；许庭只依据自己实际获知的操作表现调整后续建议。"
+      },
+      "narrative_segment_id": "v1-33-40-task-result",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接任务结果和能力进步，为卷二连续学习留下具体问题，不把卷一获得的本领延期或归零。",
+      "segment_id": "arc:xu-ting:05",
+      "entry_state_ref": "v1-33-40-task-result",
+      "exit_state_spec": {
+        "summary": "许庭与沈砚明确已能重复使用的部分及下一步稳定性、时长或条件差别上的不足；教学安排仍以实际权限和时间为限。"
+      },
+      "narrative_segment_id": "v1-41-48-settlement",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "条件式承接卷一结果，避免把许庭的答疑、好感或反馈当成正式课程录入。",
+      "segment_id": "arc:xu-ting:06",
+      "entry_state_ref": "v1-41-48-settlement",
+      "exit_state_spec": {
+        "summary": "沈砚经实际接触区分已确认的学习安排与未满足的课程条件；许庭说明自己能够提供的指导时段及范围。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:1",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使卷一有限本领在卷二扩展稳定性和适用范围，保留休息、劳作与条件变化对表现的实际影响。",
+      "segment_id": "arc:xu-ting:07",
+      "entry_state_ref": "volume:2:future-1:segment:1",
+      "exit_state_spec": {
+        "summary": "许庭依据多次可比较的练习结果给出下一项可操作的反馈；沈砚在已验证范围内更稳定地使用基础流转。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:2",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让教学反馈与任务价值判断相连，保持沈砚对已接任务和后续选择的责任。",
+      "segment_id": "arc:xu-ting:08",
+      "entry_state_ref": "volume:2:future-1:segment:2",
+      "exit_state_spec": {
+        "summary": "任务的实际用时与技术用途成为沈砚下一次求教时可说明的问题；许庭不替他决定接取，也不把已耗时间解释成能力倒退。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:3",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把判断修正落到可执行的学习安排，允许许庭维持自己的修炼节奏。",
+      "segment_id": "arc:xu-ting:09",
+      "entry_state_ref": "volume:2:future-1:segment:3",
+      "exit_state_spec": {
+        "summary": "沈砚依据实际日程保留练习时段；许庭在自己可提供的指导范围内回应新的练习问题，不承诺未经确认的资源或资格。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:4",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以安静、连续的教学与运用呈现积累，使师生互动不只发生在失败或审核时。",
+      "segment_id": "arc:xu-ting:10",
+      "entry_state_ref": "volume:2:future-1:segment:4",
+      "exit_state_spec": {
+        "summary": "几轮练习和有限任务显示新安排的实际效果；许庭据表现调整指导深度，沈砚能够区分已会、尚不稳和仍需核实的部分。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:5",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以行动结果结算教学成效，为第三卷更复杂的准备责任提供可用基础。",
+      "segment_id": "arc:xu-ting:11",
+      "entry_state_ref": "volume:2:future-1:segment:5",
+      "exit_state_spec": {
+        "summary": "受控合作交付与保留的练习均有结果；许庭确认自己实际观察到的能力进步和下一步技术问题，沈砚保有可执行安排。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:6",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "条件式进入第三卷，不把前卷拟议结果写成已接受事实。",
+      "segment_id": "arc:xu-ting:12",
+      "entry_state_ref": "volume:2:future-1:segment:6",
+      "exit_state_spec": {
+        "summary": "沈砚先核实届时实际保有的能力与安排，再向许庭提出与新职责有关的具体学习问题；许庭只依据实际接触回应。"
+      },
+      "narrative_segment_id": "volume:3:segment:1",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "帮助沈砚辨认技术熟练不能替代用时、工具和质量复查的整体安排。",
+      "segment_id": "arc:xu-ting:13",
+      "entry_state_ref": "volume:3:segment:1",
+      "exit_state_spec": {
+        "summary": "单项动作与整体准备之间的差别获得可观察的说明；许庭的反馈聚焦其可判断的练习部分，工具与交付条件仍由相应来源核实。"
+      },
+      "narrative_segment_id": "volume:3:segment:2",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接沈砚放弃互斥当次机会的选择，让教学节奏与真实日程相容。",
+      "segment_id": "arc:xu-ting:14",
+      "entry_state_ref": "volume:3:segment:2",
+      "exit_state_spec": {
+        "summary": "沈砚以实际用时修正准备安排，保留原有技能；许庭继续按已明确时段指导，不要求沈砚为赶进度挤占休息。"
+      },
+      "narrative_segment_id": "volume:3:segment:3",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使教学服务于自主准备，同时让陆衡、唐穗各自的合作边界发挥作用。",
+      "segment_id": "arc:xu-ting:15",
+      "entry_state_ref": "volume:3:segment:3",
+      "exit_state_spec": {
+        "summary": "沈砚练习自己承担一项过去依赖伙伴支持的核实或准备工作；许庭在适合其指导范围的部分给出方法反馈，不替代伙伴协商。"
+      },
+      "narrative_segment_id": "volume:3:segment:4",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让沈砚承担现场取舍与交付结果，保留许庭作为有限信息的教习角色。",
+      "segment_id": "arc:xu-ting:16",
+      "entry_state_ref": "volume:3:segment:4",
+      "exit_state_spec": {
+        "summary": "沈砚完成有范围的任务与交付；许庭只有在实际获知相关表现后才将其用于后续教学，不越权判定药材质量或收益。"
+      },
+      "narrative_segment_id": "volume:3:segment:5",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "收束第三卷的准备能力，为第四卷核实飞剑学习条件留下方法基础。",
+      "segment_id": "arc:xu-ting:17",
+      "entry_state_ref": "volume:3:segment:5",
+      "exit_state_spec": {
+        "summary": "修正后的准备方法至少再次用于学习或事务；许庭与沈砚能够谈清已可自行判断的部分和仍需具体教学的部分。"
+      },
+      "narrative_segment_id": "volume:3:segment:6",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让既有师生关系进入飞剑实践阶段，同时逐项确认新的教学权限与条件。",
+      "segment_id": "arc:xu-ting:18",
+      "entry_state_ref": "volume:3:segment:6",
+      "exit_state_spec": {
+        "summary": "沈砚核实器具、使用和学习条件；许庭只说明自己确有能力且获允许指导的部分，不被预设为飞剑教习或管理者。"
+      },
+      "narrative_segment_id": "volume4-segment1",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "保留许庭观察、调整、重复的教学原则，不凭角色身份授予飞剑专门权限。",
+      "segment_id": "arc:xu-ting:19",
+      "entry_state_ref": "volume4-segment1",
+      "exit_state_spec": {
+        "summary": "起降练习产生多次可比较的结果；若许庭具备相应指导条件，其反馈落在具体动作上，否则由实际有权且胜任者承担该项教学。"
+      },
+      "narrative_segment_id": "volume4-segment2",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让教学安排与持续控制所需的恢复、复查时间相符。",
+      "segment_id": "arc:xu-ting:20",
+      "entry_state_ref": "volume4-segment2",
+      "exit_state_spec": {
+        "summary": "沈砚依据持续控制的重复结果修正练习日程；许庭按自身安排提供可行的反馈，既有起降进步得到保留。"
+      },
+      "narrative_segment_id": "volume4-segment3",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使师生信任表现为有范围的支持，而非代控或代决。",
+      "segment_id": "arc:xu-ting:21",
+      "entry_state_ref": "volume4-segment3",
+      "exit_state_spec": {
+        "summary": "受控短程实践有清楚的准备和返回安排；许庭的参与若获确认，限于可承担的观察或反馈，操控与关键判断由沈砚负责。"
+      },
+      "narrative_segment_id": "volume4-segment4",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "将早期按动作和结果修正的方法用于范围受控的处置练习。",
+      "segment_id": "arc:xu-ting:22",
+      "entry_state_ref": "volume4-segment4",
+      "exit_state_spec": {
+        "summary": "沈砚获得已说明条件下识别失稳和判断返回的实践证据；许庭依据实际观察讨论方法边界，不概括为任意天气皆可应对。"
+      },
+      "narrative_segment_id": "volume4-segment5",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以可观察的操作成果结算这一阶段的教学关系，不提前兑现独自远行。",
+      "segment_id": "arc:xu-ting:23",
+      "entry_state_ref": "volume4-segment5",
+      "exit_state_spec": {
+        "summary": "沈砚亲自完成受控短程往返；许庭只确认自己能够核对的学习成果，完整远行的路线、天气、补给和落脚仍待分别核实。"
+      },
+      "narrative_segment_id": "volume4-segment6",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "条件式进入终卷，让许庭支持能力辨认而不替沈砚完成行程准备。",
+      "segment_id": "arc:xu-ting:24",
+      "entry_state_ref": "volume4-segment6",
+      "exit_state_spec": {
+        "summary": "沈砚依据届时实际前卷结果说明已有操控与远行缺项；许庭对自己知道的能力范围作具体反馈，不把拟议短程成果当成既成事实。"
+      },
+      "narrative_segment_id": "volume-5:segment-1",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让终局准备保有师生关系的日常温度与各自时间边界。",
+      "segment_id": "arc:xu-ting:25",
+      "entry_state_ref": "volume-5:segment-1",
+      "exit_state_spec": {
+        "summary": "影响学习与准备的旧约和新增安排得到实际协商；许庭明确可提供的时间，不要求沈砚以无条件空出全部事务证明决心。"
+      },
+      "narrative_segment_id": "volume-5:segment-2",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "用具体表现区分本领有效与组合方案尚需修改。",
+      "segment_id": "arc:xu-ting:26",
+      "entry_state_ref": "volume-5:segment-2",
+      "exit_state_spec": {
+        "summary": "携行实践显露偏好方案的余地不足；许庭可就其实际观察到的操控差别提供反馈，载荷或行程修正由沈砚决定。"
+      },
+      "narrative_segment_id": "volume-5:segment-3",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "保持教师知识边界，让沈砚亲自完成行程所需的分项核实。",
+      "segment_id": "arc:xu-ting:27",
+      "entry_state_ref": "volume-5:segment-3",
+      "exit_state_spec": {
+        "summary": "沈砚从各自合适的信息来源核实路线、补给与落脚；许庭不凭教学身份保证陈旧记录或未亲见条件的时效。"
+      },
+      "narrative_segment_id": "volume-5:segment-4",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以具体履约和有边界的交流承接长期师生关系。",
+      "segment_id": "arc:xu-ting:28",
+      "entry_state_ref": "volume-5:segment-4",
+      "exit_state_spec": {
+        "summary": "影响出行的明确约定得到处理；许庭与沈砚在各自已知范围内谈清可用本领和未决事项，关系无需因独行而终止。"
+      },
+      "narrative_segment_id": "volume-5:segment-5",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让多年具体指导在沈砚的实际操作中得到回响，终局判断和行动仍由沈砚完成。",
+      "segment_id": "arc:xu-ting:29",
+      "entry_state_ref": "volume-5:segment-5",
+      "exit_state_spec": {
+        "summary": "出发前的教学相关约定与能力反馈已经处理；沈砚独自完成飞行和落脚，许庭无需代控、远程援助或切断师生关系来证明其成长。"
+      },
+      "narrative_segment_id": "volume-5:segment-6",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "arc_relations": [],
+  "arc_contributions": [
+    {
+      "change": "以具体教学、动作反馈和重复练习支持沈砚在卷一练成范围有限的可用本领，后续教学承接而不撤销这一成果。",
+      "subject": "沈砚的修行成长"
+    },
+    {
+      "change": "许庭依据可观察的表现调整指导深度，同时保有自己的教学安排和修炼时间；沈砚逐渐能带着具体问题求教并自行验证。",
+      "subject": "许庭与沈砚的师生关系"
+    },
+    {
+      "change": "到远行准备阶段，许庭提供能力范围内的反馈；沈砚自行核实其余条件、作出行程判断并完成独行。",
+      "subject": "独自御剑远行"
+    }
+  ]
+}

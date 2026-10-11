@@ -1,0 +1,843 @@
+{
+  "asset_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "raw_content_hash": "sha256:3ac5361f90f04657f9c971d37defa15149bf8c2672d56cd95b50e56cf423daff",
+  "raw_location": "ORIGINAL_NATIVE_PG_ASSET_AND_PRIVATE_FULL_COPY",
+  "semantic_projection": {
+    "schema_version": "story_design.authority.v1",
+    "logical_key": "chapter-group:containing:37",
+    "chapter_range": [
+      37,
+      40
+    ],
+    "parent_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+    "objective": "在第37—40章让既有任务交付与有限本领产生新的实际结果：沈砚自主练习，许庭教出相邻的新控制，程观交代并回应一段真正完成的普通工作。",
+    "required_events": [
+      "第37章沈砚自主分轮练习，在熟悉平地短步条件下多次辨出并主动收住自身细暖。",
+      "第38章许庭根据亲见动作实际教授缓步转身或折返的新控制，沈砚经调整与休息得到限定条件下的多次成功。",
+      "第39章程观当面说明一段自己经办、来源用途时段和交付要求清楚的普通轻物工作；沈砚选择后实际领物并开始。",
+      "第40章工作实际完成、交回并得到程观职责内回应；沈砚依据真实结果作出可执行的后续选择。"
+    ],
+    "forbidden_events": [
+      "第37章重新等待程观说明第36章已明确处理的三清一留，或复盘四处位置。",
+      "把第36章已练成的缓步与行步收束归零，再用数章重复同一问题。",
+      "让许庭只问下一次的问题而不实际教学，或无限占用她的时段。",
+      "使普通轻物成为灵气增力、托举、外物检测或治疗的媒介。",
+      "把程观写成当然拥有课程、器具、库存或远行批准权。",
+      "未经实际辨认就断定盘边粗影的材质。",
+      "以未说明的库存、报酬、余额或课位作为既得条件。",
+      "为本组新增敌对势力、秘密派系或重大无因果损失。"
+    ],
+    "hard_constraints": [
+      "保留《青岚问道》240章、五卷结构及第1—36章所选工作连续性；本组只规划第37—40章未来事件。",
+      "第36章近坡任务已按三处清出、一处未动交回完结；第37章从已有缓步收束本领继续练习。",
+      "第37章必须由沈砚独自分轮辨认、调整并多次成功，结果引出具体下一步选择。",
+      "第38章许庭须根据亲眼所见，在有限时段内实际教授一项等量新控制；教学由简单动作到转身，包含适当休息与重复结果。",
+      "新控制只涉及自身气息的辨认与主动收束，适用范围限熟悉平地、短时和轻负荷；普通轻物始终由手握持。",
+      "第39—40章的新工作须由程观在实际经办范围内当面说明来源、用途、物件、限定时段与交付要求，并实际领到、执行、交回和回应。",
+      "工作中沈砚只可用已有自身辨认与收束方法调整动作；物件分量仍由普通身体承担。",
+      "唐穗保有自己的材料学习目标、时间和参与选择；粗影材质未经实际辨认仍未知。",
+      "正式课程录入、资源收益与资格均不得由教学反馈或工作好感自动取得。",
+      "日程以同一单位容纳劳作、练习、往返、休息及既有承诺，不重复占用互斥时段。",
+      "遵守沈砚第三人称限知视角、人物有限权限及最多三条活跃Arc的叙事负载。"
+    ],
+    "narrative_event_chain": [
+      {
+        "action": "沈砚在熟悉平地用普通轻物分轮练短步；一次脚步催快使掌中细暖散去，他停下休息，缩短步幅后多次在行步中主动收住。",
+        "causes": [],
+        "decision": "继续按短步、分轮和休息的方式练习，不追求一次走得更远。",
+        "event_id": "cg37-e1",
+        "required": true,
+        "slice_id": "cg37-self-practice",
+        "actor_ref": "沈砚",
+        "motivation": "检验没有许庭当场提醒时，自己能否听出气息追上脚步的那一下。",
+        "resistance": "急于接下一步时细暖散去，劳作后的身体也不能无限连续尝试。",
+        "consequence": "他不靠旁人指出第二步，也能辨出失稳与调整后的差别。",
+        "disclosures": [
+          "沈砚已能在熟悉平地短步条件下自行辨出脚步过急，并多次主动收住自身细暖。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "在熟悉平地短步条件下能自行辨差、调整并多次主动收住",
+            "entity_id": "沈砚",
+            "from_state": "直行缓步收束曾在许庭指导下多次成功，独自辨差仍待尝试",
+            "state_kind": "PRACTICE"
+          }
+        ],
+        "preconditions": [
+          "第36章已选工作正文中，缓步数步维持与行步主动收住已有多次成功。",
+          "熟悉平地和普通轻物可用于基础练习。"
+        ],
+        "chapter_number": 37,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "第36章工作正文已留下沈砚想独自辨认脚步与气息差别的意愿，分轮练习是他的具体选择。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "山路劳作后的疲倦和偶发的步子过急，构成练习中的具体限制。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "此处形成可继续使用的经验，但不需宣称能力不可逆或跨条件稳定。"
+          }
+        },
+        "next_event_ids": [
+          "cg37-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "第36章自己在许庭指导下曾多次缓步维持细暖并在行步中收住。",
+            "山路劳作后肩臂仍需休息。"
+          ],
+          "reader_may_learn": [
+            "沈砚已能在熟悉平地短步条件下自行辨出脚步过急，并多次主动收住自身细暖。"
+          ],
+          "forbidden_disclosures": [
+            "正式课程名额、课位或未公布条件。",
+            "其他场地、重负荷下的稳定表现。"
+          ]
+        },
+        "obligation_actions": [],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚据练习结果选定下一项具体问题：在既有答疑时段试缓步转身或折返时的自身辨认与收束；随后结束本轮，不用疲倦的手臂硬练。",
+        "causes": [
+          "cg37-e1"
+        ],
+        "decision": "下一次只增加转身这一项条件，并在约好的答疑时段向许庭展示实际动作。",
+        "event_id": "cg37-e2",
+        "required": true,
+        "slice_id": "cg37-next-question",
+        "actor_ref": "沈砚",
+        "motivation": "让已有方法适应一个紧邻的新动作条件。",
+        "resistance": "此时尚无转身的重复结果，不能凭直行成功替它下结论。",
+        "consequence": "第38章教学有了可观察的已会动作与明确的新问题。",
+        "disclosures": [
+          "沈砚选择把转身作为下一项具体练习，不再重复追问已会的直行收束。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "选定在既有答疑时段试缓步转身并展示实际动作",
+            "entity_id": "沈砚",
+            "from_state": "尚未选定下一项可执行练习",
+            "state_kind": "PRACTICE_PLAN"
+          }
+        ],
+        "preconditions": [
+          "cg37-e1的多轮练习形成可比较结果。"
+        ],
+        "chapter_number": 37,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "第37章自主练习已有结果，沈砚据结果选择下一项可练动作。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "疲倦和有限练习时段使他必须收住当次练习。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "练习问题和时段可随实际表现调整，无须强加不可逆后果。"
+          }
+        },
+        "next_event_ids": [
+          "cg38-e1"
+        ],
+        "arc_contributions": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "自己刚完成的短步练习结果。",
+            "许庭此前说明的有限答疑时段。"
+          ],
+          "reader_may_learn": [
+            "沈砚选择把转身作为下一项具体练习，不再重复追问已会的直行收束。"
+          ],
+          "forbidden_disclosures": [
+            "许庭私下修炼内容与未说出的判断。",
+            "新转身动作必然成功的结论。"
+          ]
+        },
+        "obligation_actions": [
+          "cg37-turn-practice:SETUP:38"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "在既有答疑时段，许庭先看沈砚直行缓步和行步收束，再示范如何在平地缓慢转身时留意自身气息与脚步先后；她让他从更简单的半转开始。",
+        "causes": [
+          "cg37-e2"
+        ],
+        "decision": "依据亲眼看到的直行表现，只加缓步转身这一项控制。",
+        "event_id": "cg38-e1",
+        "required": true,
+        "slice_id": "cg38-teaching",
+        "actor_ref": "许庭",
+        "motivation": "让有限教学真实形成弟子能自行使用的下一项本领，同时守住自己的时间。",
+        "resistance": "转身时脚步次序改变，容易把气息催快。",
+        "consequence": "教学从第36章已会的直行推进到一个相邻的新动作条件。",
+        "disclosures": [
+          "许庭亲眼见到沈砚已能直行缓步收束，因此把指导推进到缓步转身。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "许庭依据亲见表现实际教授短时缓步转身的自身辨认与收束",
+            "entity_id": "许庭与沈砚",
+            "from_state": "指导停留在直行缓步收束",
+            "state_kind": "TEACHING_SCOPE"
+          }
+        ],
+        "preconditions": [
+          "沈砚按第37章选择带来可观察的直行动作。",
+          "许庭的既有答疑时段仍可用。"
+        ],
+        "chapter_number": 38,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "许庭的Arc要求她依据可观察表现决定指导深度。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "她的答疑时间有限，转身也给沈砚增加了一个实际动作条件。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "示范本身尚未构成已练成的新能力。"
+          }
+        },
+        "next_event_ids": [
+          "cg38-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "她此刻亲眼所见的沈砚直行练习。",
+            "她自己可用的答疑时段与修炼安排。"
+          ],
+          "reader_may_learn": [
+            "许庭亲眼见到沈砚已能直行缓步收束，因此把指导推进到缓步转身。"
+          ],
+          "forbidden_disclosures": [
+            "第37章她未亲见的每一轮练习细节。",
+            "沈砚的天赋定论、正式课程资格或器具权限。"
+          ]
+        },
+        "obligation_actions": [
+          "cg37-turn-practice:ADVANCE:38"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚在半转和折返中有过脚先抢快的失败，停下休息、调整脚步与呼吸；随后分轮多次在熟悉平地短时缓步转身时辨出细暖并主动收住。许庭说明她实际看见的范围，按时去做自己的练习。",
+        "causes": [
+          "cg38-e1"
+        ],
+        "decision": "只认熟悉平地、轻物、短时缓步转身的结果，之后由自己在合适时段再练。",
+        "event_id": "cg38-e2",
+        "required": true,
+        "slice_id": "cg38-repeatable-turn",
+        "actor_ref": "沈砚",
+        "motivation": "把新动作真正练成可在已知条件下重复的本领。",
+        "resistance": "第一次转身脚快于气息，不能靠多用力解决。",
+        "consequence": "新动作在限定条件下获得重复证据，师生双方各自继续自己的安排。",
+        "disclosures": [
+          "沈砚在熟悉平地、轻物、短时缓步转身时多次辨出自身细暖并主动收住。",
+          "许庭结束答疑后继续自己的修炼。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "熟悉平地、轻物、短时缓步转身时已有多次主动收束的证据",
+            "entity_id": "沈砚",
+            "from_state": "直行缓步收束可重复，转身尚无证据",
+            "state_kind": "PRACTICE"
+          }
+        ],
+        "preconditions": [
+          "cg38-e1已经给出具体示范和动作次序。"
+        ],
+        "chapter_number": 38,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚选择承认已验证范围，许庭选择按时结束教学。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "转身中的步子抢快与身体疲倦通过休息、调整和再试得到处理。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "限定条件内的学习成果应被后文承接，但无需写成普遍不可逆的能力。"
+          }
+        },
+        "next_event_ids": [
+          "cg39-e1"
+        ],
+        "arc_contributions": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "许庭刚教的半转与折返方法。",
+            "自己各轮成功和失误时的身体感受。"
+          ],
+          "reader_may_learn": [
+            "沈砚在熟悉平地、轻物、短时缓步转身时多次辨出自身细暖并主动收住。",
+            "许庭结束答疑后继续自己的修炼。"
+          ],
+          "forbidden_disclosures": [
+            "复杂地形、重负荷或长时间下的稳定结果。",
+            "正式课程录入结论。"
+          ]
+        },
+        "obligation_actions": [
+          "cg37-turn-practice:PAYOFF:38"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "程观在自己经办的日常事务中，当面指出一段器架与平地之间的普通轻物整理需求，说明用途、当时实际可用的物件、限定时段及交回标准；因第36章近坡工作已按实际交清，愿意让沈砚独立承担这段明确工作。",
+        "causes": [
+          "cg38-e2"
+        ],
+        "decision": "只交代自己实际经办、数量与时段均能说明的一段普通整理。",
+        "event_id": "cg39-e1",
+        "required": true,
+        "slice_id": "cg39-work-offer",
+        "actor_ref": "程观",
+        "motivation": "把来源和交付说清，减少工作错配，并让已可靠履约的人承担一段可追踪的事务。",
+        "resistance": "工作只能按当时实际可用的物件和时段安排，不能预定未知数量。",
+        "consequence": "此前履约改变了当前可选择的工作条件，且新任务的来源与要求在场景中明确。",
+        "disclosures": [
+          "程观当面说明了一段自己经办的普通轻物整理工作的来源、用途、限定时段和交回要求。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "一段来源、用途、时段和交付要求明确的新工作已当面提出",
+            "entity_id": "程观与沈砚",
+            "from_state": "近坡工作已交回，下一段工作尚未当面明确",
+            "state_kind": "WORK_RELATION"
+          }
+        ],
+        "preconditions": [
+          "第36章已选工作正文中近坡工作已交回完结。",
+          "程观在未来场景实际接触并经办这段日常事务。"
+        ],
+        "chapter_number": 39,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "程观的Arc允许他依据实际履约和清楚条件调整工作安排。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "可用物件、时段和程观当天事务限定了工作范围。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "此刻是提出并说明工作，交付结果尚待执行。"
+          }
+        },
+        "next_event_ids": [
+          "cg39-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "自己经办的当期普通整理需求与实际可用物件。",
+            "第36章近坡工作已按三处清出、一处未动交回完结。"
+          ],
+          "reader_may_learn": [
+            "程观当面说明了一段自己经办的普通轻物整理工作的来源、用途、限定时段和交回要求。"
+          ],
+          "forbidden_disclosures": [
+            "未核实的库存总量、报酬和内部额度。",
+            "正式课程、器具或远行的批准条件。"
+          ]
+        },
+        "obligation_actions": [
+          "cg39-light-work-delivery:SETUP:40"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚核对自己可用的劳作、练习、往返与休息时间后选择承担限定部分，当场领到实际可用的普通轻物并开始手搬整理。唐穗按自己的材料学习目标选择观察物件摆放与盘边角度，在不替他承担全部工作的前提下提供有限互助。",
+        "causes": [
+          "cg39-e1"
+        ],
+        "decision": "只接真实时段内可完成的范围，物件分量用普通手力承担。",
+        "event_id": "cg39-e2",
+        "required": true,
+        "slice_id": "cg39-work-begins",
+        "actor_ref": "沈砚",
+        "motivation": "把前次履约得到的具体机会做成，同时不挤掉必要练习和休息。",
+        "resistance": "普通重量和往返次数使工作不能只凭估计完成。",
+        "consequence": "新工作由说明进入实际执行；唐穗的参与出于自己的目标与可用时间。",
+        "disclosures": [
+          "沈砚已实际领到并开始整理限定范围内的普通轻物。",
+          "唐穗按自己的材料学习目标选择有限观察与互助，盘边粗影的材质仍未辨明。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "已选择限定范围、实际领物并开始普通手搬整理",
+            "entity_id": "沈砚",
+            "from_state": "新工作尚未接取与执行",
+            "state_kind": "WORK"
+          }
+        ],
+        "preconditions": [
+          "cg39-e1已经明确新工作的来源、时段及交付要求。"
+        ],
+        "chapter_number": 39,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚选择可承担范围，唐穗也独立选择有限参与。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "物件有实际重量，往返和休息占用时间。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "工作已经开始，但最终交付须到第40章完成。"
+          }
+        },
+        "next_event_ids": [
+          "cg40-e1"
+        ],
+        "arc_contributions": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "程观当面说明的这段工作要求。",
+            "自己此前短时、轻负荷练习的真实范围。",
+            "唐穗当面表示的参与方式。"
+          ],
+          "reader_may_learn": [
+            "沈砚已实际领到并开始整理限定范围内的普通轻物。",
+            "唐穗按自己的材料学习目标选择有限观察与互助，盘边粗影的材质仍未辨明。"
+          ],
+          "forbidden_disclosures": [
+            "盘边粗影究竟是砂还是灰。",
+            "普通物件可由灵气托举或检测的结论。",
+            "未公布的资源收益。"
+          ]
+        },
+        "obligation_actions": [
+          "cg39-light-work-delivery:ADVANCE:40"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚继续手搬、摆放与核对；手指或肩臂紧起来时，他在已知范围内辨认自身气息并主动收住，随后用普通动作调整握法与休息。唐穗完成她选择承担的观察或有限互助，两人把物件按要求整理完毕并交回。",
+        "causes": [
+          "cg39-e2"
+        ],
+        "decision": "按真实身体状态停下休息后完成剩余范围，不把练习中的短时成功当成劳作增力。",
+        "event_id": "cg40-e1",
+        "required": true,
+        "slice_id": "cg40-complete-work",
+        "actor_ref": "沈砚",
+        "motivation": "完成自己选择承担的明确工作，并看清有限本领在真实劳作中的用途与边界。",
+        "resistance": "身体疲倦与普通物件分量需要安排握法、往返和休息。",
+        "consequence": "新工作获得实际完成的交付；本领只帮助沈砚辨认和调整自身动作，物件重量没有改变。",
+        "disclosures": [
+          "限定的普通轻物整理工作已实际完成并交回。",
+          "沈砚在劳作中沿用自身辨认与收束方法，物件仍由普通手力搬放。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "限定工作实际完成并交回，真实用时和身体负荷已可比较",
+            "entity_id": "沈砚",
+            "from_state": "限定工作已开始但尚未交回",
+            "state_kind": "WORK"
+          }
+        ],
+        "preconditions": [
+          "cg39-e2已实际领物并开始执行。"
+        ],
+        "chapter_number": 40,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚依据真实负荷决定休息与完成次序。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "普通重量、往返与疲倦是本次工作真实可见的限制。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "实际交付一经完成，后续须承接这一结果，不能无因撤销。"
+          }
+        },
+        "next_event_ids": [
+          "cg40-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "程观说明的交付要求。",
+            "自己在搬放中的身体感受与实际休息、往返。",
+            "唐穗当面完成的有限互助。"
+          ],
+          "reader_may_learn": [
+            "限定的普通轻物整理工作已实际完成并交回。",
+            "沈砚在劳作中沿用自身辨认与收束方法，物件仍由普通手力搬放。"
+          ],
+          "forbidden_disclosures": [
+            "未核实的报酬或课程权益。",
+            "物件材质的无依据判定。"
+          ]
+        },
+        "obligation_actions": [
+          "cg39-light-work-delivery:ADVANCE:40"
+        ],
+        "irreversible_change": "这段限定工作实际完成并交回，成为后续安排的既成工作结果。"
+      },
+      {
+        "action": "程观依据当面说过的要求，对已交回的物件与整理结果作出职责内的明确回应。沈砚据实际用时、肩臂感受和已练成的短时转身结果，定下下一次熟悉平地折返练习的可用时段，并说明自己下一段普通事务能承担的范围。",
+        "causes": [
+          "cg40-e1"
+        ],
+        "decision": "程观只回应自己负责的交付；沈砚把下一次练习和工作范围分别定在真实可用时段内。",
+        "event_id": "cg40-e2",
+        "required": true,
+        "slice_id": "cg40-response-and-choice",
+        "actor_ref": "程观",
+        "motivation": "程观要把经办工作处理清楚；沈砚要让劳动与持续学习都落到可行的安排上。",
+        "resistance": "下一次安排须容纳练习、劳作、往返、休息和已有承诺的真实时段。",
+        "consequence": "完整交付改变当前工作关系，沈砚下一次练习与可承担范围有了实际依据；许庭的教学成果由弟子的自行安排继续承接。",
+        "disclosures": [
+          "程观对已完成的限定工作给出职责范围内的明确回应。",
+          "沈砚依据实际用时、身体与学习结果定下下一次练习及可承担的工作范围。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "已得到明确回应，下一次练习和可承担工作范围有实际依据",
+            "entity_id": "程观与沈砚",
+            "from_state": "新工作已交回，尚待职责内回应与下一步安排",
+            "state_kind": "WORK_RELATION"
+          }
+        ],
+        "preconditions": [
+          "cg40-e1已完成并交回限定工作。"
+        ],
+        "chapter_number": 40,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "程观按已说明要求回应，沈砚依据完成后的实际结果选择下一步。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "后续范围受真实用时、疲倦与既有练习安排限定，无须另造冲突。"
+          },
+          "irreversible_change": {
+            "status": "APPLICABLE",
+            "rationale": "明确回应承接已完成的交付，构成后续工作关系的新依据。"
+          }
+        },
+        "next_event_ids": [],
+        "arc_contributions": [
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "眼前工作已完成并交回。",
+            "自己实际用时与身体感受。",
+            "自己在熟悉平地短时折返练习中的结果。"
+          ],
+          "reader_may_learn": [
+            "程观对已完成的限定工作给出职责范围内的明确回应。",
+            "沈砚依据实际用时、身体与学习结果定下下一次练习及可承担的工作范围。"
+          ],
+          "forbidden_disclosures": [
+            "未由有权者确认的正式课程资格。",
+            "未发布的新任务、收益或库存。"
+          ]
+        },
+        "obligation_actions": [
+          "cg39-light-work-delivery:PAYOFF:40"
+        ],
+        "irreversible_change": "已完成交付及程观的明确回应进入后续工作安排，不能再写成仍待首次验收。"
+      }
+    ],
+    "chapter_function_matrix": [
+      {
+        "arc_cadence": [
+          {
+            "action": "TOUCH",
+            "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          },
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "沈砚带着自己辨出的具体差别，决定在下一次既有答疑时段试缓步转身。",
+        "reward_action": "让成功体现为动作和感受的可比较结果，不用评价性台词宣布天赋。",
+        "chapter_number": 37,
+        "promise_action": "兑现第36章沈砚想在无人提醒时自行辨认气息追上脚步的念头。",
+        "primary_function": "用一章完整的自主练习承接第36章成果：沈砚在熟悉平地握普通轻物，分轮试短步，辨出失稳、休息并调整，多次在行步中主动收住。",
+        "foreshadow_action": "直行时能收住，转身时脚与呼吸的次序仍待实际练习。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "看见自主辨认与重复成功带来的踏实进步",
+          "target_emotion": "安静而具体的欣喜"
+        },
+        "obligation_actions": [
+          {
+            "action": "SETUP",
+            "due_chapter": 38,
+            "obligation_id": "cg37-turn-practice"
+          }
+        ],
+        "prohibited_outcomes": [
+          "重新演示第36章的初次成功，或把已学会的缓步收束写成归零。",
+          "仅抄录步数、等待别人复核，却不形成下一步实际选择。"
+        ],
+        "secondary_functions": [
+          "承接山路劳作后的身体疲倦，安排合理休息。",
+          "为第38章新控制提供具体可观察的问题。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "沈砚从依靠许庭指出第二步过急，推进到自己辨出这一差别，并在熟悉平地短步条件下多次主动收住。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "沈砚把观察、调整、重复的方法独自用起来，并据结果选择下一项练习。",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          },
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "沈砚已能在熟悉平地短时缓步转身时收束，准备把练习所得带回普通日常。",
+        "reward_action": "以多轮实际动作兑现教学，不以许庭的赞许替代结果。",
+        "chapter_number": 38,
+        "promise_action": "兑现第37章沈砚选出的转身练习问题。",
+        "primary_function": "许庭根据亲眼所见的直行练习，在有限时段内教沈砚缓步转身或折返时继续辨认自身气息并主动收束；从简单动作到转身，经过失误、休息、调整和多次成功。",
+        "foreshadow_action": "转身所得仍限轻负荷、短时与熟悉平地，实际劳作会呈现不同用时和身体感受。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "亲眼看见具体教学转成限定条件内可重复的动作",
+          "target_emotion": "受教后的明朗与温暖"
+        },
+        "obligation_actions": [
+          {
+            "action": "PAYOFF",
+            "due_chapter": 38,
+            "obligation_id": "cg37-turn-practice"
+          }
+        ],
+        "prohibited_outcomes": [
+          "重新教授已掌握的起意与收束，或只留下一个下次再问的问题。",
+          "让轻物产生增力、托举、外放、检测或治疗作用。",
+          "宣称沈砚在所有场地和负荷下都已稳定。"
+        ],
+        "secondary_functions": [
+          "体现许庭有自己的修炼时间与教学判断。",
+          "明确新本领的适用边界。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "沈砚在已会直行的基础上，获得熟悉平地、短时、普通轻物条件下缓步转身并主动收束的重复证据；许庭的指导时段按实际安排结束。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "许庭依实际表现调整指导深度，教出一项新动作，同时结束答疑去做自己的练习。",
+            "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "沈砚以观察、调整、多次成功建立熟悉平地短时转身时的有限控制。",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "TOUCH",
+            "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "限定时段内的整理已展开，沈砚和唐穗仍须完成手边的普通搬放与核对。",
+        "reward_action": "用交到手上的具体工作体现程观对已履约者的信任。",
+        "chapter_number": 39,
+        "promise_action": "使第36章的可靠履约确实改变当前可承担的工作，而非只谈将来可能的安排。",
+        "primary_function": "程观当面交代一段由自己经办、确有用途的短程轻物整理工作，说明可用物件、限定时段和交付要求；沈砚选择承担并开始实际执行。",
+        "foreshadow_action": "实际往返、休息与物件分量会决定沈砚下一步能承担的工作范围。",
+        "narrative_density": "HIGH",
+        "reader_experience": {
+          "reward_mode": "既有履约换来具体信任与实际行动",
+          "target_emotion": "被信任后的谨慎投入"
+        },
+        "obligation_actions": [
+          {
+            "action": "SETUP",
+            "due_chapter": 40,
+            "obligation_id": "cg39-light-work-delivery"
+          }
+        ],
+        "prohibited_outcomes": [
+          "把第36章近坡三清一留重新交付或重新等待结论。",
+          "预支报酬、库存、课程资格或器具准入。",
+          "以灵气托物、辨物或替代普通负重。"
+        ],
+        "secondary_functions": [
+          "让唐穗保有独立的学习目标及选择。",
+          "把身体负荷、往返和休息纳入同一日程。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "一段当面交代、范围明确的新工作已由沈砚接下并开始执行；唐穗按自己的材料学习目标决定参与观察和有限互助。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "程观在职责内交代新工作的来源、用途、时段和交付要求，并允许沈砚自行承担明确的一段。",
+            "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "沈砚比较真实用时和能力，选择可承担范围，开始普通轻物整理。",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "TOUCH",
+            "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+          },
+          {
+            "action": "PAYOFF",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          },
+          {
+            "action": "PAYOFF",
+            "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "沈砚定下下一次在熟悉平地练习短时折返的时段，同时明确自己能承担的下一段普通事务范围。",
+        "reward_action": "呈现物件归位、交付清楚和下一步安排落地。",
+        "chapter_number": 40,
+        "promise_action": "兑现第39章限定工作的交付，落实第33—36章履约对当前机会的影响。",
+        "primary_function": "完成第39章已开始的限定工作，交回普通物件并得到程观职责内的具体回应；沈砚据真实用时、身体感受与学习结果作出可执行的后续选择。",
+        "foreshadow_action": "第41—48章可据此次实际用时、交付与练习结果安排更广的学习。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "完整工作与明确回应带来的踏实收束",
+          "target_emotion": "劳作后的疲倦与向前的笃定"
+        },
+        "obligation_actions": [
+          {
+            "action": "PAYOFF",
+            "due_chapter": 40,
+            "obligation_id": "cg39-light-work-delivery"
+          }
+        ],
+        "prohibited_outcomes": [
+          "仅协商一个尚无来源的未来任务，而不完成眼前工作。",
+          "以赞叹、越权承诺或不明收益代替清楚交付。",
+          "把一次普通整理写成全面稳定的灵气运用。"
+        ],
+        "secondary_functions": [
+          "承接唐穗的观察与互助，不凭粗影直接断言材质。",
+          "为第41—48章保留更广学习和后续结算空间。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "新工作已经实际完成、交回并得到职责内回应；沈砚保有有限本领，定下与真实日程相容的下一次练习及可承担范围。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "沈砚完成选择承担的工作，沿用自身辨认与收束方法，并据结果调整下一次练习。",
+            "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "程观按已说明的要求回应实际交付，双方的工作关系获得一次可见推进。",
+            "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+          }
+        ]
+      }
+    ],
+    "commitment_contract": [
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "第36章工作正文中，近坡三处已清、一处未动已由程观按实际处理并交回；缓步数步维持自身细暖及行步中主动收住已有多次成功。第37—40章只从这一工作连续性向前推进。",
+        "commitment_id": "cg37-40-working-continuity"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "新增控制仅限熟悉平地、短时、普通轻物与缓步转身；灵气不增力、不托物、不外放、不辨物、不治疗，也不授予新境界。",
+        "commitment_id": "cg37-40-limited-control"
+      },
+      {
+        "level": "HARD_CONSTRAINT",
+        "statement": "程观在实际经办范围内当面说明新日常工作的来源、用途、限定时段及交付要求；沈砚选择、执行、交回，得到职责内的明确回应。",
+        "commitment_id": "cg37-40-complete-work"
+      },
+      {
+        "level": "SOFT_INTENT",
+        "statement": "让安静练习、劳作后的疲倦、许庭的个人修炼和唐穗的独立兴趣在场景中自然影响选择。",
+        "commitment_id": "cg37-40-human-rhythm"
+      },
+      {
+        "level": "OPEN_DESIGN_SPACE",
+        "statement": "普通轻物的具体种类与数量、实际用时及唐穗参与的范围，可在未来场景中按可见条件确定，不预设库存、收益或材质结论。",
+        "commitment_id": "cg37-40-work-detail"
+      }
+    ]
+  }
+}

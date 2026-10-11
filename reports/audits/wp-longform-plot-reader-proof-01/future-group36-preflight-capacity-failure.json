@@ -1,0 +1,13 @@
+{
+  "operation_id": "402b270c-6e81-49d7-bd3b-4849f4717d9b",
+  "status": "FAILED_RETRYABLE",
+  "version": 3,
+  "external_effect_count": 0,
+  "reservation_count": 0,
+  "estimated_total_tokens": 263746,
+  "hard_limit": 258400,
+  "allowed_model": "codex-cli:gpt-6-sol:high",
+  "other_model_unauthorized": true,
+  "old_history_retained": true,
+  "recovery": "Native exact frozen routing-capacity continuation; no external send"
+}

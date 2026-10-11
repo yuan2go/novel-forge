@@ -1,0 +1,59 @@
+{
+  "schema_version": "plot-reader-constraint-classification.v1",
+  "constraints": [
+    {
+      "name": "Exact selected source, frozen range/hash and request reservation",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "evidence": [
+        "historical_working_inputs",
+        "verify_working_context",
+        "focused_verification",
+        "real Chapter19 Context successor"
+      ]
+    },
+    {
+      "name": "Original PAUSED16, acceptance0, dispatch disabled",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "evidence": [
+        "original-final-readonly.json"
+      ]
+    },
+    {
+      "name": "Provider258400 admission maximum;32000 output reserve",
+      "classification": "CONFIGURABLE_POLICY",
+      "changed": false,
+      "evidence": [
+        "final-writer-capacity.json"
+      ]
+    },
+    {
+      "name": "History32/recentcomplete3/optional passage allocation18000→14000",
+      "classification": "CONFIGURABLE_POLICY",
+      "prospective_only": true,
+      "evidence": [
+        "prospective-history-allocation.json"
+      ]
+    },
+    {
+      "name": "Historical BookPlan profile window3",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "interpretation": "Not current delivery authorization; existing native40window is separate; no fictional delay imposed"
+    },
+    {
+      "name": "Legacy PlanChangeSource.HUMAN_FEEDBACK for operator change-request assets",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "interpretation": "Existing contract validates operator-planning-change-request.v1; actor is isolated operator, evidence is assistant analysis of supplied WP, no actual reader verdict or human author adoption fabricated"
+    },
+    {
+      "name": "Stable useful limited ability forbidden until Volume2 in generated Volume1",
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "resolution": "Removed prospectively through active nativeVolume PlanChange, preserves supported practice and laterVolume expansion"
+    },
+    {
+      "name": "240chapter overall /40chapter delivery",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "source": "Current supplied author task and current native delivery window; no updated author choice found"
+    }
+  ],
+  "literary_inference": "No configurable limit is treated as universal writing law; independent human effectiveness remains NOT_RUN"
+}

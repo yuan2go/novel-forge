@@ -1,0 +1,33 @@
+{
+  "status": "UNFILLED_DRAFT_NOT_HUMAN_EVIDENCE",
+  "packet_code": "P01",
+  "reviewer_id": null,
+  "identity_class": null,
+  "reading_date": null,
+  "read_background_chapters": null,
+  "choice": null,
+  "dimension_scores": {
+    "overall_preference": null,
+    "readability": null,
+    "character_credibility": null,
+    "scene_effectiveness": null,
+    "tension_momentum": null,
+    "emotional_impact": null,
+    "prose_quality": null,
+    "continuity": null,
+    "payoff_satisfaction": null,
+    "desire_to_continue": null
+  },
+  "confidence": null,
+  "rationale": null,
+  "continue_reading": {
+    "A": null,
+    "B": null,
+    "reason": null
+  },
+  "skip_locations": [],
+  "attractive_characters": [],
+  "unnatural_language_quotes": [],
+  "key_changes_and_reasons": [],
+  "evidence_spans": []
+}

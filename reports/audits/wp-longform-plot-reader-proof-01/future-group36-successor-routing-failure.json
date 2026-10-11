@@ -1,0 +1,10 @@
+{
+  "operation_id": "f25eb88f-902c-4192-b1b2-5dd264b0bf22",
+  "status_at_reconciliation": "FAILED_RETRYABLE",
+  "version": 3,
+  "external_effects": 0,
+  "budget_reservations": 0,
+  "external_outcome": "NOT_SENT",
+  "failure": "PROVIDER_ROUTING_BLOCKED",
+  "record_retained": true
+}

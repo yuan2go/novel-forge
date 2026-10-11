@@ -1,0 +1,43 @@
+{
+  "status": "WAITING_FOR_AUTHORIZED_REAL_REVIEWERS",
+  "human_evaluators": 0,
+  "author_feedback": "NOT_RUN",
+  "independent_target_reader_feedback": "NOT_RUN",
+  "official_blind_import": "NOT_RUN",
+  "blockers": [
+    "No actual reviewer identities or authorized contact supplied",
+    "Existing formal blind export requires verified actual evaluators; unassigned packet seats cannot meet that condition"
+  ],
+  "adoption_recommendation": "KEEP_EXPERIMENTAL_DEFAULT_OFF_UNTIL_REAL_FEEDBACK",
+  "writing_is_independent": true,
+  "private_mapping_ref": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/reader-packet-mapping.private.json",
+  "scope": "ISOLATED_ONLY",
+  "prepared_continuous_chapters": [
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40
+  ],
+  "author_pending_form": "reader-packet/连续阅读/作者待填写答卷.json",
+  "independent_reader_pending_form": "reader-packet/连续阅读/独立目标读者待填写答卷.json"
+}

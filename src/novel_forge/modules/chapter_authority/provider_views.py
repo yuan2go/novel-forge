@@ -1304,6 +1304,32 @@ def project_retrieved_state_context(content: Mapping[str, Any], *, projection: M
     return {**content, "structured_facts": [*filtered, *metadata], "safe_summary": "Governed accepted state projection at the frozen chapter boundary.", "omitted_state_fact_count": len(state_facts) - len(filtered)}
 
 
+def _validate_memo_realization_reference(raw, segments):
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+
+    try:
+        memo = json.loads(raw.get("safe_summary") or "{}")
+    except (ValueError, TypeError):
+        return
+    reference = memo.get("narrative_realization_reference") if isinstance(memo, dict) else None
+    if reference is None:
+        return
+    if not isinstance(reference, Mapping):
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Realization reference must be an exact source binding")
+    sources = [item for item in segments if isinstance(item, Mapping)
+               and item.get("asset_type") == "chapter_execution_intent"
+               and item.get("asset_version_id") == reference.get("asset_version_id")]
+    if len(sources) != 1 or reference.get("json_pointer") != "/chapter_mission/narrative_realization":
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Require one exact protected Intent source")
+    try:
+        source = json.loads(sources[0].get("safe_summary") or "{}")
+        realization = source["chapter_mission"]["narrative_realization"]
+    except (ValueError, TypeError, KeyError) as exc:
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Referenced Mission is missing") from exc
+    if reference.get("content_hash") != narrative_hash(realization):
+        raise KernelError("MEMO_REALIZATION_REFERENCE_DRIFT", "Referenced Mission content changed")
+
+
 def build_provider_context_view(
     stage: str,
     context_bundle: Mapping[str, Any],
@@ -1691,6 +1717,8 @@ def build_provider_context_view(
                 "rebuild the governed task projection before dispatch",
             )
         omitted_facts += len(facts) - len(selected_facts)
+        if stage in {"draft", "revision"} and asset_type == "chapter_memo":
+            _validate_memo_realization_reference(raw, segments)
         summary = str(raw.get("safe_summary") or "").strip()
         if writer_projection_version == "accepted-writer-history.v2":
             from novel_forge.modules.context_builder.story_projection import story_history
@@ -3337,25 +3365,52 @@ def _realization_source_review(draft):
         "review_requirement": "Read the actual prose to check actor ownership, observation/communication before dependent use, future leakage and testimony versus objective fact. These declared references are evidence, not proof of occurrence or successful realization. Accepted source versions are read-only; planned sources are not accepted history."}}
 
 
-def compile_exact_context_references(view):
+def compile_exact_context_references(view, *, structured_transport=False):
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     marker = "__exact_value_ref__"
-    seen, count = {}, 0
+    overrides, removed, json_string = "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
+    seen, dictionaries, count, delta_count, json_count = {}, [], 0, 0, 0
     def encode(value, path):
-        nonlocal count
-        if isinstance(value, Mapping) and marker in value:
+        nonlocal count, delta_count, json_count
+        if isinstance(value, Mapping) and any(key in value for key in (marker, overrides, removed, json_string)):
             raise KernelError("PROVIDER_EXACT_REFERENCE_COLLISION", "Reserved reference syntax occurs in source content")
         identity = _canonical_exact_reference_value(value)
-        if len(identity.encode("utf-8")) >= 256 and identity in seen:
+        large = len(identity.encode("utf-8")) >= 256
+        if large and identity in seen:
             count += 1
             return {marker: seen[identity]}
         if isinstance(value, Mapping):
             result = {key: encode(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in sorted(value.items())}
+            if structured_transport and large:
+                best, size = result, len(_canonical_exact_reference_value(result).encode("utf-8"))
+                for original, pointer in dictionaries:
+                    if pointer.startswith(path + "/"):
+                        continue
+                    changes = {key: result[key] for key, item in sorted(value.items()) if key not in original or original[key] != item}
+                    deletions = sorted(set(original) - set(value))
+                    candidate = {marker: pointer, **({overrides: changes} if changes else {}), **({removed: deletions} if deletions else {})}
+                    candidate_size = len(_canonical_exact_reference_value(candidate).encode("utf-8"))
+                    if candidate_size < size:
+                        best, size = candidate, candidate_size
+                if best is not result:
+                    delta_count += 1
+                    result = best
+                dictionaries.append((value, path))
         elif isinstance(value, list):
             result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
+        elif structured_transport and isinstance(value, str) and path.endswith("/safe_summary"):
+            try:
+                parsed = json.loads(value)
+            except ValueError:
+                parsed = None
+            if isinstance(parsed, Mapping) and _canonical_exact_reference_value(parsed) == value:
+                result = {json_string: encode(parsed, path + "/" + json_string)}
+                json_count += 1
+            else:
+                result = value
         else:
             result = value
-        if len(identity.encode("utf-8")) >= 256:
+        if large:
             seen.setdefault(identity, path)
         return result
     encoded = encode(view, "")
@@ -3363,6 +3418,8 @@ def compile_exact_context_references(view):
         raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact context references did not reconstruct the complete source")
     proof = {"contract_version": "planning-exact-value-reference.v1", "source_context_hash": canonical_hash(view),
         "encoded_context_hash": canonical_hash(encoded), "reference_count": count, "decoded_equal": True}
+    if structured_transport:
+        proof.update(transport_version="provider-structured-exact-reference.v1", delta_reference_count=delta_count, canonical_json_string_count=json_count)
     return encoded, proof
 
 
@@ -3372,18 +3429,48 @@ def _canonical_exact_reference_value(value):
 
 def expand_exact_context_references(encoded):
     decoded = {}
+    marker, overrides, removed, json_string = "__exact_value_ref__", "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
+    def remember(value, path):
+        decoded[path] = value
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                remember(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1"))
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                remember(item, path + "/" + str(index))
     def expand(value, path):
-        if isinstance(value, Mapping) and "__exact_value_ref__" in value:
-            target = value["__exact_value_ref__"]
-            if set(value) != {"__exact_value_ref__"} or not isinstance(target, str) or target not in decoded:
+        if isinstance(value, Mapping) and marker in value:
+            target = value[marker]
+            if not set(value).issubset({marker, overrides, removed}) or not isinstance(target, str) or target not in decoded:
                 raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "References must identify an earlier complete value within the same Context; external, forward and cyclic references are forbidden")
             result = deepcopy(decoded[target])
+            if overrides in value or removed in value:
+                changes, deletions = value.get(overrides, {}), value.get(removed, [])
+                if (not isinstance(result, dict) or not isinstance(changes, Mapping) or not isinstance(deletions, list)
+                    or any(not isinstance(key, str) or key not in result for key in deletions) or len(set(deletions)) != len(deletions)):
+                    raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact object deltas require a complete earlier object and valid removed keys")
+                for key in deletions:
+                    del result[key]
+                for key, item in result.items():
+                    if key not in changes:
+                        remember(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1"))
+                for key, item in changes.items():
+                    result[key] = expand(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1"))
+        elif isinstance(value, Mapping) and json_string in value:
+            if set(value) != {json_string}:
+                raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Canonical JSON string encoding cannot contain extra fields")
+            parsed = expand(value[json_string], path + "/" + json_string)
+            if not isinstance(parsed, Mapping):
+                raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Canonical JSON string requires an object")
+            result = _canonical_exact_reference_value(parsed)
         elif isinstance(value, Mapping):
+            if overrides in value or removed in value:
+                raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact object deltas require an earlier reference")
             result = {key: expand(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in value.items()}
         elif isinstance(value, list):
             result = [expand(item, path + "/" + str(index)) for index, item in enumerate(value)]
         else:
             result = value
-        decoded[path] = result
+        remember(result, path)
         return result
     return expand(encoded, "")

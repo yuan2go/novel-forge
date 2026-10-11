@@ -1,0 +1,153 @@
+{
+  "focused_unit": {
+    "status": "PASS",
+    "passed": 199,
+    "files": [
+      "test_book_plan_reference_recovery",
+      "test_historical_working_inputs",
+      "test_codex_execution_evidence",
+      "test_operator_plan_change_resume",
+      "test_step_successor_v2_guards",
+      "test_manuscript_native_continuation",
+      "test_creation_coordination",
+      "test_chapter_sample_contract_versions"
+    ]
+  },
+  "native_integration": {
+    "plan_change_and_author_first": {
+      "status": "PASS",
+      "passed": 13,
+      "tested_source_sha": "afd8679fa49a8063415dc26c64f72ab45c1c98f8",
+      "provider": "SCRIPTED"
+    },
+    "working_memory_interruption": {
+      "status": "PASS",
+      "passed": 1,
+      "tested_source_sha": "2843d74f",
+      "provider": "SCRIPTED",
+      "limitation": "Started before ContextBuild stage was added; later real Chapter19 exercised that correction"
+    }
+  },
+  "lint": {
+    "status": "PASS",
+    "changed_python_files": 16
+  },
+  "documentation_reality": {
+    "status": "PASS",
+    "canonical_docs": 5,
+    "tested_sha": "e4fb3b1309ce217c2deca9b8951e83d47d27e7cd"
+  },
+  "canonical_full_P0": "NOT_RUN_USER_SCOPED_MATRIX; historical NO_GO retained",
+  "evidence_ceiling": "EXECUTABLE; NOT_QUALIFIED_OR_PRODUCTION_PROVEN",
+  "diff_whitespace": {
+    "source_docs_tests_architecture": "PASS",
+    "raw_evidence": "RAW_TRAILING_WHITESPACE_RETAINED",
+    "reason": "Exact original chapter exports and raw failure/warning logs are not normalized"
+  },
+  "installed_wheel_cli": {
+    "status": "PASS",
+    "wheel_sha256": "5e74b85f453d25005bf0e49432e4f6fec7a86c841ba4182595588130ad8f14fd",
+    "help": "PASS",
+    "exact_recovery_journal_replay": "PASS",
+    "original_recovery_operation_id": "a3faead0-28b3-482e-ac75-34af3515f436",
+    "new_provider_dispatch": false
+  },
+  "plan_change_capacity_0199": {
+    "source_sha": "899d4279aebbb9efe7d206a92e24df3cabbbb3de",
+    "postgres_integration": {
+      "status": "PASS",
+      "passed": 2,
+      "file": "tests/integration/test_authorized_planning_capacity_postgres.py",
+      "evidence": "Native existing fixture extended to ChapterGroup request; exact hashes/scope/request-success/effect/budget/lease deny cases"
+    },
+    "migration_focused": {
+      "status": "PASS",
+      "passed": 13,
+      "files": [
+        "tests/unit/test_postgres_migrations.py",
+        "tests/unit/test_migration_history_admission.py",
+        "tests/architecture/test_migration_surface_boundary.py"
+      ]
+    },
+    "ruff": "PASS",
+    "migration_manifest": "PASS",
+    "documentation_reality": "PASS after checked inventory refresh",
+    "isolated_native_successor_database_gate": "PASS; downstream routing capacity rejection remains preserved",
+    "original_deployment": "NOT_RUN",
+    "installed_wheel_readonly_status": "PASS; exact0199 registered head through installed entrypoint, no Provider dispatch"
+  },
+  "memo_realization_reference": {
+    "source_sha": "b40f743f3f841cc381a56faa3a3d3b55267a4a8c",
+    "focused_tests": {
+      "status": "PASS",
+      "passed": 123,
+      "files": [
+        "tests/unit/test_chapter_authority_domain_handlers.py",
+        "tests/unit/test_working_prose_projection.py",
+        "tests/unit/test_production_instruction_cleanup.py",
+        "tests/unit/test_task_scoped_context.py"
+      ]
+    },
+    "ruff": "PASS",
+    "required_info_truncation": false,
+    "native_context_retry_and_writer": "PASS: Context successor 94555e0e SUCCEEDED, Writer36 c86b2bfe SUCCEEDED on original request/second Attempt; 257678/258400 admission, measured87362 tokens",
+    "original_deployment": "NOT_RUN",
+    "representation": "Identical Memo Realization referenced by exact protected Intent version/pointer/hash; old unreferenced Contexts preserved"
+  },
+  "context_accounting_and_transport": {
+    "source_sha": "30647e4dc0b9df6450308da845d7b52909d44615",
+    "focused_tests": {
+      "status": "PASS",
+      "passed": 183,
+      "deselected": 1,
+      "files": [
+        "test_completed_generation_recovery",
+        "test_chapter_authority_domain_handlers",
+        "test_working_prose_projection",
+        "test_production_instruction_cleanup",
+        "test_task_scoped_context",
+        "test_step_successor_v2_guards"
+      ]
+    },
+    "historical_failure": {
+      "status": "FAIL",
+      "test": "test_current_planning_template_binds_whole_envelope_and_retains_historical_template",
+      "reason": "expects v2 although current main uses v3",
+      "first_run": "49 PASS, 1 FAIL; failure retained privately; scoped rerun excludes unrelated assertion"
+    },
+    "ruff": "PASS",
+    "documentation_reality": "PASS",
+    "native_same_id_successor_replay": "PASS",
+    "frozen_context_sources": "UNCHANGED",
+    "hard_limit_and_output_reserve": "UNCHANGED",
+    "original_deployment": "NOT_RUN",
+    "native_writer36": "PASS; frozen inputs unchanged, 32000 output reserve, paid/entitlement reconciliation separate"
+  },
+  "initial_source_sha": "26c5b4c11899d8efabe3e445e640d6307b311416",
+  "initial_checked_head": "ebbc2687d7cd4ff5353cfadfc0356d6455244a50",
+  "final_execution_source_sha": "30647e4dc0b9df6450308da845d7b52909d44615",
+  "final_installed_wheel_cli": {
+    "build_head": "30647e4dc0b9df6450308da845d7b52909d44615",
+    "runtime_release_sha": "30647e4dc0b9df6450308da845d7b52909d44615",
+    "wheel": {
+      "filename": "novel_forge-6.0.0-py3-none-any.whl",
+      "sha256": "28ef4b8fab27f8aeaf3036852ee6e334107ac467373dadd82704df941312eff8"
+    },
+    "installed_module_origin": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/wheel-final-source/site/novel_forge/cli/manuscript.py",
+    "entrypoint": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/wheel-final-source/site/bin/novel-forge",
+    "help": "PASS",
+    "recovery_replay_returncode": 0,
+    "original_instance_mutations": 0,
+    "provider_dispatch": "NONE_REPLAY_ONLY",
+    "recovery_replay": "PASS",
+    "exact_original_operation_id": "a3faead0-28b3-482e-ac75-34af3515f436",
+    "receipt": {
+      "chapter": 19,
+      "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "recovery_asset_version_id": "a3abc392-4e85-491b-bbcc-85c4ab205082",
+      "replayed": true
+    }
+  },
+  "native_final_delivery": "PASS_SAVED_READBACK_EXACT_CURRENT_EXPORTS_17_40; LAST37_40_CONSUMED_SELECTED_PREDECESSOR_BEFORE_DISPATCH",
+  "human_review": "NOT_RUN"
+}

@@ -51,6 +51,8 @@ class AuthorityHandlerRepository:
         snapshots: list[dict[str, Any]],
         *,
         allow_approved_archival_migration: bool = False,
+        historical_working_book_id: str = "",
+        historical_working_asset_version_ids: frozenset[str] = frozenset(),
         evaluation_candidate_asset_version_id: str = "",
         story_design_candidate_asset_version_id: str = "",
         repair_candidate_asset_version_id: str = "",
@@ -102,8 +104,20 @@ class AuthorityHandlerRepository:
                 [project_id, asset_version_id],
             )
             invalidation = self.cursor.fetchone()
+            historical_plan_invalidation = False
+            if invalidation and asset_version_id in historical_working_asset_version_ids and row[1] in {"draft_chapter", "author_edit_candidate"}:
+                self.cursor.execute("""SELECT NOT EXISTS (
+                    SELECT 1 FROM authority_artifact_invalidation i
+                    WHERE i.project_id=%s AND i.target_asset_version_id=%s AND i.status IN ('OPEN','REGENERATING')
+                      AND (i.book_id IS DISTINCT FROM %s OR NOT EXISTS (
+                        SELECT 1 FROM authority_plan_change_proposal p WHERE p.project_id=i.project_id
+                          AND p.book_id=i.book_id AND p.target_asset_version_id=i.source_asset_version_id
+                          AND p.status='ACTIVE')))
+                    """, [project_id, asset_version_id, historical_working_book_id])
+                historical_plan_invalidation = self.cursor.fetchone()[0]
             if (
                 invalidation is not None
+                and not historical_plan_invalidation
                 and asset_version_id
                 != semantic_revalidation_target_asset_version_id
             ):

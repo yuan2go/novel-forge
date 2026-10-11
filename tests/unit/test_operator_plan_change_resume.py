@@ -66,3 +66,28 @@ def test_book_resume_rejects_a_changed_checkpoint_before_reopening_saga():
     authority.require = lambda _identity: {"project_id": "project:one", "version": 13, "state": "PAUSED"}
     with pytest.raises(KernelError, match="BOOK_MUTATION_CONFLICT"):
         authority.resume("run:one", reason="recover binding", principal=SimpleNamespace(require=lambda *_args: None), expected_version=11)
+
+
+@pytest.mark.parametrize("initial", [
+    {"initial_story_state_version": "state:zero", "initial_canon_snapshot_version": "canon:zero"},
+    {},
+])
+def test_replan_retains_paired_bootstrap_inputs_for_unaccepted_working_prose(initial):
+    from novel_forge.modules.book_replan.coordinator import _SNAPSHOT_ROLE_FIELDS
+
+    coordinator = object.__new__(BookReplanCoordinator)
+    previous = {role: "version:" + role for role in _SNAPSHOT_ROLE_FIELDS}
+    previous.update(initial)
+    coordinator._snapshot = lambda identity: previous if identity == "snapshot:before" else None
+    overrides = dict(coordinator._new_snapshot_role_overrides({"input_snapshot_id": "snapshot:before"}))
+    from novel_forge.modules.book_authority.input_resolver import ResolveBookProductionInputCommand
+
+    command = ResolveBookProductionInputCommand(
+        project_id="project:one", workspace_id="workspace:one", book_id="book:one",
+        production_profile=overrides["production_profile_version"], expected_book_version=2,
+        actor_id="operator", idempotency_key="successor", trace_id="trace", correlation_id="correlation",
+        role_asset_version_overrides=tuple(overrides.items()),
+    )
+    resolved_roles = dict(command.role_asset_version_overrides)
+    assert {role: resolved_roles[role] for role in initial} == initial
+    assert bool("initial_story_state_version" in resolved_roles) is bool(initial)

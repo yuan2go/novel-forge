@@ -102,8 +102,9 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
         from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
-        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_unsent_context_transport
+        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_unsent_context_transport, recover_optional_memory_transport
         recover_unsent_context_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal)
+        recover_optional_memory_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"

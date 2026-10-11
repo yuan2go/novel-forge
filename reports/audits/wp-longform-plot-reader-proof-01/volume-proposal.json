@@ -1,0 +1,274 @@
+{
+  "proposal_id": "plan-change:6eb44d79-8c56-4d0c-af9a-5ee5d7ff781a",
+  "risk": "MEDIUM",
+  "target_asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+  "proposed_asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+  "hypotheses": [
+    {
+      "hypothesis_id": "semantic-impact:454165e4e3a36d3e95bbd33d130d09aa7dab7d45f74b9f1fa92a152f88fd43f6",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter:18",
+        "content_hash": "sha256:b829ee414f391ff426059b86f090bd4d0e99c74993ead55404dc30fe907f6a56",
+        "contract_type": "CHAPTER",
+        "binding_version": 1,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:1a7213c2-74f9-4229-8d1b-9c658c4923e6:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:1a7213c2-74f9-4229-8d1b-9c658c4923e6:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:8b448a66dddbc8f40e713e6da3488a3b32c6d87dd9a38f50c319af8fe1c0555b",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter:13",
+        "content_hash": "sha256:385c6931354d66e7d17175c917aac2dd9c22e8ec642f04e235cdb60a62370bc3",
+        "contract_type": "CHAPTER",
+        "binding_version": 1,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:1c162850-a1af-487e-bf04-897ec035ab72:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:1c162850-a1af-487e-bf04-897ec035ab72:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:060c74821fdf5a12fd68309b33a9225d6042353a5b473db986330b816222ba04",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "character:character:shen-yan",
+        "content_hash": "sha256:485dbcadd121176df0155fc040c55e9a99791def228d182ee3d779f55dff496c",
+        "contract_type": "ARC",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:f997f8d18bf764fbbbf28662b2205a236c4724d10ec971ff5cc4e0c6085f3b97",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter:14",
+        "content_hash": "sha256:43cecbf6f79b8bd45c2d7c7d4d1e0f8ba00120df080d18150a4815289291f3f4",
+        "contract_type": "CHAPTER",
+        "binding_version": 1,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:3229515d-a556-41eb-8063-9b7de7283bb2:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:3229515d-a556-41eb-8063-9b7de7283bb2:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:036cff05496c8c8ec242d9b19ed6f55947aac857e6fb59600195d60226955d1a",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "volume:4",
+        "content_hash": "sha256:f9f913b72ffd98b2d707089671141bdd9c929748bf77b3ef79d1436878039fe1",
+        "contract_type": "VOLUME",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:ee5fb9c9d3da10a5a6e65ca34406e092129208003979e3d3a4207c169eea69b2",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "character:character:cheng-guan",
+        "content_hash": "sha256:859bf567e58148388d09cebba861a12025ae1681c5ac9ab0e8cbc2db1e76f4c1",
+        "contract_type": "ARC",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:31de142d99324c6596ec61ec1696708bff2b791d4a3884aec64e2ce26b3532a4",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter-group:containing:16",
+        "content_hash": "sha256:a95b8eda23c5f92ed80447388182e20b4efa6a05a1aa05a8d3906862a22fb541",
+        "contract_type": "CHAPTER_GROUP",
+        "binding_version": 0,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:3a9860a9-5b2c-4cde-92de-ba68c62c8c1c:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:3a9860a9-5b2c-4cde-92de-ba68c62c8c1c:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:8a34e8005e23368087bde8c8c33093e2333188b40a739a5f498c72d8a80ec823",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "volume:3",
+        "content_hash": "sha256:44bfbfbaaa7097b4b003f522bb909cb531437c08ce611f96b3ceed56e89efa90",
+        "contract_type": "VOLUME",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:79cbbbec4ef080449802461dabfa3e3eeba9db19a827ad3104381892170f1c5c",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter-group:containing:12",
+        "content_hash": "sha256:373837eed654a2167daeef94071e1b0614179441a3284c10777422b187b489f1",
+        "contract_type": "CHAPTER_GROUP",
+        "binding_version": 0,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:5ab4e0fd-7e4c-4209-a828-80f587d3649d:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:5ab4e0fd-7e4c-4209-a828-80f587d3649d:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:28912a86e0a6de3c6a6891420d1d73d160465585d496a1ea8370c6b8f36b778f",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "character:character:lu-heng",
+        "content_hash": "sha256:6558d6ef5c24b4467d2bff73dc2e546d40faf8906ea29b73d6633b1a86d21ef6",
+        "contract_type": "ARC",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:9474ed612ec3a8de0fc991a5c142a2c6707fb16b635ed782297df79f77fb84b8",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter:19",
+        "content_hash": "sha256:9fd31a450e12ae6aa59b73d19dd235673d239929cfa86fe44f043cbb24adc4a2",
+        "contract_type": "CHAPTER",
+        "binding_version": 1,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:7318ea12-0494-4603-936d-5fae43e11f6f:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:7318ea12-0494-4603-936d-5fae43e11f6f:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:7d50896a7671d99a4635d384f79aeefb059495b351cbc96ae730a55a9de716e2",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "book:book:qinglan-wendao-20261008",
+        "content_hash": "sha256:490775075ec3113ea9ff739e097cc85714bf61eeb6280d9cb4e8683ff23ba9af",
+        "contract_type": "ARC",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:7f77bbfc-f8e0-4629-8fb6-5a7c34e9f8da:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:7f77bbfc-f8e0-4629-8fb6-5a7c34e9f8da:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:9d08ad1ea06b200a7a752e288916cd8064afbcd75b9aa04e4702adca3f2e469a",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "volume:5",
+        "content_hash": "sha256:1bc0940c4a0d17611c0ced8e8447d1ad380a4ec2de4f474cfb6cf31bf12a02f8",
+        "contract_type": "VOLUME",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:f7614ea30379086666f9f61b9f02bb34645b01ad287240a8dcf218af42d27f94",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "volume:2",
+        "content_hash": "sha256:32c6a39fb149bf2adbd0d7c2d57c77c50c5a5d1bdf8ce715592bfed0fdc05190",
+        "contract_type": "VOLUME",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:f7f624c436b8fb0e5f4a54402627fa50080b7bdc2a8dffff778faa522c258cb1",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter:15",
+        "content_hash": "sha256:29b8e95b75ea252459f70a98d6e8bee357ca4833a98a21452175edd821ddf102",
+        "contract_type": "CHAPTER",
+        "binding_version": 1,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:a83db086-b69f-4f62-96c5-f1788f3f88d0:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:a83db086-b69f-4f62-96c5-f1788f3f88d0:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:389c555a65e44a7b3c8fc5d832ad2452b08c918d1126df7db5c19547e921885c",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "chapter:17",
+        "content_hash": "sha256:93c7892017ac5b61a866672a62d5dfc3e3df2a5f72bd69163cc8dcb9b7a7aef0",
+        "contract_type": "CHAPTER",
+        "binding_version": 1,
+        "execution_scope": "FROZEN",
+        "asset_version_id": "authority-output:b992277a-1d21-4d02-9c64-9b402b0ede6c:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:b992277a-1d21-4d02-9c64-9b402b0ede6c:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:ebd6b124117a9de23feabd0f218657f9582d5c0d38e893e10744e2e9d4e6504f",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "character:character:xu-ting",
+        "content_hash": "sha256:dd9a2c190b097a9301bd4b6d60be3d08b0e5d37dba943292acb61a62beb280b8",
+        "contract_type": "ARC",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:d0ee7f69-473e-4328-bfa9-bf9f56145831:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:d0ee7f69-473e-4328-bfa9-bf9f56145831:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:ac173004154d48035d8b38cb28089054403d0c2258e1b470aa6fb55ac28f5c30",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "book:main",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "contract_type": "BOOK",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      "rationale": null
+    },
+    {
+      "hypothesis_id": "semantic-impact:7c6f4638b97e99e1e255e6d675b105894ad2b6be829472daaa241feb1ff7c741",
+      "candidate": {
+        "freshness": "CURRENT",
+        "logical_key": "character:character:tang-sui",
+        "content_hash": "sha256:d44b22af43d6a098a619a8e6317da99ff46e21c31cc6a3a380677420d76ae532",
+        "contract_type": "ARC",
+        "binding_version": 0,
+        "execution_scope": "PLANNED",
+        "asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1",
+        "active_asset_version_id": "authority-output:dffdf02c-42e5-4c20-803b-ba0ad4dab5a8:story_planning.candidate:v1"
+      },
+      "rationale": null
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "state": "PAUSED",
+  "current_chapter": 36,
+  "version": 249,
+  "reason": "UPSTREAM_GENERATED_GROUP_STAGNATION",
+  "human_feedback_gate": false,
+  "target_chapters": 40
+}

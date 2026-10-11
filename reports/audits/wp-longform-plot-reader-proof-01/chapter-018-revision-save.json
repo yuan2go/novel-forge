@@ -1,0 +1,14 @@
+{
+  "operation_id": "7a82837b-697d-4d04-a995-59af88afad67",
+  "status": "SUCCEEDED",
+  "project_id": "qid-learning-prose-01",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008",
+  "chapter": 18,
+  "version": 1,
+  "asset_version_id": "426b40ec-486c-4004-ad80-d06b074789cc",
+  "candidate_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374",
+  "decision_asset_version_id": "",
+  "editor_status": "SAVED_CANDIDATE",
+  "replayed": false
+}

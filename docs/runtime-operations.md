@@ -152,7 +152,12 @@ using a new migration outside an isolated test database.
 The published chain through 0197 is immutable. The original audit boundary is
 0194; published 0196 and 0197 retain stopped CLI isolation and authorized Planning capacity.
 The current head additionally includes 0198, which adds missing foreign-key reference indexes
-without rewriting facts or admission rules. Resolve each full
+without rewriting facts or admission rules. Migration 0199 permits an unsent ChapterGroup
+capacity successor from an exact native Plan Change request as well as Narrative Search.
+It retains the frozen context and input hashes, original executor and author entitlement,
+zero external intents/reservations, released leases, and unchanged model capacity. An
+ordinary Plan Change uses exact value references without dropping future content as though
+it had a Narrative Search horizon. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
@@ -347,6 +352,24 @@ Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy t
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
+An activated upstream PlanChange can make an unfinished Chapter's frozen Context stale.
+`authority-manuscript recover-upstream-plan --proposal-id ... --corrected-plan-version ...`
+uses Book's preprose replacement boundary: require the same live frontier and actor,
+recorded stale-input failure, current corrected Chapter binding and lineage to the active
+upstream successor. Only terminal preprose work and settled Memo effects are admissible;
+Writer work, acceptance, live leases, foreign children or uncertain effects stop recovery.
+The journal retains original failures and settled usage and binds the next request's
+generation; replay returns the same mutation. It does not reset an Attempt or grant approval.
+
+Selected historical working prose remains readable after a future PlanChange only through
+Book's exact source/range/hash verification and, for Chapter work, its frozen reservation.
+The handler exception covers direct historical draft/editor inputs whose invalidations
+all originate in active same-Book PlanChanges; invalidations remain recorded. Current plans,
+Intent and Memo receive no such exception. The historical indirect-Memo preflight defect
+has a single guarded Kernel successor contract, `chapter-historical-input-scope-repair.v1`:
+exact original error/input, no dispatch, budget, output or previous repair, and the matching
+same-Book deployed correction. Other failures retain ordinary recovery and reconciliation.
+
 A focused pass does not substitute for release qualification below. Before rollout of
 work contracts, run migration clean-install/upgrade and the applicable same-release
 matrix, register/compile/approve/deploy the coherent Pack and routing profiles, and
@@ -440,6 +463,19 @@ boundaries, not a product or narrative development sequence.
 
 
 ## Task Context capacity and assembly
+
+Chapter Memo and protected Execution Intent can contain the same Realization. Context
+assembly replaces only an equal Memo copy with an exact asset/version, JSON pointer and
+content-hash reference to the selected protected Mission. Writer projection verifies that
+source and hash before rendering. The complete Mission remains available once; differing
+content or a missing source fails closed. Frozen legacy Contexts without this reference
+keep their original representation. This saves serialization before the task budget gate
+and does not change the task budget, model limit or output reservation.
+For a frozen working Intent, candidate budgeting counts the structured value Writer
+actually parses, including every field and conservative envelope allowance, rather than
+charging escaping introduced only by the storage summary string. The receipt records
+both storage bytes and Provider data estimates. Final fully rendered Provider admission
+remains independent and must still fit the unchanged model limit and output reserve.
 
 At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
 semantic overflow effects existed but formal Router selection rejected context tasks
@@ -3351,6 +3387,7 @@ The additional recovery procedures use exact native sources:
 | Empty Planning knowledge search | Newly frozen `planning-empty-query-projection.v1` requests retain the exact empty selection and need digests plus policy, while retrieval query text stays in durable Context. Selected or required cards are never omitted. Chapter repair schemas use `operational-commitments-v1` to enforce the existing HARD_CONSTRAINT/SOFT_INTENT operational rule; original frozen schemas remain unchanged. |
 | Chapter successor | The native creation driver may replace a known settled pre-prose member Memo timeout or an exact failed scene/information/review/length/Canon step. Command Kernel appends successor evidence; Book/Group update only their owned references. Old terminal history, successful siblings and fees remain. |
 | Unproduced Chapter with an invalid Plan identity | Return the diagnostic to Planning and activate an exact Chapter PlanChange. `authority-manuscript recover-plan-references --book-run-id … --proposal-id …` validates the corrected Plan against the frozen Book cast, cancels only the original unproduced child, and journals its linked next generation. A pending cancellation retains the same request and recovery key for native worker reconciliation. No Effect, produced body, active lease or acceptance may exist; a corrected successor cannot repeat this recovery. The next native Book tick recalculates execution projection, Intent, Memo and Context against the new Plan and current working prefix. Author selection and acceptance remain separate. |
+| Unproduced author-first Chapter invalidated by an activated upstream PlanChange | `authority-manuscript recover-upstream-plan --book-run-id … --proposal-id … --corrected-plan-version …` requires the same live writing frontier, original stale Context failure and exact upstream invalidation. The corrected Chapter must be current and descend from that activated successor. Only settled successful Memo effects may remain; Writer work, unknown/unsettled effects, foreign children, live leases and acceptance close the gate. Native cancellation retains successful siblings and terminal evidence, then the Book recovery journal links the next generation to the old request. The original reference-contract recovery retains its zero-Effect rule. |
 | Derived Canon/Quality | Explicit v6 `grounded-canon-validation.v2` correction binds the frozen diagnosis and contracts to an unaccepted frontier. Existing successful outputs remain immutable. Accepted state, foreign actor/scope, live lease, unresolved effects or committed downstream state reject recovery. |
 
 Window continuation requires the explicit v5/v6
@@ -4016,6 +4053,8 @@ New current-contract Chapter Planning requests bind the existing operational com
 
 The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 template per Attempt. Its joint task-and-Context data envelope replaces only identical repeated values with local RFC6901 references in canonical key order after an exact full round-trip check, and admission measures the encoded prompt with the complete output reservation. Original Context assets and prior Attempt manifests remain unchanged. A proven unsent capacity failure may use its remaining native Attempt allowance with this new Pack. If its v12 attempts already exhausted, the native StepSuccessor records at most one v13 transport correction with identical inputs, completion checks, actor, Book and original retry lineage; all routes must prove only Context capacity rejection and no Effect or budget reservation may exist. A later v13 failure cannot repeat that correction. Changing the Pack never resets the persisted failure allowance or authorizes another business commit.
 
+Codex wire projection `codex-structured-schema.v6` represents the optional draft `working_memory_json` field as required and nullable only for `:working-memory-v1` contracts. Decoding null omits that metadata before the unchanged domain Schema and prose checks. Other contracts retain their existing projection. A recorded v5 protocol rejection may use the native StepSuccessor after all exact membership rejection receipts are reconciled and settled; the correction retains the coordinated OperationDefinition and binds the exact active Chapter Pack deployment, original inputs and actor. A v6 rejection cannot repeat this correction. The historical undispatched experimental 3.10.2 Pack preflight successor has a narrowly checked return to the coordinated contract; its failed Attempts remain append-only.
+
 The unsent v12-to-v13 correction binds `kernel-unsent-transport-window.v1` to the exact compiled target deployment. Native StepSuccessor atomically retains exhausted failure history, extends only a derived Root window by its original bounded duration, aligns the Saga deadline projection and registers the successor. Explicit author/business deadlines, active leases, unsettled sibling Effects and irreversible work retain their existing guards. The single correction decision and shared fault counter do not reset on restart.
 
 Repeated calls of the same native CLI request retain the first actor/file/work identity
@@ -4041,3 +4080,42 @@ separate. Do not change a Book's length or delivery window for this repair.
 Only a separately authorized same-Book Provider experiment and subsequent literary
 review can establish prose improvement; offline assembly and scripted integration
 prove engineering execution only.
+
+Before a structural working-manuscript continuation, reread the actual selected prefix,
+current plan bindings, service release, original database identity and dispatch policy.
+Historical report cursors and capacity failures are not current runtime facts. Compare
+generated restrictions with the exact author Brief and Foundation before retaining them as
+story requirements. Preserve selected past prose and correct affected future parent scopes
+through native Plan Change, then bind the new input snapshot before Chapter admission.
+An original instance with dispatch disabled or no write grant stays unchanged; a disposable
+restore can validate prospective decisions and writing, explicitly marked as an isolated
+operator result awaiting original adoption. It cannot supply a human author approval.
+The checked Chapter Pack currently binds prose-generation-v4 even though the root Skill is
+v5. A prospective v5 selection requires a new exact Pack binding and admission, with the
+actual rendered Skill/hash retained in Provider evidence. Keep frozen v4 requests recoverable.
+Budget the final complete rendered request rather than summing stored Context assets.
+Optional older prose may be reallocated prospectively with explicit omissions, while required
+recent prose and causal dependencies remain intact. A pre-send failure uses its owning
+bounded continuation; it does not authorize a replacement request identity or a larger cap.
+
+A `chapter.context.build@3.10.0` step that exhausted only local
+`TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED` or
+`TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED` checks may use the existing failed-step
+successor with `chapter-unsent-context-transport.v1` and
+`provider-working-intent-accounting.v1`. It binds every unchanged input hash to
+an active compiled v13 Chapter Pack at the executing release, requires zero
+ExternalEffects, reservations and output assets, and permits this transport
+correction once in the original step lineage. The Kernel retains the original
+Attempts and terminal state. Capacity, completion checks, Provider authorization
+and the final rendered-request admission remain authoritative; admitting a
+successor does not prove that its Context or Writer will fit.
+
+For a v13 Chapter Writer using a frozen working-prose v2/v3 projection, final
+request materialization uses `provider-structured-exact-reference.v1` inside the
+existing exact-reference compiler. Canonical JSON summaries retain all original
+bytes after decoding; repeated objects may refer to an earlier complete object
+with explicit field replacements and removals. The host verifies full source
+reconstruction and records source/encoded hashes and reference counts. The
+rendered stage contract explains these encodings to the Provider. Other Planning
+and legacy transports retain whole-value references. This removes repeated
+serialization without changing the frozen source window or admission limits.

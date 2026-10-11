@@ -1,0 +1,30 @@
+{
+  "old_group": "authority-output:e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6:story_planning.candidate:v1",
+  "new_group": "authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+  "plan_change": "plan-change:9c421579-214c-401c-89db-e93c16320a34",
+  "scope": "ISOLATED_ONLY",
+  "future_only": [
+    36,
+    36
+  ],
+  "retained_written_chapters": [
+    1,
+    35
+  ],
+  "old": "Task handoff, repeat former static 起收, give next self-check question. Prior Group34 falsely called first use in task despite selected33.",
+  "new": "Task three cleared/one left explicitly handed off; Xu gives real limited teaching and practice progresses to short self control while carrying light object and slowly moving. Multiple successes, ordinary load remains ordinary; Tang own material interest and Xu own practice.",
+  "unchanged": "240 strategy/40 delivery; no new realm/spell/object influence/strength/course entitlement",
+  "decision_authority": "ISOLATED_OPERATOR",
+  "original_author_approval": "NOT_GRANTED",
+  "actual_consumption": {
+    "status": "PASS",
+    "chapter": 36,
+    "exact_parent_group": "authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+    "chapter_plan": "authority-output:ec72063c-7f9a-43e3-84f8-be1475efa0ad:story_planning.candidate:v1",
+    "previous_selected_35": "e5ee36f1-1929-4946-9c86-7ad1df1f9829",
+    "prior_omitted_ranges": [],
+    "evidence": "chapter-036-consumed-plan.json",
+    "scope": "FROZEN_REQUEST_NOT_YET_PROSE_DELIVERY"
+  },
+  "literary_effect": "NOT_CERTIFIED"
+}

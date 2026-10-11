@@ -1,0 +1,151 @@
+{
+  "source_group": "authority-output:7643460d-85ba-4dd8-a3cf-3ea582756123:story_planning.candidate:v1",
+  "new_group": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "proposal_id": "plan-change:1be276d8-18a0-4d46-93c1-cdabf881e298",
+  "activation": "ACTIVE_ISOLATED_ONLY",
+  "original_author_decision": "NOT_GRANTED",
+  "range": [
+    37,
+    40
+  ],
+  "past_1_36": "PRESERVED",
+  "before": [
+    "37 repeats36 finished handoff",
+    "38 independent same practice",
+    "39 rechecks same practice then same next question",
+    "40 only future scheduling, no new task"
+  ],
+  "after": [
+    "37 independent repeated movement and explicit own choice",
+    "38 actual limited turning/return teaching with repeated success",
+    "39 duty-bound sourced ordinary light-object work actually received and begun",
+    "40 actual completion/handoff changes available choices, independently chosen practice"
+  ],
+  "parent_support": [
+    "Volume1 explicitly allows finite repeatable ability from real teaching and task outcomes changing cooperation/learning conditions",
+    "Selected Shen/Xu/Cheng Arcs permit finite teaching, independent use and duty-bound work",
+    "No new realm, sword flight, external/object power, automatic resources or course qualification"
+  ],
+  "classification": "GENERATED_GROUP_DESIGN_RESTRICTIONS_NOT_AUTHOR_INVARIANTS",
+  "actual_prose_consumption": "CHAPTER037_040_SAVED_READBACK_EXACT_EXPORTED",
+  "reader_willingness": "NOT_RUN",
+  "combination_effect_only": true,
+  "chapter037_consumed_selected036": "3fe34394-8628-485c-9414-308850515eca",
+  "chapter037_selected": "37dda880-f890-4e84-9b79-f188459b4ddb",
+  "chapter038_selected": "201925b1-609d-4d09-a9ca-b925b8db0e4f",
+  "chapter039_selected": "20920948-a60c-4801-ac9f-dc7a12664da4",
+  "actual_consumed_lineage": [
+    {
+      "chapter": 37,
+      "plan_asset_version_id": "authority-output:847e3d39-a158-42ba-ac15-4fcd58e903cb:story_planning.candidate:v1",
+      "group_asset_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "consumed_exact_final_predecessor": {
+        "chapter": 36,
+        "asset_version_id": "3fe34394-8628-485c-9414-308850515eca",
+        "content_hash": "sha256:58a146662b6f36c0dc29900161845eb1e8ccde3099f392d7e72e4a768a3345f5",
+        "text_hash": "sha256:c111fd3595d427c8c798aa2482de9e131b7cd92e448553d1e4430028746238c6",
+        "omitted_ranges": []
+      },
+      "writer_saved": {
+        "chapter": 37,
+        "asset_version_id": "37dda880-f890-4e84-9b79-f188459b4ddb",
+        "content_hash": "sha256:cbd81946f477b3d5712af46b8ec03fb83be4201128376511d0877fce6cc514c1",
+        "text_hash": "sha256:999f4f4e71df2d56c006cc3d6c834219e9d43eafb510581c871a1fe8af1a5fc0",
+        "text_digest": "sha256:3f6621b2774ff30b56982256a0bce3b59e988c75162be8b5c5ec0982faacccb2",
+        "file_sha256": "3f6621b2774ff30b56982256a0bce3b59e988c75162be8b5c5ec0982faacccb2",
+        "exact_selected_units_and_text_equal": true,
+        "old_export_manifest_digest": "sha256:0f49d887742c254fede14caf9ed679bfcfeb030ded09be41d16a6af4d26b3858",
+        "current_manifest_digest": "sha256:c83fd692f411b0d0062424bb18b6697797e1ac722fca0fe49e44f5202e4ef2e1",
+        "both_native_manifest_hashes_valid": true,
+        "export_runtime_metadata_differences": [
+          "book_version",
+          "writing_state",
+          "manifest_digest"
+        ]
+      }
+    },
+    {
+      "chapter": 38,
+      "plan_asset_version_id": "authority-output:457e761c-316e-4bd1-934d-b67d0ff530c9:story_planning.candidate:v1",
+      "group_asset_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "consumed_exact_final_predecessor": {
+        "chapter": 37,
+        "asset_version_id": "37dda880-f890-4e84-9b79-f188459b4ddb",
+        "content_hash": "sha256:cbd81946f477b3d5712af46b8ec03fb83be4201128376511d0877fce6cc514c1",
+        "text_hash": "sha256:999f4f4e71df2d56c006cc3d6c834219e9d43eafb510581c871a1fe8af1a5fc0",
+        "omitted_ranges": []
+      },
+      "writer_saved": {
+        "chapter": 38,
+        "asset_version_id": "201925b1-609d-4d09-a9ca-b925b8db0e4f",
+        "content_hash": "sha256:71d58c38601e826b634e97dd3dd31ea850d535d643d935cf037f28acba550e52",
+        "text_hash": "sha256:b9f028409f7ab9ba4dbe93e5053b4883b9d4fc66e6e7123aeb7b4f3ae4a0a380",
+        "text_digest": "sha256:da30e94d0be75854cac144686c40ddcea65700756be41efa23a8a66ef1c69849",
+        "file_sha256": "da30e94d0be75854cac144686c40ddcea65700756be41efa23a8a66ef1c69849",
+        "exact_selected_units_and_text_equal": true,
+        "old_export_manifest_digest": "sha256:2790dfc4bedcfa2d21c10e2a9ee1350c04f04f0ee94b1c6ed6a8c257ae99d812",
+        "current_manifest_digest": "sha256:ac0ab4934ae6ae5c06672b2ef80e11e201c90e1c9a4cacd76a152721ef5783c6",
+        "both_native_manifest_hashes_valid": true,
+        "export_runtime_metadata_differences": [
+          "book_version",
+          "writing_state",
+          "manifest_digest"
+        ]
+      }
+    },
+    {
+      "chapter": 39,
+      "plan_asset_version_id": "authority-output:59548f20-b8e3-4d6f-9220-5067820c59b9:story_planning.candidate:v1",
+      "group_asset_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "consumed_exact_final_predecessor": {
+        "chapter": 38,
+        "asset_version_id": "201925b1-609d-4d09-a9ca-b925b8db0e4f",
+        "content_hash": "sha256:71d58c38601e826b634e97dd3dd31ea850d535d643d935cf037f28acba550e52",
+        "text_hash": "sha256:b9f028409f7ab9ba4dbe93e5053b4883b9d4fc66e6e7123aeb7b4f3ae4a0a380",
+        "omitted_ranges": []
+      },
+      "writer_saved": {
+        "chapter": 39,
+        "asset_version_id": "20920948-a60c-4801-ac9f-dc7a12664da4",
+        "content_hash": "sha256:a64be9098bd9371739ff0322be9b4d0d7e3e268b8ffed74b7bba2463c44df7c5",
+        "text_hash": "sha256:288e14d7c28052cee25027514f2e4ee954c5eca81768cbfb7608a8fe47098caa",
+        "text_digest": "sha256:a4eeb3980494a34da24a03f4e66ab88beb7a3adb596a96d2e9e53a433d20d0b3",
+        "file_sha256": "a4eeb3980494a34da24a03f4e66ab88beb7a3adb596a96d2e9e53a433d20d0b3",
+        "exact_selected_units_and_text_equal": true,
+        "old_export_manifest_digest": "sha256:e18f98651ad6e331f36c7ae2d0179dbd5388d5257f3e1567c721bab9948aa4f1",
+        "current_manifest_digest": "sha256:a0d265cda9d08c743bc3dcf31c5c595f4058aff8d9ac9fe60e5546d3469fa866",
+        "both_native_manifest_hashes_valid": true,
+        "export_runtime_metadata_differences": [
+          "book_version",
+          "writing_state",
+          "manifest_digest"
+        ]
+      }
+    },
+    {
+      "chapter": 40,
+      "plan_asset_version_id": "authority-output:37e169cf-e1ba-45e3-ac75-864baa406973:story_planning.candidate:v1",
+      "group_asset_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+      "consumed_exact_final_predecessor": {
+        "chapter": 39,
+        "asset_version_id": "20920948-a60c-4801-ac9f-dc7a12664da4",
+        "content_hash": "sha256:a64be9098bd9371739ff0322be9b4d0d7e3e268b8ffed74b7bba2463c44df7c5",
+        "text_hash": "sha256:288e14d7c28052cee25027514f2e4ee954c5eca81768cbfb7608a8fe47098caa",
+        "omitted_ranges": []
+      },
+      "writer_saved": {
+        "chapter": 40,
+        "asset_version_id": "ae60a15a-332f-4239-a835-4118932497fd",
+        "content_hash": "sha256:da4c28a6f1f66eb113082cc8547f5a5459d638dbbd4e76215816d57d802691d3",
+        "text_hash": "sha256:005ea0ba7ecdcc51a4ccbcdb234bad178095e607ce0c34368e5bdde85f67153f",
+        "text_digest": "sha256:c05061854f0a981663d8b097a5bfda57d1031e2562eac235afe40628ba07bbe8",
+        "file_sha256": "c05061854f0a981663d8b097a5bfda57d1031e2562eac235afe40628ba07bbe8",
+        "exact_selected_units_and_text_equal": true,
+        "old_export_manifest_digest": "sha256:04d38a3dcda1fe109c1e27bd4ee76fcf32657ca4bf3c1d79663d141a64de074b",
+        "current_manifest_digest": "sha256:04d38a3dcda1fe109c1e27bd4ee76fcf32657ca4bf3c1d79663d141a64de074b",
+        "both_native_manifest_hashes_valid": true,
+        "export_runtime_metadata_differences": []
+      }
+    }
+  ]
+}

@@ -30,7 +30,7 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 )
 
 
-CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v5"
+CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v6"
 CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v3"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
@@ -87,6 +87,12 @@ def codex_output_schema(schema: dict, *, schema_ref: str = "") -> dict:
     if schema_ref == CODEX_CANONICAL_JSON_SCHEMA_REF:
         return {"type":"object","properties":{"output_json":{"type":"string"}},
             "required":["output_json"],"additionalProperties":False}
+    if schema_ref.endswith(":working-memory-v1"):
+        schema = json.loads(json.dumps(schema))
+        memory = schema.get("properties", {}).get("working_memory_json")
+        if memory == {"type": "string", "maxLength": 100000} and "working_memory_json" not in schema.get("required", []):
+            schema["properties"]["working_memory_json"] = {"anyOf": [memory, {"type": "null"}]}
+            schema["required"] = [*schema.get("required", []), "working_memory_json"]
     return _codex_output_schema(schema, all_nullable=True)
 
 
@@ -104,6 +110,8 @@ def strict_codex_json_loads(text: str):
 
 
 def decode_codex_output(value, *, schema_ref: str):
+    if schema_ref.endswith(":working-memory-v1") and isinstance(value, dict) and value.get("working_memory_json", object()) is None:
+        return {key: item for key, item in value.items() if key != "working_memory_json"}, {"contract_version": "codex-optional-working-memory.v1", "omitted_null_fields": ["working_memory_json"]}
     if schema_ref != CODEX_CANONICAL_JSON_SCHEMA_REF:
         return value, None
     if not isinstance(value, dict) or set(value)!={"output_json"} or not isinstance(value['output_json'],str):

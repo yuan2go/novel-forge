@@ -1,0 +1,2765 @@
+{
+  "schema_version": "plot-reader-native-continuation.v1",
+  "tested_sha": "30647e4dc0b9df6450308da845d7b52909d44615",
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "database_oid": 318939,
+  "scope": "ISOLATED_AUTHOR_FIRST_VALIDATION",
+  "original_mutations": 0,
+  "human_review": "NOT_RUN",
+  "events": [
+    {
+      "phase": "BOOK_TICK",
+      "target": 40,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "37e169cf-e1ba-45e3-ac75-864baa406973",
+        "evidence_ref": "authority-output:37e169cf-e1ba-45e3-ac75-864baa406973:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 40,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "73824b98-1f5b-4c96-aacb-e076e1859b31",
+        "evidence_ref": "authority-output:37e169cf-e1ba-45e3-ac75-864baa406973:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "BOOK_TICK",
+      "target": 40,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+        "evidence_ref": "chapter-request:2408e5de26f081b85d2e1fe283e2f342185f307aaf7ed8225e5da09e63458382"
+      }
+    },
+    {
+      "phase": "FROZEN_REQUEST",
+      "target": 40,
+      "request_id": "chapter-request:2408e5de26f081b85d2e1fe283e2f342185f307aaf7ed8225e5da09e63458382",
+      "root": "9a720be9-3763-43a8-9b7c-656cff10c061",
+      "plan_version_id": "authority-output:37e169cf-e1ba-45e3-ac75-864baa406973:story_planning.candidate:v1",
+      "working_snapshot": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "qid-learning-prose-01",
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "instruction": "Continue only these exact selected working versions. Each passage is an attributed excerpt with Unicode positions; omitted ranges are unknown here, not evidence of absence. Distinguish what occurred in this working story, what an individual witnessed or was told, that individual's inference or belief, attributed rumor, reader-only disclosure and future plan intent. A true world event does not grant every character knowledge; a character's belief or statement need not be true. Discarded or unselected versions supply no experience. Carry realized experiences, practical progress and relationship aftermath into the next situation without reenacting them merely for formal acceptance. Unresolved dependency changes retain uncertainty. These passages grant no accepted fact IDs or Canon mutation. Let perception, goals, prior experience and the current situation motivate action, dialogue and subtext. Planned emotions and optional consequences are directions, not forced performances; distinguish binding fictional constraints from conditional possibilities. Important actions affect later choices when the story supports that effect; quiet scenes and unchanged positions are valid. Do not force conflict, reward, reversal or cost. Realize the chapter's intended movement without repeating settled progress. If a frozen plan requires repetition or contradicts the sources, retain that conflict for author/Plan Change rather than silently altering it. Use this information to write natural prose, without explaining these categories or a state checklist to the reader.Working observations are fallible source-bound navigation, never Canon or verified knowledge. Use their exact historical passages to assess current character states, attributed knowledge, relationships, actions, consequences and outstanding promises. Latest means latest observed statement, not proven truth. Missing or stale memory remains unknown; retain subjective and reader scopes. If the declared output schema permits working_memory_json, you may return a separate JSON-string array of observations grounded only in the prose you just wrote; omission must not impair prose. Each object has kind (CHARACTER_STATE, KNOWLEDGE, RELATIONSHIP, EVENT, CONSEQUENCE, PROMISE), subject, state_key, claim, perspective (OBSERVED, BELIEF, HEARSAY, READER_ONLY), knowledge_owner (empty for unattributed world observations or reader-only disclosures), an unambiguous literal quote, and causes (only observation_ids present in the frozen working memory, or []). Do not turn future plans into past events or return this metadata inside Scene prose. ",
+        "snapshot_hash": "sha256:52c16bb5e823763f62336480a1c6661ee3cb6c5b5051e54bb804ae84d8890c26",
+        "target_chapter": 40,
+        "working_memory": {
+          "entries": [],
+          "version": "working-observations.v1",
+          "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
+          "packet_hash": "sha256:810bfa82e80f6bdd36c91f3d1dc990841521377ec0bfbb3ff929d7840608d9e7",
+          "candidate_count": 0,
+          "source_coverage": [
+            {
+              "status": "MISSING",
+              "chapter": 8,
+              "asset_version_id": "1f233c1e-48bd-4dce-a727-2061788968f6"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 9,
+              "asset_version_id": "17127099-12f0-4d83-a896-8bddb5955ff6"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 10,
+              "asset_version_id": "82f5c0fc-dbe4-4e53-a6f2-cee2704c6aa3"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 11,
+              "asset_version_id": "19e4b8ba-46b7-4bdf-9baf-253a8da1b19e"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 12,
+              "asset_version_id": "fc49eb7a-f91c-4fd2-8f9d-c25e57bb2a03"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 13,
+              "asset_version_id": "fbbe7312-7490-4ea5-a35b-03d8e158fbdf"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 14,
+              "asset_version_id": "eacaad1b-9f87-4f80-8d4e-be6d151efb63"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 15,
+              "asset_version_id": "86b871d8-41ce-4646-9ef9-432c506cd0d9"
+            },
+            {
+              "status": "MISSING",
+              "chapter": 16,
+              "asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 17,
+              "asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 18,
+              "asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "status": "NOT_REQUESTED",
+              "chapter": 19,
+              "asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "status": "NOT_REQUESTED",
+              "chapter": 20,
+              "asset_version_id": "0d8cd54d-1a52-4df9-aa98-5d1b3ba81a82"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 21,
+              "asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 22,
+              "asset_version_id": "772490bd-d5aa-4ecd-b0e2-7ee2f935fb45"
+            },
+            {
+              "status": "UNAVAILABLE",
+              "chapter": 23,
+              "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 24,
+              "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 25,
+              "asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 26,
+              "asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "status": "NOT_REQUESTED",
+              "chapter": 27,
+              "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 28,
+              "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 29,
+              "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 30,
+              "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+            },
+            {
+              "status": "NOT_REQUESTED",
+              "chapter": 31,
+              "asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 32,
+              "asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 33,
+              "asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 34,
+              "asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 35,
+              "asset_version_id": "e5ee36f1-1929-4946-9c86-7ad1df1f9829"
+            },
+            {
+              "status": "NOT_REQUESTED",
+              "chapter": 36,
+              "asset_version_id": "3fe34394-8628-485c-9414-308850515eca"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 37,
+              "asset_version_id": "37dda880-f890-4e84-9b79-f188459b4ddb"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 38,
+              "asset_version_id": "201925b1-609d-4d09-a9ca-b925b8db0e4f"
+            },
+            {
+              "status": "WORKING_MEMORY_STALE",
+              "chapter": 39,
+              "asset_version_id": "20920948-a60c-4801-ac9f-dc7a12664da4"
+            }
+          ],
+          "semantic_support": "NOT_VERIFIED",
+          "retrieval_omissions": [],
+          "omitted_observation_ids": []
+        },
+        "structured_facts": [],
+        "projection_policy": {
+          "queries": [
+            "沈砚初次引气与木片亮纹",
+            "唐穗药叶和共同用饭",
+            "陆衡搬桩与自己练习时间",
+            "许庭课堂手势",
+            "程教习课程与劳动"
+          ],
+          "version": "working-prose-projection.v3",
+          "guidance_mode": "COMBINED",
+          "max_characters": 12000,
+          "history_chapters": 32,
+          "recent_complete_chapters": 3
+        },
+        "accepted_through_chapter": 0
+      },
+      "working_sources": [
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 8,
+          "passages": [],
+          "text_hash": "sha256:a00efdb353ceffb011757815025b4db3d76f670bd1abfc11d6971cf7696770c5",
+          "content_hash": "sha256:c004bab1be24de1f817f4f81e8c921c2c29758b46ee32939125090412446d69a",
+          "omitted_ranges": [
+            {
+              "end": 2989,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "1f233c1e-48bd-4dce-a727-2061788968f6",
+          "source_characters": 2989,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 9,
+          "passages": [],
+          "text_hash": "sha256:b64ee1a6f2a1e5215a169a8c222917e964f6fa963ef44fb095014a7b09235a7e",
+          "content_hash": "sha256:157651e2ba1c9d35b098f24a5326ce3ef2242c3140e8ba16095f45218af9c1bd",
+          "omitted_ranges": [
+            {
+              "end": 2958,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "17127099-12f0-4d83-a896-8bddb5955ff6",
+          "source_characters": 2958,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 10,
+          "passages": [],
+          "text_hash": "sha256:2d3de692ad0fce418d9495e8d6c8d9044c628edd6611020b9befa0a72a98b800",
+          "content_hash": "sha256:eb4d7a28df7098a52c253e5c036d3712f2d50a4457f22dc3dc86f1a3de13e6ba",
+          "omitted_ranges": [
+            {
+              "end": 3285,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "82f5c0fc-dbe4-4e53-a6f2-cee2704c6aa3",
+          "source_characters": 3285,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 11,
+          "passages": [],
+          "text_hash": "sha256:f81b0df0c08a7ce1355ccb9ab24f2280aec24d205a2cddec7036ec8e4f576fd5",
+          "content_hash": "sha256:4c5a2a12a2772b5ef1268530851d427aad23a93e8fedbee5acf38ec212856fd2",
+          "omitted_ranges": [
+            {
+              "end": 3033,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "19e4b8ba-46b7-4bdf-9baf-253a8da1b19e",
+          "source_characters": 3033,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 12,
+          "passages": [],
+          "text_hash": "sha256:a19263fc81aa919ce89b6315802c30941cf4362e7dead4db6012ff916d416f67",
+          "content_hash": "sha256:393e8b2a059edd90bfa4f4090d81f86f94efbf8629ec83df5840770455f282d1",
+          "omitted_ranges": [
+            {
+              "end": 3124,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "fc49eb7a-f91c-4fd2-8f9d-c25e57bb2a03",
+          "source_characters": 3124,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 13,
+          "passages": [],
+          "text_hash": "sha256:616bcbed9d50ebe5ad3ee734c6536c255210f1c4c37416c42fb86d97e9bd3656",
+          "content_hash": "sha256:b2d2aff89d72e145d6edb6ed435ba595c2776725b56ca30af919a1b838d33c15",
+          "omitted_ranges": [
+            {
+              "end": 3102,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "fbbe7312-7490-4ea5-a35b-03d8e158fbdf",
+          "source_characters": 3102,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 14,
+          "passages": [],
+          "text_hash": "sha256:0ecaad8ecca77e64111d91009bf5982bcf7cabfc4bc208230f972cf9f02dc93f",
+          "content_hash": "sha256:5013be5a36e1a4cf7bae58b5e5d8ed6376c6a0e5917fba5e5d265b545fd464bd",
+          "omitted_ranges": [
+            {
+              "end": 3103,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "eacaad1b-9f87-4f80-8d4e-be6d151efb63",
+          "source_characters": 3103,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 15,
+          "passages": [],
+          "text_hash": "sha256:d1916585104c1f36c7a96e8db9cfe360ba7fa9818dc6fbf25170328bc552c640",
+          "content_hash": "sha256:272eadd7ea67b0f1e7adf7faec1ecc4ffcab8311ed8c17a0ecf888ebadb5a3a4",
+          "omitted_ranges": [
+            {
+              "end": 2975,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "86b871d8-41ce-4646-9ef9-432c506cd0d9",
+          "source_characters": 2975,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 16,
+          "passages": [],
+          "text_hash": "sha256:86fb9cac9ece8f9f6579c05dfcd70fe52e5d0c5313c37e0b3091d3c3efecbbfb",
+          "content_hash": "sha256:83bf0525b42b76b4e2f3907b5ce6ba835e7693bdc1d6a7e968dc8c765338754f",
+          "omitted_ranges": [
+            {
+              "end": 2479,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1",
+          "source_characters": 2479,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 17,
+          "passages": [],
+          "text_hash": "sha256:938e13cb6b7b4a383641e025c66f416f383a868dc509c17db24dc7f6da75de52",
+          "content_hash": "sha256:5d5950055a2be180d37af4261dd4bc0ea47fe670098f4032fc953bd9d6ba30c4",
+          "omitted_ranges": [
+            {
+              "end": 3075,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046",
+          "source_characters": 3075,
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 18,
+          "passages": [],
+          "text_hash": "sha256:a167d08118833e58fdc71a49288fddc2f9ac69e1b511c9de8d79398ee5bc1028",
+          "content_hash": "sha256:f582e697859bff80d0d1f3363e27c90ea7c8b499806af8fec0a9d55263f6773d",
+          "omitted_ranges": [
+            {
+              "end": 2969,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374",
+          "source_characters": 2969,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 19,
+          "passages": [],
+          "text_hash": "sha256:6b777ba2a22a58d8970b2afa2044956f91a449c7469193c45bc63bc34f73dbf3",
+          "content_hash": "sha256:722fb76830d42fd6356ba88c5e405b87dc737ddf469cc0f3bd768648b90c21b6",
+          "omitted_ranges": [
+            {
+              "end": 3034,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7",
+          "source_characters": 3034,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 20,
+          "passages": [],
+          "text_hash": "sha256:48e50b9bec30c72e0dd554739a0d14a8153389ff0c551681acd61ab4733eb151",
+          "content_hash": "sha256:795fe1638d19316c34f1729b655fa5c43b6ef8ec5831f62f8305bc7300b7cc41",
+          "omitted_ranges": [
+            {
+              "end": 2977,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "0d8cd54d-1a52-4df9-aa98-5d1b3ba81a82",
+          "source_characters": 2977,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 19,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 21,
+          "passages": [],
+          "text_hash": "sha256:ba3789bbdf88d6f4576098a9046bfefa7fb95a28b908020c358f034c5b64f1d5",
+          "content_hash": "sha256:f1092f95e90e3aeef895500a3bdd8793f4f7fd47a371bf36041905b051994732",
+          "omitted_ranges": [
+            {
+              "end": 3046,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953",
+          "source_characters": 3046,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 22,
+          "passages": [],
+          "text_hash": "sha256:5fae53880cc58162444cff151aa8f2400ee1da9f3884e6bd1ccae1f7e0cff2bf",
+          "content_hash": "sha256:a5c3eef02ea7c42ddddf0c66580fc930e10251b2c46b8db67cf69e3745241773",
+          "omitted_ranges": [
+            {
+              "end": 2955,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "772490bd-d5aa-4ecd-b0e2-7ee2f935fb45",
+          "source_characters": 2955,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 23,
+          "passages": [],
+          "text_hash": "sha256:77399407ebe4d4a58b4f7a564f072c89360b72e5a277ff8082ff3837a8e4a587",
+          "content_hash": "sha256:092474b4c0d920f09a17edb828cad01feb5a9bb29c1fee0a07063cefd4c6f423",
+          "omitted_ranges": [
+            {
+              "end": 2961,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea",
+          "source_characters": 2961,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 24,
+          "passages": [],
+          "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+          "content_hash": "sha256:c39326a0de6dc95ed2ab12058d174e530e33cbc98132204a105bdac8da04c963",
+          "omitted_ranges": [
+            {
+              "end": 2914,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+          "source_characters": 2914,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 25,
+          "passages": [],
+          "text_hash": "sha256:fa511199a2920f2a227ce100bbb23674c5d83db77cc34484a4302ed1b9c2e68d",
+          "content_hash": "sha256:343f3afd7b53a172d0bfc649dd887449aea958cbb50fc4e7fa98b02e3ef2d39f",
+          "omitted_ranges": [
+            {
+              "end": 2968,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4",
+          "source_characters": 2968,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 26,
+          "passages": [],
+          "text_hash": "sha256:cf9576db2ecd7faf2c7cee7529d36a7408284d8590f4d19f4be015feed3a8c0d",
+          "content_hash": "sha256:4cdc788f3e4115edf068a265f3d96657e859872f73d6d5027dee686e65c2a3db",
+          "omitted_ranges": [
+            {
+              "end": 3115,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c",
+          "source_characters": 3115,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 27,
+          "passages": [],
+          "text_hash": "sha256:0704b44b90c75372d5ee31589564e21959982c658c0d1c91e9a5bccdad06878c",
+          "content_hash": "sha256:309a89d185e52927f514e466c7e09f7165eac2f95ee2a29bef54bd3b7f018257",
+          "omitted_ranges": [
+            {
+              "end": 3137,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0",
+          "source_characters": 3137,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 26,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 28,
+          "passages": [],
+          "text_hash": "sha256:bdc0c6c4d20c4706e8ef02aace9e16a6adf8bf6ba58b7a5bded29dee0af8ffe3",
+          "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "omitted_ranges": [
+            {
+              "end": 3105,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c",
+          "source_characters": 3105,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 27,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 29,
+          "passages": [],
+          "text_hash": "sha256:f495942050f3b32210fe9676bd53a1163a02ba62c033c63524f70270f7254d15",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "omitted_ranges": [
+            {
+              "end": 3077,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4",
+          "source_characters": 3077,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 30,
+          "passages": [],
+          "text_hash": "sha256:98fd5ebd440d0bd2ba79609e973948ae846223201769d6fa93f8c7137cf6b445",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "omitted_ranges": [
+            {
+              "end": 2898,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6",
+          "source_characters": 2898,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 31,
+          "passages": [],
+          "text_hash": "sha256:c3e30dcfc867034b805cde9a79236519c19572a6991c02d3001fae16a9638191",
+          "content_hash": "sha256:cf0f9ad4c9c1a4d90d5243fb942e9140923caffd029519d6089c3c56d04ce6c0",
+          "omitted_ranges": [
+            {
+              "end": 3388,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41",
+          "source_characters": 3388,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 32,
+          "passages": [],
+          "text_hash": "sha256:14ff5cc6817cb377a61fe8cc01c64929569cb071b733e774ed6d4e33248fb8b8",
+          "content_hash": "sha256:bb0bb585bdd152c8b84b0db4a4f06550960389cfcdf8d2c634f554d006cfbefd",
+          "omitted_ranges": [
+            {
+              "end": 3232,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79",
+          "source_characters": 3232,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 31,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 33,
+          "passages": [],
+          "text_hash": "sha256:278f84642cdd419275acb909487b00f9d30fa9fa93ed3f5d67c20216d7d487e2",
+          "content_hash": "sha256:bc5026ea2a8c3b37c1749af804720f6bf79e61a37c0cde2b52a2e64c652a515c",
+          "omitted_ranges": [
+            {
+              "end": 3008,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38",
+          "source_characters": 3008,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 32,
+              "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+              "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            },
+            {
+              "chapter": 31,
+              "via_chapter": 32,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 34,
+          "passages": [],
+          "text_hash": "sha256:dd90f41c3d483b8cea309024253502a8f28798570a55ce684ccf9ba5e1d473ff",
+          "content_hash": "sha256:70d084059531254d29f5d5b7a97ae7483b23cb9c0064e7950638fe5c90ea8f28",
+          "omitted_ranges": [
+            {
+              "end": 3122,
+              "start": 0
+            }
+          ],
+          "asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43",
+          "source_characters": 3122,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 31,
+              "via_chapter": 32,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            },
+            {
+              "chapter": 33,
+              "source_asset_version_id": "authority-output:d25b7604-1143-4f3f-8de5-889eba9fe02e:chapter.draft:v1",
+              "current_asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38"
+            },
+            {
+              "chapter": 32,
+              "via_chapter": 33,
+              "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+              "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 35,
+          "passages": [
+            {
+              "end": 288,
+              "text": "“我先抬起一点，”他对唐穗说，“你从那边看盖住的路面。若有土跟着起，叫我放下。”\n\n",
+              "start": 246,
+              "text_hash": "sha256:fa1a98d5a05f02fa9be7303ee7533f1a1f1d3ef2b5c7132fcb2d2eb5a300414a"
+            },
+            {
+              "end": 871,
+              "text": "“我去看原处。”唐穗说。\n\n",
+              "start": 857,
+              "text_hash": "sha256:2c116a1193a380547b0b5790339a34948a00dda02aedabd84118f333bc0bfbc7"
+            }
+          ],
+          "text_hash": "sha256:d53a8f76d20e2d1ba18382b303be88eff36fb398fd0cc3d9e75ea161b4eaee66",
+          "content_hash": "sha256:ec63338bab13d819f3bb27b2bcaf748f84138a67b9cf0b899d945fe3b92211d5",
+          "omitted_ranges": [
+            {
+              "end": 246,
+              "start": 0
+            },
+            {
+              "end": 857,
+              "start": 288
+            },
+            {
+              "end": 3001,
+              "start": 871
+            }
+          ],
+          "asset_version_id": "e5ee36f1-1929-4946-9c86-7ad1df1f9829",
+          "source_characters": 3001,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 31,
+              "via_chapter": 32,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            },
+            {
+              "chapter": 32,
+              "via_chapter": 33,
+              "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+              "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            },
+            {
+              "chapter": 34,
+              "source_asset_version_id": "authority-output:7b2b5b7e-9d02-45df-bfaa-a851cde4263a:chapter.draft:v1",
+              "current_asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43"
+            },
+            {
+              "chapter": 33,
+              "via_chapter": 34,
+              "source_asset_version_id": "authority-output:d25b7604-1143-4f3f-8de5-889eba9fe02e:chapter.draft:v1",
+              "current_asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 36,
+          "passages": [
+            {
+              "end": 75,
+              "text": "事务房里，程观正伏案整理任务纸。沈砚和唐穗走到桌前，唐穗把折纸摊平，压住翘起的一角。纸上四行炭字照着上山的次序排着，末行写到弯前，便没有再往后添。\n\n",
+              "start": 0,
+              "text_hash": "sha256:f2a2e5ab7287bff3564b483a56d83c1742aaaca50b35c1867092fc1368b45670"
+            },
+            {
+              "end": 163,
+              "text": "沈砚先指第一行：“起处往上，横在原路上的落枝，我们移到了划定段内的路旁。它原先挡着落脚的土，移开后，两人都从原处走过。”他说的是自己托起枝条的地方，没把路旁别的枝叶算进去。\n\n",
+              "start": 75,
+              "text_hash": "sha256:8f7279a1c6253fcee7006fc64aff82552810f27d5a260573e18075c7ef895e90"
+            },
+            {
+              "end": 211,
+              "text": "指到第二行，他停了停：“再往上，靠坡这一块石头，露出的石缘同坡土接着。我们没试搬，也没动。”\n\n",
+              "start": 163,
+              "text_hash": "sha256:4f1f3eb58da24af6f55795ab67583583de352507087de5dc6259741c6bc7f95a"
+            },
+            {
+              "end": 290,
+              "text": "唐穗把纸朝程观转正：“从正面只看得见半块石面。我换到侧边，才看见细土一直贴到石缘；底下接成什么样，我们看不见。所以记了位置和‘未动，待核’，没写搬不动。”\n\n",
+              "start": 211,
+              "text_hash": "sha256:931ce0ae7d4d9211c17c15d616abfa0f6a1d53e6c1cedc8f9a0826e7fcab2e42"
+            },
+            {
+              "end": 486,
+              "text": "程观听完，笔尖在任务纸上第二处的位置停住，先记了未动，才示意他们往下说。沈砚讲到扁石：第一回从一边托，石头没有离地；后来两手分托，看清接地处没有带起坡土，才将它移到路旁。唐穗补上清出后路中可以落脚，也说清她当时只从侧面看见路面与石边的变化。末了一处是弯前短枝，细杈曾卡在石缝口；沈砚换了角度将它托出，枝端放稳在路旁，两人看过原来的石缝和土面，便循原路下坡。弯后的情形，他们没有说成已看过。\n\n",
+              "start": 290,
+              "text_hash": "sha256:17099028054ad6d2e97ac6d57b9258c6bf6f2dc7906f8a76988fa83de9e11552"
+            },
+            {
+              "end": 610,
+              "text": "程观把折纸与自己经办的近坡段任务纸对照，分别在落枝、扁石、短枝旁记下已清，又将靠坡石单列为未动、待后续判断。他看了一遍四行字，说：“你们交回的范围，我按这三处已清、一处未动记明了。本次就按实际做过的这些处理。那块石头留在原处，记录也留在这里。”\n\n",
+              "start": 486,
+              "text_hash": "sha256:dba17410df7fc5c9938d87050c390327efaa1c962fd121a170ebf7ab5c339b2a"
+            },
+            {
+              "end": 716,
+              "text": "程观收起任务纸，手边另有一叠要理。沈砚也将手从折纸边挪开。一路下坡时，他总觉得弯前那根短枝还压在臂弯里；如今三处结果落到了程观笔下，才觉得手上真的空了。右臂仍酸，却不是站在山路上看着枝条、无从下手时的那种沉。\n\n",
+              "start": 610,
+              "text_hash": "sha256:14b1a12c38fb11784662a1ca70220bcefb5a837e3026dc37f965dd08dc5f27c2"
+            },
+            {
+              "end": 803,
+              "text": "唐穗等他起身才收折纸。两人向程观道别，走到门槛前，沈砚回头瞧了一眼案上的字。不是许多，也不是整片山坡，三处确实是他们做完交回的。他嘴角抬了一下，跨过门槛时才把这个笑收好。\n\n",
+              "start": 716,
+              "text_hash": "sha256:2e260054d663c113d3be629d4eda93a8fb23f057021f4d38baedac60f3007cea"
+            },
+            {
+              "end": 918,
+              "text": "门外的光比房里亮。唐穗重新折好纸，炭笔在小袋里碰出轻轻一声。沈砚见她的目光还落在写靠坡石的那道折痕上，以为她要核对方才的说法；她却道：“站在石头正前面时，我也差点只看那块露出来的面。往旁边挪了半步，土贴着石缘的地方才显出来。”\n\n",
+              "start": 803,
+              "text_hash": "sha256:884dd6cb4a31ad6635df3445149bbf97e45aa089512986fad96e1c79ee8bc7c2"
+            },
+            {
+              "end": 1023,
+              "text": "她抬起手，在半空比了比角度：“我又想起盘边那几点粗影。那回从正面看，光把浅线盖住了；换到侧边，线才露出来。粗影到底是砂还是灰，我如今仍说不准。下次若有机会照着规矩再看，我想先记好从哪边、在什么光下看见的。”\n\n",
+              "start": 918,
+              "text_hash": "sha256:840ae3671e6140028203bdbf2081ede3b861a3f7eae4e961436177c5d3aee4f3"
+            },
+            {
+              "end": 1128,
+              "text": "沈砚听她说完，想起自己伸向靠坡石又放下的手。“你指出那条土边，我才知道不能只凭露出的石面判断要不要搬。后来托扁石，也是先看了另一侧，才找得到两手接住分量的地方。弯前那根枝，我停下来，你才看清细杈卡在缝口。”\n\n",
+              "start": 1023,
+              "text_hash": "sha256:124c83f23364020ec36ad6855e292968c234e996f23d6d2bc1f581dd8c055202"
+            },
+            {
+              "end": 1164,
+              "text": "唐穗笑了一下：“你肯停，我才有工夫看。石头和枝，最后还是你托走的。”\n\n",
+              "start": 1128,
+              "text_hash": "sha256:d52c02c53f9263972147660ba46022809f61f583fc5b18c6e628a5fc3a031f6e"
+            },
+            {
+              "end": 1272,
+              "text": "“我们各看见一部分。”沈砚说。他没有替她猜盘边的答案。唐穗把小袋系紧，说她要趁记得清楚，把盘边那几个角度另记下来。沈砚应了一声，约好的答疑时段还在后头，他得先吃些东西、歇一歇手臂。唐穗看他垂着右手，问：“还酸？”\n\n",
+              "start": 1164,
+              "text_hash": "sha256:55921290765c9b046ad7370d9eb7d678fff850a838822213c50d64fb673c755c"
+            },
+            {
+              "end": 1305,
+              "text": "“最后那根枝，大概还想跟我下山。”他抬了抬臂，才到一半便放下。\n\n",
+              "start": 1272,
+              "text_hash": "sha256:5c7d8407eaa1b5b8790c47e046767a8328ad9a1051d77a90683870dfa7dfbe5c"
+            },
+            {
+              "end": 1349,
+              "text": "唐穗笑出了声，折纸也跟着轻轻一颤：“那就让它在路旁待着。你先吃饭，我先把角度记了。”\n\n",
+              "start": 1305,
+              "text_hash": "sha256:9092e33812000fe89ca20149ca70b0f86e00deb0dc081074455692bdba467426"
+            },
+            {
+              "end": 1435,
+              "text": "两人在路口分开。沈砚走了几步，还听得见她小袋里的炭笔碰响。方才同在山路上，两人得接住对方腾出来的那一点工夫；这会儿她惦着盘边的浅线，他惦着下午要问的脚步，各有一处想去。\n\n",
+              "start": 1349,
+              "text_hash": "sha256:7545991a6d62d2c76ce310b3bf4e9f741c63aeb12b62436c9e49067e3839b366"
+            },
+            {
+              "end": 1517,
+              "text": "吃过饭，沈砚让肩臂歇到不再一抬就牵着酸意，才去了基础练习的平地。许庭已在那儿，身旁放着一块寻常木片。她看见他走近，先问：“山路上的事，哪一步同先前练习不一样？”\n\n",
+              "start": 1435,
+              "text_hash": "sha256:5014a7dea55418150b9deaaa88f479d7e986941ee01767ed452f9e5d312c32da"
+            },
+            {
+              "end": 1607,
+              "text": "沈砚没有从整段清路说起，只讲弯前托枝那一回：“我停着托住枝身，右指先扣紧，肩也往上提。掌中起过一小阵暖，我认出劲用得乱，收住以后，松了指根，才搬过去。枝条的分量一直在两手上。”\n\n",
+              "start": 1517,
+              "text_hash": "sha256:0e553b31487fbfdad5cd982c70f96647ed05fc43eefc627dd530f8877517d8e0"
+            },
+            {
+              "end": 1639,
+              "text": "许庭点点头：“那一回我没看见。你先在这里起一次，收给我看。”\n\n",
+              "start": 1607,
+              "text_hash": "sha256:13f74b158f583063176b052af532cff91073838291cac5592d347e4731564822"
+            },
+            {
+              "end": 1727,
+              "text": "沈砚在平地上站稳，空掌垂在身前，照已练熟的快慢缓下呼吸。那点细暖短短浮起，他没追着延长，便把它收住。许庭只看了这一回，随即把木片交给他。木片小而轻，拿在手里仍有实在的重量。\n\n",
+              "start": 1639,
+              "text_hash": "sha256:cabdc606477b3bc0f00c16ac07fc58c1e1267c00e6aa4908a1b90c1a1abc5993"
+            },
+            {
+              "end": 1847,
+              "text": "“今日加的是脚步。”许庭也拿起一件同样寻常的轻物，握在掌中，沿平地缓缓走了几步。她的手没有托出什么异样，走到一半便停了掌中的起意，脚却又往前落了一步。“手照常拿着东西。先留意你自己的掌中，走着的时候收住。步幅小些，别让迈步催着气息跑。”\n\n",
+              "start": 1727,
+              "text_hash": "sha256:0a430aa51c6e3bfcee52fb32c571be839aed6057a72e011d45398e28c0b142b7"
+            },
+            {
+              "end": 1959,
+              "text": "沈砚握好木片，先站着试。细暖在掌中起来时，木片仍压着他的指腹；他照常握住它，等那感觉稳了一瞬，才迈出第一步。脚刚落地，他便想接第二步，气息不觉一促，掌中那点暖随之散了。木片没有从手里滑走，他却知道刚才没把两件事接在一起。\n\n",
+              "start": 1847,
+              "text_hash": "sha256:eee8b6f8b4495baa3e4bd6011611913006e70833908509d262d495bb6c78b6ec"
+            },
+            {
+              "end": 2011,
+              "text": "“你急在第二只脚。”许庭说，“先走一步，另一只脚不用赶上来。感觉散了，就站稳再起，别一面追一面走。”\n\n",
+              "start": 1959,
+              "text_hash": "sha256:3d8cdb2d4e43d93a338da354bc61e78ca24efda25fe7f5147a631be7d0b78016"
+            },
+            {
+              "end": 2156,
+              "text": "沈砚退回原处。他原想趁方才还记得感觉，立刻多走几步；听见这句，先把木片换回握得自然的位置。第一次重试，他站着起暖，迈一步后停脚，暖意尚在，却已浅得难以分清；等他要收时，它自己先淡了。第二次，他缩短步幅，脚掌轻轻落下，呼吸没有跟着向前冲，掌中便留住一小段清楚的暖。他才要收，脚也跟着停了。\n\n",
+              "start": 2011,
+              "text_hash": "sha256:602f40d5c58ad7fae59712ac6d6093e88a6aa1350c7ab9e03a96f3fabd63bb85"
+            },
+            {
+              "end": 2203,
+              "text": "“刚才是站定才收。”许庭道，“这回先别求多走。等能在下一步还未落完时把它收住，再加步数。”\n\n",
+              "start": 2156,
+              "text_hash": "sha256:c9be0909cce278d38e1f1f16c2f680e4004f9e943244010cda954168aea6dadb"
+            },
+            {
+              "end": 2346,
+              "text": "沈砚点头，将木片放在掌上掂了掂。它轻，却不能由那点暖意替他拿着；握松了会掉，握得太紧，指根又先僵起来。他重新合拢手指，留出能稳稳拿住木片的力气，迈一步，等第二步将落未落时试着收。暖意退下去，脚仍向前落稳。这一回他没有马上接着试，只看了一眼手里的木片，记住刚才气息慢于脚步的那一小段。\n\n",
+              "start": 2203,
+              "text_hash": "sha256:211123bbfc67072192ab5e8bc52221ed9e420041ed15d30e031262c23347df13"
+            }
+          ],
+          "text_hash": "sha256:c111fd3595d427c8c798aa2482de9e131b7cd92e448553d1e4430028746238c6",
+          "content_hash": "sha256:58a146662b6f36c0dc29900161845eb1e8ccde3099f392d7e72e4a768a3345f5",
+          "omitted_ranges": [
+            {
+              "end": 3267,
+              "start": 2346
+            }
+          ],
+          "asset_version_id": "3fe34394-8628-485c-9414-308850515eca",
+          "source_characters": 3267,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 31,
+              "via_chapter": 32,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            },
+            {
+              "chapter": 32,
+              "via_chapter": 33,
+              "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+              "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            },
+            {
+              "chapter": 33,
+              "via_chapter": 34,
+              "source_asset_version_id": "authority-output:d25b7604-1143-4f3f-8de5-889eba9fe02e:chapter.draft:v1",
+              "current_asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38"
+            },
+            {
+              "chapter": 34,
+              "via_chapter": 35,
+              "source_asset_version_id": "authority-output:7b2b5b7e-9d02-45df-bfaa-a851cde4263a:chapter.draft:v1",
+              "current_asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 37,
+          "passages": [
+            {
+              "end": 113,
+              "text": "隔了一夜，沈砚的右臂仍有些沉。他把手举到肩高，又放下，酸意不再像昨日下坡时那样牵住动作，却也没有全退。这日腾出一段工夫，他照先前想好的，回到基础练习的平地。昨日走过的浅印已看不清，他认得脚下这片平实的土，不必分神找落脚处。\n\n",
+              "start": 0,
+              "text_hash": "sha256:7f757e7c67282bf764ad2a217a8c0ea4a94f1ea7b7bb2e674bd87e6e408d4df6"
+            },
+            {
+              "end": 257,
+              "text": "他取来一块寻常木片，在指间换了两回位置。木片薄，边角抵着指腹；手指若全松开，它便会落地。沈砚用平日拿它的力道握住，沿平地看出一小段直路，先在心里定好：走短步，试完一轮就停，肩臂发沉便多歇一会儿。昨日在许庭眼前已经做成过几回，今日要弄清的是无人提醒时，自己能否在步子催快的那一刻认出来。\n\n",
+              "start": 113,
+              "text_hash": "sha256:1077f2d89bdaa158f59d8c0eeab33a4ff2c6aeff4b04c17d50885cef8eda6462"
+            },
+            {
+              "end": 400,
+              "text": "头一轮他没有求远。站稳，缓下一口气，掌中那点细暖浮起时，木片仍实实在在压着手指。他迈出一步，脚底贴住土，暖意还在；第二只脚将要抬起，他想起昨日走到第三步的情形，心里便先往前赶了半拍。脚比头一步跨得大，后脚刚离地，呼吸就短促地接上来。掌中的细暖随即散开，快得他还没来得及作收束的动作。\n\n",
+              "start": 257,
+              "text_hash": "sha256:51744eb99b997f583b16a4f57abcfbf2061b4c87b77b81654f02fe68725dce1d"
+            },
+            {
+              "end": 552,
+              "text": "沈砚让脚落稳，没有边走边追那点已经散了的感觉。四周无人开口，木片却仍抵在原处，叫他分得清握物的力气和方才消失的暖意。他低头看两脚之间的距离，第二步果然比第一步长。他又照那一下抬了抬后脚，尚未迈出去，胸口便有催着吸气的意思。原来不是走到第二步才忽然失了掌中的东西；他急着把脚送过去时，气息已经跟着跑了。\n\n",
+              "start": 400,
+              "text_hash": "sha256:0d53ec4c7bb6122853b2a24ae608a18196b82505c4a265d08fa7a5a38bfac417"
+            },
+            {
+              "end": 693,
+              "text": "“又抢了。”他低声说，瞧着自己的鞋尖，有点气，又想笑。昨日许庭站在旁边，一句话便指出第二只脚；今日没人开口，那只脚就像忘了约好要慢些，偏偏先跨出去。可脚是他的，催着它走的也是他。他方才明明已经走成过，还是想把昨日第三步的感觉一下搬到今日来，最好拿起木片就能再走出一模一样的一段。\n\n",
+              "start": 552,
+              "text_hash": "sha256:b018056a05b7a95f21dcaad7328a42e1031228ee44200629319df816f78de902"
+            },
+            {
+              "end": 812,
+              "text": "他把后脚挪回，站着看看原来的距离。若许庭现在问他急在何处，他不必再猜一个好听的答法。第二步大了，气也催了，都是方才身上发生的事。想到这里，他胸口那点不服气反而松开些。没有人替他指出，也没有人替他遮住；自己看明白了，下一回就有地方下手。\n\n",
+              "start": 693,
+              "text_hash": "sha256:bec908710dc8e3d7136dd617e294ff57635fbe4a6bfa8dcbac43c26759bff086"
+            },
+            {
+              "end": 950,
+              "text": "他把木片放在平地边，松开五指。右肩一放低，臂弯里的倦意便显了出来。昨日托枝、搬石用过的力气，吃过饭、睡过一夜也未全消。若趁此刻一遍遍赶着重来，脚下究竟是原先过急，还是手臂先累得握不稳，他反倒不易辨清。沈砚沿平地边慢慢走了几步，空着手，等呼吸平顺，再坐下让两臂垂着歇了一阵。\n\n",
+              "start": 812,
+              "text_hash": "sha256:f7c736a483659857a2739e87a774b427ccaa56cd0de9ad0b41785b0122c107d1"
+            },
+            {
+              "end": 1115,
+              "text": "歇过，他拾起木片，没有急着在土上划出一道新线，只把第一步落脚的位置看近些。掌中细暖再起，他迈步时让脚掌慢慢落下；第二步不忙着追齐，抬脚、向前、落地，各留出一口气能走完的工夫。那点暖意没有因走动立刻断开。后脚尚向前落，他觉出它仍在指根附近，便照昨日练过的快慢将它收住。脚随后落定，木片的边角还压着指腹，重量从头到尾都由手指拿着。\n\n",
+              "start": 950,
+              "text_hash": "sha256:2b27a6a8cd65dddbd32e5f835fb719cbedf3e9f915814065372e0ad4c7fc027b"
+            },
+            {
+              "end": 1322,
+              "text": "沈砚站在原处，先看了看自己的脚，再看木片。刚才不是站住以后等暖意自己淡去；脚还在走，他便收下了。他没立即把下一步接上，退回短路起处，等手指张合如常，才试第二轮。这回第一步略轻，第二步落脚时鞋底擦过一点浮土。他的目光险些跟着那道擦痕往下去，气息也有一瞬变浅。他把脚放稳，没为了补救而忽然加快，掌中细暖仍短短留着。第三步将落未落，他主动收住。木片没有晃，指根却比上一轮紧了些。他放下木片，舒开手指，把这点紧劲记住。\n\n",
+              "start": 1115,
+              "text_hash": "sha256:c5213c82d42ab000f311b118776d0ffb20215638d221ab730dd17070c7212698"
+            },
+            {
+              "end": 1450,
+              "text": "平地边有一小块不挡人的地方，他在那里坐了一会儿。风吹过时，浮土上新添的脚印慢慢显出边沿：先前失稳的一步跨得开，后两轮的印子挨得近些。印子只能告诉他脚落在何处；掌里何时起暖、何时收住，还得下一回亲自辨。沈砚将右手搭在膝上，等肩头不再悬着，才重新拿起木片。\n\n",
+              "start": 1322,
+              "text_hash": "sha256:a0ee76677ba6f1dad7a3f688acb94aa91bbd49ccb32ddb11b57efef3f873bbd1"
+            },
+            {
+              "end": 1626,
+              "text": "第三轮，他没有盯着脚印去踩。脚下是熟悉的平地，他让步幅仍旧短，眼睛看着前面一小段路。第一步落下时，木片一角轻轻硌着指腹；第二步抬起时，那点细暖在掌中，比木片的硬边浅得多。他没有将两种感觉混在一起，也没有为了留住暖意把木片攥紧。待后脚向前送出一半，他把掌中的细暖收住，脚照常落稳。走完这一轮，他才发现自己没有等谁说“就是这里”，也能认出可收的那一下。\n\n",
+              "start": 1450,
+              "text_hash": "sha256:d6ec8f359309c255c22fe53be6c8414fa68e2cfc4b455e181ddd0951d374e5f8"
+            },
+            {
+              "end": 1737,
+              "text": "他站住，嘴角压也压不下去。暖意已经收了，手里只剩木片；可他记得刚才脚还没落完时，掌中那点细小的感觉是怎样退下去的。不是听到旁人开口才赶紧补一个动作，也不是走不下去了顺势站住。那一下从何处起，何时由他收回，他自己分得出。\n\n",
+              "start": 1626,
+              "text_hash": "sha256:783470c128a4355576a0115d2792f68699357eb28a98f3b47004d0950d3f0fad"
+            },
+            {
+              "end": 1891,
+              "text": "沈砚很想马上再来一轮，脚尖已经朝起处偏了偏，右臂却在此时发沉。他把木片换到左手，右手垂下晃了两下，笑意仍留着。昨日在山路上，他愿意停下来，唐穗才有工夫看清卡住的细杈；如今也不能因为刚做成便把这点停下的工夫抹掉。他把木片放好，走到平地边坐下。这回休息不再像被迫中断：等肩臂缓过来，他还知道怎样把那一段接上。\n\n",
+              "start": 1737,
+              "text_hash": "sha256:714875c494c1877881ef71f224386d4c25e6622611dca070a0e707fd3916de43"
+            },
+            {
+              "end": 2006,
+              "text": "坐着时，他将手掌摊在膝头，指根的紧劲一点点退去。掌心空着，不必再起一回来证明刚才的欢喜。前面那两三步已经走过，留在他记得清楚的身上。等重新拿起木片，他要守住的是那个快慢，省下来的力气也该留给真正的一轮，而不是心里先跑完的几步。\n\n",
+              "start": 1891,
+              "text_hash": "sha256:eaf13a19b9cbf505c53813fae4d75d981ca820926c655e0fb86decf053a75a7c"
+            },
+            {
+              "end": 2164,
+              "text": "他又歇了一阵，只照同样的短步试了一回。这次起暖稍慢，他在第一步后多等了片刻，第二步仍在走时才收；右臂有倦意，木片却仍握得稳。几轮之中，并非每一步都一样轻，也没有一回能把细暖留得很久。可那一次催快时，气息先乱、掌中随即散去；缩步后，脚还向前落，他已能几次自己收住。这样的差别落在手指和鞋底，比把步数说得再多更清楚。\n\n",
+              "start": 2006,
+              "text_hash": "sha256:cb9b5adcf75865663c3a0447d5e2473be3d87845ddd455f1c5c3356e2535f5f5"
+            },
+            {
+              "end": 2309,
+              "text": "沈砚没有再往平地远处走。先前一心想试无人提醒会怎样，如今问的那一下已有了答案。他把木片暂放在身侧，揉了揉右臂，目光沿刚走完的短路望去。路是直的，每次重来，他都能从同一头站稳，再朝同一方向迈步。若要回到起处，脚总得换个方向；那时先动哪只脚，呼吸会不会也被带快，眼前这些直行的脚印还答不了。\n\n",
+              "start": 2164,
+              "text_hash": "sha256:aa43391a0ccd7f0836d20d4eb27fecf0a403c8ff581b453a4363f8d01bd45cc9"
+            },
+            {
+              "end": 2446,
+              "text": "沈砚坐在平地边，脚跟抵着一小撮浮土，目光顺着直路望到尽头。走到那边再回来，平常不过是换个方向；如今握着轻物，掌中又有短短一段细暖，脚步一换，他想知道两只脚会不会又抢起来。这个念头不是为了给今日挑出一个没做成的地方。恰恰是直着走已能由自己辨认，他才想把这段路接成一个来回。\n\n",
+              "start": 2309,
+              "text_hash": "sha256:bd7d87befa729c98586fe37d5bcb30631d4045acc7838526c8aa148374668c17"
+            },
+            {
+              "end": 2571,
+              "text": "他抬起脚尖，瞧了瞧鞋底，随后把脚放回原处。方才几轮已经用去不少工夫，右臂也在提醒他。带着这点疲倦再试一个新动作，若脚下仓促，自己未必能分清。今日便到这里。他没有因此觉得少练了一件事：这一段原本要有人提醒的直路，如今已能自己走过，已经够他欢喜一阵。\n\n",
+              "start": 2446,
+              "text_hash": "sha256:5ff734c0226d5beb6fa468ab3fcb65991aa68ce9b826d0b0532e487f3a2587ca"
+            },
+            {
+              "end": 2721,
+              "text": "下一次既有的答疑时段，他先走给许庭看，再请她教缓步转身。他在心里试着把要说的话收短：第二步一大，呼吸就催，掌中的感觉散了；脚步短些，气息不追，自己便能在后脚落定前收住。说到这里，他忍不住抬了抬右手，像许庭就站在面前，正要接着问下去。手臂才举起，酸意便跟来，他又笑着放下。话记住了，不急在这一会儿。\n\n",
+              "start": 2571,
+              "text_hash": "sha256:445010386c2358e22c5a1495ae418dec11c3b70e9cc5b5d19799fb8b172d5ba9"
+            },
+            {
+              "end": 2839,
+              "text": "若她问想往哪里再走，他也有自己的回答：不是先求更多步，而是想学会怎样在走到头时换个方向，仍不让脚催着气息跑。只加这一项，便能和今日做过的事接起来。至于她怎样教，他愿意到平地上听，也愿意照着做；已有的那几步不必再拿回去当作什么都不会。\n\n",
+              "start": 2721,
+              "text_hash": "sha256:14c82f5d15bc03999ec751b5cb0e75f17cc2884a4b6cdbd5fa0c18dc94171a8a"
+            },
+            {
+              "end": 2963,
+              "text": "木片搁在身旁，风从平地上过，边角贴着地面的细土。他捡起来，用拇指拂去土，再把它放回先前取物的地方。没有把它留在自己膝头多磨一会儿，也没有一路拿着偷练。他还想再走，这是好的；肩臂已经倦了，也是真的。把两件事各安顿好，比方才硬要追上第二步舒服得多。\n\n",
+              "start": 2839,
+              "text_hash": "sha256:e3e44a84a7d11896950a3c54bfa64c28f3b0c3c96cf99e00363027c7fbf9e357"
+            },
+            {
+              "end": 3113,
+              "text": "沈砚空着手坐了一阵，等呼吸平缓，才起身离开。脚印浅浅地连在身后，有一步跨得大，后面的几步近些。他没有回去重新踩齐。明日能用上什么，已经在今日几轮里慢慢清楚了。走到平地边，他又回头看了一眼，心里想着下一次怎样开口，也想着许庭看见自己独自收住时，会不会像昨日一样只点一下头。哪怕只有一下，他也想让她看看。",
+              "start": 2963,
+              "text_hash": "sha256:687f3737a1a39ca1ad76a9ce149e8578ff7fa7bd86af51064696b18ad1dc8ffd"
+            }
+          ],
+          "text_hash": "sha256:999f4f4e71df2d56c006cc3d6c834219e9d43eafb510581c871a1fe8af1a5fc0",
+          "content_hash": "sha256:cbd81946f477b3d5712af46b8ec03fb83be4201128376511d0877fce6cc514c1",
+          "omitted_ranges": [],
+          "asset_version_id": "37dda880-f890-4e84-9b79-f188459b4ddb",
+          "source_characters": 3113,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 31,
+              "via_chapter": 32,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            },
+            {
+              "chapter": 32,
+              "via_chapter": 33,
+              "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+              "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            },
+            {
+              "chapter": 33,
+              "via_chapter": 34,
+              "source_asset_version_id": "authority-output:d25b7604-1143-4f3f-8de5-889eba9fe02e:chapter.draft:v1",
+              "current_asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38"
+            },
+            {
+              "chapter": 34,
+              "via_chapter": 35,
+              "source_asset_version_id": "authority-output:7b2b5b7e-9d02-45df-bfaa-a851cde4263a:chapter.draft:v1",
+              "current_asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 38,
+          "passages": [
+            {
+              "end": 100,
+              "text": "既有的答疑时段到了，沈砚又来到那片熟悉的平地。昨日留下的脚印已经看不清，土面踩上去仍旧平实。他先抬了抬右臂。肩头还有一点沉，手指张合却不受妨碍，便从原先放物的地方取了木片，照平常拿东西的力道握住。\n\n",
+              "start": 0,
+              "text_hash": "sha256:066329bad766189a35110c9976c517cacc8261de7fe7518cff21847dfab0febf"
+            },
+            {
+              "end": 137,
+              "text": "许庭正收起手边的东西，见他走近，目光先落在他脚下。“今日要问哪一步？”\n\n",
+              "start": 100,
+              "text_hash": "sha256:688f9a253229134627dca6b61d095a242152cfbf93599c3255e377bde16aad4f"
+            },
+            {
+              "end": 220,
+              "text": "“走到头换方向。”沈砚把要说的话收短，“我自己走直路时，第二步跨大了，呼吸就跟着催，掌里的感觉会散。缩短些，脚还在走，我能把它收住。我想知道转身时该先顾哪只脚。”\n\n",
+              "start": 137,
+              "text_hash": "sha256:f1b2eaa7d7e5d49728515d35d259e085bfec75314a50fa9547cc6925031f4b3f"
+            },
+            {
+              "end": 246,
+              "text": "他朝平地上的一小段直路指了指：“我先走给你看。”\n\n",
+              "start": 220,
+              "text_hash": "sha256:1fced4af6bae715d0c7a68de52cc84ead0fe4b537c23bbaad48560aaa808f01f"
+            },
+            {
+              "end": 386,
+              "text": "许庭让开前方的空处，没有接着讲。沈砚站稳，木片的薄边压在指腹上。他缓下一口气，掌中浮起那点熟悉的细暖，才迈出短步。第二只脚抬起时，他没有赶着同前脚并齐；鞋底向前送，呼吸仍能慢慢接上。走到第三步将落未落，暖意还在，他照练熟的快慢把它收住。脚掌随后贴实土面，手指仍承着木片的重量。\n\n",
+              "start": 246,
+              "text_hash": "sha256:3473a95c1b45ecc768f0170a4c06d89ad8dcc2326236d3ef8dab813a2723399e"
+            },
+            {
+              "end": 423,
+              "text": "许庭走近两步，看了看他停下的位置：“再从那头走回来一小段。只走直的。”\n\n",
+              "start": 386,
+              "text_hash": "sha256:6e0418d34e58ec4189f404f6e4c107a101562125cf5588ad15b1071c8c971a33"
+            },
+            {
+              "end": 537,
+              "text": "沈砚按平常的步子回到起处，再照方才的短步走了一回。这一次右臂微沉，他不为求多走而加步数，在脚未落定时便收了掌中细暖。许庭看着他的脚落稳，才开口：“我看见你两回都在走着收了，没有靠站定等它散。转身可以加上，但今日只加这一件。”\n\n",
+              "start": 423,
+              "text_hash": "sha256:51c1bb9e819164785d35e6a30c1b63ce97702e700a73307c75f5773695ed1302"
+            },
+            {
+              "end": 629,
+              "text": "沈砚原本想把直路接成一个来回，听到“只加这一件”，反而把前方那段路看得更清楚了。直着走时，脚只需朝一处去；走到头，两脚都想快些换向，呼吸也容易跟着赶。他问：“是到了头先停，再转？”\n\n",
+              "start": 537,
+              "text_hash": "sha256:2b6e8d682f160b5ab0a8bb197b0096ac348fc6a2f5b3cb294953b9421ce8bd5c"
+            },
+            {
+              "end": 774,
+              "text": "“先看我这一小段。”许庭握着一件寻常轻物，沿他刚走的方向缓步向前。临到转身处，她让前脚落稳，身子没有立刻拧过去。下一口呼吸缓缓接上，她才把另一只脚朝回程方向挪出很小的一步，腰身随脚转，后脚再跟过去。整个人换了方向，步子仍短。她在脚继续移动时收住自身的起意，手里那件东西却一直由手指拿着。\n\n",
+              "start": 629,
+              "text_hash": "sha256:d9f2dfd1788b883f12cdfe637411dfe48037ae853fd39290135b3498953c0e59"
+            },
+            {
+              "end": 867,
+              "text": "许庭回头，又用脚尖比了比方才挪开的距离。“先让承重的脚站实，气息接得上，再挪换向那只脚。脚若一下抢到前头，你为了追它，呼吸也会变浅。先做半转，把这几步分清；做稳了，才接一小段折返。”\n\n",
+              "start": 774,
+              "text_hash": "sha256:5790cb55c39f783c224c10815dcf48561a4f5d15b550a273d6cbd5024a316db5"
+            },
+            {
+              "end": 982,
+              "text": "沈砚望着她留下的浅印。前一只脚没有急着拖动，后一只脚也没有大跨出去；两处印子靠得近，足够身体慢慢转过去。他把手里的木片握回自然的位置，退到那段平地的起处。这一次，他要试的不是再多走几步，而是走到头时，能否让脚等得及自己的呼吸。\n\n",
+              "start": 867,
+              "text_hash": "sha256:b681397749dd99f7c85c9f6b95d1572ba983910d04d6b2bf5b58231c9bf4534a"
+            },
+            {
+              "end": 1131,
+              "text": "沈砚沿着刚才那段路缓步走出。前两步同走直路时相仿，木片在指间，细暖在掌中，右肩虽沉，还能让手臂自然垂着。到转身处，他记得要先站稳，也确实让前脚落了地。可眼睛一瞥回程方向，另一只脚便急着跟上，脚尖比许庭示范时多跨出一截。身子被这一步带着转快，吸气也短了一下。掌中那点细暖在他准备收住之前已经散了。\n\n",
+              "start": 982,
+              "text_hash": "sha256:f5bf213de230df5ad6e1e0c69aaefdf2d817d692650bf5f3857772fe702a02a1"
+            },
+            {
+              "end": 1238,
+              "text": "他把后脚落稳，没有追着那点已经散去的感觉再走。木片仍好好夹在指间，重量也没有变；只是方才那一下转得急，胸口还在赶。他低头看脚印，换向那只脚几乎赶到了前脚外侧。直路上已经辨出过的毛病，到了转身处又换了个样子出现。\n\n",
+              "start": 1131,
+              "text_hash": "sha256:eeb0bfb4195345ca7cb47311a97ef821d719d0710290267ee482038957fb9580"
+            },
+            {
+              "end": 1271,
+              "text": "“脚先过去了。”他对许庭说，“我看着回来的方向，想一步转够。”\n\n",
+              "start": 1238,
+              "text_hash": "sha256:611d400fd93555505188c56e35d8d4c6df6d18a2058fe916f8a1ef5766cd5b10"
+            },
+            {
+              "end": 1366,
+              "text": "“你刚才前脚站住了。”许庭指向较近的那处印子，“后脚一跨大，气息才被带走。先让它只挪半步，别急着把人整个送回去。”她说完便停在一旁，把平地留给他。沈砚看得出她没有打算替他数完每一次脚步。\n\n",
+              "start": 1271,
+              "text_hash": "sha256:ebb83551d589b1d283fa282199f92e83d3d20fa55331716cc19530a6b1563ba8"
+            },
+            {
+              "end": 1502,
+              "text": "他原想立刻重来，右臂却在抬手时发沉，指根也有一点绷紧。沈砚把木片放到平地边，舒开五指，沿着不挡人的地方空手走了几步。没有拿东西，肩头的倦意反而更分明。他坐下，让两臂自然垂着，等呼吸不再带着方才转急的短促。许庭没有催他，只看了一眼日影，又把目光放回他准备练的那小段路上。\n\n",
+              "start": 1366,
+              "text_hash": "sha256:3f70f18fffce2a8b0fb43504d060bf0284776cf6a0d8ca767800f9e8eb865941"
+            },
+            {
+              "end": 1644,
+              "text": "歇过后，沈砚重新拿起木片。他先不求折返，只在原处做半转。前脚落稳时，他让那一口气完整地缓过去，另一只脚才朝旁边移开半步。脚尖指向回程，身子随之转动，后脚短短接上。木片的边角硌着指腹，掌中细暖还在。他没有等全身停定，趁后脚仍向前落，把暖意主动收住。木片始终由手指握着，没有轻上一分。\n\n",
+              "start": 1502,
+              "text_hash": "sha256:c20100cc4dd98ea1fbbf8b6ed16657b68ecce379ac1e5f83e2eb9cc7706d1196"
+            },
+            {
+              "end": 1701,
+              "text": "这回他站定后，先看了看两脚。转身处的印子比头一回近，肩也没有随着腰身猛地提起来。许庭问：“哪一步同刚才不同？”\n\n",
+              "start": 1644,
+              "text_hash": "sha256:0348d7bb446bedb4d874d5e572833a0df159c60f10973bf112db25558cb98f19"
+            },
+            {
+              "end": 1774,
+              "text": "“换向那只脚短了。”沈砚说，“前脚站实以后，我还来得及把气接上。暖意是在后脚走着时收的。”他把“来得及”说得很慢，像在重新听那一口呼吸的长短。\n\n",
+              "start": 1701,
+              "text_hash": "sha256:e1cbb5ccb84ee9b8c350f2d15ae176083a792a60da39be787cbadf0932172173"
+            },
+            {
+              "end": 1808,
+              "text": "许庭点了一下头：“记住这个次序。再试，走到头后只接一小段回来。”\n\n",
+              "start": 1774,
+              "text_hash": "sha256:40715519f6bb0af15ca63d2d5c14518229555116ff91a6e3f234df9e5afadc79"
+            },
+            {
+              "end": 1982,
+              "text": "沈砚把木片暂放下，等握物的手指松开，才回到起处。下一轮，他拿起木片，直着走两步，到头时先落稳前脚。换向的脚沿土面移出短短一段，身子转过半圈，后脚跟着接上；他没有为了赶回原处而把回程步子放大。走回一步，掌中那点细暖尚能辨清，他在脚未落完时收住。胸口没有被转身催出一口急气，右臂却比上一轮沉了些。他把木片放下，站着活动肩臂，随后在平地边又歇了一阵。\n\n",
+              "start": 1808,
+              "text_hash": "sha256:8f68af050e3f84fd786ae67e2c21d2945bdd3a2013705c42e76da944784420ab"
+            },
+            {
+              "end": 2158,
+              "text": "许庭看了看余下的时辰，还来得及让他再走两轮。她看他重新握稳木片，才示意他照同样的一小段再走。第三轮转身时，后脚落地擦起一点浮土，沈砚的目光差点追着那道痕走。他让脚掌贴稳，不赶下一步；呼吸虽浅了一瞬，掌中的细暖仍在。转过身，他只走了短短一步，便在行步中收住。木片没有晃，指根却扣紧了些。他停下，把这点多余的力松开，也没有借刚才的一次成功立刻加长路程。\n\n",
+              "start": 1982,
+              "text_hash": "sha256:87dba747b07376cb28a964c020a8263e26c9b615d952541d3f72eb344c4d811b"
+            },
+            {
+              "end": 2402,
+              "text": "又歇过一回，他从起处走到转身处。前脚承住身体，换向的脚小幅移开，腰身跟上，后脚再落。那口气跟得上脚步，细暖在掌中短短留着；他还在慢慢往回走，便自己把它收下。几轮里，每次肩臂的轻重、脚底碰到浮土的感觉都不全一样，能做成的范围却清楚：这片熟悉平地，手里一块普通木片，走得慢、转得短，并在疲倦加重前分轮停下。头一回抢快时，感觉先散，他没能收；后来几回，都是辨出细暖还在，才由自己收住。沈砚低头看了眼自己留下的脚印，嘴角慢慢松开。头一回走偏的印子还在，后来几回落得近，像是绕着它另踩出一条路。\n\n",
+              "start": 2158,
+              "text_hash": "sha256:3ce62d9815a6dbee6615e3262ae097c32a6abb2b31342b97ccebbd3b831fb81f"
+            },
+            {
+              "end": 2437,
+              "text": "许庭看着他收好最后一步，问：“若换成搬东西转身，也照今日这样算？”\n\n",
+              "start": 2402,
+              "text_hash": "sha256:01a55bb5c28f9948c50c6bdebd06a8692dca17dda0d41588213f397657ed2741"
+            },
+            {
+              "end": 2543,
+              "text": "沈砚想起山路上两手托石时，重量会偏向哪一边，脚下也须先找实处。眼前这块木片只压着几根手指，平地又是自己熟悉的。他摇头：“还不能。我今日拿的是轻物，转的也是这段平地。换了分量，脚和肩怎样跟上，要到那时才知道。”\n\n",
+              "start": 2437,
+              "text_hash": "sha256:1423e52854709e30439135d3b5b5de63be3514a89dac0a7f188d0fb30d14d50c"
+            },
+            {
+              "end": 2581,
+              "text": "“先把今天这几步留住。”许庭说，“下次自己练，仍从短的做起，累了就停。”\n\n",
+              "start": 2543,
+              "text_hash": "sha256:d7c8b93f0765ab1253f5f4ee6e0f79ff0c69b379ef2b7cbf0e694270a85238bb"
+            },
+            {
+              "end": 2662,
+              "text": "沈砚看着她，忍不住又看向那段回程。来时觉得转身是直路尽头一道碍事的弯，现在它仍在，却不再把他挡回起处。他刚才确实带着掌里的细暖转过来了，还能在行步中把它收住。\n\n",
+              "start": 2581,
+              "text_hash": "sha256:92c69fa4ed41f32231965dd36417357b8adae8a47bf1d5132f9d376321c10d84"
+            },
+            {
+              "end": 2701,
+              "text": "“我原想一转就走回原处。”他有些不好意思，“看你那么走，好像只挪了一下。”\n\n",
+              "start": 2662,
+              "text_hash": "sha256:27823efcd810bcef566515ab51bf4aa20760886b47454793023ae7a50dcf0d56"
+            },
+            {
+              "end": 2738,
+              "text": "许庭望了望两头的距离：“你看的是人已经回来了，脚底下几步倒略过去了。”\n\n",
+              "start": 2701,
+              "text_hash": "sha256:149e4db3df2ea54f94da84bff93d02e417b50031b1b6c3e5046a4b8798c4d379"
+            },
+            {
+              "end": 2818,
+              "text": "沈砚笑了一声。她示范时，他眼睛跟着她肩头转，等肩头换了方向，便觉得人也该一步换过来。脚在下面，平时自己日日用着，到了想学会一件新事的时候，反而把它忘得最快。\n\n",
+              "start": 2738,
+              "text_hash": "sha256:085efe211d3ac3dde6011dfce23aba84a8ef3149e9153e6e0181fa4474ad1eeb"
+            },
+            {
+              "end": 2890,
+              "text": "沈砚应下，伸手去拿木片，拿到一半又停住。手指关节还有些紧，他已经走了几轮，许庭也都看过。他把手收回来，留着那一点高兴，没再拿一回练习去压它。\n\n",
+              "start": 2818,
+              "text_hash": "sha256:19b11c1541403aeeb5cf3cfa685f98be028eb7728165b13305dfe070308fb633"
+            },
+            {
+              "end": 2914,
+              "text": "“方才回来那一步，比走出去还容易急。”他说。\n\n",
+              "start": 2890,
+              "text_hash": "sha256:89431c9ff43dcb4ecaab110dc61b5e0494d026d4886482a3ddc71c2126ea0f71"
+            },
+            {
+              "end": 2966,
+              "text": "“因为你想着快到了。”许庭说完，朝他停过的地方点了点，“下次走到这里，还记得等一口气，就少追一步。”\n\n",
+              "start": 2914,
+              "text_hash": "sha256:363f3467c8016712c6212c70507a46491ec8b3aadaa76394ed2ae6706d873caf"
+            },
+            {
+              "end": 3107,
+              "text": "沈砚把那处浅印看在眼里。它很小，挨着鞋底擦起的浮土，过不了多久便会被别的脚印盖住。他没有拿枝条去画线；记住自己为什么抢那一步，比留下一个记号更有用。许庭看了时辰，收好自己的东西：“答疑到这里。我也该去练了。”她沿平地一侧走向自己平日修炼的位置，脚步没有为他放慢，也没有催他跟上。\n\n",
+              "start": 2966,
+              "text_hash": "sha256:cacca7eb92530b6ee65c8f3f86ce760176864036be782f8695f8c40b95877127"
+            },
+            {
+              "end": 3288,
+              "text": "沈砚向她道谢，退开让出路。掌中的细暖早已收尽，指腹还记得木片薄边的硬，右臂也记得几轮练习用去的力气。他把木片放回原处，沿平地向外走。经过那处转身的脚印时，他照寻常步子回过头，向已走开的许庭又望了一眼。她正把自己的练习处收拾妥当，没再看他。沈砚便转回来，走出平地。昨日他练着练着，总想有个人看见才放心；今天有人教过、看过，也已经离开了，往后那些短步仍得自己走。\n\n",
+              "start": 3107,
+              "text_hash": "sha256:a0dfb3e64f1a48b879882a14e817e2892dfe0fafc9dc54401c435c5b12655ae8"
+            },
+            {
+              "end": 3380,
+              "text": "他并不觉得这件事扫兴。那一小段回程是自己一步步接出来的；下回若遇到需要回身放物的差事，他倒愿意站近一点，看看手里的东西会怎样牵住脚步。右臂的酸意随行步渐渐分明，他松开手指，先让它歇着。",
+              "start": 3288,
+              "text_hash": "sha256:2bb4d10f7ac94850cd03a24b96d96f3593f0e778cbfe86bdbaa2ff4ed8f28d4f"
+            }
+          ],
+          "text_hash": "sha256:b9f028409f7ab9ba4dbe93e5053b4883b9d4fc66e6e7123aeb7b4f3ae4a0a380",
+          "content_hash": "sha256:71d58c38601e826b634e97dd3dd31ea850d535d643d935cf037f28acba550e52",
+          "omitted_ranges": [],
+          "asset_version_id": "201925b1-609d-4d09-a9ca-b925b8db0e4f",
+          "source_characters": 3380,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 31,
+              "via_chapter": 32,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            },
+            {
+              "chapter": 32,
+              "via_chapter": 33,
+              "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+              "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            },
+            {
+              "chapter": 33,
+              "via_chapter": 34,
+              "source_asset_version_id": "authority-output:d25b7604-1143-4f3f-8de5-889eba9fe02e:chapter.draft:v1",
+              "current_asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38"
+            },
+            {
+              "chapter": 34,
+              "via_chapter": 35,
+              "source_asset_version_id": "authority-output:7b2b5b7e-9d02-45df-bfaa-a851cde4263a:chapter.draft:v1",
+              "current_asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "chapter": 39,
+          "passages": [
+            {
+              "end": 129,
+              "text": "沈砚沿着平地走到器架旁时，先看见程观站在架脚，正把一只空浅盘从旁边挪开，让出脚下的位置。架子离平地不远，中间一段土路踩得平实，盘和薄木托却还留在架侧，没有人动。沈砚的右肩比昨日练完转身时松快些，抬臂仍能觉出一点倦意。他便先停在架外，等程观把手里的盘放稳。\n\n",
+              "start": 0,
+              "text_hash": "sha256:2b53b54209c71103ccbb741b69afcdc06975a355efce84077198b2e3a884d528"
+            },
+            {
+              "end": 222,
+              "text": "程观抬头时，沈砚还在想着今天先往哪处练习。听见对方招呼，他应得很快，走近两步又放慢下来。架边有东西待搬，眼前有一条不长的路；这样的活，他见了就想伸手，却还不知道程观叫住他是为哪一件。\n\n",
+              "start": 129,
+              "text_hash": "sha256:66b6000a1c3f5fc0d289e87cadca6f445b2b405fd36cd7736b5a5d004765e661"
+            },
+            {
+              "end": 308,
+              "text": "“来得正好。”程观指了指身旁，“近坡那次，你们做过的和没动的都交代清楚了。我这里眼下有一段整理，你若愿意，可以自己接一部分。”他说完没有催沈砚应声，先让他看架上的东西。\n\n",
+              "start": 222,
+              "text_hash": "sha256:28b90a775125d8eded9af5d0d35c835f681c823a82a17c4f180e281d2fb47f53"
+            },
+            {
+              "end": 411,
+              "text": "沈砚听见“自己接一部分”，胸口轻轻一热。近坡的枝石已留在山上，程观也听完他们的交代，他原以为那件事就此过去了；现在，对方把它带到这座器架旁，问他愿不愿意。沈砚没有立即说愿意，却已沿着程观指的地方看起来。\n\n",
+              "start": 308,
+              "text_hash": "sha256:51c93f44fa75bf859d9f19834509a914b93f938d437d6da7dbbbcd0c8a827db9"
+            },
+            {
+              "end": 446,
+              "text": "靠外有一排空浅盘，旁边叠着薄木托；再往里还有物件，程观没有指过去。\n\n",
+              "start": 411,
+              "text_hash": "sha256:69fabc3871220045d00cc15ab12d88c2f5283327ad227b76891c8d4796320628"
+            },
+            {
+              "end": 569,
+              "text": "程观说，器架下层今日要腾出地方清理，暂放在外侧的盘和木托须先移到平地上。平地边已有一块空处，盘口朝上放稳，木托另排一列，不能把两样东西随手堆在一起。“你先看外侧这一段，”他用手指从架侧比到空处，“接多少，先说清楚。里面那些留着，我另有安排。”\n\n",
+              "start": 446,
+              "text_hash": "sha256:66f0cfca39f612119d33eed224a24da588715997eca273c478bbf0a632af66c0"
+            },
+            {
+              "end": 692,
+              "text": "沈砚顺着他的手看过去。两头之间不过一条短路，可架上的物件得逐件取下，走到平地放稳，再空手回来。浅盘看着轻，端在手里也不能像拎柴那样任它晃。昨日握着木片练转身的几步浮上心头。他顺着短路看了一眼，盘在手里该怎么转、怎么放，却还得自己端起来才知道。\n\n",
+              "start": 569,
+              "text_hash": "sha256:37e03a1d1a3b85b5ce97f7de36b78b9741fe43a7b50f5c6231a007229a5b7ddf"
+            },
+            {
+              "end": 823,
+              "text": "“从现在起，到日影移过平地边那块长石为止。”程观指明石头的位置，又指回架旁，“到时停手，不够做的留在原处。已经移过去的，按盘和木托分别核对；盘要放稳，边口别磕着，木托别压在盘里。你当面告诉我哪部分动了、哪部分还在，我照实际情况记。这一段做得怎样，做完再说。”\n\n",
+              "start": 692,
+              "text_hash": "sha256:167de91568c5772025d5a123a50920e220ff67df838fae8448fcb62ee672c2d2"
+            },
+            {
+              "end": 962,
+              "text": "沈砚把那块长石和架脚在日光里的位置都看了一遍。程观把选择留给他。他目光往架里挪了挪，很想让人觉得自己能多做些；右臂一抬，肩头那点倦意却跟着提了起来。他目测了两处之间的步数，又看了看靠外那叠木托的高度。程观还等着他定范围，沈砚没有伸手取物，先在心里把一趟往返所需的工夫算进去。\n\n",
+              "start": 823,
+              "text_hash": "sha256:16b9abeed1f2735492f080c26e22ab627d3aba225bff0403382881219a504182"
+            },
+            {
+              "end": 1147,
+              "text": "今早的劳作已经占过一段工夫，昨日几轮练习留下的肩臂倦意也还没全退。若把日影移到长石前的时间全算作搬物，他或许能多说几件；来回走路、摆稳盘子和中途歇手，却一样都省不掉。余下的日子，他还想留一点工夫照许庭教过的短步自行练习。沈砚看着靠外的物件，向程观说：“我接这边三只空盘，还有这叠木托的上半截。先按这部分搬；若到时还没放妥，就照实际做过的交回，不把底下那半截算进去。”\n\n",
+              "start": 962,
+              "text_hash": "sha256:83a4ba60bdd3568ee95eacc25c1f8ddbdcde55313d9a441a8359b8b4d0253af2"
+            },
+            {
+              "end": 1273,
+              "text": "程观走近架子，拨开叠在一起的木托，让沈砚看清两部分的分界。“三只盘，木托到这里。”他重复了一遍，又问，“你要把木托放在哪边？”沈砚指向平地上离盘位隔开的一侧。程观点头：“先把路走通，别抱着东西到了那边才找落点。我还有旁的事，日影到长石时回来核对。”\n\n",
+              "start": 1147,
+              "text_hash": "sha256:a556f5f225c86f0a8022e27a50269aa3f1729997df6bc3eb70796620c3ea8071"
+            },
+            {
+              "end": 1404,
+              "text": "沈砚差点接一句“我都记住了”，话到嘴边又咽回去。先说得满满的容易；等日影到了，人走回来，眼前那三只盘和木托摆在哪里，才是自己的回答。他点了点头，反而觉得心里踏实。程观并没嫌他接得少，也没把他说出的休息时间削掉。他让开架前的位置，沈砚接下的范围便留在两人眼前。\n\n",
+              "start": 1273,
+              "text_hash": "sha256:af40c0e69ae753a16cc827d9a484efb261660d965b05b84932108f3464f8a21e"
+            },
+            {
+              "end": 1567,
+              "text": "唐穗这时从平地另一侧过来，目光先落在架边的浅盘上。她听沈砚把分工简短说了一遍，走到盘旁，却没立即帮他取。她微微侧身，看看盘沿在架上的朝向，又望向平地上预留的位置。“我想看它们从架上挪到那边，盘边的影子会怎么变，”她对沈砚说，“摆放角度也想记一记。我能留一段工夫，帮你把落点理开，搬一只轻的；整段搬放还是照你接下的范围做。”\n\n",
+              "start": 1404,
+              "text_hash": "sha256:fe9e9c11fcda22d56d36c6f7b81321f937ab0937674010812f27f3e963177537"
+            },
+            {
+              "end": 1625,
+              "text": "沈砚想起她在近坡时肯换个位置看贴着石缘的土，也想起她提过盘边那几点粗影。那几点粗影还没有弄清。沈砚答应让她先看。\n\n",
+              "start": 1567,
+              "text_hash": "sha256:3fdc590980dacd9c412ec1f08b2947332ee9ec66b6cf6ddd308dccd2b5796f94"
+            },
+            {
+              "end": 1646,
+              "text": "“你看盘边，比我端盘子还费心。”他说。\n\n",
+              "start": 1625,
+              "text_hash": "sha256:6d557bb7f1aa626f5b7b50c1dc898b533772e08353292058f26f7c960baa8b9d"
+            },
+            {
+              "end": 1719,
+              "text": "“你端的时候总看脚下，我不看盘，谁看？”唐穗顺着盘口低下头，过了一会儿才补上一句，“我还想看摆下去以后。端来端去，影子一直动，眼睛也跟着跑。”\n\n",
+              "start": 1646,
+              "text_hash": "sha256:ab8a1b194bef86ebde3e6c26e960d418b72b2f03fdb5e42e1e715025b8dd51f4"
+            },
+            {
+              "end": 1852,
+              "text": "沈砚忍不住笑。他只想别把盘晃出去，她却连停稳之前的影子都放在心上。两人站在同一座架旁，心里追着的东西竟能这样不同。他问她何时须走。唐穗指了指还没移到长石的日影：“到那边以前我就得收手。你要是先搬木托，我可以趁空把盘落下的位置看好；别等我走了才发现盘子挤在一处。”\n\n",
+              "start": 1719,
+              "text_hash": "sha256:d070237c2ce4a4c49794187608b026c452c1be72e459eea94150e5baaa486944"
+            },
+            {
+              "end": 1994,
+              "text": "两人沿短路走了一遍。沈砚在平地上蹲下，摸了摸预定放盘的土面，拣开一颗凸出的碎石；唐穗站在架边，照着盘沿宽窄比出三个不相碰的位置。她将自己能看清的空处指给他。沈砚回头望程观，见他仍在旁边收拾经办的纸物，便向他说明要先取最外一只。程观应了一声，目光落在那只盘上，等他把双手放好才转开。\n\n",
+              "start": 1852,
+              "text_hash": "sha256:ac6d32bb6778bfa938b4096f9ecbacfd44e35f938d162d8a9d2705e829a28f44"
+            },
+            {
+              "end": 2183,
+              "text": "沈砚先把上层一片薄木托取下，在手里掂了掂。它确实不重，边角却顶着掌根；再添一片时，右肩便不自觉向上提。他把第二片放回去，只拿一片走到平地。短路比目测时多出几步，尤其临到落点，要放慢脚步找准木托该排的位置。木托贴地后，他松开手指，确认它没有压住盘位，才空手折回。折回架边时，他望向刚才空着的那一侧，第一片木托已经平平放在那里。事情总算在自己手里动了，接下来得照手上这点力气做。\n\n",
+              "start": 1994,
+              "text_hash": "sha256:09c688fd8077d6011966d86f475a515883c69549c935be408c64b2b66a51754c"
+            },
+            {
+              "end": 2339,
+              "text": "接着他取最外那只浅盘。双手托住盘底时，重量稳稳压在指腹上，比木托更不容他随意换手。唐穗退到路侧，把刚看好的空处让出来。沈砚走到平地边，前脚先站实，后脚才挪向盘位；若照昨日握木片时那点小转身的轻巧去估量，盘沿便会随着手臂晃。他索性停稳了再屈膝，将盘缓缓放下。盘底触土的一声很轻，他仍等两手都不再承重，才抽开手。\n\n",
+              "start": 2183,
+              "text_hash": "sha256:7f8ead47bc4976654f7e34f9deb0661a165e1cb7f9fe8692ad778f40f773d44f"
+            },
+            {
+              "end": 2498,
+              "text": "唐穗从架边走到盘旁，先看两处盘沿朝光的一面。“在架上，粗影挨着这边的浅线；到这里，影子又往盘沿里收了。”她只说自己看见的变化，换了个角度再看，也没给那几点粗影起名字。沈砚照她指出的位置，将盘与木托之间留出一段空隙。唐穗随后搬来一只她能稳稳端住的空盘，放下前请沈砚看一眼两只盘是否相碰；他蹲下确认盘沿分开，她才松手。\n\n",
+              "start": 2339,
+              "text_hash": "sha256:941bdd89ce08ce51f65c7b356b7f31b9197f91aa051dd23cdc271afc7f42cbd1"
+            },
+            {
+              "end": 2614,
+              "text": "唐穗松开手以后仍蹲在盘旁。沈砚本想叫她一道折回去，见她侧着头找先前那道浅线，便自己起身。她搬的那只已经算在他接下的三只里面，他不会再取一只补出“自己搬的三只”；她愿意伸手，手里的活便少了一件。他想到这里，回架边的脚步也轻快起来。\n\n",
+              "start": 2498,
+              "text_hash": "sha256:95535e675960568164a90619580c09f94675239dbee0cbd6ac44e34d9d0003eb"
+            },
+            {
+              "end": 2789,
+              "text": "沈砚再次走回架边，右臂已有些发沉。他原先按眼见的短路估算，算得出往返，却没算足每次俯身、托起和放稳之间的停顿。若接着照第一趟的步幅赶，肩头便会替手指多用一股劲。他靠着架外不挡路的地方站了片刻，让两臂自然垂下，慢慢张合手指。掌中浮起一点熟悉的细暖，他辨出呼吸正要随着下一步催快，便在动身前将它收住。气息慢下来，他望着那段土路，把下一趟的步子缩短些。\n\n",
+              "start": 2614,
+              "text_hash": "sha256:c4e2c5a545c835ce2a89d47b59790bb3f90168515dce7bae0625f00d033c8b04"
+            },
+            {
+              "end": 2980,
+              "text": "唐穗没有趁他歇着把剩下的盘全端走。她指着平地上已放好的两只，问木托下一片是否还照先前的一侧排。沈砚走过去，重新看了看空隙，说可以再往外留半掌宽，免得后来取盘时碰到木托。她依言挪开位置，拿起一片薄木托；沈砚从架上取下另一片，照刚才试出的步幅沿短路走。长石旁的日影还没移到约定的位置，架上也还有他接下而未搬完的物件。两人一边放，一边回头核对各自刚动过的那一处，下一趟仍须亲手走过去。\n\n",
+              "start": 2789,
+              "text_hash": "sha256:9494443dcf793ae0357bacf31333f8790f1d21fc7b5c27ecb2fe87d52a1988d6"
+            },
+            {
+              "end": 3101,
+              "text": "沈砚把木托放下，直起腰，回望架上剩着的一只盘。日影正一点点向长石靠近，他能看见余下的路，也能觉出手指需要歇一下。若把这一段做完，程观回来时，他想站在已经空下来的架侧告诉对方：自己接的东西都在那边。先前听见“自己接一部分”时的高兴，就有了落处。",
+              "start": 2980,
+              "text_hash": "sha256:a33f455397f53d4df58fbbcd88072ca31cbb4cbf13c7f89a5cd520e9845fbf0e"
+            }
+          ],
+          "text_hash": "sha256:288e14d7c28052cee25027514f2e4ee954c5eca81768cbfb7608a8fe47098caa",
+          "content_hash": "sha256:a64be9098bd9371739ff0322be9b4d0d7e3e268b8ffed74b7bba2463c44df7c5",
+          "omitted_ranges": [],
+          "asset_version_id": "20920948-a60c-4801-ac9f-dc7a12664da4",
+          "source_characters": 3101,
+          "dependency_changes": [
+            {
+              "chapter": 17,
+              "via_chapter": 18,
+              "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+              "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046"
+            },
+            {
+              "chapter": 18,
+              "via_chapter": 19,
+              "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+              "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374"
+            },
+            {
+              "chapter": 19,
+              "via_chapter": 20,
+              "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+              "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7"
+            },
+            {
+              "chapter": 21,
+              "via_chapter": 22,
+              "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+              "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953"
+            },
+            {
+              "chapter": 23,
+              "via_chapter": 24,
+              "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+              "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea"
+            },
+            {
+              "chapter": 25,
+              "via_chapter": 26,
+              "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+              "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4"
+            },
+            {
+              "chapter": 26,
+              "via_chapter": 27,
+              "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+              "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c"
+            },
+            {
+              "chapter": 27,
+              "via_chapter": 28,
+              "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+              "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+            },
+            {
+              "chapter": 29,
+              "via_chapter": 30,
+              "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+              "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+            },
+            {
+              "chapter": 31,
+              "via_chapter": 32,
+              "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+              "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+            },
+            {
+              "chapter": 32,
+              "via_chapter": 33,
+              "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+              "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79"
+            },
+            {
+              "chapter": 33,
+              "via_chapter": 34,
+              "source_asset_version_id": "authority-output:d25b7604-1143-4f3f-8de5-889eba9fe02e:chapter.draft:v1",
+              "current_asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38"
+            },
+            {
+              "chapter": 34,
+              "via_chapter": 35,
+              "source_asset_version_id": "authority-output:7b2b5b7e-9d02-45df-bfaa-a851cde4263a:chapter.draft:v1",
+              "current_asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43"
+            }
+          ],
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 40,
+      "turn": 0,
+      "result": {
+        "root_operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+        "saga_id": "22275713-29a2-4ebb-8b03-5e3f5aa9e532",
+        "saga_status": "RUNNING",
+        "operation_id": "35d70f34-0423-4ec8-85dc-ae62344107a2",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 40,
+      "turn": 1,
+      "result": {
+        "root_operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+        "saga_id": "22275713-29a2-4ebb-8b03-5e3f5aa9e532",
+        "saga_status": "RUNNING",
+        "operation_id": "08e0b348-b891-48ee-bd26-a6b7077e0761",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 40,
+      "turn": 2,
+      "result": {
+        "root_operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+        "saga_id": "22275713-29a2-4ebb-8b03-5e3f5aa9e532",
+        "saga_status": "RUNNING",
+        "operation_id": "446f51cc-96ac-4c93-8564-e97e024d389d",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 40,
+      "turn": 3,
+      "result": {
+        "root_operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+        "saga_id": "22275713-29a2-4ebb-8b03-5e3f5aa9e532",
+        "saga_status": "RUNNING",
+        "operation_id": "837977e2-2486-4ee3-8f33-461df8a598f4",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 40,
+      "turn": 4,
+      "result": {
+        "root_operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+        "saga_id": "22275713-29a2-4ebb-8b03-5e3f5aa9e532",
+        "saga_status": "RUNNING",
+        "operation_id": "a0ab93fb-24d6-42a4-97c5-00fac66bacf3",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "CHAPTER_TICK",
+      "target": 40,
+      "turn": 5,
+      "result": {
+        "root_operation_id": "9a720be9-3763-43a8-9b7c-656cff10c061",
+        "saga_id": "22275713-29a2-4ebb-8b03-5e3f5aa9e532",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "51c5bd84-cfc5-4395-aa0a-f44ce4cceab1",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "SAVED_READ_BACK_EXACT_EXPORTED",
+      "target": 40,
+      "receipt": {
+        "operation_id": "ca6f522e-2e86-4dc1-8fa9-49e1fd3dd61a",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "chapter": 40,
+        "source_asset_version_id": "authority-output:51c5bd84-cfc5-4395-aa0a-f44ce4cceab1:chapter.draft:v1",
+        "source_content_hash": "sha256:7c35dddd949cc7b02fa78dcb0fc420f1f762f7f591f82fc5785bf217febddba5",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "asset_version_id": "authority-output:51c5bd84-cfc5-4395-aa0a-f44ce4cceab1:chapter.draft:v1",
+      "text_digest": "sha256:f57740f49e0e8cb7b1018f42689a156781301d34532c922bb01d70b94934e9a0",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2620,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "dependencies": [
+        {
+          "chapter": 17,
+          "source_asset_version_id": "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1",
+          "current_asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046",
+          "via_chapter": 18
+        },
+        {
+          "chapter": 18,
+          "source_asset_version_id": "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+          "current_asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374",
+          "via_chapter": 19
+        },
+        {
+          "chapter": 19,
+          "source_asset_version_id": "authority-output:ec440c3a-f2ff-42f8-8d16-3dbe6502c93d:chapter.draft:v1",
+          "current_asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7",
+          "via_chapter": 20
+        },
+        {
+          "chapter": 21,
+          "source_asset_version_id": "authority-output:dabadea3-767d-470a-b03d-455d7f242f2d:chapter.draft:v1",
+          "current_asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953",
+          "via_chapter": 22
+        },
+        {
+          "chapter": 23,
+          "source_asset_version_id": "authority-output:f683d051-1a2a-4204-9500-6ab27161f706:chapter.draft:v1",
+          "current_asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea",
+          "via_chapter": 24
+        },
+        {
+          "chapter": 25,
+          "source_asset_version_id": "authority-output:d4a22804-2495-4439-9419-f31f6a1de646:chapter.draft:v1",
+          "current_asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4",
+          "via_chapter": 26
+        },
+        {
+          "chapter": 26,
+          "source_asset_version_id": "authority-output:1ee6309e-3f7a-4b34-860d-45451676c5eb:chapter.draft:v1",
+          "current_asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c",
+          "via_chapter": 27
+        },
+        {
+          "chapter": 27,
+          "source_asset_version_id": "authority-output:f246ac58-0546-486f-b69f-b01207288d28:chapter.draft:v1",
+          "current_asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0",
+          "via_chapter": 28
+        },
+        {
+          "chapter": 29,
+          "source_asset_version_id": "authority-output:a92a0d5c-13c4-4e0d-9260-c88c3b21f19f:chapter.draft:v1",
+          "current_asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4",
+          "via_chapter": 30
+        },
+        {
+          "chapter": 31,
+          "source_asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+          "current_asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41",
+          "via_chapter": 32
+        },
+        {
+          "chapter": 32,
+          "source_asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+          "current_asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79",
+          "via_chapter": 33
+        },
+        {
+          "chapter": 33,
+          "source_asset_version_id": "authority-output:d25b7604-1143-4f3f-8de5-889eba9fe02e:chapter.draft:v1",
+          "current_asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38",
+          "via_chapter": 34
+        },
+        {
+          "chapter": 34,
+          "source_asset_version_id": "authority-output:7b2b5b7e-9d02-45df-bfaa-a851cde4263a:chapter.draft:v1",
+          "current_asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43",
+          "via_chapter": 35
+        }
+      ]
+    },
+    {
+      "phase": "EXPLICIT_QUEUED_EXPRESSION_SELECTION",
+      "target": 40,
+      "returncode": 0,
+      "author_decision": "NOT_GRANTED",
+      "human_feedback_gate": false
+    }
+  ],
+  "status": "DELIVERY_WINDOW_REACHED",
+  "final_book": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "book_design_version": "db9855a3-5d98-44ba-9f09-3ce437a9cb31",
+    "book_plan_version": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "production_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "longform_context_versions": {
+      "arc_plan_versions": [
+        "authority-output:aa4dadf8-e409-4921-a42c-0ceef850f0b7:story_planning.candidate:v1",
+        "authority-output:b75a932c-8e57-432f-8f41-fb5ee85b5678:story_planning.candidate:v1",
+        "authority-output:f38e7d16-c508-4fc4-9677-d6fb28181d5a:story_planning.candidate:v1",
+        "authority-output:bd397553-2236-4cc7-9c75-2fe54f228b54:story_planning.candidate:v1",
+        "authority-output:358953bc-ca0b-4393-a449-449da9a33b55:story_planning.candidate:v1",
+        "authority-output:6981b0a9-d992-4788-b8e1-5d1c2bdc887d:story_planning.candidate:v1"
+      ],
+      "volume_plan_version": "authority-output:a185b627-8c5b-4ead-904d-909d5c48beda:story_planning.candidate:v1",
+      "quality_trend_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "reward_ledger_version": "authority-output:4be19b7c-d137-49f2-bcef-35052376fc3d:book.bootstrap.reward_ledger_snapshot:v1",
+      "promise_ledger_version": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "reader_segment_version": "authority-output:08c731aa-7360-4e22-8581-1925dadf9f7c:book.bootstrap.reader_segment_profile:v1",
+      "character_state_version": "authority-output:50789306-2be0-42e9-b936-e22010e6c63c:book.bootstrap.character_state_snapshot:v1",
+      "reader_contract_version": "authority-output:376566dd-d0ce-4769-a7c1-6960e8014c28:book.bootstrap.reader_contract:v1",
+      "platform_profile_version": "authority-output:f159c4c5-0564-45b8-9886-9a8aabacaadb:chapter.platform_profile:v1",
+      "foreshadowing_state_version": "authority-output:62bb1c79-69a4-4fe1-8240-efcdb63e8556:book.bootstrap.foreshadow_snapshot:v1"
+    },
+    "root_operation_id": "c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "saga_id": "499c2651-12f1-45c7-9bbb-671764e83a78",
+    "stable_idempotency_key": "qinglan-five:continuous-work:v1",
+    "state": "READY",
+    "current_chapter": 40,
+    "target_chapter_count": 40,
+    "light_recap_cadence": 5,
+    "formal_recap_cadence": 10,
+    "active_chapter_request_id": null,
+    "version": 276,
+    "paused_reason": "",
+    "failure_classification": "",
+    "accepted_through_chapter": 0,
+    "active_child_delegation_id": null,
+    "active_chapter_number": null,
+    "active_plan_version_id": null,
+    "active_story_state_version_id": null,
+    "active_canon_snapshot_version_id": null,
+    "active_longform_projection_set_id": null,
+    "last_chapter_outcome_version_id": null,
+    "failure_reason": "",
+    "input_snapshot_id": "sha256:4d3ec1095c58d937ead0021bbd70285689eb4b8db1c18a79c6184bf30e9f1513",
+    "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    "author_workflow": {
+      "mode": "AUTHOR_FIRST",
+      "version": "author-workflow.v1",
+      "deep_review": false
+    },
+    "delivery_window_policy": {
+      "asset_version_id": "9c7d2641-de25-40ad-aaf8-8d073156b015",
+      "book_id": "book:qinglan-wendao-20261008",
+      "version": "book-delivery-window-extension.v1",
+      "project_id": "qid-learning-prose-01",
+      "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+      "workspace_id": "workspace:qid-learning-prose-01",
+      "current_chapter": 0,
+      "history_rewritten": false,
+      "stop_after_chapter": 40,
+      "source_book_version": 0,
+      "source_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+      "accepted_through_chapter": 0,
+      "full_book_target_chapters": 240,
+      "previous_stop_after_chapter": 3,
+      "previous_policy_asset_version_id": null
+    }
+  }
+}

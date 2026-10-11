@@ -1,0 +1,1097 @@
+{
+  "turn": "第29章无木片起收使掌中细暖有了明确而有限的自身用途；第30章一件完成的搬放证明他能在眼前需要中自主运用，后两章据实际结果转向合作与下一项任务。",
+  "type": "PlanningGenerationCandidate",
+  "book_id": "book:qinglan-wendao-20261008",
+  "trigger": "第28章所选工作已让沈砚在移步后的新站位做出一次起收，他希望这项已有能力离开木片也能成为自己会用的本领。",
+  "objective": "在第29—32章内承接第28章已交付的移步结果，让许庭有限指导帮助沈砚掌握无木片的短时自身用途，使他在当章完成的日常事务里用上它，并以同伴观察和明确任务条件进入下一段完整山林行动。",
+  "cost_range": [
+    "许庭只使用当次实际可用的答疑时段，结束后继续自己的修炼。",
+    "沈砚的练习、搬放、休息和行前准备各占实际时间；后续任务不得挤掉已明确的劳作与休息。"
+  ],
+  "project_id": "qid-learning-prose-01",
+  "contract_id": "chapter-group:containing:28",
+  "logical_key": "chapter-group:containing:28",
+  "local_climax": "第32章沈砚不再只问何时能学或接什么差事，而是凭已经练成并实际用过的小本领、同伴各自的兴趣和当期任务实物标准，选定自己的山林工作部分并完成第一项行前准备。",
+  "world_deltas": [
+    {
+      "change": "修盘者当场指出可移动陶盘和放置处；指定搬放完成后，盘的后续质量仍由负责者观察判断。",
+      "subject": "修盘处的陶盘搬放"
+    },
+    {
+      "change": "第32章在当期有权来源说明后形成有用途、实物标准与交付方式的后续山林任务准备；山林采集和交付尚未发生。",
+      "subject": "后续山林任务"
+    }
+  ],
+  "chapter_range": [
+    29,
+    32
+  ],
+  "emotion_curve": [
+    "第29章：从惦记移步差别到亲手掌握无木片起收，获得安静而确切的喜悦。",
+    "第30章：把小本领用在眼前劳作，完成搬放后感到踏实。",
+    "第31章：与唐穗交换各自看见和做成的事，生出温暖的合作期待。",
+    "第32章：看清下一项任务所需并动手准备，带着明确目标进入山行。"
+  ],
+  "frozen_inputs": [
+    {
+      "role": "arc_plans",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+      "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+    },
+    {
+      "role": "book_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+      "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+    },
+    {
+      "role": "story_state",
+      "asset_type": "story_state_snapshot",
+      "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+      "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+    },
+    {
+      "role": "volume_plan",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+      "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "role": "reader_state",
+      "asset_type": "reader_state",
+      "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+      "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+    },
+    {
+      "role": "quality_trend",
+      "asset_type": "quality_trend",
+      "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+      "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+    },
+    {
+      "role": "canon_snapshot",
+      "asset_type": "canon_snapshot",
+      "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+      "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    {
+      "role": "previous_chapter_group_outcome",
+      "asset_type": "previous_chapter_group_outcome",
+      "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+      "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+    },
+    {
+      "role": "related_arc:1",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+      "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+    },
+    {
+      "role": "related_arc:2",
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:f992a3778907880295fa2cc2dd0b81330fca74f5cdb19b73901a41b27ea5b027",
+      "asset_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "CHAPTER_GROUP",
+  "schema_version": "story_design.authority.v1",
+  "entry_state_ref": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+  "exit_state_spec": {
+    "summary": "拟在保留第26—28章所选工作连续性的前提下，使沈砚无木片也能短时起收掌中细暖，并在当章完成的陶盘搬放中据此调整自己的手与气息；唐穗获得晾定盘边的现场观察，双方各自选择可做之事。到第32章，沈砚依据当期有权者说明的山林任务条件，选定可承担部分并完成有用的行前准备；山行与交付仍属后续未来设计。"
+  },
+  "local_objective": "把第26—28章已经形成的基础起收，推进为沈砚能无木片使用、能用于一件完成的日常事务的小本领，再由实际结果导向有来源的下一项山林任务。",
+  "primary_arc_ids": [
+    "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+  ],
+  "quality_targets": {
+    "minimum": 80
+  },
+  "required_events": [
+    "第29章许庭在当次有限答疑时段说明木片回音与掌中细暖的自身用途，沈砚经必要练习无木片短时起收。",
+    "第30章修盘者指定可移动陶盘及位置，沈砚在实际搬放中使用自身小用途调整动作，当章完成搬放。",
+    "第31章唐穗亲看晾定盘边并交流所见，沈砚据已完成工作主动提出可承担的帮助。",
+    "第32章当期有权来源说明山林任务条件，沈砚选择可承担部分、明确分工并完成实物行前准备。"
+  ],
+  "character_deltas": [
+    {
+      "change": "能在无木片时短时自行引出、感受并收回掌中细暖，在陶盘搬放中据此留意手指紧绷并调整普通动作；继而主动选择自己可承担的下一项工作。",
+      "subject": "沈砚"
+    },
+    {
+      "change": "以沈砚亲述与当面表现为依据，给出有限而具体的用途指导，并明确鼓励他自行实践；答疑结束后继续自己的修炼。",
+      "subject": "许庭"
+    },
+    {
+      "change": "亲看晾定盘边后，把所见用于自己的辨料兴趣，并与沈砚交流各自能做的事。",
+      "subject": "唐穗"
+    },
+    {
+      "change": "若当期任务确在职责内，说明任务来源、用途、交付和可调整范围，支持沈砚作出可执行的选择。",
+      "subject": "程观"
+    }
+  ],
+  "forbidden_events": [
+    "重写第1—28章已选工作，或把工作稿经历称为已接受Canon。",
+    "把第28章第一次移步当作第29章才发生。",
+    "每换脚位就把已练成的基础起收归零，要求所有独练先经教师亲眼复核。",
+    "让许庭授予正式课程、器具或事务权限，或无限延长她的答疑时段。",
+    "让掌中细暖作用于外物、判断陶盘或材料质量、替他人施术或治病。",
+    "把第30章搬放拖延至下一章，或以反复询问代替行动。",
+    "虚构未核实的任务供给、报酬、库存、课位或劳动额度。",
+    "第32章提前完成后续山行或交付。"
+  ],
+  "hard_constraints": [
+    "准确规划第29—32章，每章一行章功能；事件链仅覆盖这四章。",
+    "保留第1—28章所选工作连续性和accepted_through_chapter为0的正式边界。",
+    "沈砚已有第26章木片前数次主动起守收、第27章独练三回、第28章移步后在新站位至少一次起收的工作稿经历，不重复入门或撤销这些进步。",
+    "第29章在许庭实际可用的答疑时段完成无木片短时起收及自身小用途的说明与实践，不自动取得正式课程资格。",
+    "第30章在修盘者说明可搬盘与放置位置后完成搬放；身体感受只影响沈砚自己的动作选择，物件质量仍由负责者判断。",
+    "第31章唐穗对晾定盘边的关心须有现场观察和自主选择；沈砚的帮助须在自己能承担的范围内。",
+    "第32章从实际有权来源取得后续山林任务的来源、用途、标准、交付方式及时间条件，并完成可见行前准备；后续执行与交付不得提前。",
+    "保持沈砚为主的第三人称限知视角、人物权限和信息来源，单章2500—3500中文字，段落不超过500中文字。",
+    "每章同时活跃Arc不超过3，主要状态变化不超过8，新概念不超过4；不制造逾期义务。"
+  ],
+  "planning_horizon": "TACTICAL",
+  "required_payoffs": [
+    "第26—28章已有的掌前细暖、独练和移步结果在第29章转成无木片可自行起收的有限本领。",
+    "有限本领在第30章眼前事务中产生具体动作选择，事务当章完成。",
+    "唐穗此前想看晾定盘边的愿望在第31章获得亲见结果。",
+    "第32章以真实任务条件和有用准备，为第33—40章完整执行与交付建立起点。"
+  ],
+  "soft_constraints": [
+    "第29章少量复习足以支持新练习，不用整章对照记录；保留师生动作、对话与感受的场景空间。",
+    "第30章的短时细暖须在搬放的实际动作链中起作用，不安排一段无关自检。",
+    "第31章让唐穗自己观察、提问和选择，不要求所有人物同时出场或强发奖励。",
+    "第32章以实际准备收束，章尾期待来自已选择的目标，不强制悬念、反转或突破。",
+    "每章让生活细节、动作与关系自然支撑2500—3500中文字，不以反复边界声明充篇幅。"
+  ],
+  "arc_contributions": [
+    {
+      "change": "从纠正眼前动作推进到说明小本领的自身用途，并鼓励沈砚先自行实践、带着具体问题再来答疑。",
+      "subject": "许庭的有限教学"
+    },
+    {
+      "change": "从案前可重复的起收推进到无木片短时起收，以及在实际搬放事务中据自身手感调整做法。",
+      "subject": "沈砚的基础运用"
+    },
+    {
+      "change": "以明确的任务条件支持沈砚选择下一段山林工作，不预先保证后续交付结果。",
+      "subject": "程观与沈砚的工作协商"
+    }
+  ],
+  "budget_policy_ref": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+  "forbidden_payoffs": [
+    "以许庭一句天赋评价、口头许可或新术名代替沈砚的实际练习与运用。",
+    "以一回细暖宣称稳定、广泛的灵气运用。",
+    "以灵气感受代替修盘者对陶盘质量的判断。",
+    "以报名或排日程代替第32章的具体选择和行前动作。",
+    "以第32章准备代替第33—40章完整任务的现场执行与明确交付。"
+  ],
+  "parent_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+  "realization_level": "DETAILED",
+  "secondary_arc_ids": [
+    "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+    "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+  ],
+  "world_realization": [
+    {
+      "world_id": "青岚宗外门基础练习处",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "WORLD_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "visibility": "SCENE_VISIBLE",
+      "accessibility": "ACCESSIBLE",
+      "invariant_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_INVARIANT",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+        }
+      ],
+      "structure_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STRUCTURE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+        }
+      ],
+      "realization_level": "DETAILED",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "world_id": "修盘处",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "WORLD_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "visibility": "SCENE_VISIBLE",
+      "accessibility": "ACCESSIBLE",
+      "invariant_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_INVARIANT",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+        }
+      ],
+      "structure_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STRUCTURE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+        }
+      ],
+      "realization_level": "DETAILED",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "world_id": "后续山林任务地点",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "WORLD_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "visibility": "PARTIAL",
+      "accessibility": "RESTRICTED",
+      "invariant_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_INVARIANT",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+        }
+      ],
+      "structure_refs": [
+        {
+          "book_id": "book:qinglan-wendao-20261008",
+          "freshness": "CURRENT",
+          "asset_type": "planning_generation_candidate",
+          "project_id": "qid-learning-prose-01",
+          "domain_type": "WORLD_STRUCTURE",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "authority_role": "book_plan",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+          "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+        }
+      ],
+      "realization_level": "DEFINED",
+      "narrative_relevance": "NEAR_FUTURE"
+    }
+  ],
+  "antagonist_actions": [],
+  "canon_dependencies": [
+    "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+    "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+    "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+    "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+    "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+  ],
+  "commitment_contract": [
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "第28章所选工作稿中的移步、重心变化和新站位起收是已写工作的连续性；第29章只承接，不重演。",
+      "commitment_id": "preserve-working-28"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "掌中细暖只作为沈砚短时流转的自身感受与小用途；不赋予外物加热、辨料、治病或新术法效果。",
+      "commitment_id": "limited-self-use"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "第30章在物主明确指出可搬的盘与位置后，当章实际完成搬放，并让小本领影响具体握持或休息选择。",
+      "commitment_id": "completed-plate-work"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "第32章后续山林任务必须有当期有权来源、具体用途、实物标准、交付方式与可承担时间；第33—40章才执行并交付。",
+      "commitment_id": "future-task-conditions"
+    },
+    {
+      "level": "SOFT_INTENT",
+      "statement": "每章以动作、对话、手感、同伴兴趣和日常环境支撑完整场景，避免用重复记录撑满篇幅。",
+      "commitment_id": "scene-life"
+    },
+    {
+      "level": "OPEN_DESIGN_SPACE",
+      "statement": "后续山林物料的具体种类可由实际任务来源和修盘处需要确定；不得预设未核实的数量、报酬或库存。",
+      "commitment_id": "task-material-choice"
+    }
+  ],
+  "context_profile_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+  "information_release": [
+    "许庭在基础练习范围内说明：木片浅纹是掌前短时流转的回音，沈砚掌中的细暖可帮助他辨认自己起、守、收时手与气息的变化。",
+    "修盘者现场指出可移动的盘与放置处，并在搬放结束后确认放妥；盘的质量不由沈砚的灵气判断。",
+    "唐穗亲眼看过晾定盘边后，才向沈砚讲她实际看到的接合与外沿情形。",
+    "第32章的山林任务条件只通过当期有权来源向沈砚呈现；未确定的数量、报酬与后续结果保持未定。"
+  ],
+  "relationship_deltas": [
+    {
+      "change": "许庭在有限时段教沈砚辨认自身用途，之后鼓励他自行实践；师生关系由逐步当面纠正，推进到学生可带着实际结果再来求教。",
+      "subject": "许庭与沈砚"
+    },
+    {
+      "change": "唐穗带来盘边的亲眼观察，沈砚带来已完成的搬放与自身小用途；两人各守兴趣，并能商量彼此真正可承担的帮助。",
+      "subject": "唐穗与沈砚"
+    },
+    {
+      "change": "程观以当期实际负责的任务条件回应沈砚的选择，形成可执行的下一项工作约定，不预授其他资格。",
+      "subject": "程观与沈砚"
+    }
+  ],
+  "character_realization": [
+    {
+      "reach": "CURRENT_SCENE",
+      "scope": "CHAPTER_GROUP",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "character_id": "沈砚",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "realization_level": "ACTIVE",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "reach": "CURRENT_CHAPTER",
+      "scope": "CHAPTER_GROUP",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "character_id": "许庭",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "realization_level": "ACTIVE",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "reach": "CURRENT_CHAPTER",
+      "scope": "CHAPTER_GROUP",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "character_id": "唐穗",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "realization_level": "DETAILED",
+      "narrative_relevance": "CURRENT"
+    },
+    {
+      "reach": "CURRENT_CHAPTER",
+      "scope": "CHAPTER_GROUP",
+      "state_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_STATE",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "character_id": "程观",
+      "identity_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_IDENTITY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "trajectory_ref": {
+        "book_id": "book:qinglan-wendao-20261008",
+        "freshness": "CURRENT",
+        "asset_type": "planning_generation_candidate",
+        "project_id": "qid-learning-prose-01",
+        "domain_type": "CHARACTER_TRAJECTORY",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "authority_role": "book_plan",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+        "frozen_by_operation_id": "6d8a1f8c-3522-4de3-9b9b-8117b95b666f"
+      },
+      "realization_level": "DETAILED",
+      "narrative_relevance": "CURRENT"
+    }
+  ],
+  "narrative_event_chain": [
+    {
+      "action": "沈砚在许庭当次答疑时段简述第27章独练与第28章移步后的真实动作。许庭依据亲述与眼前所见，点明木片浅纹和掌中细暖各自能说明什么，示范松肩、定息与短时收回。他用少量必要复习调整手位，歇过后数次不借木片引出、感受并收回掌中细暖，并说清它只帮助自己认清与调好手和气息。许庭到时回去修炼，嘱他能自行先做，不必每一步都等她在旁。",
+      "causes": [],
+      "decision": "沈砚决定把注意力从木片亮暗移回自己的掌心、手位与气息，练到能自行开始和收住为止。",
+      "event_id": "e29",
+      "required": true,
+      "slice_id": "chapter-29-self-use",
+      "actor_ref": "沈砚",
+      "motivation": "沈砚希望已练成的起收离开木片后仍是自己会用的本领；许庭希望有限指导真正帮他自行练习，并保留自己的修炼时段。",
+      "resistance": "移步后手位与重心仍需调整，沈砚不能凭木片浅纹替自己感觉掌中的变化。",
+      "consequence": "沈砚获得一项由既有实践延伸、仅对自身有用的有限短时起收本领，许庭的指导落实为他能自行实践的方法。",
+      "disclosures": [
+        "掌中细暖可作为沈砚辨认自己短时流转与手、气息变化的感受，不能判断外物或替他人施术。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "能在无木片时短时自行起、感受并收住掌中细暖，知道它用于辨认自己手与气息的变化且范围有限。",
+          "entity_id": "沈砚",
+          "from_state": "在木片前已有多次自主起收，移步后曾起收一回，但尚未在无木片时说明和运用自身用途。",
+          "state_kind": "ABILITY"
+        }
+      ],
+      "preconditions": [
+        "第26章已有掌前细暖与数次主动起收的工作稿经历。",
+        "第27章已独练三回，第28章已完成移步试验与新站位的一回起收。",
+        "许庭当次有实际可用的基础答疑时段。"
+      ],
+      "chapter_number": 29,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "第28章已留下可接续的移步结果；第29章沈砚主动选择不再只围着木片记录，而要取得能自行使用的小用途。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "新站位的手位需要小幅调整，许庭只有当次答疑时间；这些具体条件影响练法与时段。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "此处建立的是有限而可继续练熟的能力，毋须制造不可逆损失。"
+        }
+      },
+      "next_event_ids": [
+        "e30"
+      ],
+      "arc_contributions": [
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚亲历第26—28章所选工作中的起收、独练和移步结果。",
+          "许庭只知道沈砚亲述的独练经历及她亲眼看见的动作，不掌握未接触的私下细节。"
+        ],
+        "reader_may_learn": [
+          "掌中细暖可作为沈砚辨认自己短时流转与手、气息变化的感受，不能判断外物或替他人施术。"
+        ],
+        "forbidden_disclosures": [
+          "木片可以辨别土或陶盘质量。",
+          "短时细暖已经成为可温热外物或治疗他人的术法。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "修盘者在现场指出已可移动的陶盘与放置处。沈砚按物件要求托稳盘底、避开盘边；洗去手上细砂后，凉水使指头略紧，他短时引出掌中熟悉的细暖，觉出右手握得过紧，便松开多余的劲，换手托住并在需要时停下歇息。他依靠双手和普通搬放动作把指定陶盘全部放妥。修盘者确认位置，继续负责盘的状况。",
+      "causes": [
+        "e29"
+      ],
+      "decision": "沈砚察觉手指紧绷后选择换手、放松握持并按需休息，而不是继续用力硬搬。",
+      "event_id": "e30",
+      "required": true,
+      "slice_id": "chapter-30-plate-work",
+      "actor_ref": "沈砚",
+      "motivation": "沈砚想完成眼前能帮上的事，也想知道刚学明白的小用途在真正用手劳作时能否帮他作出更好的动作选择。",
+      "resistance": "盘边须避碰，洗手后的手指略紧，搬放需要稳托和适时换手。",
+      "consequence": "搬放这件有限事务当章完成；沈砚亲历小本领如何帮助他察觉自己的手并改变握持选择，也看清它不能替代托盘或质量判断。",
+      "disclosures": [
+        "修盘者现场说明哪几只盘可搬及放置处，并在搬完后确认位置。",
+        "沈砚只用掌中短时细暖辨认自身手感，陶盘仍靠普通动作搬放。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "由沈砚按要求搬至指定位置，修盘者已确认放妥。",
+          "entity_id": "修盘处指定陶盘",
+          "from_state": "修盘者指出可移动，尚在原放置处。",
+          "state_kind": "OBJECT_LOCATION"
+        },
+        {
+          "to_state": "在搬放中据掌中感受调整握持、换手和休息，完成工作并保留本领限度。",
+          "entity_id": "沈砚",
+          "from_state": "明白掌中细暖的自身用途，但尚未用于一件完成的眼前事务。",
+          "state_kind": "PRACTICAL_USE"
+        }
+      ],
+      "preconditions": [
+        "第29章已建立无木片短时起收的自身用途。",
+        "修盘者当场说明哪些晾定陶盘可以搬动、应放在哪里。"
+      ],
+      "chapter_number": 30,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "身体感受与易碰的盘边使沈砚必须在当下决定如何握持、换手和歇息。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "凉水后的手紧与陶盘需稳托的物理要求构成具体而有限的阻力。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "指定陶盘已实际搬到新位置并由修盘者确认，这项工作成为后续交流的既成结果。"
+        }
+      },
+      "next_event_ids": [
+        "e31"
+      ],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚知道第29章自己在无木片时能短时起收掌中细暖。",
+          "修盘者知道自己指出的可移动陶盘、放置位置和眼前物件状况。"
+        ],
+        "reader_may_learn": [
+          "修盘者现场说明哪几只盘可搬及放置处，并在搬完后确认位置。",
+          "沈砚只用掌中短时细暖辨认自身手感，陶盘仍靠普通动作搬放。"
+        ],
+        "forbidden_disclosures": [
+          "沈砚能凭灵气判断盘边是否牢固。",
+          "修盘者已承诺新报酬或长期工作。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "指定陶盘完成一次实际搬放，后文承接其结果，不把这项工作重新留待第31章。"
+    },
+    {
+      "action": "唐穗到修盘处看晾定的盘边，在修盘者允许观察的范围内看清接合和外沿，辨出与湿土刚贴上去时不同的样子。她把亲眼所见讲给沈砚，也说明自己还想怎样学着辨料。沈砚说起已完成的搬放和手上那点短时用途，承认盘边好坏仍须靠她的观察与修盘者判断；他主动提出以后若有合适的共同事务，愿多承担自己已经会做的搬运或准备部分。两人各自保留下一步的兴趣和时间。",
+      "causes": [
+        "e30"
+      ],
+      "decision": "唐穗选择继续追她的辨料问题；沈砚选择以后在合适任务中主动承担自己会做的一部分。",
+      "event_id": "e31",
+      "required": true,
+      "slice_id": "chapter-31-shared-results",
+      "actor_ref": "唐穗",
+      "motivation": "唐穗想看湿土晾定后究竟留下怎样的盘边；沈砚希望把已练成并已用过的本领化为自己能承担的帮助，同时听她讲自己看不出的材料差别。",
+      "resistance": null,
+      "consequence": "唐穗的观察愿望有现场结果并指向她自己的学习；沈砚以真实完成的工作提出可承担的帮助，合作关系获得新的双向内容。",
+      "disclosures": [
+        "唐穗亲眼看见晾定盘边的接合与外沿，再把实际所见告诉沈砚。",
+        "沈砚愿以自己已做成的搬运和准备动作参与后续合作，唐穗仍追自己的辨料兴趣。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "亲眼观察晾定盘边的接合与外沿，并形成下一步辨料问题。",
+          "entity_id": "唐穗",
+          "from_state": "想看晾定盘边，尚未亲见其当下情况。",
+          "state_kind": "KNOWLEDGE"
+        },
+        {
+          "to_state": "互相交换当下亲见与已完成的工作结果，沈砚主动提出在合适共同任务中承担自己会做的部分。",
+          "entity_id": "沈砚与唐穗",
+          "from_state": "能够交流练习与湿盘观察，各自的后续帮助尚未以新结果说明。",
+          "state_kind": "RELATIONSHIP"
+        }
+      ],
+      "preconditions": [
+        "第25与第27章的所选工作稿中，唐穗已表示想看晾定盘边。",
+        "第30章指定陶盘已搬放完毕，沈砚有真实结果可谈。",
+        "盘边是否可观察以修盘者当场说明为准。"
+      ],
+      "chapter_number": 31,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "第30章的完成结果给沈砚可说的依据，盘边现场观察也让唐穗选择她想继续学的方向。"
+        },
+        "resistance": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "两人的兴趣并不相斥；现场观察和自然协商足以推进这一章。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "本章重在观察、交流与关系方向的形成，不需强加不可逆损失或资格变化。"
+        }
+      },
+      "next_event_ids": [
+        "e32"
+      ],
+      "arc_contributions": [
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "唐穗记得自己此前想看晾定盘边，并只讲本章亲眼看到的部分。",
+          "沈砚知道自己在第30章怎样完成搬放，不知道唐穗未说出的私下判断。"
+        ],
+        "reader_may_learn": [
+          "唐穗亲眼看见晾定盘边的接合与外沿，再把实际所见告诉沈砚。",
+          "沈砚愿以自己已做成的搬运和准备动作参与后续合作，唐穗仍追自己的辨料兴趣。"
+        ],
+        "forbidden_disclosures": [
+          "陶盘的最终质量已由沈砚灵气证实。",
+          "唐穗未到现场也已知道晾定盘边的真实状况。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "程观若确在当期任务职责内，向沈砚与愿意参与的同行者展示已发布山林任务的实物样件，说明物料用于何处、什么样的部分可收、怎样交付及哪些范围可商量；需要修盘处使用的细直枝或其他适用物料，须由当期真实需要和有权来源确定。沈砚对照样件与自己的劳作、练习和休息时间，选定能承担的采集与携行部分；唐穗若参与，则依她的辨料兴趣选择自己的观察或分拣部分。众人当场试装普通工具与容器，发现一种装法易压坏样件，改好携行办法，留下可用于第33章出发的准备。",
+      "causes": [
+        "e31"
+      ],
+      "decision": "沈砚在已说明的条件内选择自己能承担的任务部分，并与实际愿意同行的人明确分工。",
+      "event_id": "e32",
+      "required": true,
+      "slice_id": "chapter-32-task-start",
+      "actor_ref": "沈砚",
+      "motivation": "沈砚想让已有本领与可靠劳作通向下一件自己能做完的事；程观希望任务来源与交付清楚，参与者各按自己的需要决定承担范围。",
+      "resistance": "实物标准和携行要求使分工不能只凭热情决定，既有时段也限制每人可承担的范围。",
+      "consequence": "后续山行有了来源清楚的目标、可承担的分工和实际准备；现场采集、验收与结果仍留给第33—40章完整展开。",
+      "disclosures": [
+        "当期有权任务方展示实物样件，说明山林任务的用途、可收标准与交付方式。",
+        "沈砚与实际参与者完成工具和携行方式的行前试装，山林采集与交付尚未发生。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "在有权来源说明后选定可承担部分，明确实际参与者分工，并完成样件对照、工具和携行方式的首步准备；执行与交付待后续。",
+          "entity_id": "沈砚的后续山林任务安排",
+          "from_state": "尚未依据当期明确条件选定可承担部分或完成行前准备。",
+          "state_kind": "TASK_COMMITMENT"
+        }
+      ],
+      "preconditions": [
+        "第29—31章已形成有限本领、完成的日常事务和可协商的合作基础。",
+        "当期确有由有权来源发布、用途与交付要求清楚的后续山林任务。",
+        "日程按同一单位核算已有劳作、练习、赶路与休息。"
+      ],
+      "chapter_number": 32,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "父Volume要求后续完整任务由沈砚主动选择；本章让他据实际条件选定可承担部分并动手准备。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "任务的实物标准、携行保护和参与者各自的可用时间，具体限制分工与装法。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "本章形成可协商的任务约定与准备，完整交付尚未发生；无需把准备写成不可撤销的成果。"
+        }
+      },
+      "next_event_ids": [],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+        "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚知道自己第29—30章练成和用过的小本领及第31章与唐穗交换的所见。",
+          "程观只说明他当期实际接触且在职责内的已发布任务条件。",
+          "同行者只依据当场听到的条件和自己已有的经验选择。"
+        ],
+        "reader_may_learn": [
+          "当期有权任务方展示实物样件，说明山林任务的用途、可收标准与交付方式。",
+          "沈砚与实际参与者完成工具和携行方式的行前试装，山林采集与交付尚未发生。"
+        ],
+        "forbidden_disclosures": [
+          "未核实的任务数量、报酬、库存或课程资格。",
+          "后续山行已经完成采集与交付。"
+        ]
+      },
+      "obligation_actions": [
+        "SETUP:v1-mountain-task-delivery:40"
+      ],
+      "irreversible_change": null
+    }
+  ],
+  "narrative_segment_ref": {
+    "segment_id": "v1-26-32-repeatable-foundation",
+    "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+  },
+  "resistance_escalation": [
+    "第29章是新站位的手位调整与许庭有限答疑时段。",
+    "第30章是陶盘需稳托、洗手后手指紧绷等具体操作要求。",
+    "第31章允许安静交流，不强制制造冲突。",
+    "第32章是任务实物标准、携行保护与各人可用时间对分工的实际限制。"
+  ],
+  "chapter_function_matrix": [
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "沈砚已能不用木片自行起收掌中的细暖，想到下次手上真有事做时，该由自己决定怎样用。",
+      "reward_action": "他在歇息后再做成必要的数次短时起收，并能用自己的话说出何时起、何时收及其限度。",
+      "chapter_number": 29,
+      "promise_action": "兑现此前掌前细暖和自主起收的积累，使沈砚知道这一点本领怎样帮他辨认自己的手与气息。",
+      "primary_function": "压缩移步纠正与必要复习，在实际答疑时段内让沈砚练成并说清一项无木片、仅作用于自身的短时起收用途。",
+      "foreshadow_action": "许庭把木片的回音与掌中可感的短时流转分开说明，为实际事务中的自身运用奠定范围。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "看见熟悉练习终于化为自己能说明、能开始也能收住的小用途。",
+        "target_emotion": "踏实的喜悦"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "将第28章的移步试验重演为本章新事件。",
+        "只留下待许庭再次复核的问题，未完成无木片起收。",
+        "让细暖作用于外物、辨别陶土或陶盘质量、替他人施术或治病。"
+      ],
+      "secondary_functions": [
+        "承接第26—28章已有成功与移步结果。",
+        "显示许庭有限答疑与自身修炼时段同时存在。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "沈砚由依赖木片回音辨认练习，推进到能无木片短时引出、感受并收回掌中细暖，明白它只帮助自己辨认和调整手与气息。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭凭亲述与亲见选择具体指导，说明可答疑的范围后按时回到自己的修炼。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚把已有起收方法带离木片，在练习支持下形成范围有限的自身用途。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "TOUCH",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "盘已按修盘者指出的位置放妥；沈砚看见自己的手仍能做普通劳作，也更清楚何时短短用上那点本领。",
+      "reward_action": "修盘者现场确认盘已放到指定处，沈砚据此结束这项工作，不再空等后续搬运。",
+      "chapter_number": 30,
+      "promise_action": "把基础运用从练习带进具体劳作。",
+      "primary_function": "让第29章的小用途在有眼前需要的陶盘搬放中发挥作用，并当章完成这一件有限事务。",
+      "foreshadow_action": "修盘者明确哪些晾定的盘可搬、应放到何处；盘边的实际状态留给在意材料的唐穗观察。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "完整完成一件小事，并看见沈砚因自身感受及时调整握持与换手。",
+        "target_emotion": "有用而安稳的满足"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "把搬放延至第31章。",
+        "让灵气代替托盘、握持、换手与休息，或凭掌中感觉判定盘的质量。",
+        "虚构工钱、库存权益或长期工作承诺。"
+      ],
+      "secondary_functions": [
+        "延续修盘处的生活细节与唐穗关心的盘边。",
+        "让本领的限度通过行动自然可见。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "指定的可移动陶盘被沈砚依物主要求搬放完毕；他确认短时细暖可帮助自己留意手的紧绷，却仍须靠普通动作支撑和保护陶盘。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚在搬放现场短时运用掌中细暖辨认手指紧绷，随即改变握持、换手或歇息，完成实物搬放。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "许庭所教的观察与自主起收方法在她不在场时得到有限实际运用。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "PAYOFF",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "唐穗带着对盘边的新观察去追自己的辨料问题；沈砚也想起自己已能替下一件共同事务承担一部分。",
+      "reward_action": "唐穗讲出她看到的接合与外沿情况，沈砚讲出搬放时自己的选择；两人明确各自接下来想做的事。",
+      "chapter_number": 31,
+      "promise_action": "回应唐穗此前想看晾定盘边、再把所见告诉沈砚的愿望。",
+      "primary_function": "消费第30章的完成结果，让唐穗的辨料兴趣与沈砚的新本领各自影响一项自然交流和下一步选择。",
+      "foreshadow_action": "唐穗从晾定盘边得到具体观察，联想到日后挑料时要留意的差别；下一项合作由两人各自的本事与兴趣自然生出。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "两人交换各自亲见的结果，并由各自兴趣生出不同而可相助的下一步。",
+        "target_emotion": "温暖与向前的期待"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "让沈砚用灵气替唐穗判断盘边或材料。",
+        "把唐穗写成只负责赞叹或纠正沈砚。",
+        "整章停留于尚未复核、未来再看的等待。"
+      ],
+      "secondary_functions": [
+        "保留同伴各自的目标。",
+        "为第32章选择共同任务提供关系基础，而不预定所有人必须同行。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "唐穗对晾定盘边有了亲眼观察并选择继续辨料；沈砚从只讲练习成功，转为能以已完成的工作说明自己可承担的帮助。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭的教学效果由沈砚已完成的实物工作体现；他无需等她再次在场才承认自己做成的小事。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚依据真实完成的搬放，主动提出以后承担自己会做的搬运或准备部分，同时让唐穗继续追她的辨料问题。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "TOUCH",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "已选任务的样件、分工和行前物件都在眼前；山行的实际采集与交付仍待第33—40章完成。",
+      "reward_action": "众人对照实物样件试装工具和容器，排除一项不合用的携行方式，留下能带走的准备成果。",
+      "chapter_number": 32,
+      "promise_action": "使卷一中段练成的小本领和已形成的合作方式，成为下一项完整任务的可见起点。",
+      "primary_function": "以明确来源的后续山林目标结束第26—32章：沈砚选择可承担部分，协商分工，并当场完成真正有用的行前准备。",
+      "foreshadow_action": "当期有权任务方指出所需山林物料的用途与实物标准，沈砚据样件准备普通工具和携行办法。",
+      "narrative_density": "HIGH",
+      "reader_experience": {
+        "reward_mode": "看见沈砚用现有能力、同伴需要和明确任务条件作选择，随后动手准备。",
+        "target_emotion": "稳妥的期待"
+      },
+      "obligation_actions": [
+        {
+          "action": "SETUP",
+          "due_chapter": 40,
+          "obligation_id": "v1-mountain-task-delivery"
+        }
+      ],
+      "prohibited_outcomes": [
+        "把山林采集或后续交付写成本章已完成。",
+        "只完成报名、排时段和反复询问，没有选定任务与实物准备。",
+        "让程观越权承诺报酬、课位、库存或修行资格。"
+      ],
+      "secondary_functions": [
+        "承接唐穗的辨料兴趣与沈砚愿意多承担一件事的选择。",
+        "为第33—40章完整执行和交付建立清楚目标。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "沈砚已在有权来源说明条件后选定下一项山林任务的可承担部分，与实际愿意同行者明确分工，并完成样件辨认、普通工具和携行方式的行前准备；任务执行与交付尚未发生。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚依据任务用途、实际要求和可用时间选定可承担的山林工作，完成工具与携行准备的首步。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "程观在实际职责范围内把已发布的来源、交付标准和可调整部分讲清，使众人能够分工。",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚将许庭所教的观察、调整与重复作为准备方法，教师不替他选择任务。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        }
+      ]
+    }
+  ],
+  "generator_operation_name": "chapter_group_plan.generate",
+  "required_arc_contributions": [
+    "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+    "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+    "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+  ],
+  "arc_checkpoint_expectations": [
+    {
+      "expectation": "许庭依据沈砚亲述的独练经历和当面动作，说明掌前短时流转可用于辨认自己的手与气息；沈砚在无木片时实际起收，随后自行运用。她保留自己的修炼时段。",
+      "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+    },
+    {
+      "expectation": "沈砚把已练成的有限本领用于当下搬放陶盘的需要，并凭完成的事务与同伴所见，主动选择自己能承担的下一项工作。",
+      "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+    },
+    {
+      "expectation": "第32章程观仅在实际负责的任务范围内说明山林任务的来源、用途、交付要求和可承担部分；沈砚据此作出选择并完成有用的行前动作。",
+      "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+    }
+  ],
+  "narrative_architecture_version": "canonical-narrative-v1",
+  "knowledge_translation_policy_version": "knowledge-grounded-selection-v2",
+  "review_projection": {
+    "kind": "SEMANTIC_AND_IDENTITY_VIEW",
+    "full_native_record": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-public-review-records/future-group29-candidate.full.private.json",
+    "full_file_sha256": "a82721d62fabec7419f46b5137cc56d7ab0f98f5b16f6e6e697d31ec1a2e4395",
+    "preservation": "Full content retained in native PostgreSQL and private exact JSON; view does not recompute native content hashes"
+  }
+}

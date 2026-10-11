@@ -1,0 +1,342 @@
+{
+  "asset_version_id": "authority-output:ec72063c-7f9a-43e3-84f8-be1475efa0ad:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:584d9f4b983ba0f6b3ee85177b47c4a6f4263bb40125daec20fc4cdffff891fc",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:36"
+  },
+  "expected_group": "authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:6a3d48ee1e03b3c881d6e9c89dd96191f069b9617dbc10113889ca5233f8e53d",
+  "chapter_root_operation_id": "61337fba-be6a-4cd0-97c9-21ee327f31a2",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 35,
+      "asset_version_id": "e5ee36f1-1929-4946-9c86-7ad1df1f9829",
+      "content_hash": "sha256:ec63338bab13d819f3bb27b2bcaf748f84138a67b9cf0b899d945fe3b92211d5",
+      "text_hash": "sha256:d53a8f76d20e2d1ba18382b303be88eff36fb398fd0cc3d9e75ea161b4eaee66",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 36,
+    "chapter_intent": "让第35章做成的清路工作获得明确交回结果，再以许庭有限而具体的教学，使沈砚通过多次实练掌握一项缓步时才新增的短暂自身控制，并由他选择下一次练习的起点。",
+    "scene_plan": [
+      {
+        "goal": "把实做范围准确交给经办人，取得当场明确回应。",
+        "beats": [
+          {
+            "beat_id": "c36-s1-b1",
+            "ordinal": 1,
+            "function": "沈砚按折纸依次说明首处落枝、靠坡未动石、扁石和弯前短枝；唐穗补充侧面所见。",
+            "expected_reader_effect": "认出第35章三清一留的工作得以原样延续。"
+          },
+          {
+            "beat_id": "c36-s1-b2",
+            "ordinal": 2,
+            "function": "程观对照经办范围，把三处已清与一处未动分别写入任务纸，并说明本次交回已按所做范围处理。",
+            "expected_reader_effect": "看见交付获得明确而有范围的结果。"
+          }
+        ],
+        "conflict": "四处路况不同，交回时须把已清与未动分开说明。",
+        "scene_id": "c36-s1",
+        "exit_state": "程观已在经办范围内明确处理三清一留的交回，未动的靠坡石另行记明；沈砚与唐穗带着清路工作已有结果的踏实走出事务房。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter:36",
+          "start_ordinal": 1
+        },
+        "entry_state": "午前，沈砚与唐穗带着记有三清一留的折纸走进事务房；三处清路工作已在山路上完成，靠坡石未动，本次交回尚待程观回应。",
+        "location_id": "location:事务房",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:tang-sui",
+          "character:cheng-guan"
+        ],
+        "reader_effect": "清路劳动获得准确而具体的交付结果。",
+        "scene_version": 1,
+        "scene_group_id": "c36-delivery",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "c36-f1",
+          "c36-f2"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "石湾谷近坡步道清理任务"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "c36-e1",
+          "c36-e2"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "INTERIOR"
+        ]
+      },
+      {
+        "goal": "在交回后的短暂交流里承接此次合作与各自兴趣。",
+        "beats": [
+          {
+            "beat_id": "c36-s2-b1",
+            "ordinal": 1,
+            "function": "唐穗说起石土接处的换角度观察如何让她想起盘边未明的粗影。",
+            "expected_reader_effect": "感到两人的合作因具体观察而亲近。"
+          },
+          {
+            "beat_id": "c36-s2-b2",
+            "ordinal": 2,
+            "function": "沈砚承认她帮自己找到托石和停手的时机；两人没有预订下一次同行。",
+            "expected_reader_effect": "看见唐穗自己的兴趣仍有位置。"
+          }
+        ],
+        "conflict": null,
+        "scene_id": "c36-s2",
+        "exit_state": "沈砚已具体承认唐穗的观察贡献；唐穗仍想辨认盘边粗影的材料细节，两人各自保留下一步安排，清路交回结果保持明确。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 3,
+          "timeline_id": "chapter:36",
+          "start_ordinal": 3
+        },
+        "entry_state": "程观已在经办范围内明确处理三清一留的交回，未动的靠坡石另行记明；沈砚与唐穗带着清路工作已有结果的踏实走出事务房。",
+        "location_id": "location:事务房外",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:tang-sui"
+        ],
+        "reader_effect": "合作的温度与唐穗独立的兴趣同时留在场上。",
+        "scene_version": 1,
+        "scene_group_id": "c36-aftermath",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "c36-f3"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan:character:tang-sui"
+        ],
+        "accessible_knowledge": [
+          "c36-f2"
+        ],
+        "realization_event_ids": [
+          "c36-e3"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "DIALOGUE",
+          "INTERIOR",
+          "TRANSITION"
+        ]
+      },
+      {
+        "goal": "在许庭可用的有限时段里，把已会的短时起收练进缓步。",
+        "beats": [
+          {
+            "beat_id": "c36-s3-b1",
+            "ordinal": 1,
+            "function": "饮食与休息之后，沈砚口述停步托枝的经历；许庭简短看他眼前的静立起收，示范持普通轻物缓步。",
+            "expected_reader_effect": "明白旧本领是新练习的起点。"
+          },
+          {
+            "beat_id": "c36-s3-b2",
+            "ordinal": 2,
+            "function": "沈砚从静立转向一步，步子一急便失去掌中细暖，随后按步幅和气息反馈调整。",
+            "expected_reader_effect": "感到移动条件确有具体难处。"
+          },
+          {
+            "beat_id": "c36-s3-b3",
+            "ordinal": 3,
+            "function": "休息后分轮练一步、几步缓步，数次短暂保持并在仍走着时主动收住；轻物始终靠手承重。",
+            "expected_reader_effect": "看见有限新动作由多次实练支持。"
+          },
+          {
+            "beat_id": "c36-s3-b4",
+            "ordinal": 4,
+            "function": "许庭只评价眼前所见，答疑结束便按自己的安排去修炼。",
+            "expected_reader_effect": "感到教学有用且时段真实有限。"
+          }
+        ],
+        "conflict": "停步时会起收，不等于缓步时手、步子和气息已能协调；答疑时段有限。",
+        "scene_id": "c36-s3",
+        "exit_state": "有限答疑已结束，许庭回到自身修炼；沈砚经调整、休息和多次成功，能在普通轻负荷缓步中短暂保持自身掌中感受并主动收住，轻物仍由手正常承重。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 6,
+          "timeline_id": "chapter:36",
+          "start_ordinal": 4
+        },
+        "entry_state": "沈砚已具体承认唐穗的观察贡献；唐穗仍想辨认盘边粗影的材料细节，两人各自保留下一步安排，清路交回结果保持明确。",
+        "location_id": "location:基础练习平地",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:xu-ting"
+        ],
+        "reader_effect": "看见技能积累所带来的安静而可辨认的新进步。",
+        "scene_version": 1,
+        "scene_group_id": "c36-teaching",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "c36-f4",
+          "c36-f5"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [
+          "c36-f2"
+        ],
+        "realization_event_ids": [
+          "c36-e4",
+          "c36-e5"
+        ],
+        "narrative_time_relation": "ELLIPSIS",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "INTERIOR",
+          "DESCRIPTION"
+        ]
+      },
+      {
+        "goal": "依本章真实结果选定下一次可实行的练习方向。",
+        "beats": [
+          {
+            "beat_id": "c36-s4-b1",
+            "ordinal": 1,
+            "function": "沈砚回想三清一留已有处理，以及缓步时几次留住又收住掌中感受的具体条件。",
+            "expected_reader_effect": "看见完成的工作与新学到的动作都进入下一步判断。"
+          },
+          {
+            "beat_id": "c36-s4-b2",
+            "ordinal": 2,
+            "function": "他决定下次在安全平地先自行重复短程轻负荷缓步；其他用途只待真实事务与日程相容时再判断。",
+            "expected_reader_effect": "带着踏实而开放的续练期待离开本章。"
+          }
+        ],
+        "conflict": null,
+        "scene_id": "c36-s4",
+        "exit_state": "本次清路交回得到明确处理；沈砚保有普通轻负荷缓步中的有限新本领，已决定下一次先在安全平地自行续练，其他用途等待有来源且日程相容的事务。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 7,
+          "timeline_id": "chapter:36",
+          "start_ordinal": 7
+        },
+        "entry_state": "有限答疑已结束，许庭回到自身修炼；沈砚经调整、休息和多次成功，能在普通轻负荷缓步中短暂保持自身掌中感受并主动收住，轻物仍由手正常承重。",
+        "location_id": "location:基础练习平地",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan"
+        ],
+        "reader_effect": "获得工作已交付、学习可继续积累的收束感。",
+        "scene_version": 1,
+        "scene_group_id": "c36-choice",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "c36-f6"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [
+          "c36-f2",
+          "c36-f5"
+        ],
+        "realization_event_ids": [
+          "c36-e6"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "INTERIOR",
+          "TRANSITION"
+        ]
+      }
+    ],
+    "required_events": [
+      "沈砚和唐穗按折纸逐处交代三处已清与靠坡石未动。",
+      "程观在经办范围内分别记明三清一留，当场明确处理本次交回。",
+      "唐穗谈起仍未看明白的盘边粗影，沈砚具体承认她今日侧面观察的帮助。",
+      "许庭听取山路口述，简短看旧静立动作，示范普通轻物缓步时留意自身掌中感受。",
+      "沈砚经历初试散失、调整、休息和多轮重复，数次在缓步中短暂保持并主动收住。",
+      "沈砚选定下一次安全平地自行续练的条件，将其他用途留待真实事务出现再判断。"
+    ],
+    "forbidden_events": [
+      "重演第1—35章已完成的山路清理，或把停步持枝起收当作本章初次学会。",
+      "把靠坡石写成试搬、清掉，或将弯后未见路段写成已清。",
+      "让程观越权给报酬、课程、器具或资格。",
+      "让许庭凭口述推定自己亲见全部山路动作，或无限延长教学时段。",
+      "将唐穗的材料兴趣变成替沈砚服务的单一功能。",
+      "引入外放、增力、辨物、治疗、新境界或术名。"
+    ],
+    "hard_constraints": [
+      "章域严格为[36,36]；保留第1—35章所选工作连续性和accepted_through_chapter为0的正式边界。",
+      "第35章已形成三清一留，沈砚已在停步持枝时起暖并收住后搬；本章不得撤销或重复授予。",
+      "三清一留须实际交回；经办人当场在自己职责内明确处理，未动处仍按所见说明。",
+      "许庭为女性，依据沈砚亲历口述、她过去亲见及眼前表现教学；压缩旧空掌起收复习，教成普通轻负荷缓步中短暂保持自身掌中感受并主动收住。",
+      "新动作须经历由静到一步、几步的实际调整与休息后多次成功；物件仍凭普通握持和物性处理。",
+      "沈砚的掌中感受只关乎自身手、气息与短暂控制，不外放、不增力、不辨物、不治疗。",
+      "唐穗的观察贡献和材料兴趣须表达；许庭的有限时段与自身修炼须真实承接。",
+      "结尾由沈砚主动决定下一步练习方向，使本章交付和进步改变第37—40章可选行动，不预定尚无来源的任务或资源。",
+      "日程容纳交回、饮食休息、有限答疑和许庭修炼；不让互斥活动重复占时。"
+    ],
+    "reader_experience": {
+      "reward_mode": "看见三清一留得到明确回应，随后看见有限新动作被练成。",
+      "exit_question": "沈砚下一次自行练习时，能否在同样有界的条件下继续用好刚练成的动作？",
+      "entry_question": "三处已清、一处未动的清路工作，会怎样得到明确交回？",
+      "target_emotion": "踏实、亲近而有继续练习的兴致"
+    },
+    "ending_hook": null,
+    "canon_dependencies": [
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+      "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-036-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

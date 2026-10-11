@@ -1,0 +1,8 @@
+{
+  "operation_id": "a3faead0-28b3-482e-ac75-34af3515f436",
+  "status": "SUCCEEDED",
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "chapter": 19,
+  "recovery_asset_version_id": "a3abc392-4e85-491b-bbcc-85c4ab205082",
+  "replayed": false
+}

@@ -1,0 +1,151 @@
+{
+  "asset_version_id": "authority-output:ca24a5e2-6d8e-4ba2-98a0-b21066a5831a:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:428794d0a55f2b41c14a1093e84283982f076866f6487aa2284df560d0fc508b",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:31"
+  },
+  "expected_group": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:090da03d5e61561bf60ad483877e49828638c9bbf07c3d9b1ca59229e1b23b88",
+  "chapter_root_operation_id": "ec6de12e-b06f-4dee-b453-bb4b4083f67f",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 30,
+      "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6",
+      "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+      "text_hash": "sha256:98fd5ebd440d0bd2ba79609e973948ae846223201769d6fa93f8c7137cf6b445",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 31,
+    "chapter_intent": "让唐穗亲眼看见晾定盘边，并把具体所见告诉沈砚；让沈砚凭已完成的搬放说明自己能承担的帮助。两人的交流由各自做成的事生出下一步，而不替彼此判断或预定同行。",
+    "scene_plan": [
+      {
+        "goal": "让唐穗完成现场观察并分享所见，让沈砚以已完成的工作回应她，形成各自有方向的下一步。",
+        "beats": [
+          {
+            "beat_id": "chapter31:beat1",
+            "ordinal": 1,
+            "function": "沈砚回到修盘处附近，看见唐穗在修盘者指出的范围内观察晾定盘边；他记得自己搬放的三只盘已由修盘者确认位置。画面只呈现他能亲眼看见的动作。 ",
+            "expected_reader_effect": "期待唐穗先前惦记的盘边终于有可看的结果。"
+          },
+          {
+            "beat_id": "chapter31:beat2",
+            "ordinal": 2,
+            "function": "唐穗看清接合与外沿，向沈砚讲它们与湿土初贴时的可见差别；她提出日后辨料时想继续留意的问题，不把一次观察说成最终质量结论。",
+            "expected_reader_effect": "获得具体、安静的观察回报，感到唐穗的兴趣有自己的方向。"
+          },
+          {
+            "beat_id": "chapter31:beat3",
+            "ordinal": 3,
+            "function": "沈砚讲出搬放时右手过紧、停步换托、歇过再放妥三只盘的实际选择，说明掌中短时细暖只帮他辨认自身手和气息。",
+            "expected_reader_effect": "认出第30章的搬放确实成为沈砚可以分享的成果。"
+          },
+          {
+            "beat_id": "chapter31:beat4",
+            "ordinal": 4,
+            "function": "沈砚承认盘边好坏仍须由唐穗的观察和修盘者判断；他提出以后若有合适共同事务，愿承担自己已经会做的搬运或准备。唐穗继续追自己的辨料问题，两人不预定任务和同行者。",
+            "expected_reader_effect": "感到两人的本事与兴趣可以相助，且各有边界。"
+          },
+          {
+            "beat_id": "chapter31:beat5",
+            "ordinal": 5,
+            "function": "两人带着各自的新结果离开这次交流：唐穗记着要继续比较的盘边差别，沈砚记着下一件共同事务中自己可承担的一部分。",
+            "expected_reader_effect": "留下温暖而具体的向前期待。"
+          }
+        ],
+        "conflict": null,
+        "scene_id": "scene:chapter31:repair-area-exchange",
+        "exit_state": "唐穗已在修盘处亲眼看见晾定盘边，并向沈砚讲出接合与外沿的实际样子；她决定继续追辨料问题。沈砚已讲明自己完成的搬放和掌中细暖的有限自身用途，提出以后在合适共同事务中承担会做的搬运或准备；两人没有预定任务、资源或同行者。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "timeline:chapter31:main",
+          "start_ordinal": 1
+        },
+        "entry_state": "在所选工作连续性中，第30章修盘者已确认沈砚搬放的三只陶盘位置；沈砚知道自己的掌中细暖只能短时帮助辨认手与气息。唐穗此前想看晾定盘边，此刻尚未亲眼见到这次接合与外沿的情况。",
+        "location_id": "location:qinglan-zong-repair-area",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:tang-sui",
+          "character:shen-yan"
+        ],
+        "reader_effect": "从亲见盘边和完成搬放得到踏实回报，再因两人不同而可相助的兴趣感到温暖与期待。",
+        "scene_version": 1,
+        "scene_group_id": "scene-group:chapter31:repair-area-exchange",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:chapter31:rim-observation",
+          "fact:chapter31:shared-next-steps"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:tang-sui:fact:chapter31:rim-observation",
+          "character:shen-yan:fact:chapter31:rim-observation",
+          "character:shen-yan",
+          "character:shen-yan:character:tang-sui"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "e31"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "INTERIOR",
+          "DESCRIPTION",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "唐穗在修盘处亲眼看清晾定盘边的接合与外沿，并将实际所见告诉沈砚。",
+      "沈砚讲出已完成的搬放及掌中细暖的短时自身用途，提出以后在合适共同事务中承担会做的搬运或准备。",
+      "唐穗选择继续追辨料问题，两人各自保留下一步的兴趣与时间。"
+    ],
+    "forbidden_events": [
+      "让唐穗未到修盘处便知道晾定盘边的实际状况。",
+      "让沈砚的灵气作用于陶盘，或由此判断盘边及材料质量。",
+      "把第30章已经完成的搬放改写为本章仍待完成。",
+      "凭这次交流预定未获明确来源的任务、报酬或资源。"
+    ],
+    "hard_constraints": [
+      "保留第29—30章所选工作中的无木片短时起收和已完成的三只陶盘搬放；工作稿经历在本章作为连续经验承接，正式接受边界仍为第0章。",
+      "唐穗须在修盘者当场允许观察的范围内亲眼看见晾定盘边，之后才向沈砚讲实际所见。",
+      "沈砚的掌中细暖只用于辨认自身手与气息的变化，不判断陶盘或材料好坏。",
+      "唐穗保有自己的辨料目标与时间；沈砚只提出以后在合适共同事务中承担已会做的搬运或准备，不预定所有人同行。",
+      "采用以沈砚为主的第三人称限知视角；正文主要使用简体中文，单章2500—3500中文字，段落不超过500中文字。"
+    ],
+    "reader_experience": {
+      "reward_mode": "两人交换各自亲见的结果，并由各自兴趣生出不同而可相助的下一步。",
+      "exit_question": "带着各自已经看见和做成的事，两人下一次会选择怎样合作？",
+      "entry_question": "唐穗亲眼看见晾定的盘边后，会发现什么变化？",
+      "target_emotion": "温暖与向前的期待"
+    },
+    "ending_hook": "唐穗带着对盘边的新观察去追自己的辨料问题；沈砚也想起自己已能替下一件共同事务承担一部分。",
+    "canon_dependencies": [
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-031-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

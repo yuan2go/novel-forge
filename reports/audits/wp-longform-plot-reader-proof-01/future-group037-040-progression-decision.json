@@ -1,0 +1,8 @@
+{
+  "proposal_id": "plan-change:1be276d8-18a0-4d46-93c1-cdabf881e298",
+  "status": "APPROVED",
+  "target_asset_version_id": "authority-output:7643460d-85ba-4dd8-a3cf-3ea582756123:story_planning.candidate:v1",
+  "proposed_asset_version_id": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "approval_operation_id": "793b34bc-7563-4b37-8770-376019499548",
+  "activation_operation_id": null
+}

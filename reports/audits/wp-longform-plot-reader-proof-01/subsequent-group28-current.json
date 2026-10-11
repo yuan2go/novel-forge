@@ -1,0 +1,415 @@
+{
+  "asset_version_id": "authority-output:79d42e95-ce53-43a9-a628-cb8a8ededda3:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:5f1fdf5c3ff6cc6410afb0baed62735b2a6a1740473aaa09f9e1dac55e91f092",
+  "freshness": "CURRENT",
+  "execution_scope": "FROZEN",
+  "chapter_range": [
+    28,
+    31
+  ],
+  "objective": "在第28—31章承接沈砚已练成的熟悉站位短时起守收，通过许庭有限指导、沈砚独立比较与一次具体事务，使能力增长可辨认、用途有边界，并为第32章继续检验留下真实问题。",
+  "exit_state_spec": {
+    "summary": "沿所选工作正文，沈砚已能在熟悉条件下独自完成短时起守收。本组未来设计使他经许庭观察、独自比较及再次当面复核，在小幅移步后形成有限重复；第31章在安静且无木片的条件下用短时起收自查，再按修盘者的说明与程观完成一次搬放。陶盘质量和劳作后灵气表现仍以实际观察为准。上述均为候选展开，不构成已接受历史。"
+  },
+  "chapter_function_matrix": [
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "沈砚记下移步后最先改变的是身体重心，下一回要看能否独自找回起收次序。",
+      "reward_action": "沈砚能说清一次不顺利尝试中脚与手分别发生了什么。",
+      "chapter_number": 28,
+      "promise_action": "把先前练成的观察、调整与重复方法用于真实的新条件。",
+      "primary_function": "兑现第27章提出的移步试验：许庭在答疑时段内观察沈砚只改变脚下站位后的起收，帮助他确定可以比较的动作。",
+      "foreshadow_action": "许庭请他分别记录脚、手和木片反应，供随后比较。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "看见已有本领成为新试验的起点",
+        "target_emotion": "踏实的期待"
+      },
+      "obligation_actions": [
+        {
+          "action": "SETUP",
+          "due_chapter": 30,
+          "obligation_id": "obligation:28-30-shifted-stance-comparison"
+        }
+      ],
+      "prohibited_outcomes": [
+        "把移步后的第一次反应写成普遍稳定的灵气运用。",
+        "让许庭无限延长答疑或替沈砚完成每一次动作。"
+      ],
+      "secondary_functions": [
+        "明确木片只反馈当前基础练习的短时流转。",
+        "保留许庭教学时段的边界。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "沈砚获得一组移步后可比较的实际动作记录；新站位尚未被证明可重复。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭依据沈砚实际动作给出可执行的比较方法，并按时回到自己的修炼安排。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚主动试验小幅移步，保留熟悉站位下已会的起收。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "TOUCH",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "离开木片后，沈砚想知道没有亮纹可看时，自己还能否辨清短时起收。",
+      "reward_action": "沈砚在预定次数内完成记录，按原定时间收手。",
+      "chapter_number": 29,
+      "promise_action": "以可观察的重复结果呈现能力范围，而非用评价性台词宣告掌握。",
+      "primary_function": "让沈砚独自按第28章定下的比较方法，在新站位做有限次数的练习、休息和记录。",
+      "foreshadow_action": "记录中把木片亮纹与自身起收感受分列。",
+      "narrative_density": "LOW",
+      "reader_experience": {
+        "reward_mode": "从细小差别中辨认进步",
+        "target_emotion": "安静的专注"
+      },
+      "obligation_actions": [
+        {
+          "action": "ADVANCE",
+          "due_chapter": 30,
+          "obligation_id": "obligation:28-30-shifted-stance-comparison"
+        }
+      ],
+      "prohibited_outcomes": [
+        "因一回未起而抹去熟悉站位下已有的能力。",
+        "用亮纹深浅单独判断动作好坏。",
+        "挤占已经留出的休息与劳动时间。"
+      ],
+      "secondary_functions": [
+        "以较安静的练习与第28章指导场景形成节奏变化。",
+        "为第30章的教学反馈提供实际材料。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "新站位下出现若干可比较的短时起收，但沈砚仍需许庭亲眼复核适用范围。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚独立安排次数和歇息，发现先稳住重心再找手位，比追逐木片亮纹更能使结果可比较。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "沈砚准备在下一次普通事务前，短暂试试没有木片时能否清楚起收；具体事务仍须照其本身的办法完成。",
+      "reward_action": "许庭确认的是具体站位和短时起收，沈砚也能自己说出它的边界。",
+      "chapter_number": 30,
+      "promise_action": "让教学反馈依据多次可比较的实践调整。",
+      "primary_function": "许庭比对沈砚的多次记录，并亲眼看他在移开的站位完成有限起收；指导重心转向沈砚下一次能自行检验的问题。",
+      "foreshadow_action": "许庭问他若木片不在眼前，打算以什么辨认起与收。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "具体教学与可见动作相互印证",
+        "target_emotion": "克制的喜悦"
+      },
+      "obligation_actions": [
+        {
+          "action": "PAYOFF",
+          "due_chapter": 30,
+          "obligation_id": "obligation:28-30-shifted-stance-comparison"
+        },
+        {
+          "action": "SETUP",
+          "due_chapter": 31,
+          "obligation_id": "obligation:30-31-without-plate-limited-use"
+        }
+      ],
+      "prohibited_outcomes": [
+        "把记录当作许庭亲眼见过的全部练习。",
+        "让许庭凭好感授予课程资格或扩大器具用途。",
+        "把新站位的有限成功推广到疲劳、赶路等未经试验的条件。"
+      ],
+      "secondary_functions": [
+        "承接许庭有限教学与自身修炼节奏。",
+        "把第31章的尝试设为具体而有限的问题。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "移步后的有限起收获得当面复核；无木片时的辨认与实际用途仍待下一步尝试。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭依据沈砚带来的记录和当面演示调整指导，并提出由他自行检验的下一问题。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚能区分亲自重复得到的结果与尚未试过的无木片条件。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "TOUCH",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "沈砚知道自己能在安静、短时的条件下不看木片完成起收，却还要在后续练习中辨清劳作之后的差别。",
+      "reward_action": "陶盘按说明放到指定位置，程观与沈砚各自完成约定的一趟。",
+      "chapter_number": 31,
+      "promise_action": "让有限本领在清楚的事务中发挥有限作用，同时让普通手工判断继续有效。",
+      "primary_function": "把有限本领放进一件有实际目的的日常事务：沈砚在搬动已晾定的陶盘前，用短时起收辨认自身状态，随后依照修盘者的搬放说明与程观分工完成工作。",
+      "foreshadow_action": "劳作后的疲倦为第32章检验能力范围留下具体条件。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "能力用于自查，合作产生实际交付",
+        "target_emotion": "踏实与温暖"
+      },
+      "obligation_actions": [
+        {
+          "action": "PAYOFF",
+          "due_chapter": 31,
+          "obligation_id": "obligation:30-31-without-plate-limited-use"
+        }
+      ],
+      "prohibited_outcomes": [
+        "声称灵气能检验陶土含砂、陶盘接合或修复质量。",
+        "未经修盘者说明便搬动其陶盘。",
+        "把程观写成课程、库存或器具的批准者。",
+        "把一次无木片起收宣告为任何环境下都稳定。"
+      ],
+      "secondary_functions": [
+        "让唐穗此前对晾定陶盘的关注有可观察的后续，但不代她判断修复质量。",
+        "为第32章在不同身体条件下继续练习提供自然起点。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "一项经物主说明的搬放工作完成；沈砚确认无木片时有限的短时起收可用于劳作前自查，劳作后的表现尚未验证。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚在无木片、安静的短时条件下完成自查，再按陶盘实际搬放要求工作；他没有混淆两种判断。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "程观说明自己当天可承担的一趟搬运，沈砚也限定并完成自己的一趟，双方不把当次帮助扩成长期安排。",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ]
+    }
+  ],
+  "hard_constraints": [
+    "严格规划第28—31章，每章一行章节功能，事件仅落在该范围内。",
+    "所选工作正文第26章已出现熟悉木片与站位下数次短时起守收，第27章沈砚独自完成三回并计划在许庭指导时小幅移步；后续必须承接而非重做。",
+    "许庭为女性，有限教学须依据她实际见到的动作；她自己的修炼时段继续有效。",
+    "沈砚主要采用第三人称限知视角；唐穗尚未看见的晾定陶盘状态、程观私下动机及机构未公布条件均不可直接成为沈砚所知。",
+    "正式课程条件、任务来源、物件用途与管理者分别处理；本组不授予新课位或未明确权限。",
+    "日程按同一计量单位安排练习、劳作、赶路和休息，具体时长在场景中核算，不预定未给定数值。",
+    "同时活跃的冻结Arc为三条；单章主要状态变化、新概念和开放义务保持在冻结叙事负载限度内。"
+  ],
+  "required_events": [
+    "第28章承接第27章计划，在许庭可用时段内实际试验小幅移步。",
+    "第29章沈砚独立进行有休息、有记录的可比较练习。",
+    "第30章许庭依据记录和当面演示调整指导，并明确所见范围。",
+    "第31章在物主实际说明与双方有限承诺下完成普通工作；短时灵气只用于沈砚自查。"
+  ],
+  "character_deltas": [
+    {
+      "change": "从熟悉站位下独自完成三回，推进到移步后有限重复，并尝试无木片时的短时自查；尚未证明劳作后的稳定性。",
+      "subject": "沈砚"
+    },
+    {
+      "change": "依据记录与当面演示调整指导重点，同时维持答疑与自身修炼的时间边界。",
+      "subject": "许庭"
+    },
+    {
+      "change": "在一件实际工作中与沈砚明确各自可承担的一趟，并完成自己的部分。",
+      "subject": "程观"
+    }
+  ],
+  "relationship_deltas": [
+    {
+      "change": "许庭依据沈砚真实的多次记录与当面动作给出下一问题，沈砚承担独自检验；双方保留教学时间边界。",
+      "subject": "许庭—沈砚"
+    },
+    {
+      "change": "程观与沈砚就一次搬放说明各自可承担的范围，并实际完成约定部分。",
+      "subject": "程观—沈砚"
+    }
+  ],
+  "narrative_event_chain": [
+    {
+      "chapter_number": 28,
+      "action": "沈砚带着第27章的问题，在许庭可答疑的时段把脚从熟悉木纹旁小幅移开；许庭观察他站稳、举手、起收的先后，要求他一次只改变一处并照实记录。",
+      "decision": "沈砚决定先固定脚位与歇息方式，再分别观察手位和起收。",
+      "motivation": "弄清熟悉站位之外，自己究竟能保留哪一步已练成的起收。",
+      "consequence": "两人得到一组可比较的移步尝试；沈砚发现最初的不顺伴随重心和手位同时变化，尚不能归因于单一动作。",
+      "disclosures": [
+        "小幅移步会同时影响沈砚的重心与手位。",
+        "许庭此次只看见答疑时段内的尝试。"
+      ],
+      "preconditions": [
+        "第27章沈砚已在熟悉木片前独自完成三回。",
+        "许庭有一段实际可用的答疑时间。"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "熟悉站位下自己已独自完成三回短时起守收。",
+          "第27章自己提出过小幅移步并请许庭观察的想法。",
+          "木片只反馈眼前基础练习的短时流转。"
+        ],
+        "reader_may_learn": [
+          "小幅移步会同时影响沈砚的重心与手位。",
+          "许庭此次只看见答疑时段内的尝试。"
+        ],
+        "forbidden_disclosures": [
+          "移步试验已经证明任何站位都稳定。",
+          "木片可以检查陶土或陶盘质量。"
+        ]
+      },
+      "irreversible_change": null
+    },
+    {
+      "chapter_number": 29,
+      "action": "沈砚按前一日的记录独自练习，在预定次数内交替检查脚位、手位和短时起收，按计划歇息；一次不顺时不追着亮纹加练，而是复位再试。",
+      "decision": "沈砚按原定次数结束，把成功和未成的动作一并带给许庭。",
+      "motivation": "亲自回答移步后的动作能否重复，而不是等待别人替他下结论。",
+      "consequence": "新站位下出现若干可比较的有限成功，记录也保留未成的一回；熟悉站位下的本领没有消失。",
+      "disclosures": [
+        "新站位下的结果已有重复迹象，但仍限于这处木片和当时的身体条件。"
+      ],
+      "preconditions": [
+        "第28章已定下可比较的记录办法。",
+        "沈砚为练习和歇息留出时间。"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "许庭亲眼见过第28章答疑时段内的尝试。",
+          "自己可以依记录固定脚位、歇息与次数。"
+        ],
+        "reader_may_learn": [
+          "新站位下的结果已有重复迹象，但仍限于这处木片和当时的身体条件。"
+        ],
+        "forbidden_disclosures": [
+          "许庭已经亲眼见到这次独自练习。",
+          "没有木片时也必然能清楚起收。"
+        ]
+      },
+      "irreversible_change": null
+    },
+    {
+      "chapter_number": 30,
+      "action": "许庭看沈砚带来的分项记录，再让他当面在移开的站位做有限次数的起收。她确认自己见到的范围，并问他没有木片时将怎样辨认起与收，然后结束这段答疑，回到自己的修炼。",
+      "decision": "许庭把下一步留给沈砚自行试验，只约定在实际可用的答疑时段再讨论结果。",
+      "motivation": "让有限指导真正成为沈砚可重复使用的观察方法，同时保留自身修炼节奏。",
+      "consequence": "教学反馈建立在多次记录与当面动作之上；沈砚知道新站位的有限范围，也有了下一项可亲自检验的问题。",
+      "disclosures": [
+        "许庭亲眼确认的是这次当面演示，独自练习的其余结果来自沈砚的记录。",
+        "新站位下的有限成功不等于无木片或劳作后也稳定。"
+      ],
+      "preconditions": [
+        "沈砚已带来第29章如实记录。",
+        "许庭有有限答疑时段。"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "自己见过第28章的移步尝试。",
+          "沈砚带来了第29章分项记录。",
+          "她亲眼看见第30章当面演示的动作。"
+        ],
+        "reader_may_learn": [
+          "许庭亲眼确认的是这次当面演示，独自练习的其余结果来自沈砚的记录。",
+          "新站位下的有限成功不等于无木片或劳作后也稳定。"
+        ],
+        "forbidden_disclosures": [
+          "她亲眼见过第29章全部独自练习。",
+          "沈砚已满足正式课程录入条件。",
+          "无木片与劳作后的表现已经得到验证。"
+        ]
+      },
+      "irreversible_change": null
+    },
+    {
+      "chapter_number": 31,
+      "action": "修盘者在陶盘确已晾定且可以移动时，当场说明搬放的位置与手法。程观说清自己当天只能搬一趟，沈砚也只答应一趟。沈砚在动手前于安静处短暂试出并收回熟悉的流转，以此辨认自己的状态；搬盘时仍按修盘者的说明与程观分工，用眼和手照看物件。唐穗只报告自己实际看清的晾后表面。",
+      "decision": "沈砚只承诺自己能在当天安排内完成的一趟，工作结束后不再额外加练。",
+      "motivation": "把新练成的短时起收谨慎用于自查，同时可靠完成自己答应的普通工作。",
+      "consequence": "两人完成各自约定的一趟搬放。沈砚得到一次无木片、安静条件下的短时自查经验，但不以它判断陶盘质量；劳作后的灵气表现仍待后续检验。",
+      "disclosures": [
+        "修盘者当场确认陶盘已可移动，并说明本次搬放要求。",
+        "沈砚在无木片、安静的短时条件下能辨认一次起收，但这不能检验陶盘。",
+        "程观与沈砚各自完成约定的一趟，没有形成长期工作承诺。"
+      ],
+      "preconditions": [
+        "修盘者实际确认陶盘晾定、可以移动，并亲自说明搬放要求。",
+        "程观与沈砚当天均有各自可用的一趟时间。",
+        "沈砚已知道木片反馈不能替代陶盘检查。"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "许庭已确认新站位下当面演示的有限起收。",
+          "木片不能检查陶土或陶盘。",
+          "修盘者当场说明了本次搬放要求。",
+          "自己与程观各自答应一趟。"
+        ],
+        "reader_may_learn": [
+          "修盘者当场确认陶盘已可移动，并说明本次搬放要求。",
+          "沈砚在无木片、安静的短时条件下能辨认一次起收，但这不能检验陶盘。",
+          "程观与沈砚各自完成约定的一趟，没有形成长期工作承诺。"
+        ],
+        "forbidden_disclosures": [
+          "陶盘已经修复合格，除非现场另有实际检查。",
+          "唐穗没有看清之处的晾后状态。",
+          "劳作后的灵气起收已经稳定。",
+          "程观拥有课程或器具批准权。"
+        ]
+      },
+      "irreversible_change": null
+    }
+  ],
+  "full_retained": "PostgreSQL immutable asset and private group28-full.private.json"
+}

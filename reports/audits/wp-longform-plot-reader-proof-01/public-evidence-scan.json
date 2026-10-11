@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "scope": "TRACKED_REQUESTED_PUBLIC_EVIDENCE",
+  "files_checked": 428,
+  "methods": [
+    "exact configured private credential values",
+    "credential patterns"
+  ],
+  "match_count": 0,
+  "private_values_printed": false,
+  "existing_literal_REDACTED_markers": "EXCLUDED_AS_NON_CREDENTIALS",
+  "human_identity_material": "BLANK_FORMS_NO_ACTUAL_REVIEWERS"
+}

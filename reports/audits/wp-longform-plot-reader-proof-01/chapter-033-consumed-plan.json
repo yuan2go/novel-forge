@@ -1,0 +1,205 @@
+{
+  "asset_version_id": "authority-output:4c730b1d-4e29-49ce-a0ac-db5e1165ed5b:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:89fb2591cd569a10480f4ac67f3850623a676a77ba5c48cacfeeb9993629fbbb",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:33"
+  },
+  "expected_group": "authority-output:e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:56fc535daaf5fa25d75764c0950679c596dca8584ac9e22c7eb2944b42d2d5b8",
+  "chapter_root_operation_id": "e5ae1332-a136-4223-b240-69db164a3b89",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 32,
+      "asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+      "content_hash": "sha256:ed6f9447462202209be083b0332066ac2bb649170458e9c6bc9543241c734989",
+      "text_hash": "sha256:58b7daaa674aba9b21c47e9252378106cf770c5eb3894ad388d912cf02b4b510",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 33,
+    "chapter_intent": "承接已选定、已试装的近坡清路，让沈砚和唐穗在真实划定段按各自分工完成第一处稳妥清理，并因一块与坡土相连的石头形成待核对的留置记录。",
+    "scene_plan": [
+      {
+        "goal": "确认眼前划定段，清出第一处确实能稳妥处理的障碍。",
+        "beats": [
+          {
+            "beat_id": "ch33-s1-b1",
+            "ordinal": 1,
+            "function": "沈砚束好袖口，背着分隔装好的筐随唐穗进入近坡，按任务牌辨认划定段的起止。两人保留午前回程所需工夫。",
+            "expected_reader_effect": "感到前章准备立即用于真实山路。"
+          },
+          {
+            "beat_id": "ch33-s1-b2",
+            "ordinal": 2,
+            "function": "两人只查看眼前路面。沈砚发现段内落枝挡住通行处，先看枝条是否压住坡土、能否徒手稳妥移开，再选它作为第一处清理。",
+            "expected_reader_effect": "看见沈砚依据现场条件作出自己的第一项选择。"
+          },
+          {
+            "beat_id": "ch33-s1-b3",
+            "ordinal": 3,
+            "function": "沈砚稳住背筐和脚步，松开过紧的手指，徒手将落枝移到不挡路的位置；唐穗在旁辨认原来的遮挡处，两人回望已露出的路面。",
+            "expected_reader_effect": "获得具体、可信的劳动成果。"
+          }
+        ],
+        "conflict": "现场边界和落枝实际受力须亲眼辨认，携行重量与回程时限限制能做的范围。",
+        "scene_id": "ch33-first-clear",
+        "exit_state": "两人已在近坡辨明眼前的划定边界和午前回程余地；第一处挡路落枝已由沈砚徒手稳妥移开，唐穗看见清出的通行位置，前方其他障碍仍待逐处辨认。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter:33:near-slope-morning",
+          "start_ordinal": 1
+        },
+        "entry_state": "次日上午，沈砚与唐穗带着第32章已试妥的背筐、束袖、折纸与工具来到近坡；他们已选清路任务和分工，尚未亲眼确认划定段内具体障碍。",
+        "location_id": "near-slope-marked-section",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:tang-sui"
+        ],
+        "reader_effect": "准备见效，第一处路面实际得到清理。",
+        "scene_version": 1,
+        "scene_group_id": "ch33-near-slope",
+        "obligation_refs": [
+          "near-slope-task-delivery"
+        ],
+        "trajectory_refs": [],
+        "information_gain": [
+          "ch33-first-fallen-branch"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "near-slope-task-delivery"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg33-e01"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "INTERIOR",
+          "DESCRIPTION",
+          "DIALOGUE"
+        ]
+      },
+      {
+        "goal": "区别下一处可清轻障与应暂缓处理的石土接处。",
+        "beats": [
+          {
+            "beat_id": "ch33-s2-b1",
+            "ordinal": 1,
+            "function": "两人沿划定段向前寻找下一处轻障，唐穗留眼看路边材料，沈砚仍按可搬范围选择要动的东西。",
+            "expected_reader_effect": "让第一处成果与下一处判断自然相连。"
+          },
+          {
+            "beat_id": "ch33-s2-b2",
+            "ordinal": 2,
+            "function": "唐穗发现一块石头的边缘与坡土相接，指出可见接处；沈砚停手查看，不凭掌中感知推断石头下面的情况。",
+            "expected_reader_effect": "理解唐穗的观察有独立价值，并实际影响分工。"
+          },
+          {
+            "beat_id": "ch33-s2-b3",
+            "ordinal": 3,
+            "function": "唐穗在折纸上记下位置，两人先不硬拉，并将目光移向范围内仍可处理的轻障；石头是否最终留置，待继续现场判断。",
+            "expected_reader_effect": "留下有依据的下一步问题。"
+          }
+        ],
+        "conflict": "石头与坡土的可见连接使它不能按普通轻障搬动，而其下方情况并不可见。",
+        "scene_id": "ch33-stone-distinction",
+        "exit_state": "两人已清过第一处落枝；唐穗指出前方石头与坡土相连，并在折纸上记下位置。两人暂不硬拉，继续寻找划定段内能处理的轻障，是否最终留置仍待判断。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 4,
+          "timeline_id": "chapter:33:near-slope-morning",
+          "start_ordinal": 3
+        },
+        "entry_state": "两人已在近坡辨明眼前的划定边界和午前回程余地；第一处挡路落枝已由沈砚徒手稳妥移开，唐穗看见清出的通行位置，前方其他障碍仍待逐处辨认。",
+        "location_id": "near-slope-marked-section",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:tang-sui"
+        ],
+        "reader_effect": "唐穗的记录使清路进度有了清楚边界，读者关心这块石头如何处理。",
+        "scene_version": 1,
+        "scene_group_id": "ch33-near-slope",
+        "obligation_refs": [
+          "near-slope-task-delivery"
+        ],
+        "trajectory_refs": [],
+        "information_gain": [
+          "ch33-stone-slope-contact"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan:character:tang-sui"
+        ],
+        "accessible_knowledge": [
+          "ch33-first-fallen-branch"
+        ],
+        "realization_event_ids": [
+          "cg33-e02"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "DESCRIPTION",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "次日上午沈砚与唐穗到近坡划定段，辨认边界和回程余地，沈砚徒手清出第一处挡路落枝。",
+      "唐穗发现一块石头与坡土相连，记下位置并使两人暂缓搬动，继续寻找范围内可处理的轻障。"
+    ],
+    "forbidden_events": [
+      "将第29—32章工作摘录推定为已接受Canon或改写其已呈现的选择与行动。",
+      "借短时灵气感知识别石土、增加搬运力量或越过物件实际重量。",
+      "移动划定段外、压住坡土或无法稳妥搬动的障碍。",
+      "以无来源收益、无限工夫或越权许诺完成任务与教学线。"
+    ],
+    "hard_constraints": [
+      "承接第32章已选定的次日上午近坡清路、携行试装、唐穗观察分拣和午前回程安排。",
+      "只据两人现场可见的路况行动；不预知整段障碍、石头下方结构或未来经办回应。",
+      "沈砚的短时掌中感知只辨自己的手与气息，不辨物、不增力；本章普通搬动须靠目测、手感和适当停歇。",
+      "划定范围、往返、现场清理、休息及已有承诺都占用同一上午时段，不以扩清挤掉回程。",
+      "本章只形成局部清理与留置记录，不提前完成第36章交付。"
+    ],
+    "reader_experience": {
+      "reward_mode": "准备见效，第一处路面实际得到清理",
+      "exit_question": "前方那块连着坡土的石头，该怎样留置并在回程时说清？",
+      "entry_question": "院中试妥的携行和分工，到了真实坡路上能否帮两人稳妥开工？",
+      "target_emotion": "踏实而专注"
+    },
+    "ending_hook": "两人清过第一处后，唐穗指出前方一块与坡土相连的石头，需要决定是否留置。",
+    "canon_dependencies": [
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6:story_planning.candidate:v1",
+      "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-033-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

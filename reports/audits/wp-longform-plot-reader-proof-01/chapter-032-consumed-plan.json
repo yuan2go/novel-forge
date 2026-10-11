@@ -1,0 +1,217 @@
+{
+  "asset_version_id": "authority-output:cfc52316-c16a-4971-9430-8c00286bf68d:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:fad131062a9185032ca766899ca24eea92d61c670c14ad6b96ea397b129109ff",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:32"
+  },
+  "expected_group": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:56b58c141effb9707200b76c90b4004342363c34c75d5326b1745c40c52dd613",
+  "chapter_root_operation_id": "992a9df8-f1cf-4125-89bd-09b85daea5bb",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 31,
+      "asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1",
+      "content_hash": "sha256:d975dd22cb4cd4f31d7f5e5649e032e88b4aa6a855364105f16b642f0cc2e3ba",
+      "text_hash": "sha256:71c25a4c99c24bbb189f30604e1435a4675b48ba87fee8b828fd1fd27133a8c4",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 32,
+    "chapter_intent": "让沈砚在看清当期山林步道清理的实际条件后，亲自选择可承担的部分，与愿意同行的唐穗商量分工，并用样件完成工具和携行方式的试装。",
+    "scene_plan": [
+      {
+        "goal": "弄清任务具体要做什么，再判断是否能承担。",
+        "beats": [
+          {
+            "beat_id": "s32-1-b1",
+            "ordinal": 1,
+            "function": "沈砚读到事务房任务牌：石湾谷谷口近坡步道须清通，范围限于划定段内可徒手搬动的落枝与小石。",
+            "expected_reader_effect": "看见下一件共同事务有清楚的来源和具体用途。"
+          },
+          {
+            "beat_id": "s32-1-b2",
+            "ordinal": 2,
+            "function": "程观在当期经办范围内摆出落枝、小石样件，说明不改路、不越段，回房后要报告已清理段与未处理处，供经办人核对。",
+            "expected_reader_effect": "理解任务的边界以及后续怎样交付。"
+          },
+          {
+            "beat_id": "s32-1-b3",
+            "ordinal": 3,
+            "function": "沈砚对照劳作、练习、往返和休息时间，唐穗则留意样件可观察的差别；两人各自说出愿意承担的部分。",
+            "expected_reader_effect": "看见沈砚和唐穗开始用各自需要衡量参与范围。"
+          }
+        ],
+        "conflict": "任务范围、次日上午往返安排与两人已有事务，共同限制可承担的工作量。",
+        "scene_id": "chapter32-task-terms",
+        "exit_state": "沈砚与唐穗已在事务房读到当期任务牌，听程观说明划定近坡段的清理标准与回房核对方式；二人正依据各自时间和兴趣商量分工，尚未完成行前试装。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "book:qinglan-wendao-20261008",
+          "start_ordinal": 1
+        },
+        "entry_state": "第31章的工作稿中，沈砚与唐穗已交换各自亲见的盘边变化与搬放经历；沈砚愿意在能力范围内多承担一件合适的事。两人尚未接触第32章当期任务条件。",
+        "location_id": "unit:sect-affairs",
+        "arc_progress": [
+          "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:cheng-guan",
+          "character:tang-sui"
+        ],
+        "reader_effect": "任务从模糊的山林差事变成有用途、范围和交付方式的选择。",
+        "scene_version": 1,
+        "scene_group_id": "chapter32-task-start",
+        "obligation_refs": [
+          "v1-mountain-task-delivery"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "world_event_ids": [
+          "read-task32"
+        ],
+        "information_gain": [
+          "local:read-task32"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [],
+        "accessible_knowledge": [],
+        "realization_event_ids": [],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "DESCRIPTION",
+          "DIALOGUE",
+          "INTERIOR"
+        ]
+      },
+      {
+        "goal": "把已看清的任务条件变成可执行的分工和能带走的行前准备。",
+        "beats": [
+          {
+            "beat_id": "s32-2-b1",
+            "ordinal": 1,
+            "function": "沈砚选定划定近坡段内可徒手搬动的落枝与小石清理，并承担携行；唐穗选择现场观察、分拣和记录不能确定的部分。",
+            "expected_reader_effect": "看到选择由沈砚和唐穗自己作出。"
+          },
+          {
+            "beat_id": "s32-2-b2",
+            "ordinal": 2,
+            "function": "二人将普通工具、容器与样件试装，发现把小石压在细枝样件上会折损参照物，遂分开固定并重新试走。",
+            "expected_reader_effect": "获得具体、可触摸的行前进展。"
+          },
+          {
+            "beat_id": "s32-2-b3",
+            "ordinal": 3,
+            "function": "沈砚束紧衣袖，在院内试走时按先前练习的观察、调整、重试次序留意手与肩的紧劲，改妥携带方式；短时掌中细暖只帮助他辨认自身动作。",
+            "expected_reader_effect": "认出沈砚已有的自查方法如何帮助他准备下一件事。"
+          },
+          {
+            "beat_id": "s32-2-b4",
+            "ordinal": 4,
+            "function": "样件、分工与已试妥的物件留在眼前；次日上午才开始近坡段清理，回房交付仍在其后。",
+            "expected_reader_effect": "带着明确目标期待真正的山行。"
+          }
+        ],
+        "conflict": "初次装法压坏枝条样件，工具和样件需要在普通容器中分开放妥；携带动作还须适合徒步往返。",
+        "scene_id": "chapter32-task-preparation",
+        "exit_state": "沈砚已选定石湾谷谷口划定近坡段的徒手步道清理，与唐穗明确各自的清理、观察和分拣部分；样件与普通工具分开固定，衣袖束紧且院内试走完成。现场清理和交付尚未发生。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 4,
+          "timeline_id": "book:qinglan-wendao-20261008",
+          "start_ordinal": 3
+        },
+        "entry_state": "沈砚与唐穗已在事务房读到当期任务牌，听程观说明划定近坡段的清理标准与回房核对方式；二人正依据各自时间和兴趣商量分工，尚未完成行前试装。",
+        "location_id": "unit:sect-affairs",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:tang-sui"
+        ],
+        "reader_effect": "以实物试装兑现本章的准备进展，并把期待引向第33章实际出发。",
+        "scene_version": 1,
+        "scene_group_id": "chapter32-task-start",
+        "obligation_refs": [
+          "v1-mountain-task-delivery"
+        ],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "world_event_ids": [
+          "prepare-task32"
+        ],
+        "information_gain": [
+          "local:prepare-task32"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [
+          "local:read-task32"
+        ],
+        "realization_event_ids": [
+          "e32"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "INTERIOR",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "e32"
+    ],
+    "forbidden_events": [
+      "提前完成石湾谷近坡段清理或返回事务房交付。",
+      "把未核实的报酬、库存、课程资格或劳动额度写成既得条件。",
+      "让程观越过实际经办范围决定课程、器具或修行资格。",
+      "把沈砚掌中的短时细暖写成能够辨认物料质量或作用于外物的能力。"
+    ],
+    "hard_constraints": [
+      "延续第29—31章选定工作稿中的有限本领、已完成搬放及与唐穗的交流，不将这些工作稿经历记作已接受Canon。",
+      "当期任务依已发布的事务房任务牌展开：清理石湾谷谷口划定近坡段内可徒手搬动的落枝与小石，不改路、不越段；返回事务房说明已清理段和未处理处，供经办人核对。",
+      "沈砚以同一日程单位考虑已有劳作、练习、往返与休息，选择可承担范围。",
+      "程观仅说明自己实际接触且职责内的任务条件，不承诺未核实的报酬、库存、课位或资格。",
+      "以沈砚为主的第三人称限知视角展开；山行执行及交付留待后续章节。"
+    ],
+    "reader_experience": {
+      "reward_mode": "看见沈砚用现有能力、同伴需要和明确任务条件作选择，随后动手准备。",
+      "exit_question": "带着已试妥的物件和分工，他们次日能否把划定近坡段清理妥当？",
+      "entry_question": "沈砚能否在已有劳作和练习之外，挑出一件真正做得完的山林事务？",
+      "target_emotion": "稳妥的期待"
+    },
+    "ending_hook": "已选任务的样件、分工和行前物件都在眼前；山行的实际采集与交付仍待第33—40章完成。",
+    "canon_dependencies": [
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+      "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+      "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-032-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

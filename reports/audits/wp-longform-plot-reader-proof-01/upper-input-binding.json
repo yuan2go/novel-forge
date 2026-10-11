@@ -1,0 +1,13 @@
+{
+  "snapshot_id": "sha256:ec9c690163ad5095f0bdf90f29d994e976e4bed363f3cf72bb976c20eba1e862",
+  "previous_snapshot_id": "sha256:9ab1c852186d70e4aed6a8688a76353ecf31b71d5b3a7489c608bc225cd3811e",
+  "book_version": 135,
+  "state": "PAUSED",
+  "formal_accepted_cursor": 0,
+  "working_cursor": 18,
+  "source_volume_change": "plan-change:6eb44d79-8c56-4d0c-af9a-5ee5d7ff781a",
+  "snapshot_initial_pair": [
+    "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+    "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+  ]
+}

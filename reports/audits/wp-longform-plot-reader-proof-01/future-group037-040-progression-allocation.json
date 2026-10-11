@@ -1,0 +1,219 @@
+{
+  "policy": {
+    "version": "working-prose-projection.v3",
+    "history_chapters": 32,
+    "recent_complete_chapters": 3,
+    "max_characters": 10000,
+    "queries": [
+      "沈砚初次引气与木片亮纹",
+      "唐穗药叶和共同用饭",
+      "陆衡搬桩与自己练习时间",
+      "许庭课堂手势",
+      "程教习课程与劳动"
+    ],
+    "guidance_mode": "COMBINED"
+  },
+  "hard_capacity": 258400,
+  "output_reserve": 32000,
+  "required_recent_complete": 3,
+  "snapshot": {
+    "version": "working-manuscript-context.v1",
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "project_id": "qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "target_chapter": 37,
+    "accepted_through_chapter": 0,
+    "authority": "AUTHOR_WORKING_PROSE_ONLY",
+    "structured_facts": [],
+    "projection_policy": {
+      "version": "working-prose-projection.v3",
+      "history_chapters": 32,
+      "recent_complete_chapters": 3,
+      "max_characters": 10000,
+      "queries": [
+        "沈砚初次引气与木片亮纹",
+        "唐穗药叶和共同用饭",
+        "陆衡搬桩与自己练习时间",
+        "许庭课堂手势",
+        "程教习课程与劳动"
+      ],
+      "guidance_mode": "COMBINED"
+    },
+    "working_memory": {
+      "version": "working-observations.v1",
+      "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
+      "semantic_support": "NOT_VERIFIED",
+      "entries": [],
+      "omitted_observation_ids": [],
+      "source_coverage": [
+        {
+          "chapter": 5,
+          "asset_version_id": "f20f8ea7-9cc3-4ee8-98f8-efe4dbe3157a",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 6,
+          "asset_version_id": "fd426812-e534-4975-a358-258da2832beb",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 7,
+          "asset_version_id": "26b6ac37-8cc2-4a2d-8ad3-d6a8aa61edcf",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 8,
+          "asset_version_id": "1f233c1e-48bd-4dce-a727-2061788968f6",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 9,
+          "asset_version_id": "17127099-12f0-4d83-a896-8bddb5955ff6",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 10,
+          "asset_version_id": "82f5c0fc-dbe4-4e53-a6f2-cee2704c6aa3",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 11,
+          "asset_version_id": "19e4b8ba-46b7-4bdf-9baf-253a8da1b19e",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 12,
+          "asset_version_id": "fc49eb7a-f91c-4fd2-8f9d-c25e57bb2a03",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 13,
+          "asset_version_id": "fbbe7312-7490-4ea5-a35b-03d8e158fbdf",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 14,
+          "asset_version_id": "eacaad1b-9f87-4f80-8d4e-be6d151efb63",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 15,
+          "asset_version_id": "86b871d8-41ce-4646-9ef9-432c506cd0d9",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 16,
+          "asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1",
+          "status": "MISSING"
+        },
+        {
+          "chapter": 17,
+          "asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 18,
+          "asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 19,
+          "asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7",
+          "status": "NOT_REQUESTED"
+        },
+        {
+          "chapter": 20,
+          "asset_version_id": "0d8cd54d-1a52-4df9-aa98-5d1b3ba81a82",
+          "status": "NOT_REQUESTED"
+        },
+        {
+          "chapter": 21,
+          "asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 22,
+          "asset_version_id": "772490bd-d5aa-4ecd-b0e2-7ee2f935fb45",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 23,
+          "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "chapter": 24,
+          "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 25,
+          "asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 26,
+          "asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 27,
+          "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0",
+          "status": "NOT_REQUESTED"
+        },
+        {
+          "chapter": 28,
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 29,
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 30,
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 31,
+          "asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41",
+          "status": "NOT_REQUESTED"
+        },
+        {
+          "chapter": 32,
+          "asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 33,
+          "asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 34,
+          "asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 35,
+          "asset_version_id": "e5ee36f1-1929-4946-9c86-7ad1df1f9829",
+          "status": "WORKING_MEMORY_STALE"
+        },
+        {
+          "chapter": 36,
+          "asset_version_id": "3fe34394-8628-485c-9414-308850515eca",
+          "status": "NOT_REQUESTED"
+        }
+      ],
+      "candidate_count": 0,
+      "packet_hash": "sha256:1aee3fb2606690374303658e61bd226c6118041652850afea3a625e2014e5840",
+      "retrieval_omissions": []
+    },
+    "instruction": "Continue only these exact selected working versions. Each passage is an attributed excerpt with Unicode positions; omitted ranges are unknown here, not evidence of absence. Distinguish what occurred in this working story, what an individual witnessed or was told, that individual's inference or belief, attributed rumor, reader-only disclosure and future plan intent. A true world event does not grant every character knowledge; a character's belief or statement need not be true. Discarded or unselected versions supply no experience. Carry realized experiences, practical progress and relationship aftermath into the next situation without reenacting them merely for formal acceptance. Unresolved dependency changes retain uncertainty. These passages grant no accepted fact IDs or Canon mutation. Let perception, goals, prior experience and the current situation motivate action, dialogue and subtext. Planned emotions and optional consequences are directions, not forced performances; distinguish binding fictional constraints from conditional possibilities. Important actions affect later choices when the story supports that effect; quiet scenes and unchanged positions are valid. Do not force conflict, reward, reversal or cost. Realize the chapter's intended movement without repeating settled progress. If a frozen plan requires repetition or contradicts the sources, retain that conflict for author/Plan Change rather than silently altering it. Use this information to write natural prose, without explaining these categories or a state checklist to the reader.Working observations are fallible source-bound navigation, never Canon or verified knowledge. Use their exact historical passages to assess current character states, attributed knowledge, relationships, actions, consequences and outstanding promises. Latest means latest observed statement, not proven truth. Missing or stale memory remains unknown; retain subjective and reader scopes. If the declared output schema permits working_memory_json, you may return a separate JSON-string array of observations grounded only in the prose you just wrote; omission must not impair prose. Each object has kind (CHARACTER_STATE, KNOWLEDGE, RELATIONSHIP, EVENT, CONSEQUENCE, PROMISE), subject, state_key, claim, perspective (OBSERVED, BELIEF, HEARSAY, READER_ONLY), knowledge_owner (empty for unattributed world observations or reader-only disclosures), an unambiguous literal quote, and causes (only observation_ids present in the frozen working memory, or []). Do not turn future plans into past events or return this metadata inside Scene prose. ",
+    "snapshot_hash": "sha256:3a2ab8b7e59b2ba283dfe8c96c80486e2d0dbf5b1187669f251f21709cc07c74"
+  },
+  "retains_selected_34_35_36": true,
+  "purpose": "New explicit Plan Change input snapshot after exact NOT_SENT capacity evidence; optional history allocation only"
+}

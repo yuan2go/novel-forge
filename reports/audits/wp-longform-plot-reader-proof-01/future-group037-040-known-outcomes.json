@@ -1,0 +1,46 @@
+{
+  "scope": "EXACT_OPERATIONS_ONLY_NOT_GLOBAL_UNKNOWN_AUDIT",
+  "records": [
+    [
+      "1d40ad93-db37-4a91-a4cb-cfb75d5e647c",
+      "SUCCEEDED",
+      "SUCCEEDED",
+      "world_candidates.generate",
+      "180850"
+    ],
+    [
+      "1d40ad93-db37-4a91-a4cb-cfb75d5e647c",
+      "SUCCEEDED",
+      "SUCCEEDED",
+      "world_candidates.evaluate",
+      "166290"
+    ],
+    [
+      "1d40ad93-db37-4a91-a4cb-cfb75d5e647c",
+      "SUCCEEDED",
+      "SUCCEEDED",
+      "chapter_plan.generate",
+      "181405"
+    ],
+    [
+      "b019f9fe-f915-4b94-9690-d623e2cf52e9",
+      "FAILED_FINAL",
+      null,
+      null,
+      null
+    ],
+    [
+      "16edc1d4-4c9b-4d9e-b022-8fdc97541e28",
+      "SUCCEEDED",
+      "SUCCEEDED",
+      "chapter_group_plan.generate",
+      "248172"
+    ]
+  ],
+  "old_chapter_plan": "SETTLED_UNCONSUMED_AFTER_CHECKPOINT_CAS_CONFLICT",
+  "new_group": "ACTIVE_NATIVE_PLANCHANGE",
+  "old_local_failure": "PRESERVED_ZERO_EFFECT",
+  "ordinary_native_capacity_successor": "16edc1d4-4c9b-4d9e-b022-8fdc97541e28",
+  "unknown_resend": false,
+  "original_mutations": 0
+}

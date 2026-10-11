@@ -1,0 +1,6 @@
+{
+  "state": "PAUSED",
+  "current_chapter": 20,
+  "reason": "Native idle editing checkpoint: select saved Chapter19 expression candidate and prospective optional-history allocation, then immediately resume toward40; in-flight Planning retains its effect",
+  "human_feedback_gate": false
+}
