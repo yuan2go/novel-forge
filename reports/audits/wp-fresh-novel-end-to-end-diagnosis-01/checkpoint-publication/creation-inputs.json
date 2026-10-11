@@ -1,0 +1,251 @@
+{
+  "contract_version": "creation-input-policy.v1",
+  "purpose": "Runtime genesis and quality floor; work scope and language supplied by the current Formation request.",
+  "profiles": {
+    "production_profile": {
+      "operation": "book.production_profile.author",
+      "content": {
+        "type": "production_profile",
+        "safe_summary": "Initial production_profile; no accepted narrative history.",
+        "structured_facts": [],
+        "profile_id": "creative-validation-production-profile",
+        "authority_boundary": "FUTURE_INTENT",
+        "working_prose_policy": {
+          "version": "working-prose-projection.v3",
+          "history_chapters": 100,
+          "recent_complete_chapters": 2,
+          "max_characters": 40000,
+          "queries": [
+            "人物欲望与实际选择",
+            "关系变化与经历",
+            "已获修行能力及行动后果",
+            "未兑现承诺与伏笔"
+          ],
+          "guidance_mode": "COMBINED"
+        }
+      }
+    },
+    "previous_volume_outcome": {
+      "operation": "book.previous_volume_outcome.author",
+      "content": {
+        "type": "previous_volume_outcome",
+        "safe_summary": "Initial previous_volume_outcome; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_PREVIOUS_VOLUME",
+        "actual_outcomes": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "previous_chapter_group_outcome": {
+      "operation": "book.previous_chapter_group_outcome.author",
+      "content": {
+        "type": "previous_chapter_group_outcome",
+        "safe_summary": "Initial previous_chapter_group_outcome; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_PREVIOUS_CHAPTER_GROUP",
+        "actual_outcomes": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "previous_chapter_outcome": {
+      "operation": "book.previous_chapter_outcome.author",
+      "content": {
+        "type": "previous_chapter_outcome",
+        "safe_summary": "Initial previous_chapter_outcome; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_PREVIOUS_CHAPTER",
+        "actual_outcomes": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "arc_portfolio": {
+      "operation": "book.arc_portfolio.author",
+      "content": {
+        "type": "arc_portfolio",
+        "safe_summary": "Initial arc_portfolio; no accepted narrative history.",
+        "structured_facts": [],
+        "portfolio_id": "initial-arc-window",
+        "contract_version": "v1",
+        "authority_boundary": "FUTURE_INTENT"
+      }
+    },
+    "ending_reachability": {
+      "operation": "book.ending_reachability.author",
+      "content": {
+        "type": "ending_reachability",
+        "safe_summary": "Initial ending_reachability; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "PLANNED_NOT_ACTUAL",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "conflict_state": {
+      "operation": "book.conflict_state.author",
+      "content": {
+        "type": "conflict_state",
+        "safe_summary": "Initial conflict_state; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "foreshadowing_ledger": {
+      "operation": "book.foreshadowing_ledger.author",
+      "content": {
+        "type": "foreshadowing_ledger",
+        "safe_summary": "Initial foreshadowing_ledger; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "character_state": {
+      "operation": "book.character_state.author",
+      "content": {
+        "type": "character_state_snapshot",
+        "safe_summary": "Initial character_state; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "foreshadowing_state": {
+      "operation": "book.foreshadowing_state.author",
+      "content": {
+        "type": "foreshadow_snapshot",
+        "safe_summary": "Initial foreshadowing_state; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "reward_ledger": {
+      "operation": "book.reward_ledger.author",
+      "content": {
+        "type": "reward_ledger_snapshot",
+        "safe_summary": "Initial reward_ledger; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "promise_ledger": {
+      "operation": "book.promise_ledger.author",
+      "content": {
+        "type": "promise_ledger_snapshot",
+        "safe_summary": "Initial promise_ledger; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "entries": [],
+        "authority_boundary": "PRE_CHAPTER_0"
+      }
+    },
+    "reader_segment": {
+      "operation": "book.reader_segment.author",
+      "content": {
+        "type": "reader_segment_profile",
+        "safe_summary": "Initial reader_segment; no accepted narrative history.",
+        "structured_facts": [],
+        "profile_id": "creative-validation-reader-segment",
+        "profile_version": "reader-outcome-v3",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "reader_contract": {
+      "operation": "book.reader_contract.author",
+      "content": {
+        "type": "reader_contract",
+        "safe_summary": "Initial reader_contract; no accepted narrative history.",
+        "structured_facts": [],
+        "profile_id": "creative-validation-reader-contract",
+        "profile_version": "reader-outcome-v3",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "reader_state": {
+      "operation": "book.reader_state.author",
+      "content": {
+        "type": "reader_state",
+        "safe_summary": "Initial reader_state; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "reader-state-genesis-v1",
+        "profile_version": "reader-outcome-v3",
+        "status": "NOT_OBSERVED",
+        "accepted_through_chapter": 0,
+        "observations": [],
+        "evidence_class": "READER_PROXY_ADVISORY",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "quality_trend": {
+      "operation": "book.quality_trend.author",
+      "content": {
+        "type": "quality_trend",
+        "safe_summary": "Initial quality_trend; no accepted narrative history.",
+        "structured_facts": [],
+        "contract_version": "v1",
+        "status": "NO_ACCEPTED_CHAPTERS",
+        "authority_boundary": "ADVISORY"
+      }
+    },
+    "platform_profile": {
+      "operation": "chapter.platform_profile.author",
+      "content": {
+        "type": "platform_profile",
+        "safe_summary": "Initial platform_profile; no accepted narrative history.",
+        "structured_facts": [
+          {
+            "key": "platform_rules",
+            "value": {
+              "chapter_length": {
+                "minimum": 300,
+                "maximum": 10000
+              },
+              "format": {
+                "paragraph_max": 500
+              },
+              "sensitive_content": [],
+              "ai_content": {
+                "mode": "internal"
+              },
+              "opening": [],
+              "rhythm": [],
+              "publish_metadata": {
+                "title_required": true
+              }
+            }
+          }
+        ],
+        "profile_id": "creative-validation-platform-profile",
+        "constraints": [
+          "Private internal manuscript; no external publication"
+        ]
+      }
+    },
+    "quality_rubric": {
+      "operation": "chapter.quality_rubric.author",
+      "content": {
+        "type": "quality_rubric",
+        "safe_summary": "Initial quality_rubric; no accepted narrative history.",
+        "structured_facts": [],
+        "profile_id": "creative-validation-quality-rubric",
+        "dimensions": [
+          "continuity",
+          "causality",
+          "character_consistency",
+          "pacing",
+          "style"
+        ]
+      }
+    }
+  }
+}

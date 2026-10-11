@@ -1,0 +1,30 @@
+{
+  "scope": "OBSERVED_NATIVE_EXECUTION_EVENTS",
+  "items": [
+    {
+      "execution_directory": "planning-execution-9dec4911-cf67-4668-a782-71778-5705f1ec20e254cb",
+      "observed_external_tool_items": []
+    },
+    {
+      "execution_directory": "planning-execution-ac3e7819-192c-49af-acce-069c8-e3446d0aa63c7615",
+      "observed_external_tool_items": []
+    },
+    {
+      "execution_directory": "planning-execution-e44c0a01-d5bd-4569-8b6f-552bf-8b00f75a99e74432",
+      "observed_external_tool_items": []
+    },
+    {
+      "execution_directory": "planning-execution-eafc5acb-ed6d-4f83-8c29-8fb37-d83a2624a6648468",
+      "observed_external_tool_items": []
+    },
+    {
+      "execution_directory": "planning-execution-e88dd61a-df5c-41aa-b501-21f42-0d1cc7400d8e280b",
+      "observed_external_tool_items": []
+    },
+    {
+      "execution_directory": "planning-execution-24e92484-187d-4b3a-8e52-cb933-8c23f0a30de06864",
+      "observed_external_tool_items": []
+    }
+  ],
+  "conclusion": "No observed old-source read or external writing tool use; frozen sources separately verified."
+}

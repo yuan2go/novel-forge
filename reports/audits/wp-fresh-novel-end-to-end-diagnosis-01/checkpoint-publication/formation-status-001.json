@@ -1,0 +1,47 @@
+{
+  "formation_run_id": "story-formation:758b56a9b8091f0a4d9f94124e29d2e2d9e325333325c2df8a7211eeea78c015",
+  "production": null,
+  "author_state": "PRODUCING",
+  "unresolved_external_effects": [],
+  "next_action": "WAIT_FOR_NATIVE_EXECUTOR",
+  "responsible_party": "BOOK_AUTHORITY_WORKER",
+  "delivery": {
+    "required_action": "READ_EDIT_OR_EXPORT_CURRENT_MANUSCRIPT",
+    "export_status": "AVAILABLE_FOR_SAVED_PROSE",
+    "query_url": "",
+    "literary_quality": "NOT_PROVEN"
+  },
+  "formation_lifecycle": "RUNNING",
+  "stage": "THEME_CONTRACT",
+  "version": 2,
+  "cancellation": null,
+  "candidates": [],
+  "failure": {},
+  "recovery_instruction": {},
+  "coordination": {
+    "runtime_job_id": "runtime-job:274242477cc08c9c57622fc15f48d63e8909c6a04704b8622311fada14afd700",
+    "status": "READY",
+    "next_attempt_at": "2026-10-11 08:42:20.690495+00:00",
+    "error": {},
+    "result": null
+  },
+  "progress": [
+    "THEME_CONTRACT",
+    "RUNNING",
+    2,
+    2,
+    0,
+    null,
+    {
+      "chapter": null,
+      "opening": null,
+      "cancel_requested": false,
+      "generation_recovery": [
+        0,
+        0
+      ]
+    }
+  ],
+  "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+  "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537"
+}

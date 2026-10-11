@@ -1,0 +1,13 @@
+{
+  "authorization_ref": "user:WP-FRESH-NOVEL-END-TO-END-DIAGNOSIS-01:20261011",
+  "source": "CURRENT_DIRECT_USER_REQUEST",
+  "intent": "Execute independent native new-novel creation and actual delivery of chapters 1–100; full-book design 600 chapters; diagnose earliest quality causes and repair in same Book.",
+  "membership_route": "EXISTING_AUTHENTICATED_CODEX_MEMBERSHIP",
+  "paid_channel_authorization": "NOT_EXPANDED; PAID_ROUTES_DISABLED",
+  "external_assistant_prose": "FORBIDDEN",
+  "automatic_selection": "Record operator/automatic identity; not human author acceptance",
+  "existing_qinglan_runtime": "PRESERVE",
+  "completion": "Require 100 selected complete saved/read-back/exported chapters, each4000–5000HAN_CHARACTERS_V1, whole-prose reading; planning/calls/candidates not completion",
+  "source_boundaries": "No old Book assets imported; old published prose and audits retained only in diagnostic filesystem.",
+  "failure": "Retain original operation/effect/usage and bounded native recovery; never reset exhaustion or create replacement Book."
+}
