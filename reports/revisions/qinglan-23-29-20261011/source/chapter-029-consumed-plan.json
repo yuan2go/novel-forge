@@ -1,0 +1,147 @@
+{
+  "asset_version_id": "authority-output:1597477c-0e20-4ac5-9c62-a98deb99202b:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:cd013f3a1268714c0db3f93ea9a77b315ddf25c640ef7f25ea28f1289b20de11",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:29"
+  },
+  "expected_group": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:1fddc8b8f826951ecb282723e6612d2af78e7994f708f13227fbb7ea6319f8eb",
+  "chapter_root_operation_id": "1b468c3a-f2c2-47ab-ab0b-0deb801a5819",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 28,
+      "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c",
+      "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+      "text_hash": "sha256:bdc0c6c4d20c4706e8ef02aace9e16a6adf8bf6ba58b7a5bded29dee0af8ffe3",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 29,
+    "chapter_intent": "承接沈砚已经做成的起收和移步试验，让许庭在当次答疑中说明木片浅纹与掌中感受的区别；沈砚经过必要调整与歇息，数次完成无木片的短时起收，并说清这点本领怎样帮助自己。",
+    "scene_plan": [
+      {
+        "goal": "在许庭当次答疑内厘清感受的用途，并由沈砚自己完成数次无木片短时起收。",
+        "beats": [
+          {
+            "beat_id": "chapter29:beat1",
+            "ordinal": 1,
+            "function": "沈砚简述独练三回和移步后的真实动作，指出新站位手位与重心仍需小幅调整。",
+            "expected_reader_effect": "认出第27—28章经历的连续性，也看见许庭只凭亲述和亲见判断。"
+          },
+          {
+            "beat_id": "chapter29:beat2",
+            "ordinal": 2,
+            "function": "许庭结合眼前动作说明浅纹是掌前短时流转的回音，示范松肩、定息和短时收回；掌中细暖帮助沈砚辨认自身变化。",
+            "expected_reader_effect": "明白木片浅纹与掌中感受各有范围。"
+          },
+          {
+            "beat_id": "chapter29:beat3",
+            "ordinal": 3,
+            "function": "沈砚少量复习后调整手位，不再追着木片亮暗找结果，歇至肩松气缓。",
+            "expected_reader_effect": "看见沈砚主动把注意力移回自己的身体。"
+          },
+          {
+            "beat_id": "chapter29:beat4",
+            "ordinal": 4,
+            "function": "沈砚数次不借木片短时引出、感受并收住掌中细暖，逐回辨认手位和呼吸的差别。",
+            "expected_reader_effect": "由数次具体动作获得踏实的喜悦。"
+          },
+          {
+            "beat_id": "chapter29:beat5",
+            "ordinal": 5,
+            "function": "沈砚说清起与收的时点和自身用途；许庭到时回去修炼，嘱他可以自行先做。沈砚想到下次手上真有事做时由自己决定怎样用。",
+            "expected_reader_effect": "确认所得有限而可自行沿用，并自然期待下一次实际使用。"
+          }
+        ],
+        "conflict": "新站位的手位与重心尚需小幅调整，许庭的当次答疑时段有限。",
+        "scene_id": "chapter29:scene1",
+        "exit_state": "沈砚歇息后数次无木片短时起收掌中细暖，并说清它帮助自己辨认和调整手与气息；许庭结束当次答疑，回去修炼。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter29:main",
+          "start_ordinal": 1
+        },
+        "entry_state": "第26章木片前数次主动起收、第27章三回独练及第28章移步后新站位的一回起收都已是沈砚亲历的工作稿经历；他尚未无木片完成并说清自身用途。许庭只知道他已亲述及她亲眼见过的部分。",
+        "location_id": "location:qinglan-basic-practice-ground",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:xu-ting"
+        ],
+        "reader_effect": "熟悉练习获得可亲手重复、可自己说明的小用途。",
+        "scene_version": 1,
+        "scene_group_id": "chapter29:practice-and-answer",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:chapter29:self-sensing-limit"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "e29"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "DIALOGUE",
+          "ACTION",
+          "INTERIOR",
+          "INTEGRATION"
+        ]
+      }
+    ],
+    "required_events": [
+      "e29"
+    ],
+    "forbidden_events": [
+      "将第28章的移步试验重演为本章新事件。",
+      "让许庭知道沈砚未向她讲述、她也未亲见的私下细节。",
+      "让许庭授予正式课程、器具或事务权限，或无限延长她的答疑时段。",
+      "让掌中细暖作用于外物、判断陶土或陶盘质量、替他人施术或治病。"
+    ],
+    "hard_constraints": [
+      "承接第26—28章所选工作中的数次主动起收、三回独练及第28章移步后的一回起收，不将工作稿经历写成已接受Canon。",
+      "在许庭当次实际可用的答疑时段完成无木片短时起收及自身小用途的说明与实践。",
+      "许庭为女性，只依据沈砚亲述与她亲眼所见指导；到时回去修炼。",
+      "掌中细暖只帮助沈砚辨认和调整自己的手与气息，不作用于外物或他人。",
+      "保持沈砚为主的第三人称限知视角；正文主要使用简体中文，单章2500—3500中文字，段落不超过500中文字。"
+    ],
+    "reader_experience": {
+      "reward_mode": "看见熟悉练习终于化为自己能说明、能开始也能收住的小用途。",
+      "exit_question": "下次手上真有事做时，沈砚会怎样在这点本领的范围内自行使用？",
+      "entry_question": "沈砚在新站位留下的手位差别，能否在有限答疑后由自己调整，并离开木片完成起收？",
+      "target_emotion": "踏实的喜悦"
+    },
+    "ending_hook": "沈砚已能不用木片自行起收掌中的细暖，想到下次手上真有事做时，该由自己决定怎样用。",
+    "canon_dependencies": [
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+      "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-029-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

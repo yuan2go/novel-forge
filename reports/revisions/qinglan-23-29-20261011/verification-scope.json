@@ -1,0 +1,21 @@
+{
+  "change_scope": "LITERARY_ARTIFACTS_ONLY_NO_RUNTIME_CODE_SCHEMA_SKILL_OR_CONFIGURATION_CHANGE",
+  "source_commit": "9271fda41edb617b246fb4201a6b24b63c627bf1",
+  "artifact_integrity": "PASS",
+  "quote_locator_verification": "PASS_PRESENCE_ONLY",
+  "documentation_reality": {
+    "status": "PASS",
+    "canonical_document_count": 5,
+    "errors": [],
+    "inventory_sha256": "sha256:16fc1911b86beddb3fe99cecf122c5cf33c418f1f56b999e96d49465d93485b5",
+    "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m novel_forge.tools.documentation_reality --repo-root ."
+  },
+  "native_provider_postgres_plan_change": "NOT_RUN",
+  "backend_matrix": {
+    "status": "NOT_RUN",
+    "applicability": "NO_PRODUCTION_CHANGE_IN_THIS_REVISION"
+  },
+  "reader_quality": "ASSISTANT_TEXT_COMPARISON_ONLY",
+  "author_acceptance": "PENDING",
+  "publication": "NOT_RUN"
+}
