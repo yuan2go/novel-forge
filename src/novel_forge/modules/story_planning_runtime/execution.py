@@ -2568,6 +2568,7 @@ def planning_provider_output_schema(
     work_requirements: bool = False,
     aligned_methods: bool = False,
     serialization_contract: bool = False,
+    typed_volume_allocation: bool = False,
     operational_commitments: bool = False,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
@@ -2719,14 +2720,21 @@ def planning_provider_output_schema(
         elif field == "required_state_delta":
             properties[field] = _strict_object({"summary": string})
         elif field == "volume_skeleton":
+            volume_fields = {
+                "volume": {"type": "integer", "minimum": 1},
+                "function": string,
+            }
+            if serialization_contract and typed_volume_allocation:
+                volume_fields["chapter_range"] = {
+                    "type": "array",
+                    "items": {"type": "integer", "minimum": 1},
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Inclusive chapter bounds for this Volume. All Volumes must form one contiguous allocation of the Book target, matching their story functions.",
+                }
             properties[field] = {
                 "type": "array",
-                "items": _strict_object(
-                    {
-                        "volume": {"type": "integer", "minimum": 1},
-                        "function": string,
-                    }
-                ),
+                "items": _strict_object(volume_fields),
             }
         elif field == "required_arc_contributions":
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
@@ -4369,6 +4377,7 @@ class PostgresPlanningExecutionPreparer:
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
                 serialization_contract=command.execution_contract_version in {"1.19.0", "1.21.0"},
+                typed_volume_allocation=command.execution_contract_version == "1.21.0",
                 operational_commitments=command.execution_contract_version == "1.21.0" and command.planning_scope.value == PlanContractType.CHAPTER.value,
             )
         )
@@ -4412,6 +4421,8 @@ class PostgresPlanningExecutionPreparer:
             output_schema_ref = foundation_output_schema_ref(command.generator_operation_name, execution_contract_version=command.execution_contract_version, narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0")
         if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
             output_schema_ref += ":work-v4" if command.execution_contract_version in {"1.19.0", "1.21.0"} else ":work-v3" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else ":work-v2"
+        if command.planning_scope.value == PlanContractType.BOOK.value and command.execution_contract_version == "1.21.0":
+            output_schema_ref += ":volume-allocation-v2"
         if command.execution_contract_version == "1.21.0" and command.generator_operation_name not in FOUNDATION_GENERATORS and provider_stage is None:
             output_schema = bind_realization_selector_schema(
                 output_schema, context_document.content["realization_reference_contract"],

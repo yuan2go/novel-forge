@@ -1024,6 +1024,17 @@ do not freeze the delivery window. The command does not dispatch a model; ordina
 uses the saved frontier and selected prior prose after successful extension. Before a
 BookRun exists, finish the original Opening recovery and original start first.
 
+An unwritten Book with a verified semantic planning defect may use the Book Opening
+application's `reopen_unwritten` command after its source Opening is `ABORTED` and
+all prior model effects have settled or have native pure-generation isolation.
+This is an explicit planning repair, not a Provider retry. It freezes the source
+Opening/version, reason and exact active `PLANNED` versions, preserves the same
+Book, Foundation, profile and initial state, and admits a new native Opening.
+Admission rechecks the frozen boundary under the Book lock; existing Hierarchical
+Planning expected-version guards own each replacement. Any BookRun, executed or
+frozen plan, changed source or active unisolated model work rejects this path.
+Historical frozen Opening requests retain their original serialization and hashes.
+
 Focused verification for this policy uses
 `tests/integration/test_author_first_manuscript_postgres.py` (controlled native production
 composition, cross-ChapterGroup writing, interrupted delivery/recovery, optional review

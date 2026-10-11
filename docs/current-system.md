@@ -1687,15 +1687,26 @@ scene-local guidance to the whole Book. Canon, knowledge visibility, copyright a
 objective interface limits remain separate hard boundaries. Private author spans stay
 host-side except for explicitly permitted role/scope projections.
 
-The 2026-10-04 Prompt/Skill audit remains historical diagnostic evidence. Current
-new Planning Pack 2.13.0 uses `story-planning` 1.21.0, Prompt v11,
+The 2026-10-04 Prompt/Skill audit remains historical diagnostic evidence. The work-intent
+contract introduced with Planning Pack 2.13.0 uses `story-planning` 1.21.0, Prompt v11,
 `foundation-generation.v4`, BookDesign v7
 and work qualification profiles v3. Theme exploration and ending alignment follow selected
 methods; absent choices or closure are evaluated against the coherent chosen alternative,
 with PASS alignment evidence and no repair, not as missing universal requirements.
 Explicit commitments still fail when missing. Profile semantics participate in the hash.
-BookDesign and Formation use the same explicit 1–10000 chapter range, and volume allocation
-exactly covers the selected positive length. Optional costs, escalation, rewards and closure
+BookDesign and Formation use the same explicit 1–10000 chapter range. The Planning domain
+accepts complete, contiguous `volume_skeleton[].chapter_range` allocations and otherwise
+uses equal allocation for historical skeletons. Numeric coverage alone does not establish
+agreement with ranges embedded in `function` text. Current serialization-contract Book
+Provider output requires typed `chapter_range` on each volume, under the
+`volume-allocation-v2` output Schema identity. Historical schemas admitting only `volume`
+and `function` retain their frozen validation path; their textual allocation can be lost
+before Volume generation. Treat equal allocation as historical compatibility, not a
+creative invariant. An aborted, unwritten Opening can explicitly admit same-Book native
+planning replacement with frozen predecessor versions; BookRuns and executed plans
+continue to require governed Plan Change. The source Foundation and initial state remain
+bound to the original Book, and old candidates and terminal execution evidence remain.
+Optional costs, escalation, rewards and closure
 use explicit applicability with rationale; null is interpreted through that declaration,
 and UNDETERMINED does not establish that a method is absent. A selected
 requirement or an existing due obligation remains mandatory. Old generation v1,
