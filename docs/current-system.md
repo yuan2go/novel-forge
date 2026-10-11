@@ -315,6 +315,10 @@ worker restart. Technical waits use the original frozen work; author and owner d
 stop polling until relevant persisted state changes. An active uncertain Effect requires native
 reconciliation or authorized pure-generation isolation. Isolation revokes its commit rights and
 permits one linked native successor without requiring a remote result or measured usage.
+If a CLI host crash leaves the original dispatch unfinished after the Operation stops,
+the Kernel first checkpoints verified orphan-process evidence under the original
+execution identity and expired leases. It preserves unknown remote outcome and usage;
+complete results are recovered before isolation, and active writers cannot be isolated.
 Chapter recovery first reuses a complete trusted original API response or CLI result with
 its Gateway validation evidence. Isolated API receipts bind each original dispatch
 independently; missing measurements in any generation keep the original reservation held.

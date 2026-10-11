@@ -2545,6 +2545,14 @@ evidence for explicit, bounded repair. A remote `UNKNOWN` outcome retains its or
 identity and uncertainty. Native pure-generation isolation can revoke the old attempt
 and register a successor without a remote receipt; irreversible effects still require
 original reconciliation before any retry.
+For a CLI host crash before dispatch-result persistence, a stopped Operation can still
+have a `DISPATCHING` Effect. Recover the original Gateway record first. A verified
+`ORPHANED` local process with no complete result permits the Kernel to checkpoint that
+original dispatch as uncertain after its writer and dispatch leases expire. This is
+local evidence, not remote cancellation, non-execution or measured usage. Authorized
+pure-generation isolation then retains the uncertainty and links the same task's native
+successor. A live process, complete result, different identity or active lease blocks
+this path.
 
 Remote submit, query and callback use the host's persisted output contract: Schema,
 Schema reference, request hash and execution identity. Provider evidence cannot replace

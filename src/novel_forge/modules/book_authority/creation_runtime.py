@@ -1046,6 +1046,16 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             if recovered:
                 return {"stop_reason":"WORKER_OWNS_CONTINUATION", "scheduled":[recovered],
                     **creation_status(settings.database_url, project_id=args.project_id, formation_run_id=formation_id, principal=principal)}
+            from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
+
+            with AuthorityUnitOfWork(settings.database_url) as uow:
+                uow.cursor.execute("""SELECT DISTINCT o.actor_id FROM authority_story_planning_generation g
+                    JOIN authority_operation o USING(operation_id) WHERE g.project_id=%s AND g.book_id=%s""",
+                    [run["project_id"], run["book_id"]])
+                source_actors = [row[0] for row in uow.cursor.fetchall()]
+            for source_actor in source_actors:
+                recover_book_generations(composition.planning, project_id=run["project_id"],
+                    book_id=run["book_id"], principal=principal, source_actor_id=source_actor)
             if run["lifecycle"] == "FAILED":
                 composition.formation.resume(formation_id, expected_version=run["version"], principal=principal)
         if args.action == "choose":
