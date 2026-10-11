@@ -240,11 +240,17 @@ def test_prospective_template_renders_only_active_method_with_lossless_inputs(st
     assert pack.prompt_template.version == "v13"
 
 
-@pytest.mark.parametrize("stage", ["draft", "memo", "review", "rereview", "revision"])
+@pytest.mark.parametrize("stage", ["draft", "memo", "review", "rereview", "revision", "canon_extraction", "quality_structural", "quality_commercial"])
 def test_active_method_template_preserves_frozen_stage_output_contract(stage):
     from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
 
-    arguments = {"stage": stage, "request_payload": {"input": {}}}
+    from novel_forge.modules.canon_graph.source_spans import source_spans
+
+    arguments = {"stage": stage, "request_payload": {"input": {
+        "source_span_table": source_spans("门开了。"),
+        "accepted_transition_baselines": {}, "canonical_transition_results": [],
+        "quality_applicability_contract": "quality-host-applicability.v1",
+        "quality_context": {"creative_baseline": {"method_requirements": {}}}}}}
     assert PostgresChapterExecutionContractBinder._provider_output_contract(
         **arguments, prompt_contract_version="v15"
     ) == PostgresChapterExecutionContractBinder._provider_output_contract(
