@@ -3779,9 +3779,11 @@ through native Plan Change, then bind the new input snapshot before Chapter admi
 An original instance with dispatch disabled or no write grant stays unchanged; a disposable
 restore can validate prospective decisions and writing, explicitly marked as an isolated
 operator result awaiting original adoption. It cannot supply a human author approval.
-The checked Chapter Pack currently binds prose-generation-v4 even though the root Skill is
-v5. A prospective v5 selection requires a new exact Pack binding and admission, with the
-actual rendered Skill/hash retained in Provider evidence. Keep frozen v4 requests recoverable.
+Historical Chapter Packs bind prose-generation-v4 independently of the root Skill version.
+A prospective v5 selection requires an explicit current-contract Pack compilation, binding
+and admission; Template v15 and prose-generation-v5 are available in the artifact catalog.
+Check the deployed activation and actual rendered Skill/hash in each Provider Attempt
+before reporting v5 prose execution. Keep frozen v4 requests recoverable.
 Budget the final complete rendered request rather than summing stored Context assets.
 Optional older prose may be reallocated prospectively with explicit omissions, while required
 recent prose and causal dependencies remain intact. A pre-send failure uses its owning

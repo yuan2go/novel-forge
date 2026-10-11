@@ -98,9 +98,11 @@ silently truncating it. The enhancement remains opt-in. Independent human feedba
 literary effectiveness; that evidence ceiling is not an additional manuscript delivery gate. Profile selection affects future work; it does not upgrade an
 existing frozen run. These coverage limits do not require characters to repeat earlier
 actions or forget experiences in the selected working version.
-The root prose Skill is not the runtime binding: the checked Chapter Pack still selects
-`prose-generation-v4`, while the current root Skill is registered as v5. Inspect the actual
-compiled/deployed Pack and each Attempt manifest before claiming that v5 generated prose.
+The root prose Skill is not the runtime binding. Historical Chapter Packs retain
+`prose-generation-v4`; a current-contract compilation can explicitly bind
+`prose-generation-v5` and Template v15. Neither availability nor compilation establishes
+which version generated a Book. Inspect the actual deployed Pack, activation and each
+Attempt manifest before claiming that v5 generated prose.
 Generated plan constraints also remain distinct from author intent. A planning clause about
 candidate status, formal acceptance, delivery windows or host authorization does not require
 characters to delay action. Changing a future story commitment requires the existing Plan
