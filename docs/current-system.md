@@ -386,6 +386,11 @@ the input evidence additionally retains the exact PASS result, native APPROVE re
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
 that chain.
 
+Prospective Chapter template v15 requires an explicit compiled Pack identity. It projects
+only shared rules and the active stage method while retaining the v13 output contracts
+and lossless input transport. Source identity and frozen full template hashes remain in
+the execution manifest; this selection does not alter historical Attempts or defaults.
+
 Current Chapter workflow 3.10.0 and candidate Pack 3.0.2/template v13 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
 corrections. The Pack binds ordinary coordinated nodes to their exact 3.10.0 definition hashes. ExecutionIntent 3.10.1, Memo 3.10.1/3.10.2 and Draft 3.10.1 remain separately journal-bound recovery definitions. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and

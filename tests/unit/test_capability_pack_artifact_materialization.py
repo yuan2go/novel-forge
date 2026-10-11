@@ -205,6 +205,53 @@ def test_current_draft_request_renders_single_body_contract_without_operator_pol
     assert evidence["provider_view"]["exact_context_references"]["contract_version"] == "provider-context-exact-value-reference.v1"
 
 
+@pytest.mark.parametrize("stage,heading", [("draft", None), ("review", "Review"), ("revision", "Revision"), ("canon_extraction", "Canon"), ("quality_structural", "Quality")])
+def test_prospective_template_renders_only_active_method_with_lossless_inputs(stage, heading):
+    resolver = default_chapter_artifact_resolver(ROOT)
+    template = resolver.resolve(ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", "v15")
+    from novel_forge.modules.chapter_authority.prompt_methods import project_chapter_template
+
+    projected = project_chapter_template(json.loads(template.content_json)["text"], stage=stage)
+    assert "## Shared rules" in projected
+    for method in ("Review", "Revision", "Canon", "Quality"):
+        assert ("## " + method in projected) == (method == heading)
+    if stage != "draft":
+        return
+    registered, snapshot = _registered_version_and_snapshot()
+    pack = materialize_registered_pack_version(snapshot, registered)
+    *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    materialization = _prompt_materialization({"context_segments": []})
+    materialization["pack_artifacts"] = {
+        "system_instruction": pack.system_instruction.to_dict(),
+        "prompt_template": template.to_dict(),
+        "skill": pack.skill.to_dict(),
+    }
+    prompt, evidence = _materialize_chapter_codex_prompt(
+        request=request, stage=stage,
+        inputs={"plan": {}, "style": {}, "chapter_memo": {}, "realization_contract": {}},
+        materialization=materialization,
+    )
+    assert "## Shared rules" in prompt
+    for method in ("Review", "Revision", "Canon", "Quality"):
+        assert "## " + method not in prompt
+    assert evidence["prompt_template"]["version"] == "v15"
+    assert evidence["prompt_template"]["content_hash"] == template.content_hash
+    assert evidence["provider_view"]["exact_context_references"]["decoded_equal"]
+    assert pack.prompt_template.version == "v13"
+
+
+@pytest.mark.parametrize("stage", ["draft", "memo", "review", "rereview", "revision"])
+def test_active_method_template_preserves_frozen_stage_output_contract(stage):
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+
+    arguments = {"stage": stage, "request_payload": {"input": {}}}
+    assert PostgresChapterExecutionContractBinder._provider_output_contract(
+        **arguments, prompt_contract_version="v15"
+    ) == PostgresChapterExecutionContractBinder._provider_output_contract(
+        **arguments, prompt_contract_version="v13"
+    )
+
+
 @pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)
 def test_catalog_contains_each_chapter_model_execution_contract(
     policy_key: str,

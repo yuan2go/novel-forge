@@ -2574,6 +2574,12 @@ database or change an old request. Inspect the actual deployment, activation and
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
 identities; current candidate Chapter Pack 3.0.2 binds workflow and ordinary coordinated nodes 3.10.0, including Plan materialization, with
 Template v13 with lossless joint input transport. Frozen v12 Attempts retain their original manifests. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
+For an explicit prospective deployment, `install_chapter_validation_pack` accepts
+`prompt_template_version="v15"` together with a new Pack ID and version. Compilation
+freezes its template hash and compiler version. Its Provider prompt projects only the
+active stage method; existing v13 schemas, exact reference transport and defaults remain.
+Verify the actual Attempt materialization before attributing a result to this selection.
+
 Current Planning Pack 2.14.0 binds Operation 1.21.0, System v12 and Template v3
 with the narrative-intent boundary. Historical Planning Pack 2.13.0 retains
 Operation 1.21.0, System v11 and Template v2,

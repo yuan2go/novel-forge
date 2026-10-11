@@ -151,6 +151,7 @@ def install_chapter_validation_pack(
     model_reference_creation: bool = False,
     runtime_environment: str = "validation",
     prose_skill_version: str = "",
+    prompt_template_version: str = "",
 ) -> dict[str, Any]:
     root = Path(repository_root).resolve()
     source = (root / pack_path).resolve()
@@ -192,6 +193,15 @@ def install_chapter_validation_pack(
         if len(bindings) != 1:
             raise ValueError("Chapter Pack must have one prose Skill binding")
         bindings[0].update(version=selected_skill.version, content_hash=selected_skill.content_hash)
+    if prompt_template_version:
+        from .artifacts import ArtifactKind
+
+        if not pack_id_override or not pack_version_override:
+            raise ValueError("prospective template selection requires an explicit Pack identity")
+        selected_template = resolver.resolve(ArtifactKind.PROMPT_TEMPLATE, "prompt-template:chapter-generation-pack", prompt_template_version)
+        manifest["prompt_binding"].update(template_version=selected_template.version,
+            template_hash=selected_template.content_hash,
+            compiler_version="chapter-prompt-compiler:" + selected_template.version)
     catalog = {
         "schema_version": "novelos.capability_pack.artifact_catalog.v1",
         "artifacts": [item.to_dict() for item in resolver.artifacts()],
