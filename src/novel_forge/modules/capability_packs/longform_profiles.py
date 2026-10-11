@@ -94,11 +94,14 @@ def build_story_planning_pack_profile(
     execution_contract_version: str | None = None,
     planning_task_token_budget: int | None = None,
     narrative_intent_boundary: bool = True,
+    event_first_planning: bool = False,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
     if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"}:
         raise ValueError("Unsupported Planning execution contract")
     intent_boundary = narrative_intent_boundary and version == "1.21.0"
+    if event_first_planning and not intent_boundary:
+        raise ValueError("Event-first methods require the current narrative intent contract")
     operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
     if version != "1.21.0":
@@ -156,7 +159,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.14.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
+        version="2.15.0" if event_first_planning else "2.14.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -202,8 +205,8 @@ def build_story_planning_pack_profile(
         manifest,
         artifacts,
         skill_ref="long-outline",
-        skill_version="long-outline-v4" if intent_boundary else "long-outline-v3" if version in {"1.18.0", "1.19.0", "1.21.0"} else "long-outline-v2",
-        skill_path="skills/long-outline/SKILL.md" if intent_boundary else "skills/long-outline/legacy-narrative-intent-20261010.md" if version in {"1.18.0", "1.19.0", "1.21.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
+        skill_version="long-outline-v5" if event_first_planning else "long-outline-v4" if intent_boundary else "long-outline-v3" if version in {"1.18.0", "1.19.0", "1.21.0"} else "long-outline-v2",
+        skill_path="skills/long-outline/SKILL.md" if event_first_planning else "skills/long-outline/legacy-event-planning-20261011.md" if intent_boundary else "skills/long-outline/legacy-narrative-intent-20261010.md" if version in {"1.18.0", "1.19.0", "1.21.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
         system_ref="prompt-system:story-planning-pack",
         system_path=(
             "config/capability_packs/artifacts/story_planning_system_instruction_v12.md" if intent_boundary else "config/capability_packs/artifacts/story_planning_system_instruction_v11.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"

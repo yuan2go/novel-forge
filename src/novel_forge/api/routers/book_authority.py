@@ -1348,6 +1348,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     formal_recap_cadence=request.formal_recap_cadence,
                     input_snapshot_id=request.input_snapshot_id,
                     input_mode=request.input_mode,
+                    revision_candidate_origin=request.revision_candidate_origin,
                 ),
                 principal=principal,
             )

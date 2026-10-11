@@ -2495,7 +2495,7 @@ def project_planning_narrative_intent(
     return result_task, result_context, receipt
 
 
-def bind_narrative_intent_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
+def bind_narrative_intent_schema(schema: Mapping[str, Any], *, event_first_planning: bool = False) -> dict[str, Any]:
     result = deepcopy(dict(schema))
     result["description"] = (str(result.get("description") or "") +
         " Narrative intent v1: author intent, fictional rules and selected design supply story meaning. "
@@ -2509,6 +2509,12 @@ def bind_narrative_intent_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
         "scene_plan": "Realize the selected chapter purpose through its people, situation and POV. Knowledge limits do not require verification scenes.",
         "beats": "Scene-specific observation, action or experience; no mandatory conflict, reward, reversal or cost.",
     }
+    if event_first_planning:
+        meanings.update({
+            "hard_constraints": "Fictional constraints grounded in author requirements, world rules or selected design. Preserve their actual scope and source. Candidate approval, accepted cursors, execution budgets and delivery windows remain host protocol, not duties for fictional people or reasons to postpone event results.",
+            "required_events": "Required fictional actions and results of this selected complete event. Host approval, validation and receipt steps are not story events. Distribute by the event's causal turns, not by giving each procedural step a chapter.",
+            "forbidden_events": "Fictional outcomes prohibited by author requirements, world rules or this selected scope. Do not turn historical candidate or activation restrictions into fictional prohibitions; active scope changes still require native Plan Change.",
+        })
 
     def visit(node: Any) -> None:
         if isinstance(node, dict):

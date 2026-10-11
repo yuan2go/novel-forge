@@ -1,0 +1,697 @@
+[
+  {
+    "chapter": 1,
+    "root_operation_id": "db453bad-3103-45fd-bd75-4bc6e087a7ed",
+    "effect_id": "3d5e4ec3-3fca-40fd-a6c9-f921c017c37b",
+    "operation_id": "ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2",
+    "status": "SUCCEEDED",
+    "source_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+    "definition_version": "3.10.0",
+    "rendered_prompt_hash": "sha256:d2f4893150b78d03bb428cc8fe75c9d022a2eebf497669b43e044848299315b4",
+    "frozen_rendered_prompt_hash": "sha256:d2f4893150b78d03bb428cc8fe75c9d022a2eebf497669b43e044848299315b4",
+    "frozen_admission_hash_match": "PASS",
+    "pack_ref": "chapter_generation_pack.serial_quality_01@3.0.1204",
+    "materialization_asset_version_id": "5326f646-a75d-4005-bdba-0bf03ac332e0",
+    "materialization_content_hash": "sha256:e7e92b918a676e6fab12c122af7a0e592eaff37f316cc3812520485cb3608422",
+    "prompt_evidence": {
+      "materialization_hash": "sha256:143b57a9d50f645d239fad1d78f23cd668b22d829676f5f32ffc492acb070fb1",
+      "reusable_prefix_bytes": 3451,
+      "fully_rendered_prompt_hash": "sha256:d2f4893150b78d03bb428cc8fe75c9d022a2eebf497669b43e044848299315b4",
+      "required_reader_facing_language": null,
+      "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+      "method_selection": {
+        "contract_version": "production-stage-methods.v1",
+        "skill_sections": [
+          "Shared rules",
+          "Draft"
+        ],
+        "system_sections": []
+      },
+      "rendered_prompt_bytes": 101660,
+      "rendered_prompt_estimated_tokens": 33887,
+      "system_instruction": {
+        "ref": "prompt-system:chapter-generation-pack",
+        "version": "v3",
+        "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:chapter-generation-pack",
+        "version": "v13",
+        "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+      },
+      "skill": {
+        "ref": "prose-generation",
+        "version": "prose-generation-v5",
+        "content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596"
+      },
+      "context_asset_version_ids": [
+        "authority-output:1312a8b2-afc1-4a02-96e6-76f09abe7fdc:chapter.context:v1"
+      ],
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4:working-memory-v1",
+      "output_schema_hash": "sha256:c096997c8d9eeed7775a95939352785fc980d9987f39198f78ebab9d46800f1b",
+      "embedding_output_contract": null,
+      "provider_view": {
+        "exact_context_references": {
+          "contract_version": "provider-context-exact-value-reference.v1",
+          "source_context_hash": "sha256:5a2c75dec9844855e00e54d37a9b6f75c54e5d365890e23fa2b193eb4d00a78f",
+          "encoded_context_hash": "sha256:2fc727d2ef6a14c7364e2993c5974e92a6d2e58c98f3cabd6457b296c4cc5765",
+          "reference_count": 40,
+          "decoded_equal": true,
+          "transport_version": "provider-structured-exact-reference.v1",
+          "delta_reference_count": 37,
+          "canonical_json_string_count": 2,
+          "source_scope": "provider_data_envelope"
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v7",
+        "selection_explanation": {
+          "policy": "task-scoped-context.v1",
+          "included_segment_count": 6,
+          "included_fact_count": 6,
+          "omitted_segment_count": 6,
+          "omitted_fact_count": 13,
+          "maximum_segments": null,
+          "maximum_facts_per_segment": null,
+          "maximum_serialized_bytes": 8388608,
+          "context_profile_version": "draft-context-profile-v4",
+          "frozen_context_token_budget": 226400,
+          "duplicate_state_summary_count": 0
+        },
+        "component_characters": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 16388,
+          "provider_context_view": 50183,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2638,
+          "fully_rendered_prompt": 77476
+        },
+        "component_estimated_tokens": {
+          "system_instruction": 207,
+          "governed_skill": 918,
+          "provider_knowledge": 187,
+          "provider_task_view": 5966,
+          "provider_context_view": 24287,
+          "tool_policy": 0,
+          "stage_semantic_contract": 421,
+          "output_schema": 880,
+          "fully_rendered_prompt": 33887
+        },
+        "component_utf8_byte_upper_bounds": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 17896,
+          "provider_context_view": 72859,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2638,
+          "fully_rendered_prompt": 101660
+        },
+        "component_hashes": {
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:4e49ecc8891eb8ac09253155a93a15212b9fb0bb4fae9102149c94d74c226017",
+          "provider_context_view": "sha256:623110c63b888b82888b72b69362b3b5ff7e40959becb0e22f20aa69b360ce33",
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8",
+          "output_schema": "sha256:c096997c8d9eeed7775a95939352785fc980d9987f39198f78ebab9d46800f1b",
+          "fully_rendered_prompt": "sha256:d2f4893150b78d03bb428cc8fe75c9d022a2eebf497669b43e044848299315b4"
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "provider_admission_uses_component_estimates": false,
+        "authority_context_estimated_tokens": 95362,
+        "provider_context_estimated_tokens": 24287,
+        "context_projection_ratio": 0.254682,
+        "rendered_prompt_to_semantic_input_ratio": 1.113239,
+        "representation_policy": "authority-projection-task-provider-v2"
+      }
+    }
+  },
+  {
+    "chapter": 2,
+    "root_operation_id": "5fba7952-d7ae-44bc-986c-0baf0c511873",
+    "effect_id": "d2824ad2-7e94-4933-bb6b-7d453dc2322e",
+    "operation_id": "e9ae5942-a179-4877-b8ec-9e9aa31d8c26",
+    "status": "SUCCEEDED",
+    "source_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+    "definition_version": "3.10.0",
+    "rendered_prompt_hash": "sha256:6838613dbebffc4fd05cd7b45580a3c8a4f15b2ab9a110fdc6c1357cdf024c35",
+    "frozen_rendered_prompt_hash": "sha256:6838613dbebffc4fd05cd7b45580a3c8a4f15b2ab9a110fdc6c1357cdf024c35",
+    "frozen_admission_hash_match": "PASS",
+    "pack_ref": "chapter_generation_pack.serial_quality_01@3.0.1204",
+    "materialization_asset_version_id": "ef5bbc6c-ed0b-412a-b456-18a7c7d10d75",
+    "materialization_content_hash": "sha256:fdd880d97f8d20017e4d5920a456fe901f0d7b2a3fcb9817600ef459f3fcdaa2",
+    "prompt_evidence": {
+      "materialization_hash": "sha256:81468fcd2c542bc4b105a23b2afef593c0c804597c4aa658ccee27051b4d71ab",
+      "reusable_prefix_bytes": 3451,
+      "fully_rendered_prompt_hash": "sha256:6838613dbebffc4fd05cd7b45580a3c8a4f15b2ab9a110fdc6c1357cdf024c35",
+      "required_reader_facing_language": null,
+      "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+      "method_selection": {
+        "contract_version": "production-stage-methods.v1",
+        "skill_sections": [
+          "Shared rules",
+          "Draft"
+        ],
+        "system_sections": []
+      },
+      "rendered_prompt_bytes": 122866,
+      "rendered_prompt_estimated_tokens": 40956,
+      "system_instruction": {
+        "ref": "prompt-system:chapter-generation-pack",
+        "version": "v3",
+        "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:chapter-generation-pack",
+        "version": "v13",
+        "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+      },
+      "skill": {
+        "ref": "prose-generation",
+        "version": "prose-generation-v5",
+        "content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596"
+      },
+      "context_asset_version_ids": [
+        "authority-output:ca5e9809-5ea3-49a7-afef-c875b213602c:chapter.context:v1"
+      ],
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4:working-memory-v1",
+      "output_schema_hash": "sha256:37dbdac43bc5a7a27be4b8405f85f59cdb91a23da147d893319e5cb1c3cd9d4e",
+      "embedding_output_contract": null,
+      "provider_view": {
+        "exact_context_references": {
+          "contract_version": "provider-context-exact-value-reference.v1",
+          "source_context_hash": "sha256:8dfc8ff34b6721b98e3131625e82310612b498cbed67f49e19d16b451b678eee",
+          "encoded_context_hash": "sha256:bcbe3b12ac8de64539e8510d5c635b2d4051cb98608ebcb8ae945a6e380e2e13",
+          "reference_count": 45,
+          "decoded_equal": true,
+          "transport_version": "provider-structured-exact-reference.v1",
+          "delta_reference_count": 45,
+          "canonical_json_string_count": 2,
+          "source_scope": "provider_data_envelope"
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v7",
+        "selection_explanation": {
+          "policy": "task-scoped-context.v1",
+          "included_segment_count": 7,
+          "included_fact_count": 6,
+          "omitted_segment_count": 6,
+          "omitted_fact_count": 13,
+          "maximum_segments": null,
+          "maximum_facts_per_segment": null,
+          "maximum_serialized_bytes": 8388608,
+          "context_profile_version": "draft-context-profile-v4",
+          "frozen_context_token_budget": 226400,
+          "duplicate_state_summary_count": 0
+        },
+        "component_characters": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 17171,
+          "provider_context_view": 62782,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2900,
+          "fully_rendered_prompt": 91120
+        },
+        "component_estimated_tokens": {
+          "system_instruction": 207,
+          "governed_skill": 918,
+          "provider_knowledge": 187,
+          "provider_task_view": 6215,
+          "provider_context_view": 31019,
+          "tool_policy": 0,
+          "stage_semantic_contract": 421,
+          "output_schema": 967,
+          "fully_rendered_prompt": 40956
+        },
+        "component_utf8_byte_upper_bounds": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 18643,
+          "provider_context_view": 93056,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2900,
+          "fully_rendered_prompt": 122866
+        },
+        "component_hashes": {
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:0b5b4172a697bf675d1d02cd6b4ced5407cd8ec65cc63cc7e606ee0a9f71e98b",
+          "provider_context_view": "sha256:83b5f7c5712794d180885840cf15ffd9c9d099c5d87c4ca3f4bddf3bea779b2a",
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8",
+          "output_schema": "sha256:37dbdac43bc5a7a27be4b8405f85f59cdb91a23da147d893319e5cb1c3cd9d4e",
+          "fully_rendered_prompt": "sha256:6838613dbebffc4fd05cd7b45580a3c8a4f15b2ab9a110fdc6c1357cdf024c35"
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "provider_admission_uses_component_estimates": false,
+        "authority_context_estimated_tokens": 114583,
+        "provider_context_estimated_tokens": 31019,
+        "context_projection_ratio": 0.270712,
+        "rendered_prompt_to_semantic_input_ratio": 1.094466,
+        "representation_policy": "authority-projection-task-provider-v2"
+      }
+    }
+  },
+  {
+    "chapter": 3,
+    "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+    "effect_id": "e1c95a4c-9ef5-4198-8145-4d62b0375079",
+    "operation_id": "3e19b6f7-d98e-4e0a-8850-778c42057f89",
+    "status": "SUCCEEDED",
+    "source_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+    "definition_version": "3.10.0",
+    "rendered_prompt_hash": "sha256:7ca8ddd9097e983ce640601025af6af1834d707ed8642f07c5b056cbd589ec1f",
+    "frozen_rendered_prompt_hash": "sha256:7ca8ddd9097e983ce640601025af6af1834d707ed8642f07c5b056cbd589ec1f",
+    "frozen_admission_hash_match": "PASS",
+    "pack_ref": "chapter_generation_pack.serial_quality_01@3.0.1204",
+    "materialization_asset_version_id": "88d62144-91ea-4675-bc11-cf0ada7a8940",
+    "materialization_content_hash": "sha256:120752bd6d4abb7213b00a7615829b637cdbcacf6cbb3946cbed947795f3d8df",
+    "prompt_evidence": {
+      "materialization_hash": "sha256:d93dc72d425289542b58b4efb26130abdb8e7585e30d79be289c8b69c43aa4d9",
+      "reusable_prefix_bytes": 3451,
+      "fully_rendered_prompt_hash": "sha256:7ca8ddd9097e983ce640601025af6af1834d707ed8642f07c5b056cbd589ec1f",
+      "required_reader_facing_language": null,
+      "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+      "method_selection": {
+        "contract_version": "production-stage-methods.v1",
+        "skill_sections": [
+          "Shared rules",
+          "Draft"
+        ],
+        "system_sections": []
+      },
+      "rendered_prompt_bytes": 126645,
+      "rendered_prompt_estimated_tokens": 42215,
+      "system_instruction": {
+        "ref": "prompt-system:chapter-generation-pack",
+        "version": "v3",
+        "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:chapter-generation-pack",
+        "version": "v13",
+        "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+      },
+      "skill": {
+        "ref": "prose-generation",
+        "version": "prose-generation-v5",
+        "content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596"
+      },
+      "context_asset_version_ids": [
+        "authority-output:cb314b1b-6d04-42a0-9afd-2d548dbf0de2:chapter.context:v1"
+      ],
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4:working-memory-v1",
+      "output_schema_hash": "sha256:ac60149fb8dd57726e7b3d917c8092a2f3fe0dc4e8eb70960d96a59634f3b2de",
+      "embedding_output_contract": null,
+      "provider_view": {
+        "exact_context_references": {
+          "contract_version": "provider-context-exact-value-reference.v1",
+          "source_context_hash": "sha256:4e523496c82fe483c93949876ced44f4a57f03793710f0cdafe3724a6744543a",
+          "encoded_context_hash": "sha256:ea2724cc71f5e108ca3e636d76a706f9a4261ce6744243b7c22c207edbe79572",
+          "reference_count": 42,
+          "decoded_equal": true,
+          "transport_version": "provider-structured-exact-reference.v1",
+          "delta_reference_count": 37,
+          "canonical_json_string_count": 2,
+          "source_scope": "provider_data_envelope"
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v7",
+        "selection_explanation": {
+          "policy": "task-scoped-context.v1",
+          "included_segment_count": 7,
+          "included_fact_count": 6,
+          "omitted_segment_count": 6,
+          "omitted_fact_count": 13,
+          "maximum_segments": null,
+          "maximum_facts_per_segment": null,
+          "maximum_serialized_bytes": 8388608,
+          "context_profile_version": "draft-context-profile-v4",
+          "frozen_context_token_budget": 226400,
+          "duplicate_state_summary_count": 0
+        },
+        "component_characters": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 15721,
+          "provider_context_view": 64172,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2867,
+          "fully_rendered_prompt": 91027
+        },
+        "component_estimated_tokens": {
+          "system_instruction": 207,
+          "governed_skill": 918,
+          "provider_knowledge": 187,
+          "provider_task_view": 5670,
+          "provider_context_view": 32834,
+          "tool_policy": 0,
+          "stage_semantic_contract": 421,
+          "output_schema": 956,
+          "fully_rendered_prompt": 42215
+        },
+        "component_utf8_byte_upper_bounds": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 17009,
+          "provider_context_view": 98502,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2867,
+          "fully_rendered_prompt": 126645
+        },
+        "component_hashes": {
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:3569f5915a3a8b1d14c28dd9e9c50ca0c65f1aafc9f63772feccf44ac88b7784",
+          "provider_context_view": "sha256:03374511db1d67056fdbf5841109a3b4ce82dbee5aabdb4259cb5518583eeea1",
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8",
+          "output_schema": "sha256:ac60149fb8dd57726e7b3d917c8092a2f3fe0dc4e8eb70960d96a59634f3b2de",
+          "fully_rendered_prompt": "sha256:7ca8ddd9097e983ce640601025af6af1834d707ed8642f07c5b056cbd589ec1f"
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "provider_admission_uses_component_estimates": false,
+        "authority_context_estimated_tokens": 119288,
+        "provider_context_estimated_tokens": 32834,
+        "context_projection_ratio": 0.27525,
+        "rendered_prompt_to_semantic_input_ratio": 1.091081,
+        "representation_policy": "authority-projection-task-provider-v2"
+      }
+    }
+  },
+  {
+    "chapter": 4,
+    "root_operation_id": "0ed78c86-9c5b-4768-8a39-50a041340b00",
+    "effect_id": "a54b7432-e146-4856-abca-0689507d6ae4",
+    "operation_id": "5b75880d-2608-47ce-8df1-a99affea5521",
+    "status": "SUCCEEDED",
+    "source_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+    "definition_version": "3.10.0",
+    "rendered_prompt_hash": "sha256:ff561a84b2cc6e47e72052793f3742006e6b6f3afcae04cb40da7dbd5c67c303",
+    "frozen_rendered_prompt_hash": "sha256:ff561a84b2cc6e47e72052793f3742006e6b6f3afcae04cb40da7dbd5c67c303",
+    "frozen_admission_hash_match": "PASS",
+    "pack_ref": "chapter_generation_pack.serial_quality_01@3.0.1204",
+    "materialization_asset_version_id": "00a09686-7d6e-4a7a-a712-c8bfafa88398",
+    "materialization_content_hash": "sha256:9a222909a49dc771b0d02d9e5793c459fb9ef0b77150d2e3e7e2bb86b1bd0714",
+    "prompt_evidence": {
+      "materialization_hash": "sha256:b225a0a9c660c1d17ff2a46df4d5d22f36bca40ba11cbbcd14c4dfec8f9da483",
+      "reusable_prefix_bytes": 3451,
+      "fully_rendered_prompt_hash": "sha256:ff561a84b2cc6e47e72052793f3742006e6b6f3afcae04cb40da7dbd5c67c303",
+      "required_reader_facing_language": null,
+      "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+      "method_selection": {
+        "contract_version": "production-stage-methods.v1",
+        "skill_sections": [
+          "Shared rules",
+          "Draft"
+        ],
+        "system_sections": []
+      },
+      "rendered_prompt_bytes": 137927,
+      "rendered_prompt_estimated_tokens": 45976,
+      "system_instruction": {
+        "ref": "prompt-system:chapter-generation-pack",
+        "version": "v3",
+        "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:chapter-generation-pack",
+        "version": "v13",
+        "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+      },
+      "skill": {
+        "ref": "prose-generation",
+        "version": "prose-generation-v5",
+        "content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596"
+      },
+      "context_asset_version_ids": [
+        "authority-output:340eb2df-61fd-4695-89d0-e00a40151412:chapter.context:v1"
+      ],
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4:working-memory-v1",
+      "output_schema_hash": "sha256:ab0454d975d32259b7087b94e9f3c4d19e98b6b7d3df74a9849b9e4ddedb45ca",
+      "embedding_output_contract": null,
+      "provider_view": {
+        "exact_context_references": {
+          "contract_version": "provider-context-exact-value-reference.v1",
+          "source_context_hash": "sha256:8a83176a70ceefbf2049367d6647842bc15502618e3ac8774e440dff34adb014",
+          "encoded_context_hash": "sha256:bef7b2daeb571a1a710eede1d4f14f06460e8d5bac6d2543726bb3433212a850",
+          "reference_count": 42,
+          "decoded_equal": true,
+          "transport_version": "provider-structured-exact-reference.v1",
+          "delta_reference_count": 40,
+          "canonical_json_string_count": 2,
+          "source_scope": "provider_data_envelope"
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v7",
+        "selection_explanation": {
+          "policy": "task-scoped-context.v1",
+          "included_segment_count": 7,
+          "included_fact_count": 6,
+          "omitted_segment_count": 6,
+          "omitted_fact_count": 13,
+          "maximum_segments": null,
+          "maximum_facts_per_segment": null,
+          "maximum_serialized_bytes": 8388608,
+          "context_profile_version": "draft-context-profile-v4",
+          "frozen_context_token_budget": 226400,
+          "duplicate_state_summary_count": 0
+        },
+        "component_characters": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 15581,
+          "provider_context_view": 70211,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2682,
+          "fully_rendered_prompt": 96741
+        },
+        "component_estimated_tokens": {
+          "system_instruction": 207,
+          "governed_skill": 918,
+          "provider_knowledge": 187,
+          "provider_task_view": 5677,
+          "provider_context_view": 36649,
+          "tool_policy": 0,
+          "stage_semantic_contract": 421,
+          "output_schema": 894,
+          "fully_rendered_prompt": 45976
+        },
+        "component_utf8_byte_upper_bounds": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 17031,
+          "provider_context_view": 109947,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 2682,
+          "fully_rendered_prompt": 137927
+        },
+        "component_hashes": {
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:3ae1cb6eff442336a8952accadcfeb15f9939566a6a6f1eb41d3fe3ae4e42405",
+          "provider_context_view": "sha256:adc2e5acef40e516a47c7da7a4821ae40a97f4425f4cf3c92575a170609d3b5b",
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8",
+          "output_schema": "sha256:ab0454d975d32259b7087b94e9f3c4d19e98b6b7d3df74a9849b9e4ddedb45ca",
+          "fully_rendered_prompt": "sha256:ff561a84b2cc6e47e72052793f3742006e6b6f3afcae04cb40da7dbd5c67c303"
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "provider_admission_uses_component_estimates": false,
+        "authority_context_estimated_tokens": 131982,
+        "provider_context_estimated_tokens": 36649,
+        "context_projection_ratio": 0.277682,
+        "rendered_prompt_to_semantic_input_ratio": 1.081457,
+        "representation_policy": "authority-projection-task-provider-v2"
+      }
+    }
+  },
+  {
+    "chapter": 5,
+    "root_operation_id": "0bbd386a-787e-46d2-ac14-a8a397d29b36",
+    "effect_id": "79e787a4-204d-4dab-8997-096a31196920",
+    "operation_id": "d3fca797-0140-49f0-91e9-50c8d30c24ac",
+    "status": "SUCCEEDED",
+    "source_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+    "definition_version": "3.10.0",
+    "rendered_prompt_hash": "sha256:b208c2d65829c81ddfb76047645e446d10f5b6a90ec758ff6b87d379f0174054",
+    "frozen_rendered_prompt_hash": "sha256:b208c2d65829c81ddfb76047645e446d10f5b6a90ec758ff6b87d379f0174054",
+    "frozen_admission_hash_match": "PASS",
+    "pack_ref": "chapter_generation_pack.serial_quality_01@3.0.1204",
+    "materialization_asset_version_id": "82709af8-6c2e-4561-b786-bed9a7977632",
+    "materialization_content_hash": "sha256:66c37b56b70e9c3bf56159e0558f03b80eedd59bc5c1220062de81b904d2b562",
+    "prompt_evidence": {
+      "materialization_hash": "sha256:42249bc3ea7378d645b546a8e02ffeb848b80007d7d0ed8c61ae8df03568c0f6",
+      "reusable_prefix_bytes": 3451,
+      "fully_rendered_prompt_hash": "sha256:b208c2d65829c81ddfb76047645e446d10f5b6a90ec758ff6b87d379f0174054",
+      "required_reader_facing_language": null,
+      "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+      "method_selection": {
+        "contract_version": "production-stage-methods.v1",
+        "skill_sections": [
+          "Shared rules",
+          "Draft"
+        ],
+        "system_sections": []
+      },
+      "rendered_prompt_bytes": 167661,
+      "rendered_prompt_estimated_tokens": 55887,
+      "system_instruction": {
+        "ref": "prompt-system:chapter-generation-pack",
+        "version": "v3",
+        "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+      },
+      "prompt_template": {
+        "ref": "prompt-template:chapter-generation-pack",
+        "version": "v13",
+        "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+      },
+      "skill": {
+        "ref": "prose-generation",
+        "version": "prose-generation-v5",
+        "content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596"
+      },
+      "context_asset_version_ids": [
+        "authority-output:8ff21459-80cf-4f6f-ace9-e5838096d082:chapter.context:v1"
+      ],
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4:working-memory-v1",
+      "output_schema_hash": "sha256:e820c2e53fb6051326e4ed7784fae2763c9ceb27ff926c8bb452f665bbdf6878",
+      "embedding_output_contract": null,
+      "provider_view": {
+        "exact_context_references": {
+          "contract_version": "provider-context-exact-value-reference.v1",
+          "source_context_hash": "sha256:15d9d7e693bc50989add0fe697d1ac2d3f3d02e02ea74a1478963f5e0916ce85",
+          "encoded_context_hash": "sha256:e02bb3063de0e6bd279c0227bef43a0b1ae257b9d4f42684ce2db55d5b200b57",
+          "reference_count": 70,
+          "decoded_equal": true,
+          "transport_version": "provider-structured-exact-reference.v1",
+          "delta_reference_count": 52,
+          "canonical_json_string_count": 2,
+          "source_scope": "provider_data_envelope"
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v7",
+        "selection_explanation": {
+          "policy": "task-scoped-context.v1",
+          "included_segment_count": 7,
+          "included_fact_count": 6,
+          "omitted_segment_count": 6,
+          "omitted_fact_count": 13,
+          "maximum_segments": null,
+          "maximum_facts_per_segment": null,
+          "maximum_serialized_bytes": 8388608,
+          "context_profile_version": "draft-context-profile-v4",
+          "frozen_context_token_budget": 226400,
+          "duplicate_state_summary_count": 0
+        },
+        "component_characters": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 20003,
+          "provider_context_view": 85667,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 3638,
+          "fully_rendered_prompt": 117575
+        },
+        "component_estimated_tokens": {
+          "system_instruction": 207,
+          "governed_skill": 918,
+          "provider_knowledge": 187,
+          "provider_task_view": 7119,
+          "provider_context_view": 44800,
+          "tool_policy": 0,
+          "stage_semantic_contract": 421,
+          "output_schema": 1213,
+          "fully_rendered_prompt": 55887
+        },
+        "component_utf8_byte_upper_bounds": {
+          "system_instruction": 619,
+          "governed_skill": 2752,
+          "provider_knowledge": 559,
+          "provider_task_view": 21357,
+          "provider_context_view": 134399,
+          "tool_policy": 0,
+          "stage_semantic_contract": 1263,
+          "output_schema": 3638,
+          "fully_rendered_prompt": 167661
+        },
+        "component_hashes": {
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:02b8d81b3bfc849a467aade07d3f231f07651cc2313b8c54f1a1f051126d8594",
+          "provider_context_view": "sha256:98de71c72bb5a0954a06aa0d481408aef457d5c52b9e0bc8344515e77b9976d8",
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8",
+          "output_schema": "sha256:e820c2e53fb6051326e4ed7784fae2763c9ceb27ff926c8bb452f665bbdf6878",
+          "fully_rendered_prompt": "sha256:b208c2d65829c81ddfb76047645e446d10f5b6a90ec758ff6b87d379f0174054"
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "provider_admission_uses_component_estimates": false,
+        "authority_context_estimated_tokens": 162287,
+        "provider_context_estimated_tokens": 44800,
+        "context_projection_ratio": 0.276054,
+        "rendered_prompt_to_semantic_input_ratio": 1.072564,
+        "representation_policy": "authority-projection-task-provider-v2"
+      }
+    }
+  }
+]

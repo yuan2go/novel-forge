@@ -1,0 +1,26 @@
+{
+  "source_40": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "status": "PASS",
+    "retained_units": 40,
+    "exact_asset_versions_and_hashes": true,
+    "exact_text": true,
+    "manifest_digest": "sha256:651c4c8362841fa78a38aee0552017e5f42ae21f3efd4d79b878e7c73ea97ddd",
+    "text_digest": "sha256:f574c36ea18f4c177b5bfe65d7c9dcc305c5b49f8a61c4b7667c5e821378e53b",
+    "current_chapter": 40,
+    "accepted_through_chapter": 0,
+    "state": "READY"
+  },
+  "clone_original_40": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "status": "PASS",
+    "retained_units": 40,
+    "exact_asset_versions_and_hashes": true,
+    "exact_text": true,
+    "manifest_digest": "sha256:9e346699a5b2d02540922d02e99d099bccb6fcfd053be1ff1f58ef153838b673",
+    "text_digest": "sha256:f574c36ea18f4c177b5bfe65d7c9dcc305c5b49f8a61c4b7667c5e821378e53b",
+    "current_chapter": 40,
+    "accepted_through_chapter": 0,
+    "state": "ABORTED"
+  }
+}

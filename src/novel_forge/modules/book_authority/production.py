@@ -317,6 +317,7 @@ class StartBookProductionCommand:
     formal_recap_cadence: int = 10
     input_snapshot_id: str = ""
     edition_revision_id: str = ""
+    revision_candidate_origin: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -518,6 +519,11 @@ class PostgresBookAuthority:
     ) -> BookProductionAdmission:
         principal.require("book.authority.execute", command.project_id)
         _validate_start(command)
+        if command.revision_candidate_origin is not None:
+            from .revision_candidate import require_revision_origin
+
+            evidence = require_revision_origin(self, command)
+            command = replace(command, revision_candidate_origin={**command.revision_candidate_origin, "evidence": evidence})
         if (
             command.input_mode == "LEGACY_FIXTURE_INPUT_MODE"
             and not self.legacy_fixture_input_allowed
@@ -565,7 +571,8 @@ class PostgresBookAuthority:
                 "input": {
                     "project_id": command.project_id,
                     "input_asset_version_ids": list(root_input_version_ids),
-                    "payload": {key: value for key, value in asdict(command).items() if key != "edition_revision_id" or value},
+                    "payload": {key: value for key, value in asdict(command).items()
+                        if key not in {"edition_revision_id", "revision_candidate_origin"} or value},
                 },
                 "input_assets": list(root_input_assets),
             },
@@ -667,6 +674,10 @@ class PostgresBookAuthority:
                 book_design_version=str(book_owner[2] or ""),
                 book_status=str(book_owner[3]),
             )
+            if command.revision_candidate_origin is not None:
+                from .revision_candidate import require_revision_origin
+
+                require_revision_origin(self, command, uow=uow)
             uow.repositories.book_authority.create_run(
                 {
                     "book_run_id": book_run_id,
@@ -2523,13 +2534,21 @@ class PostgresBookAuthority:
                 "BOOK_PRODUCTION_INPUT_SNAPSHOT_DRIFT",
                 "caller projection differs from the immutable Authority snapshot",
             )
-        self._require_completed_opening_workflow_for_snapshot(command)
+        revision_evidence = None
+        if command.revision_candidate_origin is not None:
+            from .revision_candidate import require_revision_origin
+
+            revision_evidence = require_revision_origin(self, command)
+        else:
+            self._require_completed_opening_workflow_for_snapshot(command)
         values = [str(item) for item in row[3:7]]
         values.extend(str(item) for item in row[7])
         if row[8]:
             values.append(str(row[8]))
         values.extend(str(item) for item in row[9:17])
         values.extend(str(item) for item in row[17:19] if item)
+        if revision_evidence:
+            values.append(revision_evidence["source_evidence_version_id"])
         return tuple(dict.fromkeys(values))
 
     @staticmethod

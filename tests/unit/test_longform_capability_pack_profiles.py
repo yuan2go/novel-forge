@@ -26,6 +26,40 @@ from novel_forge.modules.story_planning_runtime import (
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_event_first_pack_is_explicit_and_freezes_only_the_planning_method():
+    from novel_forge.modules.chapter_authority.prompt_methods import project_skill_method
+    from novel_forge.modules.capability_packs.artifacts import artifact_content_hash
+
+    legacy = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
+    current = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64,
+                                              event_first_planning=True)
+    assert legacy.manifest["identity"]["version"] == "2.14.0"
+    assert current.manifest["identity"]["version"] == "2.15.0"
+    old = next(row for row in legacy.artifact_catalog["artifacts"] if row["kind"] == "SKILL" and row["ref"] == "long-outline")
+    new = next(row for row in current.artifact_catalog["artifacts"] if row["kind"] == "SKILL" and row["ref"] == "long-outline")
+    assert old["version"] == "long-outline-v4"
+    assert new["version"] == "long-outline-v5"
+    assert old["content_hash"] == artifact_content_hash({"text": (ROOT / "skills/long-outline/legacy-event-planning-20261011.md").read_text()})
+    assert new["content_hash"] != old["content_hash"]
+    assert current.manifest["workflow_template"] == legacy.manifest["workflow_template"]
+    assert current.manifest["evaluation"] == legacy.manifest["evaluation"]
+    assert current.manifest["context_sources"] == legacy.manifest["context_sources"]
+    rendered = project_skill_method(new["content"]["text"], ref="long-outline", version=new["version"],
+                                    stage="chapter_group_plan.generate", targeted=False)
+    assert "## Chapter-group planning" in rendered
+    assert "## Volume planning" not in rendered
+    assert "## Ending intent" not in rendered
+    assert "existing Plan Change" in rendered
+
+
+def test_event_first_pack_rejects_incompatible_historical_input_contract():
+    import pytest
+
+    with pytest.raises(ValueError, match="current narrative intent contract"):
+        build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64,
+                                         event_first_planning=True, narrative_intent_boundary=False)
+
+
 def test_world_sampling_pack_preserves_native_producer_artifacts():
     from novel_forge.modules.capability_packs.longform_profiles import build_world_sampling_pack_profile
     from novel_forge.modules.capability_packs.operation_catalog import governed_workflow_binding_catalog

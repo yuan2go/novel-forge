@@ -956,6 +956,7 @@ class BookAuthorityStartRequest(BaseModel):
     book_id: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
     input_snapshot_id: str = ""
+    revision_candidate_origin: dict[str, Any] | None = None
     input_mode: Literal["RESOLVED_AUTHORITY_INPUT"] = "RESOLVED_AUTHORITY_INPUT"
     book_design_version: str = ""
     book_plan_version: str = ""

@@ -3678,6 +3678,43 @@ private mappings away from reviewers. Assign actual reviewers and collect their 
 responses; generated empty forms are `NOT_REVIEWED`. A completed six-chapter comparison
 can establish a bounded result, not long-novel stability or real-reader benefit.
 
+For a narrative-intent repair, compile and inspect the new Story Planning 2.14
+bindings through the existing Pack Authority before scoped use. System v12 and
+template v3 bind the narrative-intent projection and versioned sent Schema; historical
+recovery retains its exact old Pack. Inspect the projection receipt's source and
+projected hashes, omission pointers, stage methods and final rendered Prompt hash.
+Compare author-selected quiet, procedural and other narrative purposes through the
+real gateway assembler offline. A structural diagnosis returns to existing Plan
+Change and Book edition candidate owners with exact source plans/manuscript and any
+new approved input snapshot. Candidate saving, author selection and acceptance remain
+separate. Do not change a Book's length or delivery window for this repair.
+Only a separately authorized same-Book Provider experiment and subsequent literary
+review can establish prose improvement; offline assembly and scripted integration
+prove engineering execution only.
+
+
+For event-first planning, explicitly compile the current Story Planning profile with
+`event_first_planning=True`, install that exact Pack through Capability Pack Authority,
+and inspect its `long-outline-v5` hash and active-stage rendered method. Default v4
+and frozen old requests retain their original bytes. Record structural diagnoses and
+work-specific purposes in native Plan Change evidence, then update affected parent
+bindings and resolve a new snapshot before Chapter execution. Use a separate same-Book
+candidate run for a rebuilt opening; preserve the original run and its selected source
+manifest. Native Writer output, editing proposals, operator selections, human author
+choices and formal acceptance must remain separately identifiable. See the ordinary
+writing and author editing contracts in `docs/current-system.md`.
+
+For an unaccepted author-first source, pass `revision_candidate_origin` to Book start
+with version `book-working-revision-origin.v1`, `source_book_run_id`, the exact
+`source_book_version` and `plan_change_proposal_id`. Resolve the candidate at narrative
+cursor 1 with the retained initial state and current activated portfolio. A source
+must be settled READY or PAUSED without active Chapter work or delegation. Book
+Authority derives and freezes provenance and rechecks it inside the admission UoW;
+callers cannot grant adoption by supplying evidence. A source with accepted chapters
+uses the existing edition process. Adopt author-first delivery and adjust the event
+window through their existing commands; do not alter the frozen profile or original
+run. This is candidate generation authorization, not literary or market qualification.
+
 ## Controlled deployment and Book edition operations
 
 Keep `NOVEL_FORGE_NO_MODEL_DISPATCH=1` while restoring/upgrading and checking a release.
@@ -4066,20 +4103,6 @@ not impose a Reader or qualification requirement on author-first saved manuscrip
 
 Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
 
-
-For a narrative-intent repair, compile and inspect the new Story Planning 2.14
-bindings through the existing Pack Authority before scoped use. System v12 and
-template v3 bind the narrative-intent projection and versioned sent Schema; historical
-recovery retains its exact old Pack. Inspect the projection receipt's source and
-projected hashes, omission pointers, stage methods and final rendered Prompt hash.
-Compare author-selected quiet, procedural and other narrative purposes through the
-real gateway assembler offline. A structural diagnosis returns to existing Plan
-Change and Book edition candidate owners with exact source plans/manuscript and any
-new approved input snapshot. Candidate saving, author selection and acceptance remain
-separate. Do not change a Book's length or delivery window for this repair.
-Only a separately authorized same-Book Provider experiment and subsequent literary
-review can establish prose improvement; offline assembly and scripted integration
-prove engineering execution only.
 
 Before a structural working-manuscript continuation, reread the actual selected prefix,
 current plan bindings, service release, original database identity and dispatch policy.

@@ -1,0 +1,222 @@
+{
+  "source_sha": "2e5934e2663b390a3df55b714a2271508e7b6d34",
+  "operation_id": "dc29e8a1-213f-4342-8846-7ea6480f43d2",
+  "effect_id": "a6bc7ab2-d680-4929-b5e9-3e046fd85bab",
+  "candidate_asset_version_id": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+  "pack_identity": {
+    "pack_id": "story_planning_pack.serial_quality_01",
+    "pack_version": "2.15.1101",
+    "manifest_hash": "sha256:859226ee381c98f86b3e9c80a92f31d3ff55698ab798af33a59d397c04f89708",
+    "binding_set_id": "3e5b8f97-658c-47eb-8aa5-01f014405272",
+    "binding_set_hash": "sha256:7111a2f2d13a07c8062e99ed30a5ce5faea1e76dac93e5a4bf9c6cde91a96996",
+    "compilation_hash": "sha256:8b7e2de7b4db54dfdc0f0ad59618064a15dccdda2dd954d84d97384dd02f1b02",
+    "catalog_snapshot_hash": "sha256:58a67491fe5d1422792b6c6290fe338553f3617977e7b6ff251b32493eb0945c"
+  },
+  "runtime_snapshot_id": "sha256:fd27c3089f41829cf9e30133353b4e8390d0f2502cdc3e810582e21d13990a43",
+  "materialization_asset_version_id": "094378f2-70cd-4047-a26f-ef5ff9b1391d",
+  "materialization_content_hash": "sha256:6239ae52fa96829348a2c25799e2624bd5c49ecefd9eb6cd063ff094d7fde3c7",
+  "frozen_prompt_hash": "sha256:2a4f8c289ddf0de3de09c061379bc9a00634e40dc11dbe6bdc70519a5d9c30c2",
+  "current_materialized_prompt_hash": "sha256:2a4f8c289ddf0de3de09c061379bc9a00634e40dc11dbe6bdc70519a5d9c30c2",
+  "exact_prompt_readback": "PASS",
+  "method": {
+    "ref": "long-outline",
+    "version": "long-outline-v5",
+    "content_hash": "sha256:60c79e5c52308419a756e19c24dd2128171f6ed1e4355595c9d6e7c0a2974810"
+  },
+  "template": {
+    "ref": "prompt-template:story-planning-pack",
+    "version": "v3",
+    "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+  },
+  "system": {
+    "ref": "prompt-system:story-planning-pack",
+    "version": "v12",
+    "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+  },
+  "projection_evidence": {
+    "materialization_hash": "sha256:1df7c9f5bb4a3a22ecd4288aa82fa8096e09d78c6b95a96bbbbf23034036ae17",
+    "reusable_prefix_bytes": 8466,
+    "fully_rendered_prompt_hash": "sha256:2a4f8c289ddf0de3de09c061379bc9a00634e40dc11dbe6bdc70519a5d9c30c2",
+    "required_reader_facing_language": "zh-CN",
+    "narrative_intent_projection": {
+      "contract_version": "planning-narrative-intent-projection.v1",
+      "source_task_hash": "sha256:6932f644c4fbdaeaade457f591c520b7bc83d6a1b9b0b24aae20412a626ae8cf",
+      "source_context_hash": "sha256:4722065a16ed58631f4985cc95338f86c4d6330296f1bb6e012b9842c09c3e4b",
+      "projected_task_hash": "sha256:7e5ad4ceb3bd6718f12c6aa3f6261553c0ac9a31fe03e7bf2525dc60d1eae1d0",
+      "projected_context_hash": "sha256:fad834a1c2e9c901df9c6cd2c4a361c9b206d266871f8b0995ec656fa7f6f73a",
+      "omissions": [
+        {
+          "source_pointer": "/input_manifest/planning_command/repair_number",
+          "content_hash": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "source_pointer": "/input_manifest/planning_command/repair_reason",
+          "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+        },
+        {
+          "source_pointer": "/input_manifest/planning_command/narrative_search_branch_key",
+          "content_hash": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126"
+        },
+        {
+          "source_pointer": "/context_bundle/selection_explanation",
+          "content_hash": "sha256:6c71ba7e7909c1021e36f167670809c2abb10456af504dc22422fe7f37fb7cda"
+        }
+      ],
+      "semantic_source_rewrite": false
+    },
+    "provider_prompt_projection_version": "planning-narrative-intent-projection.v1",
+    "method_selection": {
+      "contract_version": "production-stage-methods.v1",
+      "skill_sections": [
+        "Shared rules",
+        "Volume planning"
+      ],
+      "system_sections": [
+        "Shared rules",
+        "Volume plan",
+        "Realization references",
+        "Narrative intent boundary",
+        "Host source selectors and scheduled Arc scope"
+      ]
+    },
+    "rendered_prompt_bytes": 63809,
+    "rendered_prompt_estimated_tokens": 21270,
+    "system_instruction": {
+      "ref": "prompt-system:story-planning-pack",
+      "version": "v12",
+      "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+    },
+    "prompt_template": {
+      "ref": "prompt-template:story-planning-pack",
+      "version": "v3",
+      "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+    },
+    "skill": {
+      "ref": "long-outline",
+      "version": "long-outline-v5",
+      "content_hash": "sha256:60c79e5c52308419a756e19c24dd2128171f6ed1e4355595c9d6e7c0a2974810"
+    },
+    "context_asset_version_ids": [
+      "aa9ad25b-ba44-44c1-9ace-fdb6305547df"
+    ],
+    "knowledge_content_hashes": [
+      "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+    ],
+    "allowed_tools": [
+      "model.provider.invoke"
+    ],
+    "output_schema_ref": "schema:planning-provider-output:volume:v1:work-v4:host-selectors-v2:planning-semantic-fields-v2:narrative-intent-v1",
+    "output_schema_hash": "sha256:5294867c06be94a731be9dffad4108489f2f9fab913e45e69765aabf98aad871",
+    "embedding_output_contract": null,
+    "provider_view": {
+      "exact_context_references": {
+        "contract_version": "provider-context-exact-value-reference.v1",
+        "source_context_hash": "sha256:02e0e5219a84f8a5f28ebe854388b5428eae036dfc9a751ecf6e193ee1e32af9",
+        "encoded_context_hash": "sha256:02e0e5219a84f8a5f28ebe854388b5428eae036dfc9a751ecf6e193ee1e32af9",
+        "reference_count": 0,
+        "decoded_equal": true,
+        "source_scope": "provider_data_envelope"
+      },
+      "task_contract_version": "provider-task-narrative-intent.v1",
+      "context_contract_version": "provider-context-narrative-intent.v1",
+      "selection_explanation": {
+        "policy": "minimum-sufficient-planning-context-v2",
+        "loss_receipt": {
+          "audit_hash": "sha256:ddfe6a727d6824923396509dc6f56787a96f39073afb0bd3d8ba829ef1d2e79e",
+          "json_pointer": "/context_manifest/projection_audit",
+          "loss_record_count": 32,
+          "source_input_hash": "sha256:5433cc7d800a35797d633d65253187018651276e7b2e1d80d6344e95f1efadf6"
+        },
+        "field_classes": {
+          "invariants": "HARD_CONSTRAINT",
+          "constraints": "HARD_CONSTRAINT",
+          "inspiration": "OPTIONAL_GUIDANCE",
+          "required_facts": "REQUIRED_FACT",
+          "due_obligations": "DUE_OBLIGATION",
+          "forbidden_events": "PROHIBITION",
+          "hard_constraints": "HARD_CONSTRAINT",
+          "required_payoffs": "DUE_OBLIGATION",
+          "soft_suggestions": "OPTIONAL_GUIDANCE",
+          "forbidden_payoffs": "PROHIBITION",
+          "optional_guidance": "OPTIONAL_GUIDANCE",
+          "required_fact_ids": "REQUIRED_FACT",
+          "story_constraints": "HARD_CONSTRAINT",
+          "style_suggestions": "OPTIONAL_GUIDANCE",
+          "prohibited_outcomes": "PROHIBITION",
+          "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+          "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+          "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+          "required_obligation_ids": "DUE_OBLIGATION",
+          "unresolved_obligation_ids": "DUE_OBLIGATION"
+        },
+        "compiler_version": "scope-preserving-planning-context-v2",
+        "maximum_segments": 24,
+        "token_accounting": "utf8-byte-upper-bound.v1",
+        "omitted_fact_count": 0,
+        "omitted_item_count": 101,
+        "task_target_tokens": 64000,
+        "included_fact_count": 0,
+        "omitted_segment_count": 0,
+        "included_segment_count": 7,
+        "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+        "maximum_serialized_bytes": 8388608,
+        "maximum_facts_per_segment": null,
+        "truncated_character_count": 0
+      },
+      "component_characters": {
+        "system_instruction": 4710,
+        "governed_skill": 3676,
+        "provider_knowledge": 559,
+        "provider_task_view": 7034,
+        "provider_context_view": 18357,
+        "tool_policy": 0,
+        "stage_semantic_contract": 997,
+        "output_schema": 13874,
+        "fully_rendered_prompt": 50463
+      },
+      "component_estimated_tokens": {
+        "system_instruction": 1570,
+        "governed_skill": 1226,
+        "provider_knowledge": 187,
+        "provider_task_view": 2345,
+        "provider_context_view": 10568,
+        "tool_policy": 0,
+        "stage_semantic_contract": 333,
+        "output_schema": 4625,
+        "fully_rendered_prompt": 21270
+      },
+      "component_utf8_byte_upper_bounds": {
+        "system_instruction": 4710,
+        "governed_skill": 3676,
+        "provider_knowledge": 559,
+        "provider_task_view": 7034,
+        "provider_context_view": 31703,
+        "tool_policy": 0,
+        "stage_semantic_contract": 997,
+        "output_schema": 13874,
+        "fully_rendered_prompt": 63809
+      },
+      "component_hashes": {
+        "system_instruction": "sha256:6a87321d9dcaeca794361801433541df4d630d2c4385dafca48c0f39df8116c9",
+        "governed_skill": "sha256:9cb41e88dec3443270d3b808a4fc6349060d581e88e8d7496f1c3e80ad271566",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:7e5ad4ceb3bd6718f12c6aa3f6261553c0ac9a31fe03e7bf2525dc60d1eae1d0",
+        "provider_context_view": "sha256:fad834a1c2e9c901df9c6cd2c4a361c9b206d266871f8b0995ec656fa7f6f73a",
+        "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stage_semantic_contract": "sha256:c640781f656cfc8a20c7500b928de3ed9d8d4a248317b679702cc5daffd43502",
+        "output_schema": "sha256:5294867c06be94a731be9dffad4108489f2f9fab913e45e69765aabf98aad871",
+        "fully_rendered_prompt": "sha256:2a4f8c289ddf0de3de09c061379bc9a00634e40dc11dbe6bdc70519a5d9c30c2"
+      },
+      "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+      "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+      "provider_admission_uses_component_estimates": false,
+      "authority_context_estimated_tokens": 33161,
+      "provider_context_estimated_tokens": 10568,
+      "context_projection_ratio": 0.318688,
+      "rendered_prompt_to_semantic_input_ratio": 1.623664,
+      "representation_policy": "authority-projection-task-provider-v2"
+    }
+  },
+  "original_author_acceptance": "NOT_GRANTED",
+  "market_effect": "NOT_PROVEN"
+}

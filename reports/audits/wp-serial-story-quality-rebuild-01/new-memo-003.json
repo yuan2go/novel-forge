@@ -1,0 +1,1403 @@
+{
+  "asset_version_id": "authority-output:a5fe4583-c2f6-4716-a8a1-6838c1dd9033:chapter.memo:v1",
+  "content_hash": "sha256:b3d67c6fe3ca8ec379985a9a4bd9d3544d9e61e46ef8292a4c849e434fb66743",
+  "content": {
+    "type": "ChapterMemo",
+    "chapter": 3,
+    "arc_actions": [
+      {
+        "action": "ADVANCE：唐穗依据石湾谷当次所见核实成熟外叶，说明可确认的范围，并留下幼芽和芽根。",
+        "arc_plan_version_id": "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1"
+      },
+      {
+        "action": "TOUCH：让程观已说明的期限、质量和交回要求实际约束采收范围与回程余地。",
+        "arc_plan_version_id": "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1"
+      },
+      {
+        "action": "ADVANCE：沈砚按同伴的辨认结果与时段安排，承担手工采集、分放和部分携行。",
+        "arc_plan_version_id": "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+      }
+    ],
+    "hook_intent": {
+      "ending_hook": "",
+      "unresolved_exit_question": "已有外叶怎样妥善带回，远处看似可采的材料又该如何处理？"
+    },
+    "qualification": "QUALIFIED",
+    "reader_effect": {
+      "reward_mode": "有依据的分工与首批合用收获",
+      "exit_question": "已有外叶怎样妥善带回，远处看似可采的材料又该如何处理？",
+      "entry_question": "三人能否在各自的时段内，认清并采得合用的折露草？",
+      "target_emotion": "专注、谨慎而有进展"
+    },
+    "stop_conditions": [
+      "三人已形成可执行的现场分工，并按当次核实结果采得成熟外叶。",
+      "幼芽及芽根仍在原处，已采材料分放待保护携回。",
+      "远处额外材料仍未辨清或采收；回程、交付与验收尚未完成。"
+    ],
+    "contract_version": "chapter-memo-v2",
+    "event_directives": [
+      {
+        "event_id": "chapter3-scene1-departure",
+        "causal_intent": {
+          "goal": "以可执行的携行和返程安排进入石湾谷。",
+          "conflict": "三人可投入的时间和工作不同，须在出发前把返程余地与携行责任说清。",
+          "exit_state": "三人已核对携行物件和返程时段，约定唐穗先辨认、沈砚按指认采集并分放、陆衡承担约定的背负和赶路工作；他们尚未看见谷中当次成熟份额。",
+          "entry_state": "清晨，三人按昨日约定在任务院会合；已领下有期限和质量要求的石湾谷采药任务，尚未核实当次成熟份额，也尚未采收。"
+        },
+        "arc_contributions": [
+          "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1",
+          "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+        ],
+        "narrative_functions": [
+          "CHARACTER",
+          "MYSTERY_DISCLOSURE",
+          "PLOT",
+          "READER_EXPERIENCE"
+        ]
+      },
+      {
+        "event_id": "chapter3-scene2-harvest",
+        "causal_intent": {
+          "goal": "在不损伤幼芽和芽根的前提下采得当次可确认的成熟外叶。",
+          "conflict": "成熟份额有限，远处材料的辨认把握不足，继续寻找还会占用约定的返程余地。",
+          "exit_state": "三人按现场核实的份额采得成熟外叶，幼芽及芽根留在原处；材料已分放并待保护携回，远处额外材料尚未辨清或采收。",
+          "entry_state": "三人已核对携行物件和返程时段，约定唐穗先辨认、沈砚按指认采集并分放、陆衡承担约定的背负和赶路工作；他们尚未看见谷中当次成熟份额。"
+        },
+        "arc_contributions": [
+          "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+          "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+        ],
+        "narrative_functions": [
+          "CHARACTER",
+          "MYSTERY_DISCLOSURE",
+          "PLOT",
+          "READER_EXPERIENCE"
+        ]
+      }
+    ],
+    "memo_fingerprint": "sha256:a239d9fc5deed957f5a79e607f16023e3ca8ae6dd32d8e9eecec35d8770bac5f",
+    "scene_directives": [
+      {
+        "scene_id": "chapter3-scene1-departure",
+        "directive": "在任务院用实物核对落实前章工作稿的约定：沈砚带空篓与分放物件，唐穗核对说明，陆衡调背带并确认时间；把各自职责说到可以执行。",
+        "transition": "带着已核对的物件和回头时刻进入石湾谷，让约定接受现场所见的检验。",
+        "emotional_change": "沈砚对出门的期待落到具体工作上。",
+        "information_release": "确认三人的携行物件、可同行时段与现场分工；此时仍不知道谷中当次成熟份额。",
+        "conflict_progression": "陆衡的回头时刻使三人先选可观察的近处，并为返程及交回留余地。"
+      },
+      {
+        "scene_id": "chapter3-scene2-harvest",
+        "directive": "唐穗对照说明逐处指出成熟外叶、幼芽和芽根，交代能确认与不能确认之处；沈砚按指认手工采集并分放，陆衡调整背负，三人检查留在原处的植株。",
+        "transition": "停在已分放的外叶、待安排的保护与回程，以及远处尚未辨清的材料上。",
+        "emotional_change": "首批收获带来踏实感，远处材料保留谨慎的好奇。",
+        "information_release": "让读者看见当次可采边界如何得出；远处材料只呈现可见迹象，不给出未核实的结论。",
+        "conflict_progression": "近处成熟份额有限；远处似有材料，却因辨认把握不足和回程时间而不能直接增加采收。"
+      }
+    ],
+    "tension_strategy": "让成熟份额、辨认把握和回头时刻共同限定行动：每确认一处才采一处；远处材料出现时，以现有收获和剩余时间构成下一步选择。",
+    "accepted_boundary": {
+      "accepted_through_chapter": 0,
+      "story_state_asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "canon_snapshot_asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+    },
+    "creative_guidance": {
+      "pov": "以沈砚为主的第三人称限知视角，随他所见、所闻和亲手操作推进判断。",
+      "voice": "朴素、清楚且有分寸；用物件、手上动作和简短对话写出合作，规则只在核对、辨认或选择时说明。",
+      "constraints": [
+        "主要使用简体中文；成章目标为2500—3500中文字。",
+        "以沈砚为主的第三人称限知视角；其他人的未说明动机只由言行呈现。",
+        "采前必须核实当次成熟份额；只采已确认的成熟外叶，不采幼芽，不伤芽根。",
+        "唐穗不能独自承担全部辨认、采集与回程工作。",
+        "远处额外材料的种类、用途与质量尚未确认；本章不采收，也不预写回宗验收或报酬。",
+        "辨认依据须通过对照说明和眼前植株呈现；不要凭空增设确定的药性或世界规则。"
+      ],
+      "chapter_goal": "三人在可同行的时段内采得经当次核实的折露草成熟外叶，保留幼芽及芽根，并让材料具备后续保护、回程和交付的基础。",
+      "ending_change": "首批成熟外叶已采下并分放，幼芽及芽根留在原处；材料尚待保护携回，远处看似可采的材料尚未辨清。",
+      "emotional_turn": "沈砚由出发时的期待与谨慎，转为因完成约定的采集和分放而踏实；远处材料仍使他保持疑问。",
+      "reader_promise": "同伴各自的判断、时间和劳动会改变实际采收办法，让首批合用材料成为有依据的阶段性收获。",
+      "character_choices": [
+        {
+          "cost": "暂缓多认一段山路的心愿。",
+          "choice": "先按唐穗指认采近处可确认的外叶，负责分放和部分携行；远处材料暂不动手。",
+          "motivation": "他想把已答应的工作做好，也要给合用材料留足回程余地。",
+          "character_id": "character:shen-yan"
+        },
+        {
+          "cost": null,
+          "choice": "逐处对照说明，指出能采的成熟外叶；将看不准的部分记下，不计入当次份额。",
+          "motivation": "她要保住材料质量，并守住自己判断所依据的观察范围。",
+          "character_id": "character:tang-sui"
+        },
+        {
+          "cost": null,
+          "choice": "重申回头时刻，调好背带，承担约定的赶路与背负工作。",
+          "motivation": "他愿意同行，也须为次日下午的劳作和晚间练习留出时间。",
+          "character_id": "character:lu-heng"
+        }
+      ]
+    },
+    "forbidden_changes": {
+      "forbidden_events": [],
+      "hard_constraints": [],
+      "forbidden_payoffs": [],
+      "prohibited_outcomes": [
+        "未经当次核实便采收折露草。",
+        "采下幼芽或损伤芽根来增加交付。",
+        "让唐穗无条件承担全部辨认、采集与回程工作。"
+      ]
+    },
+    "retrieval_queries": [
+      "检索初始正典中折露草采收、材料保护及石湾谷路线已有的明确事实。",
+      "检索已接受历史中程观对采药期限、交回地点与合用材料的具体要求。"
+    ],
+    "execution_evidence": {
+      "cost": {
+        "model": "gpt-6-sol",
+        "reason": "monetary_cost_not_observable",
+        "currency": "UNKNOWN",
+        "measurement": "UNKNOWN",
+        "availability": "UNAVAILABLE",
+        "provider_billed": "UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+        "entitlement_snapshot": {
+          "cli_version": "codex-cli 0.159.2",
+          "billing_identity": {
+            "version": "codex-membership-identity.v1",
+            "auth_mode": "chatgpt",
+            "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+            "billing_channel": "ACCOUNT_ENTITLEMENT"
+          },
+          "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+          "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+          "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+        },
+        "entitlement_snapshot_hash": "sha256:5cf47cc5901f73363c45d9aa8634f819e4a1ac401b3882a1237f3379193ac02a"
+      },
+      "tools": {
+        "denied": [
+          "storage.object.put"
+        ],
+        "policy": "DEFAULT_DENY",
+        "allowed": [
+          "model.provider.invoke"
+        ],
+        "invoked": [
+          "model.provider.invoke"
+        ],
+        "invocations": [
+          {
+            "event": "provider_execution",
+            "status": "completed",
+            "call_id": "",
+            "tool_ref": "model.provider.invoke"
+          }
+        ]
+      },
+      "usage": {
+        "model": "gpt-6-sol",
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 34612,
+        "total_tokens": 36935,
+        "output_tokens": 2323,
+        "cached_input_tokens": 0,
+        "uncached_input_tokens": 34612,
+        "reasoning_output_tokens": 484
+      },
+      "model_id": "gpt-6-sol",
+      "provider_id": "codex-cli",
+      "skill_version": "chapter-plan-skill-v3",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "real_model_call": true,
+      "capability_runtime": {
+        "skill": {
+          "ref": "chapter-outline",
+          "version": "chapter-plan-skill-v3",
+          "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+        },
+        "allowed_tools": [
+          "model.provider.invoke"
+        ],
+        "provider_view": {
+          "component_hashes": {
+            "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "output_schema": "sha256:697811c7b1fb1a9340b8a03a3ef5f0d2612b3e255e20cbd1da9df852c4e93ab5",
+            "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:f68d39f7fb66fe548cda3676cb2f1953a94f4aa52ac646d992d00f0f5e6d891f",
+            "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+            "fully_rendered_prompt": "sha256:46b39c1023e03ca2cf576b18c6fa044ff4018b94c7d492ce7716ce0ae48f4988",
+            "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+            "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+          },
+          "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+          "component_characters": {
+            "tool_policy": 0,
+            "output_schema": 2933,
+            "governed_skill": 894,
+            "provider_knowledge": 559,
+            "provider_task_view": 42426,
+            "system_instruction": 619,
+            "fully_rendered_prompt": 51821,
+            "provider_context_view": 417,
+            "stage_semantic_contract": 900
+          },
+          "representation_policy": "authority-projection-task-provider-v2",
+          "selection_explanation": {
+            "policy": "accepted-boundary-only",
+            "omitted_count": 0,
+            "selected_count": 1
+          },
+          "task_contract_version": "provider-task-view-v1",
+          "context_contract_version": "provider-context-view-v2",
+          "context_projection_ratio": 139.0,
+          "exact_context_references": {
+            "source_scope": "provider_data_envelope",
+            "decoded_equal": true,
+            "reference_count": 3,
+            "contract_version": "provider-context-exact-value-reference.v1",
+            "source_context_hash": "sha256:f4f2a8bdbe469c50d52bff0e179c0f4b0a07ae1713a80eda9a9a8167631af85d",
+            "encoded_context_hash": "sha256:160f3a9a7c3e8568a5d80daa338d7b5eb909896b3a3cf8e962d4c05935039e71"
+          },
+          "component_estimated_tokens": {
+            "tool_policy": 0,
+            "output_schema": 978,
+            "governed_skill": 298,
+            "provider_knowledge": 187,
+            "provider_task_view": 22080,
+            "system_instruction": 207,
+            "fully_rendered_prompt": 25212,
+            "provider_context_view": 139,
+            "stage_semantic_contract": 300
+          },
+          "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+          "component_utf8_byte_upper_bounds": {
+            "tool_policy": 0,
+            "output_schema": 2933,
+            "governed_skill": 894,
+            "provider_knowledge": 559,
+            "provider_task_view": 66240,
+            "system_instruction": 619,
+            "fully_rendered_prompt": 75635,
+            "provider_context_view": 417,
+            "stage_semantic_contract": 900
+          },
+          "provider_context_estimated_tokens": 139,
+          "authority_context_estimated_tokens": 0,
+          "rendered_prompt_to_semantic_input_ratio": 1.125234,
+          "provider_admission_uses_component_estimates": false
+        },
+        "prompt_template": {
+          "ref": "prompt-template:chapter-generation-pack",
+          "version": "v13",
+          "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+        },
+        "method_selection": {
+          "skill_sections": [
+            "Shared rules",
+            "Memo"
+          ],
+          "system_sections": [],
+          "contract_version": "production-stage-methods.v1"
+        },
+        "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+        "output_schema_hash": "sha256:697811c7b1fb1a9340b8a03a3ef5f0d2612b3e255e20cbd1da9df852c4e93ab5",
+        "provider_admission": {
+          "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+          "status": "ADMITTED",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "envelope_hash": "sha256:64ed40b023d065eec1a3d850d53355f6b8afd14c4f08c591b6b47a93df8b2e28",
+          "total_reserved": 107907,
+          "component_usage": {
+            "safety_margin": 256,
+            "output_reserve": 32000,
+            "provider_input": 75635,
+            "request_framing": 16
+          },
+          "applicable_limit": 258400,
+          "contract_version": "provider-token-admission-v1",
+          "accounting_contract": {
+            "model": "gpt-6-sol",
+            "provider": "codex-cli",
+            "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+            "meter_version": "v1",
+            "safety_margin": 256,
+            "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+            "output_reserve": 32000,
+            "route_identity": "routing-decision:d32348d3cb5edb6f3604b783eb909530c6031c0768b19251467d52e4edb00bbb",
+            "contract_version": "provider-token-accounting-v3",
+            "framing_overhead": 16,
+            "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+            "model_context_limit": 258400,
+            "execution_token_limit": 258400,
+            "serialization_contract": "codex-cli-application-stdin-v1"
+          },
+          "context_bundle_status": "VALID",
+          "context_bundle_tokens": 0,
+          "input_component_hashes": {
+            "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "output_schema": "sha256:697811c7b1fb1a9340b8a03a3ef5f0d2612b3e255e20cbd1da9df852c4e93ab5",
+            "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+            "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+            "provider_task_view": "sha256:f68d39f7fb66fe548cda3676cb2f1953a94f4aa52ac646d992d00f0f5e6d891f",
+            "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+            "fully_rendered_prompt": "sha256:46b39c1023e03ca2cf576b18c6fa044ff4018b94c7d492ce7716ce0ae48f4988",
+            "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+            "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+          },
+          "complete_request_coverage": [
+            "system_runtime_instructions",
+            "prompt_template",
+            "skill_instructions",
+            "tool_policy_and_schemas",
+            "structured_output_schema",
+            "context_bundle",
+            "knowledge_inputs",
+            "request_envelope_and_framing",
+            "output_reserve",
+            "safety_margin"
+          ]
+        },
+        "system_instruction": {
+          "ref": "prompt-system:chapter-generation-pack",
+          "version": "v3",
+          "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "materialization_hash": "sha256:24a6d3256d173c12183ab5757d21ad6b5c8e5cc287b33357f1f208080d2eb08d",
+        "rendered_prompt_bytes": 75635,
+        "reusable_prefix_bytes": 1593,
+        "knowledge_content_hashes": [
+          "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+        ],
+        "context_asset_version_ids": [
+          "authority-output:468f1b0c-9def-47c7-b3ed-3b00e77dc5a6:chapter.execution_intent:v1"
+        ],
+        "embedding_output_contract": null,
+        "fully_rendered_prompt_hash": "sha256:46b39c1023e03ca2cf576b18c6fa044ff4018b94c7d492ce7716ce0ae48f4988",
+        "provider_request_envelope_hash": "sha256:64ed40b023d065eec1a3d850d53355f6b8afd14c4f08c591b6b47a93df8b2e28",
+        "required_reader_facing_language": null,
+        "rendered_prompt_estimated_tokens": 25212,
+        "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+        "provider_admission_asset_version_id": "06122ea4-1fdb-4a38-86d5-7808c4b7ceaf"
+      },
+      "production_execution": {
+        "input_manifest": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "read_set": [
+            "asset-version:authority-output:ef41af0b-f066-4cc6-a96d-d5979908022a:chapter.plan:v1",
+            "asset-version:authority-output:468f1b0c-9def-47c7-b3ed-3b00e77dc5a6:chapter.execution_intent:v1",
+            "asset-version:56a7a7fe-03c0-45f6-86f7-130aebdde29e",
+            "asset-version:06122ea4-1fdb-4a38-86d5-7808c4b7ceaf"
+          ],
+          "attempt_id": "c98c1c13-4fee-47e0-83f8-3b9ad936aac9",
+          "project_id": "qid-learning-prose-01",
+          "manifest_id": "production_execution/inputs/d280021b38e816bd39f9",
+          "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:3",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 3
+          },
+          "fencing_token": 1,
+          "input_artifacts": [
+            {
+              "artifact_ref": "asset-version:authority-output:ef41af0b-f066-4cc6-a96d-d5979908022a:chapter.plan:v1",
+              "content_hash": "sha256:6ff034cdf7584fd96522daf509c3de15fefb4a855ae5dd8f27f5058916a73356",
+              "artifact_type": "chapter_plan",
+              "schema_version": "authoritative-chapter-plan-v5",
+              "asset_version_id": "authority-output:ef41af0b-f066-4cc6-a96d-d5979908022a:chapter.plan:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:authority-output:468f1b0c-9def-47c7-b3ed-3b00e77dc5a6:chapter.execution_intent:v1",
+              "content_hash": "sha256:490408d69bbab41065cbe90dc8becf5528228a987e1fdb987095d8f76be21b9f",
+              "artifact_type": "chapter_execution_intent",
+              "schema_version": "chapter-execution-intent-v4",
+              "asset_version_id": "authority-output:468f1b0c-9def-47c7-b3ed-3b00e77dc5a6:chapter.execution_intent:v1",
+              "source_eligibility": "PRODUCTION_ELIGIBLE"
+            },
+            {
+              "artifact_ref": "asset-version:56a7a7fe-03c0-45f6-86f7-130aebdde29e",
+              "content_hash": "sha256:852a4584ef9ba3f23aca882403cf7ca06fc0cffff91e2280d8d35b38721b5a53",
+              "artifact_type": "capability_materialization_manifest",
+              "schema_version": "novelos.chapter_capability_materialization.v1",
+              "asset_version_id": "56a7a7fe-03c0-45f6-86f7-130aebdde29e",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            },
+            {
+              "artifact_ref": "asset-version:06122ea4-1fdb-4a38-86d5-7808c4b7ceaf",
+              "content_hash": "sha256:1b9e5f841da4c4f432af3754efe4c3a052c5ad2a72ef98cba91c045084e9171e",
+              "artifact_type": "provider_request_admission_manifest",
+              "schema_version": "novelos.provider_request_admission.v1",
+              "asset_version_id": "06122ea4-1fdb-4a38-86d5-7808c4b7ceaf",
+              "source_eligibility": "NOT_SOURCE_DERIVED"
+            }
+          ],
+          "arc_version_refs": [],
+          "planning_version": "authority-output:ef41af0b-f066-4cc6-a96d-d5979908022a:chapter.plan:v1",
+          "skill_bundle_ref": "production_execution/skill_bundles/d280021b38e816bd39f9",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/d280021b38e816bd39f9",
+          "source_policy_ref": "source:planning-chapter-memo:v1",
+          "canon_version_refs": [],
+          "context_bundle_ref": "context:none:a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "source_eligibility": "PRODUCTION_ELIGIBLE",
+          "story_state_version": "story-state:none:a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "skill_bundle_version": "chapter-plan-skill-v3",
+          "prompt_bundle_version": "prompt-system:chapter-generation-pack@v3",
+          "canon_snapshot_version": "canon:none:a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "context_bundle_version": "context:none:a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "quality_profile_version": "quality-profile:none:a5fe4583-c2f6-4716-a8a1-6838c1dd9033"
+        },
+        "route_snapshot": {
+          "model_id": "gpt-6-sol",
+          "policy_id": "chapter.memo.route.d2197ad06183f26bd186",
+          "attempt_id": "c98c1c13-4fee-47e0-83f8-3b9ad936aac9",
+          "backend_id": "codex-cli",
+          "release_sha": "b602896f67a707d0ef39699c6c4355dec61a3a52",
+          "approval_ref": "",
+          "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "model_provider": "codex-cli",
+          "policy_version": 1,
+          "backend_version": "1.0.0",
+          "runtime_host_id": "host:author-first-live-isolated",
+          "auth_profile_ref": "auth:current-chatgpt-member:codex:f44c8a92519f0b8580c24ff252423ec611484df68305f4646b907721f2829bea",
+          "credential_scope": "",
+          "fallback_trigger": "",
+          "model_profile_id": "chapter.memo.default.d2197ad06183f26bd186",
+          "reasoning_effort": "high",
+          "route_generation": 1,
+          "skill_bundle_ref": "production_execution/skill_bundles/d280021b38e816bd39f9",
+          "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+          "prompt_bundle_ref": "production_execution/prompt_bundles/d280021b38e816bd39f9",
+          "route_decision_id": "routing-decision:d32348d3cb5edb6f3604b783eb909530c6031c0768b19251467d52e4edb00bbb",
+          "route_policy_hash": "8fb0b5f9d6e169821307bbff23b05b187cf3caf10da39d6ce82bf90542b96544",
+          "route_snapshot_id": "production_execution/routes/d280021b38e816bd39f9",
+          "context_bundle_ref": "context:none:a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "model_profile_hash": "2551edc5f0cc2f6fb1a5cdc4d9add0f169af2fc5cf8b138e177ec84f79ed4cf4",
+          "route_change_index": 0,
+          "secret_version_ref": "",
+          "fallback_policy_ref": "chapter.memo.fail-closed",
+          "model_profile_version": 2,
+          "fallback_policy_version": 1,
+          "parent_route_snapshot_id": "",
+          "quality_revalidation_ref": "",
+          "requested_reasoning_effort": "high"
+        },
+        "output_manifest": {
+          "files": [],
+          "attempt_id": "c98c1c13-4fee-47e0-83f8-3b9ad936aac9",
+          "stderr_ref": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01/executions/chapter-execution-127d330b-09a0-4241-9d56-d147f2-fd9a16e50ccff0fc/stderr.log",
+          "stdout_ref": "/Volumes/DevSSD/Development/Workspace/evidence/wp-serial-story-quality-rebuild-01/executions/chapter-execution-127d330b-09a0-4241-9d56-d147f2-fd9a16e50ccff0fc/stdout.log",
+          "manifest_id": "output-manifest:chapter-execution:127d330b-09a0-4241-9d56-d147f22a6025",
+          "output_hash": "sha256:ce7e8f8d070c7e2937aa159c9d0767e31106fe9fd570f3837881e669ffc67974",
+          "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:00f5c6a5-0606-4f35-8f84-5b33dd147599",
+          "schema_version": "schema:chapter-provider-output:memo:v3",
+          "normalized_output_ref": "authority-asset-version:f6148166-bfbe-4d33-8a1b-b142093c168b"
+        },
+        "execution_handle": {
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "attempt_id": "c98c1c13-4fee-47e0-83f8-3b9ad936aac9",
+          "backend_id": "codex-cli",
+          "execution_id": "chapter-execution:127d330b-09a0-4241-9d56-d147f22a6025",
+          "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "fencing_token": 1,
+          "completion_mode": "PROCESS_EXIT",
+          "local_process_id": 59116,
+          "query_capability": "SUPPORTED",
+          "cancel_capability": "SUPPORTED",
+          "callback_capability": "UNSUPPORTED",
+          "external_request_id": null,
+          "provider_request_id": null,
+          "backend_execution_id": "process-receipt:11ead12473cb23311c431094",
+          "local_process_group_id": 59116,
+          "local_process_start_time": "Sun Oct 11 10:40:32 2026",
+          "local_execution_receipt_id": "process-receipt:11ead12473cb23311c431094"
+        },
+        "execution_result": {
+          "error": null,
+          "outcome": "SUCCEEDED",
+          "attempt_id": "c98c1c13-4fee-47e0-83f8-3b9ad936aac9",
+          "started_at": "2026-10-11T02:40:32.564044Z",
+          "completed_at": "2026-10-11T02:41:35.061620Z",
+          "execution_id": "chapter-execution:127d330b-09a0-4241-9d56-d147f22a6025",
+          "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "fencing_token": 1,
+          "raw_output_ref": "authority-asset-version:00f5c6a5-0606-4f35-8f84-5b33dd147599",
+          "cost_receipt_ref": "authority-asset-version:0cbb68eb-c9c5-4825-9b57-8013a16bc84b",
+          "usage_receipt_ref": "authority-asset-version:1cd6a2bb-d3b4-4789-975c-4cae4d81d2d4",
+          "output_manifest_ref": "authority-asset-version:d18dc883-31da-4bf6-affd-1083fee87bcf",
+          "process_receipt_ref": "authority-asset-version:06a1d2de-7f9e-4d88-bf62-5f331da4820e",
+          "external_receipt_ref": null,
+          "provider_receipt_ref": null,
+          "normalized_output_ref": "authority-asset-version:f6148166-bfbe-4d33-8a1b-b142093c168b",
+          "validation_report_ref": "authority-asset-version:9b467368-524c-4754-80ac-a045a32127c1"
+        },
+        "process_evidence": {
+          "cost": {
+            "model": "gpt-6-sol",
+            "reason": "monetary_cost_not_observable",
+            "currency": "UNKNOWN",
+            "measurement": "UNKNOWN",
+            "availability": "UNAVAILABLE",
+            "provider_billed": "UNKNOWN",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+            "entitlement_snapshot": {
+              "cli_version": "codex-cli 0.159.2",
+              "billing_identity": {
+                "version": "codex-membership-identity.v1",
+                "auth_mode": "chatgpt",
+                "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+                "billing_channel": "ACCOUNT_ENTITLEMENT"
+              },
+              "authorization_ref": "user:qinglan-forty-chapters:20261010:current-request",
+              "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+              "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+              "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+            },
+            "entitlement_snapshot_hash": "sha256:5cf47cc5901f73363c45d9aa8634f819e4a1ac401b3882a1237f3379193ac02a"
+          },
+          "stage": "memo",
+          "tools": {
+            "denied": [
+              "storage.object.put"
+            ],
+            "policy": "DEFAULT_DENY",
+            "allowed": [
+              "model.provider.invoke"
+            ],
+            "invoked": [
+              "model.provider.invoke"
+            ],
+            "invocations": [
+              {
+                "event": "provider_execution",
+                "status": "completed",
+                "call_id": "",
+                "tool_ref": "model.provider.invoke"
+              }
+            ]
+          },
+          "usage": {
+            "model": "gpt-6-sol",
+            "measurement": "MEASURED",
+            "availability": "AVAILABLE",
+            "input_tokens": 34612,
+            "total_tokens": 36935,
+            "output_tokens": 2323,
+            "cached_input_tokens": 0,
+            "uncached_input_tokens": 34612,
+            "reasoning_output_tokens": 484
+          },
+          "result": {
+            "arc_actions": [
+              {
+                "action": "ADVANCE：唐穗依据石湾谷当次所见核实成熟外叶，说明可确认的范围，并留下幼芽和芽根。",
+                "arc_plan_version_id": "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1"
+              },
+              {
+                "action": "TOUCH：让程观已说明的期限、质量和交回要求实际约束采收范围与回程余地。",
+                "arc_plan_version_id": "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1"
+              },
+              {
+                "action": "ADVANCE：沈砚按同伴的辨认结果与时段安排，承担手工采集、分放和部分携行。",
+                "arc_plan_version_id": "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+              }
+            ],
+            "stop_conditions": [
+              "三人已形成可执行的现场分工，并按当次核实结果采得成熟外叶。",
+              "幼芽及芽根仍在原处，已采材料分放待保护携回。",
+              "远处额外材料仍未辨清或采收；回程、交付与验收尚未完成。"
+            ],
+            "scene_directives": [
+              {
+                "scene_id": "chapter3-scene1-departure",
+                "directive": "在任务院用实物核对落实前章工作稿的约定：沈砚带空篓与分放物件，唐穗核对说明，陆衡调背带并确认时间；把各自职责说到可以执行。",
+                "transition": "带着已核对的物件和回头时刻进入石湾谷，让约定接受现场所见的检验。",
+                "emotional_change": "沈砚对出门的期待落到具体工作上。",
+                "information_release": "确认三人的携行物件、可同行时段与现场分工；此时仍不知道谷中当次成熟份额。",
+                "conflict_progression": "陆衡的回头时刻使三人先选可观察的近处，并为返程及交回留余地。"
+              },
+              {
+                "scene_id": "chapter3-scene2-harvest",
+                "directive": "唐穗对照说明逐处指出成熟外叶、幼芽和芽根，交代能确认与不能确认之处；沈砚按指认手工采集并分放，陆衡调整背负，三人检查留在原处的植株。",
+                "transition": "停在已分放的外叶、待安排的保护与回程，以及远处尚未辨清的材料上。",
+                "emotional_change": "首批收获带来踏实感，远处材料保留谨慎的好奇。",
+                "information_release": "让读者看见当次可采边界如何得出；远处材料只呈现可见迹象，不给出未核实的结论。",
+                "conflict_progression": "近处成熟份额有限；远处似有材料，却因辨认把握不足和回程时间而不能直接增加采收。"
+              }
+            ],
+            "tension_strategy": "让成熟份额、辨认把握和回头时刻共同限定行动：每确认一处才采一处；远处材料出现时，以现有收获和剩余时间构成下一步选择。",
+            "creative_guidance": {
+              "pov": "以沈砚为主的第三人称限知视角，随他所见、所闻和亲手操作推进判断。",
+              "voice": "朴素、清楚且有分寸；用物件、手上动作和简短对话写出合作，规则只在核对、辨认或选择时说明。",
+              "constraints": [
+                "主要使用简体中文；成章目标为2500—3500中文字。",
+                "以沈砚为主的第三人称限知视角；其他人的未说明动机只由言行呈现。",
+                "采前必须核实当次成熟份额；只采已确认的成熟外叶，不采幼芽，不伤芽根。",
+                "唐穗不能独自承担全部辨认、采集与回程工作。",
+                "远处额外材料的种类、用途与质量尚未确认；本章不采收，也不预写回宗验收或报酬。",
+                "辨认依据须通过对照说明和眼前植株呈现；不要凭空增设确定的药性或世界规则。"
+              ],
+              "chapter_goal": "三人在可同行的时段内采得经当次核实的折露草成熟外叶，保留幼芽及芽根，并让材料具备后续保护、回程和交付的基础。",
+              "ending_change": "首批成熟外叶已采下并分放，幼芽及芽根留在原处；材料尚待保护携回，远处看似可采的材料尚未辨清。",
+              "emotional_turn": "沈砚由出发时的期待与谨慎，转为因完成约定的采集和分放而踏实；远处材料仍使他保持疑问。",
+              "reader_promise": "同伴各自的判断、时间和劳动会改变实际采收办法，让首批合用材料成为有依据的阶段性收获。",
+              "character_choices": [
+                {
+                  "cost": "暂缓多认一段山路的心愿。",
+                  "choice": "先按唐穗指认采近处可确认的外叶，负责分放和部分携行；远处材料暂不动手。",
+                  "motivation": "他想把已答应的工作做好，也要给合用材料留足回程余地。",
+                  "character_id": "character:shen-yan"
+                },
+                {
+                  "cost": null,
+                  "choice": "逐处对照说明，指出能采的成熟外叶；将看不准的部分记下，不计入当次份额。",
+                  "motivation": "她要保住材料质量，并守住自己判断所依据的观察范围。",
+                  "character_id": "character:tang-sui"
+                },
+                {
+                  "cost": null,
+                  "choice": "重申回头时刻，调好背带，承担约定的赶路与背负工作。",
+                  "motivation": "他愿意同行，也须为次日下午的劳作和晚间练习留出时间。",
+                  "character_id": "character:lu-heng"
+                }
+              ]
+            },
+            "retrieval_queries": [
+              "检索初始正典中折露草采收、材料保护及石湾谷路线已有的明确事实。",
+              "检索已接受历史中程观对采药期限、交回地点与合用材料的具体要求。"
+            ],
+            "execution_strategy": "开篇承接昨日约定，以空篓、分放物件、说明和背带完成出发核对；到谷后让唐穗先观察和说明，再让沈砚动手、陆衡处理背负。写清采下、分放及检查植株的过程，停在尚需保护和回程的状态。",
+            "obligation_actions": [
+              {
+                "action": "ADVANCE：取得经现场核实的成熟外叶，形成可靠交付的基础；保护、回程和交付留待后续完成。",
+                "obligation_id": "opening-herb-delivery"
+              }
+            ],
+            "composition_strategy": "以清晨核对物件和回头时刻，直接引出谷中可观察范围；再以现场辨认决定采收动作和分放办法。前章工作稿已有口头分工，任务院一场应落实细节，不重演初次商谈。"
+          },
+          "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+          "event_count": 7,
+          "denied_tools": [
+            "storage.object.put"
+          ],
+          "allowed_tools": [
+            "model.provider.invoke"
+          ],
+          "output_schema": {
+            "type": "object",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "required": [
+              "execution_strategy",
+              "tension_strategy",
+              "composition_strategy",
+              "creative_guidance",
+              "scene_directives",
+              "retrieval_queries",
+              "obligation_actions",
+              "arc_actions",
+              "stop_conditions"
+            ],
+            "properties": {
+              "arc_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "arc_plan_version_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "arc_plan_version_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "stop_conditions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 16
+              },
+              "scene_directives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "scene_id",
+                    "directive",
+                    "conflict_progression",
+                    "information_release",
+                    "emotional_change",
+                    "transition"
+                  ],
+                  "properties": {
+                    "scene_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "directive": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "transition": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "emotional_change": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "information_release": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "conflict_progression": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "tension_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "creative_guidance": {
+                "type": "object",
+                "required": [
+                  "chapter_goal",
+                  "pov",
+                  "voice",
+                  "emotional_turn",
+                  "reader_promise",
+                  "ending_change",
+                  "character_choices",
+                  "constraints"
+                ],
+                "properties": {
+                  "pov": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "voice": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "constraints": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "maxItems": 32
+                  },
+                  "chapter_goal": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
+                  },
+                  "ending_change": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "emotional_turn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reader_promise": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "character_choices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "character_id",
+                        "choice",
+                        "motivation",
+                        "cost"
+                      ],
+                      "properties": {
+                        "cost": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "choice": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "motivation": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "minLength": 1
+                        },
+                        "character_id": {
+                          "enum": [
+                            "character:lu-heng",
+                            "character:shen-yan",
+                            "character:tang-sui"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 32
+                  }
+                },
+                "additionalProperties": false
+              },
+              "retrieval_queries": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 1
+                },
+                "maxItems": 8,
+                "minItems": 1
+              },
+              "execution_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              "obligation_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "obligation_id",
+                    "action"
+                  ],
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    },
+                    "obligation_id": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 32
+              },
+              "composition_strategy": {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "model_authority": {
+            "schema_version": "novelos.model_authority_evidence.v1",
+            "route_policy_id": "chapter.memo.route.d2197ad06183f26bd186",
+            "invocation_model": "gpt-6-sol",
+            "model_profile_id": "chapter.memo.default.d2197ad06183f26bd186",
+            "route_policy_hash": "8fb0b5f9d6e169821307bbff23b05b187cf3caf10da39d6ce82bf90542b96544",
+            "route_snapshot_id": "production_execution/routes/d280021b38e816bd39f9",
+            "frozen_route_model": "gpt-6-sol",
+            "model_profile_hash": "2551edc5f0cc2f6fb1a5cdc4d9add0f169af2fc5cf8b138e177ec84f79ed4cf4",
+            "route_snapshot_hash": "a09763dabbc03088e82bf0203f425330b5502762f587ab4576aaae3d9cf24cdd",
+            "route_policy_version": 1,
+            "model_profile_version": 2,
+            "policy_requested_model": "gpt-6-sol",
+            "invocation_command_hash": "sha256:7a38fcaf9739a6f0ebd756d0f4c559bd862a72cd488e69b0ccba43c01e99784d",
+            "provider_observed_model": "unavailable",
+            "session_recovery_policy": "codex-local-session-evidence.v1",
+            "local_session_persistence": "DURABLE",
+            "local_user_config_ignored": true,
+            "invocation_reasoning_effort": "high",
+            "frozen_route_reasoning_effort": "high",
+            "policy_requested_reasoning_effort": "high",
+            "provider_observed_reasoning_effort": "unavailable",
+            "local_user_config_is_model_authority": false
+          },
+          "submission_phase": "PROCESS_RESULT_RECORDED",
+          "validation_checks": {
+            "tool_policy": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7",
+            "output_schema": "schema:chapter-provider-output:memo:v3",
+            "stage_semantics": "chapter-stage:memo:semantic-validation",
+            "capability_materialization": "sha256:24a6d3256d173c12183ab5757d21ad6b5c8e5cc287b33357f1f208080d2eb08d"
+          },
+          "stream_diagnostics": {
+            "version": "codex-stream-diagnostics.v1",
+            "event_counts": {
+              "turn.started": 1,
+              "item.completed": 4,
+              "thread.started": 1,
+              "turn.completed": 1
+            },
+            "stdout_bytes": 7764,
+            "stdout_sha256": "6bd64c645d7c9ff6f16d6436c02c8531c54def486a2c3668ac3c28ba8fc836e2",
+            "usage_present": true,
+            "remote_outcome": "UNESTABLISHED",
+            "scan_truncated": false,
+            "turn_completed": true,
+            "local_thread_id": "01a128d5-59d4-75f2-994e-5d1d76c8cf09",
+            "stream_disconnected": false,
+            "response_body_decode_failed": false
+          },
+          "unauthorized_tools": [],
+          "capability_evidence": {
+            "skill": {
+              "ref": "chapter-outline",
+              "version": "chapter-plan-skill-v3",
+              "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+            },
+            "allowed_tools": [
+              "model.provider.invoke"
+            ],
+            "provider_view": {
+              "component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:697811c7b1fb1a9340b8a03a3ef5f0d2612b3e255e20cbd1da9df852c4e93ab5",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:f68d39f7fb66fe548cda3676cb2f1953a94f4aa52ac646d992d00f0f5e6d891f",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:46b39c1023e03ca2cf576b18c6fa044ff4018b94c7d492ce7716ce0ae48f4988",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+              "component_characters": {
+                "tool_policy": 0,
+                "output_schema": 2933,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 42426,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 51821,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "representation_policy": "authority-projection-task-provider-v2",
+              "selection_explanation": {
+                "policy": "accepted-boundary-only",
+                "omitted_count": 0,
+                "selected_count": 1
+              },
+              "task_contract_version": "provider-task-view-v1",
+              "context_contract_version": "provider-context-view-v2",
+              "context_projection_ratio": 139.0,
+              "exact_context_references": {
+                "source_scope": "provider_data_envelope",
+                "decoded_equal": true,
+                "reference_count": 3,
+                "contract_version": "provider-context-exact-value-reference.v1",
+                "source_context_hash": "sha256:f4f2a8bdbe469c50d52bff0e179c0f4b0a07ae1713a80eda9a9a8167631af85d",
+                "encoded_context_hash": "sha256:160f3a9a7c3e8568a5d80daa338d7b5eb909896b3a3cf8e962d4c05935039e71"
+              },
+              "component_estimated_tokens": {
+                "tool_policy": 0,
+                "output_schema": 978,
+                "governed_skill": 298,
+                "provider_knowledge": 187,
+                "provider_task_view": 22080,
+                "system_instruction": 207,
+                "fully_rendered_prompt": 25212,
+                "provider_context_view": 139,
+                "stage_semantic_contract": 300
+              },
+              "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+              "component_utf8_byte_upper_bounds": {
+                "tool_policy": 0,
+                "output_schema": 2933,
+                "governed_skill": 894,
+                "provider_knowledge": 559,
+                "provider_task_view": 66240,
+                "system_instruction": 619,
+                "fully_rendered_prompt": 75635,
+                "provider_context_view": 417,
+                "stage_semantic_contract": 900
+              },
+              "provider_context_estimated_tokens": 139,
+              "authority_context_estimated_tokens": 0,
+              "rendered_prompt_to_semantic_input_ratio": 1.125234,
+              "provider_admission_uses_component_estimates": false
+            },
+            "prompt_template": {
+              "ref": "prompt-template:chapter-generation-pack",
+              "version": "v13",
+              "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+            },
+            "method_selection": {
+              "skill_sections": [
+                "Shared rules",
+                "Memo"
+              ],
+              "system_sections": [],
+              "contract_version": "production-stage-methods.v1"
+            },
+            "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+            "output_schema_hash": "sha256:697811c7b1fb1a9340b8a03a3ef5f0d2612b3e255e20cbd1da9df852c4e93ab5",
+            "provider_admission": {
+              "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+              "status": "ADMITTED",
+              "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+              "envelope_hash": "sha256:64ed40b023d065eec1a3d850d53355f6b8afd14c4f08c591b6b47a93df8b2e28",
+              "total_reserved": 107907,
+              "component_usage": {
+                "safety_margin": 256,
+                "output_reserve": 32000,
+                "provider_input": 75635,
+                "request_framing": 16
+              },
+              "applicable_limit": 258400,
+              "contract_version": "provider-token-admission-v1",
+              "accounting_contract": {
+                "model": "gpt-6-sol",
+                "provider": "codex-cli",
+                "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+                "meter_version": "v1",
+                "safety_margin": 256,
+                "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                "output_reserve": 32000,
+                "route_identity": "routing-decision:d32348d3cb5edb6f3604b783eb909530c6031c0768b19251467d52e4edb00bbb",
+                "contract_version": "provider-token-accounting-v3",
+                "framing_overhead": 16,
+                "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                "model_context_limit": 258400,
+                "execution_token_limit": 258400,
+                "serialization_contract": "codex-cli-application-stdin-v1"
+              },
+              "context_bundle_status": "VALID",
+              "context_bundle_tokens": 0,
+              "input_component_hashes": {
+                "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "output_schema": "sha256:697811c7b1fb1a9340b8a03a3ef5f0d2612b3e255e20cbd1da9df852c4e93ab5",
+                "governed_skill": "sha256:f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+                "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                "provider_task_view": "sha256:f68d39f7fb66fe548cda3676cb2f1953a94f4aa52ac646d992d00f0f5e6d891f",
+                "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+                "fully_rendered_prompt": "sha256:46b39c1023e03ca2cf576b18c6fa044ff4018b94c7d492ce7716ce0ae48f4988",
+                "provider_context_view": "sha256:2026e3f5d4be3dd15bd69a0178881ba79ecd4b57320de8e0a555f35271db3355",
+                "stage_semantic_contract": "sha256:f48842f861aed6fed15f93cf0bbf7598becefb3da2e2e5c8e6adb909b314c9cd"
+              },
+              "complete_request_coverage": [
+                "system_runtime_instructions",
+                "prompt_template",
+                "skill_instructions",
+                "tool_policy_and_schemas",
+                "structured_output_schema",
+                "context_bundle",
+                "knowledge_inputs",
+                "request_envelope_and_framing",
+                "output_reserve",
+                "safety_margin"
+              ]
+            },
+            "system_instruction": {
+              "ref": "prompt-system:chapter-generation-pack",
+              "version": "v3",
+              "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+            },
+            "materialization_hash": "sha256:24a6d3256d173c12183ab5757d21ad6b5c8e5cc287b33357f1f208080d2eb08d",
+            "rendered_prompt_bytes": 75635,
+            "reusable_prefix_bytes": 1593,
+            "knowledge_content_hashes": [
+              "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+            ],
+            "context_asset_version_ids": [
+              "authority-output:468f1b0c-9def-47c7-b3ed-3b00e77dc5a6:chapter.execution_intent:v1"
+            ],
+            "embedding_output_contract": null,
+            "fully_rendered_prompt_hash": "sha256:46b39c1023e03ca2cf576b18c6fa044ff4018b94c7d492ce7716ce0ae48f4988",
+            "provider_request_envelope_hash": "sha256:64ed40b023d065eec1a3d850d53355f6b8afd14c4f08c591b6b47a93df8b2e28",
+            "required_reader_facing_language": null,
+            "rendered_prompt_estimated_tokens": 25212,
+            "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+            "provider_admission_asset_version_id": "06122ea4-1fdb-4a38-86d5-7808c4b7ceaf"
+          },
+          "provider_request_id": null,
+          "output_schema_version": "schema:chapter-provider-output:memo:v3",
+          "transport_retry_policy": {
+            "version": "codex-no-transport-retry.v1",
+            "stream_max_retries": 0,
+            "request_max_retries": 0,
+            "invocation_overrides": [
+              "model_provider=\"novel_forge_openai_no_retry\"",
+              "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+              "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+              "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+              "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+              "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+            ]
+          },
+          "terminal_event_observed": true,
+          "provider_schema_contract": {
+            "version": "codex-structured-schema.v6",
+            "provider_hash": "sha256:68acf2c091fa2f0c5414c84f3dc72599ad14dd4c08c7b548bfd795dfae7f9476",
+            "canonical_hash": "sha256:697811c7b1fb1a9340b8a03a3ef5f0d2612b3e255e20cbd1da9df852c4e93ab5",
+            "equivalent_projection": "codex-nullable-shared-types.v3",
+            "local_constraints_retained": [
+              "uniqueItems"
+            ]
+          },
+          "local_execution_receipt_id": "process-receipt:11ead12473cb23311c431094",
+          "reconciliation_fingerprint": "sha256:d3de9bf4625092238b2814d0d5fa69a65e834f279708343be23a68de98f5230e"
+        },
+        "execution_request": {
+          "stage": "memo",
+          "domain": "planning",
+          "book_id": "book:qinglan-wendao-20261008",
+          "saga_id": "fb02bcce-3c21-4e27-95a9-ed2860b1c1bd",
+          "trace_id": "b4c256df-c822-4398-aa39-4b8a1128c189:chapter:3",
+          "task_kind": "chapter.memo.generate",
+          "attempt_id": "c98c1c13-4fee-47e0-83f8-3b9ad936aac9",
+          "capability": "planning.chapter.memo",
+          "project_id": "qid-learning-prose-01",
+          "risk_class": "high",
+          "execution_id": "chapter-execution:127d330b-09a0-4241-9d56-d147f22a6025",
+          "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "origin_chain": [
+            "chapter.slice.run",
+            "chapter.memo.generate"
+          ],
+          "target_scope": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "scope_id": "book:qinglan-wendao-20261008:chapter:3",
+            "project_id": "qid-learning-prose-01",
+            "scope_kind": "chapter",
+            "chapter_number": 3
+          },
+          "workspace_id": "workspace:qid-learning-prose-01",
+          "fencing_token": 1,
+          "correlation_id": "b4c256df-c822-4398-aa39-4b8a1128c189",
+          "agent_hop_count": 0,
+          "resource_claims": [
+            "chapter:3",
+            "stage:memo"
+          ],
+          "importance_class": "HIGH",
+          "budget_policy_ref": "budget:planning-chapter-memo:v1",
+          "commit_policy_ref": "commit:planning-chapter-memo:v1",
+          "root_operation_id": "717cc798-f459-4dd7-ad2e-0358d9a509a6",
+          "route_snapshot_id": "production_execution/routes/d280021b38e816bd39f9",
+          "external_effect_id": "127d330b-09a0-4241-9d56-d147f22a6025",
+          "input_manifest_ref": "production_execution/inputs/d280021b38e816bd39f9",
+          "timeout_policy_ref": "timeout:planning-chapter-memo:v1",
+          "budget_reservation_id": "d3a48ed3-f562-4330-aeda-fdd497e384b6",
+          "permission_policy_ref": "permission:planning-chapter-memo:v1",
+          "validation_policy_ref": "validation:planning-chapter-memo:v1",
+          "stable_idempotency_key": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033:c98c1c13-4fee-47e0-83f8-3b9ad936aac9:memo:attempt-v1",
+          "workspace_snapshot_ref": "workspace:qid-learning-prose-01"
+        },
+        "validation_manifest": {
+          "checks": [
+            {
+              "status": "PASSED",
+              "check_kind": "structured_object",
+              "evidence_ref": "authority-asset-version:f6148166-bfbe-4d33-8a1b-b142093c168b"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "fencing",
+              "evidence_ref": "authority-attempt:c98c1c13-4fee-47e0-83f8-3b9ad936aac9:fence:1"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "route_snapshot",
+              "evidence_ref": "production_execution/routes/d280021b38e816bd39f9"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "capability_materialization",
+              "evidence_ref": "sha256:24a6d3256d173c12183ab5757d21ad6b5c8e5cc287b33357f1f208080d2eb08d"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "output_schema",
+              "evidence_ref": "schema:chapter-provider-output:memo:v3"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "stage_semantics",
+              "evidence_ref": "chapter-stage:memo:semantic-validation"
+            },
+            {
+              "status": "PASSED",
+              "check_kind": "tool_policy",
+              "evidence_ref": "tool-policy:sha256:c85371fdf9c20f52f3c6ee0675554d25b554d99f139de0ea800106f2e2073af7"
+            }
+          ],
+          "decision": "ACCEPTED",
+          "attempt_id": "c98c1c13-4fee-47e0-83f8-3b9ad936aac9",
+          "manifest_id": "validation-manifest:chapter-execution:127d330b-09a0-4241-9d56-d147f22a6025",
+          "operation_id": "a5fe4583-c2f6-4716-a8a1-6838c1dd9033",
+          "fencing_token": 1,
+          "output_manifest_ref": "authority-asset-version:d18dc883-31da-4bf6-affd-1083fee87bcf",
+          "required_check_kinds": [
+            "structured_object",
+            "fencing",
+            "route_snapshot",
+            "capability_materialization",
+            "output_schema",
+            "stage_semantics",
+            "tool_policy"
+          ],
+          "validation_policy_ref": "validation:planning-chapter-memo:v1"
+        },
+        "validation_manifest_ref": "authority-asset-version:9b467368-524c-4754-80ac-a045a32127c1",
+        "commit_manifest_required": true
+      }
+    },
+    "execution_strategy": "开篇承接昨日约定，以空篓、分放物件、说明和背带完成出发核对；到谷后让唐穗先观察和说明，再让沈砚动手、陆衡处理背负。写清采下、分放及检查植株的过程，停在尚需保护和回程的状态。",
+    "obligation_actions": [
+      {
+        "action": "ADVANCE：取得经现场核实的成熟外叶，形成可靠交付的基础；保护、回程和交付留待后续完成。",
+        "obligation_id": "opening-herb-delivery"
+      }
+    ],
+    "mission_fingerprint": "sha256:aa56acb43e68c6864fd0a4502005fe7f58f267d897bf55529ea55a0fec0e8186",
+    "source_chapter_plan": {
+      "locked": true,
+      "content_hash": "sha256:6ff034cdf7584fd96522daf509c3de15fefb4a855ae5dd8f27f5058916a73356",
+      "asset_version_id": "authority-output:ef41af0b-f066-4cc6-a96d-d5979908022a:chapter.plan:v1"
+    },
+    "composition_strategy": "以清晨核对物件和回头时刻，直接引出谷中可观察范围；再以现场辨认决定采收动作和分放办法。前章工作稿已有口头分工，任务院一场应落实细节，不重演初次商谈。",
+    "narrative_realization": {
+      "events": [
+        {
+          "action": "三人商定采集、背负与回程时段。唐穗先核实折露草当次成熟可采份额，说明辨认依据及尚不能确认之处；众人仅采成熟外叶、保留芽根，沈砚承担约定的手工采集与携行工作。",
+          "causes": [
+            "opening-e2"
+          ],
+          "decision": "按当次核实结果采成熟外叶，保留幼芽及芽根，并把未辨清处留作疑问。",
+          "event_id": "opening-e3",
+          "required": true,
+          "slice_id": "v1-opening-1-5",
+          "actor_ref": "唐穗",
+          "motivation": "保住合用收获并弄清与任务有关的材料问题，同时守住自己能投入的时间。",
+          "resistance": "可采部分必须当次辨明，三人的时间与工作目标不完全相同。",
+          "consequence": "三人的各自时间与判断进入分工，已有材料具备可靠交付的基础；额外材料仍需辨清。",
+          "disclosures": [
+            "唐穗能够说明当次成熟可采部分及自己判断的边界。",
+            "陆衡的练习时段会影响他能承担的采药与回程工作。"
+          ],
+          "state_deltas": [
+            {
+              "to_state": "已商定分工并采得经核实的成熟外叶",
+              "entity_id": "采药小组",
+              "from_state": "尚未形成现场分工或可靠收获",
+              "state_kind": "TASK_PROGRESS"
+            }
+          ],
+          "preconditions": [
+            "程观已说明任务要求。",
+            "三人已实际到达可观察折露草的地点。"
+          ],
+          "chapter_number": 3,
+          "feature_status": {
+            "decision": {
+              "status": "APPLICABLE",
+              "rationale": "三人依据任务、成熟份额与各自日程选择有界分工。"
+            },
+            "resistance": {
+              "status": "APPLICABLE",
+              "rationale": "成熟份额、辨认把握和同行者时间均有限。"
+            },
+            "irreversible_change": {
+              "status": "APPLICABLE",
+              "rationale": "成熟外叶已经采下，芽根保留；材料质量将由后续保护和验收检验。"
+            }
+          },
+          "next_event_ids": [
+            "opening-e4"
+          ],
+          "arc_contributions": [
+            "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+            "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1"
+          ],
+          "knowledge_boundary": {
+            "actor_knows": [
+              "自己现场观察到的折露草状态。",
+              "程观说明的当次任务要求。",
+              "沈砚和陆衡当面说出的可承担工作与时段。"
+            ],
+            "reader_may_learn": [
+              "唐穗能够说明当次成熟可采部分及自己判断的边界。",
+              "陆衡的练习时段会影响他能承担的采药与回程工作。"
+            ],
+            "forbidden_disclosures": [
+              "未经核实的额外材料用途与质量。",
+              "回宗后尚未发生的验收结论。"
+            ]
+          },
+          "obligation_actions": [
+            "ADVANCE:opening-herb-delivery:5"
+          ],
+          "irreversible_change": "经当次核实的成熟外叶已采下，幼芽及芽根留在原处。"
+        }
+      ],
+      "slice_id": "v1-opening-1-5",
+      "event_ids": [
+        "opening-e3"
+      ],
+      "proof_hash": "sha256:d357d5f657e16534c00ec07c5129f46ca163b551dfa0e7e25de70d6077a55ccd",
+      "chapter_number": 3,
+      "realization_id": "narrative-realization:ad1589c9a3c475c8d1cd4e299a4cbd21beea11f6b7814dc4d4f279c330dbf41c",
+      "contract_digest": "sha256:88396f56d54552c911f6d13c1c2850a26a95b7a809d3caedece00c0a4990f910",
+      "foundation_set_digest": "sha256:00e78821a055e905a55475313f3209cc1eb5d0af07dfef25ca87249946c92b37",
+      "arc_working_set_digest": "sha256:def2bc9ea0aeabf901a548fbf5846ac73f661fa5a5ca2bac087f9b5c66c018b6",
+      "proof_asset_version_id": "authority-output:45c368c1-0885-4af0-8816-bdc5248970e5:story_design.transition.receipt:v1",
+      "accepted_through_chapter": 0,
+      "chapter_group_content_hash": "sha256:388c88e89800ff09e2e29842ce978ada2e23ead6e05212917e6a7397ed7bd1dc",
+      "chapter_group_plan_version_id": "authority-output:2657b410-5931-4b4e-b1df-fbead2c62e2a:story_planning.candidate:v1"
+    },
+    "creative_contract_version": "creative-memo.v1",
+    "source_chapter_execution_intent_asset_version_id": "authority-output:468f1b0c-9def-47c7-b3ed-3b00e77dc5a6:chapter.execution_intent:v1"
+  }
+}

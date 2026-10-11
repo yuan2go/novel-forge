@@ -1,0 +1,21 @@
+{
+  "scope": "ISOLATED_CANDIDATE_ONLY",
+  "source_sha": "cd25e84d4f765326bbb03255ec0d4ba24620c9ea",
+  "build": "serial-quality-cd25e84d4f76",
+  "planning": {
+    "pack_id": "story_planning_pack.serial_quality_01",
+    "pack_version": "2.15.1102",
+    "compilation_id": "compilation:quality:story_planning_pack.serial_quality_01:9a05e1006db597818f4f",
+    "deployment_id": "deployment:quality:story_planning_pack.serial_quality_01:9a05e1006db597818f4f"
+  },
+  "chapter": {
+    "pack_id": "chapter_generation_pack.serial_quality_01",
+    "pack_version": "3.0.1202",
+    "compilation_id": "compilation:quality:chapter_generation_pack.serial_quality_01:3d4836db1f71372780c8",
+    "deployment_id": "deployment:quality:chapter_generation_pack.serial_quality_01:3d4836db1f71372780c8"
+  },
+  "event_first_planning": true,
+  "original_adoption": "NOT_GRANTED",
+  "human_approval": "NOT_RUN",
+  "formal_acceptance": "NOT_GRANTED"
+}

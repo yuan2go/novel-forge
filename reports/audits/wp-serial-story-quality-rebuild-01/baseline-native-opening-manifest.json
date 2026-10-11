@@ -1,0 +1,56 @@
+{
+  "units": [
+    {
+      "chapter": 1,
+      "title": "雨前的药篓",
+      "asset_version_id": "authority-output:69e62be6-76f3-436e-b45d-f498761bd46d:chapter.draft:v1",
+      "content_hash": "sha256:e8d064cb01b48981fda7d1c1b90550df3d49c2349a2507f50abb16cea769689a",
+      "text_hash": "sha256:4fb8adeb896f4ed5d635d263e3c422e45cb127eafc91989405a37c59ac872923",
+      "han_characters": 2144,
+      "selected_source_asset_version_id": "64c825b9-6296-4058-9ee3-4132222e2fa2",
+      "selected_source_provenance_kind": "ASSISTANT_REVISION_PROPOSAL"
+    },
+    {
+      "chapter": 2,
+      "title": "住下之后",
+      "asset_version_id": "authority-output:c22c3737-b993-4a6f-99d4-fa94660a6a8b:chapter.draft:v1",
+      "content_hash": "sha256:0bfdc56290bc31f4bc794beea75eeeccc78f6e15837232c39ab2d53b5a7a79e4",
+      "text_hash": "sha256:2f42c6fd5485c436b2b73ce872f4824c29a69bc319d931d67d8e0c1ea44ef28c",
+      "han_characters": 2588,
+      "selected_source_asset_version_id": "ccda20cc-bdad-45c7-8643-d9ba664ee278",
+      "selected_source_provenance_kind": "ASSISTANT_REVISION_PROPOSAL"
+    },
+    {
+      "chapter": 3,
+      "title": "一线气机",
+      "asset_version_id": "authority-output:1795ff95-16ca-4bfe-983f-a66336052a05:chapter.draft:v1",
+      "content_hash": "sha256:b76957b689e1cd4a08f2f6453229921b7edf3a80a8d55908bfa3c5e3c6c45b4a",
+      "text_hash": "sha256:ab339d13c9a62ebb37051fab5f4c6dbf51e23146f84d3ded0fb1b1a4f6d28532",
+      "han_characters": 1686,
+      "selected_source_asset_version_id": "bccc74c1-3b4f-46fe-a327-d115143cb89f",
+      "selected_source_provenance_kind": "ASSISTANT_REVISION_PROPOSAL"
+    },
+    {
+      "chapter": 4,
+      "title": "湿叶里的差别",
+      "asset_version_id": "authority-output:29853dee-16ac-4812-94da-9dc82b64fb8f:chapter.draft:v1",
+      "content_hash": "sha256:d1abb069f9c11ddcf785526a30f6c119a12da6937e7a30e99cd310c6e7713b60",
+      "text_hash": "sha256:ab4aea1225af9cb5bae7f8924b3ef9fb294de515f1ec78929ab35004771e5fa7",
+      "han_characters": 2425,
+      "selected_source_asset_version_id": "794e5fb7-42e5-4837-af0d-5394c97f110c",
+      "selected_source_provenance_kind": "ASSISTANT_REVISION_PROPOSAL"
+    },
+    {
+      "chapter": 5,
+      "title": "石湾谷的第一篓",
+      "asset_version_id": "authority-output:a2436f70-ec4e-4002-89bd-1a1fb676f8a9:chapter.draft:v1",
+      "content_hash": "sha256:8b3d8d49b5b563b4fe4ea1875fcacea4732a68d4d6f944caaa137f04b5206650",
+      "text_hash": "sha256:5fe5c6d8a24ccc3f6dd017a5d5c06bfe2aa891b3819641d140faeba76fdafef4",
+      "han_characters": 3040,
+      "selected_source_asset_version_id": "f20f8ea7-9cc3-4ee8-98f8-efe4dbe3157a",
+      "selected_source_provenance_kind": "ASSISTANT_REVISION_PROPOSAL"
+    }
+  ],
+  "han_characters": 11883,
+  "reading": "NONBLIND_SOURCE_COMPARISON_AFTER_OLD_SELECTED_PROSE_BLIND_READING"
+}

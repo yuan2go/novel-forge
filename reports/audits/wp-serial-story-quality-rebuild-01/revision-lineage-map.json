@@ -1,0 +1,121 @@
+{
+  "version": "serial-quality-rebuild-source-map.v1",
+  "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+  "baseline_book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "root_plan_change_proposal_id": "plan-change:7a5fa1aa-d104-4a1b-9dd7-a575a247b4cb",
+  "new_volume_plan_version": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+  "new_arc_plan_versions": [
+    "authority-output:a402e310-d630-4326-957b-e9e0b4a7df40:story_planning.candidate:v1",
+    "authority-output:f88a017c-a7a0-43f1-91e7-7671150818e8:story_planning.candidate:v1",
+    "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+    "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1",
+    "authority-output:2f266ff1-7b1e-434a-a9bd-0e8202b026e6:story_planning.candidate:v1",
+    "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+  ],
+  "active_group_activation_operation_id": "5853ae69-9cb4-45ad-af8c-cde755f1bba5",
+  "original_foundation_bookplan_and_initialstate_retained": true,
+  "source_start_proof": "candidate-start.json",
+  "native_origin_proof": "revision-origin-readonly-proof.json",
+  "new_native_equals_selected": true,
+  "second_expression_revision": "NOT_RUN",
+  "author_adoption": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "chapter_sources": [
+    {
+      "new_chapter": 1,
+      "baseline_comparison_chapters": [
+        1,
+        2
+      ],
+      "baseline_native_sources": [
+        "authority-output:69e62be6-76f3-436e-b45d-f498761bd46d:chapter.draft:v1",
+        "authority-output:c22c3737-b993-4a6f-99d4-fa94660a6a8b:chapter.draft:v1"
+      ],
+      "baseline_selected_sources": [
+        "64c825b9-6296-4058-9ee3-4132222e2fa2",
+        "ccda20cc-bdad-45c7-8643-d9ba664ee278"
+      ],
+      "new_chapter_plan_version": "authority-output:ed39375e-95f1-4a2a-97fc-73dc49915568:story_planning.candidate:v1",
+      "new_memo_asset_version_id": "authority-output:67046eaa-ff16-4043-8c56-39306e5265a1:chapter.memo:v1",
+      "new_native_asset_version_id": "authority-output:ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2:chapter.draft:v1",
+      "new_selected_asset_version_id": "authority-output:ce2b2cbf-e61b-47fb-81dd-aceb37ab03b2:chapter.draft:v1",
+      "interpretation": "Whole event replanned; not an external textual patch or a claim of exact sentence ancestry",
+      "actual_writer_input_file": "new-writer-input-001.txt"
+    },
+    {
+      "new_chapter": 2,
+      "baseline_comparison_chapters": [
+        3,
+        4
+      ],
+      "baseline_native_sources": [
+        "authority-output:1795ff95-16ca-4bfe-983f-a66336052a05:chapter.draft:v1",
+        "authority-output:29853dee-16ac-4812-94da-9dc82b64fb8f:chapter.draft:v1"
+      ],
+      "baseline_selected_sources": [
+        "bccc74c1-3b4f-46fe-a327-d115143cb89f",
+        "794e5fb7-42e5-4837-af0d-5394c97f110c"
+      ],
+      "new_chapter_plan_version": "authority-output:2d032605-c6b6-4243-8266-1c6e6a24fa03:story_planning.candidate:v1",
+      "new_memo_asset_version_id": "authority-output:42731656-dda5-40bc-8d66-02a4966a1447:chapter.memo:v1",
+      "new_native_asset_version_id": "authority-output:e9ae5942-a179-4877-b8ec-9e9aa31d8c26:chapter.draft:v1",
+      "new_selected_asset_version_id": "authority-output:e9ae5942-a179-4877-b8ec-9e9aa31d8c26:chapter.draft:v1",
+      "interpretation": "Whole event replanned; not an external textual patch or a claim of exact sentence ancestry",
+      "actual_writer_input_file": "new-writer-input-002.txt"
+    },
+    {
+      "new_chapter": 3,
+      "baseline_comparison_chapters": [
+        5
+      ],
+      "baseline_native_sources": [
+        "authority-output:a2436f70-ec4e-4002-89bd-1a1fb676f8a9:chapter.draft:v1"
+      ],
+      "baseline_selected_sources": [
+        "f20f8ea7-9cc3-4ee8-98f8-efe4dbe3157a"
+      ],
+      "new_chapter_plan_version": "authority-output:3182e5ed-7012-46a7-b2f4-0a8a1fe497d8:story_planning.candidate:v1",
+      "new_memo_asset_version_id": "authority-output:a5fe4583-c2f6-4716-a8a1-6838c1dd9033:chapter.memo:v1",
+      "new_native_asset_version_id": "authority-output:3e19b6f7-d98e-4e0a-8850-778c42057f89:chapter.draft:v1",
+      "new_selected_asset_version_id": "authority-output:3e19b6f7-d98e-4e0a-8850-778c42057f89:chapter.draft:v1",
+      "interpretation": "Whole event replanned; not an external textual patch or a claim of exact sentence ancestry",
+      "actual_writer_input_file": "new-writer-input-003.txt"
+    },
+    {
+      "new_chapter": 4,
+      "baseline_comparison_chapters": [
+        5
+      ],
+      "baseline_native_sources": [
+        "authority-output:a2436f70-ec4e-4002-89bd-1a1fb676f8a9:chapter.draft:v1"
+      ],
+      "baseline_selected_sources": [
+        "f20f8ea7-9cc3-4ee8-98f8-efe4dbe3157a"
+      ],
+      "new_chapter_plan_version": "authority-output:2caf9e51-ebdb-455b-9a2d-7d2376d9343b:story_planning.candidate:v1",
+      "new_memo_asset_version_id": "authority-output:9a3054cb-0b04-40f4-adab-8ae0e6589f68:chapter.memo:v1",
+      "new_native_asset_version_id": "authority-output:5b75880d-2608-47ce-8df1-a99affea5521:chapter.draft:v1",
+      "new_selected_asset_version_id": "authority-output:5b75880d-2608-47ce-8df1-a99affea5521:chapter.draft:v1",
+      "interpretation": "Whole event replanned; not an external textual patch or a claim of exact sentence ancestry",
+      "actual_writer_input_file": "new-writer-input-004.txt"
+    },
+    {
+      "new_chapter": 5,
+      "baseline_comparison_chapters": [
+        5
+      ],
+      "baseline_native_sources": [
+        "authority-output:a2436f70-ec4e-4002-89bd-1a1fb676f8a9:chapter.draft:v1"
+      ],
+      "baseline_selected_sources": [
+        "f20f8ea7-9cc3-4ee8-98f8-efe4dbe3157a"
+      ],
+      "new_chapter_plan_version": "authority-output:1278d86a-4ad0-40a1-95f3-54e8b1be9ba9:story_planning.candidate:v1",
+      "new_memo_asset_version_id": "authority-output:e784f814-3056-4639-b3cb-4acd413cfc2c:chapter.memo:v1",
+      "new_native_asset_version_id": "authority-output:d3fca797-0140-49f0-91e9-50c8d30c24ac:chapter.draft:v1",
+      "new_selected_asset_version_id": "authority-output:d3fca797-0140-49f0-91e9-50c8d30c24ac:chapter.draft:v1",
+      "interpretation": "Whole event replanned; not an external textual patch or a claim of exact sentence ancestry",
+      "actual_writer_input_file": "new-writer-input-005.txt"
+    }
+  ]
+}

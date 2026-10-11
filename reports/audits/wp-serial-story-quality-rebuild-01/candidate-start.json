@@ -1,0 +1,70 @@
+{
+  "admission": {
+    "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+    "root_operation_id": "b4c256df-c822-4398-aa39-4b8a1128c189",
+    "saga_id": "3ac7bbb8-62f1-473d-ba03-65282d08e884",
+    "replayed": false
+  },
+  "book": {
+    "book_run_id": "book-run:b4c256df-c822-4398-aa39-4b8a1128c189",
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "book_design_version": "db9855a3-5d98-44ba-9f09-3ce437a9cb31",
+    "book_plan_version": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+    "production_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+    "longform_context_versions": {
+      "arc_plan_versions": [
+        "authority-output:a402e310-d630-4326-957b-e9e0b4a7df40:story_planning.candidate:v1",
+        "authority-output:f88a017c-a7a0-43f1-91e7-7671150818e8:story_planning.candidate:v1",
+        "authority-output:2195363d-51b8-4e2f-9848-3b8c0a2864bf:story_planning.candidate:v1",
+        "authority-output:8d616156-f25d-447f-8a80-4620f352dee5:story_planning.candidate:v1",
+        "authority-output:2f266ff1-7b1e-434a-a9bd-0e8202b026e6:story_planning.candidate:v1",
+        "authority-output:a2b95e50-3d72-430c-b83c-20bd693a7056:story_planning.candidate:v1"
+      ],
+      "volume_plan_version": "authority-output:dc29e8a1-213f-4342-8846-7ea6480f43d2:story_planning.candidate:v1",
+      "quality_trend_version": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "reward_ledger_version": "authority-output:4be19b7c-d137-49f2-bcef-35052376fc3d:book.bootstrap.reward_ledger_snapshot:v1",
+      "promise_ledger_version": "authority-output:e610133d-9de6-48d1-a1c8-f1200c608f0b:book.bootstrap.promise_ledger_snapshot:v1",
+      "reader_segment_version": "authority-output:08c731aa-7360-4e22-8581-1925dadf9f7c:book.bootstrap.reader_segment_profile:v1",
+      "character_state_version": "authority-output:50789306-2be0-42e9-b936-e22010e6c63c:book.bootstrap.character_state_snapshot:v1",
+      "reader_contract_version": "authority-output:376566dd-d0ce-4769-a7c1-6960e8014c28:book.bootstrap.reader_contract:v1",
+      "platform_profile_version": "authority-output:f159c4c5-0564-45b8-9886-9a8aabacaadb:chapter.platform_profile:v1",
+      "foreshadowing_state_version": "authority-output:62bb1c79-69a4-4fe1-8240-efcdb63e8556:book.bootstrap.foreshadow_snapshot:v1"
+    },
+    "root_operation_id": "b4c256df-c822-4398-aa39-4b8a1128c189",
+    "saga_id": "3ac7bbb8-62f1-473d-ba03-65282d08e884",
+    "stable_idempotency_key": "wp-serial:initial-state-candidate:revision-origin-v1",
+    "state": "READY",
+    "current_chapter": 0,
+    "target_chapter_count": 3,
+    "light_recap_cadence": 5,
+    "formal_recap_cadence": 10,
+    "active_chapter_request_id": null,
+    "version": 0,
+    "paused_reason": "",
+    "failure_classification": "",
+    "accepted_through_chapter": 0,
+    "active_child_delegation_id": null,
+    "active_chapter_number": null,
+    "active_plan_version_id": null,
+    "active_story_state_version_id": null,
+    "active_canon_snapshot_version_id": null,
+    "active_longform_projection_set_id": null,
+    "last_chapter_outcome_version_id": null,
+    "failure_reason": "",
+    "input_snapshot_id": "sha256:953e7d59ca2d047b89529021ad074e8265437294c828b39507308c67d8bba1a3",
+    "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    "author_workflow": {
+      "mode": "AUTHOR_FIRST",
+      "version": "author-workflow.v1",
+      "deep_review": false
+    },
+    "delivery_window_policy": null
+  },
+  "original_baseline_run": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "source_plan_change": "plan-change:7a5fa1aa-d104-4a1b-9dd7-a575a247b4cb",
+  "original_adoption": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "intended_delivery": "one complete event approximately 10000—20000 Han characters; native initial window3, extend only to complete event5; pause after its result"
+}
