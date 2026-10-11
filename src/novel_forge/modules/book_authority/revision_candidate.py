@@ -1,5 +1,3 @@
-"""INVARIANT: genesis working revisions inherit an exact existing Opening and activated Plan Change, never accepted history."""
-
 from dataclasses import fields
 from typing import Any, Mapping
 
