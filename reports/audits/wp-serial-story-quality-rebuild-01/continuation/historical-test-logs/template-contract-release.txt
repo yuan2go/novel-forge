@@ -1,0 +1,80 @@
+.............FF..................                                        [100%]
+=================================== FAILURES ===================================
+_ test_active_method_template_preserves_frozen_stage_output_contract[quality_structural] _
+
+stage = 'quality_structural'
+
+    @pytest.mark.parametrize("stage", ["draft", "memo", "review", "rereview", "revision", "canon_extraction", "quality_structural", "quality_commercial"])
+    def test_active_method_template_preserves_frozen_stage_output_contract(stage):
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    
+        from novel_forge.modules.canon_graph.source_spans import source_spans
+    
+        arguments = {"stage": stage, "request_payload": {"input": {
+            "source_span_table": source_spans("门开了。"),
+            "accepted_transition_baselines": {}, "canonical_transition_results": []}}}
+>       assert PostgresChapterExecutionContractBinder._provider_output_contract(
+            **arguments, prompt_contract_version="v15"
+        ) == PostgresChapterExecutionContractBinder._provider_output_contract(
+            **arguments, prompt_contract_version="v13"
+        )
+
+tests/unit/test_capability_pack_artifact_materialization.py:252: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/execution_gateway.py:1359: in _provider_output_contract
+    schema = bind_quality_applicability_spans(schema, table)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+schema = {'$schema': 'https://json-schema.org/draft/2020-12/schema', 'type': 'object', 'properties': {'dimensions': {'type': 'a...ence_locations', 'issue_codes', ...], 'additionalProperties': False}, 'minItems': 1}}, 'required': ['dimensions'], ...}
+table = {'contract_version': 'literal-source-spans.v1', 'source_text_hash': 'sha256:41752177cf2d2bd3369883c4ba71d7e6157a97cc62a7e8587d667e4bb9d33fe6', 'spans': [{'span_id': 's41752177cf2d2bd3_0_4', 'start': 0, 'end': 4, 'quote': '门开了。'}]}
+
+    def bind_quality_applicability_spans(schema, table):
+        result = deepcopy(schema)
+        rows = result["properties"]["dimensions"]["items"].get("anyOf")
+        if not rows:
+>           raise KernelError("QUALITY_SOURCE_SPAN_INVALID", "Exact frozen dimension applicability is required")
+E           novel_forge.modules.command_kernel.errors.KernelError: QUALITY_SOURCE_SPAN_INVALID: Exact frozen dimension applicability is required
+
+src/novel_forge/modules/canon_graph/source_spans.py:264: KernelError
+_ test_active_method_template_preserves_frozen_stage_output_contract[quality_commercial] _
+
+stage = 'quality_commercial'
+
+    @pytest.mark.parametrize("stage", ["draft", "memo", "review", "rereview", "revision", "canon_extraction", "quality_structural", "quality_commercial"])
+    def test_active_method_template_preserves_frozen_stage_output_contract(stage):
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    
+        from novel_forge.modules.canon_graph.source_spans import source_spans
+    
+        arguments = {"stage": stage, "request_payload": {"input": {
+            "source_span_table": source_spans("门开了。"),
+            "accepted_transition_baselines": {}, "canonical_transition_results": []}}}
+>       assert PostgresChapterExecutionContractBinder._provider_output_contract(
+            **arguments, prompt_contract_version="v15"
+        ) == PostgresChapterExecutionContractBinder._provider_output_contract(
+            **arguments, prompt_contract_version="v13"
+        )
+
+tests/unit/test_capability_pack_artifact_materialization.py:252: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/execution_gateway.py:1359: in _provider_output_contract
+    schema = bind_quality_applicability_spans(schema, table)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+schema = {'$schema': 'https://json-schema.org/draft/2020-12/schema', 'type': 'object', 'properties': {'dimensions': {'type': 'a...ence_locations', 'issue_codes', ...], 'additionalProperties': False}, 'minItems': 1}}, 'required': ['dimensions'], ...}
+table = {'contract_version': 'literal-source-spans.v1', 'source_text_hash': 'sha256:41752177cf2d2bd3369883c4ba71d7e6157a97cc62a7e8587d667e4bb9d33fe6', 'spans': [{'span_id': 's41752177cf2d2bd3_0_4', 'start': 0, 'end': 4, 'quote': '门开了。'}]}
+
+    def bind_quality_applicability_spans(schema, table):
+        result = deepcopy(schema)
+        rows = result["properties"]["dimensions"]["items"].get("anyOf")
+        if not rows:
+>           raise KernelError("QUALITY_SOURCE_SPAN_INVALID", "Exact frozen dimension applicability is required")
+E           novel_forge.modules.command_kernel.errors.KernelError: QUALITY_SOURCE_SPAN_INVALID: Exact frozen dimension applicability is required
+
+src/novel_forge/modules/canon_graph/source_spans.py:264: KernelError
+=========================== short test summary info ============================
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_active_method_template_preserves_frozen_stage_output_contract[quality_structural]
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_active_method_template_preserves_frozen_stage_output_contract[quality_commercial]
+2 failed, 31 passed in 1.41s
