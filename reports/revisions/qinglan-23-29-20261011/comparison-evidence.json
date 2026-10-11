@@ -1,0 +1,118 @@
+{
+  "document_kind": "LOCAL_EDITORIAL_COMPARISON",
+  "candidate_manifest_file_sha256": "sha256:422af8e187ee28cd8171a672ccadc439c0694ebbbdf480748868c4660e31c85e",
+  "authoring": "SAME_ASSISTANT_AS_CANDIDATE",
+  "human_or_blind_evidence": false,
+  "unicode_scope": "BODY_ONLY_NO_TITLE",
+  "locator_check_meaning": "QUOTE_PRESENCE_ONLY_NOT_LITERARY_PROOF",
+  "cases": [
+    {
+      "dimension": "人物主动性",
+      "original": {
+        "original_chapter": 24,
+        "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+        "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+        "unicode_start": 2296,
+        "unicode_end": 2313,
+        "quote": "先把脚站在这道纹外，站定了再举手。"
+      },
+      "candidate": {
+        "local_candidate_id": "qinglan-23-29-20261011:v1:03",
+        "file": "candidate-v1/03-手是自己的.txt",
+        "text_hash": "sha256:1a7137242217ea73d970eb215f9b584dbe77f585845110abe90d9f0413d963e9",
+        "unicode_start": 551,
+        "unicode_end": 558,
+        "quote": "先离开这张案。"
+      },
+      "judgment": "主动提出离案与不依赖木片；原稿已有自选路径，不把它评成全然被动"
+    },
+    {
+      "dimension": "冲突",
+      "original": {
+        "original_chapter": 24,
+        "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+        "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+        "unicode_start": 2118,
+        "unicode_end": 2134,
+        "quote": "凭这两行，能说是哪一下带来的吗？"
+      },
+      "candidate": {
+        "local_candidate_id": "qinglan-23-29-20261011:v1:01",
+        "file": "candidate-v1/01-走出案前.txt",
+        "text_hash": "sha256:377d00bcc44df7e54e3237f718a068c3aaecfc9b75533f478105a6d47ef7b3cb",
+        "unicode_start": 1545,
+        "unicode_end": 1553,
+        "quote": "我也想早点问到。"
+      },
+      "additional_candidate": {
+        "local_candidate_id": "qinglan-23-29-20261011:v1:01",
+        "file": "candidate-v1/01-走出案前.txt",
+        "text_hash": "sha256:377d00bcc44df7e54e3237f718a068c3aaecfc9b75533f478105a6d47ef7b3cb",
+        "unicode_start": 1804,
+        "unicode_end": 1814,
+        "quote": "我可不再到岔口找你。"
+      },
+      "judgment": "唐穗有独立诉求并停止继续等待，关系后果延续到后两样章"
+    },
+    {
+      "dimension": "节奏",
+      "original": {
+        "original_chapter": 28,
+        "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c",
+        "text_hash": "sha256:bdc0c6c4d20c4706e8ef02aace9e16a6adf8bf6ba58b7a5bded29dee0af8ffe3",
+        "unicode_start": 2130,
+        "unicode_end": 2142,
+        "quote": "这就有了可比的动作记录。"
+      },
+      "candidate": {
+        "local_candidate_id": "qinglan-23-29-20261011:v1:02",
+        "file": "candidate-v1/02-让它回来.txt",
+        "text_hash": "sha256:9ec3feb10c675e5d92e1a776df2996aa4e7e8630b3cc98c56a9d72421fc900eb",
+        "unicode_start": 1746,
+        "unicode_end": 1816,
+        "quote": "次日独练，许庭不在。沈砚在熟悉的位置做完三回，每回都退开歇过。第二回来得慢，他险些去催；肩才要提，便自己松了下来。末一回收尽，他没添第四笔。"
+      },
+      "judgment": "独练缩为一段，站位失败不再另写整章记录与复述"
+    },
+    {
+      "dimension": "情绪回报",
+      "original": {
+        "original_chapter": 26,
+        "asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c",
+        "text_hash": "sha256:cf9576db2ecd7faf2c7cee7529d36a7408284d8590f4d19f4be015feed3a8c0d",
+        "unicode_start": 2380,
+        "unicode_end": 2388,
+        "quote": "笑意怎么也收不住"
+      },
+      "candidate": {
+        "local_candidate_id": "qinglan-23-29-20261011:v1:03",
+        "file": "candidate-v1/03-手是自己的.txt",
+        "text_hash": "sha256:1a7137242217ea73d970eb215f9b584dbe77f585845110abe90d9f0413d963e9",
+        "unicode_start": 1790,
+        "unicode_end": 1805,
+        "quote": "第一次觉得自己带得走一样东西。"
+      },
+      "judgment": "保留既有真实喜悦，让离案成果回收前文自由愿望；外部兑现仍小"
+    },
+    {
+      "dimension": "章节吸引力",
+      "original": {
+        "original_chapter": 28,
+        "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c",
+        "text_hash": "sha256:bdc0c6c4d20c4706e8ef02aace9e16a6adf8bf6ba58b7a5bded29dee0af8ffe3",
+        "unicode_start": 3056,
+        "unicode_end": 3105,
+        "quote": "今日最先改变的是身体重心；下一回独自回到这里，他能不能从这一点开始，找回起、守、收各自该走的次序？"
+      },
+      "candidate": {
+        "local_candidate_id": "qinglan-23-29-20261011:v1:03",
+        "file": "candidate-v1/03-手是自己的.txt",
+        "text_hash": "sha256:1a7137242217ea73d970eb215f9b584dbe77f585845110abe90d9f0413d963e9",
+        "unicode_start": 2707,
+        "unicode_end": 2725,
+        "quote": "这回，问的应当是有什么活可以交给他。"
+      },
+      "judgment": "下一章承接已有搬盘任务，学习用途更具体；持续追读未被证明"
+    }
+  ]
+}

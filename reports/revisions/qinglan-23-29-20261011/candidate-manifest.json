@@ -1,0 +1,711 @@
+{
+  "document_kind": "LOCAL_EDITORIAL_CANDIDATE_MANIFEST",
+  "runtime_authority": false,
+  "schema_validation": "NOT_A_NATIVE_SCHEMA_SUBMISSION",
+  "source_commit": "9271fda41edb617b246fb4201a6b24b63c627bf1",
+  "pr157_merge_commit": "1aa302d6baf242ce18afdb7ca06754a94e77a236",
+  "pr158_merge_commit": "baae859cf83c866cec0f25b7a346be79df10d75b",
+  "source_scope": {
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71"
+  },
+  "source_accepted_through_chapter": 0,
+  "source_units": [
+    {
+      "chapter": 22,
+      "title": "各自的晚间",
+      "asset_version_id": "772490bd-d5aa-4ecd-b0e2-7ee2f935fb45",
+      "content_hash": "sha256:a5c3eef02ea7c42ddddf0c66580fc930e10251b2c46b8db67cf69e3745241773",
+      "text_hash": "sha256:5fae53880cc58162444cff151aa8f2400ee1da9f3884e6bd1ccae1f7e0cff2bf",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-022.txt",
+      "source_file_sha256": "sha256:aacec2b42c8ccd7ef31a1d656ed8e900cf1e17508b5bd75217e4a1781131b22f",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-022.json",
+      "json_file_sha256": "sha256:eb7e8268c65f1324d9f518c224c6b8ca68f97735aa6b3f3e43d5d0c7f617ea34",
+      "unicode_body_length": 2955,
+      "han_regex_body_count": 2534,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2534,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 23,
+      "title": "岔路上的两种脚步",
+      "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea",
+      "content_hash": "sha256:092474b4c0d920f09a17edb828cad01feb5a9bb29c1fee0a07063cefd4c6f423",
+      "text_hash": "sha256:77399407ebe4d4a58b4f7a564f072c89360b72e5a277ff8082ff3837a8e4a587",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-023.txt",
+      "source_file_sha256": "sha256:65497815291da3bd37a567ec543f9a8f3b10b374cf9e8332519713ebea160eaa",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-023.json",
+      "json_file_sha256": "sha256:854dc8887a6611b635f344a984e5ce308027deecf26b6c843e3fd024fe4999aa",
+      "unicode_body_length": 2961,
+      "han_regex_body_count": 2561,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2561,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "REPLACEMENT_SOURCE"
+    },
+    {
+      "chapter": 24,
+      "title": "手停在何时",
+      "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+      "content_hash": "sha256:c39326a0de6dc95ed2ab12058d174e530e33cbc98132204a105bdac8da04c963",
+      "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-024.txt",
+      "source_file_sha256": "sha256:5d4380834dbc997302d80f336c7ccace50d6949447c13e2e6f6102a639b55c33",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-024.json",
+      "json_file_sha256": "sha256:53b4c99d7c29bf256546f097e7af6b2fd57c1c74eb79b0c0c09e20be039d8bee",
+      "unicode_body_length": 2914,
+      "han_regex_body_count": 2516,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2516,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "REPLACEMENT_SOURCE"
+    },
+    {
+      "chapter": 25,
+      "title": "细土补盘边",
+      "asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4",
+      "content_hash": "sha256:343f3afd7b53a172d0bfc649dd887449aea958cbb50fc4e7fa98b02e3ef2d39f",
+      "text_hash": "sha256:fa511199a2920f2a227ce100bbb23674c5d83db77cc34484a4302ed1b9c2e68d",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-025.txt",
+      "source_file_sha256": "sha256:b83fe419601f90b12809afee9334c78fe7113d5c975cb8e14e62bd542f67344c",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-025.json",
+      "json_file_sha256": "sha256:db26b9cf785f49910b25a02698d4761bcbf6a0a4e7e0c136fa73c7986324b89a",
+      "unicode_body_length": 2968,
+      "han_regex_body_count": 2565,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2565,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "REPLACEMENT_SOURCE"
+    },
+    {
+      "chapter": 26,
+      "title": "木片上的浅纹",
+      "asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c",
+      "content_hash": "sha256:4cdc788f3e4115edf068a265f3d96657e859872f73d6d5027dee686e65c2a3db",
+      "text_hash": "sha256:cf9576db2ecd7faf2c7cee7529d36a7408284d8590f4d19f4be015feed3a8c0d",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-026.txt",
+      "source_file_sha256": "sha256:c36e84885fc1ee7d8fa7c2f1db9f5c2502c4902e8e74a892d95245911f20b94e",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-026.json",
+      "json_file_sha256": "sha256:085ea8d578d4f4cdbbf01055e86d437ccdda533da24f84b67952e30d6be2a4ee",
+      "unicode_body_length": 3115,
+      "han_regex_body_count": 2665,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2665,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "REPLACEMENT_SOURCE"
+    },
+    {
+      "chapter": 27,
+      "title": "自己收手",
+      "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0",
+      "content_hash": "sha256:309a89d185e52927f514e466c7e09f7165eac2f95ee2a29bef54bd3b7f018257",
+      "text_hash": "sha256:0704b44b90c75372d5ee31589564e21959982c658c0d1c91e9a5bccdad06878c",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-027.txt",
+      "source_file_sha256": "sha256:ea98195fc2c2f0c444f58447bde3a45a2d47d7c81943beb78479ea9a4f0c8493",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-027.json",
+      "json_file_sha256": "sha256:46c9213c71d994527f17ba2b27ab22a684d4055595c958a7c7a18c99da7ec053",
+      "unicode_body_length": 3137,
+      "han_regex_body_count": 2676,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2676,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "REPLACEMENT_SOURCE"
+    },
+    {
+      "chapter": 28,
+      "title": "移开一步",
+      "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c",
+      "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+      "text_hash": "sha256:bdc0c6c4d20c4706e8ef02aace9e16a6adf8bf6ba58b7a5bded29dee0af8ffe3",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-028.txt",
+      "source_file_sha256": "sha256:c4e569bb8b2907a4fe318e895a117ef308416fef8925e6274e8a3338449b93ce",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-028.json",
+      "json_file_sha256": "sha256:f29801980e1cad34c09c5d0d8a6af2a779fd586ca6f53aac58c52e937d832059",
+      "unicode_body_length": 3105,
+      "han_regex_body_count": 2644,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2644,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "REPLACEMENT_SOURCE"
+    },
+    {
+      "chapter": 29,
+      "title": "掌中自有起收",
+      "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4",
+      "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+      "text_hash": "sha256:f495942050f3b32210fe9676bd53a1163a02ba62c033c63524f70270f7254d15",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-029.txt",
+      "source_file_sha256": "sha256:03735b154ec0c6917be9651af91274b6583fe544ded9efc511a45bc893278292",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-029.json",
+      "json_file_sha256": "sha256:6ba59c982f493f60f90444662a3c7e7e754b0d649762ded23982ffe39c4c2680",
+      "unicode_body_length": 3077,
+      "han_regex_body_count": 2629,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2629,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "REPLACEMENT_SOURCE"
+    },
+    {
+      "chapter": 30,
+      "title": "稳稳放下",
+      "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6",
+      "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+      "text_hash": "sha256:98fd5ebd440d0bd2ba79609e973948ae846223201769d6fa93f8c7137cf6b445",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-030.txt",
+      "source_file_sha256": "sha256:c1f849ef8a5c228b59795550ebbf87d7b5de61352c6944aae8680633d204256b",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-030.json",
+      "json_file_sha256": "sha256:c23ff89f58da011403e738bbaa691177846f005298e2ced5f157747c3334af95",
+      "unicode_body_length": 2898,
+      "han_regex_body_count": 2501,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2501,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 31,
+      "title": "晾定的盘边",
+      "asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41",
+      "content_hash": "sha256:cf0f9ad4c9c1a4d90d5243fb942e9140923caffd029519d6089c3c56d04ce6c0",
+      "text_hash": "sha256:c3e30dcfc867034b805cde9a79236519c19572a6991c02d3001fae16a9638191",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-031.txt",
+      "source_file_sha256": "sha256:57779c6b85c9d721716e1f6535a9c16c49ee165e22bdfc68aa20f742b02ccc6d",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-031.json",
+      "json_file_sha256": "sha256:2410d8b1c98870f555ead89d423566a96f53b48b13a311b255fdf69d39a86c67",
+      "unicode_body_length": 3388,
+      "han_regex_body_count": 2883,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2883,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 32,
+      "title": "近坡清路",
+      "asset_version_id": "32a4fb89-b907-4174-9bf4-0565780d0f79",
+      "content_hash": "sha256:bb0bb585bdd152c8b84b0db4a4f06550960389cfcdf8d2c634f554d006cfbefd",
+      "text_hash": "sha256:14ff5cc6817cb377a61fe8cc01c64929569cb071b733e774ed6d4e33248fb8b8",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-032.txt",
+      "source_file_sha256": "sha256:ba9463daeeafd53db4f34d5d425dcc27fcfd8ee03475c2c2dec4d7e67fa1b530",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-032.json",
+      "json_file_sha256": "sha256:ee0274e2b7aa6c16879f627dc9c6680bfd11a3692af1cdbffa70890dd1a66702",
+      "unicode_body_length": 3232,
+      "han_regex_body_count": 2785,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2785,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 33,
+      "title": "近坡第一处",
+      "asset_version_id": "7f3df9b6-b125-4848-877e-9ee0c6f4dc38",
+      "content_hash": "sha256:bc5026ea2a8c3b37c1749af804720f6bf79e61a37c0cde2b52a2e64c652a515c",
+      "text_hash": "sha256:278f84642cdd419275acb909487b00f9d30fa9fa93ed3f5d67c20216d7d487e2",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-033.txt",
+      "source_file_sha256": "sha256:f46327a467183000a01774c9049038f2934e1a135607b6df741b129eec5c417d",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-033.json",
+      "json_file_sha256": "sha256:6d53f682a8fa72121635d7b5a9c722b99b52c728a14ead50b816e97c479e9642",
+      "unicode_body_length": 3008,
+      "han_regex_body_count": 2591,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2591,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 34,
+      "title": "松开手，再搬",
+      "asset_version_id": "07e45a9e-2a01-4047-8096-9afefb1f6f43",
+      "content_hash": "sha256:70d084059531254d29f5d5b7a97ae7483b23cb9c0064e7950638fe5c90ea8f28",
+      "text_hash": "sha256:dd90f41c3d483b8cea309024253502a8f28798570a55ce684ccf9ba5e1d473ff",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-034.txt",
+      "source_file_sha256": "sha256:45e7b6b1e842d5fa1a441ebf1d9c03d0d16d920a5173853684300cf43cf7d7e9",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-034.json",
+      "json_file_sha256": "sha256:bb3407181f7d734d4615748a5a08232c436e9d349bf556f54c35356fbd5c414a",
+      "unicode_body_length": 3122,
+      "han_regex_body_count": 2686,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2686,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 35,
+      "title": "午前收工",
+      "asset_version_id": "e5ee36f1-1929-4946-9c86-7ad1df1f9829",
+      "content_hash": "sha256:ec63338bab13d819f3bb27b2bcaf748f84138a67b9cf0b899d945fe3b92211d5",
+      "text_hash": "sha256:d53a8f76d20e2d1ba18382b303be88eff36fb398fd0cc3d9e75ea161b4eaee66",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-035.txt",
+      "source_file_sha256": "sha256:9176a0763717114dc5689f59ccff661f546c04c34181501c62f0d5329dde6009",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-035.json",
+      "json_file_sha256": "sha256:85d78f0c85373a207cd19d35b8c7de1b6d278e743883c2ebe50b4c4447e4ac42",
+      "unicode_body_length": 3001,
+      "han_regex_body_count": 2587,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2587,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 36,
+      "title": "三清一留",
+      "asset_version_id": "3fe34394-8628-485c-9414-308850515eca",
+      "content_hash": "sha256:58a146662b6f36c0dc29900161845eb1e8ccde3099f392d7e72e4a768a3345f5",
+      "text_hash": "sha256:c111fd3595d427c8c798aa2482de9e131b7cd92e448553d1e4430028746238c6",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-036.txt",
+      "source_file_sha256": "sha256:830b5573367b7f0a3d0c9a1e3a8b8aeb072d955494985d6693d380d8d11a6041",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-036.json",
+      "json_file_sha256": "sha256:b5f6cb5798e0deabfd163104f386e5b4c7d32d9cee1b2f0e27ee6aa2da590a55",
+      "unicode_body_length": 3267,
+      "han_regex_body_count": 2793,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2793,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 37,
+      "title": "自己听出的那一步",
+      "asset_version_id": "37dda880-f890-4e84-9b79-f188459b4ddb",
+      "content_hash": "sha256:cbd81946f477b3d5712af46b8ec03fb83be4201128376511d0877fce6cc514c1",
+      "text_hash": "sha256:999f4f4e71df2d56c006cc3d6c834219e9d43eafb510581c871a1fe8af1a5fc0",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-037.txt",
+      "source_file_sha256": "sha256:3f6621b2774ff30b56982256a0bce3b59e988c75162be8b5c5ec0982faacccb2",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-037.json",
+      "json_file_sha256": "sha256:e3a6cea314177e5a421401699dfef567fbd910d4e44a98e16c014ffb6dec3e6b",
+      "unicode_body_length": 3113,
+      "han_regex_body_count": 2739,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2739,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 38,
+      "title": "转身时收住",
+      "asset_version_id": "201925b1-609d-4d09-a9ca-b925b8db0e4f",
+      "content_hash": "sha256:71d58c38601e826b634e97dd3dd31ea850d535d643d935cf037f28acba550e52",
+      "text_hash": "sha256:b9f028409f7ab9ba4dbe93e5053b4883b9d4fc66e6e7123aeb7b4f3ae4a0a380",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-038.txt",
+      "source_file_sha256": "sha256:da30e94d0be75854cac144686c40ddcea65700756be41efa23a8a66ef1c69849",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-038.json",
+      "json_file_sha256": "sha256:5c9072b517c49a984e1821e4dd50ce45691f22ec112b3899dad89852424b2ced",
+      "unicode_body_length": 3380,
+      "han_regex_body_count": 2888,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2888,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 39,
+      "title": "器架旁的轻活",
+      "asset_version_id": "20920948-a60c-4801-ac9f-dc7a12664da4",
+      "content_hash": "sha256:a64be9098bd9371739ff0322be9b4d0d7e3e268b8ffed74b7bba2463c44df7c5",
+      "text_hash": "sha256:288e14d7c28052cee25027514f2e4ee954c5eca81768cbfb7608a8fe47098caa",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-039.txt",
+      "source_file_sha256": "sha256:a4eeb3980494a34da24a03f4e66ab88beb7a3adb596a96d2e9e53a433d20d0b3",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-039.json",
+      "json_file_sha256": "sha256:24d87048dc391ca0de077598279c11c6ae3284109f7bad32f210e72f79d36bd5",
+      "unicode_body_length": 3101,
+      "han_regex_body_count": 2708,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 2708,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    },
+    {
+      "chapter": 40,
+      "title": "交回这一段",
+      "asset_version_id": "ae60a15a-332f-4239-a835-4118932497fd",
+      "content_hash": "sha256:da4c28a6f1f66eb113082cc8547f5a5459d638dbbd4e76215816d57d802691d3",
+      "text_hash": "sha256:005ea0ba7ecdcc51a4ccbcdb234bad178095e607ce0c34368e5bdde85f67153f",
+      "source_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-040.txt",
+      "source_file_sha256": "sha256:c05061854f0a981663d8b097a5bfda57d1031e2562eac235afe40628ba07bbe8",
+      "json_file": "reports/audits/wp-longform-plot-reader-proof-01/chapter-040.json",
+      "json_file_sha256": "sha256:7657c67a5c9b365e6e0ff4c8c3848e1338e8b8fb7a95894d2e6985d696859557",
+      "unicode_body_length": 3685,
+      "han_regex_body_count": 3158,
+      "native_length_evidence": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3158,
+        "target": {
+          "maximum": 3500,
+          "minimum": 2500
+        }
+      },
+      "use": "CONTINUITY_DEPENDENCY"
+    }
+  ],
+  "candidate_version": "v1",
+  "candidate_units": [
+    {
+      "local_candidate_id": "qinglan-23-29-20261011:v1:01",
+      "native_asset_version_id": null,
+      "file": "candidate-v1/01-走出案前.txt",
+      "title": "走出案前",
+      "file_sha256": "sha256:c244991bb42663e62606fd2b9076c252fc8be67a56eae91e2341e22a486134f5",
+      "text_hash": "sha256:377d00bcc44df7e54e3237f718a068c3aaecfc9b75533f478105a6d47ef7b3cb",
+      "unicode_body_length": 2145,
+      "han_regex_body_count": 1697,
+      "parent_local_version": "v0",
+      "parent_file_sha256": "sha256:c244991bb42663e62606fd2b9076c252fc8be67a56eae91e2341e22a486134f5",
+      "replaces_original_chapters": [
+        23,
+        24
+      ],
+      "source_ranges": [
+        {
+          "asset_version_id": "95eacdf0-df05-468f-a740-2d17dde915ea",
+          "asset_hash": "sha256:092474b4c0d920f09a17edb828cad01feb5a9bb29c1fee0a07063cefd4c6f423",
+          "start": 0,
+          "end": 2961,
+          "text_hash": "sha256:77399407ebe4d4a58b4f7a564f072c89360b72e5a277ff8082ff3837a8e4a587",
+          "mapping_meaning": "EDITORIAL_REWRITE_COVERAGE_NOT_VERBATIM_RETENTION"
+        },
+        {
+          "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+          "asset_hash": "sha256:c39326a0de6dc95ed2ab12058d174e530e33cbc98132204a105bdac8da04c963",
+          "start": 0,
+          "end": 2914,
+          "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+          "mapping_meaning": "EDITORIAL_REWRITE_COVERAGE_NOT_VERBATIM_RETENTION"
+        }
+      ]
+    },
+    {
+      "local_candidate_id": "qinglan-23-29-20261011:v1:02",
+      "native_asset_version_id": null,
+      "file": "candidate-v1/02-让它回来.txt",
+      "title": "让它回来",
+      "file_sha256": "sha256:511232cd07ccc7c3b3476e24fd23d8219cb8646737a1a679384974f5e3293f24",
+      "text_hash": "sha256:9ec3feb10c675e5d92e1a776df2996aa4e7e8630b3cc98c56a9d72421fc900eb",
+      "unicode_body_length": 2249,
+      "han_regex_body_count": 1773,
+      "parent_local_version": "v0",
+      "parent_file_sha256": "sha256:e9f5217be186576e94cc2a7767964865e68508b5c1baa45f606627aa1aa04b01",
+      "replaces_original_chapters": [
+        25,
+        26,
+        27
+      ],
+      "source_ranges": [
+        {
+          "asset_version_id": "ff617a2e-0d33-4a86-bc32-69fae2f873b4",
+          "asset_hash": "sha256:343f3afd7b53a172d0bfc649dd887449aea958cbb50fc4e7fa98b02e3ef2d39f",
+          "start": 0,
+          "end": 2968,
+          "text_hash": "sha256:fa511199a2920f2a227ce100bbb23674c5d83db77cc34484a4302ed1b9c2e68d",
+          "mapping_meaning": "EDITORIAL_REWRITE_COVERAGE_NOT_VERBATIM_RETENTION"
+        },
+        {
+          "asset_version_id": "f00b353d-0661-4804-b32e-81ba3434f74c",
+          "asset_hash": "sha256:4cdc788f3e4115edf068a265f3d96657e859872f73d6d5027dee686e65c2a3db",
+          "start": 0,
+          "end": 3115,
+          "text_hash": "sha256:cf9576db2ecd7faf2c7cee7529d36a7408284d8590f4d19f4be015feed3a8c0d",
+          "mapping_meaning": "EDITORIAL_REWRITE_COVERAGE_NOT_VERBATIM_RETENTION"
+        },
+        {
+          "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0",
+          "asset_hash": "sha256:309a89d185e52927f514e466c7e09f7165eac2f95ee2a29bef54bd3b7f018257",
+          "start": 0,
+          "end": 3137,
+          "text_hash": "sha256:0704b44b90c75372d5ee31589564e21959982c658c0d1c91e9a5bccdad06878c",
+          "mapping_meaning": "EDITORIAL_REWRITE_COVERAGE_NOT_VERBATIM_RETENTION"
+        }
+      ]
+    },
+    {
+      "local_candidate_id": "qinglan-23-29-20261011:v1:03",
+      "native_asset_version_id": null,
+      "file": "candidate-v1/03-手是自己的.txt",
+      "title": "手是自己的",
+      "file_sha256": "sha256:b64685ec9257fdc4636d8660332b8c57b826e3569124fffac71bc36e11de393d",
+      "text_hash": "sha256:1a7137242217ea73d970eb215f9b584dbe77f585845110abe90d9f0413d963e9",
+      "unicode_body_length": 2726,
+      "han_regex_body_count": 2164,
+      "parent_local_version": "v0",
+      "parent_file_sha256": "sha256:34bd978d61d1cf11c8a8f2b71ddc9a21ff65f607d8596e600c5f4ac9d6d2db54",
+      "replaces_original_chapters": [
+        28,
+        29
+      ],
+      "source_ranges": [
+        {
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c",
+          "asset_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "start": 0,
+          "end": 3105,
+          "text_hash": "sha256:bdc0c6c4d20c4706e8ef02aace9e16a6adf8bf6ba58b7a5bded29dee0af8ffe3",
+          "mapping_meaning": "EDITORIAL_REWRITE_COVERAGE_NOT_VERBATIM_RETENTION"
+        },
+        {
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4",
+          "asset_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "start": 0,
+          "end": 3077,
+          "text_hash": "sha256:f495942050f3b32210fe9676bd53a1163a02ba62c033c63524f70270f7254d15",
+          "mapping_meaning": "EDITORIAL_REWRITE_COVERAGE_NOT_VERBATIM_RETENTION"
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "authoring": "ASSISTANT_AUTHORED_EDITORIAL_SAMPLE",
+    "runtime": "CODEX_CONVERSATION",
+    "model_identifier": null,
+    "model_identifier_status": "NOT_EXPOSED_BY_THIS_SESSION_TOOL_RESULT",
+    "novel_forge_provider_call_ids": [],
+    "novel_forge_operation_id": null,
+    "novel_forge_trace_id": null,
+    "novel_forge_cost_evidence": "NOT_APPLICABLE_NO_NATIVE_DISPATCH",
+    "interactive_usage": "NOT_MEASURED_HERE",
+    "native_author_input_provenance": "NOT_GRANTED",
+    "skills": [
+      {
+        "file": "skills/chapter-outline/SKILL.md",
+        "sha256": "sha256:37d50a2b8741fe36431cf1655e178d834858a9e32b4a9ed7cfd6673759cec9b6"
+      },
+      {
+        "file": "skills/prose-generation/SKILL.md",
+        "sha256": "sha256:02ef4e0daeca1412c87936d2c970c80f134b5d5b553edf39911cff0cabe8662f"
+      },
+      {
+        "file": "skills/quality-review/SKILL.md",
+        "sha256": "sha256:e850857ed4e67bfa0decdb6b5c23c6ee56bd69e3bf05b5fd2d543876ca359eb1"
+      }
+    ]
+  },
+  "readable_compilation": {
+    "file": "修订样章.md",
+    "file_sha256": "sha256:29120056cf33508a69f8c53e7496c507b21194d77c828b154d2221ebd842c797"
+  },
+  "comparison_measure": {
+    "counter": "LOCAL_REGEX_U4E00_U9FFF_BODY_ONLY_NOT_NATIVE_HAN_CHARACTERS_V1",
+    "original": 18256,
+    "candidate": 5634,
+    "reduction_fraction": 0.6913891323400525,
+    "literary_gate": false
+  },
+  "states": {
+    "local_files": "SAVED_AND_READ_BACK",
+    "native_plan_change": "NOT_RUN",
+    "native_writer": "NOT_RUN",
+    "native_revision": "NOT_RUN",
+    "native_canon": "NOT_RUN",
+    "native_book_acceptance": "NOT_RUN",
+    "native_persistence": "NOT_RUN",
+    "author_decision": "PENDING",
+    "human_reading": "NOT_RUN",
+    "literary_judgment": "ASSISTANT_TEXT_COMPARISON_ONLY",
+    "expansion": "NOT_STARTED"
+  },
+  "code_evidence_baseline": [
+    {
+      "file": "src/novel_forge/modules/book_authority/editions.py",
+      "sha256": "sha256:efe59b11e718f1ee5c1ce597466a123b24c4b7d81a94ad70fcbaa1a00837d833"
+    },
+    {
+      "file": "src/novel_forge/modules/book_authority/edition_application.py",
+      "sha256": "sha256:dbae3673005c0a79c0b9b32dcd04cee7837bca9a49305807022707807aa7b64b"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+      "sha256": "sha256:4c15e17f463cd539f4f32e48a54326f4d578198fe574005853482e3e78c616de"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/author_draft.py",
+      "sha256": "sha256:38684b90184ea517dd0465acadb7082c1f6754ad4d7543aa89c180f9b142e653"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+      "sha256": "sha256:a6c914d59bf2d618423ff9662740ce6b24ed9f700e256bafa9a55a65bdcf6b5e"
+    },
+    {
+      "file": "src/novel_forge/modules/revision/domain.py",
+      "sha256": "sha256:870bfce8bea358ce7fc82feea0bffa5744339cd23adcffa169f8f043d81f4c60"
+    },
+    {
+      "file": "src/novel_forge/modules/review/diagnostics.py",
+      "sha256": "sha256:ae14e3dd897d7ff7a8b05612a04aad2d53b26d08fdfa466b1901817a183ba84d"
+    },
+    {
+      "file": "src/novel_forge/modules/plan_change_authority/domain.py",
+      "sha256": "sha256:8328beb48fce2b24c7e4471d9ee63f0b4fc7af69e0ded5780fd4739adbed991d"
+    },
+    {
+      "file": "src/novel_forge/modules/plan_change_authority/application.py",
+      "sha256": "sha256:943213bfe27f7a0148f56583c5ba6f3dea32a0c8d6ff0b14b0150be2dd7991e9"
+    },
+    {
+      "file": "src/novel_forge/modules/book_authority/composition.py",
+      "sha256": "sha256:80ca7383789a1af85f9a36898145eb0218659494e173dcf2b52baa5d7ab0e8bf"
+    },
+    {
+      "file": "src/novel_forge/api/routers/book_authority.py",
+      "sha256": "sha256:917cd569e38e9ad1f9f26969a53aab160e4b87c3b5dc129048d9e7d1dfad0d29"
+    },
+    {
+      "file": "src/novel_forge/api/routers/chapter_editor.py",
+      "sha256": "sha256:e1060b3d6c5d4255f285e7dcf56b1e06074bd28decde24699954ee9ce6aee119"
+    },
+    {
+      "file": "src/novel_forge/storage/book_edition_repositories.py",
+      "sha256": "sha256:b5021ad2dc2683de0f2bfb31a969005891a99ab37cd3c8fb5cb65347c1e65bcb"
+    },
+    {
+      "file": "src/novel_forge/storage/plan_change_repositories.py",
+      "sha256": "sha256:37ca471980540cb39996164295c64ac23a23b2fee3734d8c92e1d0d49d970590"
+    },
+    {
+      "file": "src/novel_forge/storage/authority_uow.py",
+      "sha256": "sha256:6b235134db54fd8ffa8829789d4251287c8b3c1cdfc1f4490730e8f8f6836852"
+    },
+    {
+      "file": "src/novel_forge/infrastructure/production_execution_composition.py",
+      "sha256": "sha256:fdfb1b7f18d865be0c93bb253d0dafc38fe938a56998069f06b53799097ffaa9"
+    },
+    {
+      "file": "src/novel_forge/workers/chapter_authority.py",
+      "sha256": "sha256:f1993b98f902cae4e66f73b608fbd0215091e622276820f00a656bcbe407dd8a"
+    },
+    {
+      "file": "architecture/manifests/production-entry-manifest.yaml",
+      "sha256": "sha256:6166985ac7017fc0d2310ed7996924a5948c1768e38270c20ca39f4ca28af37a"
+    },
+    {
+      "file": "architecture/manifests/worker-manifest.yaml",
+      "sha256": "sha256:29bcdd78b2db97ba0c1d66939d590ca8d7b9504675fa99cfc41627aadddd0e6b"
+    },
+    {
+      "file": "architecture/manifests/migration-manifest.yaml",
+      "sha256": "sha256:088a5a5d1878e38e020420719b2af53da11cba030669127c5c2fa9584ed6d572"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/application.py",
+      "sha256": "sha256:0917033111c3c3eb3cd68dd9b5c42cf788aba29cafa5c3b20c7d65d23667fa9d"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/model_effects.py",
+      "sha256": "sha256:0988aa196945b835cc6b4d2c09e0301ab616f968c9637fd7c1fe078f8fddaf16"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "sha256": "sha256:34f4cc692644a3e8abde2abb67f0c978ddd1574f77f7bf80b0086d27f2cfc83f"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/quality_revision_recovery.py",
+      "sha256": "sha256:167a533e889acc03862fd6dcba265f90fc8a9bfe0aa3a1c7c36e0293fff27acd"
+    },
+    {
+      "file": "src/novel_forge/modules/chapter_authority/receipt_recovery.py",
+      "sha256": "sha256:c66e4f2c63ed0d1508202fd6079768c7993a6311b937f951333dfa72fbac108b"
+    },
+    {
+      "file": "src/novel_forge/storage/migrations/versions/__init__.py",
+      "sha256": "sha256:27dcffd521543447d540ee7f68d2b821dc0648c3a57bda7e80fe9eab4abdcea6"
+    }
+  ],
+  "publication_authorized": false,
+  "version_preservation": {
+    "v0": "RECONSTRUCTED_FROM_EXACT_FIRST_FILE_WRITE_WITH_TWO_PREVIOUS_PATCH_REVERSALS",
+    "v1": "FINAL_LOCAL_CANDIDATE",
+    "native_immutable_version_record": "NOT_RUN"
+  }
+}
