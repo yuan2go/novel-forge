@@ -15,6 +15,7 @@ CHAPTER_COORDINATED_DEFINITION_VERSION = "3.10.0"
 CHAPTER_COORDINATED_AUTHOR_INPUT_VERSION = "3.10.0-author-input.v3"
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
+CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION = "2.2.1-author-input.v1"
 CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.9.0"
 CHAPTER_PLAN_DEFINITION_VERSION = "3.9.16"
 CHAPTER_DRAFT_DEFINITION_VERSION = "3.9.2"
@@ -265,7 +266,8 @@ def chapter_operation_definitions(
     author = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.DRAFT.definition_name))
     author["policy"].pop("scene_core_projection", None)
     author["policy"].pop("scene_information_flow", None)
-    author["definition_version"] = CHAPTER_COORDINATED_AUTHOR_INPUT_VERSION if coordinated_contract and model_effects_required else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+    author["definition_version"] = (CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION if not model_effects_required else
+        CHAPTER_COORDINATED_AUTHOR_INPUT_VERSION if coordinated_contract else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION)
     author["external_capabilities"] = []
     completion = author["completion_contract"]
     completion.pop("required_external_effects", None)
@@ -353,8 +355,7 @@ def _definition(
     model_effects_required: bool,
     semantic_retrieval_available: bool,
 ) -> dict[str, Any]:
-    # WHY: Provider availability is runtime policy, not OperationDefinition
-    # identity.  In particular Retrieval may use its declared model capability
+    # WHY: Provider availability belongs to runtime policy; Retrieval may use its declared model capability
     # when semantic projection is ready, or complete under an explicitly
     # frozen FTS/graph/temporal fallback policy without a model effect.
     del semantic_retrieval_available

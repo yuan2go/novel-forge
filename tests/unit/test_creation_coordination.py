@@ -16,9 +16,30 @@ from tests.unit.test_story_formation_authorization import _input
     ("FORMATION_RECONCILIATION_OR_LEASE_REQUIRED", "RECONCILIATION_REQUIRED"),
     ("COMPLETED", "COMPLETED"), ("ABORTED", "CANCELLED"),
     ("SCHEMA_VALIDATION_FAILED", "OWNER_RECOVERY_REQUIRED"),
+    ("FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION", "OWNER_RECOVERY_REQUIRED"),
+    ("GENERATION_NO_PROGRESS", "OWNER_RECOVERY_REQUIRED"),
 ])
 def test_creation_distinguishes_waits_without_a_new_business_state(reason, expected):
     assert creation_wait_class(reason) == expected
+
+
+def test_recovery_versions_and_isolation_counts_are_not_material_progress():
+    from copy import deepcopy
+    from novel_forge.modules.book_authority.creation_runtime import creation_material_progress
+    original = ["FOUNDATION", "RUNNING", 1, 4, 2, ["CHAPTER_SUBMITTED", 0, 3],
+        {"cancel_requested": False, "generation_recovery": [1, 1], "opening": ["RUNNING", 1], "chapter": ["EXECUTING", 1]}]
+    recovered = deepcopy(original)
+    recovered[2] = 100
+    recovered[5][2] = 100
+    recovered[6].update(generation_recovery=[100, 100], opening=["RUNNING", 100], chapter=["EXECUTING", 100])
+    assert creation_material_progress(original) == creation_material_progress(recovered)
+    assert original[2] == 1
+    for index in (0, 1, 3, 4):
+        changed = deepcopy(recovered)
+        changed[index] = "NEXT" if index < 2 else changed[index] + 1
+        assert creation_material_progress(original) != creation_material_progress(changed)
+    recovered[5][1] = 1
+    assert creation_material_progress(original) != creation_material_progress(recovered)
 
 
 def test_formation_v5_freezes_author_comparison_and_creation_profiles():
@@ -108,3 +129,25 @@ def test_formation_recovery_blocks_legacy_cli_unknown_before_policy_or_retry_mut
     unknown.assert_called_once_with(cursor, "project", book_id="book")
     selected.assert_not_called()
     cursor.execute.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", ["MODEL_EFFECT_RETRYABLE_PLANNING", "MODEL_EFFECT_FINAL_PLANNING"])
+def test_authorized_formation_continue_is_not_denied_by_historical_failures(monkeypatch, failure):
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    from novel_forge.modules.book_authority import creation_runtime
+    from novel_forge.modules.command_kernel import budget_runtime
+    from novel_forge.modules.production_execution import execution_template
+    class Cursor:
+        def execute(self, query, *_): self.query = query
+        def fetchone(self): return (100,) if "count(DISTINCT" in self.query else (False,)
+    cursor = Cursor()
+    monkeypatch.setattr(creation_runtime, "AuthorityUnitOfWork", lambda _: nullcontext(SimpleNamespace(cursor=cursor)))
+    monkeypatch.setattr(budget_runtime, "unresolved_cli_outcomes", lambda *_, **__: [])
+    monkeypatch.setattr(execution_template, "selected_book_template", lambda *_, **__: {"book_id": "book"})
+    run = {"formation_run_id": "formation", "project_id": "project", "book_id": "book", "current_stage": "CREATIVE_FOUNDATION",
+        "recovery_instruction": {"action": "RESUME_WITH_SAME_FROZEN_INPUTS"}, "failure": {"code": failure}}
+    policy = {"approval_mode": "AUTO", "auto_authorization": {
+        "formation_run_id": "formation", "project_id": "project", "book_id": "book", "authorized_by_principal_id": "operator"}}
+    composition = SimpleNamespace(authority=SimpleNamespace(database_url="unused"), principal=SimpleNamespace(principal_id="operator"))
+    assert creation_runtime._formation_resume_blocker(composition, run, policy) == ""

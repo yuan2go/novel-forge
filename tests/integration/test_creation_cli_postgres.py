@@ -186,6 +186,7 @@ def replace_args(args, **changes):
         "partial-alternative",
         "cancel",
         "no-progress",
+        "ordinary-continue",
         "repair-exhausted",
         "capacity-recovery",
         "capacity-repair",
@@ -483,12 +484,13 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert len(transport.calls) == 0
         return
 
-    if mode == "no-progress":
+    if mode in {"no-progress", "ordinary-continue"}:
         monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
             lambda **values:{"formation_run_id":identity,"stop_reason":"YIELDED_CHECKPOINT"})
         for _ in range(12):
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status IN ('READY','RETRY_WAIT')", [identity])
+                uow.cursor.execute("UPDATE authority_story_formation_run SET version=version+1 WHERE formation_run_id=%s", [identity])
                 uow.commit()
             current = claim()
             assert current is not None
@@ -498,6 +500,18 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
         assert claim() is None
         assert len(transport.calls) == 0
+        if mode == "ordinary-continue":
+            continuation = parser.parse_args(["authority-creation", "continue", "--project-id", project,
+                "--formation-run-id", identity, "--idempotency-key", "fresh-continuation", "--repository-root", str(root)])
+            resumed = run_creation_command(settings, continuation)
+            assert len(resumed["scheduled"]) == 1
+            repeated = run_creation_command(settings, continuation)
+            assert repeated["scheduled"][0]["runtime_job_id"] == resumed["scheduled"][0]["runtime_job_id"]
+            assert repeated["scheduled"][0]["deduplicated"]
+            restarted = claim()
+            assert restarted.input_snapshot["stagnant_windows"] == 0
+            assert len(transport.calls) == 0
+            return
         recover = parser.parse_args(["authority-creation","recover","--project-id",project,"--formation-run-id",identity,
             "--reason","Operator resolved the isolated scheduling configuration","--idempotency-key","recovery-window","--repository-root",str(root)])
         restored = run_creation_command(settings,recover)

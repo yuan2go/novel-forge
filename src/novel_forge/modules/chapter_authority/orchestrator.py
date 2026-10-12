@@ -735,8 +735,8 @@ def _command(
         from .definitions import CHAPTER_REVISION_DEFINITION_VERSION
         definition_version = CHAPTER_REVISION_DEFINITION_VERSION
     if definition_name == ChapterNode.DRAFT.definition_name and (request.preparation_report or {}).get("author_draft_adoption"):
-        from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
-        definition_version = ("3.10.0-author-input.v3" if definition_version == "3.10.0" else definition_version + "-author-input.v2" if definition_version in {"3.6.0", "3.7.0", "3.8.0"} else CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION)
+        from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
+        definition_version = (CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION if definition_version == CHAPTER_SLICE_DEFINITION_VERSION else "3.10.0-author-input.v3" if definition_version == "3.10.0" else definition_version + "-author-input.v2" if definition_version in {"3.6.0", "3.7.0", "3.8.0"} else CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION)
     return {
         "definition_name": definition_name,
         "definition_version": definition_version,

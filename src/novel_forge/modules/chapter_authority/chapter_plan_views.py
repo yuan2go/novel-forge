@@ -338,7 +338,7 @@ def build_draft_style_view(
     if work_requirements:
         selected = context_bundle.get("production_input_manifest", {}).get("style_policy_version_id")
         style_segments = [segment for segment in style_segments if segment.get("asset_version_id") == selected]
-        if len(style_segments) != 1:
+        if selected and len(style_segments) != 1:
             raise KernelError("WORK_STYLE_SELECTION_INVALID", "The work baseline needs exactly its selected style version")
     return {
         "contract_version": "draft-style-view-v2"
@@ -350,6 +350,7 @@ def build_draft_style_view(
             )
             or ""
         ),
+        **({"source_status": "NOT_SELECTED"} if work_requirements and not context_bundle.get("production_input_manifest", {}).get("style_policy_version_id") else {}),
         "policies": [
             {
                 "asset_version_id": segment.get("asset_version_id"),

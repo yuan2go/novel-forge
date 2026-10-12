@@ -18,6 +18,12 @@ def current_planning_wire_result(result, inputs):
         value["entry_state_ref"] = story_state
         for segment in value.get("narrative_segments", []):
             segment["entry_state_ref"] = story_state
+    if inputs.get("stage") == "book_plan.generate":
+        target = value["length_strategy"]["target_chapters"]
+        volumes = value["volume_skeleton"]
+        width = (target + len(volumes) - 1) // len(volumes)
+        for index, volume in enumerate(volumes):
+            volume["chapter_range"] = [index * width + 1, min((index + 1) * width, target)]
     if inputs.get("stage") in {"book_plan.generate", "arc_plan.generate"}:
         value.pop("parent_version_id", None)
     if inputs.get("stage") == "chapter_plan.generate":

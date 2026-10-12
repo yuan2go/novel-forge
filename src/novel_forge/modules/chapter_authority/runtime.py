@@ -17,6 +17,7 @@ from novel_forge.modules.chapter_authority.contracts import (
 )
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION,
+    CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION,
     CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
     CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION,
     chapter_definition_version,
@@ -61,7 +62,7 @@ def _handler_definition_version(
     author_input: bool,
 ) -> str:
     expected = (
-        CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+        (CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION if registry.model_effects_required else CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION)
         if author_input and node is ChapterNode.DRAFT
         else "3.9.16" if registry.model_effects_required and node is ChapterNode.PLAN
         else "3.9.14" if registry.model_effects_required and node is ChapterNode.EXPORT

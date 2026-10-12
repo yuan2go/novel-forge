@@ -953,3 +953,11 @@ def test_body_first_review_rejects_invalid_or_design_enriched_policy(extra):
               "context_token_budget": 2048, "maximum_windows": 1, **extra}
     with pytest.raises(KernelError, match="LONGFORM_PROSE_POLICY_INVALID"):
         freeze_manifest(project_id="p", workspace_id="w", book_run_id="b", sources=[], policy=policy)
+
+
+def test_unselected_optional_style_is_diagnostic_for_prose():
+    from novel_forge.modules.chapter_authority.chapter_plan_views import build_draft_style_view
+    view = build_draft_style_view({"production_input_manifest": {}, "context_segments": []}, work_requirements=True)
+    assert view["style_policy_version_id"] == ""
+    assert view["policies"] == []
+    assert view["source_status"] == "NOT_SELECTED"

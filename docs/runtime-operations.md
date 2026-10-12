@@ -1222,8 +1222,14 @@ intent, motive, cause, conflict, differentiation, scope and later writability, i
 uncertainty. Failed directions remain diagnostics. Selecting the sole admitted alternative
 requires a specific decision and retained bounded failure evidence; the result cannot be
 called a best-of-two comparison. `TECHNICAL_WAIT` uses bounded exponential delay (5–300
-seconds). Twelve unchanged coordination windows stop at `CREATION_NO_PROGRESS`; native
-retryable Formation recovery is limited to three distinct failed source versions.
+seconds). Twelve windows without usable stage output or stage/cursor advancement stop at
+`CREATION_NO_PROGRESS`; failure/resume versions and isolation counts are not progress. Native
+Formation failure counts remain diagnostics and do not deny a later authorized continue.
+Three identical reconciled failures without a successful logical stage stop the current
+Book drive at `GENERATION_NO_PROGRESS`; a later continue starts a fresh progress check.
+The worker carries its current continuation's stagnant windows across scheduling yields;
+an explicitly restarted continuation begins a new check. Known final Formation model
+failures stop automatic scheduling with `FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION`.
 `RECONCILIATION_REQUIRED` retains the original external identity; no fresh ID is dispatched.
 `OWNER_RECOVERY_REQUIRED` explains an unresolved configuration, terminal effect or
 unrecoverable stage failure. Inspect the native failure/effect before using recovery:
@@ -4088,11 +4094,13 @@ existing failure handling.
 
 Creation continuation may invoke the existing native Formation resume command for an
 AUTO-authorized creative run with the same operator and frozen inputs. It performs at
-most one recovery per invocation and counts durable failures for the same stage across
-all RuntimeJobs; three failures without stage progress require intervention. Unknown,
-in-flight, terminally failed Effects and live leases block automatic retry. Worker errors
-return the stored checkpoint with the original error code. Exact approval waits and
-semantic/contract failures retain their owning Authority recovery requirements.
+most one recovery per invocation. Historical failed source versions do not deny recovery
+after the cause is corrected. Model authentication, configuration and structured-output
+failures return their exact diagnostics; ordinary authorized continue can reuse the same
+frozen inputs after correction. Unknown, in-flight and unreconciled Effects, terminal
+non-generation Effects and live leases still block retry. Worker errors return the stored
+checkpoint with the original error code. Exact approval waits and active story decisions
+retain their owning Authority requirements.
 
 An unstarted failed historical Opening can receive a resource-policy successor through
 its existing `continue_unstarted_with_budget` Authority command. Version 2 binds the

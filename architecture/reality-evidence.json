@@ -7751,7 +7751,7 @@
         },
         {
           "path": "tests/integration/test_author_editor_postgres.py",
-          "symbol": "AuthorEditorPostgresTests.test_authored_draft_flows_through_native_review_revision_canon_and_export"
+          "symbol": "AuthorEditorPostgresTests.test_authored_draft_and_partial_revision_survive_unresolved_formal_review"
         },
         {
           "path": "tests/unit/test_author_editor.py",
@@ -10106,7 +10106,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:ca5e380284e6f0bc2bf25d8925367c84986bd17854f27eabf8c43405e593e458"
+    "implementation_tree_sha": "sha256:9938f35facf348e6b0156ae642ff646b3a7170f5e8340ec1d2f85901de0a5d5d"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
