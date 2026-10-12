@@ -127,7 +127,89 @@ def book_recovery_projection(cursor, *, project_id, book_id):
     return rows
 
 
-def recover_book_generations(application, *, project_id, book_id, principal):
+def checkpoint_orphaned_cli_dispatch(database_url, *, project_id, book_id, principal, execution_id, evidence):
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    from novel_forge.modules.production_execution.contracts import ExecutionRequest
+    from .external_effect_runtime import EffectCommandContext, _hash, _record
+    from .budget_runtime import resolve_provider_budget_failure_in_uow
+    from novel_forge.modules.authority_security.service import PrincipalType
+
+    principal.require("external_effect.resolve", project_id)
+    production = evidence.get("production_execution") or {}
+    request = ExecutionRequest.from_dict(production.get("execution_request") or {})
+    if (request.execution_id != execution_id or request.project_id != project_id or request.book_id != book_id):
+        raise KernelError("ORPHANED_DISPATCH_IDENTITY_CONFLICT", "Retain the original project, Book and execution")
+    with AuthorityUnitOfWork(database_url) as uow:
+        cursor = uow.cursor
+        effect = uow.repositories.external_effects.get_for_update(request.external_effect_id)
+        cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s FOR UPDATE", [request.operation_id])
+        row = cursor.fetchone()
+        operation = row[0] if row else {}
+        if (effect["project_id"] != project_id or effect["operation_id"] != request.operation_id
+                or operation.get("project_id") != project_id
+                or (operation.get("actor_id") != principal.principal_id and principal.principal_type is not PrincipalType.LOCAL_OPERATOR)):
+            raise KernelError("ORPHANED_DISPATCH_IDENTITY_CONFLICT", "Only the original scoped owner can checkpoint this dispatch")
+        if effect["effect_type"] != "model.invoke" or effect["status"] != "DISPATCHING" or operation["status"] != "FAILED_RETRYABLE":
+            return False
+        cursor.execute("""SELECT v.asset_version_id FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+            WHERE a.project_id=%s AND a.asset_type='execution_recovery_session' AND v.content->>'execution_id'=%s
+            ORDER BY v.created_at DESC LIMIT 1""", [project_id, execution_id])
+        row = cursor.fetchone()
+        if not row:
+            raise KernelError("ORPHANED_DISPATCH_EVIDENCE_REQUIRED", "Require the original persistent Gateway recovery record")
+        document = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=row[0])
+        content, record = document.content, document.content.get("record") or {}
+        result, process, handle = record.get("result") or {}, record.get("process_receipt") or {}, record.get("handle") or {}
+        if (document.content_hash != _hash(content) or content.get("record_state_hash") != _hash(record).split(":", 1)[1]
+                or content.get("request_contract_hash") != request.contract_hash
+                or record.get("request") != request.to_dict() or production.get("execution_handle") != handle
+                or production.get("execution_result") != result or handle.get("transport") != "LOCAL_CLI_REMOTE_INFERENCE"
+                or result.get("outcome") != "ORPHANED" or process.get("status") != "ORPHANED"
+                or process.get("result_integrity") == "VALID" or result.get("normalized_output_ref") or result.get("raw_output_ref")
+                or result.get("usage_receipt_ref")):
+            raise KernelError("ORPHANED_DISPATCH_EVIDENCE_CONFLICT", "Require unchanged orphaned local evidence without a complete result")
+        for key in ("execution_id", "operation_id", "attempt_id", "fencing_token"):
+            if process.get(key) != getattr(request, key) or result.get(key) != getattr(request, key):
+                raise KernelError("ORPHANED_DISPATCH_IDENTITY_CONFLICT", "Original process and result identities differ")
+        receipt_ref = result.get("process_receipt_ref") or ""
+        if not receipt_ref.startswith("authority-asset-version:"):
+            raise KernelError("ORPHANED_DISPATCH_EVIDENCE_REQUIRED", "Require the persisted original process receipt")
+        receipt = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=receipt_ref.split(":", 1)[1])
+        if receipt.content_hash != _hash(receipt.content) or receipt.content.get("payload", receipt.content) != process:
+            raise KernelError("ORPHANED_DISPATCH_EVIDENCE_CONFLICT", "Original receipt differs from the Gateway observation")
+        cursor.execute("""SELECT dispatch_id,generation,status,payload_hash FROM authority_external_effect_dispatch
+            WHERE external_effect_id=%s ORDER BY generation DESC LIMIT 1 FOR UPDATE""", [request.external_effect_id])
+        dispatch = cursor.fetchone()
+        if not dispatch or dispatch[2] != "DISPATCHING" or dispatch[3] != effect["request_hash"]:
+            return False
+        cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+            WHERE a.operation_id=%s AND l.status='HELD' AND l.expires_at>NOW()) OR
+            EXISTS(SELECT 1 FROM authority_effect_dispatch_lease WHERE dispatch_id=%s AND status='HELD' AND expires_at>NOW())""",
+            [request.operation_id, dispatch[0]])
+        if cursor.fetchone()[0]:
+            return False
+        cursor.execute("SELECT status FROM authority_attempt WHERE attempt_id=%s AND operation_id=%s", [request.attempt_id, request.operation_id])
+        attempt = cursor.fetchone()
+        if not attempt or attempt[0] != "FAILED_RETRYABLE":
+            return False
+        cursor.execute("""UPDATE authority_effect_dispatch_lease SET status='EXPIRED',released_at=NOW(),
+            release_reason='orphaned_original_dispatch' WHERE dispatch_id=%s AND status='HELD' AND expires_at<=NOW()""", [dispatch[0]])
+        observed = {**evidence, "recovery_action": "ORPHANED_ORIGINAL_DISPATCH_CHECKPOINT",
+            "recovery_record_asset_version_id": document.asset_version_id, "remote_outcome": "UNKNOWN"}
+        repository = uow.repositories.external_effects
+        repository.submit_result(repository.dispatch_for_update(dispatch[0]), "unknown", observed,
+            handle["backend_execution_id"], handle.get("provider_request_id") or "")
+        resolve_provider_budget_failure_in_uow(uow, reservation_id=request.budget_reservation_id,
+            project_id=project_id, external_state_unknown=True)
+        context = EffectCommandContext(request.operation_id, project_id, principal.principal_id, request.trace_id, request.correlation_id)
+        _record(repository, context, request.external_effect_id, "external_effect.orphaned_dispatch_checkpointed",
+            {"dispatch_id": dispatch[0], "generation": dispatch[1], "process_receipt_ref": receipt_ref,
+                "recovery_record_asset_version_id": document.asset_version_id, "outcome": "unknown"})
+        uow.commit()
+    return True
+
+
+def recover_book_generations(application, *, project_id, book_id, principal, source_actor_id=None):
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
     from .manual_effect_resolution import (
         ExternalEffectManualResolutionCommand,
@@ -137,8 +219,14 @@ def recover_book_generations(application, *, project_id, book_id, principal):
 
     from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
 
+    source_actor_id = source_actor_id or principal.principal_id
+    if source_actor_id != principal.principal_id:
+        from novel_forge.modules.authority_security.service import PrincipalType
+        if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
+            raise PermissionError("Only a scoped trusted operator can recover another native generation owner")
     recover_saved_local_results(application.execution_binder.resolver.execution_preparer.execution_transport,
-        database_url=application.database_url, project_id=project_id, book_id=book_id, principal=principal)
+        database_url=application.database_url, project_id=project_id, book_id=book_id, principal=principal,
+        source_actor_id=source_actor_id)
     from novel_forge.modules.story_planning_runtime.gateway_result_recovery import recover_completed_planning_outputs
     recover_completed_planning_outputs(application, project_id=project_id, book_id=book_id, principal=principal)
     from .execution_window import continue_saved_result_finalization
@@ -160,7 +248,7 @@ def recover_book_generations(application, *, project_id, book_id, principal):
                   AND jsonb_path_exists(version.content,'$.candidates[*].rejected_reasons[*] ? (@ == "CONTEXT_CAPACITY_EXCEEDED")'))))
               AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=generation.operation_id)
               AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=generation.operation_id)""",
-            [project_id,book_id,principal.principal_id])
+            [project_id,book_id,source_actor_id])
         capacities=uow.cursor.fetchall()
         rows = unresolved_cli_outcomes(uow.cursor, project_id, book_id=book_id)
         uow.cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,effect.status
@@ -169,7 +257,7 @@ def recover_book_generations(application, *, project_id, book_id, principal):
             WHERE effect.project_id=%s AND generation.book_id=%s AND operation.actor_id=%s
               AND effect.effect_type='model.invoke' AND effect.status IN ('UNKNOWN','RECONCILIATION_REQUIRED')
               AND operation.status IN ('WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED','FAILED_FINAL','DEAD_LETTER')
-              AND NOT authority_generation_isolated(effect.external_effect_id)""",[project_id,book_id,principal.principal_id])
+              AND NOT authority_generation_isolated(effect.external_effect_id)""",[project_id,book_id,source_actor_id])
         seen={row["external_effect_id"] for row in rows}
         rows.extend({"external_effect_id":row[0],"operation_id":row[1],"effect_status":row[2]} for row in uow.cursor.fetchall() if row[0] not in seen)
         uow.cursor.execute(
@@ -203,9 +291,9 @@ def recover_book_generations(application, *, project_id, book_id, principal):
                 uow.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [operation["operation_id"]])
                 version = uow.cursor.fetchone()[0]
                 resolve_external_effect_manually(application.database_url, ExternalEffectManualResolutionCommand(
-                    effect["external_effect_id"], operation["operation_id"], project_id, principal.principal_id,
+                    effect["external_effect_id"], operation["operation_id"], project_id, operation["actor_id"],
                     "ISOLATE_PURE_GENERATION", "Original stopped pure generation has no recoverable result; preserve remote facts and continue the same task",
-                    {"authorization_ref": authorization}, "generation-isolation:" + effect["external_effect_id"],
+                    {"authorization_ref": authorization, "recovery_operator_principal_id": principal.principal_id}, "generation-isolation:" + effect["external_effect_id"],
                     version, operation["trace_id"], operation["correlation_id"]))
                 proof = isolation(uow.cursor, effect["external_effect_id"])
             uow.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [operation["operation_id"]])
@@ -530,6 +618,7 @@ def append_isolation(uow, effect, command):
         "reason": command.reason,
         "authorization_ref": command.evidence.get("authorization_ref"),
         "actor_id": command.actor_id,
+        "recovery_operator_principal_id": command.evidence.get("recovery_operator_principal_id", command.actor_id),
     }
     if not proof["authorization_ref"] or not proof["book_id"]:
         raise KernelError(

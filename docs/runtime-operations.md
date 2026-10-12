@@ -1024,6 +1024,17 @@ do not freeze the delivery window. The command does not dispatch a model; ordina
 uses the saved frontier and selected prior prose after successful extension. Before a
 BookRun exists, finish the original Opening recovery and original start first.
 
+An unwritten Book with a verified semantic planning defect may use the Book Opening
+application's `reopen_unwritten` command after its source Opening is `ABORTED` and
+all prior model effects have settled or have native pure-generation isolation.
+This is an explicit planning repair, not a Provider retry. It freezes the source
+Opening/version, reason and exact active `PLANNED` versions, preserves the same
+Book, Foundation, profile and initial state, and admits a new native Opening.
+Admission rechecks the frozen boundary under the Book lock; existing Hierarchical
+Planning expected-version guards own each replacement. Any BookRun, executed or
+frozen plan, changed source or active unisolated model work rejects this path.
+Historical frozen Opening requests retain their original serialization and hashes.
+
 Focused verification for this policy uses
 `tests/integration/test_author_first_manuscript_postgres.py` (controlled native production
 composition, cross-ChapterGroup writing, interrupted delivery/recovery, optional review
@@ -2545,6 +2556,14 @@ evidence for explicit, bounded repair. A remote `UNKNOWN` outcome retains its or
 identity and uncertainty. Native pure-generation isolation can revoke the old attempt
 and register a successor without a remote receipt; irreversible effects still require
 original reconciliation before any retry.
+For a CLI host crash before dispatch-result persistence, a stopped Operation can still
+have a `DISPATCHING` Effect. Recover the original Gateway record first. A verified
+`ORPHANED` local process with no complete result permits the Kernel to checkpoint that
+original dispatch as uncertain after its writer and dispatch leases expire. This is
+local evidence, not remote cancellation, non-execution or measured usage. Authorized
+pure-generation isolation then retains the uncertainty and links the same task's native
+successor. A live process, complete result, different identity or active lease blocks
+this path.
 
 Remote submit, query and callback use the host's persisted output contract: Schema,
 Schema reference, request hash and execution identity. Provider evidence cannot replace
@@ -3430,7 +3449,7 @@ The additional recovery procedures use exact native sources:
 | Complete Planning result after host failure | Reuse the original verified complete normalized output through native gateway result admission, with exact request/result/process hashes, original Pack and input identities, and settled reservation evidence. Measurement may remain unknown; it is not a content-validity predicate. Isolated or already superseded operations have no renewed submission or activation right. Ordinary Story Design validation and bounded repair still apply. |
 | Interrupted Planning World stages | Follow only the native same-task continuation ancestry. Reuse each completed generation/evaluation/actor stage from its actual owning Operation and verified result; require current World source and unchanged request/knowledge identity. Execute only missing stages. A completed action is read by its retained formal lineage, without writing a false new-operation alias. |
 | Changed Chapter planning directive with a completed World action | Explicitly freeze that current `world-production-action.v1` or `world-production-action.v2` through the existing governance-action input. Require one same-workspace, Book and actor proposal, exact current frontier and planning-source refs, both original succeeded Provider outputs with settled usage, and an identical recompiled World plan. Reuse the action in the new constraint envelope and execute only Chapter planning. A changed frontier, missing receipt, rejected action or changed Director result fails closed; selection never accepts World facts. |
-| Chapter Arc composition | When a governed Arc Working Set is frozen, both Provider Schema and validation require its selected IDs and exact roles in the Chapter schedule, contributions and combined Scene progress. The Chapter row alone supplies the scope only when no Working Set is supplied. Unselected related context does not create a required contribution. Preserve the frozen selection; do not omit a selected Arc, promote its role or change IDs to pass validation. |
+| Chapter Arc composition | Newly computed `frozen-chapter-arc-working-set-v2` projections retain exactly the required contributions and non-dormant cadence of the frozen Chapter matrix row. Portfolio debt and density ranking remain diagnostics; they cannot fill unused capacity with another Arc or override that row. An illegal, contradictory or over-capacity row fails closed for Planning/Plan Change. Provider Schema and validation then require the selected IDs and roles in Chapter scheduling and complete Scene coverage. Previously frozen `accepted-reality-arc-working-set-v1` inputs retain their original selection and validation; group-window selection without a frozen Chapter row remains v1. A changed projection creates a new input digest and native planning command; it never rewrites rejected candidates or resets their repair history. |
 | Empty Planning knowledge search | Newly frozen `planning-empty-query-projection.v1` requests retain the exact empty selection and need digests plus policy, while retrieval query text stays in durable Context. Selected or required cards are never omitted. Chapter repair schemas use `operational-commitments-v1` to enforce the existing HARD_CONSTRAINT/SOFT_INTENT operational rule; original frozen schemas remain unchanged. |
 | Chapter successor | The native creation driver may replace a known settled pre-prose member Memo timeout or an exact failed scene/information/review/length/Canon step. Command Kernel appends successor evidence; Book/Group update only their owned references. Old terminal history, successful siblings and fees remain. |
 | Unproduced Chapter with an invalid Plan identity | Return the diagnostic to Planning and activate an exact Chapter PlanChange. `authority-manuscript recover-plan-references --book-run-id … --proposal-id …` validates the corrected Plan against the frozen Book cast, cancels only the original unproduced child, and journals its linked next generation. A pending cancellation retains the same request and recovery key for native worker reconciliation. No Effect, produced body, active lease or acceptance may exist; a corrected successor cannot repeat this recovery. The next native Book tick recalculates execution projection, Intent, Memo and Context against the new Plan and current working prefix. Author selection and acceptance remain separate. |
@@ -3760,9 +3779,11 @@ through native Plan Change, then bind the new input snapshot before Chapter admi
 An original instance with dispatch disabled or no write grant stays unchanged; a disposable
 restore can validate prospective decisions and writing, explicitly marked as an isolated
 operator result awaiting original adoption. It cannot supply a human author approval.
-The checked Chapter Pack currently binds prose-generation-v4 even though the root Skill is
-v5. A prospective v5 selection requires a new exact Pack binding and admission, with the
-actual rendered Skill/hash retained in Provider evidence. Keep frozen v4 requests recoverable.
+Historical Chapter Packs bind prose-generation-v4 independently of the root Skill version.
+A prospective v5 selection requires an explicit current-contract Pack compilation, binding
+and admission; Template v15 and prose-generation-v5 are available in the artifact catalog.
+Check the deployed activation and actual rendered Skill/hash in each Provider Attempt
+before reporting v5 prose execution. Keep frozen v4 requests recoverable.
 Budget the final complete rendered request rather than summing stored Context assets.
 Optional older prose may be reallocated prospectively with explicit omissions, while required
 recent prose and causal dependencies remain intact. A pre-send failure uses its owning

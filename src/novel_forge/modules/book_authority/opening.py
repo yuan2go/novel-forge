@@ -152,6 +152,7 @@ class OpenBookProductionRequest:
     correlation_id: str
     initial_story_state_version: str = ""
     initial_canon_snapshot_version: str = ""
+    planning_replacement: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         identities = (
@@ -182,11 +183,32 @@ class OpenBookProductionRequest:
             raise ValueError(
                 "Book opening requires the initial accepted Story State and Canon boundary"
             )
+        if self.planning_replacement is not None:
+            replacement = self.planning_replacement
+            if (
+                set(replacement) != {
+                    "contract_version", "source_opening_run_id", "source_version",
+                    "reason", "expected_active_plan_versions",
+                }
+                or replacement["contract_version"] != "unwritten-book-planning-replacement.v1"
+                or not isinstance(replacement["source_version"], int)
+                or isinstance(replacement["source_version"], bool)
+                or replacement["source_version"] < 0
+                or not str(replacement["source_opening_run_id"]).strip()
+                or not str(replacement["reason"]).strip()
+                or not isinstance(replacement["expected_active_plan_versions"], Mapping)
+                or not replacement["expected_active_plan_versions"].get("book:main")
+                or any(not str(key).strip() or not str(version).strip()
+                       for key, version in replacement["expected_active_plan_versions"].items())
+            ):
+                raise ValueError("Unwritten Book planning replacement is incomplete")
 
     def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value["planning_input_versions"] = dict(self.planning_input_versions)
         value["arc_logical_keys"] = list(self.arc_logical_keys)
+        if self.planning_replacement is None:
+            value.pop("planning_replacement")
         return value
 
     @classmethod
@@ -207,7 +229,7 @@ class OpenBookProductionRequest:
             "initial_canon_snapshot_version",
         }
         if (
-            set(value) != expected
+            set(value) not in (expected, expected | {"planning_replacement"})
             or not isinstance(value.get("planning_input_versions"), Mapping)
             or not isinstance(value.get("arc_logical_keys"), list)
         ):
@@ -232,6 +254,7 @@ class OpenBookProductionRequest:
             correlation_id=str(value["correlation_id"]),
             initial_story_state_version=str(value["initial_story_state_version"]),
             initial_canon_snapshot_version=str(value["initial_canon_snapshot_version"]),
+            planning_replacement=value.get("planning_replacement"),
         )
 
 
@@ -531,6 +554,99 @@ class PostgresBookOpeningApplication:
         self, request: OpenBookProductionRequest, *, principal: Principal
     ) -> BookOpeningAdmission:
         return self._admit(request, principal=principal)
+
+    def reopen_unwritten(
+        self, opening_run_id: str, *, expected_version: int,
+        idempotency_key: str, reason: str, principal: Principal,
+    ) -> BookOpeningAdmission:
+        source = self.require(opening_run_id)
+        principal.require("book.authority.execute", str(source["project_id"]))
+        principal.require("story_planning.authority.execute", str(source["project_id"]))
+        request = self._frozen_request(opening_run_id)
+        if not idempotency_key.strip() or idempotency_key == request.idempotency_key:
+            raise ValueError("Planning repair requires a distinct stable idempotency key")
+        existing = self.find_by_key(
+            project_id=request.project_id, book_id=request.book_id,
+            idempotency_key=idempotency_key,
+        )
+        if existing is not None:
+            frozen = self._frozen_request(str(existing["opening_run_id"]))
+            replacement = frozen.planning_replacement or {}
+            if (replacement.get("source_opening_run_id") != opening_run_id
+                    or replacement.get("source_version") != expected_version
+                    or replacement.get("reason") != reason):
+                raise KernelError("BOOK_OPENING_IDEMPOTENCY_CONFLICT", "Planning repair replay differs from its frozen decision")
+            return self.admit(frozen, principal=principal)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT version FROM authority_book WHERE project_id=%s AND book_id=%s", [request.project_id, request.book_id])
+            book = uow.cursor.fetchone()
+            if book is None:
+                raise KernelError("BOOK_NOT_FOUND", "Planning repair requires its existing Book")
+            versions = self._unwritten_replacement_versions_in_uow(
+                uow.cursor, request=request, source_opening_run_id=opening_run_id,
+                source_version=expected_version,
+            )
+        return self.admit(replace(
+            request, expected_book_version=int(book[0]), idempotency_key=idempotency_key,
+            trace_id=f"trace:{opening_run_id}:planning-repair",
+            planning_replacement={
+                "contract_version": "unwritten-book-planning-replacement.v1",
+                "source_opening_run_id": opening_run_id, "source_version": expected_version,
+                "reason": reason, "expected_active_plan_versions": versions,
+            },
+        ), principal=principal)
+
+    @staticmethod
+    def _unwritten_replacement_versions_in_uow(
+        cursor: Any, *, request: OpenBookProductionRequest,
+        source_opening_run_id: str, source_version: int,
+    ) -> dict[str, str]:
+        cursor.execute("""SELECT project_id,workspace_id,book_id,lifecycle,version,frozen_request
+            FROM authority_book_opening_run WHERE opening_run_id=%s FOR UPDATE""", [source_opening_run_id])
+        source = cursor.fetchone()
+        if source is None or tuple(source[:5]) != (
+            request.project_id, request.workspace_id, request.book_id, "ABORTED", source_version,
+        ):
+            raise KernelError("BOOK_OPENING_REPLACEMENT_SOURCE_INVALID", "Planning repair requires the exact aborted same-Book Opening")
+        previous = OpenBookProductionRequest.from_mapping(source[5])
+        if any(getattr(previous, field) != getattr(request, field) for field in (
+            "actor_id", "production_profile", "planning_input_versions", "arc_logical_keys",
+            "initial_story_state_version", "initial_canon_snapshot_version",
+        )):
+            raise KernelError("BOOK_OPENING_REPLACEMENT_INPUT_DRIFT", "Planning repair must retain Foundation, profile and initial state")
+        cursor.execute("SELECT book_run_id FROM authority_book_production WHERE project_id=%s AND book_id=%s FOR UPDATE", [request.project_id, request.book_id])
+        if cursor.fetchone() is not None:
+            raise KernelError("BOOK_OPENING_REPLAN_REQUIRED", "A BookRun requires governed Plan Change rather than unwritten repair")
+        cursor.execute("""SELECT operation_id FROM authority_operation
+            WHERE project_id=%s AND workspace_id=%s AND definition_name='story_planning.generate'
+              AND command_payload#>>'{payload,book_id}'=%s
+              AND status IN ('EXECUTING','WAITING_EXTERNAL_RESULT','CANCELLATION_REQUESTED') LIMIT 1""", [request.project_id, request.workspace_id, request.book_id])
+        if cursor.fetchone() is not None:
+            raise KernelError("BOOK_OPENING_REPLACEMENT_EXECUTION_UNSETTLED", "Stop prior live Planning work before planning repair")
+        cursor.execute("""SELECT effect.external_effect_id FROM authority_external_effect effect
+            JOIN authority_operation operation USING(operation_id)
+            WHERE effect.project_id=%s AND operation.workspace_id=%s
+              AND COALESCE(operation.command_payload#>>'{payload,book_id}',operation.command_payload->>'book_id')=%s
+              AND effect.effect_type='model.invoke'
+              AND effect.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED')
+              AND NOT authority_generation_isolated(effect.external_effect_id)
+            LIMIT 1""", [request.project_id, request.workspace_id, request.book_id])
+        if cursor.fetchone() is not None:
+            raise KernelError("BOOK_OPENING_REPLACEMENT_EXECUTION_UNSETTLED", "Settle or natively isolate prior model work before planning repair")
+        cursor.execute("""SELECT active.logical_key,active.asset_version_id,binding.execution_scope,
+                COALESCE(operation.command_payload#>>'{payload,opening_execution_binding,opening_run_id}',
+                         operation.command_payload#>>'{opening_execution_binding,opening_run_id}')
+            FROM active_story_plan_version active
+            JOIN story_plan_binding binding USING(binding_id)
+            LEFT JOIN authority_story_planning_candidate candidate ON candidate.candidate_asset_version_id=active.asset_version_id
+            LEFT JOIN authority_story_planning_generation generation USING(generation_id)
+            LEFT JOIN authority_operation operation ON operation.operation_id=generation.operation_id
+            WHERE active.project_id=%s AND active.book_id=%s
+            ORDER BY active.logical_key FOR UPDATE OF active,binding""", [request.project_id, request.book_id])
+        rows = cursor.fetchall()
+        if not rows or any(row[2] != "PLANNED" or row[3] != source_opening_run_id for row in rows):
+            raise KernelError("BOOK_OPENING_REPLACEMENT_SCOPE_INVALID", "Only the aborted Opening's unexecuted native plans may be replaced")
+        return {str(row[0]): str(row[1]) for row in rows}
 
     def continue_unstarted_with_budget(
         self, opening_run_id: str, *, expected_version: int,
@@ -2428,6 +2544,15 @@ class PostgresBookOpeningApplication:
             design_version = self._require_qualified_foundation_in_uow(
                 uow.cursor, request
             )
+            if request.planning_replacement is not None:
+                replacement = request.planning_replacement
+                current_versions = self._unwritten_replacement_versions_in_uow(
+                    uow.cursor, request=request,
+                    source_opening_run_id=str(replacement["source_opening_run_id"]),
+                    source_version=int(replacement["source_version"]),
+                )
+                if current_versions != dict(replacement["expected_active_plan_versions"]):
+                    raise KernelError("BOOK_OPENING_REPLACEMENT_VERSION_CONFLICT", "Active plans changed after the unwritten repair decision")
             if request.planning_input_versions.get("book_design") != design_version:
                 raise KernelError(
                     "BOOK_OPENING_INPUTS_INVALID",
@@ -5244,6 +5369,7 @@ class PostgresBookOpeningApplication:
             request.production_profile,
             request.initial_story_state_version,
             request.initial_canon_snapshot_version,
+            *(request.planning_replacement or {}).get("expected_active_plan_versions", {}).values(),
         }
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -5278,6 +5404,7 @@ class PostgresBookOpeningApplication:
             request.production_profile,
             request.initial_story_state_version,
             request.initial_canon_snapshot_version,
+            *(request.planning_replacement or {}).get("expected_active_plan_versions", {}).values(),
         }
         if not isinstance(input_asset_snapshot, list):
             raise KernelError(
@@ -5815,6 +5942,9 @@ class PostgresBookOpeningApplication:
             ),
             accepted_through_chapter=0,
             parent_state_asset_version_id=accepted_state,
+            expected_active_asset_version_id=str(
+                (request.planning_replacement or {}).get("expected_active_plan_versions", {}).get(logical_key, "")
+            ),
         )
         qualified_branch_committer = None
         if opening_run_id:
