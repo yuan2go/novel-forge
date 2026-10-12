@@ -47,13 +47,15 @@ def test_continuous_scenes_preserve_accepted_actor_sources_and_own_action():
 
 
 @pytest.mark.parametrize("ref,actor", [("accepted:observation", "b"), ("local:private_note", "b"), ("local:future", "a"), ("invented:fact", "a")])
-def test_foreign_private_future_or_invented_actor_sources_are_rejected(ref, actor):
+def test_unreliable_model_source_declarations_remain_diagnostics(ref, actor):
     c = contract()
     rows = artifacts(c)
     rows[0]["used_fact_ids"] = [ref]
     rows[0]["character_source_uses"] = [{"character_id": actor, "used_fact_ids": [ref]}]
-    with pytest.raises(KernelError, match="REALIZATION_EPISTEMIC_SCOPE_VIOLATION"):
-        integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+    result = integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+    assert result["declaration_evidence"]["status"] == "DIAGNOSTIC_ONLY"
+    assert result["declaration_evidence"]["defects"]
+    assert result["scene_artifacts"] == rows
 
 
 def test_diagnostics_report_all_reference_and_type_defects_together():
@@ -62,9 +64,9 @@ def test_diagnostics_report_all_reference_and_type_defects_together():
     rows[0]["used_fact_ids"] = ["future:one"]
     rows[1]["used_fact_ids"] = [1]
     rows[1]["character_source_uses"] = [{"character_id": "b", "used_fact_ids": ["accepted:observation"]}]
-    with pytest.raises(KernelError) as error:
-        integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
-    assert all(code in str(error.value) for code in ["OUTSIDE_SCENE_SCOPE", "FACT_REFERENCE_TYPE_OR_DUPLICATE", "CHARACTER_SOURCE_SCOPE"])
+    result = integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+    defects = {row["defect"] for row in result["declaration_evidence"]["defects"]}
+    assert {"OUTSIDE_SCENE_SCOPE", "FACT_REFERENCE_TYPE_OR_DUPLICATE", "CHARACTER_SOURCE_SCOPE"} <= defects
 
 
 def test_dynamic_schema_matches_host_contract_and_preserves_original():
@@ -146,8 +148,12 @@ def test_union_never_repairs_illegal_or_ambiguous_identity_or_evidence(change):
     else:
         rows.reverse()
     assert normalize_scene_source_union(c, rows) == (rows, [])
-    with pytest.raises(KernelError):
-        integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+    if change == "slot_order":
+        with pytest.raises(KernelError, match="SLOT_COVERAGE"):
+            integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+    else:
+        result = integrate_realization(contract=c, artifacts=rows, text="\n\n".join(r["text"] for r in rows))
+        assert result["declaration_evidence"]["defects"]
 
 
 def test_receipt_only_draft_definition_cannot_dispatch_without_journal(monkeypatch):

@@ -207,7 +207,7 @@ def test_off_peak_usage_is_priced_separately_from_provider_bill():
     assert payload["thinking"] == {"type": "enabled"}
     assert payload["reasoning_effort"] == "low"
     assert payload["response_format"] == {"type": "json_object"}
-    assert options["timeout"] == 15
+    assert options["timeout"] == 30.0
     assert result.outcome == "success"
     assert result.evidence["model_id"] == "deepseek-flash"
     assert result.evidence["model_revision"] == "DeepSeek-V4.1-Flash"
@@ -383,7 +383,11 @@ def test_missing_required_cache_usage_is_an_ambiguous_receipt():
     ).invoke(invocation())
     assert result.outcome == "unknown"
     assert result.evidence["failure_class"] == "MALFORMED_PROVIDER_RECEIPT"
-    assert "cost" not in result.evidence
+    assert result.evidence["cost"]["measurement"] == "UNKNOWN"
+    assert "amount" not in result.evidence["cost"]
+    assert result.evidence["result"] == {"classification": "fiction"}
+    assert result.evidence["raw_usage"] == malformed["usage"]
+    assert result.evidence["source_complete"]
 
 
 def test_stale_provider_created_timestamp_is_an_ambiguous_receipt():
@@ -491,3 +495,16 @@ def test_cancellation_truthfully_reports_no_upstream_control():
         "upstream_cancellation": "UNSUPPORTED",
         "manual_resolution_required": True,
     }
+
+
+@pytest.mark.parametrize("field,value", [("created", "invalid"), ("system_fingerprint", None)])
+def test_auxiliary_receipt_errors_retain_safe_received_prose(field, value):
+    raw = response()
+    raw[field] = value
+    original_text = raw["choices"][0]["message"]["content"]
+    result = adapter(lambda *args, **kwargs: BytesIO(json.dumps(raw).encode())).invoke(invocation())
+    assert result.outcome == "unknown"
+    assert result.evidence["raw_output_text"] == original_text
+    assert result.evidence["source_complete"] is True
+    assert result.evidence["cost"]["status"] == "UNKNOWN"
+    assert "reasoning_content" not in result.evidence

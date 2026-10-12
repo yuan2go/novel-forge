@@ -152,6 +152,7 @@
         "src/novel_forge/modules/source_import/execution.py",
         "src/novel_forge/modules/story_planning_runtime/execution.py",
         "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/chapter_authority/domain_handlers.py",
         "src/novel_forge/modules/chapter_authority/execution_gateway.py",
         "src/novel_forge/modules/chapter_authority/realization_composition.py",
         "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",

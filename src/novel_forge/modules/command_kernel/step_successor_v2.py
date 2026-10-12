@@ -121,6 +121,8 @@ def replace_failed_step(
         unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence, execution_sha=context.commit_sha)
         from novel_forge.modules.chapter_authority.context_transport_recovery import require_optional_memory_transport
         memory_transport = require_optional_memory_transport(cursor, source, policy_evidence, target_version)
+        from novel_forge.modules.chapter_authority.context_transport_recovery import require_changed_schema_transport
+        schema_transport = require_changed_schema_transport(cursor, source, policy_evidence, target_version, execution_sha=context.commit_sha)
         from novel_forge.modules.book_authority.manuscript import require_historical_input_scope_repair
         historical_input_repair = require_historical_input_scope_repair(cursor, source, policy_evidence, target_version)
         memo_contract_repair = bool(
@@ -139,6 +141,20 @@ def replace_failed_step(
             and source["definition_version"] == "3.10.0" and target_version == "3.10.1"
             and expected_failure_code == "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID"
             and policy_evidence.get("contract_version") == "chapter-intent-reference-revalidation.v1")
+        optional_memo_repair = policy_evidence.get("contract_version") == "optional-memo-input-fallback.v1"
+        completed_revalidation = (
+            bool(known_receipt_effects) and not known_isolated_effects
+            and policy_evidence.get("contract_version") == "chapter-pure-generation-successor.v1"
+            and policy_evidence.get("completed_revalidation") is True
+            and policy_evidence.get("release_sha") == context.commit_sha
+            and bool(source["definition_snapshot"].get("commit_sha"))
+            and source["definition_snapshot"].get("commit_sha") != context.commit_sha
+            and {(item.get("external_effect_id"), item.get("request_hash"))
+                 for item in policy_evidence.get("completed_model_effects", [])} == set(known_receipt_effects)
+        )
+        if optional_memo_repair:
+            from novel_forge.modules.chapter_authority.creative_memo import require_optional_memo_fallback
+            require_optional_memo_fallback(cursor, source, policy_evidence)
         if intent_contract_repair:
             from novel_forge.modules.chapter_authority.memo_recovery import require_intent_reference_repair
             require_intent_reference_repair(cursor, source, policy_evidence, database_url)
@@ -146,16 +162,17 @@ def replace_failed_step(
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memory_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if known_isolated_effects or unsent_transport or memory_transport or schema_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or optional_memo_repair or completed_revalidation else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
-            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not historical_input_repair)
+            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not schema_transport and not historical_input_repair and not optional_memo_repair and not completed_revalidation)
         ):
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID",
                 "Only an owned failed child of a live graph can be replaced",
             )
-        _require_reconciled_graph(cursor, root_id=root["operation_id"], predecessor_id=predecessor_id)
+        _require_reconciled_graph(cursor, root_id=root["operation_id"], predecessor_id=predecessor_id,
+            **({"completed_receipts": known_receipt_effects} if completed_revalidation else {}))
         step = row[0]
         if saga["status"] == "MANUAL_INTERVENTION":
             cursor.execute(
@@ -181,7 +198,8 @@ def replace_failed_step(
             [root["operation_id"]],
         )
         deadline = cursor.fetchone()[0]
-        if deadline and deadline <= datetime.now(timezone.utc) and not window_successor:
+        from .generation_policy import generation_graph
+        if deadline and deadline <= datetime.now(timezone.utc) and not window_successor and not generation_graph(cursor, root["operation_id"], project):
             raise KernelError(
                 "OPERATION_BUSINESS_TIMEOUT",
                 "The frozen Root deadline remains authoritative",
@@ -197,6 +215,8 @@ def replace_failed_step(
         external, output, dependent, live_lease = cursor.fetchone()
         if output:
             output = has_domain_outputs(cursor, predecessor_id)
+        if optional_memo_repair:
+            external = False
         if memo_completion_repair:
             from novel_forge.modules.chapter_authority.memo_recovery import original_memo_source
             original_memo_source(cursor, source, policy_evidence)
@@ -209,15 +229,16 @@ def replace_failed_step(
                 raise KernelError("MEMO_COMPLETION_LINEAGE_INVALID", "Require the already qualified exact retained Memo")
             output = False
         if known_receipt_effects:
-            _require_verified_receipts(cursor, source=source, expected=known_receipt_effects, isolated_siblings=bool(known_isolated_effects))
+            _require_verified_receipts(cursor, source=source, expected=known_receipt_effects,
+                isolated_siblings=bool(known_isolated_effects), completed_revalidation=completed_revalidation)
             cursor.execute(
                 "SELECT e.external_effect_id,e.request_hash,e.status,b.status,e.effect_type FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id",
                 [predecessor_id],
             )
-            if [row for row in cursor.fetchall() if row[0] not in {e[0] for e in (*known_rejected_effects, *known_isolated_effects)}] != [
-                (effect, digest, "SUCCEEDED", "SETTLED", "model.invoke")
-                for effect, digest in sorted(known_receipt_effects)
-            ]:
+            observed = [row for row in cursor.fetchall() if row[0] not in {e[0] for e in (*known_rejected_effects, *known_isolated_effects)}]
+            if [(row[0], row[1], row[2], row[4]) for row in observed] != [
+                (effect, digest, "SUCCEEDED", "model.invoke") for effect, digest in sorted(known_receipt_effects)
+            ] or not completed_revalidation and any(row[3] != "SETTLED" for row in observed):
                 raise KernelError(
                     "STEP_SUCCESSOR_RECEIPT_UNSETTLED",
                     "Exact succeeded settled receipts are required",
@@ -479,6 +500,7 @@ def has_domain_outputs(cursor, operation_id):
         ("execution_evidence", r)
         for r in (
             "cost-receipt",
+            "model-result",
             "normalized-output",
             "output-manifest",
             "process-receipt",
@@ -606,35 +628,38 @@ def continue_completed_contract_window(database_url, *, predecessor_id, successo
     return {"replayed": False, "execution_window": window}
 
 
-def _require_reconciled_graph(cursor, *, root_id, predecessor_id):
+def _require_reconciled_graph(cursor, *, root_id, predecessor_id, completed_receipts=()):
     from .budget_runtime import require_known_cli_lineage
 
     cursor.execute("SELECT project_id FROM authority_operation WHERE operation_id=%s", [root_id])
     owner = cursor.fetchone()
     if not owner:
         raise KernelError("STEP_SUCCESSOR_GRAPH_UNRECONCILED", "The original graph scope is missing")
-    require_known_cli_lineage(cursor, project_id=str(owner[0]), operation_id=root_id)
+    if not completed_receipts:
+        require_known_cli_lineage(cursor, project_id=str(owner[0]), operation_id=root_id)
     cursor.execute(
         """SELECT EXISTS(SELECT 1 FROM authority_external_effect e
         JOIN authority_operation o USING(operation_id)
         LEFT JOIN authority_budget_reservation b USING(external_effect_id)
         WHERE o.root_operation_id=%s AND (e.status IN
         ('UNKNOWN','DISPATCHING','RECONCILIATION_REQUIRED','PENDING')
-        OR b.status IS DISTINCT FROM 'SETTLED') AND NOT authority_generation_isolated(e.external_effect_id)),
+        OR (b.status IS DISTINCT FROM 'SETTLED' AND NOT
+            (e.status='SUCCEEDED' AND e.external_effect_id=ANY(%s))))
+        AND NOT authority_generation_isolated(e.external_effect_id)),
         EXISTS(SELECT 1 FROM authority_lease_acquisition l
         JOIN authority_attempt a USING(attempt_id)
         JOIN authority_operation o USING(operation_id)
         WHERE o.root_operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW()),
         EXISTS(SELECT 1 FROM authority_cancellation_command
         WHERE operation_id IN (%s,%s))""",
-        [root_id,root_id,root_id,predecessor_id],
+        [root_id,[item[0] for item in completed_receipts],root_id,root_id,predecessor_id],
     )
     if any(cursor.fetchone()):
         raise KernelError("STEP_SUCCESSOR_GRAPH_UNRECONCILED",
                           "Reconcile every outcome, settle accounting and release leases before succession")
 
 
-def _require_verified_receipts(cursor, *, source, expected, isolated_siblings=False):
+def _require_verified_receipts(cursor, *, source, expected, isolated_siblings=False, completed_revalidation=False):
     context = EffectCommandContext(operation_id=source["operation_id"],
         project_id=source["project_id"], actor_id=source["actor_id"],
         trace_id=source["trace_id"], correlation_id=source["correlation_id"])
@@ -643,6 +668,6 @@ def _require_verified_receipts(cursor, *, source, expected, isolated_siblings=Fa
         effect = repository.get_for_update(effect_id)
         if effect["operation_id"] != source["operation_id"] or effect["request_hash"] != request_hash:
             raise KernelError("STEP_SUCCESSOR_RECEIPT_DRIFT", "Bind the exact original effect and request")
-        verified = (_read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id, retained_generation_stage=True) if isolated_siblings else _read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id))
-        if verified is None or verified["budget_reservation_status"] != "SETTLED":
+        verified = (_read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id, retained_generation_stage=True) if isolated_siblings or completed_revalidation else _read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id))
+        if verified is None or not completed_revalidation and verified["budget_reservation_status"] != "SETTLED":
             raise KernelError("STEP_SUCCESSOR_RECEIPT_UNSETTLED", "Require Kernel-verified success and settled accounting")

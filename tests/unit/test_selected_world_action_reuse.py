@@ -26,8 +26,8 @@ def fixtures():
 
 
 @pytest.mark.parametrize('disposition', ['ELIGIBLE', 'DEFER'])
-@pytest.mark.parametrize('failure', ['none', 'book', 'actor', 'workspace', 'frontier', 'stale', 'hash', 'director-binding', 'unsettled', 'receipt-output', 'recompile', 'ambiguous'])
-def test_selected_action_reuses_only_exact_current_settled_world_result(failure, disposition):
+@pytest.mark.parametrize('failure', ['none', 'book', 'actor', 'workspace', 'frontier', 'stale', 'hash', 'director-binding', 'unsettled', 'held-unknown', 'receipt-output', 'recompile', 'ambiguous'])
+def test_selected_action_reuses_only_exact_current_verified_world_result(failure, disposition):
     command, docs, plan = fixtures()
     plan.update(disposition=disposition, fact_mutation_allowed=False)
     if failure in {'book', 'actor'}:
@@ -49,11 +49,11 @@ def test_selected_action_reuses_only_exact_current_settled_world_result(failure,
     uow.cursor.fetchone.side_effect = fetch
     def receipt(_db, _context, *, effect_id):
         key = effect_id.removesuffix('-effect')
-        return {'budget_reservation_status': 'RESERVED' if failure == 'unsettled' else 'SETTLED', 'provider_evidence': {'result': {} if failure == 'receipt-output' else docs[key].content['contract']['output']}}
-    with patch(MODULE+'.AuthorityUnitOfWork', return_value=uow), patch(MODULE+'.WorldPreparationRepository', autospec=True) as repository, patch(MODULE+'.PlanningWorldPreparation._source_operation', return_value='owner'), patch(MODULE+'.PlanningWorldPreparation.validate_retained_generation') as validate, patch(MODULE+'.decode_world_generation', return_value={}), patch(MODULE+'.WorldProductionPolicy'), patch(MODULE+'.compile_world_plan', return_value=deepcopy(plan) if failure != 'recompile' else {'disposition': 'BLOCKED'}), patch(RUNTIME+'.read_completed_operation_success', side_effect=receipt) as read, patch(RUNTIME+'.read_retained_generation_stage_success', side_effect=AssertionError('wrong owner reader')):
+        return {'budget_reservation_status': 'RESERVED' if failure == 'unsettled' else 'HELD_UNKNOWN' if failure == 'held-unknown' else 'SETTLED', 'provider_evidence': {'result': {} if failure == 'receipt-output' else docs[key].content['contract']['output']}}
+    with patch(MODULE+'.AuthorityUnitOfWork', return_value=uow), patch(MODULE+'.WorldPreparationRepository', autospec=True) as repository, patch(MODULE+'.PlanningWorldPreparation._source_operation', return_value='owner'), patch(MODULE+'.PlanningWorldPreparation.validate_retained_generation') as validate, patch(MODULE+'.decode_world_generation', return_value={}), patch(MODULE+'.WorldProductionPolicy'), patch(MODULE+'.compile_world_plan', return_value=deepcopy(plan) if failure != 'recompile' else {'disposition': 'BLOCKED'}), patch(RUNTIME+'.read_retained_generation_stage_success', side_effect=receipt) as read:
         if failure == 'stale':
             repository.return_value.assert_source_current.side_effect = KernelError('WORLD_SOURCE_DRIFT', 'changed source')
-        if failure == 'none':
+        if failure in {'none', 'unsettled', 'held-unknown'}:
             assert require_selected_world_action(query, command=command) is docs['action']
             assert read.call_count == 2
             validate.assert_called_once()
@@ -66,6 +66,35 @@ def test_unselected_action_keeps_existing_generation_path():
     command, docs, _ = fixtures()
     command.governance_action_version_ids = ()
     assert require_selected_world_action(SimpleNamespace(), command=command) is None
+
+
+def test_later_capacity_recovery_revalidates_original_world_owner_without_repeating_preparation(monkeypatch):
+    from novel_forge.modules.story_planning_runtime import schema_recovery, runtime_continuation
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation
+    command, docs, _ = fixtures()
+    command.runtime_continuation_id = 'previous-continuation'
+    query = SimpleNamespace(require=lambda **kw: docs[kw['asset_version_id']])
+    monkeypatch.setattr(schema_recovery, 'AuthorityAssetQuery', lambda *args: query)
+    monkeypatch.setattr(runtime_continuation, 'require_binding', lambda *args: {
+        'successor_operation_id':'current-failed-plan',
+        'target_runtime':{'planning_capacity':{'retained_world_action':{'source_operation_id':'original-world-owner'}}}})
+    owners = []
+    def retained(_query, _command, *, source_operation_id):
+        owners.append(source_operation_id)
+        return docs['action']
+    monkeypatch.setattr(PlanningWorldPreparation, 'retained_action', retained)
+    monkeypatch.setattr(PlanningWorldPreparation, '_source_operation', lambda *args:'original-world-owner')
+    from novel_forge.modules.command_kernel import external_effect_runtime
+    calls = []
+    def read(_db, context, *, effect_id):
+        calls.append((context.operation_id,effect_id))
+        key = effect_id.removesuffix('-effect')
+        return {'budget_reservation_status':'HELD_UNKNOWN','provider_evidence':{'result':docs[key].content['contract']['output']}}
+    monkeypatch.setattr(external_effect_runtime,'read_retained_generation_stage_success',read)
+    action, proof = schema_recovery.retained_world_action('fixture-only',command=command,source_operation_id='current-failed-plan')
+    assert action is docs['action'] and proof['asset_version_id']=='action'
+    assert owners == ['original-world-owner']
+    assert calls == [('original-world-owner','generation-effect'),('original-world-owner','evaluation-effect')]
 
 
 @pytest.mark.parametrize('dependency', ['selected_candidate_id', 'selected_path_id', 'candidate_futures', 'preparation_schedule', 'causal_debts', 'actor_proposals', 'actor_experiment', 'preparation_sources', 'fact_mutation_allowed'])

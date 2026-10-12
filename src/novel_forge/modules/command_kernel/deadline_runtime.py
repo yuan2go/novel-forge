@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from .generation_policy import generation_graph
 
 
 def probe_operation_execution(
@@ -26,16 +27,18 @@ def probe_operation_execution(
             """
             SELECT EXISTS (
                 SELECT 1 FROM authority_worker_cancel_signal
-                WHERE operation_id = %s AND acknowledged_at IS NULL
+                WHERE operation_id IN (%s, (SELECT root_operation_id FROM authority_operation WHERE operation_id=%s))
+                  AND acknowledged_at IS NULL
             )
             """,
-            [operation_id],
+            [operation_id, operation_id],
         )
         cancelled = bool(uow.cursor.fetchone()[0])
+        generation = generation_graph(uow.cursor, operation_id, project_id)
     if cancelled or row[0] == "CANCELLATION_REQUESTED":
         raise KernelError("OPERATION_CANCELLATION_REQUESTED", "worker cancellation was requested")
     deadline = row[1]
-    if deadline is not None and deadline <= datetime.now(timezone.utc):
+    if not generation and deadline is not None and deadline <= datetime.now(timezone.utc):
         raise KernelError(
             "OPERATION_BUSINESS_TIMEOUT",
             "frozen operation business deadline has expired",
@@ -49,7 +52,7 @@ def probe_external_effect_execution(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
-            SELECT status, request_deadline_at
+            SELECT status, request_deadline_at, effect_type, operation_id
             FROM authority_external_effect
             WHERE external_effect_id = %s AND project_id = %s
             """,
@@ -58,8 +61,9 @@ def probe_external_effect_execution(
         row = uow.cursor.fetchone()
     if row is None:
         raise KernelError("EXTERNAL_EFFECT_NOT_FOUND", "effect deadline target is missing")
+    probe_operation_execution(database_url, operation_id=row[3], project_id=project_id)
     deadline = row[1]
-    if deadline is not None and deadline <= datetime.now(timezone.utc):
+    if row[2] != "model.invoke" and deadline is not None and deadline <= datetime.now(timezone.utc):
         raise KernelError(
             "EFFECT_REQUEST_TIMEOUT",
             "frozen ExternalEffect request deadline has expired",
@@ -99,6 +103,9 @@ def scan_expired_operation_deadlines(
     issued: list[str] = []
     conflicts: list[str] = []
     for operation_id, project_id, version, trace_id, correlation_id in expired:
+        with AuthorityUnitOfWork(database_url) as uow:
+            if generation_graph(uow.cursor, operation_id, project_id):
+                continue
         try:
             request_cancellation(
                 database_url,

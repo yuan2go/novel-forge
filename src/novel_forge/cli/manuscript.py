@@ -7,7 +7,7 @@ from typing import Any
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "use-working-candidate", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -22,6 +22,9 @@ def add_manuscript_parser(subparsers: Any) -> None:
     parser.add_argument("--stop-after-chapter", type=int)
     parser.add_argument("--expected-version", type=int)
     parser.add_argument("--idempotency-key", default="")
+    parser.add_argument("--revision-root", default="")
+    parser.add_argument("--foreground", action="store_true")
+    parser.add_argument("--work-window-seconds", type=int, default=300)
 
 
 def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
@@ -41,8 +44,11 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         args = SimpleNamespace(**vars(args))
         args.project_id = owned[0]
 
-    if args.action in {"recover-plan-references", "recover-upstream-plan"}:
-        if not args.proposal_id:
+    if args.action in {"revise", "continue-revision", "revision-status"}:
+        return _run_working_revision_command(settings, args, principal=principal)
+
+    if args.action in {"recover-plan-references", "recover-upstream-plan", "resume"}:
+        if args.action != "resume" and not args.proposal_id:
             raise ValueError("Require the active Chapter PlanChange --proposal-id")
         from novel_forge.api.authority_dependencies import build_book_production_composition, build_production_execution_composition, build_chapter_authority_application
         from novel_forge.modules.book_authority.plan_recovery import retire_reference_failed_chapter, retire_upstream_stale_chapter
@@ -52,6 +58,9 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             composition = build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter)
             if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
                 raise PermissionError("Work is outside this Project")
+            if args.action == "resume":
+                return composition.authority.resume(args.book_run_id, reason=args.reason or "Requested manuscript resume",
+                    principal=principal, expected_version=args.expected_version)
             if args.action == "recover-upstream-plan":
                 if not args.corrected_plan_version:
                     raise ValueError("Require exact current --corrected-plan-version")
@@ -86,31 +95,58 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         if args.action in {"pause", "resume"}:
             return getattr(authority, args.action)(args.book_run_id, reason=args.reason or "Author " + args.action, principal=principal)
         if args.action == "continue":
+            from novel_forge.modules.book_authority.manuscript import author_first
             from novel_forge.storage.authority_uow import AuthorityUnitOfWork
             with AuthorityUnitOfWork(settings.database_url) as uow:
                 uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND formation_run_id || ':production'=%s", [args.project_id, book["book_id"], book["stable_idempotency_key"]])
                 original = uow.cursor.fetchone()
+            if author_first(book):
+                return _continue_native_work(settings, args, book=book, principal=principal,
+                    formation_run_id=original[0] if original else '')
             if original is None:
                 return _continue_native_work(settings, args, book=book, principal=principal)
             from novel_forge.cli.authority import _authority_parser
             from novel_forge.cli.creation import run_creation_command
             request = _authority_parser().parse_args(["authority-creation", "continue", "--project-id", args.project_id,
-                "--formation-run-id", original[0], "--repository-root", str(Path(__file__).resolve().parents[3])])
+                "--formation-run-id", original[0], "--repository-root", str(settings.root)])
             return run_creation_command(settings, request)
         return adopt_author_workflow(authority, args.book_run_id, principal=principal, expected_version=None, settings=settings,
             idempotency_key="author-workflow:" + canonical_hash({"book": args.book_run_id, "profile": book["production_profile_version"]}))
+    if args.action in {"read", "export"} and args.candidate_version:
+        from novel_forge.modules.book_authority.manuscript import require_retained_model_candidate
+        candidate = require_retained_model_candidate(settings.database_url, project_id=args.project_id,
+            book_run_id=args.book_run_id, asset_version_id=args.candidate_version, principal=principal)
+        if args.action == "export" and args.output:
+            with args.output.open("x", encoding="utf-8") as stream:
+                if args.output.suffix.lower() in {".md", ".txt"}:
+                    body = candidate["text"] if candidate["text"] is not None else candidate["raw_text"]
+                    stream.write(f"第{candidate['chapter']}章 — 候选正文\n\n来源：{candidate['asset_version_id']}\n状态：{candidate['completeness']}；{candidate['review_status']}；{candidate['selection_status']}；{candidate['acceptance_status']}\n\n{body}\n")
+                else:
+                    stream.write(json.dumps(candidate, ensure_ascii=False, indent=2))
+        return candidate
+    chapters = args.chapters or ([args.chapter] if args.chapter is not None else None)
+    if args.chapters and args.chapter is not None and args.chapters != [args.chapter]:
+        raise ValueError("Choose a single --chapter or a --chapters range")
     manifest = require_manuscript(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id,
-        principal=principal, version_ids=args.versions, chapters=args.chapters)
+        principal=principal, version_ids=args.versions, chapters=chapters)
     if args.action == "read":
         return manifest
     if args.action == "export":
         if not manifest["units"]:
             raise ValueError("No complete saved prose is available")
         exact = require_manuscript(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id,
-            principal=principal, version_ids=[item["asset_version_id"] for item in manifest["units"]], chapters=args.chapters)
+            principal=principal, version_ids=[item["asset_version_id"] for item in manifest["units"]], chapters=chapters)
         if args.output:
             with args.output.open("x", encoding="utf-8") as stream:
-                stream.write(json.dumps(exact, ensure_ascii=False, indent=2))
+                if args.output.suffix.lower() in {".md", ".txt"}:
+                    for unit in exact["units"]:
+                        heading = "# " if args.output.suffix.lower() == ".md" else ""
+                        stream.write(f"{heading}第{unit['chapter']}章 {unit['title']}\n\n{unit['text']}\n\n")
+                        stream.write(f"版本：{unit['asset_version_id']}\n\n"
+                            f"状态：{unit['manuscript_status']}；审读 {unit['review_status']}；质量 {unit['quality_status']}；"
+                            f"选稿 {unit['author_selection']}；正式接纳至第{exact['accepted_through_chapter']}章\n\n")
+                else:
+                    stream.write(json.dumps(exact, ensure_ascii=False, indent=2))
         return exact
     unit = next((item for item in manifest["units"] if item["chapter"] == args.chapter), None)
     if unit is None:
@@ -156,13 +192,13 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
     return application.execute(action=action, payload=body, idempotency_key=key, principal=principal)
 
 
-def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], principal: Any) -> dict[str, Any]:
+def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], principal: Any, formation_run_id: str = '') -> dict[str, Any]:
     from time import monotonic
     from novel_forge.api.authority_dependencies import (
         build_book_production_composition, build_chapter_authority_application,
         build_production_execution_composition, build_trusted_principal_resolver,
     )
-    from novel_forge.modules.book_authority.creation_runtime import drive_book
+    from novel_forge.modules.book_authority.creation_runtime import drive_book, creation_cancellation
     from novel_forge.modules.book_authority.manuscript import author_first, require_manuscript, writing_frontier
     principal.require("book.authority.execute", book["project_id"])
     if not author_first(book):
@@ -178,6 +214,11 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
             "manuscript": require_manuscript(settings.database_url, project_id=current["project_id"],
                 book_run_id=run, principal=principal)}
 
+    def continuation_live():
+        return not formation_run_id or not creation_cancellation(settings.database_url, formation_run_id)
+
+    if not continuation_live():
+        return report('SOURCE_CANCELLED', book)
     if writing_frontier(book) >= target:
         return report("MANUSCRIPT_READY", book)
     if book["state"] in {"ABORTED", "CANCELLED", "COMPLETED"}:
@@ -200,7 +241,7 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
             from novel_forge.modules.command_kernel.errors import KernelError
             try:
                 outcome = drive_book(composition=composition, chapter=chapter, book_run_id=run, worker=worker,
-                    maximum_ticks=1, deadline=monotonic() + 1800)
+                    maximum_ticks=1, deadline=monotonic() + 1800, continuation_live=continuation_live)
             except KernelError as exc:
                 result = report("NATIVE_CONTINUATION_BLOCKED", composition.authority.require(run))
                 result["failure"] = {"code": exc.code, "message": str(exc)}
@@ -208,5 +249,57 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
             if outcome not in {"YIELDED_CHECKPOINT", "WAITING_CHAPTER_DEPENDENCY", "MANUSCRIPT_READY"}:
                 return report(outcome, composition.authority.require(run))
         return report("YIELDED_CHECKPOINT", composition.authority.require(run))
+    finally:
+        execution.close()
+
+
+def _run_working_revision_command(settings, args, *, principal):
+    from novel_forge.modules.chapter_authority.working_revision import working_revision_status
+    from dataclasses import asdict
+    from time import monotonic
+    from novel_forge.api.authority_dependencies import (build_book_production_composition,
+        build_chapter_authority_application, build_production_execution_composition, build_trusted_principal_resolver)
+    if args.action in {"revision-status", "continue-revision"}:
+        if not args.revision_root:
+            raise ValueError("Retain the original --revision-root for status or continuation")
+        result = working_revision_status(settings.database_url, project_id=args.project_id,
+            book_run_id=args.book_run_id, root_operation_id=args.revision_root, principal=principal)
+        if args.action == "revision-status" or result["status"] in {"SUCCEEDED", "CANCELLED"}:
+            return result
+    if args.work_window_seconds <= 0:
+        raise ValueError("A positive scheduling work window is required")
+    execution = build_production_execution_composition(settings)
+    try:
+        chapter = build_chapter_authority_application(settings, execution=execution)
+        if args.action == "revise":
+            if args.expected_version is None or not args.chapter or not args.idempotency_key or not args.reason:
+                raise ValueError("Revision requires chapter, expected Book version, original idempotency key and purpose")
+            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+            if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
+                raise PermissionError("Revision is outside this Project")
+            admitted = chapter.admit_manuscript_revision(authority=composition.authority, book_run_id=args.book_run_id,
+                chapter=args.chapter, expected_version=args.expected_version, idempotency_key=args.idempotency_key,
+                reason=args.reason, principal=principal)
+            root_id = admitted.root_operation_id
+            if not args.foreground:
+                return {**asdict(admitted), "book_run_id": args.book_run_id, "chapter": args.chapter}
+        else:
+            root_id = args.revision_root
+            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_schema_transport, recover_unsent_context_transport
+        recover_unsent_context_transport(composition.authority, book_run_id=args.book_run_id, principal=principal, root_operation_id=root_id)
+        recover_schema_transport(composition.authority, book_run_id=args.book_run_id, principal=principal, root_operation_id=root_id)
+        from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
+        recover_chapter_generations(composition.authority, book_run_id=args.book_run_id,
+            principal=principal, working_revision_root_id=root_id)
+        worker = build_trusted_principal_resolver().resolve_worker_principal("manuscript-revision-worker")
+        scheduler = chapter.scheduler(principal=worker)
+        deadline = monotonic() + args.work_window_seconds
+        while monotonic() < deadline:
+            tick = scheduler.tick(project_id=args.project_id, root_operation_id=root_id)
+            if tick.operation_status not in {"SUCCEEDED", "ADMITTED", "READY"} or tick.saga_status == "SUCCEEDED":
+                break
+        return working_revision_status(settings.database_url, project_id=args.project_id,
+            book_run_id=args.book_run_id, root_operation_id=root_id, principal=principal)
     finally:
         execution.close()

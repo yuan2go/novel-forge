@@ -57,6 +57,16 @@ def require_live_chapter_frontier(cursor, *, root_id, project_id, book_run_id=No
         [project_id, root_id, Jsonb(AUTHOR_WORKFLOW)],
     )
     frontier = cursor.fetchone()
+    if frontier is None:
+        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, require_working_revision_frontier
+        cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s AND project_id=%s", [root_id, project_id])
+        row = cursor.fetchone()
+        if row and isinstance(row[0], dict) and row[0].get("definition_version") == ROOT_VERSION:
+            from types import SimpleNamespace
+            from novel_forge.storage.authority_repositories import AuthorityRepositories
+            require_working_revision_frontier(SimpleNamespace(cursor=cursor, repositories=AuthorityRepositories(cursor)),
+                root=row[0], book_run_id=book_run_id)
+            return
     if (not frontier or (book_run_id is not None and frontier[0] != book_run_id)
         or frontier[1] in {'ABORTED', 'COMPLETED', 'CANCELLED'}
         or frontier[2] == 'CANCELLED' or frontier[3]):

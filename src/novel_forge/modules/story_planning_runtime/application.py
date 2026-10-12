@@ -1811,7 +1811,7 @@ class StoryPlanningGenerationApplication:
         if row[2] == "CANCELLED" and not row[4]:
             from .runtime_continuation import follow
             return follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
-        if row[2] in {"FAILED_FINAL", "DEAD_LETTER"} and not row[4]:
+        if row[2] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and not row[4]:
             from .runtime_continuation import follow, register
 
             continued = follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
@@ -1831,12 +1831,18 @@ class StoryPlanningGenerationApplication:
             if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"
                     and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})):
+                if row[2] == 'FAILED_RETRYABLE':
+                    with AuthorityUnitOfWork(self.database_url) as uow:
+                        uow.cursor.execute('SELECT snapshot_payload->>\'release_sha\' FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1', [row[0]])
+                        snapshot = uow.cursor.fetchone()
+                    if not snapshot or snapshot[0] == self.commit_sha:
+                        return None
                 self._probe(execution_probe)
                 try:
                     register(self, str(row[0]), project_id=command.project_id, principal=principal,
                         expected_source_version=source_version,
                         decision_evidence={"authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                            "reason": "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity allocation after exact frozen failure; no external intent exists"},
+                            "reason": "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity correction after exact frozen failure with verified completed preparation retained"},
                         trace_id=command.trace_id, correlation_id=command.correlation_id)
                 except KernelError as error:
                     if error.code != "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED":

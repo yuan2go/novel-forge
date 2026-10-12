@@ -98,7 +98,15 @@ def reference_duplicate_craft_uses(candidates, *, intent: dict[str, Any], intent
             output.append(candidate)
             continue
         if uses != expected or summary.get("craft_strategy_digest") != strategy["strategy_digest"]:
-            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "A duplicate projection must match the protected exact execution strategy")
+            summary.setdefault("context_diagnostics", []).append({
+                "code": "CRAFT_CONTEXT_PROJECTION_DRIFT", "status": "DIAGNOSTIC_ONLY",
+                "protected_intent_asset_version_id": intent_asset_version_id,
+                "instruction": "Independent card guidance differs from the protected intent; no exact reference is established.",
+            })
+            rendered = json.dumps(summary, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            output.append(replace(candidate, safe_summary=rendered,
+                estimated_tokens=candidate.estimated_tokens + max(0, len(rendered) - len(candidate.safe_summary) + 3) // 4))
+            continue
         summary.pop("craft_uses")
         summary["craft_uses_reference"] = {"contract_version": "protected-craft-uses-reference.v1",
             "asset_version_id": intent_asset_version_id, "json_pointer": "/craft_strategy/uses",

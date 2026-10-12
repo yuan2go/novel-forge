@@ -131,7 +131,7 @@ class AgentHarnessUsage:
             cost_amount=str(float(self.cost_amount) + float(cost_amount)),
         )
 
-    def require_within(self, budget: AgentHarnessBudget) -> None:
+    def require_within(self, budget: AgentHarnessBudget, *, pure_generation: bool = False) -> None:
         exceeded = [
             label
             for label, used, maximum in (
@@ -146,7 +146,7 @@ class AgentHarnessUsage:
                 ("output_tokens", self.output_tokens, budget.max_output_tokens),
                 ("cost", float(self.cost_amount), float(budget.max_cost_amount)),
             )
-            if used > maximum
+            if used > maximum and (not pure_generation or label == "cost")
         ]
         if exceeded:
             raise KernelError(
@@ -253,6 +253,12 @@ class AgentHarnessSession:
     usage: AgentHarnessUsage = field(default_factory=AgentHarnessUsage)
     next_sequence: int = 1
     version: int = 1
+
+    @property
+    def pure_generation(self):
+        from .policy import SERVER_AGENT_TOOL_CATALOG
+        catalog = {**SERVER_AGENT_TOOL_CATALOG, SKILL_ACTIVATION_TOOL.tool_name: SKILL_ACTIVATION_TOOL}
+        return all(catalog.get(spec.tool_name) == spec for spec in self.tool_policy)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "role", AutonomousAgentRole(self.role))
@@ -502,8 +508,11 @@ class UnifiedAgentHarness:
         committed = self.transcript.committed_request_events(
             agent_session_id=session.agent_session_id
         )
+        pure_generation = current.pure_generation
+        recent_progress = []
         try:
-            for turn_number in range(1, current.budget.max_turns + 1):
+            from itertools import count
+            for turn_number in count(1) if pure_generation else range(1, current.budget.max_turns + 1):
                 if self.cancellation.cancellation_requested(
                     operation_id=current.operation_id
                 ):
@@ -545,7 +554,7 @@ class UnifiedAgentHarness:
                 )
                 if self.usage_meter is not None:
                     usage = self.usage_meter.measure(session=current, usage=usage)
-                usage.require_within(current.budget)
+                usage.require_within(current.budget, pure_generation=pure_generation)
                 current = self.transcript.append_event(
                     session=current,
                     request_id=request_id,
@@ -583,7 +592,7 @@ class UnifiedAgentHarness:
                 assert turn.tool_call is not None
                 spec = self._authorize_tool(current, turn.tool_call)
                 tool_usage = current.usage.add(tool_calls=1)
-                tool_usage.require_within(current.budget)
+                tool_usage.require_within(current.budget, pure_generation=pure_generation)
                 current = self.transcript.append_event(
                     session=current,
                     request_id=request_id,
@@ -641,7 +650,7 @@ class UnifiedAgentHarness:
                     observed_usage = self.usage_meter.measure(
                         session=current, usage=observed_usage
                     )
-                observed_usage.require_within(current.budget)
+                observed_usage.require_within(current.budget, pure_generation=pure_generation)
                 event_type = (
                     AgentTranscriptEventType.SKILL_ACTIVATED
                     if spec.tool_name == SKILL_ACTIVATION_TOOL.tool_name
@@ -672,6 +681,11 @@ class UnifiedAgentHarness:
                     usage=observed_usage,
                 )
                 observations.append(observation)
+                recent_progress.append(transcript_payload_hash({"tool": observation.tool_name,
+                    "arguments": dict(turn.tool_call.arguments), "result": dict(observation.result)}))
+                recent_progress = recent_progress[-3:]
+                if pure_generation and len(recent_progress) == 3 and len(set(recent_progress)) == 1:
+                    raise KernelError("AGENT_HARNESS_NO_PROGRESS", "Repeated identical tool inputs and observations did not advance the request")
             raise KernelError(
                 "AGENT_HARNESS_TURN_LIMIT",
                 "Agent request reached the hard turn limit without a final response",

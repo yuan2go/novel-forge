@@ -377,13 +377,13 @@ def test_codex_retry_policy_keeps_legacy_binding_and_separates_new_account_evide
     assert codex_account_binding_evidence(backend) == {**arguments, "retry_policy": CODEX_NO_RETRY_POLICY}
 
 
-def test_provider_process_timeout_preserves_external_effect_settlement_headroom() -> (
+def test_declared_timeout_is_not_divided_across_generation_attempts() -> (
     None
 ):
-    assert _provider_process_timeout_seconds(300) == 270
-    assert _provider_process_timeout_seconds(30) == 27
-    assert _provider_process_timeout_seconds(2) == 1
-    assert _provider_process_timeout_seconds(1_800, max_attempts=3) == 570
+    assert _provider_process_timeout_seconds(300) == 300
+    assert _provider_process_timeout_seconds(30) == 30
+    assert _provider_process_timeout_seconds(2) == 2
+    assert _provider_process_timeout_seconds(1_800, max_attempts=3) == 1_800
 
 
 @pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT"])

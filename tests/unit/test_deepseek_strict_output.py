@@ -115,8 +115,12 @@ def test_strict_schema_is_metered_and_over_capacity_is_rejected():
         replace(contract, execution_token_limit=previous_total),
         complete_request_coverage=COMPLETE_COVERAGE,
     )
-    assert receipt.status == "REJECTED"
-    assert receipt.reason == "EXECUTION_TOKEN_LIMIT_EXCEEDED"
+    assert receipt.status == "ADMITTED"
+    actual_capacity = prepare_provider_admission(envelope,
+        replace(contract, model_context_limit=previous_total),
+        complete_request_coverage=COMPLETE_COVERAGE)
+    assert actual_capacity.status == "REJECTED"
+    assert actual_capacity.reason == "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
 
 
 def test_strict_wire_keeps_reasoning_and_accepts_exact_single_function_arguments():

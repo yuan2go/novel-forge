@@ -134,7 +134,8 @@ def build_retrieval_query_plan(
             "RETRIEVAL_SEMANTIC_POLICY_INVALID",
             "semantic retrieval policy must be REQUIRED, FALLBACK_ALLOWED, or DISABLED",
         )
-    if str(memo.get("qualification") or "") != "QUALIFIED":
+    from novel_forge.modules.chapter_authority.execution_artifacts import MEMO_INPUT_QUALIFICATIONS
+    if str(memo.get("qualification") or "") not in MEMO_INPUT_QUALIFICATIONS:
         raise KernelError(
             "RETRIEVAL_MEMO_UNQUALIFIED",
             "retrieval requires a qualified ChapterMemo",

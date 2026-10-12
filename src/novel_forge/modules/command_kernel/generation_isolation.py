@@ -35,8 +35,6 @@ def generation_retry_usage(cursor, *, operation_id):
 
 def require_generation_retry_budget(cursor, *, operation_id):
     evidence=generation_retry_usage(cursor,operation_id=operation_id)
-    if evidence["failure_attempts"] >= evidence["maximum_failure_attempts"]:
-        raise KernelError("GENERATION_RECOVERY_EXHAUSTED", "The original logical generation exhausted its persisted retry allowance across Providers and successors", details=evidence)
     return evidence
 
 
@@ -45,6 +43,9 @@ def require_native_api_isolation_record(content, *, project_id, book_id, operati
     from .external_effect_runtime import _hash
 
     record = content.get("record") or {}
+    from novel_forge.modules.production_execution.backends import provider_invocation_inflight
+    if provider_invocation_inflight(record):
+        raise KernelError("GENERATION_ISOLATION_PROCESS_LIVE", "The original local Provider invocation is still in flight")
     original = ExecutionRequest.from_dict(record.get("request") or {})
     frozen = record.get("frozen_output_contract") or {}
     if (original.project_id != project_id or original.book_id != book_id
@@ -341,6 +342,7 @@ def append_isolation(uow, effect, command):
         "chapter.draft.generate",
         "chapter.review.evaluate",
         "chapter.revision.apply",
+        "chapter.revision.review",
         "chapter.canon.extract",
     }
     if (
@@ -399,7 +401,18 @@ def append_isolation(uow, effect, command):
                 "GENERATION_ISOLATION_RESULT_RECOVERABLE",
                 "Reuse the immutable domain output",
             )
-        cursor.execute(
+        cursor.execute("SELECT to_jsonb(root) FROM authority_operation root WHERE operation_id=%s", [operation["root_operation_id"]])
+        chapter_root = cursor.fetchone()[0]
+        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION
+        if chapter_root["definition_version"] == ROOT_VERSION:
+            cursor.execute("""SELECT book.book_id,book.workspace_id FROM authority_book_production book
+                JOIN authority_operation root ON root.command_payload #>> '{preparation_report,working_revision,book_run_id}'=book.book_run_id
+                JOIN authority_saga_step step ON step.operation_id=%s AND step.saga_id=%s
+                WHERE root.operation_id=%s AND book.project_id=%s AND root.actor_id=%s
+                  AND root.status='WAITING_CHILDREN'""",
+                [operation["operation_id"], operation["saga_id"], operation["root_operation_id"], command.project_id, command.actor_id])
+        else:
+            cursor.execute(
             """SELECT book.book_id,book.workspace_id FROM authority_book_chapter_request request
             JOIN authority_book_production book USING(book_run_id)
             JOIN authority_saga_step step ON step.operation_id=%s AND step.saga_id=%s
@@ -690,7 +703,7 @@ def append_isolation(uow, effect, command):
     return proof
 
 
-def recover_chapter_generations(authority, *, book_run_id, principal):
+def recover_chapter_generations(authority, *, book_run_id, principal, working_revision_root_id=None):
     from .manual_effect_resolution import (
         ExternalEffectManualResolutionCommand,
         resolve_external_effect_manually,
@@ -700,7 +713,7 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
     book = authority.require(book_run_id)
-    if not book.get("active_chapter_request_id"):
+    if not book.get("active_chapter_request_id") and not working_revision_root_id:
         return False
     for permission in (
         "external_effect.resolve",
@@ -708,10 +721,24 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
         "chapter.authority.execute",
     ):
         principal.require(permission, book["project_id"])
-    request = authority.require_chapter_request(book["active_chapter_request_id"])
-    root_id = request["chapter_root_operation_id"]
+    if working_revision_root_id:
+        from novel_forge.modules.chapter_authority.working_revision import require_working_revision_frontier
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            uow.cursor.execute("SELECT to_jsonb(root) FROM authority_operation root WHERE operation_id=%s", [working_revision_root_id])
+            row = uow.cursor.fetchone()
+            if row is None or row[0]["actor_id"] != principal.principal_id:
+                raise KernelError("GENERATION_ISOLATION_SCOPE_UNSAFE", "Require this operator's exact working revision Root")
+            require_working_revision_frontier(uow, root=row[0], book_run_id=book_run_id)
+        root_id = working_revision_root_id
+        request = {"chapter_request_id": None}
+    else:
+        request = authority.require_chapter_request(book["active_chapter_request_id"])
+        root_id = request["chapter_root_operation_id"]
     from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
 
+    from novel_forge.modules.chapter_authority.receipt_recovery import recover_completed_chapter_results
+    revalidated = recover_completed_chapter_results(authority, book_run_id=book_run_id,
+        principal=principal, root_operation_id=root_id)
     recovered = recover_saved_local_results(authority.chapter_port.application._model_port.adapter,
         database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal)
     with AuthorityUnitOfWork(authority.database_url) as uow:
@@ -725,7 +752,7 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
             [root_id],
         )
         sources = [row[0] for row in uow.cursor.fetchall()]
-    changed = recovered
+    changed = recovered or revalidated
     for source in sources:
         exhausted = None
         with AuthorityUnitOfWork(authority.database_url, coordinate_nested=True) as uow:

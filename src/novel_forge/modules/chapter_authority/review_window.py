@@ -38,7 +38,7 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
     draft = target if stage == "review" else request.require_input("draft_chapter")
     review = request.require_input("review_report") if stage == "rereview" else None
     if review is not None:
-        incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
+        incumbent = next((item for item in request.inputs if item.input_type == "best_draft_candidate"), None)
         if incumbent is not None:
             from .candidate_selection import retained_candidate_evidence
             retained = retained_candidate_evidence(incumbent.asset_version_id, incumbent.content)
@@ -49,6 +49,11 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
     payload = {**({"cross_chapter_window": window, "target_candidate_asset_version_id": target.asset_version_id} if window is not None else {}),
         "draft": target.content, "knowledge_review_targets": targets,
         "author_design_review_targets": draft.content.get("author_design_guidance") or {}}
+    working = (request.command.get("preparation_report") or {}).get("working_revision")
+    if working:
+        payload["working_revision_request"] = {"contract_version": working["contract_version"],
+            "source_asset_version_id": draft.asset_version_id, "reason": working["reason"],
+            "aesthetic_revision_requested": True, "core_story_change_authorized": False}
     if review is not None:
         payload.update(original_draft=draft.content, original_draft_asset_version_id=draft.asset_version_id,
                        target_candidate_asset_version_id=target.asset_version_id, review=review.content, revision=target.content)
@@ -59,6 +64,13 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
 
 
 def require_review_frontier(request: ChapterHandlerRequest) -> None:
+    if (request.command.get("preparation_report") or {}).get("working_revision"):
+        from .working_revision import require_working_revision_frontier
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        with AuthorityUnitOfWork(request.database_url) as uow:
+            uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [request.command["chapter_root_operation_id"]])
+            require_working_revision_frontier(uow, root=uow.cursor.fetchone()[0])
+        return
     snapshot = (request.command.get("preparation_report") or {}).get(
         "accepted_prose_snapshot"
     )
@@ -82,6 +94,9 @@ def prepare_review_window(
     context: ChapterInputAsset,
     prior: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
+    if (request.command.get("preparation_report") or {}).get("working_revision"):
+        from .working_revision import working_review_window
+        return working_review_window(request, draft, context, prior)
     snapshot = (request.command.get("preparation_report") or {}).get(
         "accepted_prose_snapshot"
     )

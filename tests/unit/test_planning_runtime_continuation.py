@@ -157,7 +157,6 @@ def source_uow(
             },
             "EFFECT_SCOPE_INVALID",
         ),
-        ({"depth": 2}, "BOUND_EXCEEDED"),
     ],
 )
 def test_runtime_continuation_rejects_unsafe_or_unrelated_source(change, code):
@@ -167,13 +166,14 @@ def test_runtime_continuation_rejects_unsafe_or_unrelated_source(change, code):
         )
 
 
-def test_runtime_continuation_uses_admission_provider_not_gateway_alias():
+@pytest.mark.parametrize('depth', [1, 2, 12])
+def test_runtime_continuation_uses_admission_provider_and_retains_depth_without_lifetime_veto(depth):
     source = require_source(
-        source_uow(depth=1), source_operation_id="source", project_id="project"
+        source_uow(depth=depth), source_operation_id="source", project_id="project"
     )
     assert source["provider"] == "provider"
     assert source["model_id"] == "model"
-    assert source["depth"] == 2
+    assert source["depth"] == depth + 1
 
 
 @pytest.mark.parametrize(
@@ -578,7 +578,8 @@ def test_terminal_replay_probes_cancellation_before_read_or_recovery(monkeypatch
 
 @pytest.mark.parametrize("required_bytes,expected_error", [(180_000, None), (300_000, "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED")])
 @pytest.mark.parametrize("retained_document", [False, True])
-def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, required_bytes, expected_error, retained_document):
+@pytest.mark.parametrize('prepared_world', [False, True])
+def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, required_bytes, expected_error, retained_document, prepared_world):
     from contextlib import nullcontext
     from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
     allocations = []
@@ -601,6 +602,8 @@ def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, requi
     app = SimpleNamespace(database_url="unused", execution_binder=SimpleNamespace(resolver=SimpleNamespace(execution_preparer=preparer)))
     source = {"attempt_id": "attempt", "snapshot_id": "snapshot", "snapshot_hash": "hash", "source_operation_id": "source",
         "snapshot": {"context_policy_ref": "policy"}, "inputs": [], "command": {}, "failure": {"error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"}}
+    if prepared_world:
+        source['retained_world_action'] = {'source_operation_id': 'source', 'world_action': {'asset_version_id': 'action'}}
     monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda database: nullcontext(SimpleNamespace()))
     monkeypatch.setattr(runtime, "_capacity_authorization", lambda *args, **kwargs: {"capacity_only": True})
     if expected_error:
@@ -610,7 +613,9 @@ def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, requi
     else:
         target, evidence = runtime._capacity_target(app, source, SimpleNamespace(), SimpleNamespace(), {})
         assert target["planning_capacity"]["allocated_task_tokens"] == 224_608
-        assert target["planning_capacity"]["external_intents_at_source"] == 0
+        assert target["planning_capacity"]["external_intents_at_source"] == (2 if prepared_world else 0)
+        if prepared_world:
+            assert target['planning_capacity']['retained_world_action'] == source['retained_world_action']
     assert allocations == [128_000, 224_608]
 
 

@@ -1063,7 +1063,7 @@ def is_targeted_revision_schema_ref(schema_ref: str) -> bool:
 def is_work_review_schema_ref(schema_ref: str) -> bool:
     return re.fullmatch(
         r"schema:chapter-provider-output:(?:review|rereview):(?:v6|cross-chapter-v6)"
-        r"(?::quality-resolution-v1)?(?::narrative-craft-v[23])?",
+        r"(?::quality-resolution-v1)?(?::narrative-craft-v[23])?(?::repair-scope-v1)?",
         schema_ref,
     ) is not None
 

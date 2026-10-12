@@ -6,6 +6,47 @@ from novel_forge.modules.chapter_authority.candidate_selection import (
 )
 
 
+def _length_candidates():
+    from dataclasses import replace
+    from novel_forge.modules.review.diagnostics import prose_hash
+    previous = replace(_candidate("draft", 80), content={"text": "山" * 3520})
+    challenger = replace(_candidate("revision", 80), content={"text": "河" * 4500},
+        diagnostic_contract_version="actionable-diagnostics.v1")
+    scope = {"contract_version": "chapter-length-repair.v1", "unit": "HAN_CHARACTERS_V1",
+        "scope": "WHOLE_CHAPTER_LENGTH_CORRECTION", "source_asset_version_id": "draft",
+        "source_text_hash": prose_hash(previous.content["text"]), "source_han_characters": 3520,
+        "context_asset_version_id": "context", "minimum": 4000, "maximum": 5000}
+    return previous, challenger, scope
+
+
+def test_measured_length_correction_does_not_require_a_model_score_gain():
+    previous, challenger, scope = _length_candidates()
+    result = compare_candidates(project_id="p", chapter_root_operation_id="root", previous=previous,
+        challenger=challenger, minimum_net_improvement=3, length_repair_scope=scope)
+    assert result["selected_asset_version_id"] == "revision"
+    assert result["length_measurement"]["challenger"] == 4500
+    assert result["resolution_checks"] == [] and not result["literary_quality_proven"]
+
+
+def test_measured_length_correction_cannot_hide_new_major_problem():
+    from dataclasses import replace
+    previous, challenger, scope = _length_candidates()
+    result = compare_candidates(project_id="p", chapter_root_operation_id="root", previous=previous,
+        challenger=replace(challenger, blocker_codes=("CANON_CONFLICT",)),
+        minimum_net_improvement=3, length_repair_scope=scope)
+    assert result["selected_asset_version_id"] == "draft"
+
+
+def test_measured_length_correction_requires_exact_source():
+    import pytest
+    from novel_forge.modules.command_kernel.errors import KernelError
+    previous, challenger, scope = _length_candidates()
+    for drift in ({"source_asset_version_id": "other"}, {"source_text_hash": "sha256:" + "f" * 64}):
+        with pytest.raises(KernelError, match="exact out-of-bounds"):
+            compare_candidates(project_id="p", chapter_root_operation_id="root", previous=previous,
+                challenger=challenger, minimum_net_improvement=3, length_repair_scope={**scope, **drift})
+
+
 def _candidate(identity: str, score: float, blockers: tuple[str, ...] = ()) -> CandidateEvidence:
     return CandidateEvidence(
         asset_version_id=identity,
@@ -76,6 +117,55 @@ def test_unchanged_prose_cannot_claim_improvement_from_a_higher_score():
     assert result["selected_asset_version_id"] == previous.asset_version_id
     assert result["previous"]["blocker_codes"] == ["CANON_CONFLICT"]
     assert not result["improved"]
+
+
+def test_located_repair_and_preservation_support_selection_without_a_score_gain_or_lifetime_count():
+    from dataclasses import replace
+    previous = _candidate('draft',95)
+    challenger = replace(_candidate('revision',90),diagnostic_contract_version='actionable-diagnostics.v1',
+        resolved_issue_codes=('REPETITION',),
+        resolution_checks=({'code':'REPETITION','status':'SATISFIED','preservation':'PRESERVED',
+            'evidence':{'quote':'revision'},'reason':'The duplicate demonstration is combined while the prior choice remains.'},))
+    result = compare_candidates(project_id='p',chapter_root_operation_id='root',previous=previous,
+        challenger=challenger,minimum_net_improvement=3,correction_generation=12,maximum_correction_generations=1)
+    assert result['selected_asset_version_id']=='revision' and result['stop_reason']=='COMPARISON_SUPPORTED'
+    assert result['net_improvement']==-5 and not result['literary_quality_proven']
+
+
+def test_supported_partial_repair_keeps_remaining_problem_without_count_escalation():
+    from dataclasses import replace
+    previous = _candidate('draft',95,('REMAINING',))
+    challenger = replace(_candidate('revision',90,('REMAINING',)),diagnostic_contract_version='actionable-diagnostics.v1',
+        resolved_issue_codes=('REPETITION',),remaining_issue_codes=('REMAINING',),
+        resolution_checks=({'code':'REPETITION','status':'SATISFIED','preservation':'PRESERVED',
+            'evidence':{'quote':'revision'},'reason':'One repeated passage is combined; the other diagnosis remains open.'},))
+    result = compare_candidates(project_id='p',chapter_root_operation_id='root',previous=previous,
+        challenger=challenger,minimum_net_improvement=3,correction_generation=12,maximum_correction_generations=1)
+    assert result['selected_asset_version_id']=='revision' and result['stop_reason']=='CONTINUE_CORRECTION'
+    assert result['challenger']['blocker_codes']==['REMAINING']
+
+
+def test_located_resolution_claim_cannot_select_an_issue_the_host_keeps_open():
+    from dataclasses import replace
+    for score in (90, 100):
+        challenger = replace(_candidate('revision', score), diagnostic_contract_version='actionable-diagnostics.v1',
+            remaining_issue_codes=('REPETITION',),
+            resolution_checks=({'code':'REPETITION','status':'SATISFIED','preservation':'PRESERVED',
+                'evidence':{'quote':'revision'},'reason':'A real passage alone does not close the diagnosis.'},))
+        result = compare_candidates(project_id='p', chapter_root_operation_id='root',
+            previous=_candidate('draft',95), challenger=challenger, minimum_net_improvement=3)
+        assert result['selected_asset_version_id'] == 'draft' and not result['improved']
+        assert result['challenger']['remaining_issue_codes'] == ['REPETITION']
+
+
+def test_high_score_and_self_report_without_real_passage_do_not_select_a_revision():
+    from dataclasses import replace
+    challenger = replace(_candidate('revision',100),diagnostic_contract_version='actionable-diagnostics.v1',
+        resolution_checks=({'code':'REPETITION','status':'SATISFIED','preservation':'PRESERVED',
+            'evidence':{'quote':'invented source passage'},'reason':'The model says it is resolved.'},))
+    result = compare_candidates(project_id='p',chapter_root_operation_id='root',previous=_candidate('draft',80),
+        challenger=challenger,minimum_net_improvement=3)
+    assert result['selected_asset_version_id']=='draft' and not result['improved']
 
 
 def test_resolved_blocker_does_not_imply_literary_quality_above_a_fixed_score():

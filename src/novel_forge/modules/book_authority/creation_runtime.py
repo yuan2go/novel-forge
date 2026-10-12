@@ -37,6 +37,30 @@ class _RecoveryCheckpoint(Exception):
         super().__init__(reason)
 
 
+def resume_generation_pause(authority, *, book_run_id, principal):
+    book = authority.require(book_run_id)
+    if book["state"] != "PAUSED" or book.get("paused_reason") != "GENERATION_RECOVERY_EXHAUSTED":
+        return False
+    request = authority.require_chapter_request(book["active_chapter_request_id"])
+    from novel_forge.modules.command_kernel.generation_policy import generation_graph
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        if not generation_graph(uow.cursor, request["chapter_root_operation_id"], book["project_id"]):
+            return False
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor successor
+            JOIN authority_operation replacement ON replacement.operation_id=successor.successor_operation_id
+            JOIN authority_saga_step step ON step.operation_id=replacement.operation_id
+            WHERE replacement.root_operation_id=%s AND replacement.project_id=%s
+              AND replacement.status IN ('ADMITTED','READY','RUNNING','WAITING_EXTERNAL_RESULT')
+              AND successor.policy_evidence->>'contract_version'='chapter-pure-generation-successor.v1')""",
+            [request["chapter_root_operation_id"], book["project_id"]])
+        runnable = bool(uow.cursor.fetchone()[0])
+    if not runnable:
+        return False
+    authority.resume(book_run_id, reason="Original generation failure is isolated; resume the owned successor without a historical quota lock",
+        principal=principal, expected_version=book["version"])
+    return True
+
+
 def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                maximum_ticks: int, deadline: float, continuation_live: Callable[[], bool] = lambda: True, execution_probe: Callable[[], object] = lambda: None, events: Callable[[dict[str, Any]], None] = lambda _: None) -> str:
     try:
@@ -105,9 +129,12 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         from novel_forge.modules.chapter_authority.context_transport_recovery import recover_unsent_context_transport, recover_optional_memory_transport
         recover_unsent_context_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         recover_optional_memory_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal)
+        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_schema_transport
+        recover(lambda: recover_schema_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
+        resume_generation_pause(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.memo_recovery import recover_memo_references, recover_memo_completion, recover_intent_references
         recover(lambda: recover_intent_references(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         recover(lambda: recover_memo_references(composition.authority, book_run_id=book_run_id, principal=composition.principal))

@@ -13,9 +13,16 @@ def _materialize_targeted_result(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     from novel_forge.modules.review.cross_chapter import apply_targeted_edits
     targeted = apply_targeted_edits(draft=source, review=review, result=result, range_policy=range_policy)
-    if "scene_artifacts" not in result:
-        slots = derive_targeted_revision_slots(source, targeted["targeted_edits"])
-        result = {**result, "scene_artifacts": slots}
+    slots, mapped = [], False
+    if source.get("realization_contract") and source.get("scene_artifacts"):
+        try:
+            slots = derive_targeted_revision_slots(source, targeted["targeted_edits"])
+            mapped = True
+        except KernelError as error:
+            if error.code not in {"REVISION_TARGETED_SLOT_REQUIRED", "REVISION_TARGETED_SLOT_BOUNDARY"}:
+                raise
+    result = {**result, "text": targeted["repaired_text"], "scene_artifacts": slots,
+        **({"realization_mapping_status": "NOT_MAPPED"} if not mapped else {})}
     text = prose_from_output(result, separators=source.get("scene_separators"))
     if text != targeted["repaired_text"]:
         raise KernelError("REVISION_TARGETED_EDIT_INVALID", "derived Slot prose differs from bounded edits")
@@ -65,7 +72,9 @@ def apply_revision_result(
             or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
     targeted = {}
-    if review.get("cross_chapter_window") or review.get("craft_targets"):
+    from novel_forge.modules.review.diagnostics import structural_repair_scope
+    structural = length_scope is not None or structural_repair_scope(repair_diagnoses, review=review) == "CHAPTER_REVISION"
+    if not structural and (review.get("cross_chapter_window") or review.get("craft_targets")):
         result, targeted = _materialize_targeted_result(draft, review, result)
     text = prose_from_output(result, separators=draft.get("scene_separators"))
     if length_scope is not None:
@@ -73,22 +82,15 @@ def apply_revision_result(
             context_asset_version_id=context_bundle_version_id)
     if "creative_baseline" in draft:
         from novel_forge.modules.review.diagnostics import validate_prose_repair_scope
-        validate_prose_repair_scope(draft, repair_diagnoses, text, length_scope=length_scope)
+        validate_prose_repair_scope(draft, repair_diagnoses, text, length_scope=length_scope, review=review)
     if review.get("craft_targets"):
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
     resolved = sorted({str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()})
-    open_blocking = {
-        str(item.get("code") or "")
-        for item in diagnoses
-        if item.get("severity") == "blocking"
-        and item.get("status", "OPEN") == "OPEN"
-        and item.get("qualification", "ELIGIBLE") == "ELIGIBLE"
-    }
-    if not text.strip() or not open_blocking.issubset(set(resolved)):
+    if not text.strip():
         raise KernelError(
             "CHAPTER_REVISION_INCOMPLETE",
-            "revision must provide text and resolve every eligible blocking issue",
+            "revision must provide prose",
         )
     resolutions = [
         {
@@ -107,7 +109,9 @@ def apply_revision_result(
     if not isinstance(assertions, list) or any(not isinstance(item, dict) for item in assertions):
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "canon_assertions must be objects")
     return {
-        **reconcile_revision_composition(draft, result),
+        **({"realization_mapping_status": "NOT_MAPPED", "scene_artifacts": [],
+            "previous_composition_digest": draft.get("composition_digest")}
+           if structural or draft.get("realization_mapping_status") == "NOT_MAPPED" or result.get("realization_mapping_status") == "NOT_MAPPED" else reconcile_revision_composition(draft, result)),
         **targeted,
         "project_id": project_id,
         "chapter": draft["chapter"],
@@ -130,6 +134,7 @@ def apply_revision_result(
         "resolved_issue_codes": resolved,
         "resolution_claimed_issue_codes": resolved,
         "issue_resolutions": resolutions,
+        "repair_scope": "CHAPTER_REVISION" if structural else "LOCAL_PROSE",
         "canon_assertions": assertions,
         "provider_evidence": dict(provider_evidence),
         **({"chapter_length_repair_scope": {**length_scope, "revised_han_characters": han_characters(text)}} if length_scope is not None else {}),
@@ -227,9 +232,14 @@ def apply_quality_revision_result(
             "bounded Quality correction cannot replace a complete chapter with a "
             "truncated summary or excerpt",
         )
+    unmapped = revision.get("realization_mapping_status") == "NOT_MAPPED" or result.get("realization_mapping_status") == "NOT_MAPPED"
+    retained = {key: value for key, value in revision.items() if not unmapped or key not in {
+        "realization_contract", "composition_digest", "scene_separators", "scene_artifacts"}}
     return {
-        **revision,
-        **reconcile_revision_composition(revision, result),
+        **retained,
+        **({"realization_mapping_status": "NOT_MAPPED", "scene_artifacts": [],
+            "previous_composition_digest": revision.get("composition_digest") or revision.get("previous_composition_digest")}
+           if unmapped else reconcile_revision_composition(revision, result)),
         **targeted,
         **({"quality_edit_contract": scope} if scope is not None else {}),
         "text": text,
@@ -368,7 +378,7 @@ def han_characters(text: str) -> int:
 
 def freeze_chapter_length_scope(source: dict[str, Any], *, source_asset_version_id: str,
                                 context: dict[str, Any], context_asset_version_id: str) -> dict[str, Any] | None:
-    from novel_forge.modules.chapter_quality_authority.context_views import compile_platform_policy
+    from novel_forge.modules.chapter_quality_authority.context_views import chapter_length_unit, compile_platform_policy
     from novel_forge.modules.review.diagnostics import prose_hash
     profiles = []
     for segment in context.get('context_segments', []):
@@ -376,8 +386,11 @@ def freeze_chapter_length_scope(source: dict[str, Any], *, source_asset_version_
             continue
         profile_id = segment['asset_version_id']
         rules = compile_platform_policy(profile_asset_version_id=profile_id, segment=segment).chapter_length_rules
-        if rules.get('unit') == 'HAN_CHARACTERS_V1':
-            profiles.append((segment, rules))
+        if not ({'minimum', 'maximum'} & rules.keys()):
+            continue
+        if chapter_length_unit(rules) != 'HAN_CHARACTERS_V1':
+            raise KernelError('CHAPTER_LENGTH_UNIT_UNSUPPORTED', 'Frozen length bounds require the manuscript Han-character measurement; correct an incompatible explicit unit')
+        profiles.append((segment, rules))
     if not profiles:
         return None
     if len(profiles) != 1:

@@ -16,8 +16,8 @@ def test_agency_rejection_is_terminal_contract_failure_and_repairable():
     assert WorkerFailureClassifier.classify(KernelError('TEMPORARY_PROVIDER_FAILURE', 'temporary')) == WorkerFailureClass.RETRYABLE
 
 
-@pytest.mark.parametrize('settled', [True, False])
-def test_missing_action_still_revalidates_exact_director_receipt(settled):
+@pytest.mark.parametrize('accounting', ['SETTLED', 'RESERVED', 'HELD_UNKNOWN'])
+def test_missing_action_still_revalidates_exact_director_receipt(accounting):
     source = SimpleNamespace(asset_version_id='source', content_hash='source-hash', content={'contract': {
         'reality': {}, 'request': {'accepted_through_chapter': 0}, 'policy': {},
         'intent_version_id': 'intent', 'contract_version': 'world-preparation-source.v1'}})
@@ -33,13 +33,14 @@ def test_missing_action_still_revalidates_exact_director_receipt(settled):
         return evaluation
     query = SimpleNamespace(database_url='db', require=require)
     command = SimpleNamespace(project_id='project', actor_id='actor', trace_id='trace', correlation_id='correlation')
-    receipt = {'provider_evidence': {'result': raw}, 'budget_reservation_status': 'SETTLED' if settled else 'RESERVED'}
+    receipt = {'provider_evidence': {'result': raw}, 'budget_reservation_status': accounting}
     with patch.object(PlanningWorldPreparation, '_source_operation', return_value='operation'), patch(
-        'novel_forge.modules.command_kernel.external_effect_runtime.read_failed_operation_success', return_value=receipt
+        'novel_forge.modules.command_kernel.external_effect_runtime.read_retained_generation_stage_success', return_value=receipt
     ), patch('novel_forge.modules.story_planning_runtime.world_preparation.compile_world_plan', side_effect=KernelError(
         'WORLD_AGENCY_CLASSIFICATION_REJECTED', 'exact retained Director refusal'
     )) as compile_plan:
         with pytest.raises(KernelError) as error:
             PlanningWorldPreparation._validate_retained_plan(query, command=command, generation=generation, source=source, decoded={})
-        assert error.value.code == ('WORLD_AGENCY_CLASSIFICATION_REJECTED' if settled else 'WORLD_REPAIR_EVALUATION_UNSETTLED')
-        assert compile_plan.call_count == int(settled)
+        assert error.value.code == 'WORLD_AGENCY_CLASSIFICATION_REJECTED'
+        assert compile_plan.call_count == 1
+        assert receipt['budget_reservation_status'] == accounting

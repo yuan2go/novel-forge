@@ -57,7 +57,8 @@ def evaluate_review_result(
             if ("asset_version_id" in target and target["asset_version_id"] != target_asset_version_id) or ("text_hash" in target and target["text_hash"] != prose_hash(str(prose_text))):
                 raise KernelError("REVIEW_EVIDENCE_INVALID", "target evidence must bind the exact candidate version and hash")
             from .cross_chapter import paired_diagnosis
-            diagnosis = paired_diagnosis(item, text=str(prose_text), window=cross_chapter_window, prior=prior_review)
+            diagnosis = paired_diagnosis(item, text=str(prose_text), window=cross_chapter_window,
+                prior=prior_review, target_asset_version_id=target_asset_version_id)
             code = diagnosis.get("code", code)
         if code in seen_codes:
             raise KernelError("REVIEW_ISSUE_IDENTITY_INVALID", "review issue codes must be unique so distinct diagnoses survive revision")

@@ -577,17 +577,11 @@ def prepare_provider_admission(
         framing_overhead=contract.framing_overhead,
     )
     total = sum(components.values())
-    applicable_limit = min(
-        512_000 if contract.contract_version == "provider-token-accounting-v3" else contract.model_context_limit,
-        contract.model_context_limit,
-        contract.execution_token_limit,
-    )
+    applicable_limit = contract.model_context_limit
     if status == "ADMITTED" and total > applicable_limit:
         status, reason = (
             "REJECTED",
-            "EXECUTION_TOKEN_LIMIT_EXCEEDED"
-            if contract.execution_token_limit < contract.model_context_limit
-            else "PROVIDER_CONTEXT_LIMIT_EXCEEDED",
+            "PROVIDER_CONTEXT_LIMIT_EXCEEDED",
         )
     return ProviderAdmissionReceipt(
         status=status,

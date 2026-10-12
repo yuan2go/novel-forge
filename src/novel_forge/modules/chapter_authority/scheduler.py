@@ -142,6 +142,11 @@ class ChapterAuthorityScheduler:
 
     def tick(self, *, project_id: str, root_operation_id: str) -> ChapterSchedulerTick:
         root, saga, children = self._graph_state(project_id, root_operation_id)
+        from .working_revision import ROOT_VERSION as WORKING_REVISION_ROOT, NODES as WORKING_REVISION_NODES, require_working_revision_frontier
+        working_revision = root["definition_version"] == WORKING_REVISION_ROOT
+        if working_revision and root["status"] not in {"SUCCEEDED", "CANCELLED", "FAILED_FINAL", "DEAD_LETTER", "CANCELLATION_REQUESTED"}:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                require_working_revision_frontier(uow, root=root)
         from novel_forge.modules.book_authority.execution_recovery import require_dispatch
         require_dispatch(self.database_url, command_payload=root["command_payload"], root_operation_id=root_operation_id)
         from novel_forge.modules.book_authority.execution_recovery_v2 import require_dispatch as require_dispatch_v2
@@ -164,7 +169,7 @@ class ChapterAuthorityScheduler:
             trace_id=root["trace_id"],
             correlation_id=root["correlation_id"],
         )
-        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1"} and root["status"] == "CANCELLATION_REQUESTED":
+        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1", WORKING_REVISION_ROOT} and root["status"] == "CANCELLATION_REQUESTED":
             coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             _, _, existing = self._graph_state(project_id, root_operation_id)
             cancellable = next(((node, child) for node, child in existing.items()
@@ -174,7 +179,7 @@ class ChapterAuthorityScheduler:
                 coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             return ChapterSchedulerTick(root_operation_id, saga["saga_id"], coordinated["status"], root_operation_id,
                 "", "CANCELLATION_REQUESTED", "cancel_existing_children_only")
-        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1"} and root["status"] == "WAITING_GATE":
+        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1", WORKING_REVISION_ROOT} and root["status"] == "WAITING_GATE":
             blocked = self._admission_gate(root_operation_id, project_id)
             if blocked:
                 with AuthorityUnitOfWork(self.database_url) as uow:
@@ -210,7 +215,7 @@ class ChapterAuthorityScheduler:
         if any(c["status"] == "ADMITTED" for c in children.values()):
             root, saga, children = self._graph_state(project_id, root_operation_id)
         from novel_forge.modules.book_authority.manuscript import AUTHOR_ROOT_VERSION
-        active_nodes = tuple(ChapterNode)[:6] if root["definition_version"] == AUTHOR_ROOT_VERSION else tuple(ChapterNode)
+        active_nodes = WORKING_REVISION_NODES if working_revision else tuple(ChapterNode)[:6] if root["definition_version"] == AUTHOR_ROOT_VERSION else tuple(ChapterNode)
         chapter_complete = all(
             children.get(node, {}).get("status") == "SUCCEEDED" for node in active_nodes
         )
@@ -306,7 +311,7 @@ class ChapterAuthorityScheduler:
                     node=node,
                 )
             except KernelError as error:
-                if root["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1"} or WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
+                if root["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1", WORKING_REVISION_ROOT} or WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
                     raise
                 fresh_root, fresh_saga, fresh_children = self._graph_state(project_id, root_operation_id)
                 if node in fresh_children or fresh_root["status"] not in {"EXECUTING", "WAITING_CHILDREN"}:
@@ -881,7 +886,7 @@ class ChapterAuthorityScheduler:
                     OR (operation.definition_name LIKE 'chapter.provider.sample.%%'
                         AND operation.definition_version = ANY(%s))
                   )
-                  AND NOT (operation.definition_version IN ('3.10.0','3.10.0-author-first.v1') AND operation.status='WAITING_GATE'
+                  AND NOT (operation.definition_version IN ('3.10.0','3.10.0-author-first.v1','3.10.0-working-revision.v1') AND operation.status='WAITING_GATE'
                     AND COALESCE(latest_transition.reason, '') LIKE %s AND COALESCE(latest_transition.reason, '') LIKE %s)
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
@@ -910,6 +915,7 @@ class ChapterAuthorityScheduler:
             and gate.get("implementation_identity") and gate.get("node") in {item.value for item in ChapterNode}) else None
 
     def _require_technical_gate_frontier(self, uow, root, saga):
+        from .working_revision import ROOT_VERSION
         from novel_forge.modules.command_kernel.step_successor import require_live_chapter_frontier
         from novel_forge.modules.command_kernel.step_successor_v2 import _require_reconciled_graph
         from novel_forge.modules.command_kernel.derived_step_revalidation import _settled_graph
@@ -919,11 +925,13 @@ class ChapterAuthorityScheduler:
         uow.cursor.execute("SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s AND project_id=%s FOR UPDATE",
             [root["operation_id"], root["project_id"]])
         row = uow.cursor.fetchone()
-        if (not row or row[0]["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1"} or row[0]["definition_name"] != "chapter.slice.run"
+        if (not row or row[0]["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1", ROOT_VERSION} or row[0]["definition_name"] != "chapter.slice.run"
             or row[0]["status"] not in {"EXECUTING", "WAITING_CHILDREN", "WAITING_GATE"}
             or any(row[0].get(key) != root.get(key) for key in ("workspace_id", "actor_id", "command_payload", "input_asset_snapshot", "definition_snapshot"))):
             raise KernelError("CHAPTER_TECHNICAL_GATE_SCOPE_DRIFT", "Technical admission may only retain its exact unfinished native Root")
-        if row[1] is not None and row[1] <= datetime.now(timezone.utc):
+        from novel_forge.modules.command_kernel.generation_policy import generation_graph
+        if row[1] is not None and row[1] <= datetime.now(timezone.utc) and not generation_graph(
+                uow.cursor, root["operation_id"], root["project_id"]):
             raise KernelError("OPERATION_BUSINESS_TIMEOUT", "Technical repair cannot renew the frozen Root or author deadline")
         require_live_chapter_frontier(uow.cursor, root_id=root["operation_id"], project_id=root["project_id"])
         _require_reconciled_graph(uow.cursor, root_id=root["operation_id"], predecessor_id=root["operation_id"])
@@ -999,10 +1007,17 @@ class ChapterAuthorityScheduler:
         timeline_ordinal: int = 0,
         activate_immediately: bool = False,
     ) -> dict[str, Any]:
+        from .working_revision import ROOT_VERSION as WORKING_REVISION_ROOT, NODES as WORKING_REVISION_NODES
         inputs: list[dict[str, str]] = []
         effective_overrides = dict(input_overrides or {})
         for source in _input_nodes(node):
             source_operation = children.get(source)
+            working = (request.preparation_report or {}).get("working_revision")
+            if source_operation is None and working and root["definition_version"] == WORKING_REVISION_ROOT:
+                pointer = working.get("source_inputs", {}).get(source.value)
+                if pointer is not None:
+                    inputs.append(dict(pointer))
+                    continue
             if source_operation is None or source_operation["status"] != "SUCCEEDED":
                 raise KernelError(
                     "CHAPTER_INPUT_NOT_COMPLETE",
@@ -1143,6 +1158,8 @@ class ChapterAuthorityScheduler:
             f"{request.project_id}:chapter:{request.chapter}:root"
         )
         dependencies = _admission_dependencies(node)
+        if root["definition_version"] == WORKING_REVISION_ROOT:
+            dependencies = tuple(item for item in dependencies if item in children)
         dependency_ids = [str(children[item]["operation_id"]) for item in dependencies]
         if dependency_operation_ids is not None:
             dependency_ids = list(dependency_operation_ids)
@@ -1176,7 +1193,7 @@ class ChapterAuthorityScheduler:
                 saga_id,
                 operation_id,
                 timeline_step_key or node.value,
-                timeline_ordinal or list(ChapterNode).index(node) + 1,
+                timeline_ordinal or (WORKING_REVISION_NODES.index(node) + 1 if root["definition_version"] == WORKING_REVISION_ROOT else list(ChapterNode).index(node) + 1),
                 "",
             )
         for dependency_id in dependency_ids:
@@ -1716,6 +1733,19 @@ class ChapterAuthorityScheduler:
         operation_id = str(operation["operation_id"])
         project_id = request.project_id
         active = self._active_attempt(operation_id, project_id)
+        if (operation["status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
+            and active is not None and active["status"] == "RESULT_SUBMITTED"):
+            from novel_forge.modules.command_kernel.completion import (
+                CompletionCommandContext, evaluate_completion_contract, finalize_operation_completion,
+            )
+            completed = evaluate_completion_contract(self.database_url, operation_id, project_id)
+            if completed["satisfied"] and completed["target_status"] == "SUCCEEDED":
+                finalize_operation_completion(self.database_url,
+                    CompletionCommandContext(project_id, self.worker_id, request.trace_id, request.correlation_id),
+                    operation_id=operation_id, expected_status=completed["evaluated_operation_status"],
+                    expected_version=completed["evaluated_operation_version"],
+                    require_uncancelled=True)
+                return "submitted_completion_finalized"
         recovery_mode = "fresh_attempt"
         if operation["status"] in {"READY", "FAILED_RETRYABLE"}:
             recovery_mode = (
@@ -1954,7 +1984,7 @@ class ChapterAuthorityScheduler:
                 """
                 SELECT operation_id, project_id, workspace_id, actor_id, status,
                        definition_version, definition_snapshot, command_payload,
-                       trace_id, correlation_id, idempotency_key
+                       trace_id, correlation_id, idempotency_key, definition_name, input_asset_snapshot
                 FROM authority_operation
                 WHERE operation_id = %s AND project_id = %s
                   AND root_operation_id = operation_id
@@ -1980,6 +2010,8 @@ class ChapterAuthorityScheduler:
                         "trace_id",
                         "correlation_id",
                         "idempotency_key",
+                        "definition_name",
+                        "input_asset_snapshot",
                     ),
                     row,
                     strict=True,

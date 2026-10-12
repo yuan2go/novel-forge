@@ -106,8 +106,8 @@ def require_task_reasoning(route: Any, *, task_scoped: bool) -> None:
         and authorization[0] == route.model_profile.reasoning_effort
         and isinstance(authorization[1], str) and authorization[1].startswith("sha256:")
         and len(authorization[1]) == 71)
-    if route.model_profile.reasoning_effort not in {"high", "xhigh", "max", "ultra"} and not authorized:
-        raise KernelError("TASK_CONTEXT_REASONING_REQUIRED", "task-scoped text and semantic execution require high reasoning or above")
+    if authorization is not None and not authorized:
+        raise KernelError("TASK_CONTEXT_REASONING_AUTHORIZATION_DRIFT", "Selected task reasoning differs from its frozen route authorization")
     if route.route_policy.reasoning_downgrade_policy != "PROHIBITED":
         raise KernelError("TASK_CONTEXT_REASONING_DOWNGRADE_FORBIDDEN", "task-scoped execution cannot permit a reasoning downgrade")
 

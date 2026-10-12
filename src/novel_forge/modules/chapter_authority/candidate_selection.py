@@ -36,6 +36,8 @@ class CandidateEvidence:
     cross_chapter_review: bool = False
     preservation_checks: tuple[dict[str, Any], ...] = ()
     quality_resolution_checks: tuple[dict[str, Any], ...] = ()
+    resolved_issue_codes: tuple[str, ...] = ()
+    remaining_issue_codes: tuple[str, ...] = ()
 
 
 def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
@@ -65,6 +67,18 @@ def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> C
                              workspace_asset_version_id=workspace_id)
 
 
+def _supported_resolution(check, text):
+    if (check.get('status') != 'SATISFIED' or check.get('preservation') != 'PRESERVED'
+        or not str(check.get('reason') or '').strip() or not isinstance(check.get('evidence'), dict)):
+        return False
+    from novel_forge.modules.review.diagnostics import validate_location
+    try:
+        validate_location(check['evidence'], text)
+    except KernelError:
+        return False
+    return True
+
+
 def compare_candidates(
     *,
     project_id: str,
@@ -72,6 +86,7 @@ def compare_candidates(
     previous: CandidateEvidence,
     challenger: CandidateEvidence,
     minimum_net_improvement: float,
+    length_repair_scope: dict[str, Any] | None = None,
     correction_generation: int = 0,
     maximum_correction_generations: int = 1,
 ) -> dict[str, Any]:
@@ -101,8 +116,25 @@ def compare_candidates(
         set(previous.blocker_codes) - set(challenger.blocker_codes)
     )
     net_improvement = challenger.score - previous.score
+    length_measurement = None
+    if length_repair_scope is not None:
+        from novel_forge.modules.revision.domain import han_characters, validate_chapter_length_scope
+        validate_chapter_length_scope(length_repair_scope, previous.content,
+            str(challenger.content.get("text") or ""), source_asset_version_id=previous.asset_version_id,
+            context_asset_version_id=str(length_repair_scope.get("context_asset_version_id") or ""))
+        length_measurement = {"unit": "HAN_CHARACTERS_V1", "source_asset_version_id": previous.asset_version_id,
+            "challenger_asset_version_id": challenger.asset_version_id,
+            "previous": han_characters(str(previous.content.get("text") or "")),
+            "challenger": han_characters(str(challenger.content.get("text") or "")),
+            "minimum": length_repair_scope["minimum"], "maximum": length_repair_scope["maximum"],
+            "evidence_class": "HOST_MEASURED_REQUIREMENT_CORRECTION"}
     diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
-    supported_improvement = any(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
+    supported_improvement = any(
+        check.get("code") in challenger.resolved_issue_codes
+        and check.get("code") not in challenger.remaining_issue_codes
+        and _supported_resolution(check, str(challenger.content.get("text") or ""))
+        for check in challenger.resolution_checks
+    )
     from novel_forge.modules.review.diagnostics import prose_hash
 
     quality_supported = (bool(challenger.quality_resolution_checks)
@@ -113,7 +145,7 @@ def compare_candidates(
             and check.get("source_quality_asset_version_id") == challenger.content.get("source_quality_asset_version_id")
             and check.get("source_quality_asset_version_id")
             for check in challenger.quality_resolution_checks))
-    supported_improvement = supported_improvement or quality_supported
+    supported_improvement = supported_improvement or quality_supported or length_measurement is not None
     preservation_regressed = any(check.get("preservation") != "PRESERVED"
         for check in (*challenger.resolution_checks, *challenger.quality_resolution_checks))
     from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
@@ -142,6 +174,10 @@ def compare_candidates(
         selected = previous
         reason = CandidateStopReason.DETERMINISTIC_BLOCKER
         improved = False
+    elif length_measurement is not None:
+        selected = challenger
+        improved = True
+        reason = CandidateStopReason.COMPARISON_SUPPORTED if not challenger.blocker_codes else CandidateStopReason.CONTINUE_CORRECTION
     elif resolved_blockers:
         selected = challenger
         improved = True
@@ -150,6 +186,10 @@ def compare_candidates(
             if not challenger.blocker_codes
             else CandidateStopReason.CONTINUE_CORRECTION
         )
+    elif supported_improvement:
+        selected = challenger
+        improved = True
+        reason = CandidateStopReason.COMPARISON_SUPPORTED if not challenger.blocker_codes else CandidateStopReason.CONTINUE_CORRECTION
     elif net_improvement + 1e-9 < minimum_net_improvement:
         selected = previous
         reason = CandidateStopReason.MARGINAL_IMPROVEMENT
@@ -159,8 +199,6 @@ def compare_candidates(
         improved = True
         if not challenger.blocker_codes:
             reason = CandidateStopReason.COMPARISON_SUPPORTED
-        elif correction_generation >= maximum_correction_generations:
-            reason = CandidateStopReason.MAX_CORRECTION_BUDGET
         else:
             reason = CandidateStopReason.CONTINUE_CORRECTION
     identity = "|".join(
@@ -187,6 +225,7 @@ def compare_candidates(
         "net_improvement": net_improvement,
         "score_evidence_class": "MODEL_JUDGMENT",
         "literary_quality_proven": False,
+        "length_measurement": length_measurement,
         "new_blocker_codes": new_blockers,
         "resolved_blocker_codes": resolved_blockers,
         "selected_asset_version_id": selected.asset_version_id,
@@ -287,6 +326,8 @@ def _evidence(value: CandidateEvidence) -> dict[str, Any]:
         "score": value.score,
         "blocker_codes": list(value.blocker_codes),
         "review_asset_version_id": value.review_asset_version_id,
+        "resolved_issue_codes": list(value.resolved_issue_codes),
+        "remaining_issue_codes": list(value.remaining_issue_codes),
         **(
             {
                 "creative_baseline_digest": value.content["creative_baseline"][

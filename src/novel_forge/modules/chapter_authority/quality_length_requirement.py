@@ -6,6 +6,7 @@ from novel_forge.modules.production_execution.cost_routing import snapshot_hash
 
 def freeze_requirement(context, *, context_id):
     from novel_forge.modules.chapter_quality_authority.context_views import (
+        chapter_length_unit,
         compile_platform_policy,
     )
 
@@ -15,7 +16,9 @@ def freeze_requirement(context, *, context_id):
             rules = compile_platform_policy(
                 profile_asset_version_id=segment["asset_version_id"], segment=segment
             ).chapter_length_rules
-            if rules.get("unit") == "HAN_CHARACTERS_V1":
+            if {'minimum', 'maximum'} & rules.keys():
+                if chapter_length_unit(rules) != "HAN_CHARACTERS_V1":
+                    raise KernelError("CHAPTER_LENGTH_UNIT_UNSUPPORTED", "Frozen length preservation requires the manuscript Han-character measurement; correct an incompatible explicit unit")
                 minimum, maximum = rules.get("minimum"), rules.get("maximum")
                 if (
                     type(minimum) is not int

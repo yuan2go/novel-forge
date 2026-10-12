@@ -188,7 +188,8 @@ root successor and its scheduling intent commit atomically. The original window 
 through the durable successor journal; its source Operation and remote/usage facts remain
 unchanged. Persistent retry exhaustion stops this review without blocking baseline prose.
 Current author manuscript windows reserve one bounded process window inside the frozen Effect
-deadline, retaining settlement time; CLI stream/request retries remain disabled.
+deadline as a historical observation; the supervised model process has no total elapsed
+generation deadline. CLI stream/request retries remain disabled.
 
 For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning
@@ -963,8 +964,9 @@ Memo execution, including after process restart.
 Editing compares the full submitted chapter with the selected base and freezes only actual
 changed Unicode ranges. Preserve unsubmitted input on conflict, reload the selected base and
 rebase explicitly. Diff returns the original-protecting candidates, before/after edits and
-adoption decisions. Export creates a new JSON artifact containing exact source versions,
-statuses, prose and hashes; it refuses to overwrite an existing output file. `--chapters`
+adoption decisions. Export creates readable Markdown or text for `.md`/`.txt`, and JSON
+for other suffixes, containing exact source versions and statuses. It refuses to overwrite
+an existing output file. `--chapter` filters one chapter; `--chapters`
 selects an ordered available range, and `--versions` binds an expected version list.
 An editor session selection applies only to the exact native source of that working
 run, or an edit whose originating draft is that source. A same-Book session from an
@@ -972,7 +974,7 @@ older run remains readable but cannot replace a newer run's delivered text or it
 continuation dependencies. Saving against a changed native base retains the old session
 versions and begins from the supplied current base without recording adoption.
 `authority-manuscript use-working-candidate` records delegated use of an exact saved
-assistant revision in one settled author-first Book run. Supply `--chapter`,
+assistant or native revision in one settled author-first Book run. Supply `--chapter`,
 `--candidate-version`, `--expected-version`, `--idempotency-key` and `--reason`.
 It preserves original delivery and candidate versions, requires the current base
 and its hash, and updates working continuation dependencies. Planning must consume
@@ -983,6 +985,42 @@ remain uncertain. A structural repetition finding returns to scoped Plan Change 
 continuation. It creates no author
 choice, review pass or formal acceptance; human input and an existing author choice
 retain their separate decision path. Repeating the exact command is idempotent.
+For native revision, `authority-manuscript revise` takes the same Book, `--chapter`,
+`--expected-version`, `--idempotency-key` and an explicit `--reason`. It freezes the current
+prose, original governed Context/Plan and exact selected earlier prose, then runs the existing
+Review → Revision → ReReview → BestCandidate nodes. It does not rerun Foundation or submit Canon.
+Use `--foreground` for a scheduling window, retain the returned Root for `continue-revision`
+or `revision-status --revision-root …`, and use `use-working-candidate` to activate a result.
+Status and completed-result reads require no new Provider eligibility. UNKNOWN continuation
+first reconciles retained results; only an owned stopped pure invocation may be isolated
+and replaced by the existing StepSuccessor. Original UNKNOWN and cost evidence remain unchanged.
+That atomic successor can resume a `FORWARD_RECOVERY` Saga after stopped pure-generation
+isolation; ordinary failed steps without that proof retain their existing state restrictions.
+Reviewing a selected Revision uses its real Asset type and hash with a separate host
+Draft input role. A corrected unsent role-binding failure can resume the same Root through
+StepSuccessor after a changed release, unchanged source and zero effects, reservations or outputs.
+Inspect the rendered task's `working_revision_request`, not just the stored Review report,
+to verify that the requested literary problem reached the model. Exact local edits of a
+body without Scene mapping remain valid prose candidates with mapping `NOT_MAPPED`.
+After local validation is corrected, continuation first reuses a verified completed call
+with exactly matching stage and inputs. An unchanged result does not claim improvement or
+resolution of the requested problem, and reuse creates no new Provider dispatch or fee.
+An out-of-range chapter triggers whole-chapter repair against its original frozen length bounds,
+even when optional Review finds no issue. A frozen profile with omitted length unit uses
+the same `HAN_CHARACTERS_V1` count as manuscript readback, retaining its exact version,
+digest and bounds. An incompatible explicit unit fails with `CHAPTER_LENGTH_UNIT_UNSUPPORTED`;
+it cannot silently remove the length requirement. New Quality receipts bind
+`compiled-platform-policy-v2`; replay of historical
+v1 receipts preserves their original Unicode default and compatibility marker. It does
+not reinterpret or rewrite an existing Quality report. BestCandidate records measured correction
+separately from model score/resolution evidence; new blockers and preservation regression
+still prevent automatic preference. Selection rechecks the target and all earlier source versions.
+An evidenced unresolved major contradiction in the exact prose prevents its use as affected
+later prose's automatic input; the saved candidate remains readable and revisable. Suspected
+problems and aesthetic advice do not acquire this veto. Unreviewed prose is labelled honestly.
+Run `test_working_manuscript_revision.py`, `test_best_candidate_selection.py`,
+`test_working_manuscript_selection.py`, `test_cross_chapter_prose_review.py`,
+`test_native_api_generation_isolation.py` and the related Chapter/runtime matrix for these paths.
 The UI also downloads a readable text manuscript with the same version/status provenance.
 An Editor link containing the Project and Book run opens the current manuscript directly.
 Provider-dependent API services assemble only for related execution operations; API restart
@@ -2103,9 +2141,9 @@ The same command exercises Creative Memo, directed revision and grounded Canon o
 current Chapter route. `NOVEL_FORGE_MEMO_PROVIDER`/`NOVEL_FORGE_MEMO_MODEL` and
 `NOVEL_FORGE_CANON_SUPPORT_PROVIDER`/`NOVEL_FORGE_CANON_SUPPORT_MODEL` select their
 routes; if omitted they inherit the explicitly configured Review route. They use the
-existing Provider admission, token and cost limits. Memo has the Planning capability's
-60-second operation bound in frozen Chapter 3.8 definitions. Chapter 3.9 Memo uses
-its explicit 600-second model-operation policy; Canon support uses its frozen bound.
+existing Provider admission, actual model capacity and priced authorization. The 60-second
+Chapter 3.8 and 600-second Chapter 3.9 Memo policies remain frozen historical observations;
+current pure model execution does not enforce them as generation deadlines.
 
 The export also writes `chapter-workspaces.json`, including candidate prose, diagnoses,
 claim support, accepted state references, attempt errors and receipt/cost references.
@@ -2512,6 +2550,72 @@ their ledgers, or establish model qualification for the new input contract. The 
 engineering scenario freezes 20,000 tokens; Provider usage is still settled from receipts.
 
 ## Failure and recovery procedure
+
+For an exact retained model candidate exposed by Chapter workspace, use the existing
+manuscript CLI without starting a Provider call:
+
+```sh
+novel-forge authority-manuscript read --project-id "$PROJECT" --book-run-id "$BOOK_RUN" --candidate-version "$RETAINED_ASSET_VERSION"
+novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$BOOK_RUN" --candidate-version "$RETAINED_ASSET_VERSION" --output "$NEW_CANDIDATE_PATH"
+```
+
+`.md` and `.txt` exports contain readable source text plus its candidate status;
+other suffixes retain the exact JSON projection and raw result. Export never selects
+or accepts a candidate. A fragment or ambiguous JSON remains raw and is not labeled
+complete prose. A repeated export cannot overwrite an existing file.
+
+Migration 0200 removes cumulative Planning
+continuation depth rejection while preserving immutable continuation records and
+isolation identity/commit-right guards. Back up and verify a restore first. Historical
+`failure_retry_counter`, deadline and max-attempt values are retained, including values
+already at their former ceilings; recovery does not reset them.
+Migration 0201 extends the same isolation guard to the exact working-revision Root,
+owning Book and Saga, including ReReview. It requires the frozen source/hash binding,
+stopped model Effect, no live lease or primary output, and revoked commit/activation rights.
+It creates no production Chapter Request and never changes UNKNOWN or fees. Verify the
+forward migration on a restore and run `test_working_revision_isolation_guard_postgres.py`
+before deployment. Review, Revision and ReReview project original requirements, plan,
+characters and exact prose sources while excluding duplicate Memo/ExecutionIntent directives.
+Native manuscript continuation uses the configured repository root for an original Formation Book.
+Its chapter checkpoint is a round boundary inside the original delivery window; it
+does not rerun Foundation or change the target.
+Whole-chapter revision transports one body plus the frozen source window; slot copies
+are retained host evidence. A new independent Review cannot erase an older OPEN major
+contradiction by omission. Exact ReReview disposition may resolve it; frozen continuation
+rechecks current propagation eligibility before execution.
+Migration 0202 extends unsent Planning capacity recovery to exact completed World
+preparation. Back up and restore before deployment. The migration preserves old
+snapshots and accepts only two verified pure model receipts bound to the same selected
+action; unrelated Effects, live leases, cancellation and changed Book/input bindings
+still reject. Usage settlement is not a generation prerequisite. Verify the migration
+and `test_authorized_planning_capacity_postgres.py`, then ordinary continue follows
+the registered successor and reuses preparation without repeating calls. Migration 0203
+recognizes the native timestamped availability reason alongside that capacity failure;
+authentication or authorization failures remain errors.
+Codex wire projection `codex-structured-schema.v7` omits unsupported regex lookaround
+from the transport Schema. The immutable canonical Schema and host validation still
+enforce the original pattern, judgment/category combinations, locations and source bindings.
+This is transport compatibility, not a Review pass. Ordinary Book continue and working
+revision continue can register the existing Kernel StepSuccessor for a changed wire
+projection after every original membership rejection has a scope-bound terminal receipt
+and settled reservation. The native correction preserves inputs, canonical domain Schema,
+failed Attempts, original usage and authorization. The same projection is not a new cause
+fix; authentication, unresolved outcomes and non-model effects require their own resolution.
+Retained working-revision results use the same Book-scoped read/export path even if
+auxiliary validation fails; those reads do not require new Provider admission.
+Ordinary creation continue also resumes a Book paused by the former generation retry
+ceiling once its native, scope-checked successor is runnable. Author pauses are separate.
+The manuscript resume CLI composes the real Chapter port before reconciling an active
+request; it never uses an unbound Authority for that action.
+
+
+Inspect the actual installed release and original Book before recovery. Historical
+retry exhaustion, automatic generation deadlines and resource observations are
+execution diagnostics; they are not literary acceptance evidence. Preserve failed
+Attempts, UNKNOWN Effects, reservations and frozen snapshots when applying a
+forward recovery. Candidate retention, prose selection and accepted narrative facts
+are separate checks. No counter reset or replacement Book is a recovery procedure.
+
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect
    identities from PostgreSQL before acting.
@@ -3242,9 +3346,9 @@ start remain conservatively counted without rewriting their history; pre-start f
 remain distinguishable. Unknown use is never reported as measured zero. New requests must
 use the remaining allowance while keeping the original absolute project caps.
 
-Source Codex requests allocate the Effect deadline to one local invocation, retaining
-settlement headroom. The preview reports both the Effect timeout and actual local process
-timeout. A local CLI timeout/cancellation without a final usage receipt is an unknown
+Source Codex requests retain frozen Effect deadline observations. Pure model invocations
+have no local elapsed timeout or attempt-based time slice. The preview retains the historical
+Effect policy; it is not an elapsed-time stop for the supervised process. A local CLI timeout/cancellation without a final usage receipt is an unknown
 remote outcome, not permission to resend. Source preflight/status exposes the original
 Effect and process receipt; pre-send checks block dependent requests in the original
 execution lineage until governed reconciliation resolves it. Independent curated research

@@ -122,12 +122,12 @@ class EnvironmentAllowlist:
 
 @dataclass(frozen=True, slots=True)
 class ProcessTimeout:
-    timeout_seconds: float
+    timeout_seconds: float | None
     termination_grace_seconds: float = 2.0
     poll_interval_seconds: float = 0.25
 
     def __post_init__(self) -> None:
-        if self.timeout_seconds <= 0:
+        if self.timeout_seconds is not None and self.timeout_seconds <= 0:
             raise ValueError("process timeout must be positive")
         if self.termination_grace_seconds < 0:
             raise ValueError("termination grace must not be negative")
@@ -772,7 +772,7 @@ class CodexProcessSupervisor:
                     pass
             while process.poll() is None:
                 elapsed = time.monotonic() - started_monotonic
-                if elapsed >= request.timeout.timeout_seconds:
+                if request.timeout.timeout_seconds is not None and elapsed >= request.timeout.timeout_seconds:
                     termination_status = ProcessReceiptStatus.TIMED_OUT
                     termination_reason = f"local process timed out after {request.timeout.timeout_seconds:g}s"
                     termination_signal = self._terminate_process_group(process, process_group, request.timeout)
@@ -1033,11 +1033,12 @@ class CodexProcessSupervisor:
         return True
 
     def _await_existing(self, request: ProcessLaunchRequest) -> SupervisedProcessResult:
-        deadline = time.monotonic() + request.timeout.timeout_seconds
+        deadline = (time.monotonic() + request.timeout.timeout_seconds
+                    if request.timeout.timeout_seconds is not None else None)
         recovery = self.recover(request.execution_id)
         while (
             recovery.receipt.status is ProcessReceiptStatus.RUNNING
-            and time.monotonic() < deadline
+            and (deadline is None or time.monotonic() < deadline)
         ):
             time.sleep(request.timeout.poll_interval_seconds)
             recovery = self.recover(request.execution_id)

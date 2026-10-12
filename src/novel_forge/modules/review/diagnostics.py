@@ -76,14 +76,27 @@ def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = 
     diagnoses = open_diagnoses(review)
     if not work_requirements:
         return diagnoses
-    return [item for item in diagnoses if item.get("judgment_kind") in {
+    aesthetic_requested = _aesthetic_revision_requested(review)
+    return [item for item in diagnoses if (item.get("judgment_kind") in {
         "SEMANTIC_CONFLICT", "HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM"
-    } and item.get("status", "OPEN") == "OPEN"]
+    } or aesthetic_requested and item.get("judgment_kind") == "AESTHETIC_SUGGESTION")
+        and item.get("status", "OPEN") == "OPEN"]
 
 
-def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None) -> None:
+def _aesthetic_revision_requested(review):
+    requested = review.get("working_revision_request") or {}
+    return (requested.get("contract_version") == "chapter-working-revision.v1"
+        and requested.get("aesthetic_revision_requested") is True
+        and requested.get("source_asset_version_id") == review.get("target_asset_version_id"))
+
+
+def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None, review: dict[str, Any] | None = None) -> None:
     from difflib import SequenceMatcher
     original = str(source.get("text") or "")
+    if structural_repair_scope(diagnoses, review=review) == "CHAPTER_REVISION":
+        for issue in diagnoses:
+            validate_location(dict(issue.get("evidence_locator") or {}), original)
+        return
     scopes = []
     artifacts = source.get("scene_artifacts") or []
     separators = source.get("scene_separators") or ["\n\n"] * max(0, len(artifacts) - 1)
@@ -122,6 +135,16 @@ def blocking_diagnosis_codes(review: dict[str, Any]) -> tuple[str, ...]:
     return codes
 
 
+def major_contradiction_codes(review: dict[str, Any], *, text: str, source_id: str) -> tuple[str, ...]:
+    if (review.get("target_asset_version_id") != source_id and review.get("revision_version_id") != source_id
+            or review.get("target_text_hash") != prose_hash(text)):
+        return ()
+    return tuple(sorted({str(item["code"]) for item in open_diagnoses(review)
+        if item.get("judgment_kind") in {"HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "SEMANTIC_CONFLICT"}
+        and item.get("status", "OPEN") == "OPEN"
+        and item.get("severity") in {"blocking", "blocker", "critical", "high", "major"}}))
+
+
 def prose_hash(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode()).hexdigest()
 
@@ -158,9 +181,29 @@ def validate_diagnosis(issue: dict[str, Any], text: str) -> dict[str, Any]:
         raise KernelError("REVIEW_JUDGMENT_INVALID", "an aesthetic preference alone cannot block acceptance")
     if issue["judgment_kind"] == "UNCERTAIN" and issue.get("severity") == "blocking":
         raise KernelError("REVIEW_JUDGMENT_INVALID", "uncertain evidence cannot block acceptance")
+    repair = issue.get("repair")
+    if repair is not None:
+        from .repair_scope import validate_repair
+        validate_repair(repair)
     return {**{key: issue[key] for key in (*required, "preserve", "acceptance_criteria")},
+            **({"repair": dict(repair)} if repair is not None else {}),
             "evidence_locator": validate_location(dict(issue.get("evidence") or {}), text),
             "revision_strategy": issue["revision_goal"]}
+
+
+def structural_repair_scope(diagnoses, *, review=None):
+    from .repair_scope import validate_repair
+    scopes = []
+    for issue in diagnoses:
+        repair = issue.get("repair")
+        if repair is None:
+            continue
+        validate_repair(repair)
+        if (repair["problem_owner"] == "PROSE" and issue.get("status", "OPEN") == "OPEN"
+                and issue.get("judgment_kind") != "UNCERTAIN"
+                and (issue.get("judgment_kind") != "AESTHETIC_SUGGESTION" or _aesthetic_revision_requested(review or {}))):
+            scopes.append(repair["repair_scope"])
+    return "CHAPTER_REVISION" if "CHAPTER_REVISION" in scopes else "SCENE_REVISION" if "SCENE_REVISION" in scopes else "LOCAL_PROSE"
 
 
 def verified_resolutions(result: dict[str, Any], initial: dict[str, Any], text: str) -> set[str]:

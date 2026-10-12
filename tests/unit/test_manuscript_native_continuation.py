@@ -107,6 +107,47 @@ def test_paused_nonformation_work_continues_same_run_and_stops_round_without_acc
     assert calls.count(("drive", "same-run")) == 1 and ("close",) in calls
 
 
+def test_cancelled_original_formation_does_not_resume_or_dispatch_its_book(monkeypatch):
+    from novel_forge.modules.book_authority import creation_runtime
+    book, principal, calls = setup_runtime(monkeypatch,state='PAUSED')
+    observed = []
+    def cancelled(database_url, formation_run_id):
+        observed.append((database_url,formation_run_id))
+        return {'status':'CANCELLED'}
+    monkeypatch.setattr(creation_runtime,'creation_cancellation',cancelled)
+    result = _continue_native_work(SimpleNamespace(database_url='db'),SimpleNamespace(stop_after_chapter=5),
+        book=book,principal=principal,formation_run_id='original-formation')
+    assert result['status']=='SOURCE_CANCELLED' and len(result['manuscript']['units'])==4
+    assert observed==[('db','original-formation')]
+    assert all(call[0]=='permission' for call in calls) and book['state']=='PAUSED'
+
+
+def test_original_author_first_cli_uses_same_book_round_and_configured_runtime(monkeypatch,tmp_path):
+    from contextlib import nullcontext
+    from unittest.mock import Mock
+    from novel_forge.api import authority_dependencies as deps
+    from novel_forge.cli import manuscript as cli
+    from novel_forge.modules.book_authority import production
+    from novel_forge.modules.book_followup_authority import application
+    from novel_forge.storage import authority_uow
+    book,principal,_ = setup_runtime(monkeypatch)
+    book['stable_idempotency_key']='original-formation:production'
+    monkeypatch.setattr(deps,'authority_release_identity',lambda:('build','a'*40))
+    monkeypatch.setattr(deps,'build_trusted_principal_resolver',lambda:SimpleNamespace(resolve_api_principal=lambda:principal))
+    monkeypatch.setattr(production,'PostgresBookAuthority',lambda *args,**kw:SimpleNamespace(require=lambda run:book))
+    monkeypatch.setattr(application,'BookFollowupAuthorityApplication',lambda *args,**kw:None)
+    cursor=Mock()
+    cursor.fetchone.return_value=('original-formation',)
+    monkeypatch.setattr(authority_uow,'AuthorityUnitOfWork',lambda *args:nullcontext(SimpleNamespace(cursor=cursor)))
+    continued=Mock(return_value={'status':'MANUSCRIPT_READY'})
+    monkeypatch.setattr(cli,'_continue_native_work',continued)
+    settings=SimpleNamespace(database_url='db',root=tmp_path)
+    args=SimpleNamespace(action='continue',project_id='p',book_run_id='same-run',stop_after_chapter=5)
+    assert cli.run_manuscript_command(settings,args)=={'status':'MANUSCRIPT_READY'}
+    continued.assert_called_once_with(settings,args,book=book,principal=principal,formation_run_id='original-formation')
+    assert cursor.execute.call_args.args[1]==['p','b','original-formation:production']
+
+
 def test_already_delivered_round_is_read_only_replay(monkeypatch):
     book, principal, calls = setup_runtime(monkeypatch, state="PAUSED", chapter=5)
     result = _continue_native_work(

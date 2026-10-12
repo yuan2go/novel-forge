@@ -87,6 +87,8 @@ def recover_memo_references(authority, *, book_run_id, principal):
     principal.require("chapter.authority.execute", book["project_id"])
     if not book.get("active_chapter_request_id") or book["state"] not in {"PAUSED", "CHAPTER_RUNNING", "CHAPTER_WAITING_RETRY", "CHAPTER_SUBMITTED"}:
         return False
+    if recover_optional_memo(authority, book=book, principal=principal):
+        return True
     request = authority.require_chapter_request(book["active_chapter_request_id"])
     with AuthorityUnitOfWork(authority.database_url) as u:
         u.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
@@ -152,6 +154,42 @@ def recover_memo_references(authority, *, book_run_id, principal):
         known_receipt_effects=tuple((r["source_effect_id"], r["source_request_hash"]) for r in retained),
         window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "memo_reference_contract", "policy_value": CONTRACT},
         transaction_guard=guard)
+    return True
+
+
+def recover_optional_memo(authority, *, book, principal):
+    request = authority.require_chapter_request(book["active_chapter_request_id"])
+    with AuthorityUnitOfWork(authority.database_url) as u:
+        u.cursor.execute("""SELECT to_jsonb(owner) FROM authority_operation owner JOIN authority_saga_step step USING(operation_id)
+            WHERE owner.root_operation_id=%s AND owner.project_id=%s AND owner.definition_name='chapter.memo.generate'
+              AND owner.status IN ('FAILED_FINAL','DEAD_LETTER')
+              AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor successor WHERE successor.predecessor_operation_id=owner.operation_id)""",
+            [request["chapter_root_operation_id"], book["project_id"]])
+        rows = u.cursor.fetchall()
+        if not rows:
+            return False
+        if len(rows) != 1 or _cancelled(u.cursor, book):
+            raise KernelError("MEMO_RECOVERY_SCOPE_INVALID", "Require one uncancelled Memo frontier")
+        source = rows[0][0]
+        from novel_forge.modules.production_execution.execution_template import selected_book_template
+        if not selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]):
+            return False
+        u.cursor.execute("SELECT external_effect_id,request_hash,status FROM authority_external_effect WHERE operation_id=%s AND effect_type='model.invoke' ORDER BY external_effect_id", [source["operation_id"]])
+        effects = u.cursor.fetchall()
+        if not effects or any(row[2] not in {'SUCCEEDED','FAILED_FINAL','FAILED_RETRYABLE'} for row in effects):
+            return False
+        u.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [source["operation_id"]])
+        failure = u.cursor.fetchone()[0]
+        evidence = {"contract_version": "optional-memo-input-fallback.v1", "source_operation_id": source["operation_id"],
+            "terminal_effects": [list(row) for row in effects], "provider_invoked": False,
+            "enhancement_status": "FAILED", "domain_inputs": "UNCHANGED"}
+    def guard(u, _):
+        u.cursor.execute("SELECT version,active_chapter_request_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
+        if u.cursor.fetchone() != (book["version"], book["active_chapter_request_id"]) or _cancelled(u.cursor, book):
+            raise KernelError("MEMO_RECOVERY_SCOPE_INVALID", "Reload the original uncancelled Book frontier")
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version=source["definition_version"],
+        context=AdmissionContext(principal.principal_id, principal.permissions, authority.chapter_port.application.registry.available_handler_keys,
+            authority.application_build_id, authority.commit_sha), policy_evidence=evidence, expected_failure_code=failure, transaction_guard=guard)
     return True
 
 

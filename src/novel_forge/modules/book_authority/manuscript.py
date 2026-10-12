@@ -237,11 +237,32 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
         scope = {key: current[key] for key in ("project_id", "workspace_id", "book_id")}
         scope["chapter"] = chapter
         candidate = require_source(uow, scope, candidate_asset_version_id)
-        if candidate.asset_type != "author_edit_candidate" or candidate.content.get("base_asset_version_id") != source.asset_version_id or candidate.content.get("base_asset_hash") != source.content_hash:
-            raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Working candidate must revise this exact current source")
-        if candidate.content.get("source_provenance", {}).get("kind") != "ASSISTANT_REVISION_PROPOSAL":
-            raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Human author input uses its separate author choice")
+        if candidate.asset_type == "author_edit_candidate":
+            if candidate.content.get("base_asset_version_id") != source.asset_version_id or candidate.content.get("base_asset_hash") != source.content_hash:
+                raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Working candidate must revise this exact current source")
+            if candidate.content.get("source_provenance", {}).get("kind") != "ASSISTANT_REVISION_PROPOSAL":
+                raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Human author input uses its separate author choice")
+        else:
+            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT, require_working_revision_frontier
+            uow.cursor.execute("""SELECT to_jsonb(root) FROM authority_operation_output_asset output
+                JOIN authority_operation child USING(operation_id)
+                JOIN authority_operation root ON root.operation_id=child.root_operation_id
+                WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
+                  AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best')""",
+                [candidate.asset_version_id, current["project_id"]])
+            origins = uow.cursor.fetchall()
+            origin = origins[0][0] if len(origins) == 1 else {}
+            binding = (origin.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
+            if (candidate.asset_type not in {"draft_version", "best_draft_candidate"}
+                    or origin.get("definition_version") != ROOT_VERSION
+                    or origin.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}
+                    or binding.get("contract_version") != CONTRACT or binding.get("book_run_id") != book_run_id
+                    or binding.get("source_asset_version_id") != source.asset_version_id
+                    or binding.get("source_content_hash") != source.content_hash):
+                raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Native working revision must bind this exact current source")
+            require_working_revision_frontier(uow, root=origin, book_run_id=book_run_id)
         validate_complete_prose(source_draft_content(candidate))
+        require_prose_propagation(uow, current, candidate)
         session = _optional_document(uow, current["project_id"], _session_ref(scope))
         if session and session.content.get("status") == "ADOPTED_PENDING_REVIEW" and session.content.get("selected_asset_version_id") == source.asset_version_id:
             raise KernelError("MANUSCRIPT_AUTHOR_SELECTION_PRESENT", "An author-selected version requires an explicit author decision before replacement")
@@ -356,6 +377,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     history = projection_policy["history_chapters"] if projection_policy else 4
     for number in range(max(1, chapter - history), chapter):
         source = selected_source(uow, book, number)
+        require_prose_propagation(uow, book, source)
         text = source_draft_content(source)["text"]
         rows.append({"chapter": number, "asset_version_id": source.asset_version_id,
             "content_hash": source.content_hash, "text_hash": text_hash(text),
@@ -386,6 +408,43 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     return {**result, "snapshot_hash": canonical_hash(result)}
 
 
+def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
+    from novel_forge.modules.review.diagnostics import major_contradiction_codes
+    content = source_draft_content(source)
+    source_id = content.get("selected_source_asset_version_id") or source.asset_version_id
+    embedded = content.get("selected_review")
+    reviews = [(embedded.get("selection_review_source_asset_version_id"), embedded)] if isinstance(embedded, dict) else []
+    uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
+        JOIN authority_operation operation USING(operation_id)
+        JOIN authority_asset_version v USING(asset_version_id)
+        JOIN authority_asset asset ON asset.asset_id=v.asset_id
+        WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
+          AND asset.asset_type IN ('review_report','re_review_report')
+          AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
+        ORDER BY operation.created_at""", [book["project_id"], source_id])
+    reviews.extend(uow.cursor.fetchall())
+    pending = {}
+    from novel_forge.modules.review.diagnostics import prose_hash
+    for review_id, review in reviews:
+        if (review.get("revision_version_id") or review.get("target_asset_version_id")) != source_id or review.get("target_text_hash") != prose_hash(content["text"]):
+            continue
+        if review.get("report_type") == "ReReviewReport":
+            prior_id = (review.get("prior_review_evidence") or {}).get("asset_version_id")
+            verified = {check["code"] for check in review.get("resolution_checks", [])
+                if check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED"}
+            for disposition in review.get("issue_lineage", []):
+                if (disposition.get("verified_by_rereview") is True and disposition.get("to_status") == "RESOLVED"
+                        and disposition.get("code") in verified):
+                    pending.pop((prior_id, disposition["code"]), None)
+        for code in major_contradiction_codes(review, text=content["text"], source_id=source_id):
+            pending[(review_id, code)] = code
+    problems = sorted(set(pending.values()))
+    if problems:
+        raise KernelError("MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED",
+            "Retain this complete candidate for targeted revision; it cannot become affected later prose's automatic source",
+            details={"source_asset_version_id": source.asset_version_id, "diagnosis_codes": problems})
+
+
 def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, Any], *, require_current: bool = True) -> None:
     from .working_prose import CONTEXT_VERSION, validate_working_projection
     enhanced = snapshot.get("projection_policy") is not None
@@ -408,6 +467,8 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     for item in snapshot["sources"]:
         source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=item["asset_version_id"])
+        if require_current:
+            require_prose_propagation(uow, book, source)
         if source.content_hash != item["content_hash"] or text_hash(source_draft_content(source)["text"]) != item["text_hash"]:
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working manuscript source failed its exact version binding")
         if snapshot.get("working_memory"):
@@ -559,6 +620,11 @@ def deliver_manuscript(authority: Any, request_id: str, *, principal: Any) -> di
 
 
 def _review_status(uow: Any, book: dict[str, Any], source: Any) -> dict[str, Any]:
+    selected_review = source_draft_content(source).get("selected_review")
+    if isinstance(selected_review, dict) and selected_review.get("selection_review_source_asset_version_id"):
+        from novel_forge.modules.review.diagnostics import open_diagnoses
+        return {"review_status": "COMPLETED", "review_asset_version_id": selected_review["selection_review_source_asset_version_id"],
+            "unresolved_issue_codes": [item["code"] for item in open_diagnoses(selected_review) if item.get("status", "OPEN") == "OPEN"]}
     from psycopg.types.json import Jsonb
     uow.cursor.execute("""SELECT to_jsonb(run) FROM authority_book_prose_review_run run
         WHERE run.project_id=%s AND run.book_run_id=%s AND run.manifest->'sources' @> %s
@@ -671,3 +737,46 @@ def require_current_editor_base(uow: Any, scope: dict[str, Any], version_id: str
     row = uow.cursor.fetchone()
     if row and selected_source(uow, row[0], scope["chapter"]).asset_version_id != version_id:
         raise KernelError("AUTHOR_BASE_STALE", "The current author manuscript changed; keep unsaved input and rebase on its exact selected version")
+
+
+def require_retained_model_candidate(database_url, *, project_id, book_run_id, asset_version_id, principal):
+    principal.require("book.authority.query", project_id)
+    with AuthorityUnitOfWork(database_url) as uow:
+        source = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=asset_version_id)
+        payload = source.content.get("payload") or {}
+        uow.cursor.execute("""SELECT book.book_id,book.workspace_id,request.chapter_number
+            FROM authority_book_production book JOIN authority_book_chapter_request request USING(book_run_id)
+            JOIN authority_operation op ON op.root_operation_id=request.chapter_root_operation_id
+            JOIN authority_operation_output_asset output USING(operation_id)
+            WHERE book.book_run_id=%s AND book.project_id=%s AND op.project_id=book.project_id
+              AND op.workspace_id=book.workspace_id AND output.asset_version_id=%s
+              AND op.operation_id=%s""", [book_run_id, project_id, asset_version_id, payload.get("operation_id")])
+        row = uow.cursor.fetchone()
+        if row is None:
+            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT
+            uow.cursor.execute("""SELECT book.book_id,book.workspace_id,(root.command_payload->>'chapter')::integer
+                FROM authority_book_production book
+                JOIN authority_operation root ON root.command_payload#>>'{preparation_report,working_revision,book_run_id}'=book.book_run_id
+                JOIN authority_operation op ON op.root_operation_id=root.operation_id
+                JOIN authority_operation_output_asset output ON output.operation_id=op.operation_id
+                WHERE book.book_run_id=%s AND book.project_id=%s AND root.project_id=book.project_id
+                  AND root.workspace_id=book.workspace_id AND root.command_payload->>'book_id'=book.book_id
+                  AND root.definition_name='chapter.slice.run' AND root.definition_version=%s
+                  AND root.command_payload#>>'{preparation_report,working_revision,contract_version}'=%s
+                  AND op.project_id=book.project_id AND op.workspace_id=book.workspace_id
+                  AND output.asset_version_id=%s AND op.operation_id=%s""",
+                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id, payload.get("operation_id")])
+            row = uow.cursor.fetchone()
+        if (row is None or source.asset_type != "execution_evidence"
+                or source.content.get("kind") not in {"model-result", "prose-candidate"}
+                or payload.get("project_id") != project_id or payload.get("book_id") != row[0]):
+            raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
+        if canonical_hash(payload).split(":", 1)[1] != source.content.get("payload_hash"):
+            raise KernelError("MANUSCRIPT_CANDIDATE_HASH_INVALID", "Retained source bytes changed")
+        return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_MODEL_CANDIDATE",
+            "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,
+            "chapter": row[2], "asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
+            "text": payload.get("text"), "raw_text": payload["raw_text"],
+            **{key: payload[key] for key in ("completeness", "structural_status", "review_status",
+                "selection_status", "acceptance_status", "accounting_status")},
+            "publication": "NOT_AUTHORIZED"}

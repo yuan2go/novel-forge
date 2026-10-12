@@ -37,6 +37,31 @@ class CompletionContractPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
+    def test_cancelled_submitted_result_cannot_finalize_after_late_evidence(self) -> None:
+        from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation, resolve_cancellation
+        from novel_forge.modules.command_kernel.errors import KernelError
+        from tests.integration.test_authority_attempt_lease_schema_postgres import insert_attempt
+        context, operation_id, _ = self._operation({"required_gates": ["late-result"]})
+        attempt_id = identifier("submitted")
+        with transaction() as connection, connection.cursor() as cursor:
+            insert_attempt(cursor, attempt_id=attempt_id, operation_id=operation_id,
+                attempt_number=1, status="RESULT_SUBMITTED")
+        request_cancellation(DATABASE_URL, CancelCommand(operation_id, context.project_id, "worker",
+            "cancel before late evidence", 0, identifier("cancel"), context.trace_id, context.correlation_id))
+        resolve_cancellation(DATABASE_URL, operation_id=operation_id, project_id=context.project_id,
+            expected_version=1, resolution="external_state_unknown", actor_id="worker",
+            reason="retain unknown external state", trace_id=context.trace_id, correlation_id=context.correlation_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("INSERT INTO authority_completion_gate(gate_id,operation_id,gate_key,status,evidence) VALUES (%s,%s,'late-result','PASSED','{}')",
+                [identifier("late-gate"), operation_id])
+        self.assertTrue(evaluate_completion_contract(DATABASE_URL, operation_id, context.project_id)["satisfied"])
+        with self.assertRaisesRegex(KernelError, "OPERATION_CANCELLATION_ACTIVE"):
+            finalize_operation_completion(DATABASE_URL, context, operation_id=operation_id,
+                expected_status="RECONCILIATION_REQUIRED", expected_version=2, require_uncancelled=True)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT o.status,a.status FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE a.attempt_id=%s", [attempt_id])
+            self.assertEqual(cursor.fetchone(), ("RECONCILIATION_REQUIRED", "RESULT_SUBMITTED"))
+
     def test_frozen_gate_contract_blocks_success_despite_definition_drift(self) -> None:
         context, operation_id, definition = self._operation(
             {"required_gates": ["quality.release"]}

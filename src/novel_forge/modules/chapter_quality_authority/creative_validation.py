@@ -136,6 +136,7 @@ def internal_required_actions(*, admission, evidence_reports, target):
 
 
 def receipt_work_constraints(database_url, *, project_id, receipts, target):
+    from novel_forge.modules.chapter_quality_authority.context_views import chapter_length_unit
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
     receipt = next(row for row in receipts if row["stage"] == "quality_platform")
     with AuthorityUnitOfWork(database_url) as u:
@@ -149,7 +150,8 @@ def receipt_work_constraints(database_url, *, project_id, receipts, target):
     minimum, maximum = rules.get("minimum"), rules.get("maximum")
     if type(minimum) is not int or type(maximum) is not int or not 0 < minimum <= maximum:
         raise KernelError("CHAPTER_LENGTH_POLICY_INVALID", "Frozen bounds must be positive ordered integers")
-    unit = rules.get("unit", "UNICODE_CODE_POINTS_V1")
+    policy_version = policy.get("contract_version", "compiled-platform-policy-v1")
+    unit = chapter_length_unit(rules, contract_version=policy_version)
     if unit not in {"UNICODE_CODE_POINTS_V1", "HAN_CHARACTERS_V1"}:
         raise KernelError("CHAPTER_LENGTH_UNIT_INVALID", unit)
     text = AuthorityAssetQuery(database_url).require(project_id=project_id, asset_version_id=target).content["text"]
@@ -157,7 +159,7 @@ def receipt_work_constraints(database_url, *, project_id, receipts, target):
     return ({"dimension": "chapter_length", "status": "PASSED" if minimum <= observed <= maximum else "FAILED",
         "source_policy": policy["source_asset_version_id"], "policy_digest": policy["policy_digest"],
         "target_asset_version_id": target, "unit": unit, "minimum": minimum, "maximum": maximum, "observed": observed,
-        "compatibility": "EXPLICIT_UNIT" if "unit" in rules else "LEGACY_CHARACTER_BOUNDS_UNICODE"},)
+        "compatibility": "EXPLICIT_UNIT" if "unit" in rules else "LEGACY_CHARACTER_BOUNDS_UNICODE" if policy_version == "compiled-platform-policy-v1" else "MANUSCRIPT_HAN_CHARACTER_BOUNDS"},)
 
 
 def apply_work_constraint_actions(content, *, admission, revision, target, canon, bounded_single_scene=False):

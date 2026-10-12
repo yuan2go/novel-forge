@@ -321,3 +321,11 @@ def test_protected_craft_projection_keeps_one_exact_full_copy_and_delivery_trace
     assert resolve_projected_craft_uses(projected, [{"asset_version_id": "intent", "safe_summary": json.dumps({"craft_strategy": strategy})}]) == [use]
     with pytest.raises(KernelError, match="PROJECTION_DRIFT"):
         resolve_projected_craft_uses(projected, [])
+
+    drifted = replace(candidate, safe_summary=json.dumps({**summary, "craft_strategy_digest": "different"}))
+    independent = reference_duplicate_craft_uses([drifted], intent={"craft_strategy": strategy}, intent_asset_version_id="intent")[0]
+    independent_summary = json.loads(independent.safe_summary)
+    assert independent_summary["craft_uses"] == [use]
+    assert independent_summary["craft_strategy_digest"] == "different"
+    assert "craft_uses_reference" not in independent_summary
+    assert independent_summary["context_diagnostics"][0]["status"] == "DIAGNOSTIC_ONLY"

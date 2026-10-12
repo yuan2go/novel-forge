@@ -45,6 +45,9 @@ def _validate_proof(proof, output_proof, source, current):
 
 
 def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effects):
+    completed = completed_generation_completion(uow, operation, own_effects)
+    if completed is not None:
+        return completed
     definition = operation.get("definition_snapshot") or {}
     policy = definition.get("policy") or {}
     if (definition.get("definition_version") not in {"3.10.0", "3.10.1", "3.10.2"}
@@ -147,6 +150,82 @@ def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effect
         or not uow.repositories.completion_contracts.has_cost(source_id)):
         raise _invalid()
     return [{"capability": row[5], "status": "SUCCEEDED", "source_operation_id": source_id}]
+
+
+def completed_generation_completion(uow, operation, own_effects):
+    from .generation_policy import pure_generation_capabilities
+    capabilities = set((operation.get("definition_snapshot") or {}).get("external_capabilities") or [])
+    if own_effects or not pure_generation_capabilities(capabilities):
+        return None
+    cursor = uow.cursor
+    cursor.execute("""SELECT j.policy_evidence,j.source_failure_snapshot,to_jsonb(current)
+        FROM authority_saga_step_successor j JOIN authority_operation current ON current.operation_id=j.successor_operation_id
+        WHERE j.successor_operation_id=%s AND j.project_id=%s AND j.actor_id=current.actor_id
+          AND j.saga_id=current.saga_id AND j.predecessor_operation_id=current.causation_operation_id
+          AND j.contract_version='kernel-failed-step-successor.v2'
+          AND j.policy_evidence->>'contract_version'='chapter-pure-generation-successor.v1'
+          AND j.policy_evidence->>'completed_revalidation'='true'""",
+        [operation["operation_id"], operation["project_id"]])
+    row = cursor.fetchone()
+    if not row:
+        return None
+    policy, frozen, current = row
+    source = frozen["operation"]
+    if (own_effects or current["definition_snapshot"] != operation["definition_snapshot"]
+        or current["definition_snapshot"].get("commit_sha") != policy.get("release_sha")
+        or source["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}
+        or any(current.get(key) != source.get(key) for key in ("project_id", "workspace_id", "actor_id",
+            "root_operation_id", "definition_name", "definition_version", "command_payload",
+            "input_asset_snapshot", "completion_contract_snapshot"))
+        or policy.get("completion_checks") != "UNCHANGED" or policy.get("provider_invoked") is not False):
+        raise _invalid()
+    cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s AND project_id=%s",
+        [source["operation_id"], current["project_id"]])
+    if cursor.fetchone() != (source,):
+        raise _invalid()
+    cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=ANY(%s))",
+        [[source["operation_id"], current["operation_id"], current["root_operation_id"]]])
+    if cursor.fetchone()[0]:
+        raise _invalid()
+    expected = {"contract_version": "chapter-completed-result-revalidation.v1",
+        "source_operation_id": source["operation_id"], "successor_operation_id": current["operation_id"],
+        "provider_invoked": False, "strict_certification_eligible": False,
+        "completed_model_effects": policy.get("completed_model_effects")}
+    cursor.execute("""SELECT v.content FROM authority_operation_output_asset o JOIN authority_asset_version v USING(asset_version_id)
+        JOIN authority_asset a ON a.asset_id=v.asset_id AND a.asset_id=o.asset_id
+        WHERE o.operation_id=%s AND a.project_id=%s AND o.role='primary' AND o.content_hash=v.content_hash
+          AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'""",
+        [current["operation_id"], current["project_id"]])
+    outputs = cursor.fetchall()
+    proofs = policy.get("completed_model_effects") or []
+    retained = outputs[0][0].get("retained_generation_revalidation") if len(outputs) == 1 else None
+    single = (len(proofs) == 1 and isinstance(retained, dict)
+        and retained.get("contract_version") == "chapter-completed-sibling-reuse.v1"
+        and retained.get("source_operation_id") == source["operation_id"]
+        and retained.get("successor_operation_id") == current["operation_id"]
+        and retained.get("provider_invoked") is False and retained.get("original_submission_right") == "REVOKED"
+        and retained.get("source_effect_id") == proofs[0].get("external_effect_id")
+        and retained.get("source_request_hash") == proofs[0].get("request_hash")
+        and retained.get("stage") == proofs[0].get("stage"))
+    if len(outputs) != 1 or outputs[0][0].get("completed_result_revalidation") != expected and not single:
+        raise _invalid()
+    require_live_chapter_frontier(cursor, root_id=current["root_operation_id"], project_id=current["project_id"])
+    cursor.execute("SELECT external_effect_id,request_hash,capability,request_payload->>'stage',status,effect_type FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id",
+        [source["operation_id"]])
+    effects = cursor.fetchall()
+    proofs = policy.get("completed_model_effects") or []
+    if (not effects or len(proofs) != len(effects)
+        or {(item.get("external_effect_id"), item.get("request_hash"), item.get("stage")) for item in proofs}
+        != {(item[0], item[1], item[3]) for item in effects}
+        or any(item[4:] != ("SUCCEEDED", "model.invoke") for item in effects)):
+        raise _invalid()
+    context = EffectCommandContext(source["operation_id"], source["project_id"], source["actor_id"], source["trace_id"], source["correlation_id"])
+    retained = []
+    for effect_id, request_hash, capability, stage, status, kind in effects:
+        if _read_verified_success(uow, ExternalEffectRepository(cursor), context, effect_id, retained_generation_stage=True) is None:
+            raise _invalid()
+        retained.append({"capability": capability, "status": "SUCCEEDED", "source_operation_id": source["operation_id"]})
+    return retained
 
 
 def _require_settled_lineage(cursor, current, source):

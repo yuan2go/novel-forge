@@ -79,19 +79,20 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
         self.assertEqual(issue["context_bundle_version_id"], "context-v1")
         self.assertEqual(issue["evidence_locator"]["start"], 10)
 
-    def test_revision_fails_closed_until_every_eligible_blocker_is_resolved(self) -> None:
+    def test_partial_revision_retains_unresolved_blockers(self) -> None:
         review = self.review()
-        with self.assertRaisesRegex(KernelError, "CHAPTER_REVISION_INCOMPLETE"):
-            apply_revision_result(
-                project_id="project-a",
-                draft={"chapter": 1, "title": "Cost", "text": "old"},
-                review=review,
-                draft_asset_version_id="draft-v1",
-                review_asset_version_id="review-v1",
-                context_bundle_version_id="context-v1",
-                result={"text": "changed", "resolved_issue_codes": []},
-                provider_evidence={},
-            )
+        partial = apply_revision_result(
+            project_id="project-a",
+            draft={"chapter": 1, "title": "Cost", "text": "old"},
+            review=review,
+            draft_asset_version_id="draft-v1",
+            review_asset_version_id="review-v1",
+            context_bundle_version_id="context-v1",
+            result={"text": "changed", "resolved_issue_codes": []},
+            provider_evidence={},
+        )
+        self.assertEqual(partial["text"], "changed")
+        self.assertEqual(partial["issue_resolutions"][0]["to_status"], "OPEN")
         review["issues"][0]["qualification"] = "REVOKED"
         self.assertEqual(
             self.revision(review)["issue_resolutions"][0]["to_status"],

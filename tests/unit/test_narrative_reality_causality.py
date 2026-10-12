@@ -591,18 +591,18 @@ def test_structured_realization_scopes_specialists_and_preserves_slot_revisions(
             text=text(slots) + " Unplanned factual change.",
         )
     revised[1]["used_fact_ids"] = ["reader-only-secret"]
-    with pytest.raises(KernelError, match="EPISTEMIC_SCOPE_VIOLATION"):
-        integrate_realization(contract=contract, artifacts=revised, text=text(revised))
+    diagnostic = integrate_realization(contract=contract, artifacts=revised, text=text(revised))
+    assert diagnostic["declaration_evidence"]["defects"]
     revised[1]["used_fact_ids"] = []
     revised[0]["text"] = "as an AI"
-    with pytest.raises(KernelError, match="VOICE_DRIFT"):
-        integrate_realization(contract=contract, artifacts=revised, text=text(revised))
+    diagnostic = integrate_realization(contract=contract, artifacts=revised, text=text(revised))
+    assert any(row["status"] == "DRIFT_DETECTED" for row in diagnostic["voice_evidence"])
     working = integrate_realization(contract=contract, artifacts=revised, text=text(revised), enforce_voice_contract=False)
     assert working["scene_artifacts"] == revised
     assert working["voice_evidence"][0]["status"] == "DRIFT_DETECTED"
     revised[1]["used_fact_ids"] = ["reader-only-secret"]
-    with pytest.raises(KernelError, match="EPISTEMIC_SCOPE_VIOLATION"):
-        integrate_realization(contract=contract, artifacts=revised, text=text(revised), enforce_voice_contract=False)
+    diagnostic = integrate_realization(contract=contract, artifacts=revised, text=text(revised), enforce_voice_contract=False)
+    assert diagnostic["declaration_evidence"]["defects"]
 
 
 @pytest.mark.parametrize(

@@ -33,6 +33,25 @@ from .definitions import CHAPTER_SAMPLE_COMPLETION_TOPIC, CHAPTER_SAMPLE_OUTPUT_
 ChapterExecutionResult = AuthorityExecutionResult
 
 
+def bind_working_revision_inputs(request: ChapterHandlerRequest) -> ChapterHandlerRequest:
+    working = (request.command.get("preparation_report") or {}).get("working_revision")
+    if not working:
+        return request
+    from dataclasses import replace
+    from .working_revision import require_working_revision_frontier
+    from .author_editor import source_draft_content
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [request.command["chapter_root_operation_id"]])
+        root = uow.cursor.fetchone()[0]
+        if working != (root["command_payload"].get("preparation_report") or {}).get("working_revision"):
+            raise KernelError("MANUSCRIPT_REVISION_SCOPE_INVALID", "A child cannot replace the Root's frozen working source")
+        require_working_revision_frontier(uow, root=root)
+    return replace(request, inputs=tuple(
+        replace(item, input_role="draft_chapter", content=source_draft_content(item))
+        if item.asset_version_id == working["source_asset_version_id"] else item
+        for item in request.inputs))
+
+
 def _handler_definition_version(
     database_url: str,
     *,
@@ -140,6 +159,7 @@ class _ChapterHandlerAdapter:
             definition_version=request.definition_version,
             source_definition_version=source_version,
         )
+        chapter_request = bind_working_revision_inputs(chapter_request)
         reference = None
         if snapshot is not None and snapshot["authorization"]["purpose"] == "REFERENCE_EVALUATION":
             from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
@@ -153,6 +173,11 @@ class _ChapterHandlerAdapter:
                     binding=chapter_request.command["reference_evaluation"], evaluator_actor_id=request.actor_id,
                     chapter=chapter_request.command["chapter"], generation_sample=subject)
         output = self.registry.require(self.node).execute(chapter_request)
+        from .receipt_recovery import completed_result_proof
+        retained_proof = completed_result_proof(chapter_request)
+        if retained_proof is not None:
+            from dataclasses import replace
+            output = replace(output, content={**output.content, "completed_result_revalidation": retained_proof})
         agreement = None
         if reference is not None:
             from novel_forge.modules.chapter_quality_authority.reference_sampling import (

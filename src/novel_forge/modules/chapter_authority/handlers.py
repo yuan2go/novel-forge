@@ -442,6 +442,18 @@ class _MemoHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         intent = request.require_input("chapter_execution_intent")
+        if request.database_url:
+            from novel_forge.modules.production_execution.execution_template import selected_book_template, selected_template
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            with AuthorityUnitOfWork(request.database_url) as uow:
+                admission = selected_book_template(uow.cursor, project_id=request.project_id, book_id=str(request.command.get("book_id") or intent.content.get("book_id") or ""))
+                from .creative_memo import optional_memo_failure_source
+                failed_memo = optional_memo_failure_source(uow.cursor, request.operation_id, request.project_id)
+            template = selected_template(admission["policy_snapshot"]["policy"], admission["book_id"]) if admission else None
+            if template and ("memo" not in template.get("optional_enhancements", []) or failed_memo):
+                from .creative_memo import input_only_memo
+                return _output(ChapterNode.MEMO, input_only_memo(intent.content, intent.asset_version_id,
+                    failed_operation_id=failed_memo))
         from .memo_recovery import consume_memo_receipt
         retained = consume_memo_receipt(request)
         generated, references = retained if retained else (self.provider.invoke(request, stage="memo", payload={"execution_intent": intent.content}), None)
@@ -1516,7 +1528,7 @@ class _DraftHandler:
         from .realization_composition import compile_realization_contract
         from .craft_execution import require_craft_delivery
 
-        require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
+        craft_delivery = require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
         style = build_draft_style_view(
             context.content, work_requirements=request.work_requirements_enabled
         )
@@ -1572,6 +1584,7 @@ class _DraftHandler:
             "scene_directives": list(memo.content.get("scene_directives") or []),
             "authority": "CREATIVE_SUGGESTION_ONLY",
         }
+        content["craft_delivery_evidence"] = craft_delivery
         if request.work_requirements_enabled:
             from .chapter_plan_views import build_creative_baseline
 
@@ -1597,9 +1610,7 @@ class _ReviewHandler:
             payload=payload,
         )
         require_review_frontier(request)
-        return _model_output(
-            ChapterNode.REVIEW,
-            normalize_review_result(
+        content = normalize_review_result(
                 draft=draft.content,
                 draft_asset_version_id=draft.asset_version_id,
                 result=reviewed.output,
@@ -1608,10 +1619,13 @@ class _ReviewHandler:
                 context_bundle_version_id=context.asset_version_id,
                 knowledge_targets=targets,
                 cross_chapter_window=window,
-            ),
-            request=request,
-            generated=reviewed,
-        )
+            )
+        working = (request.command.get("preparation_report") or {}).get("working_revision")
+        if working:
+            content["working_revision_request"] = {"contract_version": working["contract_version"],
+                "source_asset_version_id": draft.asset_version_id, "reason": working["reason"],
+                "aesthetic_revision_requested": True, "core_story_change_authorized": False}
+        return _model_output(ChapterNode.REVIEW, content, request=request, generated=reviewed)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1677,7 +1691,12 @@ class _RevisionHandler:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         context = request.require_input("context_bundle")
-        if request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
+        length_scope = None
+        if request.effective_definition_version in {"3.9.4", "3.10.0"}:
+            from novel_forge.modules.revision.domain import freeze_chapter_length_scope
+            length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
+                context=context.content, context_asset_version_id=context.asset_version_id)
+        if length_scope is None and request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
             from novel_forge.modules.revision.domain import retain_reviewed_draft
             retained = retain_reviewed_draft(draft=draft.content, draft_id=draft.asset_version_id,
                 draft_hash=draft.content_hash, review=review.content, review_id=review.asset_version_id,
@@ -1686,13 +1705,10 @@ class _RevisionHandler:
                 from .review_window import require_review_frontier
                 require_review_frontier(request)
                 return _revision_decision_output(ChapterNode.REVISION, _output(ChapterNode.REVISION, retained), retained["revision_execution_decision"])
-        length_scope = None
         repair_payload = {}
         if request.effective_definition_version in {"3.9.4", "3.10.0"}:
             from novel_forge.modules.revision.domain import freeze_chapter_length_scope
             from .candidate_repair import candidate_repair_payload
-            length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
-                context=context.content, context_asset_version_id=context.asset_version_id)
             repair_payload = candidate_repair_payload(request)
         revised = self.provider.invoke(
             request,
@@ -1736,7 +1752,7 @@ class _ReReviewHandler:
                 "retained_result_derivation": content["retained_result_derivation"], "provider_dispatches": 0})
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
-        incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
+        incumbent = next((item for item in request.inputs if item.input_type == "best_draft_candidate"), None)
         if incumbent is not None:
             from dataclasses import replace
             from .candidate_selection import retained_candidate_evidence
@@ -1792,7 +1808,7 @@ class _BestCandidateHandler:
             (
                 item
                 for item in request.inputs
-                if item.asset_type == "best_draft_candidate"
+                if item.input_type == "best_draft_candidate"
             ),
             None,
         )
@@ -1874,8 +1890,11 @@ class _BestCandidateHandler:
                 cross_chapter_review=bool(rereview.content.get("cross_chapter_window")),
                 preservation_checks=tuple(rereview.content.get("preservation_checks") or []),
                 quality_resolution_checks=tuple(rereview.content.get("quality_resolution_checks") or []),
+                resolved_issue_codes=tuple(rereview.content.get("resolved_issue_codes") or []),
+                remaining_issue_codes=tuple(rereview.content.get("remaining_issue_codes") or []),
             ),
             minimum_net_improvement=threshold,
+            length_repair_scope=revision.content.get("chapter_length_repair_scope"),
             correction_generation=generation,
             maximum_correction_generations=int(
                 (request.command.get("preparation_report") or {}).get(
@@ -3141,14 +3160,17 @@ def _model_output(
         known = known_receipt_proof(request)
     if known is not None:
         content = {**content, "known_receipt_revalidation": known}
+    reused = (generated.execution_evidence or {}).get('completed_attempt_reuse') or (generated.execution_evidence or {}).get('completed_sibling_reuse')
+    if reused:
+        content = {**content, 'retained_generation_revalidation': reused}
     primary = _output(node, content)
-    commit = None if known else _execution_commit_auxiliary(node, request, generated)
+    commit = None if known or reused else _execution_commit_auxiliary(node, request, generated)
     if commit is not None:
         primary = replace(primary, auxiliary_outputs=(commit,))
     if request.effective_definition_version == "3.10.0" and node in {ChapterNode.REVISION, ChapterNode.REREVIEW}:
         primary = _revision_decision_output(node, primary, {
             "contract_version": "revision-execution-decision.v1",
-            "decision": "PROVIDER_REVISION" if node is ChapterNode.REVISION else "PROVIDER_REREVIEW",
+            "decision": "RETAINED_RESULT_DERIVATION" if reused else "PROVIDER_REVISION" if node is ChapterNode.REVISION else "PROVIDER_REREVIEW",
             "operation_id": request.operation_id,
             "provider_evidence": _provider_evidence(generated),
         })
@@ -3169,6 +3191,8 @@ def _execution_commit_auxiliary(
 ) -> ChapterAuxiliaryOutput | None:
     execution = generated.execution_evidence
     if not execution:
+        return None
+    if execution.get('completed_attempt_reuse') or execution.get('completed_sibling_reuse'):
         return None
     validation_ref = str(execution.get("validation_manifest_ref") or "")
     if not validation_ref:

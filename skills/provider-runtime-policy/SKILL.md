@@ -19,8 +19,8 @@ description: Use when designing, reviewing, or debugging model provider routing,
 
 ## Novel OS Runtime Contract
 
-- production / strict / operating_system 路径缺 provider policy、budget 或 model_call_log 时必须 fail closed。
-- provider timeout、refusal、cancel、budget exceeded、quota exceeded、schema failure 都必须记录为 hard-stop 或显式 approved fallback。
+- 新调用保留 Provider/模型能力、实际上下文容量、账号及真实付费授权检查；已保存结果的读取不得重新要求新调用资格。
+- 用量、耗时、失败、取消与 UNKNOWN 如实留证。纯生成不因自设累计 Token/调用/期限/恢复次数锁死；暂时故障退避，认证、配置和重复无进展明确报错。
 - fallback 不能 silent；必须记录原 provider、失败原因、批准主体、替代 provider、成本影响和质量 gate。
 - mock / deterministic provider 只能标记为 fixture、compat 或 test，不得伪装为 production model coverage。
 
@@ -64,7 +64,7 @@ description: Use when designing, reviewing, or debugging model provider routing,
 ## 质量标准
 
 - 每个生产 model call 都能反查 provider、model、prompt/context source、token、cost 和 trace。
-- provider failure 不产生隐式可发布内容。
+- 原始结果和来源可核验的正文候选先留存；执行终态、核算、结构、选稿及正式事实提交分别判断。候选保存不产生隐式发布或接纳权限。
 - fallback 结果必须重新进入 schema validation、quality gate 和 source isolation gate。
 
 ## 禁止事项

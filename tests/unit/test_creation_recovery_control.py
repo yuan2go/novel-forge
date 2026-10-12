@@ -153,3 +153,30 @@ def test_remote_uncertainty_between_hooks_blocks_next_action(drive):
     assert drive_book(**arguments) == 'WAIT_EXTERNAL_RECONCILIATION'
     candidates.recover_quality_frontier.assert_called_once()
     candidates.recover_support_frontier.assert_not_called()
+
+
+def test_historical_generation_pause_resumes_owned_runnable_successor(monkeypatch):
+    from novel_forge.modules.book_authority.creation_runtime import resume_generation_pause
+    from novel_forge.modules.command_kernel import generation_policy
+    from novel_forge.storage import authority_uow
+    book = {'state':'PAUSED','paused_reason':'GENERATION_RECOVERY_EXHAUSTED','project_id':'p', 'version':10,
+        'active_chapter_request_id':'chapter-request'}
+    authority = SimpleNamespace(database_url='unused', require=Mock(return_value=book),
+        require_chapter_request=Mock(return_value={'chapter_root_operation_id':'root'}), resume=Mock())
+    cursor=Mock()
+    cursor.fetchone.return_value=(True,)
+    uow=SimpleNamespace(cursor=cursor)
+    class OwnedUow:
+        def __init__(self, *_): pass
+        def __enter__(self): return uow
+        def __exit__(self, *_): pass
+    monkeypatch.setattr(authority_uow, 'AuthorityUnitOfWork', OwnedUow)
+    monkeypatch.setattr('novel_forge.modules.book_authority.creation_runtime.AuthorityUnitOfWork', OwnedUow)
+    monkeypatch.setattr(generation_policy, 'generation_graph', Mock(return_value=True))
+    assert resume_generation_pause(authority,book_run_id='b',principal='principal')
+    assert authority.resume.call_args.kwargs['expected_version'] == 10
+    assert 'chapter-pure-generation-successor.v1' in cursor.execute.call_args.args[0]
+    authority.resume.reset_mock()
+    book['paused_reason']='AUTHOR_PAUSE'
+    assert not resume_generation_pause(authority,book_run_id='b',principal='principal')
+    authority.resume.assert_not_called()

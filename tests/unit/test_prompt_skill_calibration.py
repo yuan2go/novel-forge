@@ -340,6 +340,13 @@ def test_narrative_intent_pack_reaches_real_prompt_assembly_and_keeps_work_speci
         "frozen_inputs": [{"role": "book_design", "asset_version_id": "design:v1", "content_hash": HASH}],
         "authoritative_narrative_load": _authoritative_load(), "arc_working_set": _arc_working_set(),
         "narrative_intelligence": _narrative_intelligence()}
+    import hashlib
+    passages, offset = [], 0
+    for text in ("Previously selected prose.\n\n", "The character retains the prior choice.\n"):
+        passages.append({"start": offset, "end": offset + len(text), "text": text,
+                         "text_hash": "sha256:" + hashlib.sha256(text.encode()).hexdigest()})
+        offset += len(text)
+    inputs["arc_working_set"]["working_manuscript"] = {"selected_version": "selected:v4", "passages": passages}
     materialization = _prompt_materialization(context)
     materialization["pack_artifacts"] = {
         "system_instruction": artifact("PROMPT_SYSTEM_INSTRUCTION", "prompt-system:story-planning-pack", "v12"),
@@ -361,6 +368,12 @@ def test_narrative_intent_pack_reaches_real_prompt_assembly_and_keeps_work_speci
     assert "Chapter serialization realization" not in evidence["method_selection"]["system_sections"]
     assert "Chapter plan" not in evidence["method_selection"]["system_sections"]
     assert '"target_chapters":240' in prompt
+    assert '"selected_version":"selected:v4"' in prompt
+    assert '"__text_fragments__"' in prompt
+    assert "Previously selected prose.\\n\\nThe character retains the prior choice.\\n" in prompt
+    assert "All prose, whitespace, source positions and version bindings are retained" in prompt
+    proof = evidence["provider_view"]["exact_context_references"]
+    assert proof["text_fragment_group_count"] == 1 and proof["decoded_equal"]
 
 
 def test_narrative_intent_projection_preserves_relative_refs_knowledge_and_full_repair_sources():

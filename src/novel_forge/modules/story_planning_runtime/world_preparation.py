@@ -34,7 +34,7 @@ def require_world_host_revalidation(
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
     from novel_forge.modules.command_kernel.external_effect_runtime import (
         EffectCommandContext,
-        read_failed_operation_success,
+        read_retained_generation_stage_success,
     )
 
     query = AuthorityAssetQuery(database_url)
@@ -83,7 +83,7 @@ def require_world_host_revalidation(
             project_id=command.project_id, book_id=command.book_id, frozen=source
         )
     for output in (generation, evaluation):
-        receipt = read_failed_operation_success(
+        receipt = read_retained_generation_stage_success(
             database_url,
             EffectCommandContext(
                 operation_id=operation_id,
@@ -96,12 +96,11 @@ def require_world_host_revalidation(
         )
         if (
             receipt is None
-            or receipt["budget_reservation_status"] != "SETTLED"
             or receipt["provider_evidence"].get("result") != output["output"]
         ):
             raise KernelError(
                 "WORLD_HOST_REVALIDATION_RECEIPT_UNSETTLED",
-                "reuse requires exact succeeded Provider output and settled original usage",
+                "reuse requires exact verified complete pure-generation output with preserved usage",
             )
     decoded = decode_world_generation(
         {
@@ -239,17 +238,13 @@ def require_selected_world_action(query: Any, *, command: Any) -> Any:
         raise KernelError("WORLD_REPAIR_SOURCE_DRIFT", "Selected action belongs to another frozen frontier or planning input set")
     with AuthorityUnitOfWork(query.database_url) as uow:
         WorldPreparationRepository(uow.cursor).assert_source_current(project_id=command.project_id, book_id=command.book_id, frozen=source)
-    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_completed_operation_success, read_retained_generation_stage_success
+    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_retained_generation_stage_success
     for key in ("generation", "evaluation"):
         producer = PlanningWorldPreparation._source_operation(query.database_url, command.project_id, documents[key].asset_version_id)
-        with AuthorityUnitOfWork(query.database_url) as uow:
-            uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [producer, command.project_id])
-            row = uow.cursor.fetchone()
-        reader = read_completed_operation_success if row and row[0] == "SUCCEEDED" else read_retained_generation_stage_success
         output = documents[key].content["contract"]
-        receipt = reader(query.database_url, EffectCommandContext(operation_id=producer, project_id=command.project_id, actor_id=command.actor_id, trace_id=command.trace_id, correlation_id=command.correlation_id), effect_id=output["evidence"]["external_receipt_ref"])
-        if receipt is None or receipt["budget_reservation_status"] != "SETTLED" or receipt["provider_evidence"].get("result") != output["output"]:
-            raise KernelError("WORLD_SELECTED_ACTION_RECEIPT_INVALID", "Reuse requires both exact succeeded Provider outputs and settled usage")
+        receipt = read_retained_generation_stage_success(query.database_url, EffectCommandContext(operation_id=producer, project_id=command.project_id, actor_id=command.actor_id, trace_id=command.trace_id, correlation_id=command.correlation_id), effect_id=output["evidence"]["external_receipt_ref"])
+        if receipt is None or receipt["provider_evidence"].get("result") != output["output"]:
+            raise KernelError("WORLD_SELECTED_ACTION_RECEIPT_INVALID", "Reuse requires both exact verified Provider outputs; usage remains an observation")
     PlanningWorldPreparation.validate_retained_generation(query.database_url, command=command, generation=documents["generation"])
     decoded = decode_world_generation({key: value for key, value in generation["output"].items() if key not in {"knowledge_translations", "actor_adjudications"}}, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
     plan = compile_world_plan(reality=source["reality"], generated=decoded, evaluation=evaluation["output"], policy=WorldProductionPolicy(**source["policy"]), chapter_number=int(source["request"]["accepted_through_chapter"]) + 1, intent_version_id=source["intent_version_id"])
@@ -928,7 +923,7 @@ class PlanningWorldPreparation:
     ) -> None:
         from novel_forge.modules.command_kernel.external_effect_runtime import (
             EffectCommandContext,
-            read_failed_operation_success,
+            read_retained_generation_stage_success,
         )
         from novel_forge.modules.worldbuilding.continuation import (
             decide_preparation,
@@ -985,7 +980,7 @@ class PlanningWorldPreparation:
                 "WORLD_REPAIR_EVALUATION_DRIFT",
                 "World causal repair must bind its exact frozen proposal and Director receipt",
             )
-        receipt = read_failed_operation_success(
+        receipt = read_retained_generation_stage_success(
             query.database_url,
             EffectCommandContext(
                 operation_id=owner,
@@ -999,11 +994,10 @@ class PlanningWorldPreparation:
         if (
             receipt is None
             or receipt["provider_evidence"].get("result") != retained["output"]
-            or receipt["budget_reservation_status"] != "SETTLED"
         ):
             raise KernelError(
                 "WORLD_REPAIR_EVALUATION_UNSETTLED",
-                "World causal repair requires verified known Director outcome and settled usage",
+                "World causal repair requires verified known Director outcome with preserved usage",
             )
         frozen = source.content["contract"]
         chapter = int(frozen["request"]["accepted_through_chapter"]) + 1

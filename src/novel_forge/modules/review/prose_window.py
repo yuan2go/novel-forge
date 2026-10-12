@@ -13,6 +13,8 @@ from .diagnostics import prose_hash, validate_location
 
 WINDOW_CONTRACT = "cross-chapter-review-window.v2"
 WINDOW_POLICY = "accepted-prose-neighbours.v1"
+WORKING_WINDOW_POLICY = "selected-working-prose-neighbours.v1"
+WORKING_WINDOW_CONTRACT = "cross-chapter-working-review-window.v1"
 COVERAGE_POLICY = "whole-paragraph-ending.v1"
 CROSS_CHAPTER_CATEGORIES = frozenset(
     {
@@ -52,7 +54,7 @@ def digest(value: Any) -> str:
 
 
 def window_policy(value: dict[str, Any]) -> dict[str, Any]:
-    if value.get("version") != WINDOW_POLICY:
+    if value.get("version") not in {WINDOW_POLICY, WORKING_WINDOW_POLICY}:
         raise KernelError(
             "CROSS_CHAPTER_REVIEW_POLICY_INVALID", "unknown accepted prose policy"
         )
@@ -64,7 +66,7 @@ def window_policy(value: dict[str, Any]) -> dict[str, Any]:
             "positive source count and bounded budget required",
         )
     return {
-        "version": WINDOW_POLICY,
+        "version": value["version"],
         "maximum_previous_chapters": count,
         "source_token_budget": budget,
         "coverage_policy": COVERAGE_POLICY,
@@ -73,7 +75,8 @@ def window_policy(value: dict[str, Any]) -> dict[str, Any]:
 
 def validate_source_snapshot(snapshot: dict[str, Any]) -> None:
     body = {key: value for key, value in snapshot.items() if key != "snapshot_hash"}
-    if snapshot.get("contract_version") != "accepted-prose-snapshot.v1" or snapshot.get(
+    working = snapshot.get("contract_version") == "selected-working-prose-snapshot.v1"
+    if snapshot.get("contract_version") not in {"accepted-prose-snapshot.v1", "selected-working-prose-snapshot.v1"} or snapshot.get(
         "snapshot_hash"
     ) != digest(body):
         raise KernelError(
@@ -87,7 +90,7 @@ def validate_source_snapshot(snapshot: dict[str, Any]) -> None:
             "CROSS_CHAPTER_REVIEW_SOURCE_INVALID", "Book scope is required"
         )
     frontier, target = (
-        snapshot.get("accepted_through_chapter"),
+        snapshot.get("working_through_chapter") if working else snapshot.get("accepted_through_chapter"),
         snapshot.get("target_chapter_number"),
     )
     if (
@@ -98,7 +101,7 @@ def validate_source_snapshot(snapshot: dict[str, Any]) -> None:
     ):
         raise KernelError(
             "CROSS_CHAPTER_REVIEW_SOURCE_INVALID",
-            "accepted frontier must precede the target",
+            "frozen source frontier must precede the target",
         )
     policy = window_policy(snapshot["window_policy"])
     expected = list(range(max(1, target - policy["maximum_previous_chapters"]), target))
@@ -119,8 +122,8 @@ def validate_source_snapshot(snapshot: dict[str, Any]) -> None:
             )
             or not source.get("asset_version_id")
             or not source.get("content_hash")
-            or not source.get("acceptance_operation_id")
-            or source.get("acceptance_status") != "COMMITTED"
+            or (source.get("source_status") != "SELECTED_WORKING_PROSE" if working else
+                not source.get("acceptance_operation_id") or source.get("acceptance_status") != "COMMITTED")
             or not isinstance(source.get("text"), str)
             or not source["text"]
             or source.get("text_hash") != prose_hash(source["text"])
@@ -175,7 +178,7 @@ def freeze_review_window(
             ranges = [(start, len(prose))]
             coverage, reason = "EXCERPT", "ONLY_COMPLETE_ENDING_PARAGRAPHS_FIT"
             if meter.estimate(prose[start:]) > remaining:
-                if source["chapter_number"] == snapshot["accepted_through_chapter"]:
+                if source["chapter_number"] == snapshot["target_chapter_number"] - 1:
                     raise KernelError(
                         "CROSS_CHAPTER_REVIEW_CONTEXT_INSUFFICIENT",
                         "previous ending cannot be included without cutting its paragraph boundary",
@@ -203,7 +206,7 @@ def freeze_review_window(
         )
     window = {
         **{key: deepcopy(value) for key, value in snapshot.items() if key != "sources"},
-        "contract_version": WINDOW_CONTRACT,
+        "contract_version": WORKING_WINDOW_CONTRACT if snapshot["contract_version"] == "selected-working-prose-snapshot.v1" else WINDOW_CONTRACT,
         "sources": list(reversed(sources)),
         "target_candidate_asset_version_id": candidate_id,
         "target_candidate_text_hash": prose_hash(text),
@@ -228,7 +231,7 @@ def freeze_review_window(
 
 
 def validate_window(window: dict[str, Any]) -> None:
-    if window.get("contract_version") not in {WINDOW_CONTRACT, "cross-chapter-review-window.v1"} or window.get(
+    if window.get("contract_version") not in {WINDOW_CONTRACT, "cross-chapter-review-window.v1", WORKING_WINDOW_CONTRACT} or window.get(
         "source_window_hash"
     ) != digest({k: v for k, v in window.items() if k != "source_window_hash"}):
         raise KernelError(

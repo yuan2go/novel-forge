@@ -79,3 +79,44 @@ def test_historical_definition_or_undeclared_current_policy_cannot_inherit_recei
     operation = deepcopy(operation)
     operation["definition_snapshot"] = {"definition_version": "3.10.0", "policy": {}}
     assert retained_completion_evidence(None, operation, []) == []
+
+
+@pytest.mark.parametrize("fault", [None, "own-effect", "changed-input", "wrong-proof", "wrong-effect", "unverified", "cancelled"])
+def test_completed_generation_closes_only_its_exact_original_receipt_without_new_commit_or_cost(monkeypatch, fault):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.modules.command_kernel import retained_completion as runtime
+    source = dict(operation_id="source", project_id="p", workspace_id="w", actor_id="author",
+        root_operation_id="root", definition_name="chapter.review.evaluate", definition_version="3.10.0",
+        command_payload={"chapter": 4}, input_asset_snapshot=[{"asset_version_id": "selected"}],
+        completion_contract_snapshot={}, status="FAILED_FINAL", trace_id="trace", correlation_id="root")
+    current = {**source, "operation_id": "current", "status": "WAITING_EXTERNAL_RESULT",
+        "definition_snapshot": {"commit_sha": "new", "external_capabilities": ["model.review"]}}
+    policy = {"release_sha": "new", "completion_checks": "UNCHANGED", "provider_invoked": False,
+        "completed_model_effects": [{"external_effect_id": "effect", "request_hash": "hash", "stage": "review"}]}
+    binding = {"contract_version": "chapter-completed-sibling-reuse.v1", "source_operation_id": "source",
+        "successor_operation_id": "current", "provider_invoked": False, "original_submission_right": "REVOKED",
+        "source_effect_id": "effect", "source_request_hash": "hash", "stage": "review"}
+    if fault == "changed-input":
+        current["command_payload"] = {"chapter": 5}
+    if fault == "wrong-proof":
+        binding["source_request_hash"] = "other"
+    cursor = Mock()
+    cursor.fetchone.side_effect = [(policy, {"operation": source}, current), (source,), (fault == "cancelled",)]
+    cursor.fetchall.side_effect = [[({"retained_generation_revalidation": binding},)],
+        [("foreign" if fault == "wrong-effect" else "effect", "hash", "model.review", "review", "SUCCEEDED", "model.invoke")]]
+    monkeypatch.setattr(runtime, "require_live_chapter_frontier", Mock())
+    monkeypatch.setattr(runtime, "ExternalEffectRepository", Mock())
+    verified = Mock(return_value=None if fault == "unverified" else {"budget_reservation_status": "HELD_UNKNOWN"})
+    monkeypatch.setattr(runtime, "_read_verified_success", verified)
+    operation = {"operation_id": "current", "project_id": "p", "definition_snapshot": current["definition_snapshot"]}
+    if fault == "own-effect":
+        assert runtime.completed_generation_completion(SimpleNamespace(cursor=cursor), operation, [("model.review", "UNKNOWN")]) is None
+        cursor.execute.assert_not_called()
+    elif fault:
+        with pytest.raises(KernelError, match="RETAINED_COMPLETION_EVIDENCE_INVALID"):
+            runtime.completed_generation_completion(SimpleNamespace(cursor=cursor), operation, [])
+    else:
+        assert runtime.completed_generation_completion(SimpleNamespace(cursor=cursor), operation, []) == [
+            {"capability": "model.review", "status": "SUCCEEDED", "source_operation_id": "source"}]
+        assert verified.call_args.kwargs["retained_generation_stage"] is True
