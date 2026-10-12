@@ -7,6 +7,14 @@ from novel_forge.modules.command_kernel import step_successor_v2 as recovery
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+def test_raw_first_model_result_is_execution_evidence_not_a_committed_domain_output():
+    cursor = Mock()
+    cursor.fetchall.return_value = [("execution_evidence", "model-result"), ("execution_evidence", "raw-output")]
+    assert recovery.has_domain_outputs(cursor, "original") is False
+    cursor.fetchall.return_value.append(("review_report", "primary"))
+    assert recovery.has_domain_outputs(cursor, "original") is True
+
+
 @pytest.mark.parametrize('isolated,source_status,root_status,expected', [
     (True, 'FAILED_FINAL', 'WAITING_CHILDREN', 'FIXTURE_NEXT_RECONCILIATION_BOUNDARY'),
     (False, 'FAILED_FINAL', 'WAITING_CHILDREN', 'STEP_SUCCESSOR_SOURCE_INVALID'),

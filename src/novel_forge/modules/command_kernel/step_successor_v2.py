@@ -500,6 +500,7 @@ def has_domain_outputs(cursor, operation_id):
         ("execution_evidence", r)
         for r in (
             "cost-receipt",
+            "model-result",
             "normalized-output",
             "output-manifest",
             "process-receipt",
