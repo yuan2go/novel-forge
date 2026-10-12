@@ -752,6 +752,21 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
               AND op.workspace_id=book.workspace_id AND output.asset_version_id=%s
               AND op.operation_id=%s""", [book_run_id, project_id, asset_version_id, payload.get("operation_id")])
         row = uow.cursor.fetchone()
+        if row is None:
+            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT
+            uow.cursor.execute("""SELECT book.book_id,book.workspace_id,(root.command_payload->>'chapter')::integer
+                FROM authority_book_production book
+                JOIN authority_operation root ON root.command_payload#>>'{preparation_report,working_revision,book_run_id}'=book.book_run_id
+                JOIN authority_operation op ON op.root_operation_id=root.operation_id
+                JOIN authority_operation_output_asset output ON output.operation_id=op.operation_id
+                WHERE book.book_run_id=%s AND book.project_id=%s AND root.project_id=book.project_id
+                  AND root.workspace_id=book.workspace_id AND root.command_payload->>'book_id'=book.book_id
+                  AND root.definition_name='chapter.slice.run' AND root.definition_version=%s
+                  AND root.command_payload#>>'{preparation_report,working_revision,contract_version}'=%s
+                  AND op.project_id=book.project_id AND op.workspace_id=book.workspace_id
+                  AND output.asset_version_id=%s AND op.operation_id=%s""",
+                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id, payload.get("operation_id")])
+            row = uow.cursor.fetchone()
         if (row is None or source.asset_type != "execution_evidence"
                 or source.content.get("kind") not in {"model-result", "prose-candidate"}
                 or payload.get("project_id") != project_id or payload.get("book_id") != row[0]):

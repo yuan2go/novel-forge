@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import os
 from pathlib import Path
 from typing import Mapping
@@ -30,7 +31,7 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 )
 
 
-CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v6"
+CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v7"
 CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v3"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
@@ -126,6 +127,8 @@ def decode_codex_output(value, *, schema_ref: str):
 
 def _codex_output_schema(schema: dict, *, all_nullable: bool, partition_nullable_enums: bool = True) -> dict:
     result = {k: v for k, v in schema.items() if k not in {"uniqueItems", "x-host-payload-schema"}}
+    if isinstance(result.get("pattern"), str) and re.search(r"\(\?(?:[=!]|<[=!])", result["pattern"]):
+        result.pop("pattern")
     if set(result.get("properties", {})) == {"finding_code", "statement", "evidence_span_ids", "input_observation_asset_version_ids"}:
         properties = result["properties"]
         for key in ("anyOf", "oneOf"):

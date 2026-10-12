@@ -121,6 +121,8 @@ def replace_failed_step(
         unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence, execution_sha=context.commit_sha)
         from novel_forge.modules.chapter_authority.context_transport_recovery import require_optional_memory_transport
         memory_transport = require_optional_memory_transport(cursor, source, policy_evidence, target_version)
+        from novel_forge.modules.chapter_authority.context_transport_recovery import require_changed_schema_transport
+        schema_transport = require_changed_schema_transport(cursor, source, policy_evidence, target_version, execution_sha=context.commit_sha)
         from novel_forge.modules.book_authority.manuscript import require_historical_input_scope_repair
         historical_input_repair = require_historical_input_scope_repair(cursor, source, policy_evidence, target_version)
         memo_contract_repair = bool(
@@ -150,10 +152,10 @@ def replace_failed_step(
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memory_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or optional_memo_repair else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memory_transport or schema_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or optional_memo_repair else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
-            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not historical_input_repair and not optional_memo_repair)
+            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not schema_transport and not historical_input_repair and not optional_memo_repair)
         ):
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID",

@@ -154,6 +154,91 @@ def test_whole_chapter_revision_prompt_has_one_body_and_keeps_selected_predecess
     assert "Return ordered non-overlapping edits" not in prompt
 
 
+@pytest.mark.parametrize("owned", [True, False])
+def test_retained_working_revision_body_is_readable_without_new_call_qualification(monkeypatch, owned):
+    from novel_forge.modules.book_authority import manuscript
+    payload = {"operation_id": "revision", "project_id": "project", "book_id": "book", "text": "完整候选",
+        "raw_text": "完整原始结果", "completeness": "COMPLETE", "structural_status": "INVALID_AUXILIARY",
+        "review_status": "NOT_REVIEWED", "selection_status": "NOT_SELECTED", "acceptance_status": "NOT_ACCEPTED",
+        "accounting_status": "UNKNOWN"}
+    source = SimpleNamespace(asset_type="execution_evidence", asset_version_id="raw", content_hash="hash",
+        content={"kind": "prose-candidate", "payload": payload, "payload_hash": manuscript.canonical_hash(payload).split(":", 1)[1]})
+    class Uow:
+        def __init__(self, *args):
+            self.cursor = self
+            self.rows = iter([None, ("book", "workspace", 3) if owned else None])
+            self.repositories = SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **kwargs: source))
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def execute(self, sql, params):
+            assert "authority_operation_output_asset" in sql and "runtime" not in sql.lower()
+        def fetchone(self):
+            return next(self.rows)
+    monkeypatch.setattr(manuscript, "AuthorityUnitOfWork", Uow)
+    principal = SimpleNamespace(require=lambda permission, project: None)
+    if owned:
+        actual = manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+            asset_version_id="raw", principal=principal)
+        assert actual["text"] == "完整候选" and actual["accounting_status"] == "UNKNOWN"
+        assert actual["structural_status"] == "INVALID_AUXILIARY" and actual["publication"] == "NOT_AUTHORIZED"
+    else:
+        with pytest.raises(KernelError, match="another source or Book"):
+            manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+                asset_version_id="raw", principal=principal)
+
+
+def test_unsupported_regex_wire_projection_keeps_full_host_validation():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    canonical = {"type": "object", "properties": {"category": {"type": "string", "pattern": "^(?!(?:CAUSAL_CARRYOVER)$).+"},
+        "reference": {"type": "string", "pattern": "^[a-z]+$"}}, "required": ["category", "reference"], "additionalProperties": False}
+    before = deepcopy(canonical)
+    wire = codex_output_schema(canonical)
+    assert "pattern" not in wire["properties"]["category"]
+    assert wire["properties"]["reference"]["pattern"] == "^[a-z]+$"
+    invalid = {"category": "CAUSAL_CARRYOVER", "reference": "source"}
+    _validate(wire, invalid, path="wire")
+    with pytest.raises(ValueError, match="permitted pattern"):
+        _validate(canonical, invalid, path="canonical")
+    assert canonical == before
+
+
+@pytest.mark.parametrize("fault", [None, "unchanged-wire", "different-input", "external-write", "missing-receipt"])
+def test_schema_transport_recovery_requires_changed_wire_and_same_pure_task(fault):
+    from novel_forge.modules.chapter_authority.context_transport_recovery import require_changed_schema_transport
+    from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION
+    source = {"operation_id": "source", "project_id": "project", "workspace_id": "workspace",
+        "definition_version": "3.10.0", "command_payload": {"book_id": "book"},
+        "input_asset_snapshot": [{"asset_version_id": "draft", "content_hash": "hash"}],
+        "definition_snapshot": {"external_capabilities": ["model.review"]}}
+    policy = {"contract_version": "chapter-provider-schema-transport.v1", "transport_projection": "codex-supported-patterns.v1",
+        "release_sha": "release", "source_schema_projection": "codex-structured-schema.v6",
+        "target_schema_projection": CODEX_SCHEMA_PROJECTION_VERSION, "input_snapshot": deepcopy(source["input_asset_snapshot"]),
+        "domain_schema": "UNCHANGED", "target_deployment_id": "deployment", "schema_rejection_receipts": [{"receipt": "immutable"}]}
+    if fault == "unchanged-wire":
+        policy["source_schema_projection"] = CODEX_SCHEMA_PROJECTION_VERSION
+    elif fault == "different-input":
+        policy["input_snapshot"] = []
+    elif fault == "external-write":
+        source["definition_snapshot"]["external_capabilities"].append("external.publish")
+    elif fault == "missing-receipt":
+        policy["schema_rejection_receipts"] = []
+    class Cursor:
+        def execute(self, *args):
+            pass
+        def fetchall(self):
+            return [("codex-structured-schema.v6",)]
+        def fetchone(self):
+            return ("deployment",)
+    if fault:
+        with pytest.raises(KernelError, match="actual changed transport"):
+            require_changed_schema_transport(Cursor(), source, policy, "3.10.0", execution_sha="release")
+    else:
+        assert require_changed_schema_transport(Cursor(), source, policy, "3.10.0", execution_sha="release")
+
+
 @pytest.mark.parametrize("change", [{"cancelled": True}, {"state": "PAUSED"}, {"state": "ABORTED"},
     {"workspace": "foreign"}, {"selected": "newer-draft"}])
 def test_revision_does_not_cross_cancellation_scope_or_newer_selection(monkeypatch, change):

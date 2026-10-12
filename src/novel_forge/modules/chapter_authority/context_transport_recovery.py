@@ -59,7 +59,7 @@ def require_optional_memory_transport(cursor, source, policy, target_version):
         return False
     from novel_forge.modules.command_kernel.errors import KernelError
     from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION
-    if (CODEX_SCHEMA_PROJECTION_VERSION != 'codex-structured-schema.v6' or target_version != '3.10.0'
+    if (CODEX_SCHEMA_PROJECTION_VERSION not in {'codex-structured-schema.v6', 'codex-structured-schema.v7'} or target_version != '3.10.0'
         or source['definition_name'] != 'chapter.draft.generate' or source['definition_version'] not in {'3.10.0', '3.10.2'}
         or policy.get('transport_projection') != 'codex-optional-working-memory.v1'
         or policy.get('input_snapshot') != source['input_asset_snapshot']):
@@ -89,6 +89,91 @@ def require_optional_memory_transport(cursor, source, policy, target_version):
             or failures != ['CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED', 'CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT']):
             raise KernelError('CHAPTER_MEMORY_TRANSPORT_INVALID', 'Only the retained undispatched Pack preflight successor may continue')
     return True
+
+
+def require_changed_schema_transport(cursor, source, policy, target_version, *, execution_sha):
+    if policy.get("contract_version") != "chapter-provider-schema-transport.v1":
+        return False
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.command_kernel.generation_policy import pure_generation_capabilities
+    from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION
+    if (policy.get("transport_projection") != "codex-supported-patterns.v1"
+            or policy.get("release_sha") != execution_sha or not execution_sha
+            or policy.get("target_schema_projection") != CODEX_SCHEMA_PROJECTION_VERSION
+            or policy.get("source_schema_projection") == CODEX_SCHEMA_PROJECTION_VERSION
+            or policy.get("input_snapshot") != source["input_asset_snapshot"]
+            or target_version != source["definition_version"]
+            or not pure_generation_capabilities(source["definition_snapshot"].get("external_capabilities", []))
+            or policy.get("domain_schema") != "UNCHANGED" or not policy.get("schema_rejection_receipts")):
+        raise KernelError("CHAPTER_SCHEMA_TRANSPORT_INVALID", "Require an actual changed transport for the exact frozen pure-generation task")
+    cursor.execute("""SELECT last_error #>> '{production_execution,process_evidence,provider_schema_contract,version}'
+        FROM authority_external_effect WHERE operation_id=%s""", [source["operation_id"]])
+    versions = [row[0] for row in cursor.fetchall()]
+    if not versions or set(versions) != {policy.get("source_schema_projection")}:
+        raise KernelError("CHAPTER_SCHEMA_TRANSPORT_INVALID", "Bind the original rejected wire projection without rewriting its receipt")
+    cursor.execute("""SELECT d.deployment_id FROM authority_capability_pack_activation a
+        JOIN authority_capability_pack_deployment d ON d.deployment_id=a.active_deployment_id
+        JOIN authority_capability_pack_compilation c USING(compilation_id)
+        WHERE a.project_id=%s AND a.workspace_id=%s AND a.book_id=%s
+          AND a.workflow_definition_ref='chapter_authority_slice@3.10.0'
+          AND d.deployment_id=%s AND d.deployment_status='ACTIVE' AND c.release_sha=%s""",
+        [source["project_id"], source["workspace_id"], source["command_payload"]["book_id"],
+         policy.get("target_deployment_id"), execution_sha])
+    if cursor.fetchone() != (policy.get("target_deployment_id"),):
+        raise KernelError("CHAPTER_SCHEMA_TRANSPORT_INVALID", "Require the current compiled transport within the same Book authorization")
+    return True
+
+
+def recover_schema_transport(authority, *, book_run_id, principal, root_operation_id=None):
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION
+    from .canon_contract_recovery import schema_rejection_receipts
+    book = authority.require(book_run_id)
+    principal.require("book.authority.execute", book["project_id"])
+    principal.require("chapter.authority.execute", book["project_id"])
+    if root_operation_id is None:
+        if not book.get("active_chapter_request_id"):
+            return False
+        root_operation_id = authority.require_chapter_request(book["active_chapter_request_id"])["chapter_root_operation_id"]
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        from novel_forge.modules.command_kernel.step_successor import require_live_chapter_frontier
+        require_live_chapter_frontier(uow.cursor, root_id=root_operation_id, project_id=book["project_id"], book_run_id=book_run_id)
+        uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step step USING(operation_id)
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.actor_id=%s AND o.status='FAILED_FINAL'
+              AND EXISTS(SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=o.operation_id
+                AND attempt.result->>'error_code'='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED')
+              AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor edge WHERE edge.predecessor_operation_id=o.operation_id)""",
+            [root_operation_id, book["project_id"], principal.principal_id])
+        sources = [row[0] for row in uow.cursor.fetchall()]
+        uow.cursor.execute("""SELECT d.deployment_id FROM authority_capability_pack_activation a
+            JOIN authority_capability_pack_deployment d ON d.deployment_id=a.active_deployment_id
+            JOIN authority_capability_pack_compilation c USING(compilation_id)
+            WHERE a.project_id=%s AND a.workspace_id=%s AND a.book_id=%s
+              AND a.workflow_definition_ref='chapter_authority_slice@3.10.0'
+              AND c.release_sha=%s AND d.deployment_status='ACTIVE'""",
+            [book["project_id"], book["workspace_id"], book["book_id"], authority.commit_sha])
+        deployments = uow.cursor.fetchall()
+    if sources and len(deployments) != 1:
+        raise KernelError("CHAPTER_SCHEMA_TRANSPORT_INVALID", "Resolve the current same-Book deployment before continuation")
+    changed = False
+    for source in sources:
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            uow.cursor.execute("""SELECT DISTINCT last_error #>> '{production_execution,process_evidence,provider_schema_contract,version}'
+                FROM authority_external_effect WHERE operation_id=%s""", [source["operation_id"]])
+            versions = uow.cursor.fetchall()
+        if len(versions) != 1 or not versions[0][0] or versions[0][0] == CODEX_SCHEMA_PROJECTION_VERSION:
+            continue
+        identities, proofs = schema_rejection_receipts(authority.database_url, source)
+        policy = {"contract_version": "chapter-provider-schema-transport.v1", "transport_projection": "codex-supported-patterns.v1",
+            "source_schema_projection": versions[0][0], "target_schema_projection": CODEX_SCHEMA_PROJECTION_VERSION,
+            "input_snapshot": source["input_asset_snapshot"], "domain_schema": "UNCHANGED", "completion_checks": "UNCHANGED",
+            "schema_rejection_receipts": proofs, "target_deployment_id": deployments[0][0], "release_sha": authority.commit_sha}
+        replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version=source["definition_version"],
+            context=AdmissionContext(principal.principal_id, principal.permissions,
+                authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
+            policy_evidence=policy, expected_failure_code="MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED", known_rejected_effects=identities)
+        changed = True
+    return changed
 
 
 def recover_optional_memory_transport(authority, *, book_run_id, principal):

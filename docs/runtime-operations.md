@@ -2563,6 +2563,17 @@ Whole-chapter revision transports one body plus the frozen source window; slot c
 are retained host evidence. A new independent Review cannot erase an older OPEN major
 contradiction by omission. Exact ReReview disposition may resolve it; frozen continuation
 rechecks current propagation eligibility before execution.
+Codex wire projection `codex-structured-schema.v7` omits unsupported regex lookaround
+from the transport Schema. The immutable canonical Schema and host validation still
+enforce the original pattern, judgment/category combinations, locations and source bindings.
+This is transport compatibility, not a Review pass. Ordinary Book continue and working
+revision continue can register the existing Kernel StepSuccessor for a changed wire
+projection after every original membership rejection has a scope-bound terminal receipt
+and settled reservation. The native correction preserves inputs, canonical domain Schema,
+failed Attempts, original usage and authorization. The same projection is not a new cause
+fix; authentication, unresolved outcomes and non-model effects require their own resolution.
+Retained working-revision results use the same Book-scoped read/export path even if
+auxiliary validation fails; those reads do not require new Provider admission.
 Ordinary creation continue also resumes a Book paused by the former generation retry
 ceiling once its native, scope-checked successor is runnable. Author pauses are separate.
 The manuscript resume CLI composes the real Chapter port before reconciling an active

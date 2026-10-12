@@ -277,9 +277,11 @@ def _run_working_revision_command(settings, args, *, principal):
         else:
             root_id = args.revision_root
             composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
-            from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
-            recover_chapter_generations(composition.authority, book_run_id=args.book_run_id,
-                principal=principal, working_revision_root_id=root_id)
+        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_schema_transport
+        recover_schema_transport(composition.authority, book_run_id=args.book_run_id, principal=principal, root_operation_id=root_id)
+        from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
+        recover_chapter_generations(composition.authority, book_run_id=args.book_run_id,
+            principal=principal, working_revision_root_id=root_id)
         worker = build_trusted_principal_resolver().resolve_worker_principal("manuscript-revision-worker")
         scheduler = chapter.scheduler(principal=worker)
         deadline = monotonic() + args.work_window_seconds
