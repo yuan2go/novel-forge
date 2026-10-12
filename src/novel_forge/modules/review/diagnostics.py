@@ -80,7 +80,10 @@ def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = 
     return [item for item in diagnoses if (item.get("judgment_kind") in {
         "SEMANTIC_CONFLICT", "HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM"
     } or aesthetic_requested and item.get("judgment_kind") == "AESTHETIC_SUGGESTION")
-        and item.get("status", "OPEN") == "OPEN"]
+        and item.get("status", "OPEN") == "OPEN"
+        and (item.get("repair") or {}).get("problem_owner", "PROSE") == "PROSE"
+        and (item.get("repair") or {}).get("repair_scope") not in {"INVESTIGATE", "FUTURE_REPLAN"}
+        and (item.get("repair") or {}).get("root_cause") != "UNCERTAIN"]
 
 
 def _aesthetic_revision_requested(review):

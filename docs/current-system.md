@@ -1866,6 +1866,9 @@ hash and chapter binding; the two plan identities are not interchangeable.
 Edition revalidation matches the submitted slot identities and order against the
 published continuous-scene and legacy core-slot interpretations. Auxiliary capabilities
 in a new plan do not turn one saved prose scene into several required source slots.
+An uncertain plan diagnosis may request investigation. That proposal authorizes neither
+plan mutation nor an automatic prose repair of frozen commitments; its concrete evidence
+and unresolved status remain available to the existing review and revision workflow.
 
 Chapter 3.8.0 and Pack 2.12.0/template v9 retain their frozen `work-requirements.v1` inputs
 and emit `work-quality.v2` evidence. Selected method values reach Draft Plan v3,

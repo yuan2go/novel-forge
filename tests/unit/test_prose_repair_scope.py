@@ -46,6 +46,48 @@ def test_mixed_or_uncertain_diagnoses_remain_investigation():
     assert finding_repair_route(finding)["repair_scope"] == "INVESTIGATE"
 
 
+def test_uncertain_plan_evidence_can_be_retained_without_authorizing_plan_or_prose_mutation():
+    from novel_forge.modules.review.diagnostics import structural_repair_scope
+
+    diagnosis = repair(root_cause="UNCERTAIN", repair_scope="INVESTIGATE")
+    validate_repair(diagnosis)
+    route = finding_repair_route({"status": "UNRESOLVED", "members": [{"judgment": "ISSUE", "repair": diagnosis}]})
+    assert route == {"contract_version": "prose-root-cause.v1", "repair_scope": "INVESTIGATE",
+        "consumer": "AUTHOR_DIAGNOSIS", "authorization": "PROPOSAL_ONLY"}
+    assert structural_repair_scope([{"repair": diagnosis, "judgment_kind": "UNCERTAIN", "status": "OPEN"}]) == "LOCAL_PROSE"
+
+
+@pytest.mark.parametrize("diagnosis", [
+    repair(root_cause="UNCERTAIN", repair_scope="INVESTIGATE"),
+    repair(problem_owner="UNKNOWN", repair_scope="INVESTIGATE"),
+    repair(problem_owner="PROSE", root_cause="UNCERTAIN", repair_scope="INVESTIGATE"),
+    repair(),
+])
+def test_semantic_label_cannot_turn_investigation_or_plan_proposal_into_prose_permission(diagnosis):
+    from novel_forge.modules.review.diagnostics import open_diagnoses, prose_repair_diagnoses, validate_prose_repair_scope
+
+    validate_repair(diagnosis)
+    issue = {"code": "timeline", "severity": "major", "judgment_kind": "SEMANTIC_CONFLICT",
+        "repair": diagnosis, "evidence_locator": {"quote": "昨日交出的粗盘。"}}
+    review = {"issues": [issue]}
+    assert open_diagnoses(review) == [issue]
+    assert prose_repair_diagnoses(review, work_requirements=True) == []
+    with pytest.raises(KernelError, match="unaffected"):
+        validate_prose_repair_scope({"text": "昨日交出的粗盘。"},
+            prose_repair_diagnoses(review, work_requirements=True), "上月交出的粗盘。")
+
+
+@pytest.mark.parametrize("scope", ["LOCAL_PROSE", "SCENE_REVISION", "CHAPTER_REVISION", None])
+def test_concrete_prose_diagnoses_and_legacy_diagnoses_remain_repairable(scope):
+    from novel_forge.modules.review.diagnostics import prose_repair_diagnoses
+
+    issue = {"code": "repeat", "severity": "minor", "judgment_kind": "SEMANTIC_CONFLICT"}
+    if scope:
+        issue["repair"] = repair(problem_owner="PROSE", repair_scope=scope)
+        validate_repair(issue["repair"])
+    assert prose_repair_diagnoses({"issues": [issue]}, work_requirements=True) == [issue]
+
+
 def test_native_provider_schema_and_context_expose_root_causes_only_for_selected_policy():
     schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage="longform_prose_review",
         request_payload={"input": {"prose_diagnosis_contract": "prose-root-cause.v1"}})

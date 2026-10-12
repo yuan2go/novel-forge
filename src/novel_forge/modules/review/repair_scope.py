@@ -20,7 +20,7 @@ def validate_repair(repair: Mapping[str, Any]) -> None:
     root, owner, scope = (repair.get(key) for key in ("root_cause", "problem_owner", "repair_scope"))
     if (any(not isinstance(value, str) for value in (root, owner, scope))
             or root not in ROOT_CAUSES or owner not in {"PROSE", "PLAN", "UNKNOWN"} or scope not in REPAIR_SCOPES
-            or owner == "PLAN" and scope != "FUTURE_REPLAN"
+            or owner == "PLAN" and scope not in {"FUTURE_REPLAN", "INVESTIGATE"}
             or (owner == "UNKNOWN" or root == "UNCERTAIN") and scope != "INVESTIGATE"
             or root == "UPPER_PLOT" and scope not in {"FUTURE_REPLAN", "INVESTIGATE"}
             or owner == "PROSE" and scope == "FUTURE_REPLAN"):
