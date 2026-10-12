@@ -243,6 +243,8 @@ def test_current_planning_template_binds_whole_envelope_and_retains_historical_t
     ([['QUALITY_FLOOR_NOT_MET', 'CONTEXT_CAPACITY_EXCEEDED']], False),
     ([['CONTEXT_CAPACITY_EXCEEDED', 'PROVIDER_MODEL_CAPACITY_UNAVAILABLE']], True),
     ([['PROVIDER_MODEL_CAPACITY_UNAVAILABLE']], False),
+    ([['CONTEXT_CAPACITY_EXCEEDED', 'PROVIDER_UNAVAILABLE:PROVIDER_MODEL_CAPACITY_UNAVAILABLE:receipt:until:2026-10-12T14:05:15+00:00']], True),
+    ([['CONTEXT_CAPACITY_EXCEEDED', 'PROVIDER_UNAVAILABLE:AUTHORIZATION_MISSING:receipt:until:2026-10-12T14:05:15+00:00']], False),
 ])
 def test_planning_capacity_recovery_uses_authorized_candidate_failures(reasons, allowed):
     from novel_forge.modules.story_planning_runtime.runtime_continuation import require_capacity_route_candidates

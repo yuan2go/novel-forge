@@ -2,7 +2,7 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
-from novel_forge.storage.migrations.versions.v20261011_0199_plan_change_capacity import UPGRADE_STATEMENTS
+from novel_forge.storage.migrations.versions.v20261012_0203_capacity_availability_observation import UPGRADE_STATEMENTS
 from tests.integration.authority_postgres_support import DATABASE_URL
 
 
@@ -19,8 +19,11 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
                 'authority_asset(asset_id text,asset_type text,project_id text)',
                 'authority_story_formation_run(formation_run_id text,project_id text,book_id text,workspace_id text,frozen_stage_inputs jsonb)',
                 'authority_story_creation_cancellation(formation_run_id text)',
-                'authority_external_effect(operation_id text)',
-                'authority_budget_reservation(operation_id text)',
+                'authority_external_effect(operation_id text,external_effect_id text,project_id text,effect_type text,status text,request_payload jsonb,request_hash text)',
+                'authority_budget_reservation(operation_id text,external_effect_id text,status text)',
+                'authority_external_effect_dispatch(dispatch_id text,external_effect_id text,status text,evidence jsonb)',
+                'authority_external_receipt(dispatch_id text,status text,payload jsonb)',
+                'authority_generation_isolation(external_effect_id text,operation_id text,project_id text,workspace_id text,request_hash text,proof jsonb)',
                 'authority_lease_acquisition(attempt_id text,status text)',
                 'authority_attempt(operation_id text,attempt_id text,attempt_number int,status text,error jsonb,result jsonb)',
             ]:
@@ -65,10 +68,10 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
             def route(reasons):
                 content = {'decision_id': 'decision', 'status': 'BLOCKED', 'task': {'operation_id': 'source', 'project_id': 'project', 'work_id': 'book'}, 'candidates': [{'rejected_reasons': value} for value in reasons]}
                 connection.execute("UPDATE authority_asset_version SET content=%s WHERE asset_version_id='route'", [Jsonb(content)])
-            legal = [['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED'], ['CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT']]
+            legal = [['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED'], ['CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT', 'PROVIDER_UNAVAILABLE:PROVIDER_MODEL_CAPACITY_UNAVAILABLE:receipt:until:2026-10-12T14:05:15+00:00']]
             route(legal)
             assert accepted()
-            for denied in [[['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED']], [['BUDGET_HARD_LIMIT']], [['AUTHORIZATION_MISSING', 'CONTEXT_CAPACITY_EXCEEDED']]]:
+            for denied in [[['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED']], [['BUDGET_HARD_LIMIT']], [['AUTHORIZATION_MISSING', 'CONTEXT_CAPACITY_EXCEEDED']], [['CONTEXT_CAPACITY_EXCEEDED', 'PROVIDER_UNAVAILABLE:AUTHORIZATION_MISSING:receipt:until:2026-10-12T14:05:15+00:00']]]:
                 route(denied)
                 assert not accepted()
             route(legal)
@@ -81,7 +84,7 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
                     assert not accepted()
                     connection.execute('ROLLBACK TO SAVEPOINT change_boundary')
                     connection.execute('RELEASE SAVEPOINT change_boundary')
-            for mutation in ["INSERT INTO authority_external_effect VALUES('source')", "INSERT INTO authority_budget_reservation VALUES('source')", "INSERT INTO authority_lease_acquisition VALUES('attempt','HELD')", "UPDATE authority_operation SET actor_id='foreign' WHERE operation_id='child'"]:
+            for mutation in ["INSERT INTO authority_external_effect(operation_id) VALUES('source')", "INSERT INTO authority_budget_reservation(operation_id) VALUES('source')", "INSERT INTO authority_lease_acquisition VALUES('attempt','HELD')", "UPDATE authority_operation SET actor_id='foreign' WHERE operation_id='child'"]:
                 connection.execute('SAVEPOINT boundary')
                 connection.execute(mutation)
                 assert not accepted()

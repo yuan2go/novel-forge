@@ -2586,7 +2586,9 @@ snapshots and accepts only two verified pure model receipts bound to the same se
 action; unrelated Effects, live leases, cancellation and changed Book/input bindings
 still reject. Usage settlement is not a generation prerequisite. Verify the migration
 and `test_authorized_planning_capacity_postgres.py`, then ordinary continue follows
-the registered successor and reuses preparation without repeating calls.
+the registered successor and reuses preparation without repeating calls. Migration 0203
+recognizes the native timestamped availability reason alongside that capacity failure;
+authentication or authorization failures remain errors.
 Codex wire projection `codex-structured-schema.v7` omits unsupported regex lookaround
 from the transport Schema. The immutable canonical Schema and host validation still
 enforce the original pattern, judgment/category combinations, locations and source bindings.

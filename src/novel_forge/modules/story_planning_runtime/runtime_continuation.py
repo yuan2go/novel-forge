@@ -700,7 +700,9 @@ def require_capacity_route_candidates(decision, *, frozen, source_operation_id):
         or task.get("work_id") != frozen["book_id"]
         or task.get("operation_id") != source_operation_id
         or any("CONTEXT_CAPACITY_EXCEEDED" not in item.get("rejected_reasons", [])
-            or set(item["rejected_reasons"]) - {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT", "PROVIDER_MODEL_CAPACITY_UNAVAILABLE"}
+            or any(reason not in {'CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT', 'PROVIDER_MODEL_CAPACITY_UNAVAILABLE'}
+                and not (isinstance(reason, str) and reason.startswith('PROVIDER_UNAVAILABLE:PROVIDER_MODEL_CAPACITY_UNAVAILABLE:'))
+                for reason in item['rejected_reasons'])
             for item in eligible_scope)):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing failure is not solely a proven request capacity failure for an authorized candidate")
 
