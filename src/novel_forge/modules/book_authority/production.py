@@ -1879,7 +1879,10 @@ class PostgresBookAuthority:
                 "FAILED_TERMINAL": BookProductionState.CHAPTER_FAILED_TERMINAL,
             }.get(str(request["status_reference"]), BookProductionState.READY)
         current = self.require(book_run_id)
-        expected_version = int(current["version"]) if expected_version is None else expected_version
+        if (any(current[key] != book[key] for key in ('active_chapter_request_id', 'accepted_through_chapter', 'current_chapter'))
+                or current['state'] in {'CANCELLED', 'ABORTED', 'COMPLETED'}):
+            raise KernelError('BOOK_MUTATION_CONFLICT', 'Book frontier changed during its owned resume reconciliation')
+        expected_version = int(current["version"])
 
         def commit_resume(
             uow: AuthorityUnitOfWork,

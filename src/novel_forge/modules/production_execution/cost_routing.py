@@ -1077,6 +1077,9 @@ class CostAwareRouter:
                 }
                 diagnostics = [reason for reason in reasons if reason in diagnostic_rules]
                 reasons = [reason for reason in reasons if reason not in diagnostic_rules]
+                if price.accounting_basis == "ACCOUNT_ENTITLEMENT" and "PRICING_NOT_EFFECTIVE" in reasons:
+                    diagnostics.append("PRICING_NOT_EFFECTIVE")
+                    reasons.remove("PRICING_NOT_EFFECTIVE")
                 if "BUDGET_HARD_LIMIT" in reasons and not (
                     price.accounting_basis == "PRICED" and worst_case > remaining_money
                 ):

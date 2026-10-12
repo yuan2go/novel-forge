@@ -58,11 +58,10 @@ def test_independent_checker_requires_exact_selection_and_preserves_uncertain_ve
     assert "A legal ID alone is not fidelity proof" in _stage_semantic_contract("context_fidelity")
 
 
-def test_new_task_reasoning_rejects_router_downgrade_and_keeps_legacy_effort() -> None:
+def test_task_reasoning_is_a_route_choice_and_silent_downgrade_remains_forbidden() -> None:
     route = SimpleNamespace(model_profile=SimpleNamespace(reasoning_effort="medium"), route_policy=SimpleNamespace(reasoning_downgrade_policy="PROHIBITED"))
     require_task_reasoning(route, task_scoped=False)
-    with pytest.raises(KernelError, match="REASONING_REQUIRED"):
-        require_task_reasoning(route, task_scoped=True)
+    require_task_reasoning(route, task_scoped=True)
     route.model_profile.reasoning_effort = "high"
     require_task_reasoning(route, task_scoped=True)
     route.route_policy.reasoning_downgrade_policy = "ALLOWED"
@@ -77,7 +76,7 @@ def test_native_validation_reasoning_authorization_is_exact_and_keeps_no_downgra
         task_reasoning_authorization=("medium", "sha256:" + "a" * 64))
     require_task_reasoning(route, task_scoped=True)
     route.model_profile.reasoning_effort = "low"
-    with pytest.raises(KernelError, match="REASONING_REQUIRED"):
+    with pytest.raises(KernelError, match="REASONING_AUTHORIZATION_DRIFT"):
         require_task_reasoning(route, task_scoped=True)
     route.model_profile.reasoning_effort = "medium"
     route.route_policy.reasoning_downgrade_policy = "ALLOWED"

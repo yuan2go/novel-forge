@@ -231,8 +231,13 @@ class DeepSeekProviderAdapter:
             failed = self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started, failure_cause=_safe_cause(exc))
             safe_output = _received_output(content)
             if safe_output is not None:
-                failed = ProviderInvocationResult(failed.outcome, failed.handle, {**failed.evidence,
-                    "raw_output_text": safe_output, "source_complete": False,
+                complete = _received_complete(content, request)
+                identity = content.get("id") if isinstance(content, Mapping) else None
+                handle = ProviderInvocationHandle(identity, identity, submitted_at.isoformat(), "synchronous",
+                    False, False, False, False) if complete else None
+                failed = ProviderInvocationResult(failed.outcome, handle, {**failed.evidence,
+                    "raw_output_text": safe_output, "source_complete": complete,
+                    "provider_request_id": identity if complete else None, "model_id": request.model if complete else None,
                     "request_hash": request.request_hash, "usage": {"availability": "UNAVAILABLE", "input_tokens": None, "output_tokens": None},
                     "cost": {"status": "UNKNOWN", "currency": "USD"}}, failed.request_sent)
             return failed
@@ -611,6 +616,23 @@ def _received_output(content):
         if isinstance(function, Mapping) and function.get("name") == DEEPSEEK_OUTPUT_TOOL and isinstance(function.get("arguments"), str):
             return function["arguments"]
     return message.get("content") if isinstance(message.get("content"), str) else None
+
+
+def _received_complete(content, request):
+    if (not isinstance(content, Mapping) or not isinstance(content.get("id"), str) or not content["id"]
+            or content.get("model") != request.model):
+        return False
+    choices = content.get("choices")
+    if not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], Mapping):
+        return False
+    choice = choices[0]
+    if request.request_payload.get("protocol") == DEEPSEEK_STRICT_PROTOCOL:
+        calls = (choice.get("message") or {}).get("tool_calls")
+        return (choice.get("finish_reason") == "tool_calls" and isinstance(calls, list) and len(calls) == 1
+                and isinstance(calls[0], Mapping) and isinstance(calls[0].get("function"), Mapping)
+                and calls[0]["function"].get("name") == DEEPSEEK_OUTPUT_TOOL
+                and isinstance(calls[0]["function"].get("arguments"), str))
+    return choice.get("finish_reason") == "stop" and isinstance((choice.get("message") or {}).get("content"), str)
 
 
 def _contract_failure(response: HTTPError) -> str:

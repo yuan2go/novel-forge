@@ -1224,7 +1224,9 @@ process identity, heartbeat, cancellation and duplicate-submission recovery rema
 
 Production generative routing treats cumulative attempts, prior failed-route
 exclusion, mechanical arbitration/escalation thresholds, benchmark insufficiency and
-latency insufficiency as diagnostics. Model/task authorization, actual Context/output
+latency insufficiency as diagnostics. An expired price observation on an authorized
+account-entitlement route is also diagnostic; priced channels retain their price period
+and monetary authorization checks. Model/task authorization, actual Context/output
 capacity, in-flight exclusion, Retry-After and priced monetary authorization still
 reject new calls. Provider consumption Token/call ceilings are ledger observations;
 removing them does not increase model Context capacity or grant a paid channel.

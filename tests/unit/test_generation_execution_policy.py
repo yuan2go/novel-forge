@@ -209,3 +209,22 @@ def test_remote_wait_observes_cancellation_without_total_generation_deadline(mon
         assert store.get_record(request.execution_id).raw_evidence["local_wait_revoked"] is True
     finally:
         release.set()
+
+
+def test_expired_membership_price_observation_does_not_revoke_generation_authorization():
+    from datetime import timedelta
+    from novel_forge.modules.production_execution.codex_model_catalog import codex_catalog_candidates
+    from tests.unit.test_cost_aware_routing import task, route, NOW, candidate
+    member = codex_catalog_candidates(({'model':'authorized-model','reasoning':'high','role':'PRIMARY',
+        'tasks':['classification'],'context_limit':4096,'output_limit':1024},),
+        entitlement={'configuration_ref':'member-config-v1','authorization_ref':'existing-member-grant'}, quota=1,
+        valid_from=(NOW-timedelta(days=2)).isoformat(), valid_until=(NOW-timedelta(days=1)).isoformat())[0]
+    request=task(declared_requirements={'pure_generation':True})
+    selected=route(request,[member],{})
+    assert selected['status']=='SELECTED'
+    assert selected['selected']['candidate']['authorization_ref']=='existing-member-grant'
+    assert 'PRICING_NOT_EFFECTIVE' in selected['selected']['diagnostic_reasons']
+    from dataclasses import replace
+    paid_base=candidate()
+    paid=replace(paid_base,pricing=replace(paid_base.pricing,effective_until=(NOW-timedelta(days=1)).isoformat(),effective_from=(NOW-timedelta(days=2)).isoformat()))
+    assert 'PRICING_NOT_EFFECTIVE' in route(request,[paid],{})['candidates'][0]['rejected_reasons']

@@ -505,6 +505,6 @@ def test_auxiliary_receipt_errors_retain_safe_received_prose(field, value):
     result = adapter(lambda *args, **kwargs: BytesIO(json.dumps(raw).encode())).invoke(invocation())
     assert result.outcome == "unknown"
     assert result.evidence["raw_output_text"] == original_text
-    assert result.evidence["source_complete"] is False
+    assert result.evidence["source_complete"] is True
     assert result.evidence["cost"]["status"] == "UNKNOWN"
     assert "reasoning_content" not in result.evidence
