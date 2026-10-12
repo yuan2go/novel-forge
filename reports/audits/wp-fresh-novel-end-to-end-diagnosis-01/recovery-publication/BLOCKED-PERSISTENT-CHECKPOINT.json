@@ -1,0 +1,2150 @@
+{
+  "recorded_at": "2026-10-11T19:55:58.550614+00:00",
+  "package_status": "BLOCKED_INCOMPLETE",
+  "book": {
+    "state": "PAUSED",
+    "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+    "saga_id": "76a43201-b0e5-446a-8a20-d0bed7d60e0a",
+    "version": 10,
+    "created_at": "2026-10-11T18:28:31.447978+00:00",
+    "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+    "updated_at": "2026-10-11T19:50:45.787579+00:00",
+    "book_run_id": "book-run:ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc",
+    "workspace_id": "workspace:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+    "paused_reason": "GENERATION_RECOVERY_EXHAUSTED",
+    "failure_reason": "",
+    "current_chapter": 0,
+    "book_plan_version": "authority-output:67f962e7-41aa-480e-b8d9-aa677b1ea4f3:story_planning.candidate:v1",
+    "input_snapshot_id": "sha256:6a0fd50415d6ecafdc8fe62842cf7241bcefba0f0146bc8026362f17180d420d",
+    "root_operation_id": "ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc",
+    "book_design_version": "65257ed7-1aec-4f03-8499-3337506906ce",
+    "light_recap_cadence": 5,
+    "formal_recap_cadence": 10,
+    "target_chapter_count": 100,
+    "active_chapter_number": 1,
+    "active_plan_version_id": "authority-output:b7ccf27a-156c-42de-90eb-deea910e0304:story_planning.candidate:v1",
+    "failure_classification": "",
+    "stable_idempotency_key": "story-formation:758b56a9b8091f0a4d9f94124e29d2e2d9e325333325c2df8a7211eeea78c015:production",
+    "accepted_through_chapter": 0,
+    "active_chapter_request_id": "chapter-request:bd316a01c5a59eae792853e03e24558262344fbccc1a5c9caa64da6b4f57f1a3",
+    "longform_context_versions": {
+      "arc_plan_versions": [
+        "authority-output:6ea785b5-6c9d-41eb-80a8-04f5dac2a996:story_planning.candidate:v1",
+        "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1",
+        "authority-output:f8c98899-4f9d-4a27-ad7a-999807b5ea72:story_planning.candidate:v1",
+        "authority-output:c6d9fbaa-3b9d-480c-a769-6c807715b712:story_planning.candidate:v1",
+        "authority-output:fcb70626-fb5f-4d9a-a43d-49856db85173:story_planning.candidate:v1",
+        "authority-output:70306100-c1cc-423b-8a00-c49f47cbd7b2:story_planning.candidate:v1",
+        "authority-output:9ae51cf3-017d-4019-8724-7c1aa7fa6c94:story_planning.candidate:v1",
+        "authority-output:5fd1d1ff-7a52-4c77-8eb2-7fe872b00889:story_planning.candidate:v1"
+      ],
+      "volume_plan_version": "authority-output:9fb3ce46-7739-4151-90af-fed38f471363:story_planning.candidate:v1",
+      "quality_trend_version": "authority-output:d78c4901-05b3-4be1-9212-9c180b6de025:book.bootstrap.quality_trend:v1",
+      "reward_ledger_version": "authority-output:787f353a-e1f8-4948-8ef9-bfffe96cc959:book.bootstrap.reward_ledger_snapshot:v1",
+      "promise_ledger_version": "authority-output:2119db8d-f277-469a-a6c9-4b6d09b4275e:book.bootstrap.promise_ledger_snapshot:v1",
+      "reader_segment_version": "authority-output:fd887077-a6c6-4d32-841e-1d0f610e20ae:book.bootstrap.reader_segment_profile:v1",
+      "character_state_version": "authority-output:e3c16af2-498e-47c6-9d43-07b856b4f7b0:book.bootstrap.character_state_snapshot:v1",
+      "reader_contract_version": "authority-output:22ba46c8-0cd4-4c66-9ad4-b77a7b106d72:book.bootstrap.reader_contract:v1",
+      "platform_profile_version": "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1",
+      "foreshadowing_state_version": "authority-output:67a96d11-0937-4b19-8b9c-a559c9f54998:book.bootstrap.foreshadow_snapshot:v1"
+    },
+    "active_child_delegation_id": "child-delegation:4122804d3839a4f2d144950a7448a0d50c4ddca6e51d7876054f12d931dd2f9f",
+    "production_profile_version": "authority-output:36470f05-d9f5-4a86-bd59-eae814656273:book.bootstrap.production_profile:v1",
+    "active_story_state_version_id": null,
+    "last_chapter_outcome_version_id": null,
+    "active_canon_snapshot_version_id": null,
+    "active_longform_projection_set_id": null
+  },
+  "chapter_request": {
+    "created_at": "2026-10-11T19:39:07.553383+00:00",
+    "generation": 1,
+    "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+    "updated_at": "2026-10-11T19:46:11.64187+00:00",
+    "book_run_id": "book-run:ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc",
+    "chapter_number": 1,
+    "chapter_saga_id": "8969c2cb-22b4-4937-ab75-cd2ebb57d2b6",
+    "command_payload": {
+      "title": "一天的工钱",
+      "premise": "茶溪窑料出了变化，学徒徐照舍不得让好料跟着受损，便多花工夫将材料分开，把能用的部分做成相称的粗器坯。一天的活换来实在工钱，家中晚饭也有了踏实滋味；留下的旧窑料尚待处理，水源为何变化，他仍说不明白。",
+      "book_run_id": "book-run:ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc",
+      "chapter_number": 1,
+      "context_candidates": [
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "chapter_plan",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:6c2eeff41496b6ee21a7c7eb050606adeffbb49de54ae3787d9dd434805a9e57",
+          "safe_summary": "",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:6c2eeff41496b6ee21a7c7eb050606adeffbb49de54ae3787d9dd434805a9e57",
+          "source_use_mode": "generation",
+          "asset_version_id": "ed324390-7195-46bd-80d2-7a18e475d9ea",
+          "estimated_tokens": 1,
+          "selection_reason": "explicit audited AssetVersion override",
+          "structured_facts": [],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "chapter_plan",
+          "physical_asset_type": "chapter_plan",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "arc_plan",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:ff28fbcc2d357fbbb879fa22a445527f3c2c2f09d3ef54713d8913c256c67c4d",
+          "safe_summary": "",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:ff28fbcc2d357fbbb879fa22a445527f3c2c2f09d3ef54713d8913c256c67c4d",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1",
+          "estimated_tokens": 1,
+          "selection_reason": "explicit audited AssetVersion override",
+          "structured_facts": [],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "arc_plan",
+          "physical_asset_type": "planning_generation_candidate",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "creative_brief",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:f456466c6dc0358e5498fb0dd9c356881231e8e3a358593435bfe444f2f69f21",
+          "safe_summary": "",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:f456466c6dc0358e5498fb0dd9c356881231e8e3a358593435bfe444f2f69f21",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1",
+          "estimated_tokens": 1,
+          "selection_reason": "eligible scoped authority collection",
+          "structured_facts": [],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "creative_brief",
+          "physical_asset_type": "creative_brief",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "style_policy",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:249b615e9be62b41a9b794c662a38bb2b987cf101b6b08300b2b02d4a2c22b2a",
+          "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:249b615e9be62b41a9b794c662a38bb2b987cf101b6b08300b2b02d4a2c22b2a",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1",
+          "estimated_tokens": 2220,
+          "selection_reason": "eligible scoped authority collection",
+          "structured_facts": [
+            {
+              "kind": "voice_contract",
+              "layer": "NARRATOR",
+              "guidance": "第三人称叙述者，语气清楚、温和，偶尔顺着人物处境带出趣味。叙述不替所有人物预先判定对错，也不在事件未展开时频繁宣布其重大意义。",
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:NARRATOR",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "GENRE",
+              "guidance": [
+                "使用境界、功法、术法、灵材、宗门、坊市、秘境等传统修仙要素，但由具体用途引入。",
+                "提供学习与突破的期待，让新能力在后续行动中得到验证。",
+                "斗法同时体现修为、准备、地形和选择，胜负不能长期只靠临时出现的隐藏底牌。",
+                "机缘有发现与把握的过程，宝物的价值可以随主角认识改变。",
+                "宗门既有竞争，也有授业、协作、日常利益和归属感。",
+                "远游逐步扩大世界，故乡与旧关系仍能反映时间和成长。"
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:GENRE",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "CHARACTER",
+              "guidance": [
+                {
+                  "situation": "裴晏需要更换阵基附近的陶质护套，徐照尚未学会引气。",
+                  "utterance": "这圈裂口我会补，里面的纹我不懂。护套我替你做，你教我怎么把气引进来，行不行？",
+                  "motivation": "争取用已经会做的事换取学习机会，既不装懂，也不把自己说得毫无用处。"
+                },
+                {
+                  "situation": "初步学会控物术，尝试把一桶水平稳提过窑场门槛。",
+                  "utterance": "先别叫我搬别的。我想看它能不能一滴都不洒。",
+                  "motivation": "享受新能力带来的实际便利，趣味来自过去经常耗费体力的生活。"
+                },
+                {
+                  "situation": "孟青禾为后续诊治留在一地，两人准备分路。",
+                  "utterance": "你留下有你的事。我走之前把这边货路记清，信能送到，咱们就不算断了来往。",
+                  "motivation": "表达关心，并逐渐接受孟青禾有自己的责任和路线。"
+                }
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:character:xuzhao",
+              "character_id": "character:xuzhao",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "CHARACTER",
+              "guidance": [
+                {
+                  "situation": "病人只说干活之后不舒服，她需要区分不同情况。",
+                  "utterance": "你说累，是腿使不上劲，还是胸口发闷？从哪一处先难受，说那一处就行。",
+                  "motivation": "把模糊描述转成能够判断的症状，不急于显示自己懂得更多。"
+                },
+                {
+                  "situation": "裴晏把减轻不适理解为能重新连续施术。",
+                  "utterance": "今天能走得松快些，是好事。那段经脉还没好，活可以换着做，别一下全接回来。",
+                  "motivation": "支持裴晏继续过有用且自主的生活，同时说明当前诊治的实际边界。"
+                },
+                {
+                  "situation": "与徐照商量一段共同旅程之后的安排。",
+                  "utterance": "前面这段我跟你走，到了临河城，我要去找那位医师。你以后路过，带些新见闻来，我也有话讲给你听。",
+                  "motivation": "坦率表达自己的去处，维系友谊而不制造含混承诺。"
+                }
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:character:mengqinghe",
+              "character_id": "character:mengqinghe",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "CHARACTER",
+              "guidance": [
+                {
+                  "situation": "邀请徐照参与一次需要辨材和运输的外出事务。",
+                  "utterance": "货路我熟，料你看得准。这趟一起走，赚多少先说清，省得回来都说自己出了大力。",
+                  "motivation": "把合作说成互有用途的安排，保留伙伴的价值与自己的主动性。"
+                },
+                {
+                  "situation": "宗门比试中输给徐照，两人随后一起吃饭。",
+                  "utterance": "这顿我请。你刚才那一下，我吃完还得想一想，别急着问第二碗。",
+                  "motivation": "在一次竞争失败后保留好胜与自嘲，不靠突然翻脸制造关系变化。"
+                },
+                {
+                  "situation": "中后期讨论一项可能改变现有产业供给的方案。",
+                  "utterance": "改，我不是一句不许改。可这几处先停下来，靠它吃饭的人去哪儿？咱们把这一段说实在，再谈后面。",
+                  "motivation": "要求讨论具体调整，而非把经营责任化成对朋友立场的服从。"
+                }
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:character:hejianshan",
+              "character_id": "character:hejianshan",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "CHARACTER",
+              "guidance": [
+                {
+                  "situation": "徐照引气之后急着练出更强的术法。",
+                  "utterance": "能放出来了，算你会了一半。剩下一半，是想停的时候真能停。",
+                  "motivation": "把学习重点放在能够控制的基础能力上，不贬低初学者。"
+                },
+                {
+                  "situation": "同伴见他施术不适，打算把所有事务接过去。",
+                  "utterance": "上坡那两处你去，下面这处我做。别一口气全拿走，我还靠这个吃饭。",
+                  "motivation": "让分工适合伤情，同时坚持自己仍能承担有用工作。"
+                },
+                {
+                  "situation": "徐照询问进入宗门之后是否应该一直留在他身边。",
+                  "utterance": "引气我能教，往后你得学更多。路合适就去走，回来有好酒，记得叫我。",
+                  "motivation": "提供指导而不以恩情占有徐照后续道路。"
+                }
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:character:peiyan",
+              "character_id": "character:peiyan",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "CHARACTER",
+              "guidance": [
+                {
+                  "situation": "徐照准备离镇求学，父亲替他检查行囊。",
+                  "utterance": "去吧。鞋带换根新的，别到了半山才想起来，家里还有一根。",
+                  "motivation": "支持儿子远行，表达实际牵挂而不要求他留下。"
+                },
+                {
+                  "situation": "水源条件改善后，父子在窑场谈后续安排。",
+                  "utterance": "水好用了，是省了不少力气。下月那批缸我还接，活在手上，日子才往前走。",
+                  "motivation": "承认家乡改善的价值，同时继续依靠自己的劳动生活。"
+                }
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:character:xuchanggen",
+              "character_id": "character:xuchanggen",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "CHARACTER",
+              "guidance": [
+                {
+                  "situation": "徐照返乡，准备先解释一路经历。",
+                  "utterance": "路有多远，吃饭时慢慢讲。先洗手，你再站一会儿，菜可不陪你修行。",
+                  "motivation": "欢迎儿子回来，让相聚先落在实际生活里。"
+                },
+                {
+                  "situation": "徐照提出出钱让她停掉摊位。",
+                  "utterance": "棚顶漏雨，你肯帮我换，我高兴。摊子我还想摆，来买东西的也都是熟人，没必要一并替我收了。",
+                  "motivation": "接受有用的帮助，同时保留自己的经营选择。"
+                }
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:character:luosuyun",
+              "character_id": "character:luosuyun",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "kind": "voice_contract",
+              "layer": "CHARACTER",
+              "guidance": [
+                {
+                  "situation": "弟子练习护体术，争着把灵光催得更亮。",
+                  "utterance": "亮给谁看？把右肩护住，那里还漏着。",
+                  "motivation": "让术法学习落到可控制的实际效果，避免以声势代替能力。"
+                },
+                {
+                  "situation": "徐照因辨材准确，想把训练时间都用在作坊事务上。",
+                  "utterance": "辨料你已经能帮上忙。明日去练护体，东西做得好，带不出去也不成。",
+                  "motivation": "帮助徐照扩展能力，同时肯定已有手艺的有限用途。"
+                },
+                {
+                  "situation": "徐照与贺见山争论一次野外训练谁先完成。",
+                  "utterance": "名次照算。现在先把后面两人带回来，少了他们，你们这趟也没做完。",
+                  "motivation": "使竞争与合作同时成立，让名次不取代任务本身。"
+                }
+              ],
+              "voice_id": "65257ed7-1aec-4f03-8499-3337506906ce:character:qiaolingyi",
+              "character_id": "character:qiaolingyi",
+              "required_markers": [],
+              "forbidden_markers": []
+            },
+            {
+              "key": "work_applicability",
+              "value": {
+                "scope": "BOOK",
+                "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+                "declarations": [
+                  {
+                    "status": "APPLICABLE",
+                    "rationale": "作者明确要求传统修仙长篇，本候选采用凡人起步、宗门成长与山河探索相结合的方向。",
+                    "field_path": "$.subgenre"
+                  },
+                  {
+                    "status": "APPLICABLE",
+                    "rationale": "普通人成长需要具体的行动牵引；主角从争取自主谋生逐渐走向自主选择修行道路。",
+                    "field_path": "$.core_desire"
+                  },
+                  {
+                    "status": "APPLICABLE",
+                    "rationale": "主角的出身与家庭处境支持对失去选择权的恐惧，可用于解释其不同阶段的选择。",
+                    "field_path": "$.core_fear"
+                  },
+                  {
+                    "status": "APPLICABLE",
+                    "rationale": "本候选选择以修行资源、个人道路及灵脉变化之间的矛盾支撑长篇发展，符合作者要求的选择与后果相连。",
+                    "field_path": "$.core_conflict"
+                  },
+                  {
+                    "status": "APPLICABLE",
+                    "rationale": "作者明确要求600章连续长篇，需要完整走向、首100章目标及后续可持续发展的事件来源。",
+                    "field_path": "$.serialization_potential"
+                  }
+                ],
+                "source_bindings": [
+                  {
+                    "content_hash": "sha256:61eda0aab10b02231d478a855f4223486b420d6cd825d71f4ff63a7a98227d77",
+                    "asset_version_id": "65257ed7-1aec-4f03-8499-3337506906ce"
+                  },
+                  {
+                    "content_hash": "sha256:d3372827071cdfd6d3108353bb20cab6125b91320f39031743750e0fb2dd344f",
+                    "asset_version_id": "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1"
+                  },
+                  {
+                    "content_hash": "sha256:e347fe3301a0dbaafa24dc522aa8b1efd6175689a07c134fb110072a9143ed02",
+                    "asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1"
+                  }
+                ],
+                "source_content_hash": "sha256:d3372827071cdfd6d3108353bb20cab6125b91320f39031743750e0fb2dd344f",
+                "source_asset_version_id": "authority-output:0c749b31-d386-4911-9413-6234805de176:story_planning.candidate:v1"
+              }
+            },
+            {
+              "key": "creative_style",
+              "value": {
+                "pov": "以徐照为主要限知视角，读者通常随其经验认识修仙世界。确有必要时可在清楚的场景边界切换到重要伙伴，展示其独立行动；不在同一场景随意进入多人内心，不借旁人视角提前泄露本应通过探索获得的答案。",
+                "narrator": "第三人称叙述者，语气清楚、温和，偶尔顺着人物处境带出趣味。叙述不替所有人物预先判定对错，也不在事件未展开时频繁宣布其重大意义。",
+                "constraints": [
+                  "主要使用自然、清楚的现代汉语叙述，保留修仙称谓的古意，避免连续堆砌生僻词与空泛形容。",
+                  "先让读者看见人物正在做什么、想得到什么，再补充理解该行动所需的世界信息。",
+                  "对白依人物经历与当前目的变化；徐照的务实来自学徒生活，不能把所有人的话都写成相同的机锋。",
+                  "幽默优先来自熟悉关系、生活习惯和实际处境，不用网络梗打断危险场面。",
+                  "动作、修行和探索写清可感知的变化及其用途，不把境界名称本身当作成长展示。",
+                  "重要选择按其影响呈现后果，不要求每个小动作付出代价；普通休息和安静观察不强加冲突。",
+                  "单章篇幅由有效场景、人物互动和事件发展支撑，不以重复解释、修炼流水账或材料清单填量。",
+                  "所有示例为本候选原创表达，不模仿外部作品的句法、段落或人物声线。"
+                ],
+                "genre_conventions": [
+                  "使用境界、功法、术法、灵材、宗门、坊市、秘境等传统修仙要素，但由具体用途引入。",
+                  "提供学习与突破的期待，让新能力在后续行动中得到验证。",
+                  "斗法同时体现修为、准备、地形和选择，胜负不能长期只靠临时出现的隐藏底牌。",
+                  "机缘有发现与把握的过程，宝物的价值可以随主角认识改变。",
+                  "宗门既有竞争，也有授业、协作、日常利益和归属感。",
+                  "远游逐步扩大世界，故乡与旧关系仍能反映时间和成长。"
+                ],
+                "original_examples": [
+                  {
+                    "example": "徐照把三块试烧的瓦并排放好，挑出最灰的一块。掌柜皱了眉，他却把瓦翻过来，指给掌柜看背面的细纹。\n“这块没裂。”\n“颜色不好。”\n“铺上屋顶，没人翻着看。”\n掌柜盯了他一会儿，先笑了，才把那块瓦收下。",
+                    "purpose": "建立普通出身与早期说话方式。",
+                    "explanation": "通过选瓦和讨价还价呈现主角的职业经验、实用取向与适度趣味，无需先列人物性格。"
+                  },
+                  {
+                    "example": "他从前过这道溪，总要先脱鞋。今日走到水边，试着把灵气送进足底，踏出的第一步仍沉了半寸，第二步却站稳了。\n徐照低头看了一会儿，又走回岸边，把刚脱下的鞋穿上。\n裴晏在对岸等得不耐烦：“会了就过来。”\n“鞋底也该见见世面。”",
+                    "purpose": "让能力提升成为可感知的成长。",
+                    "explanation": "把修行进步落实为渡溪能力，并给人物留下享受成果的短暂空间；趣味来自他珍惜日常物件的习惯。"
+                  },
+                  {
+                    "example": "石门背后没有密室。孟青禾举着灯走到尽头，灯火忽然歪向她身后。\n徐照蹲下，拨开槽底的碎石。槽壁磨得很滑，石缝里却积着一层与外头山色不同的白沙。\n“水从这里出去过。”他说。\n贺见山摸了摸门上的封痕：“谁把出口封成了入口？”\n三人都没急着往下走。",
+                    "purpose": "展示长线谜题的发现方式。",
+                    "explanation": "用风向、磨损和异地沙粒提供可观察线索，人物提出有限推断；保留发现的不确定性与探索期待。"
+                  },
+                  {
+                    "example": "孟青禾把药箱扣好，推回他递来的两张护身符。\n“留一张就够。你明天过峡口，比我这里难走。”\n徐照没收，问她：“城里不是已经有人看诊？”\n“有。”她说，“可我昨天答应那孩子，今天还去。”\n他看着药箱上新补的搭扣，终于把其中一张收了回来。",
+                    "purpose": "体现独立欲望与成熟的相处变化。",
+                    "explanation": "伙伴因自己的承诺选择留下，主角表达担心后接受差异；关系变化通过行动表现，不靠人物突然翻脸制造冲突。"
+                  }
+                ]
+              }
+            },
+            {
+              "key": "creative_direction",
+              "value": {
+                "genre": "传统修仙商业网文；语言自然，有人情味与适度趣味。",
+                "subgenre": "凡人起步、宗门成长与山河探索型传统修仙。",
+                "target_reader": "希望持续追读普通人成长、探索未知、人物关系变化的中文网文读者；能够享受踏实修行、有效斗法、伙伴相处及逐步扩大的世界。",
+                "emotional_contract": "让读者先喜欢一个会算工钱、舍不得浪费好材料、嘴上不逞强却愿意动手的普通少年，再陪他见识修仙世界的壮阔。成长的满足来自原先办不到的事情终于能办到，也来自他逐渐能够理解和选择关系。保留饭桌、赶路、分赃、失败后互相取笑等有人情味的片段；真正的危险要有分量，胜利后允许人物享受成果。整体有探索的惊奇、修行的踏实和适度趣味，不以持续压抑或频繁失去亲友维持追读。"
+              }
+            },
+            {
+              "key": "realization_policy",
+              "value": {
+                "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                "contract_version": "scene-craft-tasks.v2"
+              }
+            },
+            {
+              "key": "style_constraints",
+              "value": [
+                "主要使用自然、清楚的现代汉语叙述，保留修仙称谓的古意，避免连续堆砌生僻词与空泛形容。",
+                "先让读者看见人物正在做什么、想得到什么，再补充理解该行动所需的世界信息。",
+                "对白依人物经历与当前目的变化；徐照的务实来自学徒生活，不能把所有人的话都写成相同的机锋。",
+                "幽默优先来自熟悉关系、生活习惯和实际处境，不用网络梗打断危险场面。",
+                "动作、修行和探索写清可感知的变化及其用途，不把境界名称本身当作成长展示。",
+                "重要选择按其影响呈现后果，不要求每个小动作付出代价；普通休息和安静观察不强加冲突。",
+                "单章篇幅由有效场景、人物互动和事件发展支撑，不以重复解释、修炼流水账或材料清单填量。",
+                "所有示例为本候选原创表达，不模仿外部作品的句法、段落或人物声线。"
+              ]
+            }
+          ],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "style_policy",
+          "physical_asset_type": "style_policy",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "quality_rubric",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "evidence_only",
+          "content_hash": "sha256:49be2736489788f27b05179035af7b1cc1594c0592bcbb64c606601b723433ca",
+          "safe_summary": "Initial quality_rubric; no accepted narrative history.",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:49be2736489788f27b05179035af7b1cc1594c0592bcbb64c606601b723433ca",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1",
+          "estimated_tokens": 14,
+          "selection_reason": "eligible scoped authority collection",
+          "structured_facts": [],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "quality_rubric",
+          "physical_asset_type": "quality_rubric",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "platform_profile",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:06a0ffb43439297f4a4c0f783981551529976f16416c7e63430c5024b31e0a84",
+          "safe_summary": "Initial platform_profile; no accepted narrative history.",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:06a0ffb43439297f4a4c0f783981551529976f16416c7e63430c5024b31e0a84",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1",
+          "estimated_tokens": 79,
+          "selection_reason": "eligible scoped authority collection",
+          "structured_facts": [
+            {
+              "key": "platform_rules",
+              "value": {
+                "format": {
+                  "paragraph_max": 500
+                },
+                "rhythm": [],
+                "opening": [],
+                "ai_content": {
+                  "mode": "internal"
+                },
+                "chapter_length": {
+                  "maximum": 5000,
+                  "minimum": 4000
+                },
+                "publish_metadata": {
+                  "title_required": true
+                },
+                "sensitive_content": []
+              }
+            }
+          ],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "platform_profile",
+          "physical_asset_type": "platform_profile",
+          "semantic_projection": true
+        },
+        {
+          "scope": {
+            "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537"
+          },
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "story_state_snapshot",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:e828378ba80d3e7d750096825c8fe31875fe9958251cbc35e8867543de18694d",
+          "safe_summary": "Compact authoritative current Narrative State through Chapter 0.",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:e828378ba80d3e7d750096825c8fe31875fe9958251cbc35e8867543de18694d",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1",
+          "estimated_tokens": 16,
+          "selection_reason": "explicit audited AssetVersion override",
+          "structured_facts": [],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "story_state_snapshot",
+          "physical_asset_type": "story_state_snapshot",
+          "semantic_projection": true
+        },
+        {
+          "scope": {
+            "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537"
+          },
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "canon_snapshot",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:5012d27149c0c907f346123034d40ccbbe09bb6f8ddba20b0cc726512a7ba59e",
+          "safe_summary": "Compact authoritative Canon truth through Chapter 0.",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:5012d27149c0c907f346123034d40ccbbe09bb6f8ddba20b0cc726512a7ba59e",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+          "estimated_tokens": 13,
+          "selection_reason": "explicit audited AssetVersion override",
+          "structured_facts": [],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "canon_snapshot",
+          "physical_asset_type": "canon_snapshot",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "character_cast",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:e347fe3301a0dbaafa24dc522aa8b1efd6175689a07c134fb110072a9143ed02",
+          "safe_summary": "Protected authoritative Character identities: 徐照, 孟青禾, 贺见山, 裴晏, 徐长根, 罗素云, 乔令仪.",
+          "context_class": "PROTECTED",
+          "content_digest": "sha256:e347fe3301a0dbaafa24dc522aa8b1efd6175689a07c134fb110072a9143ed02",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+          "estimated_tokens": 2418,
+          "selection_reason": "current Authority-admitted Foundation semantic projection",
+          "structured_facts": [
+            {
+              "kind": "character_identity_contract",
+              "aliases": [
+                "徐照",
+                "阿照"
+              ],
+              "pronouns": [
+                "他"
+              ],
+              "character_id": "character:xuzhao",
+              "canonical_name": "徐照",
+              "source_asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "stable_characterization": {
+                "fear": "怕多年辛劳仍只能等别人决定去留，也怕走远后把帮助过自己的人看成需要摆脱的负担；这两种担忧不解释他的全部行动，求知、好胜、趣味和享受成果同样能够推动他。",
+                "need": "学会接受帮助而不把支持等同于失去自主，也学会表达牵挂而不包办他人的生活；让自己的判断随知识与能力扩大，承认公开发现之后别人会作出不同选择。",
+                "voice": "用短而具体的话说用途、工夫和眼前问题，少作宏大承诺。讨价还价时会抓住一个实在理由；熟人之间的趣味来自惜物、算工钱与认真过头。见识增长后表达更准确，仍保留学徒时期的朴实口气。",
+                "agency": "主动以实际协助争取基础指导，并寻找进入岑岳宗的机会；入门后选择学习、谋生与外出事务的组合。面对家乡问题时承担已经学会的部分，能够求助、合作或放弃超出能力的办法。后期逐步形成拒绝长期独占灵脉、公开关键发现的自主选择。",
+                "desire": "先取得能够自主谋生的修行本领，让家人生活宽裕些；站稳之后亲眼走过未知地方，找到适合自己的修行道路，最终为后来者留下能够自行选择的通路。",
+                "values": [
+                  "有用的本领",
+                  "劳动与惜物",
+                  "自主去留",
+                  "记得帮助",
+                  "尊重各自道路"
+                ],
+                "weakness": "普通资质使训练速度与资源效率受限；面对新领域容易把材料经验用得过远，需要专门学习纠正。对亲近关系有时不直接说明自己的去留愿望，反而先忙着补足所有安排。",
+                "background": "起步沿用茶溪镇陶窑少年学徒、资质普通的条件。父母在世，各有生计。长期搬料、修坯、照看烧窑使他熟悉材料变化、火候与工钱尺度；这些经验不等于完整炼器或修行知识。清理旧窑基取得裂纹陶片、与裴晏相遇并争取引气指导，属于拟议的开篇发展。",
+                "capability": "开篇擅长辨认常用窑土、配料差异、器坯缺陷与火候变化，具备劳动耐力和有限积蓄，尚无成熟修行能力。引气、术法、斗法、法器和阵法知识须分别学习。陶片仅辅助观察附近流痕；随着五境成长，逐渐形成部分脱离陶片的判断、独行与协作能力。",
+                "false_belief": "早期倾向于认为，只有先替亲近的人把事情安排妥当，自己才有资格离开。这是对报答方式的局部误判，随着家人与伙伴提出自己的打算而逐渐松动。",
+                "arc_direction": "从希望挣到可靠工钱、学会有用本领，发展到凭宗门身份独立谋生，再通过远游形成自己的道途。早期把报答理解为随时在场，后来学会让家人与朋友自行安排生活。终局走到化神层次，承担与长期修炼相称的关键行动，保留故乡牵挂、务实习惯和自主启程的能力。",
+                "moral_boundary": "不拿明知不可靠的判断换取他人冒险，不因修为提高便替朋友决定去处；争取自己的机会可以竞争和讨价还价，不能把他人的生计当作理所当然的耗材。",
+                "risk_preference": "起步偏稳，愿意为学习与明确收益承担可理解的风险；能力增长后更愿意进入未知地域。重视退路和准备，也允许在事实清楚时迅速行动，不把犹疑写成固定习惯。",
+                "relationship_function": "连接家乡、宗门与远游伙伴；他的成长改变合作方式，但不能使其他人的欲望退为背景。"
+              }
+            },
+            {
+              "kind": "character_identity_contract",
+              "aliases": [
+                "孟青禾",
+                "青禾"
+              ],
+              "pronouns": [
+                "她"
+              ],
+              "character_id": "character:mengqinghe",
+              "canonical_name": "孟青禾",
+              "source_asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "stable_characterization": {
+                "fear": "怕把尚不明白的病因说成定论，也怕治疗短暂见效之后，病人因缺药或无人照护重新陷入困境；面对这些担忧，她会选择可持续的安排，而非承诺包治。",
+                "need": "建立与能力相称的照护范围，能够把事务交给可信同行，并为自己的求学、休息与谋生留出空间；成熟不等于把所有病人都留在自己身边。",
+                "voice": "句子清楚，善于把抽象的不适问成可回答的细节；对病人少用吓人的术语，对熟人可以直截了当地指出不合适的安排。幽默往往落在别人嘴硬而身体诚实的地方，不把每句话都说成医嘱。",
+                "agency": "主动选择采药、求学与诊治去处，能够因病人的后续需要留下，也能因药源或学习机会远行。与徐照合作时提出自己的目标、报酬与行程；遇到超出能力的病症可以转诊、求助或提供有限缓解，不以追随主角替代行医道路。",
+                "desire": "获得真正能够处理疑难伤病的本领，拥有持续行医的药源和去处，让自己的治疗能够进入病人的日常，而不只在一次历险中临时有用。",
+                "values": [
+                  "具体疗效",
+                  "病人的生活条件",
+                  "专业积累",
+                  "守住承诺",
+                  "可持续照护"
+                ],
+                "weakness": "早期诊治经验和药源有限，遇到复杂伤病容易把可用精力投入得过多；需要学习在紧急处置、长期管理和转交同行之间作出准确选择。",
+                "background": "沿用茶溪镇药铺学徒的起点。拟定她早期主要承担拣药、配常用药、整理药材和随师照看常见病人的工作，诊断由有经验的医者负责。熟悉镇北药坡的常用路径和药材时令，知道当地病人因工钱、路程与家务而有不同的治疗条件。",
+                "capability": "起步能够辨认常见药材、按指导配药、处理简单外伤及安排基础照护，拥有药铺师承渠道、地方药源经验和有限工具。复杂病因、经脉旧伤与高阶诊治须经过后续学习；修行提供感知与施术条件，不能替代医术积累。",
+                "arc_direction": "从茶溪药铺学徒发展为能够独立诊治疑难伤病的医者，通过辨药、判断病因、治疗选择和持续照护积累本领。逐步找到稳定药源、同行与行医去处。与徐照由同乡熟悉走向明确的长期知交，能够分别成长、重聚合作，归宿不悬置于含混的爱情承诺。",
+                "moral_boundary": "不把病人当作未经说明的试术对象，不以疗效尚未确定的办法索取必然痊愈的价钱；可以拒绝超出能力的要求，但应清楚说明自己能够做到的部分。",
+                "risk_preference": "采药时可以为明确药源承担经过准备的野外风险；治疗上偏谨慎，已熟练的手法直接运用，新办法先判断适应范围。不会为了显示勇敢选择最危险的路线。",
+                "relationship_function": "与徐照形成能够容纳分路的长期知交；与裴晏形成有边界的诊治合作，使关心落实为适合伤情的生活安排。"
+              }
+            },
+            {
+              "kind": "character_identity_contract",
+              "aliases": [
+                "贺见山",
+                "见山"
+              ],
+              "pronouns": [
+                "他"
+              ],
+              "character_id": "character:hejianshan",
+              "canonical_name": "贺见山",
+              "source_asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "stable_characterization": {
+                "fear": "怕一次扩张用尽本钱，也怕只求稳妥使家业慢慢缩到无事可做；更不愿让依靠商行领工钱的人为他的好胜承担未说明的风险。",
+                "need": "把家业的体面与可持续经营区分开，允许调整规模和方向；学会坦白困难，使合作建立在各方真正能够承担的事情上。",
+                "voice": "对外礼貌流畅，惯于先提出一个双方都能接受的说法；涉及经营时落到路线、交期和可承担的投入。与熟人相处可以承认丢脸、开自己的玩笑，争执时仍说具体问题，不以冷笑或算计代替全部性格。",
+                "agency": "主动争取宗门名次、学习机会与可靠同伴，同时参与家业的经营选择。能够与徐照竞争、合伙或拒绝一项不适合商行的投入。中后期依据实际产业与资源变化决定调整范围，不因友情便自动接受全部方案。",
+                "desire": "重振家业，恢复可靠商行的信誉，保住能够长期经营的事业，并在宗门中凭自己的成绩获得位置。",
+                "values": [
+                  "信誉",
+                  "可持续事业",
+                  "家业责任",
+                  "成绩与体面",
+                  "公平分担"
+                ],
+                "weakness": "对可见成绩和恢复家业的期待容易使他低估时间；维护体面时不愿及时说明资金压力，可能压缩伙伴原本能够选择的余地。",
+                "background": "沿用岑岳宗同辈和贺氏衰落家业的条件。拟定他在入门前便帮家中核货、跑客户，知道货栈、旧客户与少量运输能力仍有价值，也知道过去的姓氏声望不能代替如今的交付。开篇不设他已控制大规模固定灵地或拥有充足本钱。",
+                "capability": "起步具有核算、议价、客户往来和组织运输的经验，能够接触家中货栈、旧客户与有限运力；这些资源需要付费、协调和维护。宗门术法与斗法本领须按学习进度获得，商行账目只能显示供给变化，不能直接解释地下灵脉。",
+                "false_belief": "早期容易把醒目的宗门成绩和家业恢复看得过于紧密，认为取得一个足够体面的名次便能迅速带回稳定客户；实际经营会让他认识到持续交付与名声各有作用。",
+                "arc_direction": "从希望以宗门成绩恢复家业声势，逐渐学会把信誉落实为稳定交付和能够维持的事业。后续是否持有固定灵地，由具体经营选择形成；若形成资源依赖，需面对迁移、改业或减少投入的现实。终局保留可经营的部分，与徐照明确仍愿合作的事务，并保留有依据的分歧。",
+                "moral_boundary": "不靠明知有问题的货物恢复信誉，不把合作中的主要负担藏给伙伴；可以维护己方收益、拒绝不利安排，但不能把别人的投入说成毫无价值。",
+                "risk_preference": "愿意为名次和明确商机承担较积极的风险，对维系多人收入的长期投入则更谨慎；可能错估机会，但不会每次都由贪利推动。",
+                "relationship_function": "与徐照由竞争形成互补合作，再因长期责任出现有理由的分歧；既能提供道路和交易条件，也需要徐照尊重他承担的经营责任。"
+              }
+            },
+            {
+              "kind": "character_identity_contract",
+              "aliases": [
+                "裴晏",
+                "裴师兄"
+              ],
+              "pronouns": [
+                "他"
+              ],
+              "character_id": "character:peiyan",
+              "canonical_name": "裴晏",
+              "source_asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "stable_characterization": {
+                "fear": "怕被当成已经不能做事的人，也怕为了维持原有接活方式把尚可使用的本领耗得更窄。",
+                "need": "找到持续而不勉强的谋生组合，把身体限制说成可以共同安排的工作条件，同时保有自己的决定权与修行兴趣。",
+                "voice": "简短、直白，常用做过的活说明问题，少说抽象道理。对初学者略显不耐烦，但能够准确指出进步；对身体和报酬说得实际，不用自嘲掩盖所有情绪。",
+                "wound": "沿用既有伤后修行条件，拟定伤情主要影响连续施术时的经脉承受能力，可出现疼痛、输出不稳与恢复变慢。具体病灶和病因须随近端诊治细化；改善与长期管理不能突然恢复伤前状态。",
+                "agency": "选择适合身体条件的维护、指导与谋生事务，能够拒绝连续高负荷工作，也能主动提出分工。给予徐照基础指导，但不包办入门、修炼和去留。对聚灵方式的保留意见来自局部经验，需要后续发现才能扩展。",
+                "desire": "保住伤后的修行生活与能够独立谋生的本领，拥有合适的工作节奏、稳定来往和不被旧伤完全占据的日常。",
+                "values": [
+                  "把事情做成",
+                  "适度授业",
+                  "独立谋生",
+                  "身体余地",
+                  "不替人决定"
+                ],
+                "weakness": "旧伤限制连续灵气输出，环境复杂时可用余地更小；对自己习惯的工作方式不容易及时调整，有时把该说明的负荷条件说得太晚。",
+                "background": "沿用前来修补茶溪镇外阵基的低阶修士身份。拟定为岑岳宗承接周边维护事务的练气后段弟子，与山门及地方雇主保持实际往来。长期处理局部阵基、器物损耗和野外行路，熟悉常见维护难题；旧伤具体病因留待相关近端诊治细化，不预设他参与过区域核心事故。",
+                "capability": "拥有基础引气指导能力、若干低阶自保术法、野外经验及局部阵基维护本领，依靠常用工具、宗门渠道与工作信誉谋生。可指导起步，不具备完整解释古代导脉体系或处理高阶阵势的能力；连续施术受到旧伤限制。",
+                "arc_direction": "保持有边界的师友情分，逐步把伤后工作安排得更稳定。可通过调息、诊治、改变施术节奏和选择事务改善生活，旧伤不突然消失。终局获得与伤情和本领相称的修行生活，不靠恢复巅峰或替年轻人牺牲完成归宿。",
+                "moral_boundary": "不把超出身体承受的承诺交给雇主和同伴，也不以授业恩情要求年轻人服从自己的去留安排；可以提供经验，不能冒充全知。",
+                "risk_preference": "对熟悉的低阶事务判断直接，重视地形、天气与持续施术时间；愿意承担能力内的危险，不以硬撑或临时爆发证明自己仍有价值。",
+                "relationship_function": "作为徐照起步阶段的引路人与后续师友，也作为孟青禾长期管理旧伤的合作对象；他既接受帮助，也有自己的工作、朋友和生活边界。"
+              }
+            },
+            {
+              "kind": "character_identity_contract",
+              "aliases": [
+                "徐长根",
+                "长根"
+              ],
+              "pronouns": [
+                "他"
+              ],
+              "character_id": "character:xuchanggen",
+              "canonical_name": "徐长根",
+              "source_asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "stable_characterization": {
+                "fear": "怕长时间停窑使同工失去收入，也担心儿子出门时低估路程和花费；这些担忧可以通过实际安排缓解，不转成强迫留守。",
+                "voice": "话慢而具体，习惯借器物和劳动步骤表达意见；少谈远大目标，关心往往藏在一句实用提醒里。幽默来自把儿子的修行见闻接回熟悉的日子。",
+                "agency": "自行选择窑场工作、接零活与参加地方共用设施维护的方式；能够支持儿子远行，也能拒绝不合适的投资或停工安排。家乡改善之后继续经营自己的生活，不等待徐照替他规定归宿。",
+                "desire": "靠手艺维持宽裕些的家庭生活，让窑场继续有活可做，并按自己的体力与喜好安排往后的劳动。",
+                "values": [
+                  "手艺可靠",
+                  "工钱实在",
+                  "家庭联系",
+                  "同工情分"
+                ],
+                "weakness": "识字和修行知识有限，无法独自理解复杂设施；体力会随劳动与年龄变化，需要调整工作方式，不靠儿子境界提高自动免除这些条件。",
+                "background": "本阶段拟新增为徐照之父、茶溪窑场的普通窑工。擅长修坯、补窑及安排常见烧制劳动，收入来自实际工钱和零活，不拥有整片窑场，也没有隐秘修行身份。与镇上窑工和窑户保持长期往来，熟悉各家停窑几日会受什么影响。",
+                "capability": "掌握普通陶窑手艺、修补经验和地方劳动关系，能够辨认生产变化、提出实用调整并承担共同劳动；不具备灵脉控制与修行诊断能力。",
+                "arc_direction": "保持对手艺、家人和劳动的重视，随身体与窑场变化调整工作量；可把经验教给愿意学习的年轻人，也可选择更多修坯和修窑工作。父子关系从日常共同劳动转为各有去处、仍能谈得上话。",
+                "moral_boundary": "不把缺陷成品当好货交给买家，不以养育之恩要求儿子放弃道途；地方合作可以争取己方承受得起的安排，不能替其他窑工答应全部投入。",
+                "risk_preference": "生产上愿意小批试烧，不愿拿整季收入赌未经熟悉的新办法；确定有效的改进可以直接采用，不反复抗拒已经兑现的成果。",
+                "relationship_function": "提供徐照惜物、务实与手艺习惯的家庭来源；父子可以在修行知识上相距渐远，在劳动和生活话题上继续相通。"
+              }
+            },
+            {
+              "kind": "character_identity_contract",
+              "aliases": [
+                "罗素云",
+                "素云"
+              ],
+              "pronouns": [
+                "她"
+              ],
+              "character_id": "character:luosuyun",
+              "canonical_name": "罗素云",
+              "source_asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "stable_characterization": {
+                "fear": "怕家中周转被一项看似体面的投入拖空，也怕长久没有消息时不知道儿子在哪里落脚；不要求靠他留在身边消除所有担忧。",
+                "voice": "语气利落，喜欢问能回答的问题；涉及花费和家务时不绕弯。笑话常从家人的生活习惯来，担忧也说得朴素，不承担替全书总结道理的功能。",
+                "agency": "独立安排家用和小生意，可以调整货品、往来客户与投入；表达对儿子的希望，也能说明自己不需要他包办的部分。支持家庭相聚，但不把徐照每次离开视为亏欠。",
+                "desire": "让家中收支更从容，继续做自己熟悉且有收益的小生意，家人各有打算也能常通消息。",
+                "values": [
+                  "收支有余",
+                  "家人平安",
+                  "自己的生意",
+                  "往来可靠",
+                  "日常趣味"
+                ],
+                "weakness": "可动用本钱和经营范围有限，对修行风险只能通过来信与当面解释理解；无法替远行者处理所有问题，也会有自己的忙碌和疲惫。",
+                "background": "本阶段拟新增为徐照之母、茶溪镇集市的小摊经营者，售卖常用杂货并接少量代买。收入有限，熟悉邻里需求、集日和往来货价；与徐长根共同维持家用，两人的生计和意见各自成立。",
+                "capability": "具备小额经营、货品选择、家用安排和邻里互助经验，有有限周转钱与固定客户；可以通过货路托信，不掌握即时传讯或远方情况。",
+                "arc_direction": "在家乡改善带来的便利中继续经营自己的生计，随镇上需求调整货品与帮工方式；与远行儿子形成书信、托货和返乡相聚的实际往来。保持普通人的生活尺度，不随主角升级改为经营修行产业。",
+                "moral_boundary": "不把邻里托付的钱货挪作家用，不以家人的挂念迫使儿子接受她安排的去处；愿意接受帮助，也明确自己想继续做的事。",
+                "risk_preference": "倾向于保留周转余地，愿意小规模试卖有实际需求的新货；不因儿子富裕便无边界扩大经营。",
+                "relationship_function": "让徐照学会关心可以表现为可靠联系和适当帮助，而非替家人安排一切；与徐长根形成分工、商量和各自熟人的家庭生活。"
+              }
+            },
+            {
+              "kind": "character_identity_contract",
+              "aliases": [
+                "乔令仪",
+                "乔教习"
+              ],
+              "pronouns": [
+                "她"
+              ],
+              "character_id": "character:qiaolingyi",
+              "canonical_name": "乔令仪",
+              "source_asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "stable_characterization": {
+                "fear": "怕弟子会说术法名称却不能控制输出，也怕训练被重复杂务挤空，最后只能依赖少数老手承担全部外出事务。",
+                "need": "保持培养与事务之间的可持续安排，逐步让成熟弟子承担能力内的部分，使授业无需靠她长期包办才能运转。",
+                "voice": "准确、有节奏，习惯指出一个动作造成的具体差异。肯定进步直接，纠错不靠羞辱；涉及资源时说清人手和用途，不把日常讲话写成规章宣读。",
+                "agency": "自行决定授业安排和能力内的外出训练，争取有限师资与用品，也能拒绝把未学会的弟子投入过重事务。向徐照提供正式学习机会后，要求相称责任，允许其在具备条件时选择远游。",
+                "desire": "培养能够独立判断、可靠施术的弟子，维持野外授业条件，让宗门支持在弟子的实际本领上留下成果。",
+                "values": [
+                  "能力落实",
+                  "公平机会",
+                  "独立判断",
+                  "相称责任",
+                  "宗门长久授业"
+                ],
+                "weakness": "师资、时间与训练用品有限，无法同时照顾所有弟子的专门方向；对教学要求表达直接，有时较晚察觉弟子在经营、家庭或收入上的压力。",
+                "background": "本阶段拟新增为岑岳宗筑基修士、承担基础术法和野外授业的教习。熟悉弟子从引气到实用术法的常见困难，工作涉及练习地、短途外出和事务分配。她的知识来自宗门训练与周边经验，不掌握整套古代导脉设施的历史。",
+                "capability": "具备筑基层次的持续施术、短途行动与常用术法指导能力，擅长护体、控物、风系基础术法及野外队伍安排；可以调用职责内的训练资源，不能支配全宗供给，也不以境界代替阵法或医术专长。",
+                "arc_direction": "作为近端宗门人物，重点维持可信授业与职责边界；随着弟子能够独立承担事务，调整指导方式与分工。远期保留师门联系，不预定她必须与徐照同路、同境界或参加终局核心行动。",
+                "moral_boundary": "不把尚未具备能力的弟子当作廉价替手，不因家世决定全部机会；可以严格训练和安排责任，不能以师门恩情要求终身留守。",
+                "risk_preference": "训练风险按已有能力逐步增加，愿意让弟子尝试有退路的新办法；实际外出依目标决定交战、绕行或撤离，不把击败对手作为唯一成绩。",
+                "relationship_function": "作为徐照与贺见山的正式教习，使同辈竞争具有共同学习环境；与裴晏形成职责不同的合作，两人的指导不能互相取代。"
+              }
+            }
+          ],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "authority_projection",
+          "narrative_function": "critical_character_state",
+          "physical_asset_type": "planning_generation_candidate",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "reader_promise",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:9d783b5bda738903e715dd8c104f3d8628b64c5602e09f84e11428b59f0b36a1",
+          "safe_summary": "Protected Reader Promise contract; advisory intent, not Canon.",
+          "context_class": "PROTECTED",
+          "content_digest": "sha256:9d783b5bda738903e715dd8c104f3d8628b64c5602e09f84e11428b59f0b36a1",
+          "source_use_mode": "generation",
+          "asset_version_id": "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1",
+          "estimated_tokens": 177,
+          "selection_reason": "current Authority-admitted Foundation semantic projection",
+          "structured_facts": [
+            {
+              "kind": "reader_promise_contract",
+              "promise": "读者会先认识一个会算工钱、珍惜材料、肯动手做事的普通少年，再陪他从茶溪镇走进宗门，走向更广阔的山河。追读的期待来自具体的变化：从前办不到的事如今能做到，曾经只能远望的地方终于能够抵达，同路人也因各自成长而有了新的相处方式。修行有踏实学习与突破的满足，斗法有准备和选择的作用，探索有可观察的线索与逐步明白的惊奇；饭桌、赶路、互相取笑和享受收获让人物始终可亲。前100章会给出立足与改善家乡的实际成果，后续在这些成果上打开新的道路。走到结尾，徐照应真正能够自主选择道途，主要山河谜题得到回答，重要人物的追求与关系有明确归宿。更大的世界可以继续存在，但这段同行应当完整。",
+              "objective": "为《山河有路》明确可持续兑现的读者期待：陪伴普通陶窑学徒徐照获得真实的修行能力与选择自由，在逐步展开的山河中探索未知，见证伙伴因共同经历与各自追求改变关系，并在完整长篇结尾获得主要谜题与人物归宿的回答。",
+              "authority_semantics": "FUTURE_EDITORIAL_CONTRACT",
+              "source_asset_version_id": "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1"
+            }
+          ],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "authority_projection",
+          "narrative_function": "reader_promise_contract",
+          "physical_asset_type": "planning_generation_candidate",
+          "semantic_projection": true
+        },
+        {
+          "scope": {},
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_id": "",
+          "asset_type": "context_bundle",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "allowed_use": "generation",
+          "content_hash": "sha256:c1a25c2bbc259b082e432864a467e7d5246d35ea1bffc2eba19392531d1839e9",
+          "safe_summary": "",
+          "context_class": "RETRIEVABLE",
+          "content_digest": "sha256:c1a25c2bbc259b082e432864a467e7d5246d35ea1bffc2eba19392531d1839e9",
+          "source_use_mode": "generation",
+          "asset_version_id": "6b1cdcae-f034-42e2-bde7-592562b761b5",
+          "estimated_tokens": 165233,
+          "selection_reason": "eligible scoped authority collection",
+          "structured_facts": [],
+          "accepted_boundary": {
+            "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "compression_method": "safe_summary",
+          "narrative_function": "context_bundle",
+          "physical_asset_type": "context_bundle",
+          "semantic_projection": true
+        }
+      ],
+      "preparation_report": {
+        "risks": [],
+        "chapter": 1,
+        "decision": "READY",
+        "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+        "blocked_assets": [],
+        "context_digest": "sha256:43586e54e31f1fb8cc4c77453673378da9f1ed1702175b1073109c8d2b64f354",
+        "repair_actions": [],
+        "author_workflow": {
+          "mode": "AUTHOR_FIRST",
+          "version": "author-workflow.v1",
+          "deep_review": false
+        },
+        "idempotency_key": "story-formation:758b56a9b8091f0a4d9f94124e29d2e2d9e325333325c2df8a7211eeea78c015:production:chapter:1",
+        "selection_reasons": {
+          "6b1cdcae-f034-42e2-bde7-592562b761b5": "eligible scoped authority collection",
+          "ed324390-7195-46bd-80d2-7a18e475d9ea": "explicit audited AssetVersion override",
+          "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1": "eligible scoped authority collection",
+          "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1": "eligible scoped authority collection",
+          "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1": "eligible scoped authority collection",
+          "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1": "explicit audited AssetVersion override",
+          "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1": "eligible scoped authority collection",
+          "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1": "current Authority-admitted Foundation semantic projection",
+          "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1": "current Authority-admitted Foundation semantic projection",
+          "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1": "explicit audited AssetVersion override",
+          "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1": "explicit audited AssetVersion override"
+        },
+        "working_manuscript": {
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "sources": [],
+          "version": "working-manuscript-context.v1",
+          "authority": "AUTHOR_WORKING_PROSE_ONLY",
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "book_run_id": "book-run:ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc",
+          "instruction": "Continue only these exact selected working versions. Each passage is an attributed excerpt with Unicode positions; omitted ranges are unknown here, not evidence of absence. Distinguish what occurred in this working story, what an individual witnessed or was told, that individual's inference or belief, attributed rumor, reader-only disclosure and future plan intent. A true world event does not grant every character knowledge; a character's belief or statement need not be true. Discarded or unselected versions supply no experience. Carry realized experiences, practical progress and relationship aftermath into the next situation without reenacting them merely for formal acceptance. Unresolved dependency changes retain uncertainty. These passages grant no accepted fact IDs or Canon mutation. Let perception, goals, prior experience and the current situation motivate action, dialogue and subtext. Planned emotions and optional consequences are directions, not forced performances; distinguish binding fictional constraints from conditional possibilities. Important actions affect later choices when the story supports that effect; quiet scenes and unchanged positions are valid. Do not force conflict, reward, reversal or cost. Realize the chapter's intended movement without repeating settled progress. If a frozen plan requires repetition or contradicts the sources, retain that conflict for author/Plan Change rather than silently altering it. Use this information to write natural prose, without explaining these categories or a state checklist to the reader.Working observations are fallible source-bound navigation, never Canon or verified knowledge. Use their exact historical passages to assess current character states, attributed knowledge, relationships, actions, consequences and outstanding promises. Latest means latest observed statement, not proven truth. Missing or stale memory remains unknown; retain subjective and reader scopes. If the declared output schema permits working_memory_json, you may return a separate JSON-string array of observations grounded only in the prose you just wrote; omission must not impair prose. Each object has kind (CHARACTER_STATE, KNOWLEDGE, RELATIONSHIP, EVENT, CONSEQUENCE, PROMISE), subject, state_key, claim, perspective (OBSERVED, BELIEF, HEARSAY, READER_ONLY), knowledge_owner (empty for unattributed world observations or reader-only disclosures), an unambiguous literal quote, and causes (only observation_ids present in the frozen working memory, or []). Do not turn future plans into past events or return this metadata inside Scene prose. ",
+          "snapshot_hash": "sha256:3b1c975c60b299db1666f88df76225e5318cb71d49c80b7319fb568ba04a33d8",
+          "target_chapter": 1,
+          "working_memory": {
+            "entries": [],
+            "version": "working-observations.v1",
+            "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
+            "packet_hash": "sha256:ede4caefd07ef79e0ff08b98d08d003528c1863cdab0b393154207485a77109e",
+            "candidate_count": 0,
+            "source_coverage": [],
+            "semantic_support": "NOT_VERIFIED",
+            "retrieval_omissions": [],
+            "omitted_observation_ids": []
+          },
+          "structured_facts": [],
+          "projection_policy": {
+            "queries": [
+              "人物欲望与实际选择",
+              "关系变化与经历",
+              "已获修行能力及行动后果",
+              "未兑现承诺与伏笔"
+            ],
+            "version": "working-prose-projection.v3",
+            "guidance_mode": "COMBINED",
+            "max_characters": 40000,
+            "history_chapters": 100,
+            "recent_complete_chapters": 2
+          },
+          "accepted_through_chapter": 0
+        },
+        "approval_requirements": [],
+        "chapter_context_policy": {
+          "version": "book-chapter-context.v1",
+          "draft_profile": "draft-context-profile-v4",
+          "draft_token_budget": 226400,
+          "quality_token_budget": 226400,
+          "production_profile_version": "authority-output:36470f05-d9f5-4a86-bd59-eae814656273:book.bootstrap.production_profile:v1"
+        },
+        "estimated_token_budget": 226400,
+        "estimated_provider_budget": {
+          "status": "ESTIMATE_UNCALIBRATED",
+          "currency": "USD",
+          "maximum_tokens": 226400
+        },
+        "production_input_manifest": {
+          "stage": "draft",
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "chapter": 1,
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "risk_summary": [],
+          "token_budget": 226400,
+          "workspace_id": "workspace:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "entity_scopes": {},
+          "manifest_digest": "sha256:43586e54e31f1fb8cc4c77453673378da9f1ed1702175b1073109c8d2b64f354",
+          "provider_budget": {
+            "status": "ESTIMATE_UNCALIBRATED",
+            "currency": "USD",
+            "maximum_tokens": 226400
+          },
+          "contract_version": "production-input-manifest-v2",
+          "rejection_reasons": {},
+          "selection_reasons": {
+            "6b1cdcae-f034-42e2-bde7-592562b761b5": "eligible scoped authority collection",
+            "ed324390-7195-46bd-80d2-7a18e475d9ea": "explicit audited AssetVersion override",
+            "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1": "eligible scoped authority collection",
+            "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1": "eligible scoped authority collection",
+            "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1": "eligible scoped authority collection",
+            "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1": "explicit audited AssetVersion override",
+            "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1": "eligible scoped authority collection",
+            "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1": "current Authority-admitted Foundation semantic projection",
+            "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1": "current Authority-admitted Foundation semantic projection",
+            "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1": "explicit audited AssetVersion override",
+            "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1": "explicit audited AssetVersion override"
+          },
+          "source_governance": {
+            "assets": [
+              {
+                "raw_source": false,
+                "allowed_use": "generation",
+                "source_risk": 0,
+                "asset_version_id": "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1",
+                "governance_status": "CLEAR",
+                "source_policy_version": ""
+              },
+              {
+                "raw_source": false,
+                "allowed_use": "generation",
+                "source_risk": 0,
+                "asset_version_id": "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1",
+                "governance_status": "CLEAR",
+                "source_policy_version": ""
+              },
+              {
+                "raw_source": false,
+                "allowed_use": "generation",
+                "source_risk": 0,
+                "asset_version_id": "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1",
+                "governance_status": "CLEAR",
+                "source_policy_version": ""
+              }
+            ],
+            "status": "CLEAR",
+            "copyright_mode": "fail_closed",
+            "raw_source_ratio": 0.0
+          },
+          "outline_version_id": "",
+          "approval_requirements": [],
+          "volume_arc_version_id": "",
+          "qualification_evidence": {
+            "6b1cdcae-f034-42e2-bde7-592562b761b5": "ELIGIBLE",
+            "ed324390-7195-46bd-80d2-7a18e475d9ea": "ELIGIBLE",
+            "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1": "ELIGIBLE",
+            "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1": "ELIGIBLE",
+            "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1": "ELIGIBLE",
+            "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1": "ELIGIBLE",
+            "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1": "ELIGIBLE",
+            "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1": "ELIGIBLE",
+            "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1": "ELIGIBLE",
+            "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1": "ELIGIBLE",
+            "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1": "ELIGIBLE"
+          },
+          "world_bible_version_id": "",
+          "chapter_plan_version_id": "ed324390-7195-46bd-80d2-7a18e475d9ea",
+          "created_by_operation_id": "pending:chapter-plan-operation",
+          "knowledge_access_policy": {
+            "mode": "PROJECT_DEFAULT",
+            "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "policy_id": "book-production-knowledge-access",
+            "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "policy_hash": "sha256:bcfc43188c5c3aa10501b1615f55d65d19ea391293ea70b565befc11db711c7b",
+            "policy_version": 1,
+            "schema_version": "book-knowledge-access-policy.v1",
+            "configured_explicitly": false,
+            "allowed_knowledge_card_asset_version_ids": []
+          },
+          "rejected_asset_versions": [],
+          "selected_asset_versions": [
+            {
+              "role": "plan",
+              "entity_id": "",
+              "asset_type": "chapter_plan",
+              "content_hash": "sha256:6c2eeff41496b6ee21a7c7eb050606adeffbb49de54ae3787d9dd434805a9e57",
+              "asset_version_id": "ed324390-7195-46bd-80d2-7a18e475d9ea",
+              "physical_asset_type": "chapter_plan"
+            },
+            {
+              "role": "context",
+              "entity_id": "",
+              "asset_type": "arc_plan",
+              "content_hash": "sha256:ff28fbcc2d357fbbb879fa22a445527f3c2c2f09d3ef54713d8913c256c67c4d",
+              "asset_version_id": "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1",
+              "physical_asset_type": "planning_generation_candidate"
+            },
+            {
+              "role": "context",
+              "entity_id": "",
+              "asset_type": "creative_brief",
+              "content_hash": "sha256:f456466c6dc0358e5498fb0dd9c356881231e8e3a358593435bfe444f2f69f21",
+              "asset_version_id": "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1",
+              "physical_asset_type": "creative_brief"
+            },
+            {
+              "role": "profile",
+              "entity_id": "",
+              "asset_type": "style_policy",
+              "content_hash": "sha256:249b615e9be62b41a9b794c662a38bb2b987cf101b6b08300b2b02d4a2c22b2a",
+              "asset_version_id": "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1",
+              "physical_asset_type": "style_policy"
+            },
+            {
+              "role": "profile",
+              "entity_id": "",
+              "asset_type": "quality_rubric",
+              "content_hash": "sha256:49be2736489788f27b05179035af7b1cc1594c0592bcbb64c606601b723433ca",
+              "asset_version_id": "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1",
+              "physical_asset_type": "quality_rubric"
+            },
+            {
+              "role": "profile",
+              "entity_id": "",
+              "asset_type": "platform_profile",
+              "content_hash": "sha256:06a0ffb43439297f4a4c0f783981551529976f16416c7e63430c5024b31e0a84",
+              "asset_version_id": "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1",
+              "physical_asset_type": "platform_profile"
+            },
+            {
+              "role": "state",
+              "entity_id": "",
+              "asset_type": "story_state_snapshot",
+              "content_hash": "sha256:e828378ba80d3e7d750096825c8fe31875fe9958251cbc35e8867543de18694d",
+              "asset_version_id": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1",
+              "physical_asset_type": "story_state_snapshot"
+            },
+            {
+              "role": "state",
+              "entity_id": "",
+              "asset_type": "canon_snapshot",
+              "content_hash": "sha256:5012d27149c0c907f346123034d40ccbbe09bb6f8ddba20b0cc726512a7ba59e",
+              "asset_version_id": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+              "physical_asset_type": "canon_snapshot"
+            },
+            {
+              "role": "context",
+              "entity_id": "",
+              "asset_type": "character_cast",
+              "content_hash": "sha256:e347fe3301a0dbaafa24dc522aa8b1efd6175689a07c134fb110072a9143ed02",
+              "asset_version_id": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+              "physical_asset_type": "planning_generation_candidate"
+            },
+            {
+              "role": "context",
+              "entity_id": "",
+              "asset_type": "reader_promise",
+              "content_hash": "sha256:9d783b5bda738903e715dd8c104f3d8628b64c5602e09f84e11428b59f0b36a1",
+              "asset_version_id": "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1",
+              "physical_asset_type": "planning_generation_candidate"
+            },
+            {
+              "role": "context",
+              "entity_id": "",
+              "asset_type": "context_bundle",
+              "content_hash": "sha256:c1a25c2bbc259b082e432864a467e7d5246d35ea1bffc2eba19392531d1839e9",
+              "asset_version_id": "6b1cdcae-f034-42e2-bde7-592562b761b5",
+              "physical_asset_type": "context_bundle"
+            }
+          ],
+          "style_policy_version_id": "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1",
+          "canon_snapshot_version_id": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+          "context_profile_version_id": "",
+          "quality_profile_version_id": "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1",
+          "platform_profile_version_id": "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1"
+        },
+        "selected_asset_version_ids": [
+          "ed324390-7195-46bd-80d2-7a18e475d9ea",
+          "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1",
+          "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1",
+          "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1",
+          "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1",
+          "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1",
+          "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1",
+          "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+          "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+          "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1",
+          "6b1cdcae-f034-42e2-bde7-592562b761b5"
+        ],
+        "stage_context_token_budgets": {
+          "draft": 226400,
+          "quality": 226400
+        },
+        "chapter_production_admission": {
+          "receipts": [
+            {
+              "mode": "CREATIVE_VALIDATION",
+              "checks": {
+                "literary_qualification": {
+                  "reason": "creative validation template",
+                  "status": "NOT_RUN"
+                }
+              },
+              "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+              "version": "creative-design-admission.v1",
+              "lifecycle": "ACTIVE",
+              "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+              "content_hash": "sha256:31d261415fa4d9739a742a2f67f415b6906c59bec5ec7774db5eef24506975d2",
+              "design_layer": "chapter_group_plan.generate",
+              "policy_snapshot": {
+                "policy": {
+                  "reason": "native creation template; paid channel: PAID_TEMPLATE_NOT_CONFIGURED",
+                  "policy_version": "creation:story-formation:758b56a9b8091f0a4d9f94124e29d2e2d9e325333325c2df8a7211eeea78c015",
+                  "task_overrides": [],
+                  "execution_templates": [
+                    {
+                      "mode": "CREATIVE_VALIDATION",
+                      "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+                      "version": "creative-execution-template.v12",
+                      "deepseek": null,
+                      "repair_routing": {
+                        "version": "native-repair-routing.v2",
+                        "max_same_route_repairs": 2
+                      },
+                      "author_workflow": {
+                        "mode": "AUTHOR_FIRST",
+                        "version": "author-workflow.v1",
+                        "deep_review": false
+                      },
+                      "allowed_candidates": [
+                        "codex-cli:gpt-6.1-sol:high",
+                        "codex-cli:gpt-6-sol:high"
+                      ],
+                      "quality_corrections": {
+                        "version": "quality-correction-control.v1",
+                        "maximum_passes": 4,
+                        "maximum_unchanged_candidates": 2
+                      },
+                      "optional_enhancements": [
+                        "review",
+                        "rereview",
+                        "canon_extraction",
+                        "canon_support",
+                        "quality_structural",
+                        "quality_commercial",
+                        "quality_source_originality",
+                        "quality_longform",
+                        "quality_platform"
+                      ],
+                      "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+                      "member_authorization_ref": "user:WP-FRESH-NOVEL-END-TO-END-DIAGNOSIS-01:20261011",
+                      "world_future_preparation": "DISABLED",
+                      "canon_validation_contract": "grounded-canon-validation.v2",
+                      "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+                      "require_independent_review": false,
+                      "require_pack_human_approval": false,
+                      "require_literary_qualification": false
+                    }
+                  ]
+                },
+                "actor_id": "author-first-native-operator",
+                "policy_hash": "f5a2a8218bed8d0a4c1aa2f6aa7407049b2132998a9429236dfb95a4df85e8f3",
+                "operation_id": "6260138a-9ccb-463f-8b9c-6084706bae2d"
+              },
+              "asset_version_id": "authority-output:e1bcf836-cf19-4124-9ff7-6f9d39be6f13:story_planning.candidate:v1",
+              "external_effect_id": "271ff154-44d1-410d-a59c-3fc415af2d97",
+              "routing_decision_id": "routing-decision:356eaf8823e417a5b33b17da843953132c2b3c4e8065500f60e9e9b099e11d48",
+              "decision_content_hash": "sha256:7eabde6b1b8f3a6b90ff51ebc6224c87b0649bc156a083065b75c332885b9f47",
+              "literary_qualification": "NOT_RUN",
+              "generation_operation_id": "e1bcf836-cf19-4124-9ff7-6f9d39be6f13",
+              "decision_asset_version_id": "authority-output:b16ef777-212d-423b-96c0-ecfccc176976:story_design.transition.receipt:v1"
+            },
+            {
+              "mode": "CREATIVE_VALIDATION",
+              "checks": {
+                "literary_qualification": {
+                  "reason": "creative validation template",
+                  "status": "NOT_RUN"
+                }
+              },
+              "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+              "version": "creative-design-admission.v1",
+              "lifecycle": "ACTIVE",
+              "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+              "content_hash": "sha256:a336516fc1d1c9fdbeb412927e173cbc0406e399c98542f97100800e1752739e",
+              "design_layer": "chapter_plan.generate",
+              "policy_snapshot": {
+                "policy": {
+                  "reason": "native creation template; paid channel: PAID_TEMPLATE_NOT_CONFIGURED",
+                  "policy_version": "creation:story-formation:758b56a9b8091f0a4d9f94124e29d2e2d9e325333325c2df8a7211eeea78c015",
+                  "task_overrides": [],
+                  "execution_templates": [
+                    {
+                      "mode": "CREATIVE_VALIDATION",
+                      "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+                      "version": "creative-execution-template.v12",
+                      "deepseek": null,
+                      "repair_routing": {
+                        "version": "native-repair-routing.v2",
+                        "max_same_route_repairs": 2
+                      },
+                      "author_workflow": {
+                        "mode": "AUTHOR_FIRST",
+                        "version": "author-workflow.v1",
+                        "deep_review": false
+                      },
+                      "allowed_candidates": [
+                        "codex-cli:gpt-6.1-sol:high",
+                        "codex-cli:gpt-6-sol:high"
+                      ],
+                      "quality_corrections": {
+                        "version": "quality-correction-control.v1",
+                        "maximum_passes": 4,
+                        "maximum_unchanged_candidates": 2
+                      },
+                      "optional_enhancements": [
+                        "review",
+                        "rereview",
+                        "canon_extraction",
+                        "canon_support",
+                        "quality_structural",
+                        "quality_commercial",
+                        "quality_source_originality",
+                        "quality_longform",
+                        "quality_platform"
+                      ],
+                      "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+                      "member_authorization_ref": "user:WP-FRESH-NOVEL-END-TO-END-DIAGNOSIS-01:20261011",
+                      "world_future_preparation": "DISABLED",
+                      "canon_validation_contract": "grounded-canon-validation.v2",
+                      "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+                      "require_independent_review": false,
+                      "require_pack_human_approval": false,
+                      "require_literary_qualification": false
+                    }
+                  ]
+                },
+                "actor_id": "author-first-native-operator",
+                "policy_hash": "f5a2a8218bed8d0a4c1aa2f6aa7407049b2132998a9429236dfb95a4df85e8f3",
+                "operation_id": "6260138a-9ccb-463f-8b9c-6084706bae2d"
+              },
+              "asset_version_id": "authority-output:b7ccf27a-156c-42de-90eb-deea910e0304:story_planning.candidate:v1",
+              "external_effect_id": "b775287f-5648-4aaf-84a3-894fbb7cc29d",
+              "routing_decision_id": "routing-decision:40026b394289d473aedb279a515f87ec0cb1c783fcf8c044cdf2c01c47d9b0cd",
+              "decision_content_hash": "sha256:8a356e1a130f2cdffb4a3e3bfcf53d49ccb1893964636fa7b0ad541bef0413db",
+              "literary_qualification": "NOT_RUN",
+              "generation_operation_id": "b7ccf27a-156c-42de-90eb-deea910e0304",
+              "decision_asset_version_id": "authority-output:c4a25222-44b6-4268-8854-723301e7550b:story_design.transition.receipt:v1"
+            }
+          ],
+          "admission": "CHAPTER_PRODUCTION_ADMITTED",
+          "snapshot_id": "sha256:6a0fd50415d6ecafdc8fe62842cf7241bcefba0f0146bc8026362f17180d420d",
+          "book_version": 2,
+          "admission_hash": "sha256:08ba53bfcaf86fd3f10268ebfff288b99df6cbb4d6b6d00085ff51732e4d9af5",
+          "chapter_number": 1,
+          "schema_version": "chapter-production-admission.v1",
+          "arc_working_set_digest": "sha256:eadc91155c15a20ce125b9b3fd995ac467d7fa6c8a21d0a38d84cf4f40eabb77",
+          "chapter_plan_version_id": "authority-output:b7ccf27a-156c-42de-90eb-deea910e0304:story_planning.candidate:v1",
+          "accepted_through_chapter": 0,
+          "narrative_realization_id": "narrative-realization:c3a9f1899137605b8a9c299398fb343ce548d31d6430caa73c85c07af120cd91",
+          "selected_arc_contributions": [
+            {
+              "role": "PRIMARY",
+              "score": 25,
+              "action": "ADVANCE",
+              "reason_codes": [
+                "GROUP_CADENCE_ADVANCE"
+              ],
+              "arc_plan_version_id": "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1"
+            }
+          ],
+          "current_volume_plan_version": "authority-output:9fb3ce46-7739-4151-90af-fed38f471363:story_planning.candidate:v1",
+          "chapter_group_plan_version_id": "authority-output:e1bcf836-cf19-4124-9ff7-6f9d39be6f13:story_planning.candidate:v1",
+          "narrative_reality_revision_id": "",
+          "narrative_realization_slice_id": "slice:group-1:chapter-1",
+          "narrative_realization_event_ids": [
+            "event:group-1:01"
+          ],
+          "current_relevant_arc_plan_versions": [
+            "authority-output:6ea785b5-6c9d-41eb-80a8-04f5dac2a996:story_planning.candidate:v1",
+            "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1",
+            "authority-output:f8c98899-4f9d-4a27-ad7a-999807b5ea72:story_planning.candidate:v1",
+            "authority-output:c6d9fbaa-3b9d-480c-a769-6c807715b712:story_planning.candidate:v1",
+            "authority-output:fcb70626-fb5f-4d9a-a43d-49856db85173:story_planning.candidate:v1",
+            "authority-output:70306100-c1cc-423b-8a00-c49f47cbd7b2:story_planning.candidate:v1",
+            "authority-output:9ae51cf3-017d-4019-8724-7c1aa7fa6c94:story_planning.candidate:v1",
+            "authority-output:5fd1d1ff-7a52-4c77-8eb2-7fe872b00889:story_planning.candidate:v1"
+          ],
+          "longform_design_qualification_hash": "sha256:4f8e54aff71c21fe3a6be6e85bf14168120c5f68aa30b4ea7404a3b52976b28d",
+          "narrative_realization_contract_digest": "sha256:845f953fbdd602423cc5cff051d797b2a46156157b8f4b7a1ce59a6f6b21c542"
+        },
+        "missing_required_asset_types": [],
+        "stage_context_profile_versions": {
+          "draft": "draft-context-profile-v4"
+        },
+        "chapter_plan_qualification_profile": {
+          "genre": "any",
+          "platform": "any",
+          "book_phase": "opening",
+          "profile_id": "chapter-plan-work-v1",
+          "warning_fields": [],
+          "required_fields": [
+            "title",
+            "premise",
+            "chapter_objective",
+            "scene_sequence"
+          ],
+          "chapter_function": "以一次当天完成的窑料取舍与劳动结算建立徐照的生活尺度。",
+          "contract_version": "chapter-plan-qualification-profile-v2"
+        }
+      },
+      "context_token_budget": 226400,
+      "context_version_refs": {
+        "arc_working_set": {
+          "type": "ArcWorkingSet",
+          "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "capacity": {
+            "source": "FROZEN_CHAPTER_SCHEDULE",
+            "maximum_active_arcs": 1,
+            "narrative_load_policy_hash": "sha256:6948cc522cb74d34ac5f33b5c4d3124ec725e856f38fd95f65e9806f50a2753a"
+          },
+          "candidates": [
+            {
+              "score": 25,
+              "reasons": [
+                "GROUP_CADENCE_ADVANCE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "ADVANCE",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 7,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:5fd1d1ff-7a52-4c77-8eb2-7fe872b00889:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 4,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:6ea785b5-6c9d-41eb-80a8-04f5dac2a996:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 7,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:70306100-c1cc-423b-8a00-c49f47cbd7b2:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 5,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:9ae51cf3-017d-4019-8724-7c1aa7fa6c94:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 6,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:c6d9fbaa-3b9d-480c-a769-6c807715b712:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 5,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:f8c98899-4f9d-4a27-ad7a-999807b5ea72:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 6,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            },
+            {
+              "score": 0,
+              "reasons": [
+                "LEGAL_ARC_BASELINE"
+              ],
+              "eligible": true,
+              "current_phase": "",
+              "obligation_debt": {
+                "due_ids": [],
+                "due_count": 0,
+                "stale_ids": [],
+                "overdue_ids": [],
+                "stale_count": 0,
+                "violated_ids": [],
+                "overdue_count": 0
+              },
+              "dormant_chapters": 0,
+              "lifecycle_status": "READY",
+              "payoff_readiness": "NOT_READY",
+              "dependency_states": {},
+              "cadence_preference": "",
+              "observation_status": "NOT_MATERIALIZED",
+              "arc_plan_version_id": "authority-output:fcb70626-fb5f-4d9a-a43d-49856db85173:story_planning.candidate:v1",
+              "checkpoint_decision": "NOT_EVALUATED",
+              "dependency_blockers": [],
+              "target_window_status": "UNKNOWN",
+              "target_progress_units": 5,
+              "cumulative_progress_units": 0,
+              "last_material_progress_chapter": 0
+            }
+          ],
+          "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+          "reader_intent": {
+            "reward_mode": "看见有限手艺保住可用材料，并换来实际工钱。",
+            "target_emotion": "亲近、踏实，以及对少年处境的理解"
+          },
+          "policy_version": "frozen-chapter-arc-working-set-v2",
+          "target_chapter": 1,
+          "accepted_reality": {
+            "actual_only": true,
+            "narrative_state": {
+              "content_hash": "sha256:e828378ba80d3e7d750096825c8fe31875fe9958251cbc35e8867543de18694d",
+              "asset_version_id": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1",
+              "state_kind_counts": {},
+              "accepted_through_chapter": 0
+            },
+            "projection_hash": "",
+            "projection_set_id": "",
+            "accepted_through_chapter": 0,
+            "source_story_state_asset_version_id": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1"
+          },
+          "contract_version": "arc-working-set-v1",
+          "planning_horizon": {
+            "scope": "CHAPTER",
+            "chapter": 1
+          },
+          "authority_boundary": {
+            "selection_is_future_intent": true,
+            "actual_progress_requires_accepted_chapter_outcome": true
+          },
+          "working_manuscript": {
+            "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "sources": [],
+            "version": "working-manuscript-context.v1",
+            "authority": "AUTHOR_WORKING_PROSE_ONLY",
+            "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "book_run_id": "book-run:ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc",
+            "instruction": "Continue only these exact selected working versions. Each passage is an attributed excerpt with Unicode positions; omitted ranges are unknown here, not evidence of absence. Distinguish what occurred in this working story, what an individual witnessed or was told, that individual's inference or belief, attributed rumor, reader-only disclosure and future plan intent. A true world event does not grant every character knowledge; a character's belief or statement need not be true. Discarded or unselected versions supply no experience. Carry realized experiences, practical progress and relationship aftermath into the next situation without reenacting them merely for formal acceptance. Unresolved dependency changes retain uncertainty. These passages grant no accepted fact IDs or Canon mutation. Let perception, goals, prior experience and the current situation motivate action, dialogue and subtext. Planned emotions and optional consequences are directions, not forced performances; distinguish binding fictional constraints from conditional possibilities. Important actions affect later choices when the story supports that effect; quiet scenes and unchanged positions are valid. Do not force conflict, reward, reversal or cost. Realize the chapter's intended movement without repeating settled progress. If a frozen plan requires repetition or contradicts the sources, retain that conflict for author/Plan Change rather than silently altering it. Use this information to write natural prose, without explaining these categories or a state checklist to the reader.Working observations are fallible source-bound navigation, never Canon or verified knowledge. Use their exact historical passages to assess current character states, attributed knowledge, relationships, actions, consequences and outstanding promises. Latest means latest observed statement, not proven truth. Missing or stale memory remains unknown; retain subjective and reader scopes. If the declared output schema permits working_memory_json, you may return a separate JSON-string array of observations grounded only in the prose you just wrote; omission must not impair prose. Each object has kind (CHARACTER_STATE, KNOWLEDGE, RELATIONSHIP, EVENT, CONSEQUENCE, PROMISE), subject, state_key, claim, perspective (OBSERVED, BELIEF, HEARSAY, READER_ONLY), knowledge_owner (empty for unattributed world observations or reader-only disclosures), an unambiguous literal quote, and causes (only observation_ids present in the frozen working memory, or []). Do not turn future plans into past events or return this metadata inside Scene prose. ",
+            "snapshot_hash": "sha256:3b1c975c60b299db1666f88df76225e5318cb71d49c80b7319fb568ba04a33d8",
+            "target_chapter": 1,
+            "working_memory": {
+              "entries": [],
+              "version": "working-observations.v1",
+              "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
+              "packet_hash": "sha256:ede4caefd07ef79e0ff08b98d08d003528c1863cdab0b393154207485a77109e",
+              "candidate_count": 0,
+              "source_coverage": [],
+              "semantic_support": "NOT_VERIFIED",
+              "retrieval_omissions": [],
+              "omitted_observation_ids": []
+            },
+            "structured_facts": [],
+            "projection_policy": {
+              "queries": [
+                "人物欲望与实际选择",
+                "关系变化与经历",
+                "已获修行能力及行动后果",
+                "未兑现承诺与伏笔"
+              ],
+              "version": "working-prose-projection.v3",
+              "guidance_mode": "COMBINED",
+              "max_characters": 40000,
+              "history_chapters": 100,
+              "recent_complete_chapters": 2
+            },
+            "accepted_through_chapter": 0
+          },
+          "working_set_digest": "sha256:eadc91155c15a20ce125b9b3fd995ac467d7fa6c8a21d0a38d84cf4f40eabb77",
+          "schedule_correction": {
+            "status": "GROUP_CADENCE_CONFIRMED",
+            "added_arc_plan_version_ids": [],
+            "removed_arc_plan_version_ids": []
+          },
+          "selected_contributions": [
+            {
+              "role": "PRIMARY",
+              "score": 25,
+              "action": "ADVANCE",
+              "reason_codes": [
+                "GROUP_CADENCE_ADVANCE"
+              ],
+              "arc_plan_version_id": "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1"
+            }
+          ],
+          "deferred_arc_plan_version_ids": [
+            "authority-output:5fd1d1ff-7a52-4c77-8eb2-7fe872b00889:story_planning.candidate:v1",
+            "authority-output:6ea785b5-6c9d-41eb-80a8-04f5dac2a996:story_planning.candidate:v1",
+            "authority-output:70306100-c1cc-423b-8a00-c49f47cbd7b2:story_planning.candidate:v1",
+            "authority-output:9ae51cf3-017d-4019-8724-7c1aa7fa6c94:story_planning.candidate:v1",
+            "authority-output:c6d9fbaa-3b9d-480c-a769-6c807715b712:story_planning.candidate:v1",
+            "authority-output:f8c98899-4f9d-4a27-ad7a-999807b5ea72:story_planning.candidate:v1",
+            "authority-output:fcb70626-fb5f-4d9a-a43d-49856db85173:story_planning.candidate:v1"
+          ]
+        },
+        "arc_plan_versions": [
+          "authority-output:6ea785b5-6c9d-41eb-80a8-04f5dac2a996:story_planning.candidate:v1",
+          "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1",
+          "authority-output:f8c98899-4f9d-4a27-ad7a-999807b5ea72:story_planning.candidate:v1",
+          "authority-output:c6d9fbaa-3b9d-480c-a769-6c807715b712:story_planning.candidate:v1",
+          "authority-output:fcb70626-fb5f-4d9a-a43d-49856db85173:story_planning.candidate:v1",
+          "authority-output:70306100-c1cc-423b-8a00-c49f47cbd7b2:story_planning.candidate:v1",
+          "authority-output:9ae51cf3-017d-4019-8724-7c1aa7fa6c94:story_planning.candidate:v1",
+          "authority-output:5fd1d1ff-7a52-4c77-8eb2-7fe872b00889:story_planning.candidate:v1"
+        ],
+        "book_plan_version": "authority-output:67f962e7-41aa-480e-b8d9-aa677b1ea4f3:story_planning.candidate:v1",
+        "book_design_version": "65257ed7-1aec-4f03-8499-3337506906ce",
+        "volume_plan_version": "authority-output:9fb3ce46-7739-4151-90af-fed38f471363:story_planning.candidate:v1",
+        "chapter_plan_version": "ed324390-7195-46bd-80d2-7a18e475d9ea",
+        "style_policy_version": "authority-output:288c8c65-a1ea-4989-90be-e33e31d3ebb0:chapter.style_policy:v1",
+        "quality_trend_version": "authority-output:d78c4901-05b3-4be1-9212-9c180b6de025:book.bootstrap.quality_trend:v1",
+        "reward_ledger_version": "authority-output:787f353a-e1f8-4948-8ef9-bfffe96cc959:book.bootstrap.reward_ledger_snapshot:v1",
+        "arc_working_set_digest": "sha256:eadc91155c15a20ce125b9b3fd995ac467d7fa6c8a21d0a38d84cf4f40eabb77",
+        "canon_snapshot_version": "authority-output:23ae49ad-f028-4129-9c97-e9dff5775679:book.bootstrap.initial_canon:v1",
+        "character_cast_version": "authority-output:817b016f-fff0-4fa7-8fcf-00b6cfed59d2:story_planning.candidate:v1",
+        "promise_ledger_version": "authority-output:2119db8d-f277-469a-a6c9-4b6d09b4275e:book.bootstrap.promise_ledger_snapshot:v1",
+        "reader_segment_version": "authority-output:fd887077-a6c6-4d32-841e-1d0f610e20ae:book.bootstrap.reader_segment_profile:v1",
+        "character_state_version": "authority-output:e3c16af2-498e-47c6-9d43-07b856b4f7b0:book.bootstrap.character_state_snapshot:v1",
+        "context_bundle_versions": "6b1cdcae-f034-42e2-bde7-592562b761b5",
+        "creative_brief_versions": "authority-output:2e75d6bd-d206-464b-bad4-82767277644d:creative.brief:v1",
+        "quality_profile_version": "authority-output:00a9798b-c599-4a0b-a09e-7401ebd2a40c:chapter.quality_rubric:v1",
+        "reader_contract_version": "authority-output:22ba46c8-0cd4-4c66-9ad4-b77a7b106d72:book.bootstrap.reader_contract:v1",
+        "reader_promise_versions": [
+          "authority-output:a719ec5d-3c2b-4882-94c6-5b6a09fd9e35:story_planning.candidate:v1"
+        ],
+        "accepted_through_chapter": 0,
+        "platform_profile_version": "authority-output:2dc8d0a9-f5d0-415a-bcde-c0e58a50a60f:chapter.platform_profile:v1",
+        "chapter_group_plan_version": "authority-output:e1bcf836-cf19-4124-9ff7-6f9d39be6f13:story_planning.candidate:v1",
+        "selected_arc_plan_versions": [
+          "authority-output:0ebe7e0a-4de8-41c7-b907-feb6f4e434fe:story_planning.candidate:v1"
+        ],
+        "foreshadowing_state_version": "authority-output:67a96d11-0937-4b19-8b9c-a559c9f54998:book.bootstrap.foreshadow_snapshot:v1",
+        "story_state_snapshot_version": "authority-output:eb4aae6a-0c0e-481e-a2f0-6bafa3da9440:book.bootstrap.initial_story_state:v1",
+        "book_production_input_snapshot_id": "sha256:6a0fd50415d6ecafdc8fe62842cf7241bcefba0f0146bc8026362f17180d420d",
+        "chapter_production_admission_hash": "sha256:08ba53bfcaf86fd3f10268ebfff288b99df6cbb4d6b6d00085ff51732e4d9af5",
+        "longform_design_qualification_hash": "sha256:4f8e54aff71c21fe3a6be6e85bf14168120c5f68aa30b4ea7404a3b52976b28d"
+      },
+      "parent_group_version_id": "authority-output:e1bcf836-cf19-4124-9ff7-6f9d39be6f13:story_planning.candidate:v1",
+      "narrative_realization_id": "narrative-realization:c3a9f1899137605b8a9c299398fb343ce548d31d6430caa73c85c07af120cd91",
+      "chapter_plan_content_hash": "sha256:a336516fc1d1c9fdbeb412927e173cbc0406e399c98542f97100800e1752739e",
+      "chapter_plan_asset_version_id": "authority-output:b7ccf27a-156c-42de-90eb-deea910e0304:story_planning.candidate:v1",
+      "narrative_realization_slice_id": "slice:group-1:chapter-1",
+      "execution_chapter_plan_content_hash": "sha256:6c2eeff41496b6ee21a7c7eb050606adeffbb49de54ae3787d9dd434805a9e57",
+      "narrative_realization_contract_digest": "sha256:845f953fbdd602423cc5cff051d797b2a46156157b8f4b7a1ce59a6f6b21c542",
+      "execution_chapter_plan_asset_version_id": "ed324390-7195-46bd-80d2-7a18e475d9ea"
+    },
+    "status_reference": "RUNNING",
+    "chapter_request_id": "chapter-request:bd316a01c5a59eae792853e03e24558262344fbccc1a5c9caa64da6b4f57f1a3",
+    "chapter_plan_version": "authority-output:b7ccf27a-156c-42de-90eb-deea910e0304:story_planning.candidate:v1",
+    "failure_classification": "",
+    "predecessor_request_id": null,
+    "stable_idempotency_key": "book-chapter:bd316a01c5a59eae792853e03e24558262344fbccc1a5c9caa64da6b4f57f1a3",
+    "parent_group_version_id": "authority-output:e1bcf836-cf19-4124-9ff7-6f9d39be6f13:story_planning.candidate:v1",
+    "narrative_realization_id": "narrative-realization:c3a9f1899137605b8a9c299398fb343ce548d31d6430caa73c85c07af120cd91",
+    "chapter_plan_content_hash": "sha256:a336516fc1d1c9fdbeb412927e173cbc0406e399c98542f97100800e1752739e",
+    "chapter_root_operation_id": "9f0048bc-4366-4c98-a2f0-2fb161ece9a5",
+    "production_profile_version": "authority-output:36470f05-d9f5-4a86-bd59-eae814656273:book.bootstrap.production_profile:v1",
+    "narrative_realization_slice_id": "slice:group-1:chapter-1",
+    "narrative_realization_contract_digest": "sha256:845f953fbdd602423cc5cff051d797b2a46156157b8f4b7a1ce59a6f6b21c542"
+  },
+  "source_operation_id": "09e51edf-bd8c-4ea9-9330-186a6d1259d7",
+  "chapter_root_operation_id": "9f0048bc-4366-4c98-a2f0-2fb161ece9a5",
+  "retry_evidence": {
+    "failure_attempts": 2,
+    "maximum_failure_attempts": 2,
+    "counter_source": "NATIVE_DISPATCH_LINEAGE",
+    "scope": "ORIGINAL_LOGICAL_GENERATION"
+  },
+  "writer_effects": [
+    {
+      "effect_id": "ea2a2fe6-fb41-4628-a592-9d2db1b81f5d",
+      "operation_id": "ff742eaa-0b2d-4f4a-9625-52d8b460ab18",
+      "external_status": "UNKNOWN",
+      "reservation_status": "HELD_UNKNOWN",
+      "native_isolation": {
+        "usage": "UNKNOWN",
+        "reason": "Retire stopped pure generation and retain original unknown remote outcome and usage",
+        "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+        "actor_id": "author-first-native-operator",
+        "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+        "dispatch_ids": [
+          "5181aece-d363-4615-b46a-56aef5632ed6"
+        ],
+        "operation_id": "ff742eaa-0b2d-4f4a-9625-52d8b460ab18",
+        "request_hash": "sha256:60fccfedfd10659bd7d14201eaec0168f5c6c863176fc3342793bb7b9d56fbe9",
+        "workspace_id": "workspace:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+        "pack_snapshot": {
+          "pack_id": "chapter_generation_pack.creative.bbdcff811b4f66ba1b5c42a0",
+          "skill_ref": "prose-generation",
+          "rollout_id": "",
+          "release_sha": "691f36393aba8f8db9b55bef3bce941319eced08",
+          "pack_version": "3.0.1004",
+          "deployment_id": "deployment:quality:chapter_generation_pack.creative.bbdcff811b4f66ba1b5c42a0:61af7cecaf33a428b852",
+          "manifest_hash": "sha256:560eb3559461a8366fde645c07da94ecc4358e3ba3b93e2abf94b2562c3c8a6d",
+          "skill_version": "prose-generation-v5",
+          "assignment_ref": "activation:sha256:ced4fe89b2922e97c0424a75efa15f25b4afb9a3dac5d5e90c857baeada52a7a@5",
+          "binding_set_id": "794964e6-98ba-4e92-88bb-88e423c8ce26",
+          "capability_ref": "prose.chapter.draft@1",
+          "compilation_id": "compilation:quality:chapter_generation_pack.creative.bbdcff811b4f66ba1b5c42a0:61af7cecaf33a428b852",
+          "capability_hash": "sha256:728e8e9b83b92c8c73525edb67618d8ce3a7618bdb54875c64e929d69b17c210",
+          "tool_policy_ref": "tools:chapter-generation-pack:v2",
+          "binding_set_hash": "sha256:1d61ea13464a3727bb6a08560952c6fd6e49902f4fdbc49aee2b545040998a60",
+          "commit_authority": "CHAPTER_AUTHORITY",
+          "compilation_hash": "sha256:7e8077ee13f87656bedf4aac4f5395295fc6c2740d5c24e89da89bf01846a0e6",
+          "route_policy_ref": "chapter.stage.route.policy:v1",
+          "selection_reason": "BOOK deployment selected",
+          "skill_bundle_ref": "prose-generation@prose-generation-v5",
+          "tool_policy_hash": "sha256:262f5358403a3e4e79ede82ff10e072d5f1fee6426edb4ee9093d120226861de",
+          "workflow_node_id": "draft",
+          "budget_policy_ref": "budget:chapter-generation-pack:v1",
+          "prompt_bundle_ref": "prompt-system:chapter-generation-pack@v3",
+          "route_policy_hash": "sha256:750b4dac19211a00d06879fea1350325bd3dd43ccd5052abef8d21360e7605eb",
+          "skill_bundle_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596",
+          "activation_version": 5,
+          "budget_policy_hash": "sha256:55e75983b6c85de1808c06d3b9ea15402d1325e4adfbd14014440b3a28ad74f8",
+          "context_policy_ref": "context-policy:chapter-generation-pack:v2",
+          "input_contract_ref": "schema:execution-input:prose-chapter-draft:v1",
+          "prompt_bundle_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+          "skill_content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596",
+          "approval_policy_ref": "domain-decision-record:v1",
+          "context_policy_hash": "sha256:7a910c8ee8ad02c0104c7d4089b8554b2a85056efe57568fc0c40531a73cc071",
+          "output_contract_ref": "schema:execution-output:prose-chapter-draft:v1",
+          "prompt_template_ref": "prompt-template:chapter-generation-pack@v15",
+          "selected_scope_type": "BOOK",
+          "agent_definition_ref": "",
+          "approval_policy_hash": "sha256:f23f495bbc81245ef172fc1e54de2ef2395619c519114d56655f96c279b7a0a4",
+          "prompt_template_hash": "sha256:beb328b411e0c2133feea2c82ebbabd828edc2f60d99893afca28579e80fc59a",
+          "agent_definition_hash": "",
+          "catalog_snapshot_hash": "sha256:7caa57e144b9724b62004aa5183a5ac341ece24aa46fd4b97e2c8d3b904f0b63",
+          "evaluation_policy_ref": "chapter-generation-evaluation-v1",
+          "evaluation_policy_hash": "sha256:33d63251da78fc9fdb87f51916446f59fccfa4f6701b87591992a2dee9b2f21e",
+          "execution_capability_id": "prose.chapter.draft",
+          "prompt_compiler_version": "chapter-prompt-compiler:v15",
+          "workflow_definition_ref": "chapter_authority_slice@3.10.0",
+          "operation_definition_ref": "chapter.draft.generate@3.10.0",
+          "tool_policy_payload_json": "{\"database\":{\"allowed_tables\":[],\"forbidden_tables\":[\"legacy_assets\"],\"read_allowed\":false,\"write_allowed\":false},\"default\":\"DENY\",\"external_models\":{\"allowed\":true,\"context_substages\":[\"context_compress\",\"context_fidelity\"],\"route_policy_ref\":\"chapter.stage.route.policy:v1\"},\"files\":{\"allowed_roots\":[],\"read_allowed\":false,\"write_allowed\":false},\"policy_id\":\"tools:chapter-generation-pack:v2\",\"retrieval\":{\"allowed\":true,\"source_policy_ref\":\"source:chapter-generation-pack:v1\"},\"tools\":[{\"allowed_operations\":[\"context\",\"memo\",\"canon_proposal\",\"retrieval\",\"draft\",\"review\",\"revision\",\"rereview\",\"canon_extraction\",\"quality_structural\",\"quality_commercial\",\"quality_source_originality\",\"quality_longform\",\"quality_platform\"],\"approval_required\":false,\"audit_required\":true,\"budget_policy_ref\":\"budget:chapter-generation-pack:v1\",\"permission\":\"EXECUTE\",\"risk_class\":\"HIGH\",\"tool_ref\":\"model.provider.invoke\"},{\"allowed_operations\":[\"export\"],\"approval_required\":false,\"audit_required\":true,\"budget_policy_ref\":\"budget:chapter-generation-pack:v1\",\"permission\":\"EXECUTE\",\"risk_class\":\"HIGH\",\"tool_ref\":\"storage.object.put\"}]}",
+          "execution_capability_hash": "sha256:728e8e9b83b92c8c73525edb67618d8ce3a7618bdb54875c64e929d69b17c210",
+          "operation_definition_hash": "sha256:761215f648394a4aff76fe5735230d7d52abcac95a07ec4429b011c7783006d9",
+          "context_policy_payload_json": "{\"allowed_asset_types\":[\"chapter_plan_version\",\"chapter_plan\",\"book_design\",\"chapter_execution_intent\",\"chapter_memo\",\"context_bundle\",\"knowledge_pack\",\"canon_snapshot\",\"story_state\"],\"forbidden_asset_types\":[\"raw_source_document\",\"raw_source_chunk\"],\"freshness\":{\"reject_cross_project\":true,\"reject_stale\":true,\"reject_unqualified\":true},\"longform_bindings\":{\"arc\":\"optional\",\"book\":\"required\",\"canon\":\"required\",\"chapter\":\"required\",\"chapter_group\":\"required\",\"reader_feedback\":\"optional\",\"story_bible\":\"required\",\"volume\":\"optional\"},\"max_tokens\":512000,\"policy_id\":\"context-policy:chapter-generation-pack:v2\",\"priority\":[\"chapter_plan\",\"canon_snapshot\",\"story_state\",\"knowledge_pack\"],\"required_version_refs\":[\"chapter_plan_asset_version_id\",\"canon_snapshot_version_id\"],\"source_isolation\":\"ABSTRACT_ASSETS_ONLY\"}",
+          "domain_acceptance_policy_ref": "domain-decision-record:v1",
+          "prompt_system_instruction_ref": "prompt-system:chapter-generation-pack@v3",
+          "evaluation_policy_payload_json": "{\"evaluation_id\":\"chapter-generation-evaluation-v1\",\"failure_policy\":{\"acceptable_failures\":[],\"retryable_failures\":[\"PROVIDER_TIMEOUT\",\"OBJECT_STORE_UNAVAILABLE\"],\"terminal_failures\":[\"CONTEXT_MANIFEST_CONSISTENCY_FAILED\",\"SOURCE_LEAKAGE_DETECTED\"]},\"metrics\":[{\"aggregation\":\"RULE\",\"metric_id\":\"originality\",\"target\":\"pass\",\"type\":\"ORIGINALITY\"},{\"aggregation\":\"MINIMUM\",\"metric_id\":\"quality_score\",\"target\":80,\"type\":\"QUALITY\"}],\"required_gates\":[{\"blocking\":true,\"gate_id\":\"quality_aggregate\",\"judge_capability_id\":\"quality.intrinsic.judge\",\"required_evidence\":[\"quality_score_report\"],\"threshold\":80},{\"blocking\":true,\"gate_id\":\"source_originality\",\"judge_capability_id\":\"quality.originality.judge\",\"required_evidence\":[\"chapter_quality_group_report\"],\"threshold\":1},{\"blocking\":true,\"gate_id\":\"platform_fit\",\"judge_capability_id\":\"quality.platform.judge\",\"required_evidence\":[\"chapter_quality_group_report\"],\"threshold\":80}]}",
+          "prompt_system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "recovery_state": "ISOLATED_AWAITING_NATIVE_SUCCESSOR",
+        "remote_outcome": "UNKNOWN",
+        "continuation_id": "chapter-generation-successor:ff742eaa-0b2d-4f4a-9625-52d8b460ab18",
+        "local_execution": {
+          "attempt_id": "d0a1a583-a489-4d6d-a88f-306b512edd7a",
+          "execution_id": "chapter-execution:ea2a2fe6-fb41-4628-a592-9d2db1b81f5d",
+          "input_sha256": "04eb27d6e86ec1858935d80a7cf9494c3daaac013efcaf9126abe936d91b0245",
+          "fencing_token": 1,
+          "command_sha256": "a9c8d3aa9ee8dc4b911fc9f1c0bbe72c61d66c190d43d7734fd5030633f63693"
+        },
+        "activation_right": "REVOKED",
+        "contract_version": "pure-generation-isolation.v1",
+        "observed_failure": {
+          "phase": "RESPONSE_WAIT",
+          "scope": "ORIGINAL_LOGICAL_TASK",
+          "stage": "RESPONSE_WAIT",
+          "causes": [],
+          "identity": {
+            "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "attempt_id": "d0a1a583-a489-4d6d-a88f-306b512edd7a",
+            "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "execution_id": "chapter-execution:ea2a2fe6-fb41-4628-a592-9d2db1b81f5d",
+            "operation_id": "ff742eaa-0b2d-4f4a-9625-52d8b460ab18",
+            "fencing_token": 1
+          },
+          "retryable": true,
+          "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+          "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+          "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+          "recovery_state": "REQUIRED",
+          "remote_outcome": "UNESTABLISHED",
+          "business_impact": "CURRENT_TASK_BLOCKED",
+          "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+          "contract_version": "provider-failure.v1",
+          "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+        },
+        "original_history": "PRESERVED",
+        "authorization_ref": "user:WP-FRESH-NOVEL-END-TO-END-DIAGNOSIS-01:20261011",
+        "external_effect_id": "ea2a2fe6-fb41-4628-a592-9d2db1b81f5d",
+        "stopped_legacy_cli": true,
+        "execution_transport": "LOCAL_CLI_REMOTE_INFERENCE",
+        "process_receipt_ref": "authority-asset-version:22700b9a-81b6-477d-bea2-d5612b33abf5",
+        "materialization_hash": "sha256:5910deec90ea9292e80aa8b24c505be7de493f62ba99e1aefa4909a20cfe9a75",
+        "business_commit_right": "REVOKED",
+        "evidence_asset_version_id": "22700b9a-81b6-477d-bea2-d5612b33abf5",
+        "recovery_operator_principal_id": "author-first-native-operator",
+        "materialization_asset_version_id": "c9ee267b-3202-4c27-8e5b-e55d41f9e7ee"
+      }
+    },
+    {
+      "effect_id": "0cf470d9-d645-48c3-aba9-9e0fbdd7d37f",
+      "operation_id": "09e51edf-bd8c-4ea9-9330-186a6d1259d7",
+      "external_status": "UNKNOWN",
+      "reservation_status": "HELD_UNKNOWN",
+      "native_isolation": {
+        "usage": "UNKNOWN",
+        "reason": "Retire stopped pure generation and retain original unknown remote outcome and usage",
+        "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+        "actor_id": "author-first-native-operator",
+        "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+        "dispatch_ids": [
+          "fa7e2d66-6303-412f-9359-4457dc977a89"
+        ],
+        "operation_id": "09e51edf-bd8c-4ea9-9330-186a6d1259d7",
+        "request_hash": "sha256:38ce21fb33d72268c190667df5ae02ccf5ba50aad16ff6353f8231550aab4ee2",
+        "workspace_id": "workspace:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+        "pack_snapshot": {
+          "pack_id": "chapter_generation_pack.creative.bbdcff811b4f66ba1b5c42a0",
+          "skill_ref": "prose-generation",
+          "rollout_id": "",
+          "release_sha": "691f36393aba8f8db9b55bef3bce941319eced08",
+          "pack_version": "3.0.1004",
+          "deployment_id": "deployment:quality:chapter_generation_pack.creative.bbdcff811b4f66ba1b5c42a0:61af7cecaf33a428b852",
+          "manifest_hash": "sha256:560eb3559461a8366fde645c07da94ecc4358e3ba3b93e2abf94b2562c3c8a6d",
+          "skill_version": "prose-generation-v5",
+          "assignment_ref": "activation:sha256:ced4fe89b2922e97c0424a75efa15f25b4afb9a3dac5d5e90c857baeada52a7a@5",
+          "binding_set_id": "794964e6-98ba-4e92-88bb-88e423c8ce26",
+          "capability_ref": "prose.chapter.draft@1",
+          "compilation_id": "compilation:quality:chapter_generation_pack.creative.bbdcff811b4f66ba1b5c42a0:61af7cecaf33a428b852",
+          "capability_hash": "sha256:728e8e9b83b92c8c73525edb67618d8ce3a7618bdb54875c64e929d69b17c210",
+          "tool_policy_ref": "tools:chapter-generation-pack:v2",
+          "binding_set_hash": "sha256:1d61ea13464a3727bb6a08560952c6fd6e49902f4fdbc49aee2b545040998a60",
+          "commit_authority": "CHAPTER_AUTHORITY",
+          "compilation_hash": "sha256:7e8077ee13f87656bedf4aac4f5395295fc6c2740d5c24e89da89bf01846a0e6",
+          "route_policy_ref": "chapter.stage.route.policy:v1",
+          "selection_reason": "BOOK deployment selected",
+          "skill_bundle_ref": "prose-generation@prose-generation-v5",
+          "tool_policy_hash": "sha256:262f5358403a3e4e79ede82ff10e072d5f1fee6426edb4ee9093d120226861de",
+          "workflow_node_id": "draft",
+          "budget_policy_ref": "budget:chapter-generation-pack:v1",
+          "prompt_bundle_ref": "prompt-system:chapter-generation-pack@v3",
+          "route_policy_hash": "sha256:750b4dac19211a00d06879fea1350325bd3dd43ccd5052abef8d21360e7605eb",
+          "skill_bundle_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596",
+          "activation_version": 5,
+          "budget_policy_hash": "sha256:55e75983b6c85de1808c06d3b9ea15402d1325e4adfbd14014440b3a28ad74f8",
+          "context_policy_ref": "context-policy:chapter-generation-pack:v2",
+          "input_contract_ref": "schema:execution-input:prose-chapter-draft:v1",
+          "prompt_bundle_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+          "skill_content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596",
+          "approval_policy_ref": "domain-decision-record:v1",
+          "context_policy_hash": "sha256:7a910c8ee8ad02c0104c7d4089b8554b2a85056efe57568fc0c40531a73cc071",
+          "output_contract_ref": "schema:execution-output:prose-chapter-draft:v1",
+          "prompt_template_ref": "prompt-template:chapter-generation-pack@v15",
+          "selected_scope_type": "BOOK",
+          "agent_definition_ref": "",
+          "approval_policy_hash": "sha256:f23f495bbc81245ef172fc1e54de2ef2395619c519114d56655f96c279b7a0a4",
+          "prompt_template_hash": "sha256:beb328b411e0c2133feea2c82ebbabd828edc2f60d99893afca28579e80fc59a",
+          "agent_definition_hash": "",
+          "catalog_snapshot_hash": "sha256:7caa57e144b9724b62004aa5183a5ac341ece24aa46fd4b97e2c8d3b904f0b63",
+          "evaluation_policy_ref": "chapter-generation-evaluation-v1",
+          "evaluation_policy_hash": "sha256:33d63251da78fc9fdb87f51916446f59fccfa4f6701b87591992a2dee9b2f21e",
+          "execution_capability_id": "prose.chapter.draft",
+          "prompt_compiler_version": "chapter-prompt-compiler:v15",
+          "workflow_definition_ref": "chapter_authority_slice@3.10.0",
+          "operation_definition_ref": "chapter.draft.generate@3.10.0",
+          "tool_policy_payload_json": "{\"database\":{\"allowed_tables\":[],\"forbidden_tables\":[\"legacy_assets\"],\"read_allowed\":false,\"write_allowed\":false},\"default\":\"DENY\",\"external_models\":{\"allowed\":true,\"context_substages\":[\"context_compress\",\"context_fidelity\"],\"route_policy_ref\":\"chapter.stage.route.policy:v1\"},\"files\":{\"allowed_roots\":[],\"read_allowed\":false,\"write_allowed\":false},\"policy_id\":\"tools:chapter-generation-pack:v2\",\"retrieval\":{\"allowed\":true,\"source_policy_ref\":\"source:chapter-generation-pack:v1\"},\"tools\":[{\"allowed_operations\":[\"context\",\"memo\",\"canon_proposal\",\"retrieval\",\"draft\",\"review\",\"revision\",\"rereview\",\"canon_extraction\",\"quality_structural\",\"quality_commercial\",\"quality_source_originality\",\"quality_longform\",\"quality_platform\"],\"approval_required\":false,\"audit_required\":true,\"budget_policy_ref\":\"budget:chapter-generation-pack:v1\",\"permission\":\"EXECUTE\",\"risk_class\":\"HIGH\",\"tool_ref\":\"model.provider.invoke\"},{\"allowed_operations\":[\"export\"],\"approval_required\":false,\"audit_required\":true,\"budget_policy_ref\":\"budget:chapter-generation-pack:v1\",\"permission\":\"EXECUTE\",\"risk_class\":\"HIGH\",\"tool_ref\":\"storage.object.put\"}]}",
+          "execution_capability_hash": "sha256:728e8e9b83b92c8c73525edb67618d8ce3a7618bdb54875c64e929d69b17c210",
+          "operation_definition_hash": "sha256:761215f648394a4aff76fe5735230d7d52abcac95a07ec4429b011c7783006d9",
+          "context_policy_payload_json": "{\"allowed_asset_types\":[\"chapter_plan_version\",\"chapter_plan\",\"book_design\",\"chapter_execution_intent\",\"chapter_memo\",\"context_bundle\",\"knowledge_pack\",\"canon_snapshot\",\"story_state\"],\"forbidden_asset_types\":[\"raw_source_document\",\"raw_source_chunk\"],\"freshness\":{\"reject_cross_project\":true,\"reject_stale\":true,\"reject_unqualified\":true},\"longform_bindings\":{\"arc\":\"optional\",\"book\":\"required\",\"canon\":\"required\",\"chapter\":\"required\",\"chapter_group\":\"required\",\"reader_feedback\":\"optional\",\"story_bible\":\"required\",\"volume\":\"optional\"},\"max_tokens\":512000,\"policy_id\":\"context-policy:chapter-generation-pack:v2\",\"priority\":[\"chapter_plan\",\"canon_snapshot\",\"story_state\",\"knowledge_pack\"],\"required_version_refs\":[\"chapter_plan_asset_version_id\",\"canon_snapshot_version_id\"],\"source_isolation\":\"ABSTRACT_ASSETS_ONLY\"}",
+          "domain_acceptance_policy_ref": "domain-decision-record:v1",
+          "prompt_system_instruction_ref": "prompt-system:chapter-generation-pack@v3",
+          "evaluation_policy_payload_json": "{\"evaluation_id\":\"chapter-generation-evaluation-v1\",\"failure_policy\":{\"acceptable_failures\":[],\"retryable_failures\":[\"PROVIDER_TIMEOUT\",\"OBJECT_STORE_UNAVAILABLE\"],\"terminal_failures\":[\"CONTEXT_MANIFEST_CONSISTENCY_FAILED\",\"SOURCE_LEAKAGE_DETECTED\"]},\"metrics\":[{\"aggregation\":\"RULE\",\"metric_id\":\"originality\",\"target\":\"pass\",\"type\":\"ORIGINALITY\"},{\"aggregation\":\"MINIMUM\",\"metric_id\":\"quality_score\",\"target\":80,\"type\":\"QUALITY\"}],\"required_gates\":[{\"blocking\":true,\"gate_id\":\"quality_aggregate\",\"judge_capability_id\":\"quality.intrinsic.judge\",\"required_evidence\":[\"quality_score_report\"],\"threshold\":80},{\"blocking\":true,\"gate_id\":\"source_originality\",\"judge_capability_id\":\"quality.originality.judge\",\"required_evidence\":[\"chapter_quality_group_report\"],\"threshold\":1},{\"blocking\":true,\"gate_id\":\"platform_fit\",\"judge_capability_id\":\"quality.platform.judge\",\"required_evidence\":[\"chapter_quality_group_report\"],\"threshold\":80}]}",
+          "prompt_system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "recovery_state": "ISOLATED_AWAITING_NATIVE_SUCCESSOR",
+        "remote_outcome": "UNKNOWN",
+        "continuation_id": "chapter-generation-successor:09e51edf-bd8c-4ea9-9330-186a6d1259d7",
+        "local_execution": {
+          "attempt_id": "1d46deec-87ce-4a28-8f8f-42f66f367acd",
+          "execution_id": "chapter-execution:0cf470d9-d645-48c3-aba9-9e0fbdd7d37f",
+          "input_sha256": "04eb27d6e86ec1858935d80a7cf9494c3daaac013efcaf9126abe936d91b0245",
+          "fencing_token": 1,
+          "command_sha256": "9b51d7c49b96f335583b9f909ecb679eb640ec5e4862a294419aae64dd3e182e"
+        },
+        "activation_right": "REVOKED",
+        "contract_version": "pure-generation-isolation.v1",
+        "observed_failure": {
+          "phase": "RESPONSE_WAIT",
+          "scope": "ORIGINAL_LOGICAL_TASK",
+          "stage": "RESPONSE_WAIT",
+          "causes": [],
+          "identity": {
+            "book_id": "book:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "attempt_id": "1d46deec-87ce-4a28-8f8f-42f66f367acd",
+            "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+            "execution_id": "chapter-execution:0cf470d9-d645-48c3-aba9-9e0fbdd7d37f",
+            "operation_id": "09e51edf-bd8c-4ea9-9330-186a6d1259d7",
+            "fencing_token": 1
+          },
+          "retryable": true,
+          "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+          "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+          "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+          "recovery_state": "REQUIRED",
+          "remote_outcome": "UNESTABLISHED",
+          "business_impact": "CURRENT_TASK_BLOCKED",
+          "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+          "contract_version": "provider-failure.v1",
+          "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+        },
+        "original_history": "PRESERVED",
+        "authorization_ref": "user:WP-FRESH-NOVEL-END-TO-END-DIAGNOSIS-01:20261011",
+        "external_effect_id": "0cf470d9-d645-48c3-aba9-9e0fbdd7d37f",
+        "stopped_legacy_cli": true,
+        "execution_transport": "LOCAL_CLI_REMOTE_INFERENCE",
+        "process_receipt_ref": "authority-asset-version:3f808dff-f161-414f-a341-0d09ecd786ec",
+        "materialization_hash": "sha256:89cb0a8dec61f5c6ad798cdcab7d7d47f656179a0fbecb820de01d9b637029be",
+        "business_commit_right": "REVOKED",
+        "evidence_asset_version_id": "3f808dff-f161-414f-a341-0d09ecd786ec",
+        "recovery_operator_principal_id": "author-first-native-operator",
+        "materialization_asset_version_id": "a08ca71b-263b-484f-8c12-3903b67584d2"
+      }
+    }
+  ],
+  "exhaustion_events": [
+    {
+      "payload": {
+        "scope": "ORIGINAL_LOGICAL_GENERATION",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc:chapter:1",
+        "error_code": "GENERATION_RECOVERY_EXHAUSTED",
+        "operation_id": "09e51edf-bd8c-4ea9-9330-186a6d1259d7",
+        "counter_source": "NATIVE_DISPATCH_LINEAGE",
+        "recovery_action": "STOP_AT_CHECKPOINT",
+        "failure_attempts": 2,
+        "maximum_failure_attempts": 2
+      },
+      "event_id": "135279c0-ecf0-41e3-baa8-c34e3eb66a8c",
+      "created_at": "2026-10-11T19:50:45.74005+00:00",
+      "event_type": "authority.generation.recovery_exhausted",
+      "project_id": "project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537",
+      "aggregate_id": "09e51edf-bd8c-4ea9-9330-186a6d1259d7",
+      "causation_id": "",
+      "event_version": 1,
+      "aggregate_type": "authority_operation",
+      "correlation_id": "ae57b0a5-bd7e-4fb7-b90a-d585aa2014fc",
+      "sequence_number": 6
+    }
+  ],
+  "live_execution_leases": 0,
+  "actual_saved_read_back_exported_chapters": 0,
+  "body_han_characters": 0,
+  "ordinary_resume_entry": "./nf authority-creation continue --project-id project:author:c3bd8015360dc671dc35ffd6363af11dddc6a2d3a94626b272343c72a4e34537 --formation-run-id story-formation:758b56a9b8091f0a4d9f94124e29d2e2d9e325333325c2df8a7211eeea78c015 --foreground --yield-after-window --maximum-ticks 3 --work-window-seconds 300",
+  "resume_boundary": "Existing native entry preserves the exhausted original allowance; do not blindly resend, replace IDs, raise limits or admit an unrelated new Book. Saved-result reconciliation is native but neither process has a complete result.",
+  "human_author_acceptance": "NOT_GRANTED"
+}
