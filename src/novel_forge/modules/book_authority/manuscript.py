@@ -924,13 +924,20 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
     with AuthorityUnitOfWork(database_url) as uow:
         source = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=asset_version_id)
         payload = source.content.get("payload") or {}
+        typed = source.asset_type in {"draft_chapter", "draft_version", "best_draft_candidate"}
+        definition, output_key = {"draft_chapter": ("chapter.draft.generate", "chapter.draft"),
+            "draft_version": ("chapter.revision.apply", "chapter.revision"),
+            "best_draft_candidate": ("chapter.candidate.select_best", "chapter.best_candidate")}.get(source.asset_type, (None, None))
         uow.cursor.execute("""SELECT book.book_id,book.workspace_id,request.chapter_number
             FROM authority_book_production book JOIN authority_book_chapter_request request USING(book_run_id)
             JOIN authority_operation op ON op.root_operation_id=request.chapter_root_operation_id
             JOIN authority_operation_output_asset output USING(operation_id)
             WHERE book.book_run_id=%s AND book.project_id=%s AND op.project_id=book.project_id
               AND op.workspace_id=book.workspace_id AND output.asset_version_id=%s
-              AND op.operation_id=%s""", [book_run_id, project_id, asset_version_id, payload.get("operation_id")])
+              AND (%s IS TRUE OR op.operation_id=%s)
+              AND (%s IS FALSE OR (op.status='SUCCEEDED' AND output.role='primary'
+                AND op.definition_name=%s AND output.output_key=%s))""",
+            [book_run_id, project_id, asset_version_id, typed, payload.get("operation_id"), typed, definition, output_key])
         row = uow.cursor.fetchone()
         if row is None:
             from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT
@@ -944,9 +951,24 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
                   AND root.definition_name='chapter.slice.run' AND root.definition_version=%s
                   AND root.command_payload#>>'{preparation_report,working_revision,contract_version}'=%s
                   AND op.project_id=book.project_id AND op.workspace_id=book.workspace_id
-                  AND output.asset_version_id=%s AND op.operation_id=%s""",
-                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id, payload.get("operation_id")])
+                  AND output.asset_version_id=%s AND (%s IS TRUE OR op.operation_id=%s)
+                  AND (%s IS FALSE OR (op.status='SUCCEEDED' AND output.role='primary'
+                    AND op.definition_name=%s AND output.output_key=%s))""",
+                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id,
+                 typed, payload.get("operation_id"), typed, definition, output_key])
             row = uow.cursor.fetchone()
+        if typed:
+            if (row is None or source.content.get("project_id") != project_id
+                    or source.content.get("chapter") != row[2]):
+                raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
+            validate_complete_prose(source.content)
+            return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_TYPED_CANDIDATE",
+                "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,
+                "chapter": row[2], "asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
+                "text": source.content["text"], "raw_text": None, "completeness": "COMPLETE",
+                "structural_status": "VALIDATED_DOMAIN_RESULT", "review_status": "NOT_PROJECTED",
+                "selection_status": "NOT_PROJECTED", "acceptance_status": "NOT_PROJECTED",
+                "accounting_status": "NOT_PROJECTED", "publication": "NOT_AUTHORIZED"}
         if (row is None or source.asset_type != "execution_evidence"
                 or source.content.get("kind") not in {"model-result", "prose-candidate"}
                 or payload.get("project_id") != project_id or payload.get("book_id") != row[0]):

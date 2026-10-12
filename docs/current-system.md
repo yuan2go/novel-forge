@@ -1869,6 +1869,12 @@ in a new plan do not turn one saved prose scene into several required source slo
 An uncertain plan diagnosis may request investigation. That proposal authorizes neither
 plan mutation nor an automatic prose repair of frozen commitments; its concrete evidence
 and unresolved status remain available to the existing review and revision workflow.
+ReReview may cite fewer original source spans without losing the original diagnosis:
+the host retains its frozen support; changed-support lineage remains an unverified
+proposal on a distinct diagnosis. Incomplete resolution evidence retains an unresolved
+disposition rather than a false resolution. Complete typed
+prose, including a host-materialized targeted revision, is readable through the existing
+candidate API before selection; that read does not project review, selection or acceptance.
 
 Chapter 3.8.0 and Pack 2.12.0/template v9 retain their frozen `work-requirements.v1` inputs
 and emit `work-quality.v2` evidence. Selected method values reach Draft Plan v3,

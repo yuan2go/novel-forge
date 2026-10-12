@@ -355,6 +355,42 @@ def test_retained_working_revision_body_is_readable_without_new_call_qualificati
                 asset_version_id="raw", principal=principal)
 
 
+@pytest.mark.parametrize("owned", [True, False])
+def test_unselected_materialized_revision_is_readable_without_projecting_review_or_selection(monkeypatch, owned):
+    from novel_forge.modules.book_authority import manuscript
+
+    source = SimpleNamespace(asset_type="draft_version", asset_version_id="typed", content_hash="hash",
+        content={"project_id": "project", "chapter": 3, "text": "完整物化修订正文。"})
+    class Uow:
+        def __init__(self, *args):
+            self.cursor = self
+            self.rows = iter([None, ("book", "workspace", 3) if owned else None])
+            self.repositories = SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **kwargs: source))
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def execute(self, sql, params):
+            assert "authority_operation_output_asset" in sql and "output.role='primary'" in sql
+            assert "op.definition_name=%s" in sql and "chapter.revision.apply" in params
+            assert "UPDATE" not in sql and "INSERT" not in sql
+        def fetchone(self):
+            return next(self.rows)
+    monkeypatch.setattr(manuscript, "AuthorityUnitOfWork", Uow)
+    principal = SimpleNamespace(require=lambda permission, project: None)
+    if owned:
+        actual = manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+            asset_version_id="typed", principal=principal)
+        assert actual["text"] == source.content["text"] and actual["raw_text"] is None
+        assert actual["completeness"] == "COMPLETE"
+        assert {actual[key] for key in ("review_status", "selection_status", "acceptance_status")} == {"NOT_PROJECTED"}
+        assert actual["publication"] == "NOT_AUTHORIZED"
+    else:
+        with pytest.raises(KernelError, match="another source or Book"):
+            manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+                asset_version_id="typed", principal=principal)
+
+
 def test_unsupported_regex_wire_projection_keeps_full_host_validation():
     from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
     from novel_forge.modules.production_execution.codex_configuration import codex_output_schema

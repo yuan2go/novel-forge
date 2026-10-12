@@ -338,8 +338,51 @@ def test_same_category_locations_are_distinct_and_lineage_survives_candidate_cha
         == review["issues"][0]["code"]
     )
     relocated["supporting_evidence"][0].update(start=1, quote=SOURCE[1:7])
-    with pytest.raises(KernelError):
-        paired_diagnosis(relocated, text=TARGET, window=window(), prior=review)
+    unmatched = paired_diagnosis(relocated, text=TARGET, window=window(), prior=review)
+    assert unmatched["code"] != review["issues"][0]["code"]
+    assert unmatched["lineage_status"] == "UNVERIFIED"
+
+
+def test_changed_valid_support_preserves_old_issue_and_records_unverified_lineage():
+    review = initial([issue()])
+    changed = issue(start=8, end=12)
+    changed["lineage_code"] = review["issues"][0]["code"]
+    changed["supporting_evidence"][0].update(start=1, end=7, quote=SOURCE[1:7])
+    current = paired_diagnosis(changed, text=TARGET, window=window(), prior=review)
+    assert current["code"] != review["issues"][0]["code"]
+    assert current["unverified_lineage_code"] == review["issues"][0]["code"]
+    assert current["lineage_status"] == "UNVERIFIED"
+    assert review["issues"][0]["supporting_evidence"][0]["quote"] == SOURCE[:7]
+
+
+def test_reassessment_cannot_replace_prior_contradiction_with_uncertainty_at_the_same_spans():
+    review = initial([issue()])
+    changed = issue()
+    changed.update(lineage_code=review["issues"][0]["code"], judgment_kind="UNCERTAIN",
+        severity="major", confidence="MEDIUM", interpretation="UNCERTAIN")
+    current = paired_diagnosis(changed, text=TARGET, window=window(), prior=review)
+    assert current["code"] != review["issues"][0]["code"]
+    assert current["lineage_status"] == "UNVERIFIED"
+    assert review["issues"][0]["judgment_kind"] == "SEMANTIC_CONTRADICTION"
+
+
+@pytest.mark.parametrize("status", ["UNRESOLVED", "PARTIALLY_RESOLVED", "RESOLVED"])
+def test_incomplete_original_support_keeps_resolution_unverified_and_preserves_evidence(status):
+    from novel_forge.modules.review.cross_chapter import resolution_checks
+
+    review = initial([issue()])
+    result = deepcopy(rereview_result(review))
+    check = result["resolution_checks"][0]
+    check["status"] = status
+    check["supporting_evidence"][0].update(start=1, end=7, quote=SOURCE[1:7])
+    normalized = resolution_checks(result, review, TARGET)[0]
+    assert normalized["status"] == ("UNRESOLVED" if status == "RESOLVED" else status)
+    assert normalized["claimed_resolution_status"] == status
+    assert normalized["supporting_evidence"] == review["issues"][0]["supporting_evidence"]
+    assert normalized["reassessment_supporting_evidence"][0]["quote"] == SOURCE[1:7]
+    actual = rereview(review, result)
+    assert not actual["resolved_issue_codes"]
+    assert review["issues"][0]["code"] in actual["remaining_issue_codes"]
 
 
 @pytest.mark.parametrize(
