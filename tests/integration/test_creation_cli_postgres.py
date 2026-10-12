@@ -733,7 +733,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             if status == "DEAD_LETTER" and mode == "world-causal-dead-letter-replay":
                 recover = parser.parse_args(["authority-creation", "recover", "--project-id", project,
                     "--formation-run-id", identity, "--reason", "Controlled owner resolved historical World retry classification; retain original inputs and receipts.",
-                    "--idempotency-key", "legacy-dead-letter-window", "--repository-root", str(root)])
+                    "--idempotency-key", "legacy-dead-letter-window:" + current.runtime_job_id, "--repository-root", str(root)])
                 run_creation_command(settings, recover)
             else:
                 assert status == "RETRY_WAIT"
