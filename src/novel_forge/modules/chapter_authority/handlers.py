@@ -1752,7 +1752,7 @@ class _ReReviewHandler:
                 "retained_result_derivation": content["retained_result_derivation"], "provider_dispatches": 0})
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
-        incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
+        incumbent = next((item for item in request.inputs if item.input_type == "best_draft_candidate"), None)
         if incumbent is not None:
             from dataclasses import replace
             from .candidate_selection import retained_candidate_evidence
@@ -1808,7 +1808,7 @@ class _BestCandidateHandler:
             (
                 item
                 for item in request.inputs
-                if item.asset_type == "best_draft_candidate"
+                if item.input_type == "best_draft_candidate"
             ),
             None,
         )

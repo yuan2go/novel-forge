@@ -152,7 +152,7 @@ class _ChapterHandlerAdapter:
                 require_working_revision_frontier(uow, root=root)
             from dataclasses import replace
             chapter_request = replace(chapter_request, inputs=tuple(
-                replace(item, asset_type="draft_chapter", content=source_draft_content(item))
+                replace(item, input_role="draft_chapter", content=source_draft_content(item))
                 if item.asset_version_id == working["source_asset_version_id"] else item
                 for item in chapter_request.inputs))
         reference = None

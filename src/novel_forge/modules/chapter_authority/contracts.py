@@ -216,6 +216,11 @@ class ChapterInputAsset:
     content_hash: str
     content: dict[str, Any]
     blobs: tuple[dict[str, Any], ...] = ()
+    input_role: str = ""
+
+    @property
+    def input_type(self) -> str:
+        return self.input_role or self.asset_type
 
 
 @dataclass(frozen=True, slots=True)
@@ -325,7 +330,7 @@ class ChapterHandlerRequest:
         return self.semantic_definition_version in {"3.6.0", "3.6.0-author-input.v2", "3.7.0", "3.7.0-author-input.v2", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
 
     def require_input(self, asset_type: str) -> ChapterInputAsset:
-        matching = [item for item in self.inputs if item.asset_type == asset_type]
+        matching = [item for item in self.inputs if item.input_type == asset_type]
         if len(matching) != 1:
             raise KernelError(
                 "CHAPTER_HANDLER_INPUT_INVALID",

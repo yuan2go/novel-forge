@@ -9,6 +9,67 @@ from novel_forge.modules.chapter_authority.working_revision import (
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+def test_selected_revision_role_keeps_physical_type_for_gateway_materialization():
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    source_hash = 'sha256:' + 'a' * 64
+    source = ChapterInputAsset('selected:v2', 'draft_version', source_hash, {'text': '选定修订稿'}, input_role='draft_chapter')
+    revision = ChapterInputAsset('new:v3', 'draft_version', 'new-hash', {'text': '新候选'})
+    request = ChapterHandlerRequest(operation_id='review', project_id='project', workspace_id='workspace',
+        trace_id='trace', correlation_id='correlation', command={}, inputs=(source, revision))
+    assert request.require_input('draft_chapter') is source
+    assert request.require_input('draft_version') is revision
+    assert request.require_input('draft_chapter').asset_type == 'draft_version'
+    assert request.require_input('draft_chapter').content_hash == source_hash
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    from novel_forge.modules.production_execution import ArtifactPointer
+    binder = object.__new__(PostgresChapterExecutionContractBinder)
+    document = SimpleNamespace(asset_type='draft_version', content_hash=source_hash,
+        content=source.content, lifecycle='ACTIVE', eligibility='ELIGIBLE', governance='CLEAR')
+    binder.query = SimpleNamespace(require=lambda **kwargs: document)
+    pointer = ArtifactPointer(artifact_ref='asset-version:selected:v2', asset_version_id=source.asset_version_id,
+        artifact_type=source.asset_type, content_hash=source.content_hash, schema_version='draft_version.v1',
+        source_eligibility='PRODUCTION_ELIGIBLE')
+    actual = binder._materialize_selected_inputs(project_id='project', artifacts=(pointer,))
+    assert actual[0]['artifact_type'] == 'draft_version' and actual[0]['content'] == source.content
+    from dataclasses import replace
+    with pytest.raises(KernelError, match='CHAPTER_CAPABILITY_CONTEXT_INVALID'):
+        binder._materialize_selected_inputs(project_id='project', artifacts=(replace(pointer, artifact_type='draft_chapter'),))
+
+
+def test_selected_best_role_rereview_and_selection_use_this_round_review(monkeypatch):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset, ChapterNode
+    from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
+    from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
+    from novel_forge.modules.chapter_authority import review_window
+    from novel_forge.modules.review.domain import evaluate_review_result
+    source = ChapterInputAsset('selected:best', 'best_draft_candidate', 'hash',
+        {'chapter': 1, 'text': '她留下照看伤者。', 'selected_review': {'score': 99, 'target_asset_version_id': 'old:prose'}}, input_role='draft_chapter')
+    review = evaluate_review_result(project_id='p', target_asset_version_id=source.asset_version_id,
+        context_bundle_version_id='ctx', chapter=1, result={'diagnostic_contract_version': 'actionable-diagnostics.v1',
+            'decision': 'PASSED', 'score': 60, 'issues': []}, provider_evidence={}, prose_text=source.content['text'])
+    revised = ChapterInputAsset('new:revision', 'draft_version', 'hash', {'chapter': 1, 'text': '她留下照看伤者，先将药放到床边。'})
+    inputs = (source, revised, ChapterInputAsset('review:fresh', 'review_report', 'hash', review),
+        ChapterInputAsset('ctx', 'context_bundle', 'hash', {}))
+    monkeypatch.setattr(review_window, 'prepare_review_window', lambda *args: None)
+    class Provider:
+        def invoke(self, request, *, stage, payload):
+            assert payload['original_draft_asset_version_id'] == 'selected:best'
+            assert payload['review'] == review
+            return ModelProviderResult({'diagnostic_contract_version': 'actionable-diagnostics.v1',
+                'decision': 'PASSED', 'score': 70, 'issues': [], 'resolution_checks': [], 'knowledge_checks': []},
+                'fixture', 'fixture', 'fixture', 'fixture', 0, 0, '0', 'USD', False)
+    registry = build_chapter_handler_registry(Provider())
+    request = ChapterHandlerRequest('rereview', 'p', 'w', 'trace', 'root', {}, inputs)
+    rereview = registry.require(ChapterNode.REREVIEW).execute(request)
+    assert rereview.content['initial_review_version_id'] == 'review:fresh'
+    selected = registry.require(ChapterNode.BEST_CANDIDATE).execute(
+        ChapterHandlerRequest('best', 'p', 'w', 'trace', 'root', {},
+            (*inputs, ChapterInputAsset('rereview:fresh', 're_review_report', 'hash', rereview.content))))
+    assert selected.content['candidate_comparison']['previous']['asset_version_id'] == 'selected:best'
+    assert selected.content['candidate_comparison']['previous']['review_asset_version_id'] == 'review:fresh'
+    assert selected.content['candidate_comparison']['previous']['score'] == 60
+
+
 def frontier(monkeypatch, *, cancelled=False, state="READY", workspace="workspace", selected="draft"):
     from novel_forge.modules.book_authority import manuscript
     book = {"book_run_id": "run", "project_id": "project", "workspace_id": workspace,

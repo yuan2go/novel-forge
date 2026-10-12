@@ -143,13 +143,15 @@ def test_planning_envelope_references_deduplicate_task_and_context_without_losin
     assert len(__import__('json').dumps(encoded)) < len(__import__('json').dumps(source)) / 2
 
 
-def test_current_planning_template_binds_whole_envelope_and_retains_historical_template():
+@pytest.mark.parametrize('intent_boundary,version', [(True, 'v3'), (False, 'v2')])
+def test_current_planning_template_binds_whole_envelope_and_retains_historical_template(intent_boundary, version):
     from pathlib import Path
     from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
     root = Path(__file__).resolve().parents[2]
-    current = build_story_planning_pack_profile(root, operation_definition_hash='sha256:' + 'a' * 64, execution_contract_version='1.21.0')
-    assert current.manifest['prompt_binding']['template_version'] == 'v2'
-    assert '{{provider_data_envelope}}' in (root / 'config/capability_packs/artifacts/story_planning_template_v2.md').read_text()
+    historical = {} if intent_boundary else {'narrative_intent_boundary': False}
+    current = build_story_planning_pack_profile(root, operation_definition_hash='sha256:' + 'a' * 64, execution_contract_version='1.21.0', **historical)
+    assert current.manifest['prompt_binding']['template_version'] == version
+    assert '{{provider_data_envelope}}' in (root / f'config/capability_packs/artifacts/story_planning_template_{version}.md').read_text()
     assert '{{input_manifest}}' in (root / 'config/capability_packs/artifacts/story_planning_template.md').read_text()
 
 

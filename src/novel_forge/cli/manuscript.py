@@ -277,7 +277,8 @@ def _run_working_revision_command(settings, args, *, principal):
         else:
             root_id = args.revision_root
             composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
-        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_schema_transport
+        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_schema_transport, recover_unsent_context_transport
+        recover_unsent_context_transport(composition.authority, book_run_id=args.book_run_id, principal=principal, root_operation_id=root_id)
         recover_schema_transport(composition.authority, book_run_id=args.book_run_id, principal=principal, root_operation_id=root_id)
         from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
         recover_chapter_generations(composition.authority, book_run_id=args.book_run_id,

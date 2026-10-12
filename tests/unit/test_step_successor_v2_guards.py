@@ -158,3 +158,30 @@ def test_local_context_accounting_successor_preserves_frozen_and_unsent_boundari
     else:
         with pytest.raises(KernelError, match='CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE'):
             _require_local_context_accounting_source(cursor, source, policy, 'sha')
+
+
+@pytest.mark.parametrize('fault', [None, 'effect', 'reservation', 'output', 'same-release', 'foreign-release',
+    'non-generation', 'foreign-book', 'changed-input', 'changed-hash', 'failure', 'missing-attempt', 'physical-type', 'deployment'])
+def test_input_role_transport_requires_exact_unsent_changed_release(fault):
+    from novel_forge.modules.command_kernel.context_transport_recovery import CONTRACT, require_unsent_context_transport
+    from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT as WORKING
+    cursor = Mock()
+    frozen = [{'asset_version_id': 'selected:v2', 'content_hash': 'hash'}]
+    source = {'operation_id': 'source', 'root_operation_id': 'root', 'project_id': 'project', 'workspace_id': 'workspace',
+        'definition_snapshot': {'commit_sha': 'new' if fault == 'same-release' else 'old',
+            'external_capabilities': ['object_store.put'] if fault == 'non-generation' else ['model.invoke']},
+        'input_asset_snapshot': frozen, 'command_payload': {'book_id': 'book'}}
+    binding = {'contract_version': WORKING, 'book_run_id': 'foreign' if fault == 'foreign-book' else 'run',
+               'source_asset_version_id': 'selected:v2', 'source_content_hash': 'hash'}
+    cursor.fetchone.side_effect = [(ROOT_VERSION, binding), tuple(fault == key for key in ('effect', 'reservation', 'output')),
+        ('changed' if fault == 'changed-hash' else 'hash',),
+        ('draft_chapter' if fault == 'physical-type' else 'draft_version',), ('foreign' if fault == 'deployment' else 'deployment',)]
+    cursor.fetchall.return_value = [] if fault == 'missing-attempt' else [('AUTHORIZATION_MISSING' if fault == 'failure' else 'CHAPTER_CAPABILITY_CONTEXT_INVALID',)]
+    policy = {'contract_version': CONTRACT, 'transport_projection': 'selected-prose-input-role.v1',
+        'release_sha': 'foreign' if fault == 'foreign-release' else 'new', 'input_snapshot': [] if fault == 'changed-input' else frozen,
+        'completion_checks': 'UNCHANGED', 'book_run_id': 'run', 'source_asset_version_id': 'selected:v2', 'target_deployment_id': 'deployment'}
+    if fault:
+        with pytest.raises(KernelError, match='CHAPTER_UNSENT_TRANSPORT_'):
+            require_unsent_context_transport(cursor, source, policy, execution_sha='new')
+    else:
+        assert require_unsent_context_transport(cursor, source, policy, execution_sha='new')

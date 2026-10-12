@@ -8,6 +8,9 @@ CONTRACT = "chapter-unsent-context-transport.v1"
 def require_unsent_context_transport(cursor, source, policy, *, execution_sha=None):
     if policy.get('contract_version') != CONTRACT:
         return False
+    if policy.get('transport_projection') == 'selected-prose-input-role.v1':
+        _require_changed_input_role_source(cursor, source, policy, execution_sha)
+        return True
     accounting = policy.get('transport_projection') == 'provider-working-intent-accounting.v1'
     if accounting:
         _require_local_context_accounting_source(cursor, source, policy, execution_sha)
@@ -48,16 +51,59 @@ def require_unsent_context_transport(cursor, source, policy, *, execution_sha=No
           FOR SHARE OF activation,deployment""", [source['project_id'],source['workspace_id'],source['command_payload']['book_id'],policy.get('target_deployment_id'),policy.get('release_sha')])
     if cursor.fetchone() != (policy.get('target_deployment_id'),):
         raise KernelError('CHAPTER_UNSENT_TRANSPORT_TARGET_UNPROVEN', 'Require the exact active compiled v13 Pack for the same Book and release')
-    cursor.execute("""WITH RECURSIVE ancestors(operation_id) AS (SELECT %s::text UNION
-        SELECT edge.predecessor_operation_id FROM authority_saga_step_successor edge JOIN ancestors
-          ON edge.successor_operation_id=ancestors.operation_id)
-        SELECT count(*) FROM authority_saga_step_successor edge JOIN ancestors ON edge.successor_operation_id=ancestors.operation_id
-          WHERE edge.policy_evidence->>'contract_version'=%s""", [source['operation_id'], CONTRACT])
-    if cursor.fetchone()[0]:
-        raise KernelError('GENERATION_ROUTE_RECOVERY_EXHAUSTED', 'The persisted logical task already used its exact Context transport correction')
     from novel_forge.modules.command_kernel.generation_isolation import require_generation_retry_budget
     require_generation_retry_budget(cursor, operation_id=source['operation_id'])
     return True
+
+
+def _require_changed_input_role_source(cursor, source, policy, execution_sha):
+    from novel_forge.modules.chapter_authority.working_revision import CONTRACT as WORKING, ROOT_VERSION
+    from .generation_policy import pure_generation_capabilities
+    if (not execution_sha or policy.get('release_sha') != execution_sha
+            or not source['definition_snapshot'].get('commit_sha')
+            or source['definition_snapshot'].get('commit_sha') == execution_sha
+            or policy.get('input_snapshot') != source['input_asset_snapshot']
+            or policy.get('completion_checks') != 'UNCHANGED'
+            or not pure_generation_capabilities(source['definition_snapshot'].get('external_capabilities', []))):
+        raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Require changed host role projection with unchanged pure-generation input and completion identities')
+    cursor.execute("""SELECT definition_version,command_payload#>'{preparation_report,working_revision}'
+        FROM authority_operation WHERE operation_id=%s AND project_id=%s""", [source['root_operation_id'], source['project_id']])
+    row = cursor.fetchone()
+    binding = (row[1] or {}) if row else {}
+    if (not row or row[0] != ROOT_VERSION or binding.get('contract_version') != WORKING
+            or binding.get('book_run_id') != policy.get('book_run_id')
+            or binding.get('source_asset_version_id') != policy.get('source_asset_version_id')):
+        raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Bind the exact current working source rather than another input or Book')
+    frozen_refs = {item['asset_version_id']: item['content_hash'] for item in source['input_asset_snapshot']}
+    if frozen_refs.get(binding['source_asset_version_id']) != binding['source_content_hash']:
+        raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Retain the original selected prose in this child input snapshot')
+    cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s)""", [source['operation_id']] * 3)
+    if any(cursor.fetchone()):
+        raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Input role repair requires zero effects, reservations and output assets')
+    cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [source['operation_id']])
+    failures = [row[0] for row in cursor.fetchall()]
+    if not failures or set(failures) != {'CHAPTER_CAPABILITY_CONTEXT_INVALID'}:
+        raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Retain the exact unsent input binding failure')
+    for frozen in source['input_asset_snapshot']:
+        cursor.execute('SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s', [frozen['asset_version_id']])
+        if cursor.fetchone() != (frozen['content_hash'],):
+            raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Every frozen input must remain hash identical')
+    cursor.execute("""SELECT a.asset_type FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+        WHERE a.project_id=%s AND v.asset_version_id=%s AND v.content_hash=%s""",
+        [source['project_id'], binding['source_asset_version_id'], binding['source_content_hash']])
+    if cursor.fetchone() not in [('draft_version',), ('best_draft_candidate',), ('author_edit_candidate',)]:
+        raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Require a retained selected prose type needing the host Draft input role')
+    cursor.execute("""SELECT d.deployment_id FROM authority_capability_pack_activation a
+        JOIN authority_capability_pack_deployment d ON d.deployment_id=a.active_deployment_id
+        JOIN authority_capability_pack_compilation c USING(compilation_id)
+        WHERE a.project_id=%s AND a.workspace_id=%s AND a.book_id=%s
+          AND a.workflow_definition_ref='chapter_authority_slice@3.10.0'
+          AND d.deployment_id=%s AND d.deployment_status='ACTIVE' AND c.release_sha=%s""",
+        [source['project_id'], source['workspace_id'], source['command_payload']['book_id'], policy.get('target_deployment_id'), execution_sha])
+    if cursor.fetchone() != (policy.get('target_deployment_id'),):
+        raise KernelError('CHAPTER_UNSENT_TRANSPORT_TARGET_UNPROVEN', 'Require the changed current same-Book compiled transport')
 
 
 def _require_local_context_accounting_source(cursor, source, policy, execution_sha):

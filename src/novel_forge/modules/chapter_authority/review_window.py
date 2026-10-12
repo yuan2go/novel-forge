@@ -38,7 +38,7 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
     draft = target if stage == "review" else request.require_input("draft_chapter")
     review = request.require_input("review_report") if stage == "rereview" else None
     if review is not None:
-        incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
+        incumbent = next((item for item in request.inputs if item.input_type == "best_draft_candidate"), None)
         if incumbent is not None:
             from .candidate_selection import retained_candidate_evidence
             retained = retained_candidate_evidence(incumbent.asset_version_id, incumbent.content)

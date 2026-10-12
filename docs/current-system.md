@@ -53,6 +53,8 @@ New Quality receipts freeze `compiled-platform-policy-v2` with that same measure
 historical v1 receipts retain their original Unicode default when verifying old reports.
 Stopped isolated pure generation may register its native successor from a Saga's
 `FORWARD_RECOVERY` checkpoint, with the same ownership, proof, lease and cancellation checks.
+Working prose keeps its persisted Asset type and hash when used in the Draft input role;
+the host role projection does not relabel a Revision or author edit as a stored Draft.
 Known unresolved major contradictions prevent automatic affected continuation; saved
 candidates, partial repair and original failure evidence remain available. This path
 does not grant author selection, formal acceptance or literary quality proof.

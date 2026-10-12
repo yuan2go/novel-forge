@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 from novel_forge.modules.command_kernel.service import AdmissionContext
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.step_successor_v2 import replace_failed_step
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from novel_forge.modules.command_kernel.context_transport_recovery import CONTRACT, require_unsent_context_transport
 
 
-def recover_unsent_context_transport(authority, *, book_run_id, principal):
+def recover_unsent_context_transport(authority, *, book_run_id, principal, root_operation_id=None):
     book = authority.require(book_run_id)
     principal.require('book.authority.execute', book['project_id'])
     principal.require('chapter.authority.execute', book['project_id'])
+    if root_operation_id is not None:
+        return _recover_input_role_transport(authority, book, root_operation_id, principal)
     if not book.get('active_chapter_request_id'):
         return False
     request = authority.require_chapter_request(book['active_chapter_request_id'])
@@ -52,6 +55,44 @@ def recover_unsent_context_transport(authority, *, book_run_id, principal):
             authority.application_build_id,authority.commit_sha),policy_evidence=policy,expected_failure_code='PROVIDER_ROUTING_BLOCKED',
         window_successor={'contract_version':'kernel-unsent-transport-window.v1',
             'target_deployment_id':policy['target_deployment_id'],'release_sha':policy['release_sha']})
+    return True
+
+
+def _recover_input_role_transport(authority, book, root_id, principal):
+    from novel_forge.modules.command_kernel.step_successor import require_live_chapter_frontier
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        require_live_chapter_frontier(uow.cursor, root_id=root_id, project_id=book['project_id'], book_run_id=book['book_run_id'])
+        uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step step USING(operation_id)
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.actor_id=%s AND o.status='FAILED_FINAL'
+              AND o.definition_snapshot->>'commit_sha'<>%s
+              AND EXISTS(SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=o.operation_id
+                AND attempt.result->>'error_code'='CHAPTER_CAPABILITY_CONTEXT_INVALID')
+              AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor edge WHERE edge.predecessor_operation_id=o.operation_id)""",
+            [root_id, book['project_id'], principal.principal_id, authority.commit_sha])
+        sources = [row[0] for row in uow.cursor.fetchall()]
+        if not sources:
+            return False
+        uow.cursor.execute("SELECT command_payload#>>'{preparation_report,working_revision,source_asset_version_id}' FROM authority_operation WHERE operation_id=%s", [root_id])
+        source_id = uow.cursor.fetchone()[0]
+        uow.cursor.execute("""SELECT d.deployment_id FROM authority_capability_pack_activation a
+            JOIN authority_capability_pack_deployment d ON d.deployment_id=a.active_deployment_id
+            JOIN authority_capability_pack_compilation c USING(compilation_id)
+            WHERE a.project_id=%s AND a.workspace_id=%s AND a.book_id=%s
+              AND a.workflow_definition_ref='chapter_authority_slice@3.10.0'
+              AND c.release_sha=%s AND d.deployment_status='ACTIVE'""",
+            [book['project_id'], book['workspace_id'], book['book_id'], authority.commit_sha])
+        deployments = uow.cursor.fetchall()
+        if len(deployments) != 1:
+            raise KernelError('CHAPTER_UNSENT_TRANSPORT_TARGET_UNPROVEN', 'Resolve the current same-Book input transport before continuation')
+    for source in sources:
+        policy = {'contract_version': CONTRACT, 'transport_projection': 'selected-prose-input-role.v1',
+            'book_run_id': book['book_run_id'], 'source_asset_version_id': source_id,
+            'target_deployment_id': deployments[0][0], 'release_sha': authority.commit_sha,
+            'input_snapshot': source['input_asset_snapshot'], 'completion_checks': 'UNCHANGED'}
+        replace_failed_step(authority.database_url, predecessor_id=source['operation_id'], target_version=source['definition_version'],
+            context=AdmissionContext(principal.principal_id, principal.permissions,
+                authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
+            policy_evidence=policy, expected_failure_code='CHAPTER_CAPABILITY_CONTEXT_INVALID')
     return True
 
 def require_optional_memory_transport(cursor, source, policy, target_version):
