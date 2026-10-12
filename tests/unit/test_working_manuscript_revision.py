@@ -70,6 +70,109 @@ def test_selected_best_role_rereview_and_selection_use_this_round_review(monkeyp
     assert selected.content['candidate_comparison']['previous']['score'] == 60
 
 
+@pytest.mark.parametrize('stage', ['review', 'revision', 'rereview'])
+def test_revision_purpose_reaches_rendered_model_task(monkeypatch, stage):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority import review_window
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    purpose = {'contract_version': CONTRACT, 'source_asset_version_id': 'selected:v2', 'reason': '合并重复课堂观察，保留学习边界。'}
+    request = ChapterHandlerRequest('review', 'p', 'w', 'trace', 'root',
+        {'preparation_report': {'working_revision': purpose}},
+        (ChapterInputAsset('selected:v2', 'draft_version', 'hash', {'chapter': 3, 'text': '原生正文'}, input_role='draft_chapter'),
+         ChapterInputAsset('ctx', 'context_bundle', 'hash', {}),
+         ChapterInputAsset('revised', 'draft_version', 'hash', {'chapter': 3, 'text': '修订正文'}),
+         ChapterInputAsset('report', 'review_report', 'hash', {'issues': [], 'working_revision_request': purpose})))
+    monkeypatch.setattr(review_window, 'prepare_review_window', lambda *args: None)
+    *_, payload = review_window.prepare_native_review(request, stage='rereview' if stage == 'rereview' else 'review')
+    assert payload['working_revision_request']['reason'] == purpose['reason']
+    if stage == 'revision':
+        payload['review'] = {'issues': [], 'working_revision_request': payload['working_revision_request']}
+    task = build_provider_task_view(stage, payload)
+    assert task['working_revision_request']['reason'] == purpose['reason']
+    assert task['working_revision_request']['core_story_change_authorized'] is False
+
+
+@pytest.mark.parametrize('purpose', ['absent', 'stale', 'current'])
+def test_requested_structural_aesthetic_repair_uses_matching_scope_and_body_contract(purpose):
+    from novel_forge.modules.review.diagnostics import structural_repair_scope, validate_prose_repair_scope
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    source = {'chapter': 1, 'title': '门前', 'text': '他绕了两次院子。\n\n他又绕了一次院子。\n\n守门人拦住了他。'}
+    issue = {'code': 'repeat', 'status': 'OPEN', 'severity': 'minor', 'judgment_kind': 'AESTHETIC_SUGGESTION',
+        'evidence_locator': {'start': 0, 'end': 8, 'quote': source['text'][:8]},
+        'repair': {'root_cause': 'CHAPTER_STRUCTURE', 'problem_owner': 'PROSE', 'repair_scope': 'CHAPTER_REVISION',
+            'revision_goal': '合并重复观察并改善过渡', 'preserve': ['守门人阻拦'], 'resolution_criteria': ['动作不再重复']}}
+    review = {'issues': [issue], 'target_asset_version_id': 'draft', 'cross_chapter_window': {'source_window_hash': 'window'}}
+    if purpose != 'absent':
+        review['working_revision_request'] = {'contract_version': CONTRACT, 'aesthetic_revision_requested': True,
+            'source_asset_version_id': 'draft' if purpose == 'current' else 'older-draft'}
+    assert structural_repair_scope([issue], review=review) == ('CHAPTER_REVISION' if purpose == 'current' else 'LOCAL_PROSE')
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage='revision',
+        request_payload={'input': {'draft': source, 'review': review}}, prompt_contract_version='v15')
+    assert (ref == 'schema:chapter-provider-output:revision:v7') is (purpose == 'current')
+    revised = '他绕过院墙，脚步刚停，守门人便横臂拦住了他。'
+    if purpose == 'current':
+        assert set(schema['properties']) == {'text', 'resolved_issue_codes'}
+        validate_prose_repair_scope(source, [issue], revised, review=review)
+    else:
+        with pytest.raises(KernelError, match='REVISION_OUTSIDE_DIAGNOSIS_SCOPE'):
+            validate_prose_repair_scope(source, [issue], revised, review=review)
+    review['unresolved_issues'] = [issue]
+    review['issues'] = [{**issue, 'repair': {**issue['repair'], 'repair_scope': 'LOCAL_PROSE'}}]
+    _, updated_ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage='revision',
+        request_payload={'input': {'draft': source, 'review': review}}, prompt_contract_version='v15')
+    assert updated_ref != 'schema:chapter-provider-output:revision:v7'
+
+
+@pytest.mark.parametrize('edited', [False, True])
+@pytest.mark.parametrize('mapping', ['missing', 'crossed-slot'])
+def test_unmapped_prose_local_edits_retain_complete_body_without_inventing_slots(edited, mapping):
+    from novel_forge.modules.revision.domain import apply_revision_result
+    from novel_forge.modules.review.diagnostics import prose_hash
+    source = {'chapter': 1, 'title': '合成测试', 'text': '她握住药碗。窗外灯火还亮着。', 'realization_mapping_status': 'NOT_MAPPED', 'scene_artifacts': []}
+    if mapping == 'crossed-slot':
+        source.update(realization_contract={'contract_version': 'scene-realization-composition.v3'},
+            scene_artifacts=[{'text': source['text'][:4]}, {'text': source['text'][4:]}], scene_separators=[''])
+    review = {'diagnostic_contract_version': 'actionable-diagnostics.v1', 'target_asset_version_id': 'draft',
+        'context_bundle_version_id': 'ctx', 'target_text_hash': prose_hash(source['text']),
+        'cross_chapter_window': {'source_window_hash': 'window', 'preservation_requirements': []},
+        'issues': [{'code': 'WORD', 'status': 'OPEN', 'severity': 'minor', 'evidence_locator': {'start': 3, 'end': 5, 'quote': '药碗'}}] if edited else []}
+    result = {'edits': [{'start': 3, 'end': 5, 'quote': '药碗', 'replacement': '瓷碗', 'issue_codes': ['WORD']}] if edited else [],
+        'resolved_issue_codes': ['WORD'] if edited else []}
+    value = apply_revision_result(project_id='p', draft=source, review=review, draft_asset_version_id='draft',
+        review_asset_version_id='review', context_bundle_version_id='ctx', result=result, provider_evidence={})
+    assert value['text'] == (source['text'].replace('药碗', '瓷碗') if edited else source['text'])
+    assert value['realization_mapping_status'] == 'NOT_MAPPED'
+    assert value['scene_artifacts'] == []
+    assert value['text'].endswith('窗外灯火还亮着。')
+    if edited:
+        result['edits'][0]['quote'] = '假造引用'
+        with pytest.raises(KernelError, match='REVIEW_EVIDENCE_INVALID'):
+            apply_revision_result(project_id='p', draft=source, review=review, draft_asset_version_id='draft',
+                review_asset_version_id='review', context_bundle_version_id='ctx', result=result, provider_evidence={})
+
+
+def test_quality_edit_crossing_slot_retains_body_and_previous_mapping_only():
+    from novel_forge.modules.revision.domain import apply_quality_revision_result
+    from novel_forge.modules.review.diagnostics import prose_hash
+    text = '她握住药碗。窗外灯火还亮着。'
+    source = {'chapter': 1, 'title': '药碗', 'text': text, 'composition_digest': 'old-mapping',
+        'realization_contract': {'contract_version': 'scene-realization-composition.v3'},
+        'scene_artifacts': [{'text': text[:4]}, {'text': text[4:]}], 'scene_separators': ['']}
+    task = {'project_id': 'p', 'observation': 'voice', 'issue': {'code': 'WORD'}, 'status': 'OPEN',
+        'target_revision_asset_version_id': 'draft', 'bounded_edit_scope': {
+            'contract_version': 'quality-located-edit-scope.v1', 'status': 'LOCATED', 'target_asset_version_id': 'draft',
+            'text_hash': prose_hash(text), 'permitted_ranges': [{'start': 3, 'end': 5, 'quote': '药碗'}]}}
+    revised = apply_quality_revision_result(project_id='p', revision=source, revision_asset_version_id='draft',
+        quality={'project_id': 'p', 'required_actions': [task]}, quality_asset_version_id='quality', revision_tasks=(task,),
+        revision_task_asset_version_ids=('task',), context_bundle_version_id='ctx', provider_evidence={},
+        result={'edits': [{'start': 3, 'end': 5, 'quote': '药碗', 'replacement': '瓷碗', 'issue_codes': ['WORD:task:1:range:1']}]})
+    assert revised['text'] == text.replace('药碗', '瓷碗')
+    assert revised['realization_mapping_status'] == 'NOT_MAPPED' and revised['scene_artifacts'] == []
+    assert revised['previous_composition_digest'] == 'old-mapping'
+    assert not any(key in revised for key in ('realization_contract', 'composition_digest', 'scene_separators'))
+    assert source['composition_digest'] == 'old-mapping'
+
+
 def frontier(monkeypatch, *, cancelled=False, state="READY", workspace="workspace", selected="draft"):
     from novel_forge.modules.book_authority import manuscript
     book = {"book_run_id": "run", "project_id": "project", "workspace_id": workspace,

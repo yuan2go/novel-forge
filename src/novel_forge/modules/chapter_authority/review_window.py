@@ -49,6 +49,11 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
     payload = {**({"cross_chapter_window": window, "target_candidate_asset_version_id": target.asset_version_id} if window is not None else {}),
         "draft": target.content, "knowledge_review_targets": targets,
         "author_design_review_targets": draft.content.get("author_design_guidance") or {}}
+    working = (request.command.get("preparation_report") or {}).get("working_revision")
+    if working:
+        payload["working_revision_request"] = {"contract_version": working["contract_version"],
+            "source_asset_version_id": draft.asset_version_id, "reason": working["reason"],
+            "aesthetic_revision_requested": True, "core_story_change_authorized": False}
     if review is not None:
         payload.update(original_draft=draft.content, original_draft_asset_version_id=draft.asset_version_id,
                        target_candidate_asset_version_id=target.asset_version_id, review=review.content, revision=target.content)

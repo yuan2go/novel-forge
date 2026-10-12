@@ -722,6 +722,7 @@ def build_provider_task_view(
 
         return _task(
             stage,
+            **({"working_revision_request": deepcopy(inputs["working_revision_request"])} if inputs.get("working_revision_request") else {}),
             **craft_provider_task(inputs.get("draft") or {}),
             **_cross_chapter_task(inputs),
             chapter=_prose(inputs.get("draft")),
@@ -750,6 +751,7 @@ def build_provider_task_view(
     if stage == "revision":
         source = dict(inputs.get("draft") or {})
         payload: dict[str, Any] = {
+            **({"working_revision_request": deepcopy(inputs["review"]["working_revision_request"])} if (inputs.get("review") or {}).get("working_revision_request") else {}),
             **({"chapter_length_repair_scope": {**deepcopy(inputs["chapter_length_repair_scope"]), "planning_target_han_characters":(inputs["chapter_length_repair_scope"]["minimum"]+inputs["chapter_length_repair_scope"]["maximum"])//2, "objective":"Aim within the range with margin rather than estimating a boundary. Correct measured length across the frozen scenes to the original bounds through consequential actions, interaction and sensory feedback. Preserve facts, voice and scene coverage. No padding, repetition, new plot or fabricated resolution."}} if inputs.get("chapter_length_repair_scope") else {}),
             **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
             "chapter": _prose(source),
@@ -943,6 +945,7 @@ def build_provider_task_view(
         ]
         return _task(
             stage,
+            **({"working_revision_request": deepcopy(inputs["working_revision_request"])} if inputs.get("working_revision_request") else {}),
             **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),

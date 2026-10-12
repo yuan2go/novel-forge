@@ -10,6 +10,49 @@ from novel_forge.modules.chapter_authority.provider_views import compile_exact_c
 from novel_forge.modules.chapter_authority.author_editor import author_input_provenance
 
 
+@pytest.mark.parametrize('fault', [None, 'changed-input', 'foreign-book', 'unverified'])
+def test_retry_reuses_exact_verified_result_without_new_dispatch_or_settlement(monkeypatch, fault):
+    from contextlib import nullcontext
+    from novel_forge.modules.chapter_authority import receipt_recovery, model_effects
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+    payload = {'draft': {'text': '完整真实输入'}}
+    cursor = Mock()
+    original = {'input': {'changed': True} if fault == 'changed-input' else payload,
+        '_production_execution': {'book_id': 'other' if fault == 'foreign-book' else 'book'}}
+    cursor.fetchone.side_effect = [('effect', 'request-hash', original, 'actor', 'trace', 'correlation'), None]
+    uow = SimpleNamespace(cursor=cursor, repositories=SimpleNamespace(external_effects=Mock()))
+    monkeypatch.setattr(receipt_recovery, 'AuthorityUnitOfWork', lambda *args: nullcontext(uow))
+    evidence = {'result': {'edits': [], 'resolved_issue_codes': []}, 'provider_id': 'fixture', 'model_id': 'fixture',
+        'prompt_version': 'fixture', 'skill_version': 'fixture', 'real_model_call': False,
+        'usage': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN'},
+        'cost': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN', 'currency': 'UNKNOWN'}}
+    verified = Mock(return_value=None if fault == 'unverified' else {'provider_evidence': evidence, 'budget_reservation_status': 'HELD_UNKNOWN'})
+    monkeypatch.setattr(receipt_recovery, '_read_verified_success', verified)
+    request = ChapterHandlerRequest('op', 'p', 'w', 'trace', 'root', {'book_id': 'book'}, (),
+        attempt_id='new-attempt', database_url='fixture-only')
+    if fault in {'foreign-book', 'unverified'}:
+        with pytest.raises(KernelError, match='KNOWN_RECEIPT_'):
+            receipt_recovery.consume_completed_generation_result(request, stage='revision', payload=payload)
+        return
+    if fault == 'changed-input':
+        assert receipt_recovery.consume_completed_generation_result(request, stage='revision', payload=payload) is None
+        verified.assert_not_called()
+        return
+    adapter = SimpleNamespace(cost_accounting_basis='ACCOUNT_ENTITLEMENT', account_authorization_ref='fixture-grant', invoke=Mock())
+    port = model_effects.ExternalEffectChapterModelPort('fixture-only', adapter=adapter, worker_id='worker')
+    result = port.invoke(request, stage='revision', payload=payload)
+    adapter.invoke.assert_not_called()
+    assert result.output == evidence['result']
+    assert result.to_evidence()['cost'] == evidence['cost']
+    assert result.to_evidence()['usage'] == evidence['usage']
+    assert result.execution_evidence['completed_attempt_reuse']['accounting_status'] == 'HELD_UNKNOWN'
+    from novel_forge.modules.chapter_authority.handlers import _model_output
+    from novel_forge.modules.chapter_authority.contracts import ChapterNode
+    output = _model_output(ChapterNode.REVISION, {'text': '原文'}, request=request, generated=result)
+    assert output.content['retained_generation_revalidation']['provider_invoked'] is False
+    assert all(a.asset_type != 'execution_commit_manifest' for a in output.auxiliary_outputs)
+
+
 def test_multi_model_node_keeps_completed_compression_and_isolates_only_interrupted_fidelity():
     complete = {'external_effect_id': 'compress', 'effect_type': 'model.invoke', 'status': 'SUCCEEDED'}
     interrupted = {'external_effect_id': 'fidelity', 'effect_type': 'model.invoke', 'status': 'UNKNOWN'}
@@ -18,6 +61,21 @@ def test_multi_model_node_keeps_completed_compression_and_isolates_only_interrup
         partition_generation_effects([interrupted, {'effect_type': 'payment', 'status': 'UNKNOWN'}])
     with pytest.raises(KernelError, match='GENERATION_ISOLATION_RESULT_RECOVERABLE'):
         partition_generation_effects([complete])
+
+
+def test_completed_sibling_cannot_create_new_attempt_commit_manifest():
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterNode
+    from novel_forge.modules.chapter_authority.handlers import _model_output
+    from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
+    proof = {'source_effect_id': 'old-effect', 'provider_invoked': False}
+    generated = ModelProviderResult({'text': '完整正文'}, 'fixture', 'fixture', 'fixture', 'fixture', 0, 0, '0', 'UNKNOWN', False,
+        execution_evidence={'completed_sibling_reuse': proof, 'validation_manifest_ref': 'original-validation'})
+    request = ChapterHandlerRequest('new-op', 'p', 'w', 'trace', 'root', {}, (), attempt_id='new-attempt', fencing_token=2)
+    output = _model_output(ChapterNode.REVISION, {'text': '完整正文'}, request=request, generated=generated)
+    assert output.content['retained_generation_revalidation'] == proof
+    assert not any(item.asset_type == 'execution_commit_manifest' for item in output.auxiliary_outputs)
+    from novel_forge.modules.chapter_authority.handlers import _execution_commit_auxiliary
+    assert _execution_commit_auxiliary(ChapterNode.REVISION, request, generated) is None
 
 
 def test_isolation_replay_ignores_only_cas_observation_and_keeps_all_semantic_fields():

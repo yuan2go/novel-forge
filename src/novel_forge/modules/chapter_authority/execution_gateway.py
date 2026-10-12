@@ -1238,10 +1238,10 @@ class PostgresChapterExecutionContractBinder:
         prompt_contract_version: str = "v3",
     ) -> tuple[dict[str, Any], str]:
         inputs = request_payload.get("input") or {}
-        from novel_forge.modules.review.diagnostics import structural_repair_scope
+        from novel_forge.modules.review.diagnostics import structural_repair_scope, prose_repair_diagnoses
         structural_revision = stage == "revision" and (bool(inputs.get("chapter_length_repair_scope")) or structural_repair_scope(
-            [*(inputs.get("review") or {}).get("issues", []),
-             *(inputs.get("review") or {}).get("unresolved_issues", [])]) == "CHAPTER_REVISION")
+            prose_repair_diagnoses(dict(inputs["review"]), work_requirements="creative_baseline" in (inputs.get("draft") or {})) if inputs.get("review") else [],
+            review=inputs.get("review")) == "CHAPTER_REVISION")
         causal_batch = bool(
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )

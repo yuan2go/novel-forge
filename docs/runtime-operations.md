@@ -999,6 +999,12 @@ isolation; ordinary failed steps without that proof retain their existing state 
 Reviewing a selected Revision uses its real Asset type and hash with a separate host
 Draft input role. A corrected unsent role-binding failure can resume the same Root through
 StepSuccessor after a changed release, unchanged source and zero effects, reservations or outputs.
+Inspect the rendered task's `working_revision_request`, not just the stored Review report,
+to verify that the requested literary problem reached the model. Exact local edits of a
+body without Scene mapping remain valid prose candidates with mapping `NOT_MAPPED`.
+After local validation is corrected, continuation first reuses a verified completed call
+with exactly matching stage and inputs. An unchanged result does not claim improvement or
+resolution of the requested problem, and reuse creates no new Provider dispatch or fee.
 An out-of-range chapter triggers whole-chapter repair against its original frozen length bounds,
 even when optional Review finds no issue. A frozen profile with omitted length unit uses
 the same `HAN_CHARACTERS_V1` count as manuscript readback, retaining its exact version,

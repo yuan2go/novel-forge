@@ -362,9 +362,33 @@ def known_receipt_source_span_contract(request):
     return result[1].get("source_span_contract") if result else None
 
 
-def consume_completed_generation_sibling(request, *, stage, payload):
+def consume_completed_generation_result(request, *, stage, payload):
     from dataclasses import replace
+    from psycopg.types.json import Jsonb
     with AuthorityUnitOfWork(request.database_url) as u:
+        u.cursor.execute("""SELECT e.external_effect_id,e.request_hash,e.request_payload,o.actor_id,o.trace_id,o.correlation_id
+            FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
+            JOIN authority_attempt a ON a.attempt_id=e.request_payload#>>'{_production_execution,attempt_id}'
+            WHERE e.operation_id=%s AND e.project_id=%s AND o.workspace_id=%s AND e.status='SUCCEEDED' AND e.effect_type='model.invoke'
+              AND e.request_payload->>'stage'=%s AND e.request_payload->'input'=%s AND a.status IN ('FAILED_RETRYABLE','FAILED_FINAL')
+              AND a.attempt_id<>%s ORDER BY a.attempt_number DESC,e.created_at DESC LIMIT 1""",
+            [request.operation_id, request.project_id, request.workspace_id, stage, Jsonb(payload), request.attempt_id])
+        own = u.cursor.fetchone()
+        if own and own[2].get('input') == payload:
+            expected_book = request.command.get('book_id')
+            original_book = (own[2].get('_production_execution') or {}).get('book_id')
+            if expected_book and original_book != expected_book:
+                raise KernelError('KNOWN_RECEIPT_INPUT_DRIFT', 'The retained invocation belongs to another Book')
+            verified = _read_verified_success(u, u.repositories.external_effects,
+                EffectCommandContext(request.operation_id, request.project_id, own[3], own[4], own[5]), own[0],
+                retained_generation_stage=True)
+            if verified is None:
+                raise KernelError('KNOWN_RECEIPT_SOURCE_INVALID', 'Reuse requires the original verified complete model result')
+            result = ModelProviderResult.from_evidence(verified['provider_evidence'])
+            return replace(result, execution_evidence={**(result.execution_evidence or {}),
+                'completed_attempt_reuse': {'contract_version': 'chapter-completed-attempt-reuse.v1',
+                    'source_operation_id': request.operation_id, 'source_effect_id': own[0], 'source_request_hash': own[1],
+                    'stage': stage, 'provider_invoked': False, 'accounting_status': verified['budget_reservation_status']}})
         u.cursor.execute("""SELECT journal.policy_evidence,journal.source_failure_snapshot,
             current.command_payload,current.input_asset_snapshot,current.actor_id,current.definition_version
             FROM authority_saga_step_successor journal JOIN authority_operation current
@@ -401,11 +425,12 @@ def consume_completed_generation_sibling(request, *, stage, payload):
             source["trace_id"], source["correlation_id"])
         verified = _read_verified_success(u, u.repositories.external_effects, context,
             proof["external_effect_id"], retained_generation_stage=True)
-        if verified is None or verified["budget_reservation_status"] != "SETTLED":
+        if verified is None:
             raise KernelError("KNOWN_RECEIPT_SOURCE_INVALID", "A verified retained model result is required")
         result = ModelProviderResult.from_evidence(verified["provider_evidence"])
         return replace(result, execution_evidence={**(result.execution_evidence or {}),
             "completed_sibling_reuse": {"contract_version": "chapter-completed-sibling-reuse.v1",
                 "source_operation_id": source["operation_id"], "source_effect_id": proof["external_effect_id"],
                 "source_request_hash": proof["request_hash"], "successor_operation_id": request.operation_id,
-                "stage": stage, "provider_invoked": False, "original_submission_right": "REVOKED"}})
+                "stage": stage, "provider_invoked": False, "accounting_status": verified['budget_reservation_status'],
+                "original_submission_right": "REVOKED"}})

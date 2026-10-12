@@ -76,20 +76,24 @@ def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = 
     diagnoses = open_diagnoses(review)
     if not work_requirements:
         return diagnoses
-    requested = review.get("working_revision_request") or {}
-    aesthetic_requested = (requested.get("contract_version") == "chapter-working-revision.v1"
-        and requested.get("aesthetic_revision_requested") is True
-        and requested.get("source_asset_version_id") == review.get("target_asset_version_id"))
+    aesthetic_requested = _aesthetic_revision_requested(review)
     return [item for item in diagnoses if (item.get("judgment_kind") in {
         "SEMANTIC_CONFLICT", "HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM"
     } or aesthetic_requested and item.get("judgment_kind") == "AESTHETIC_SUGGESTION")
         and item.get("status", "OPEN") == "OPEN"]
 
 
-def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None) -> None:
+def _aesthetic_revision_requested(review):
+    requested = review.get("working_revision_request") or {}
+    return (requested.get("contract_version") == "chapter-working-revision.v1"
+        and requested.get("aesthetic_revision_requested") is True
+        and requested.get("source_asset_version_id") == review.get("target_asset_version_id"))
+
+
+def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None, review: dict[str, Any] | None = None) -> None:
     from difflib import SequenceMatcher
     original = str(source.get("text") or "")
-    if structural_repair_scope(diagnoses) == "CHAPTER_REVISION":
+    if structural_repair_scope(diagnoses, review=review) == "CHAPTER_REVISION":
         for issue in diagnoses:
             validate_location(dict(issue.get("evidence_locator") or {}), original)
         return
@@ -187,7 +191,7 @@ def validate_diagnosis(issue: dict[str, Any], text: str) -> dict[str, Any]:
             "revision_strategy": issue["revision_goal"]}
 
 
-def structural_repair_scope(diagnoses):
+def structural_repair_scope(diagnoses, *, review=None):
     from .repair_scope import validate_repair
     scopes = []
     for issue in diagnoses:
@@ -196,7 +200,8 @@ def structural_repair_scope(diagnoses):
             continue
         validate_repair(repair)
         if (repair["problem_owner"] == "PROSE" and issue.get("status", "OPEN") == "OPEN"
-                and issue.get("judgment_kind") not in {"UNCERTAIN", "AESTHETIC_SUGGESTION"}):
+                and issue.get("judgment_kind") != "UNCERTAIN"
+                and (issue.get("judgment_kind") != "AESTHETIC_SUGGESTION" or _aesthetic_revision_requested(review or {}))):
             scopes.append(repair["repair_scope"])
     return "CHAPTER_REVISION" if "CHAPTER_REVISION" in scopes else "SCENE_REVISION" if "SCENE_REVISION" in scopes else "LOCAL_PROSE"
 

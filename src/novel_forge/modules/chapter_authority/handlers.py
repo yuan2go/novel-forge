@@ -3158,14 +3158,17 @@ def _model_output(
         known = known_receipt_proof(request)
     if known is not None:
         content = {**content, "known_receipt_revalidation": known}
+    reused = (generated.execution_evidence or {}).get('completed_attempt_reuse') or (generated.execution_evidence or {}).get('completed_sibling_reuse')
+    if reused:
+        content = {**content, 'retained_generation_revalidation': reused}
     primary = _output(node, content)
-    commit = None if known else _execution_commit_auxiliary(node, request, generated)
+    commit = None if known or reused else _execution_commit_auxiliary(node, request, generated)
     if commit is not None:
         primary = replace(primary, auxiliary_outputs=(commit,))
     if request.effective_definition_version == "3.10.0" and node in {ChapterNode.REVISION, ChapterNode.REREVIEW}:
         primary = _revision_decision_output(node, primary, {
             "contract_version": "revision-execution-decision.v1",
-            "decision": "PROVIDER_REVISION" if node is ChapterNode.REVISION else "PROVIDER_REREVIEW",
+            "decision": "RETAINED_RESULT_DERIVATION" if reused else "PROVIDER_REVISION" if node is ChapterNode.REVISION else "PROVIDER_REREVIEW",
             "operation_id": request.operation_id,
             "provider_evidence": _provider_evidence(generated),
         })
@@ -3186,6 +3189,8 @@ def _execution_commit_auxiliary(
 ) -> ChapterAuxiliaryOutput | None:
     execution = generated.execution_evidence
     if not execution:
+        return None
+    if execution.get('completed_attempt_reuse') or execution.get('completed_sibling_reuse'):
         return None
     validation_ref = str(execution.get("validation_manifest_ref") or "")
     if not validation_ref:

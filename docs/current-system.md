@@ -55,6 +55,12 @@ Stopped isolated pure generation may register its native successor from a Saga's
 `FORWARD_RECOVERY` checkpoint, with the same ownership, proof, lease and cancellation checks.
 Working prose keeps its persisted Asset type and hash when used in the Draft input role;
 the host role projection does not relabel a Revision or author edit as a stored Draft.
+The frozen revision purpose reaches the Review, Revision and ReReview task views.
+Requested aesthetic repair of that exact selected source may use its diagnosed structural
+scope; unsolicited advice and stale requests do not authorize whole-chapter changes.
+Located edits of unmapped prose derive the body from the exact source, retain `NOT_MAPPED`
+and do not invent Scene coverage. A retry may reuse its verified completed result for the
+same stage and inputs without another model call; accounting observations retain their state.
 Known unresolved major contradictions prevent automatic affected continuation; saved
 candidates, partial repair and original failure evidence remain available. This path
 does not grant author selection, formal acceptance or literary quality proof.

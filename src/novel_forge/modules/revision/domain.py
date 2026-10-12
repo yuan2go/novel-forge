@@ -13,9 +13,16 @@ def _materialize_targeted_result(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     from novel_forge.modules.review.cross_chapter import apply_targeted_edits
     targeted = apply_targeted_edits(draft=source, review=review, result=result, range_policy=range_policy)
-    if "scene_artifacts" not in result:
-        slots = derive_targeted_revision_slots(source, targeted["targeted_edits"])
-        result = {**result, "scene_artifacts": slots}
+    slots, mapped = [], False
+    if source.get("realization_contract") and source.get("scene_artifacts"):
+        try:
+            slots = derive_targeted_revision_slots(source, targeted["targeted_edits"])
+            mapped = True
+        except KernelError as error:
+            if error.code not in {"REVISION_TARGETED_SLOT_REQUIRED", "REVISION_TARGETED_SLOT_BOUNDARY"}:
+                raise
+    result = {**result, "text": targeted["repaired_text"], "scene_artifacts": slots,
+        **({"realization_mapping_status": "NOT_MAPPED"} if not mapped else {})}
     text = prose_from_output(result, separators=source.get("scene_separators"))
     if text != targeted["repaired_text"]:
         raise KernelError("REVISION_TARGETED_EDIT_INVALID", "derived Slot prose differs from bounded edits")
@@ -66,7 +73,7 @@ def apply_revision_result(
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
     targeted = {}
     from novel_forge.modules.review.diagnostics import structural_repair_scope
-    structural = length_scope is not None or structural_repair_scope(repair_diagnoses) == "CHAPTER_REVISION"
+    structural = length_scope is not None or structural_repair_scope(repair_diagnoses, review=review) == "CHAPTER_REVISION"
     if not structural and (review.get("cross_chapter_window") or review.get("craft_targets")):
         result, targeted = _materialize_targeted_result(draft, review, result)
     text = prose_from_output(result, separators=draft.get("scene_separators"))
@@ -75,7 +82,7 @@ def apply_revision_result(
             context_asset_version_id=context_bundle_version_id)
     if "creative_baseline" in draft:
         from novel_forge.modules.review.diagnostics import validate_prose_repair_scope
-        validate_prose_repair_scope(draft, repair_diagnoses, text, length_scope=length_scope)
+        validate_prose_repair_scope(draft, repair_diagnoses, text, length_scope=length_scope, review=review)
     if review.get("craft_targets"):
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
@@ -104,7 +111,7 @@ def apply_revision_result(
     return {
         **({"realization_mapping_status": "NOT_MAPPED", "scene_artifacts": [],
             "previous_composition_digest": draft.get("composition_digest")}
-           if structural else reconcile_revision_composition(draft, result)),
+           if structural or draft.get("realization_mapping_status") == "NOT_MAPPED" or result.get("realization_mapping_status") == "NOT_MAPPED" else reconcile_revision_composition(draft, result)),
         **targeted,
         "project_id": project_id,
         "chapter": draft["chapter"],
@@ -225,9 +232,14 @@ def apply_quality_revision_result(
             "bounded Quality correction cannot replace a complete chapter with a "
             "truncated summary or excerpt",
         )
+    unmapped = revision.get("realization_mapping_status") == "NOT_MAPPED" or result.get("realization_mapping_status") == "NOT_MAPPED"
+    retained = {key: value for key, value in revision.items() if not unmapped or key not in {
+        "realization_contract", "composition_digest", "scene_separators", "scene_artifacts"}}
     return {
-        **revision,
-        **reconcile_revision_composition(revision, result),
+        **retained,
+        **({"realization_mapping_status": "NOT_MAPPED", "scene_artifacts": [],
+            "previous_composition_digest": revision.get("composition_digest") or revision.get("previous_composition_digest")}
+           if unmapped else reconcile_revision_composition(revision, result)),
         **targeted,
         **({"quality_edit_contract": scope} if scope is not None else {}),
         "text": text,
