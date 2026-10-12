@@ -36,6 +36,8 @@ class CandidateEvidence:
     cross_chapter_review: bool = False
     preservation_checks: tuple[dict[str, Any], ...] = ()
     quality_resolution_checks: tuple[dict[str, Any], ...] = ()
+    resolved_issue_codes: tuple[str, ...] = ()
+    remaining_issue_codes: tuple[str, ...] = ()
 
 
 def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
@@ -63,6 +65,18 @@ def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> C
     bind_selected_review(candidate=content, candidate_id=str(selected_id), review=review, review_id=str(review_id))
     return CandidateEvidence(str(selected_id), content, score, tuple(blockers), str(review_id),
                              workspace_asset_version_id=workspace_id)
+
+
+def _supported_resolution(check, text):
+    if (check.get('status') != 'SATISFIED' or check.get('preservation') != 'PRESERVED'
+        or not str(check.get('reason') or '').strip() or not isinstance(check.get('evidence'), dict)):
+        return False
+    from novel_forge.modules.review.diagnostics import validate_location
+    try:
+        validate_location(check['evidence'], text)
+    except KernelError:
+        return False
+    return True
 
 
 def compare_candidates(
@@ -115,7 +129,12 @@ def compare_candidates(
             "minimum": length_repair_scope["minimum"], "maximum": length_repair_scope["maximum"],
             "evidence_class": "HOST_MEASURED_REQUIREMENT_CORRECTION"}
     diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
-    supported_improvement = any(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
+    supported_improvement = any(
+        check.get("code") in challenger.resolved_issue_codes
+        and check.get("code") not in challenger.remaining_issue_codes
+        and _supported_resolution(check, str(challenger.content.get("text") or ""))
+        for check in challenger.resolution_checks
+    )
     from novel_forge.modules.review.diagnostics import prose_hash
 
     quality_supported = (bool(challenger.quality_resolution_checks)
@@ -167,6 +186,10 @@ def compare_candidates(
             if not challenger.blocker_codes
             else CandidateStopReason.CONTINUE_CORRECTION
         )
+    elif supported_improvement:
+        selected = challenger
+        improved = True
+        reason = CandidateStopReason.COMPARISON_SUPPORTED if not challenger.blocker_codes else CandidateStopReason.CONTINUE_CORRECTION
     elif net_improvement + 1e-9 < minimum_net_improvement:
         selected = previous
         reason = CandidateStopReason.MARGINAL_IMPROVEMENT
@@ -176,8 +199,6 @@ def compare_candidates(
         improved = True
         if not challenger.blocker_codes:
             reason = CandidateStopReason.COMPARISON_SUPPORTED
-        elif correction_generation >= maximum_correction_generations:
-            reason = CandidateStopReason.MAX_CORRECTION_BUDGET
         else:
             reason = CandidateStopReason.CONTINUE_CORRECTION
     identity = "|".join(
@@ -305,6 +326,8 @@ def _evidence(value: CandidateEvidence) -> dict[str, Any]:
         "score": value.score,
         "blocker_codes": list(value.blocker_codes),
         "review_asset_version_id": value.review_asset_version_id,
+        "resolved_issue_codes": list(value.resolved_issue_codes),
+        "remaining_issue_codes": list(value.remaining_issue_codes),
         **(
             {
                 "creative_baseline_digest": value.content["creative_baseline"][

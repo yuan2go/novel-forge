@@ -1890,6 +1890,8 @@ class _BestCandidateHandler:
                 cross_chapter_review=bool(rereview.content.get("cross_chapter_window")),
                 preservation_checks=tuple(rereview.content.get("preservation_checks") or []),
                 quality_resolution_checks=tuple(rereview.content.get("quality_resolution_checks") or []),
+                resolved_issue_codes=tuple(rereview.content.get("resolved_issue_codes") or []),
+                remaining_issue_codes=tuple(rereview.content.get("remaining_issue_codes") or []),
             ),
             minimum_net_improvement=threshold,
             length_repair_scope=revision.content.get("chapter_length_repair_scope"),

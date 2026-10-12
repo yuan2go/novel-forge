@@ -95,16 +95,20 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         if args.action in {"pause", "resume"}:
             return getattr(authority, args.action)(args.book_run_id, reason=args.reason or "Author " + args.action, principal=principal)
         if args.action == "continue":
+            from novel_forge.modules.book_authority.manuscript import author_first
             from novel_forge.storage.authority_uow import AuthorityUnitOfWork
             with AuthorityUnitOfWork(settings.database_url) as uow:
                 uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND formation_run_id || ':production'=%s", [args.project_id, book["book_id"], book["stable_idempotency_key"]])
                 original = uow.cursor.fetchone()
+            if author_first(book):
+                return _continue_native_work(settings, args, book=book, principal=principal,
+                    formation_run_id=original[0] if original else '')
             if original is None:
                 return _continue_native_work(settings, args, book=book, principal=principal)
             from novel_forge.cli.authority import _authority_parser
             from novel_forge.cli.creation import run_creation_command
             request = _authority_parser().parse_args(["authority-creation", "continue", "--project-id", args.project_id,
-                "--formation-run-id", original[0], "--repository-root", str(Path(__file__).resolve().parents[3])])
+                "--formation-run-id", original[0], "--repository-root", str(settings.root)])
             return run_creation_command(settings, request)
         return adopt_author_workflow(authority, args.book_run_id, principal=principal, expected_version=None, settings=settings,
             idempotency_key="author-workflow:" + canonical_hash({"book": args.book_run_id, "profile": book["production_profile_version"]}))
@@ -188,13 +192,13 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
     return application.execute(action=action, payload=body, idempotency_key=key, principal=principal)
 
 
-def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], principal: Any) -> dict[str, Any]:
+def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], principal: Any, formation_run_id: str = '') -> dict[str, Any]:
     from time import monotonic
     from novel_forge.api.authority_dependencies import (
         build_book_production_composition, build_chapter_authority_application,
         build_production_execution_composition, build_trusted_principal_resolver,
     )
-    from novel_forge.modules.book_authority.creation_runtime import drive_book
+    from novel_forge.modules.book_authority.creation_runtime import drive_book, creation_cancellation
     from novel_forge.modules.book_authority.manuscript import author_first, require_manuscript, writing_frontier
     principal.require("book.authority.execute", book["project_id"])
     if not author_first(book):
@@ -210,6 +214,11 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
             "manuscript": require_manuscript(settings.database_url, project_id=current["project_id"],
                 book_run_id=run, principal=principal)}
 
+    def continuation_live():
+        return not formation_run_id or not creation_cancellation(settings.database_url, formation_run_id)
+
+    if not continuation_live():
+        return report('SOURCE_CANCELLED', book)
     if writing_frontier(book) >= target:
         return report("MANUSCRIPT_READY", book)
     if book["state"] in {"ABORTED", "CANCELLED", "COMPLETED"}:
@@ -232,7 +241,7 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
             from novel_forge.modules.command_kernel.errors import KernelError
             try:
                 outcome = drive_book(composition=composition, chapter=chapter, book_run_id=run, worker=worker,
-                    maximum_ticks=1, deadline=monotonic() + 1800)
+                    maximum_ticks=1, deadline=monotonic() + 1800, continuation_live=continuation_live)
             except KernelError as exc:
                 result = report("NATIVE_CONTINUATION_BLOCKED", composition.authority.require(run))
                 result["failure"] = {"code": exc.code, "message": str(exc)}

@@ -2576,6 +2576,9 @@ It creates no production Chapter Request and never changes UNKNOWN or fees. Veri
 forward migration on a restore and run `test_working_revision_isolation_guard_postgres.py`
 before deployment. Review, Revision and ReReview project original requirements, plan,
 characters and exact prose sources while excluding duplicate Memo/ExecutionIntent directives.
+Native manuscript continuation uses the configured repository root for an original Formation Book.
+Its chapter checkpoint is a round boundary inside the original delivery window; it
+does not rerun Foundation or change the target.
 Whole-chapter revision transports one body plus the frozen source window; slot copies
 are retained host evidence. A new independent Review cannot erase an older OPEN major
 contradiction by omission. Exact ReReview disposition may resolve it; frozen continuation

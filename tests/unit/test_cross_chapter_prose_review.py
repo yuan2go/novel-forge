@@ -371,8 +371,10 @@ def test_high_score_cannot_replace_unresolved_or_regressed_candidate():
         ("issue",),
         "rereview",
         "actionable-diagnostics.v1",
-        ({"status": "SATISFIED", "preservation": "PRESERVED"},),
+        ({"code": "issue", "status": "SATISFIED", "preservation": "PRESERVED", "evidence": {"quote": "revised prose"},
+          "reason": "The diagnosed problem is repaired in the cited passage."},),
         cross_chapter_review=True,
+        resolved_issue_codes=("issue",),
         preservation_checks=tuple(
             {"status": "PRESERVED"} for _ in PRESERVATION_DIMENSIONS
         ),

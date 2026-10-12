@@ -305,6 +305,32 @@ def test_inexact_passages_keep_original_data_without_reconstructed_claims(fault)
     assert proof['text_fragment_group_count']==0
 
 
+def test_working_context_fits_real_transport_without_dropping_prose_or_calling_compressor():
+    import hashlib
+    import json
+    from novel_forge.modules.context_contracts import ContextCandidate
+    from novel_forge.modules.context_builder.task_compression import compile_task_context
+    paragraphs, offset = [], 0
+    for index in range(80):
+        text = str(index) + '徐照把盘子放稳。' * 5 + '\n\n'
+        paragraphs.append({'start':offset,'end':offset+len(text),'text':text,'text_hash':'sha256:'+hashlib.sha256(text.encode()).hexdigest()})
+        offset += len(text)
+    intent = {'working_manuscript':{'projection_policy':{'version':'working-prose-projection.v3'},
+        'sources':[{'asset_version_id':'selected:v4','passages':paragraphs}]}}
+    serialized = json.dumps(intent,ensure_ascii=False,sort_keys=True,separators=(',',':'))
+    assert len(serialized.encode()) > 15000
+    boundary = {'accepted_through_chapter':0}
+    source = ContextCandidate(asset_version_id='intent',asset_type='chapter_execution_intent',project_id='p',
+        estimated_tokens=0,safe_summary=serialized,provenance={'working_artifact':True},accepted_boundary=boundary)
+    compressor = Mock(side_effect=AssertionError('FULL_INPUT_ALREADY_FITS_REAL_REPRESENTATION'))
+    selected, receipt = compile_task_context([source],task={'stage':'draft','accepted_boundary':boundary},
+        token_budget=15000,required_asset_types=('chapter_execution_intent',),model_call=compressor,compression_input_tokens=64000)
+    assert len(selected)==1 and selected[0].safe_summary==serialized
+    assert selected[0].asset_version_id=='intent' and selected[0].estimated_tokens<15000
+    assert not receipt['excluded_asset_version_ids'] and not receipt['compression_trace']
+    compressor.assert_not_called()
+
+
 @pytest.mark.parametrize('payload', [
     {'start':True,'ends':[1,2],'text':'甲乙'}, {'start':0,'ends':[1,1],'text':'甲乙'},
     {'start':0,'ends':[1,2],'text':'甲乙丙'}, {'start':0,'ends':[1,3],'text':'甲乙'},
