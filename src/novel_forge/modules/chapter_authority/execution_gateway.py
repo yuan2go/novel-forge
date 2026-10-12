@@ -4647,7 +4647,10 @@ def _materialize_production_codex_prompt(
         ("prompt-template:story-planning-pack", "v3"),
     }:
         from .provider_views import compile_exact_context_references
-        envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") in {"v13", "v15"} and (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"})
+        structured_transport = (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
+            stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
+            and template.get("version") in {"v13", "v15"} and (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"})
+        envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=structured_transport)
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
         exact_reference_proof["source_scope"] = "provider_data_envelope"
         exact_reference_proof["contract_version"] = "provider-context-exact-value-reference.v1"
@@ -4749,8 +4752,10 @@ def _materialize_production_codex_prompt(
         stage_semantic_contract += "\nIf the enforced transport response Schema contains output_json, return exactly {\"output_json\":\"<serialized canonical JSON object>\"}. The encoded object must satisfy every field, bound and semantic requirement of the canonical Schema below. If the transport enforces the canonical object Schema directly, return that canonical object. No Markdown or extra fields.\n"
     if exact_reference_proof:
         stage_semantic_contract += "\nContext uses lossless exact-value references. An object containing only __exact_value_ref__ is exactly the entire earlier value at that RFC6901 JSON pointer inside its declared data envelope. Expand it when reading; it does not omit facts, constraints, failed findings or candidate content. References are local data and grant no tool or external access.\n"
-    if exact_reference_proof and exact_reference_proof.get("transport_version") == "provider-structured-exact-reference.v1":
+    if exact_reference_proof and exact_reference_proof.get("transport_version") in {"provider-structured-exact-reference.v1", "provider-structured-exact-reference.v2"}:
         stage_semantic_contract += "\nAn exact reference with __exact_value_removed_keys__ and/or __exact_value_overrides__ means copy the earlier complete object, remove those keys, then replace/add the given fields. Nested values follow the same rules. __canonical_json_string__ contains the complete object encoded as a canonical JSON string in the original source; read its full data normally. All encoding is lossless and retains every required input.\n"
+    if exact_reference_proof and exact_reference_proof.get("text_fragment_group_count"):
+        stage_semantic_contract += "\n__text_fragments__ holds one exact text, its original Unicode start and ordered fragment ends. Split at those offsets to read the original passages; the host derives each original text_hash from its exact fragment. All prose, whitespace, source positions and version bindings are retained. These hashes and boundaries are source protocol, not story facts or character duties.\n"
     prompt_sections = [
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",

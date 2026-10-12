@@ -78,6 +78,28 @@ def test_completed_sibling_cannot_create_new_attempt_commit_manifest():
     assert _execution_commit_auxiliary(ChapterNode.REVISION, request, generated) is None
 
 
+@pytest.mark.parametrize('status', ['FAILED_FINAL','FAILED_RETRYABLE','DEAD_LETTER','SUCCEEDED','EXECUTING','CANCELLED'])
+def test_completed_generation_stage_reads_stopped_original_owner_and_preserves_unknown_usage(monkeypatch,status):
+    from contextlib import nullcontext
+    from novel_forge.modules.command_kernel import external_effect_runtime as runtime
+    cursor=Mock()
+    cursor.fetchone.return_value=(status,)
+    uow=SimpleNamespace(cursor=cursor,repositories=SimpleNamespace(external_effects=Mock()))
+    monkeypatch.setattr(runtime,'AuthorityUnitOfWork',lambda *args:nullcontext(uow))
+    receipt={'budget_reservation_status':'HELD_UNKNOWN','provider_evidence':{'result':{'text':'完整结果'},'usage':{'availability':'UNAVAILABLE'}}}
+    read=Mock(return_value=receipt)
+    monkeypatch.setattr(runtime,'_read_verified_success',read)
+    context=runtime.EffectCommandContext('op','p','actor','trace','root')
+    if status in {'EXECUTING','CANCELLED'}:
+        with pytest.raises(KernelError,match='EFFECT_RETAINED_RESULT_OWNER_INVALID'):
+            runtime.read_retained_generation_stage_success('fixture-only',context,effect_id='effect')
+        read.assert_not_called()
+    else:
+        assert runtime.read_retained_generation_stage_success('fixture-only',context,effect_id='effect') is receipt
+        assert read.call_args.kwargs['retained_generation_stage'] is True
+        assert receipt['budget_reservation_status']=='HELD_UNKNOWN'
+
+
 def test_isolation_replay_ignores_only_cas_observation_and_keeps_all_semantic_fields():
     command = ExternalEffectManualResolutionCommand('effect', 'operation', 'project', 'actor',
         'ISOLATE_PURE_GENERATION', 'reason', {'authorization_ref': 'grant'}, 'key', 99, 'trace', 'correlation')
@@ -245,6 +267,48 @@ def test_structured_exact_transport_reconstructs_full_json_and_object_deltas_aft
     assert proof['decoded_equal'] and proof['canonical_json_string_count'] == 1 and proof['delta_reference_count'] > 0
     assert len(json.dumps(encoded,ensure_ascii=False).encode()) < len(json.dumps(legacy,ensure_ascii=False).encode())
     assert compile_exact_context_references(source)[0] == legacy
+
+
+@pytest.mark.parametrize('start', [0, 19])
+def test_contiguous_text_transport_keeps_unicode_whitespace_hashes_and_referenced_fragments(start):
+    import hashlib
+    import json
+    parts = ['徐照接过盘。\n\n', '裴晏说：“先学引气。”\n', '她停步🙂，没再追问。' * 40]
+    passages, offset = [], start
+    for text in parts:
+        passages.append({'start':offset,'end':offset+len(text),'text':text,'text_hash':'sha256:'+hashlib.sha256(text.encode()).hexdigest()})
+        offset += len(text)
+    source = {'a':{'asset_version_id':'selected-v4','passages':passages},'b':passages,'c':passages[-1]}
+    encoded,proof = compile_exact_context_references(source,structured_transport=True)
+    assert expand_exact_context_references(json.loads(json.dumps(encoded,sort_keys=True))) == source
+    assert proof['transport_version']=='provider-structured-exact-reference.v2'
+    assert proof['text_fragment_group_count']>=1
+    assert encoded['a']['passages']['__text_fragments__']['text']==''.join(parts)
+
+
+@pytest.mark.parametrize('fault', ['gap','bad-hash','extra-field'])
+def test_inexact_passages_keep_original_data_without_reconstructed_claims(fault):
+    import hashlib
+    source=[{'start':i,'end':i+1,'text':'甲','text_hash':'sha256:'+hashlib.sha256('甲'.encode()).hexdigest()} for i in (0,1)]
+    if fault=='gap':
+        source[1].update(start=2,end=3)
+    if fault=='bad-hash':
+        source[1]['text_hash']='sha256:unverified'
+    if fault=='extra-field':
+        source[1]['unresolved']='still open'
+    encoded,proof=compile_exact_context_references(source,structured_transport=True)
+    assert expand_exact_context_references(encoded)==source
+    assert proof['text_fragment_group_count']==0
+
+
+@pytest.mark.parametrize('payload', [
+    {'start':True,'ends':[1,2],'text':'甲乙'}, {'start':0,'ends':[1,1],'text':'甲乙'},
+    {'start':0,'ends':[1,2],'text':'甲乙丙'}, {'start':0,'ends':[1,3],'text':'甲乙'},
+    {'start':0,'ends':[1],'text':'甲'}, {'start':0,'ends':[1,2],'text':'甲乙','extra':True},
+])
+def test_text_transport_cannot_fabricate_boundaries_or_discard_characters(payload):
+    with pytest.raises(KernelError,match='PROVIDER_EXACT_REFERENCE_INVALID'):
+        expand_exact_context_references({'__text_fragments__':payload})
 
 
 @pytest.mark.parametrize('invalid', [

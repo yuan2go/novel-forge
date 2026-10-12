@@ -3392,14 +3392,50 @@ def _realization_source_review(draft):
         "review_requirement": "Read the actual prose to check actor ownership, observation/communication before dependent use, future leakage and testimony versus objective fact. These declared references are evidence, not proof of occurrence or successful realization. Accepted source versions are read-only; planned sources are not accepted history."}}
 
 
+def _pack_text_fragments(value):
+    if not isinstance(value, list) or len(value) < 2:
+        return None
+    position, ends, texts = None, [], []
+    for item in value:
+        if (not isinstance(item, Mapping) or set(item) != {'start', 'end', 'text', 'text_hash'}
+            or type(item['start']) is not int or type(item['end']) is not int or not isinstance(item['text'], str)
+            or not 0 <= item['start'] < item['end'] or item['end'] - item['start'] != len(item['text'])
+            or position is not None and item['start'] != position
+            or item['text_hash'] != 'sha256:' + hashlib.sha256(item['text'].encode()).hexdigest()):
+            return None
+        position = item['end']
+        ends.append(position)
+        texts.append(item['text'])
+    return {'start': value[0]['start'], 'ends': ends, 'text': ''.join(texts)}
+
+
+def _expand_text_fragments(value):
+    if (not isinstance(value, Mapping) or set(value) != {'start', 'ends', 'text'}
+        or type(value['start']) is not int or value['start'] < 0 or not isinstance(value['text'], str)
+        or not isinstance(value['ends'], list) or len(value['ends']) < 2):
+        raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Text fragments require an exact Unicode source and boundaries')
+    position, result = value['start'], []
+    for end in value['ends']:
+        if type(end) is not int or not position < end <= value['start'] + len(value['text']):
+            raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Text fragment boundaries must be contiguous and ordered')
+        text = value['text'][position-value['start']:end-value['start']]
+        result.append({'start': position, 'end': end, 'text': text,
+            'text_hash': 'sha256:' + hashlib.sha256(text.encode()).hexdigest()})
+        position = end
+    if position != value['start'] + len(value['text']):
+        raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Text fragments cannot discard trailing source characters')
+    return result
+
+
 def compile_exact_context_references(view, *, structured_transport=False):
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     marker = "__exact_value_ref__"
     overrides, removed, json_string = "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
-    seen, dictionaries, count, delta_count, json_count = {}, [], 0, 0, 0
+    fragments = '__text_fragments__'
+    seen, dictionaries, count, delta_count, json_count, fragment_count = {}, [], 0, 0, 0, 0
     def encode(value, path):
-        nonlocal count, delta_count, json_count
-        if isinstance(value, Mapping) and any(key in value for key in (marker, overrides, removed, json_string)):
+        nonlocal count, delta_count, json_count, fragment_count
+        if isinstance(value, Mapping) and any(key in value for key in (marker, overrides, removed, json_string, fragments)):
             raise KernelError("PROVIDER_EXACT_REFERENCE_COLLISION", "Reserved reference syntax occurs in source content")
         identity = _canonical_exact_reference_value(value)
         large = len(identity.encode("utf-8")) >= 256
@@ -3424,7 +3460,12 @@ def compile_exact_context_references(view, *, structured_transport=False):
                     result = best
                 dictionaries.append((value, path))
         elif isinstance(value, list):
-            result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
+            packed = _pack_text_fragments(value) if structured_transport else None
+            if packed is not None:
+                result = {fragments: packed}
+                fragment_count += 1
+            else:
+                result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
         elif structured_transport and isinstance(value, str) and path.endswith("/safe_summary"):
             try:
                 parsed = json.loads(value)
@@ -3446,7 +3487,8 @@ def compile_exact_context_references(view, *, structured_transport=False):
     proof = {"contract_version": "planning-exact-value-reference.v1", "source_context_hash": canonical_hash(view),
         "encoded_context_hash": canonical_hash(encoded), "reference_count": count, "decoded_equal": True}
     if structured_transport:
-        proof.update(transport_version="provider-structured-exact-reference.v1", delta_reference_count=delta_count, canonical_json_string_count=json_count)
+        proof.update(transport_version="provider-structured-exact-reference.v2" if fragment_count else "provider-structured-exact-reference.v1",
+            delta_reference_count=delta_count, canonical_json_string_count=json_count, text_fragment_group_count=fragment_count)
     return encoded, proof
 
 
@@ -3457,6 +3499,7 @@ def _canonical_exact_reference_value(value):
 def expand_exact_context_references(encoded):
     decoded = {}
     marker, overrides, removed, json_string = "__exact_value_ref__", "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
+    fragments = '__text_fragments__'
     def remember(value, path):
         decoded[path] = value
         if isinstance(value, Mapping):
@@ -3483,6 +3526,10 @@ def expand_exact_context_references(encoded):
                         remember(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1"))
                 for key, item in changes.items():
                     result[key] = expand(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1"))
+        elif isinstance(value, Mapping) and fragments in value:
+            if set(value) != {fragments}:
+                raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Text fragments cannot contain other protocol fields')
+            result = _expand_text_fragments(value[fragments])
         elif isinstance(value, Mapping) and json_string in value:
             if set(value) != {json_string}:
                 raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Canonical JSON string encoding cannot contain extra fields")

@@ -164,8 +164,8 @@ def read_retained_generation_stage_success(database_url: str, context: EffectCom
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
         row = uow.cursor.fetchone()
-        if row is None or row[0] not in {"FAILED_FINAL", "DEAD_LETTER"}:
-            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their failed terminal owner")
+        if row is None or row[0] not in {"FAILED_FINAL", "FAILED_RETRYABLE", "DEAD_LETTER", "SUCCEEDED"}:
+            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their stopped original owner")
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
 
 

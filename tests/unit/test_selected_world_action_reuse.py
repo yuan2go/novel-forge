@@ -26,8 +26,8 @@ def fixtures():
 
 
 @pytest.mark.parametrize('disposition', ['ELIGIBLE', 'DEFER'])
-@pytest.mark.parametrize('failure', ['none', 'book', 'actor', 'workspace', 'frontier', 'stale', 'hash', 'director-binding', 'unsettled', 'receipt-output', 'recompile', 'ambiguous'])
-def test_selected_action_reuses_only_exact_current_settled_world_result(failure, disposition):
+@pytest.mark.parametrize('failure', ['none', 'book', 'actor', 'workspace', 'frontier', 'stale', 'hash', 'director-binding', 'unsettled', 'held-unknown', 'receipt-output', 'recompile', 'ambiguous'])
+def test_selected_action_reuses_only_exact_current_verified_world_result(failure, disposition):
     command, docs, plan = fixtures()
     plan.update(disposition=disposition, fact_mutation_allowed=False)
     if failure in {'book', 'actor'}:
@@ -49,11 +49,11 @@ def test_selected_action_reuses_only_exact_current_settled_world_result(failure,
     uow.cursor.fetchone.side_effect = fetch
     def receipt(_db, _context, *, effect_id):
         key = effect_id.removesuffix('-effect')
-        return {'budget_reservation_status': 'RESERVED' if failure == 'unsettled' else 'SETTLED', 'provider_evidence': {'result': {} if failure == 'receipt-output' else docs[key].content['contract']['output']}}
-    with patch(MODULE+'.AuthorityUnitOfWork', return_value=uow), patch(MODULE+'.WorldPreparationRepository', autospec=True) as repository, patch(MODULE+'.PlanningWorldPreparation._source_operation', return_value='owner'), patch(MODULE+'.PlanningWorldPreparation.validate_retained_generation') as validate, patch(MODULE+'.decode_world_generation', return_value={}), patch(MODULE+'.WorldProductionPolicy'), patch(MODULE+'.compile_world_plan', return_value=deepcopy(plan) if failure != 'recompile' else {'disposition': 'BLOCKED'}), patch(RUNTIME+'.read_completed_operation_success', side_effect=receipt) as read, patch(RUNTIME+'.read_retained_generation_stage_success', side_effect=AssertionError('wrong owner reader')):
+        return {'budget_reservation_status': 'RESERVED' if failure == 'unsettled' else 'HELD_UNKNOWN' if failure == 'held-unknown' else 'SETTLED', 'provider_evidence': {'result': {} if failure == 'receipt-output' else docs[key].content['contract']['output']}}
+    with patch(MODULE+'.AuthorityUnitOfWork', return_value=uow), patch(MODULE+'.WorldPreparationRepository', autospec=True) as repository, patch(MODULE+'.PlanningWorldPreparation._source_operation', return_value='owner'), patch(MODULE+'.PlanningWorldPreparation.validate_retained_generation') as validate, patch(MODULE+'.decode_world_generation', return_value={}), patch(MODULE+'.WorldProductionPolicy'), patch(MODULE+'.compile_world_plan', return_value=deepcopy(plan) if failure != 'recompile' else {'disposition': 'BLOCKED'}), patch(RUNTIME+'.read_retained_generation_stage_success', side_effect=receipt) as read:
         if failure == 'stale':
             repository.return_value.assert_source_current.side_effect = KernelError('WORLD_SOURCE_DRIFT', 'changed source')
-        if failure == 'none':
+        if failure in {'none', 'unsettled', 'held-unknown'}:
             assert require_selected_world_action(query, command=command) is docs['action']
             assert read.call_count == 2
             validate.assert_called_once()
