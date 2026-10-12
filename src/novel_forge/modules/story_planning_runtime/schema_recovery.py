@@ -14,6 +14,14 @@ def retained_world_action(database_url: str, *, command: Any, source_operation_i
     from .world_preparation import PlanningWorldPreparation
     from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_retained_generation_stage_success
 
+    if command.runtime_continuation_id:
+        from .runtime_continuation import require_binding
+        binding = require_binding(database_url, command.runtime_continuation_id)
+        runtime = binding['target_runtime']
+        inherited = runtime.get('provider_schema_correction') or runtime.get('planning_capacity', {}).get('retained_world_action')
+        if inherited and binding.get('successor_operation_id') == source_operation_id:
+            source_operation_id = inherited['source_operation_id']
+
     query = AuthorityAssetQuery(database_url)
     action = PlanningWorldPreparation.retained_action(query, command, source_operation_id=source_operation_id)
     refs = action.content['contract']
@@ -96,7 +104,8 @@ def continuation_action(database_url: str, command: Any):
         return None
     from .runtime_continuation import require_binding
 
-    proof = require_binding(database_url, command.runtime_continuation_id)['target_runtime'].get('provider_schema_correction')
+    runtime = require_binding(database_url, command.runtime_continuation_id)['target_runtime']
+    proof = runtime.get('provider_schema_correction') or runtime.get('planning_capacity', {}).get('retained_world_action')
     if not proof:
         return None
     action, current = retained_world_action(database_url, command=command, source_operation_id=proof['source_operation_id'])

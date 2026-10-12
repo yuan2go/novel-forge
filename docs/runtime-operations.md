@@ -2580,6 +2580,13 @@ Whole-chapter revision transports one body plus the frozen source window; slot c
 are retained host evidence. A new independent Review cannot erase an older OPEN major
 contradiction by omission. Exact ReReview disposition may resolve it; frozen continuation
 rechecks current propagation eligibility before execution.
+Migration 0202 extends unsent Planning capacity recovery to exact completed World
+preparation. Back up and restore before deployment. The migration preserves old
+snapshots and accepts only two verified pure model receipts bound to the same selected
+action; unrelated Effects, live leases, cancellation and changed Book/input bindings
+still reject. Usage settlement is not a generation prerequisite. Verify the migration
+and `test_authorized_planning_capacity_postgres.py`, then ordinary continue follows
+the registered successor and reuses preparation without repeating calls.
 Codex wire projection `codex-structured-schema.v7` omits unsupported regex lookaround
 from the transport Schema. The immutable canonical Schema and host validation still
 enforce the original pattern, judgment/category combinations, locations and source bindings.

@@ -36,15 +36,15 @@ def _context_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
         "name": DEFINITION_NAME,
         "definition_version": definition_version,
         "family": "story_planning_runtime",
-        "command_schema_version": "planning-runtime-continuation.command.v1" if definition_version == "1.0.0" else "planning-runtime-continuation.command.v2",
-        "result_schema_version": "planning-runtime-continuation.result.v1" if definition_version == "1.0.0" else "planning-runtime-continuation.result.v2",
+        "command_schema_version": "planning-runtime-continuation.command.v" + definition_version[0],
+        "result_schema_version": "planning-runtime-continuation.result.v" + definition_version[0],
         "enabled": True,
         "command_schema": schema,
         "result_schema": schema,
@@ -54,7 +54,7 @@ def runtime_continuation_definition(
             "output_key": OUTPUT_KEY,
         },
         "handler_key": HANDLER_KEY,
-        "handler_contract_version": "planning-runtime-continuation.v1" if definition_version == "1.0.0" else "planning-runtime-continuation.v2",
+        "handler_contract_version": "planning-runtime-continuation.v" + definition_version[0],
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "transactional",
@@ -64,6 +64,7 @@ def runtime_continuation_definition(
             "execution_classification": "transaction_command",
             "trusted_operator_required": True,
             "zero_dispatch_required": definition_version == "1.0.0",
+            **({'unsent_main_call_required': True, 'verified_preparation_required': True} if definition_version == '3.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
         "idempotency_scope": "book:planning-runtime-continuation",
@@ -699,7 +700,7 @@ def require_capacity_route_candidates(decision, *, frozen, source_operation_id):
         or task.get("work_id") != frozen["book_id"]
         or task.get("operation_id") != source_operation_id
         or any("CONTEXT_CAPACITY_EXCEEDED" not in item.get("rejected_reasons", [])
-            or set(item["rejected_reasons"]) - {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
+            or set(item["rejected_reasons"]) - {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT", "PROVIDER_MODEL_CAPACITY_UNAVAILABLE"}
             for item in eligible_scope)):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing failure is not solely a proven request capacity failure for an authorized candidate")
 
@@ -715,7 +716,7 @@ def _pre_send_capacity_source(
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
-    projection_revalidation = None
+    projection_revalidation, retained_world, world_owner = None, None, source_operation_id
     if route_preflight:
         uow.cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
             JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
@@ -740,16 +741,32 @@ def _pre_send_capacity_source(
     )
     unsafe = uow.cursor.fetchone()[0]
     if route_preflight:
-        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
-            OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+        from .application import _command_from_payload
+        from .schema_recovery import retained_world_action
+        action, retained_world = retained_world_action(uow.database_url,
+            command=_command_from_payload(frozen), source_operation_id=source_operation_id)
+        receipts = []
+        if action is not None:
+            query = AuthorityAssetQuery(uow.database_url)
+            from .world_preparation import PlanningWorldPreparation
+            world_owner = PlanningWorldPreparation._source_operation(uow.database_url,
+                frozen['project_id'], retained_world['generation']['asset_version_id'])
+            receipts = [query.require(project_id=frozen['project_id'],
+                asset_version_id=retained_world[key]['asset_version_id']).content['contract']['evidence']['external_receipt_ref']
+                for key in ('generation', 'evaluation')]
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s
+              AND (NOT (external_effect_id=ANY(%s)) OR effect_type<>'model.invoke' OR status<>'SUCCEEDED'))
+            OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s
+              AND (external_effect_id IS NULL OR NOT (external_effect_id=ANY(%s))))
             OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status IN ('LEASED','RUNNING','CHECKPOINTED','RESULT_SUBMITTED'))
             OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
-              WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id]*4)
+              WHERE attempt.operation_id=%s AND lease.status='HELD')""",
+            [source_operation_id, receipts, source_operation_id, receipts, source_operation_id, source_operation_id])
         unsafe = uow.cursor.fetchone()[0]
     if unsafe:
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
-            "Capacity continuation requires no external intent, reservation or frozen Context",
+            "Capacity continuation requires an unsent main call, verified completed preparation and no active Attempt",
         )
     uow.cursor.execute(
         "SELECT snapshot_payload,attempt_id,snapshot_id,snapshot_hash FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
@@ -807,6 +824,7 @@ def _pre_send_capacity_source(
         "snapshot_hash": snapshot[3],
         "inputs": inputs,
         **({"capacity_inheritance": inherited} if inherited else {}),
+        **({'retained_world_action': {'source_operation_id': world_owner, 'world_action': retained_world}} if retained_world else {}),
         "failure": dict(attempt[2] or attempt[1] or {}),
         "depth": depth + 1,
         **({"context_revalidation": projection_revalidation} if projection_revalidation else {}),
@@ -1009,7 +1027,8 @@ def _capacity_target(
         "single_request_ceiling": ceiling,
         "projection_hash": _context_projection_hash(context),
         "source_failure": source["failure"],
-        "external_intents_at_source": 0,
+        "external_intents_at_source": 2 if source.get('retained_world_action', {}).get('source_operation_id') == source['source_operation_id'] else 0,
+        **({'retained_world_action': source['retained_world_action']} if source.get('retained_world_action') else {}),
         **({"context_revalidation": source["context_revalidation"]} if source.get("context_revalidation") else {}),
     }
     if source.get("capacity_inheritance"):
@@ -1495,10 +1514,11 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
+    continuation_version = '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
-        definition_version="2.0.0" if contract_change or host_revalidation else "1.0.0",
+        definition_version=continuation_version,
     )
     with AuthorityUnitOfWork(application.database_url) as uow:
         uow.repositories.definitions.register(definition)
@@ -1512,7 +1532,7 @@ def register(
         "independent_human_review": "NOT_REVIEWED",
     }
     content = {
-        "contract_version": "planning-runtime-continuation.v2" if contract_change or host_revalidation else "planning-runtime-continuation.v1",
+        "contract_version": 'planning-runtime-continuation.v' + continuation_version[0],
         "continuation_id": continuation_id,
         "source_operation_id": source_operation_id,
         "source_evidence_asset_version_id": source["evidence_asset_version_id"],
@@ -1692,7 +1712,7 @@ def register(
         application.database_url,
         {
             "definition_name": DEFINITION_NAME,
-            "definition_version": "1.0.0",
+            "definition_version": continuation_version,
             "project_id": project_id,
             "workspace_id": original.workspace_id,
             "book_id": original.book_id,

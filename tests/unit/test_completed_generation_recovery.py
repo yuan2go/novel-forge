@@ -241,6 +241,8 @@ def test_current_planning_template_binds_whole_envelope_and_retains_historical_t
     ([['AUTHORIZATION_MISSING', 'CONTEXT_CAPACITY_EXCEEDED']], False),
     ([['BUDGET_HARD_LIMIT']], False),
     ([['QUALITY_FLOOR_NOT_MET', 'CONTEXT_CAPACITY_EXCEEDED']], False),
+    ([['CONTEXT_CAPACITY_EXCEEDED', 'PROVIDER_MODEL_CAPACITY_UNAVAILABLE']], True),
+    ([['PROVIDER_MODEL_CAPACITY_UNAVAILABLE']], False),
 ])
 def test_planning_capacity_recovery_uses_authorized_candidate_failures(reasons, allowed):
     from novel_forge.modules.story_planning_runtime.runtime_continuation import require_capacity_route_candidates

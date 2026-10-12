@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261012_0201_working_revision_generation_isolation",
+  "head": "20261012_0202_prepared_planning_continuation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -204,6 +204,7 @@
     "20261010_0198_recovery_reference_indexes",
     "20261011_0199_plan_change_capacity",
     "20261012_0200_generation_history_observations",
-    "20261012_0201_working_revision_generation_isolation"
+    "20261012_0201_working_revision_generation_isolation",
+    "20261012_0202_prepared_planning_continuation"
   ]
 }
