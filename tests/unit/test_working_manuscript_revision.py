@@ -254,7 +254,9 @@ def test_later_review_omission_cannot_remove_an_earlier_major_contradiction(reso
     initial = {**base, "issues": [{"code": "major", "judgment_kind": "SEMANTIC_CONTRADICTION", "severity": "major"}]}
     later = {**base, "report_type": "ReReviewReport", "prior_review_evidence": {"asset_version_id": "initial"},
         "issue_lineage": [{"code": "major", "to_status": "RESOLVED", "verified_by_rereview": True}] if resolved else [],
-        "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED"}] if resolved else []}
+        "resolved_issue_codes": ["major"] if resolved else [],
+        "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED",
+            "evidence": {"quote": "正文"}}] if resolved else []}
     class Cursor:
         def execute(self, *args):
             pass
@@ -441,3 +443,129 @@ def test_working_review_window_keeps_actual_unaccepted_cursor_and_exact_text_sup
     assert validate_support([support], window)[0]["quote"] == SOURCE
     with pytest.raises(KernelError):
         validate_support([{**support, "quote": "forged earlier prose"}], window)
+
+
+@pytest.mark.parametrize("fault", [None, "absent-review", "wrong-prior", "wrong-target", "partial", "unlocated", "regression", "still-open"])
+@pytest.mark.parametrize("best", [False, True])
+def test_partial_revision_inherits_major_problem_until_exact_rereview(monkeypatch, fault, best):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    old = SimpleNamespace(asset_type="draft_chapter", asset_version_id="old", content={"chapter": 1, "text": "旧矛盾"})
+    revised = SimpleNamespace(asset_type="best_draft_candidate" if best else "draft_version",
+        asset_version_id="best" if best else "new", content={"chapter": 1, "text": "已修订正文", "source_draft_version_id": "old",
+        "review_version_id": "initial", "issue_resolutions": [{"code": "major", "to_status": "RESOLUTION_CLAIMED"}],
+        **({"selected_source_asset_version_id": "new"} if best else {})})
+    initial = {"target_asset_version_id": "old", "target_text_hash": prose_hash("旧矛盾"), "issues": [
+        {"code": "major", "severity": "major", "judgment_kind": "SEMANTIC_CONTRADICTION"}]}
+    review = {"report_type": "ReReviewReport", "revision_version_id": "other" if fault == "wrong-target" else "new",
+        "target_text_hash": prose_hash("已修订正文"), "initial_review_version_id": "other" if fault == "wrong-prior" else "initial",
+        "issues": [{"code": "major", "severity": "major"}] if fault == "still-open" else [],
+        "remaining_issue_codes": [], "resolved_issue_codes": ["major"],
+        "preservation_checks": [{"status": "REGRESSED" if fault == "regression" else "PRESERVED"}],
+        "issue_lineage": [{"code": "major", "to_status": "PARTIALLY_RESOLVED" if fault == "partial" else "RESOLVED", "verified_by_rereview": True}],
+        "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED",
+            "evidence": {"quote": "无此句" if fault == "unlocated" else "已修订正文"}}]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return [("initial", initial)] if self.source == "old" else [] if fault == "absent-review" else [("rereview", review)]
+    def exact_source(uow, scope, version_id):
+        assert scope == {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "chapter": 1} and version_id == "old"
+        return old
+    monkeypatch.setattr(author_editor, "require_source", exact_source)
+    uow = SimpleNamespace(cursor=Cursor())
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
+    if fault is None:
+        require_prose_propagation(uow, book, revised)
+    else:
+        with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+            require_prose_propagation(uow, book, revised)
+    assert revised.content["issue_resolutions"][0]["to_status"] == "RESOLUTION_CLAIMED"
+
+
+def test_verified_later_repair_clears_carried_major_without_erasing_history(monkeypatch):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    issue = {"code": "major", "severity": "major", "judgment_kind": "SEMANTIC_CONTRADICTION"}
+    old = SimpleNamespace(asset_type="draft_chapter", asset_version_id="old", content={"chapter": 1, "text": "矛盾"})
+    partial = SimpleNamespace(asset_type="draft_version", asset_version_id="partial",
+        content={"chapter": 1, "text": "部分修订", "source_draft_version_id": "old"})
+    fixed = SimpleNamespace(asset_type="draft_version", asset_version_id="fixed",
+        content={"chapter": 1, "text": "最终修复", "source_draft_version_id": "partial"})
+    reports = {"old": [("initial", {"target_asset_version_id": "old", "target_text_hash": prose_hash("矛盾"), "issues": [issue]})],
+        "partial": [("carried", {"report_type": "ReReviewReport", "initial_review_version_id": "initial",
+            "revision_version_id": "partial", "target_text_hash": prose_hash("部分修订"), "issues": [issue]})],
+        "fixed": [("closed", {"report_type": "ReReviewReport", "initial_review_version_id": "carried",
+            "revision_version_id": "fixed", "target_text_hash": prose_hash("最终修复"), "issues": [],
+            "resolved_issue_codes": ["major"], "remaining_issue_codes": [],
+            "issue_lineage": [{"code": "major", "to_status": "RESOLVED", "verified_by_rereview": True}],
+            "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED", "evidence": {"quote": "最终修复"}}]})]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return reports[self.source]
+    monkeypatch.setattr(author_editor, "require_source", lambda uow, scope, version: {"old": old, "partial": partial}[version])
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
+    with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+        require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, partial)
+    require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, fixed)
+    assert reports["old"][0][1]["issues"][0] == issue
+
+
+@pytest.mark.parametrize("different_problem", [False, "quote", "goal", "support"])
+def test_independent_reviews_close_only_the_same_located_source_problem(monkeypatch, different_problem):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    old = SimpleNamespace(asset_type="draft_chapter", asset_version_id="old", content={"chapter": 1, "text": "原矛盾。另一矛盾。"})
+    new = SimpleNamespace(asset_type="draft_version", asset_version_id="new",
+        content={"chapter": 1, "text": "修复后正文", "source_draft_version_id": "old"})
+    issue = {"code": "D", "severity": "major", "category": "CHARACTER_KNOWLEDGE", "judgment_kind": "SEMANTIC_CONTRADICTION",
+        "violated_constraint": "knowledge_before_action", "revision_goal": "解释原知识来源",
+        "acceptance_criteria": ["亲历先于对应知识"], "evidence_locator": {"quote": "原矛盾"}}
+    first = {"target_asset_version_id": "old", "target_text_hash": prose_hash(old.content["text"]),
+        "issues": [{**issue, "evidence_locator": {"quote": "另一矛盾"}} if different_problem == "quote" else
+            {**issue, "revision_goal": "解释另一种知识来源"} if different_problem == "goal" else
+            {**issue, "supporting_evidence": [{"asset_version_id": "different-prior-source", "quote": "另一种知识"}]} if different_problem == "support" else issue]}
+    second = {**first, "issues": [issue]}
+    closed = {"report_type": "ReReviewReport", "revision_version_id": "new", "target_text_hash": prose_hash(new.content["text"]),
+        "initial_review_version_id": "R2", "issues": [], "remaining_issue_codes": [], "resolved_issue_codes": ["D"],
+        "issue_lineage": [{"code": "D", "to_status": "RESOLVED", "verified_by_rereview": True}],
+        "resolution_checks": [{"code": "D", "status": "SATISFIED", "preservation": "PRESERVED", "evidence": {"quote": "修复后正文"}}]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return [("R1", first), ("R2", second)] if self.source == "old" else [("R3", closed)]
+    monkeypatch.setattr(author_editor, "require_source", lambda *args: old)
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
+    if different_problem:
+        with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+            require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, new)
+    else:
+        require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, new)
+
+
+def test_physical_working_candidate_review_is_not_hidden_by_prose_alias(monkeypatch):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    work = SimpleNamespace(asset_type="best_draft_candidate", asset_version_id="workspace",
+        content={"chapter": 1, "text": "工作稿矛盾", "selected_source_asset_version_id": "underlying"})
+    partial = SimpleNamespace(asset_type="draft_version", asset_version_id="partial",
+        content={"chapter": 1, "text": "只修次要问题", "source_draft_version_id": "workspace"})
+    report = {"target_asset_version_id": "workspace", "target_text_hash": prose_hash(work.content["text"]),
+        "issues": [{"code": "major", "severity": "major", "judgment_kind": "SEMANTIC_CONTRADICTION"}]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return [("new-working-review", report)] if self.source == "workspace" else []
+    monkeypatch.setattr(author_editor, "require_source", lambda *args: work)
+    with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+        require_prose_propagation(SimpleNamespace(cursor=Cursor()),
+            {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}, partial)

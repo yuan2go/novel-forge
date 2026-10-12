@@ -205,6 +205,7 @@ from . import (
     v20261012_0201_working_revision_generation_isolation,
     v20261012_0202_prepared_planning_continuation,
     v20261012_0203_capacity_availability_observation,
+    v20261013_0204_retrieval_generation_progress,
 )
 
 VERSION_MODULES = [
@@ -412,6 +413,7 @@ VERSION_MODULES = [
     v20261012_0201_working_revision_generation_isolation,
     v20261012_0202_prepared_planning_continuation,
     v20261012_0203_capacity_availability_observation,
+    v20261013_0204_retrieval_generation_progress,
 ]
 
 __all__ = ["VERSION_MODULES"]

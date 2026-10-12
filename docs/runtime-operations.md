@@ -4197,7 +4197,24 @@ reported environment; they cannot establish live access, text rights or prose be
 
 Original saved local outputs are reread through the configured Codex backend, checked against the frozen manifests, and ingested by the existing Kernel receipt path. The stopped Operation may append execution evidence for its existing session; this does not grant primary output rights. A replay preserves the original reservation and does not dispatch a new request.
 
-A recovered complete result whose original generation window expired may receive one native local-result finalization window. The Kernel journals its old and new deadlines, retains the frozen request and failed Attempt, rejects active writers and cancellation, and denies every new Provider dispatch from this window. Exhaustion is explicit.
+A recovered complete pure-generation result is reconciled and revalidated through its
+native owner without a new generation or finalization deadline. Old deadlines and
+failed Attempts remain evidence; live writers and cancellation still fence submission.
+The historical bounded local-result window applies only outside the current pure
+generation policy.
+
+Retrieval campaign execution uses coverage and semantic query novelty rather than
+cumulative round, query, call, token or campaign-cost ceilings. Frozen old policy and
+round hashes remain unchanged. Migration 0204 removes the historical third-round
+database ceiling and permits unknown usage in new versioned snapshots without
+backfilling old measurements. It also retains the final result with its exact fingerprint
+inside the existing campaign, including a no-novel-query stopping call. Restart reads
+that same terminal result without a new Provider call; pre-v2 terminal results retain
+their original observation projection. Back up and verify restoration before applying it.
+Per-round selector/accepted-scope validation, actual context capacity, no-progress
+termination, cancellation and shared monetary authorization remain enforced.
+Historical token corrections do not veto an authorized pure-generation dispatch;
+unisolated external UNKNOWN still requires reconciliation.
 
 
 For authorized baseline delivery, a trusted operator can configure the existing Book

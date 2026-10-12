@@ -1960,11 +1960,21 @@ Retrieval binds one campaign to the exact project, book, accepted-through chapte
 ExecutionIntent, Memo and policy identity. Round zero uses the accepted selective
 retrieval projection. If deterministic coverage still identifies required evidence,
 Production Execution may return a typed query-expansion proposal through the existing
-ExternalEffect path. Deterministic policy validates every query and selector, freezes at
-most three append-only rounds, and alone decides sufficiency and termination. The model
+ExternalEffect path. Deterministic policy validates every query and selector, freezes
+append-only rounds, and decides sufficiency and termination from required coverage,
+query novelty and actual progress. Historical cumulative round, query, model-call,
+token and campaign-cost ceilings remain frozen evidence, not generation vetoes. Current
+execution counts the actual model capacity independently of past consumption. Unknown
+usage remains unknown, and different currencies are observed separately. The model
 cannot name admissible AssetVersions or expand the accepted boundary. Context Authority
 admits only the frozen union after coverage is sufficient and continues to enforce the
 configured token budget; the default final retrieval limit remains 24.
+
+A revision inherits explicit unresolved major contradictions from its exact source
+lineage. Saving or reading a partial repair does not clear those diagnoses. Only a
+successful review of that exact new prose, with located resolution and preservation
+evidence for the inherited issue, removes its restriction on automatic downstream
+use. A resolved source issue does not permanently ban later versions.
 
 The deterministic coverage fast path skips only the optional query-embedding call when
 semantic policy is FALLBACK_ALLOWED and the selected accepted documents satisfy the

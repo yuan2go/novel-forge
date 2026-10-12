@@ -117,7 +117,7 @@ def load_retrieval_campaign(
                    memo_asset_version_id, intent_fingerprint, memo_fingerprint,
                    policy_version, policy, coverage_contract, input_fingerprint,
                    status, termination_reason, final_result_fingerprint,
-                   final_evidence_identity, version
+                   final_evidence_identity, version, final_result
             FROM authority_retrieval_campaign WHERE campaign_id=%s
             """,
             [campaign_id],
@@ -148,6 +148,7 @@ def load_retrieval_campaign(
         "final_result_fingerprint": str(row[19] or ""),
         "final_evidence_identity": str(row[20] or ""),
         "version": int(row[21]),
+        "final_result": dict(row[22]) if row[22] is not None else None,
     }
 
 
@@ -173,11 +174,11 @@ def freeze_retrieval_round(
     expansion_reason: str = "",
     provider_evidence: Mapping[str, Any] | None = None,
     external_effect_id: str | None = None,
-    input_tokens: int = 0,
-    output_tokens: int = 0,
-    cost_amount: str = "0",
-    currency: str = "USD",
-    latency_ms: int = 0,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
+    cost_amount: str | None = None,
+    currency: str = "UNKNOWN",
+    latency_ms: int | None = None,
 ) -> dict[str, Any]:
     documents_value = tuple(dict(item) for item in documents)
     rejected_value = tuple(dict(item) for item in rejected_documents)
@@ -210,7 +211,7 @@ def freeze_retrieval_round(
             "RETRIEVAL_CAMPAIGN_MISSING", "retrieval round has no campaign owner"
         )
     core = {
-        "contract_version": "retrieval-round-snapshot-v1",
+        "contract_version": "retrieval-round-snapshot-v2",
         "campaign_id": campaign_id,
         "project_id": project_id,
         "book_id": book_id,
@@ -233,11 +234,11 @@ def freeze_retrieval_round(
         "coverage_after": dict(coverage_after),
         "new_evidence_count": int(new_evidence_count),
         "usage": {
-            "input_tokens": int(input_tokens),
-            "output_tokens": int(output_tokens),
-            "cost_amount": _decimal_text(cost_amount),
+            "input_tokens": _nullable_integer(input_tokens),
+            "output_tokens": _nullable_integer(output_tokens),
+            "cost_amount": _observed_decimal_text(cost_amount),
             "currency": currency,
-            "latency_ms": int(latency_ms),
+            "latency_ms": _nullable_integer(latency_ms),
         },
     }
     snapshot_hash = _hash(core)
@@ -266,10 +267,10 @@ def freeze_retrieval_round(
                 documents, rejected_documents, semantic_status,
                 coverage_before, coverage_after, new_evidence_count,
                 input_tokens, output_tokens, cost_amount, currency,
-                latency_ms, snapshot_hash
+                latency_ms, snapshot_hash, snapshot_contract_version
             ) VALUES (
                 %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
             ) ON CONFLICT(campaign_id, round_number) DO NOTHING
             """,
             [
@@ -297,12 +298,13 @@ def freeze_retrieval_round(
                 Jsonb(dict(coverage_before)),
                 Jsonb(dict(coverage_after)),
                 int(new_evidence_count),
-                int(input_tokens),
-                int(output_tokens),
+                _nullable_integer(input_tokens),
+                _nullable_integer(output_tokens),
                 cost_amount,
                 currency,
-                int(latency_ms),
+                _nullable_integer(latency_ms),
                 snapshot_hash,
+                core["contract_version"],
             ],
         )
         inserted = uow.cursor.rowcount == 1
@@ -339,7 +341,7 @@ def load_retrieval_rounds(
                    documents, rejected_documents, semantic_status,
                    coverage_before, coverage_after, new_evidence_count,
                    input_tokens, output_tokens, cost_amount, currency,
-                   latency_ms, snapshot_hash
+                   latency_ms, snapshot_hash, snapshot_contract_version
             FROM authority_retrieval_round
             WHERE campaign_id=%s ORDER BY round_number
             """,
@@ -349,14 +351,14 @@ def load_retrieval_rounds(
     results: list[dict[str, Any]] = []
     for row in rows:
         usage = {
-            "input_tokens": int(row[24]),
-            "output_tokens": int(row[25]),
-            "cost_amount": _decimal_text(row[26]),
+            "input_tokens": _nullable_integer(row[24]),
+            "output_tokens": _nullable_integer(row[25]),
+            "cost_amount": (_decimal_text(row[26]) if row[30] == "retrieval-round-snapshot-v1" else _observed_decimal_text(row[26])),
             "currency": str(row[27]),
-            "latency_ms": int(row[28]),
+            "latency_ms": _nullable_integer(row[28]),
         }
         core = {
-            "contract_version": "retrieval-round-snapshot-v1",
+            "contract_version": str(row[30]),
             "campaign_id": str(row[1]),
             "project_id": str(row[2]),
             "book_id": str(row[3]),
@@ -410,12 +412,15 @@ def complete_retrieval_campaign(
     termination_reason: str,
     final_result_fingerprint: str,
     final_evidence_identity: str,
+    final_result: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if status not in {"COMPLETED", "FALLBACK", "FAILED"}:
         raise KernelError(
             "RETRIEVAL_CAMPAIGN_STATUS_INVALID",
             "retrieval campaign terminal status is invalid",
         )
+    if final_result is not None:
+        verify_campaign_result(dict(final_result), final_result_fingerprint)
     with AuthorityUnitOfWork(database_url) as uow:
         _lock_current_fence(
             uow,
@@ -428,7 +433,7 @@ def complete_retrieval_campaign(
         uow.cursor.execute(
             """
             SELECT status, termination_reason, final_result_fingerprint,
-                   final_evidence_identity
+                   final_evidence_identity, book_id
             FROM authority_retrieval_campaign
             WHERE campaign_id=%s AND project_id=%s AND operation_id=%s
             FOR UPDATE
@@ -441,6 +446,10 @@ def complete_retrieval_campaign(
                 "RETRIEVAL_CAMPAIGN_MISSING",
                 "retrieval campaign completion target is missing",
             )
+        if final_result is not None and (final_result.get("project_id") != project_id
+                or final_result.get("book_id") != row[4]
+                or (final_result.get("retrieval_campaign") or {}).get("campaign_id") != campaign_id):
+            raise KernelError("RETRIEVAL_CAMPAIGN_RESULT_SCOPE", "Final result must bind this exact campaign and Book")
         expected = (
             status,
             termination_reason,
@@ -448,7 +457,7 @@ def complete_retrieval_campaign(
             final_evidence_identity,
         )
         if str(row[0]) != "RUNNING":
-            observed = tuple(str(item or "") for item in row)
+            observed = tuple(str(item or "") for item in row[:4])
             if observed != expected:
                 raise KernelError(
                     "RETRIEVAL_CAMPAIGN_TERMINAL_CONFLICT",
@@ -466,7 +475,7 @@ def complete_retrieval_campaign(
             """
             UPDATE authority_retrieval_campaign
             SET status=%s, termination_reason=%s,
-                final_result_fingerprint=%s, final_evidence_identity=%s,
+                final_result_fingerprint=%s, final_evidence_identity=%s, final_result=%s,
                 version=version+1, updated_at=NOW()
             WHERE campaign_id=%s
             """,
@@ -475,6 +484,7 @@ def complete_retrieval_campaign(
                 termination_reason,
                 final_result_fingerprint,
                 final_evidence_identity,
+                Jsonb(dict(final_result)) if final_result is not None else None,
                 campaign_id,
             ],
         )
@@ -531,6 +541,23 @@ def _hash(value: Mapping[str, Any]) -> str:
             ).encode()
         ).hexdigest()
     )
+
+
+def verify_campaign_result(result: dict[str, Any], fingerprint: str) -> None:
+    core = {key: value for key, value in result.items() if key != "result_fingerprint"}
+    if result.get("result_fingerprint") != fingerprint or _hash(core) != fingerprint:
+        raise KernelError("RETRIEVAL_CAMPAIGN_RESULT_CORRUPT", "Retained terminal retrieval result differs from its exact fingerprint")
+
+
+def _nullable_integer(value):
+    return None if value is None else int(value)
+
+
+def _observed_decimal_text(value):
+    if value is None:
+        return None
+    normalized = format(Decimal(str(value)), "f")
+    return normalized.rstrip("0").rstrip(".") if "." in normalized else normalized
 
 
 def _decimal_text(value: Any) -> str:

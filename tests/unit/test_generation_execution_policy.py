@@ -312,3 +312,53 @@ def test_reused_process_id_does_not_create_a_historical_inflight_lock(monkeypatc
     assert backends.provider_invocation_inflight(record)
     record['raw_evidence']['invocation_finished']=True
     assert not backends.provider_invocation_inflight(record)
+
+def test_legacy_terminal_before_output_commit_replays_exact_frozen_result(monkeypatch):
+    from types import SimpleNamespace
+    from novel_forge.modules.context_builder.retrieval_campaign import RetrievalCampaignPolicy
+    from unittest.mock import Mock
+    from novel_forge.modules.chapter_authority import handlers
+    old_policy = RetrievalCampaignPolicy(policy_version="minimum-sufficient-retrieval-campaign-v1")
+    coverage = {"sufficient": False, "missing": {"fact_ids": ["missing"]}}
+    rounds = ({"contract_version": "retrieval-round-snapshot-v1", "round_number": 0,
+        "snapshot_hash": "old-round", "query_plan": {}, "semantic_status": {}, "documents": [],
+        "rejected_documents": [], "provider_evidence": {}, "external_effect_id": "",
+        "coverage_after": coverage, "coverage_before": coverage, "new_evidence_count": 0,
+        "usage": {"input_tokens": 2, "output_tokens": 1, "cost_amount": "0.1", "currency": "USD", "latency_ms": 4}},)
+    identity = handlers._content_hash({"campaign_id": "campaign", "round_snapshot_hashes": ["old-round"],
+        "coverage": coverage, "termination_reason": "NO_NEW_EVIDENCE"})
+    expected = {"project_id": "project", "book_id": "book", "selected_documents": [],
+        "retrieval_campaign": {"contract_version": "retrieval-campaign-result-v1", "campaign_id": "campaign",
+            "policy_version": old_policy.policy_version, "accepted_boundary": {"accepted_through_chapter": 0},
+            "round_count": 1, "round_snapshot_hashes": ["old-round"], "coverage": coverage,
+            "termination_reason": "NO_NEW_EVIDENCE", "final_evidence_identity": identity,
+            "usage": {"provider_calls": 0, "input_tokens": 2, "output_tokens": 1, "model_tokens": 3,
+                "cost_amount": "0.1", "currency": "USD", "latency_ms": 4, "candidate_count": 0},
+            "authority": "DETERMINISTIC_CONTEXT_POLICY"}}
+    fingerprint = handlers._content_hash(expected)
+    expected["result_fingerprint"] = fingerprint
+    campaign = {"campaign_id": "campaign", "status": "COMPLETED", "termination_reason": "NO_NEW_EVIDENCE",
+        "final_result": None, "final_result_fingerprint": fingerprint}
+    def start(*args, **kwargs):
+        assert kwargs["policy"].to_dict() == old_policy.to_dict()
+        return campaign
+    def complete(*args, **kwargs):
+        assert kwargs["final_result_fingerprint"] == fingerprint and kwargs["final_result"] == expected
+        return campaign
+    monkeypatch.setattr(handlers, "start_retrieval_campaign", start)
+    monkeypatch.setattr(handlers, "load_retrieval_rounds", lambda *args, **kwargs: rounds)
+    monkeypatch.setattr(handlers, "complete_retrieval_campaign", complete)
+    monkeypatch.setattr(handlers, "build_campaign_final_query_plan", lambda **kwargs: {})
+    monkeypatch.setattr(handlers, "build_retrieval_result", lambda **kwargs: {"project_id": "project", "book_id": "book", "selected_documents": []})
+    handler = handlers._RetrievalHandler(provider=SimpleNamespace(invoke=Mock(side_effect=AssertionError("No Provider on terminal replay"))), expansion_provider_bound=True)
+    request = SimpleNamespace(database_url="fixture", project_id="project", operation_id="operation", attempt_id="attempt",
+        fencing_token=1, worker_id="worker", effective_definition_version="3.0.0", command={"book_id": "book"})
+    plan = SimpleNamespace(content={"book_id": "book", "chapter": 1})
+    intent = SimpleNamespace(asset_version_id="intent", content={"accepted_boundary": {"accepted_through_chapter": 0}, "intent_fingerprint": "intent-hash"})
+    memo = SimpleNamespace(asset_version_id="memo", content={"memo_fingerprint": "memo-hash"})
+    for _ in range(2):
+        result = handler._run_campaign(request=request, plan=plan, intent=intent, memo=memo,
+            query_plan={"campaign_policy": old_policy.to_dict(), "coverage_contract": {"accepted_boundary": {"accepted_through_chapter": 0}}},
+            frozen_union=SimpleNamespace(query_embedding=(), query_embedding_evidence={}), discovery_rejections=())
+        assert result == expected
+    handler.provider.invoke.assert_not_called()

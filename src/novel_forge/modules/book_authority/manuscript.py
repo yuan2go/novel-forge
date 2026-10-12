@@ -408,37 +408,107 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     return {**result, "snapshot_hash": canonical_hash(result)}
 
 
-def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
-    from novel_forge.modules.review.diagnostics import major_contradiction_codes
-    content = source_draft_content(source)
-    source_id = content.get("selected_source_asset_version_id") or source.asset_version_id
-    embedded = content.get("selected_review")
-    reviews = [(embedded.get("selection_review_source_asset_version_id"), embedded)] if isinstance(embedded, dict) else []
-    uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
-        JOIN authority_operation operation USING(operation_id)
-        JOIN authority_asset_version v USING(asset_version_id)
-        JOIN authority_asset asset ON asset.asset_id=v.asset_id
-        WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
-          AND asset.asset_type IN ('review_report','re_review_report')
-          AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
-        ORDER BY operation.created_at""", [book["project_id"], source_id])
-    reviews.extend(uow.cursor.fetchall())
-    pending = {}
-    from novel_forge.modules.review.diagnostics import prose_hash
-    for review_id, review in reviews:
-        if (review.get("revision_version_id") or review.get("target_asset_version_id")) != source_id or review.get("target_text_hash") != prose_hash(content["text"]):
+def _prose_source_lineage(uow, book, source):
+    from novel_forge.modules.chapter_authority.author_editor import require_source
+    lineage, seen = [], set()
+    while source is not None:
+        if source.asset_version_id in seen:
+            raise KernelError("MANUSCRIPT_REVISION_LINEAGE_INVALID", "Prose source lineage contains a cycle")
+        seen.add(source.asset_version_id)
+        lineage.append(source)
+        content = source_draft_content(source)
+        parent_id = (source.content.get("base_asset_version_id") if source.asset_type == "author_edit_candidate"
+                     else content.get("source_draft_version_id"))
+        if not parent_id:
+            break
+        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
+        scope["chapter"] = content["chapter"]
+        parent = require_source(uow, scope, parent_id)
+        if source.asset_type == "author_edit_candidate" and source.content.get("base_asset_hash") != parent.content_hash:
+            raise KernelError("MANUSCRIPT_REVISION_LINEAGE_INVALID", "Editor source hash differs from its exact base")
+        source = parent
+    return reversed(lineage)
+
+
+def _verified_prose_resolutions(review, text):
+    from novel_forge.modules.review.diagnostics import open_diagnoses, validate_location
+    if any(item.get("status") != "PRESERVED" for item in review.get("preservation_checks", [])):
+        return set()
+    remaining = set(review.get("remaining_issue_codes", [])) | {
+        item["code"] for item in open_diagnoses(review) if item.get("status", "OPEN") == "OPEN"}
+    checks = set()
+    for check in review.get("resolution_checks", []):
+        if (check.get("status") != "SATISFIED" or check.get("preservation") != "PRESERVED"
+                or check.get("code") in remaining or check.get("code") not in review.get("resolved_issue_codes", [])):
             continue
-        if review.get("report_type") == "ReReviewReport":
-            prior_id = (review.get("prior_review_evidence") or {}).get("asset_version_id")
-            verified = {check["code"] for check in review.get("resolution_checks", [])
-                if check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED"}
-            for disposition in review.get("issue_lineage", []):
-                if (disposition.get("verified_by_rereview") is True and disposition.get("to_status") == "RESOLVED"
-                        and disposition.get("code") in verified):
-                    pending.pop((prior_id, disposition["code"]), None)
-        for code in major_contradiction_codes(review, text=content["text"], source_id=source_id):
-            pending[(review_id, code)] = code
-    problems = sorted(set(pending.values()))
+        try:
+            validate_location(check.get("evidence") or {}, text)
+        except KernelError:
+            continue
+        checks.add(check["code"])
+    return {item["code"] for item in review.get("issue_lineage", [])
+        if item.get("verified_by_rereview") is True and item.get("to_status") == "RESOLVED"
+        and item.get("code") in checks}
+
+
+def _prose_diagnosis_identity(review, code, version, text):
+    from novel_forge.modules.review.diagnostics import open_diagnoses, validate_location
+    issue = next((item for item in open_diagnoses(review) if item["code"] == code), None)
+    if not issue or any(not issue.get(key) for key in ("category", "judgment_kind", "violated_constraint", "revision_goal")) or not issue.get("acceptance_criteria"):
+        return None
+    try:
+        location = validate_location(issue.get("evidence_locator") or {}, text)
+    except KernelError:
+        return None
+    return canonical_hash({"source_version": version, "code": code,
+        **{key: issue[key] for key in ("category", "judgment_kind", "violated_constraint", "revision_goal", "acceptance_criteria")},
+        "preserve": issue.get("preserve"), "repair": issue.get("repair"),
+        "support": {key: issue.get(key) for key in ("supporting_evidence", "candidate_supporting_evidence",
+            "paired_evidence", "related_fact_ids", "related_character_ids", "related_obligation_ids")},
+        "evidence": {key: location[key] for key in ("start", "end", "quote", "excerpt_digest", "offset_unit")}})
+
+
+def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
+    from novel_forge.modules.review.diagnostics import major_contradiction_codes, prose_hash
+    pending, seen_reviews = {}, {}
+    for version in _prose_source_lineage(uow, book, source):
+        content = source_draft_content(version)
+        aliases = list(dict.fromkeys([version.asset_version_id, content.get("selected_source_asset_version_id") or version.asset_version_id]))
+        reviews = {}
+        for source_id in aliases:
+            uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
+                JOIN authority_operation operation USING(operation_id)
+                JOIN authority_asset_version v USING(asset_version_id)
+                JOIN authority_asset asset ON asset.asset_id=v.asset_id
+                WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
+                  AND asset.asset_type IN ('review_report','re_review_report')
+                  AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
+                ORDER BY operation.created_at""", [book["project_id"], source_id])
+            reviews.update(uow.cursor.fetchall())
+        embedded = content.get("selected_review")
+        if isinstance(embedded, dict):
+            reviews[embedded.get("selection_review_source_asset_version_id")] = embedded
+        for review_id, review in reviews.items():
+            target_id = review.get("revision_version_id") or review.get("target_asset_version_id")
+            if target_id not in aliases or review.get("target_text_hash") != prose_hash(content["text"]):
+                continue
+            codes = major_contradiction_codes(review, text=content["text"], source_id=target_id)
+            identities = {code: _prose_diagnosis_identity(review, code, version.asset_version_id, content["text"]) for code in codes}
+            if review.get("report_type") == "ReReviewReport":
+                prior_id = review.get("initial_review_version_id") or (review.get("prior_review_evidence") or {}).get("asset_version_id")
+                for code in _verified_prose_resolutions(review, content["text"]):
+                    pending.pop((prior_id, code), None)
+                    identity = seen_reviews.get(prior_id, {}).get(code)
+                    # WHY: Independently repeated diagnoses can close together only with identical source, repair goal, criteria and supporting evidence.
+                    if identity is not None:
+                        pending = {key: value for key, value in pending.items() if value["identity"] != identity}
+            for code in codes:
+                if review.get("report_type") == "ReReviewReport":
+                    # WHY: Carrying an open issue advances its review lineage without leaving an ancestral duplicate ban.
+                    pending.pop((prior_id, code), None)
+                pending[(review_id, code)] = {"code": code, "identity": identities[code]}
+            seen_reviews[review_id] = identities
+    problems = sorted({value["code"] for value in pending.values()})
     if problems:
         raise KernelError("MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED",
             "Retain this complete candidate for targeted revision; it cannot become affected later prose's automatic source",
