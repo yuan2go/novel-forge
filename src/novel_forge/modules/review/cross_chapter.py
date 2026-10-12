@@ -162,15 +162,16 @@ def paired_diagnosis(
         frozen_support = original.get("supporting_evidence", []) if original else []
         anchors = _source_locations(frozen_support)
         if (original is not None and original.get("category") == category and _source_locations(support) == anchors
-                and all(original.get(key) == issue.get(key) for key in ("judgment_kind", "severity", "confidence", "interpretation"))
-                and all((original.get("repair") or {}).get(key) == (issue.get("repair") or {}).get(key)
-                    for key in ("problem_owner", "root_cause"))):
+                and all(original.get(key) == issue.get(key) for key in ("judgment_kind", "severity", "confidence", "interpretation",
+                    "violated_constraint", "revision_goal", "preserve", "acceptance_criteria"))
+                and original.get("repair") == issue.get("repair")):
             code = str(lineage)
             reassessment = {"reassessment_supporting_evidence": support}
             support = deepcopy(frozen_support)
         else:
             code = "CC-" + str(category) + "-" + digest({"identity": identity, "unverified_lineage": lineage,
-                "judgment_kind": judgment, "severity": issue.get("severity"), "interpretation": intentional}).split(":")[1][:20].upper()
+                "problem": {key: issue.get(key) for key in ("judgment_kind", "severity", "interpretation", "repair",
+                    "violated_constraint", "revision_goal", "preserve", "acceptance_criteria")}}).split(":")[1][:20].upper()
             reassessment = {"unverified_lineage_code": str(lineage), "lineage_status": "UNVERIFIED"}
     return {
         **base,

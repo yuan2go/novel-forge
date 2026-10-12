@@ -366,6 +366,21 @@ def test_reassessment_cannot_replace_prior_contradiction_with_uncertainty_at_the
     assert review["issues"][0]["judgment_kind"] == "SEMANTIC_CONTRADICTION"
 
 
+@pytest.mark.parametrize("field", ["violated_constraint", "revision_goal", "preserve", "acceptance_criteria", "repair"])
+def test_same_support_cannot_rebind_an_existing_problem_to_a_different_repair_goal(field):
+    review = initial([issue()])
+    changed = issue()
+    changed["lineage_code"] = review["issues"][0]["code"]
+    changed[field] = {"repair_scope": "CHAPTER_REVISION"} if field == "repair" else ["另一目标"] if field in {"preserve", "acceptance_criteria"} else "另一目标"
+    if field == "repair":
+        changed[field] = {"root_cause": "CHAPTER_STRUCTURE", "problem_owner": "PROSE", "repair_scope": "CHAPTER_REVISION",
+            "revision_goal": "另一目标", "preserve": ["原事实"], "resolution_criteria": ["另一标准"]}
+    current = paired_diagnosis(changed, text=TARGET, window=window(), prior=review)
+    assert current["code"] != review["issues"][0]["code"]
+    assert current["unverified_lineage_code"] == review["issues"][0]["code"]
+    assert current["lineage_status"] == "UNVERIFIED"
+
+
 @pytest.mark.parametrize("status", ["UNRESOLVED", "PARTIALLY_RESOLVED", "RESOLVED"])
 def test_incomplete_original_support_keeps_resolution_unverified_and_preserves_evidence(status):
     from novel_forge.modules.review.cross_chapter import resolution_checks
