@@ -203,6 +203,8 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
     target_status = _target_status(missing, failed, effect_unknown)
     return {
         "operation_id": operation["operation_id"],
+        "evaluated_operation_status": operation["status"],
+        "evaluated_operation_version": operation["version"],
         "satisfied": not missing and not failed,
         "target_status": target_status,
         "missing": sorted(set(missing)),

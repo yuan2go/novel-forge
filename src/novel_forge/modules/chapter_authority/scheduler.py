@@ -1742,7 +1742,8 @@ class ChapterAuthorityScheduler:
             if completed["satisfied"] and completed["target_status"] == "SUCCEEDED":
                 finalize_operation_completion(self.database_url,
                     CompletionCommandContext(project_id, self.worker_id, request.trace_id, request.correlation_id),
-                    operation_id=operation_id, expected_status=operation["status"], expected_version=operation["version"],
+                    operation_id=operation_id, expected_status=completed["evaluated_operation_status"],
+                    expected_version=completed["evaluated_operation_version"],
                     require_uncancelled=True)
                 return "submitted_completion_finalized"
         recovery_mode = "fresh_attempt"
