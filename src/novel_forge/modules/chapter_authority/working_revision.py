@@ -160,12 +160,14 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
     if not idempotency_key.strip() or not reason.strip() or type(chapter) is not int or chapter < 1:
         raise ValueError("Revision requires an exact chapter, request identity and revision purpose")
     root_key = "working-revision:" + idempotency_key
+    existing_root = None
     with AuthorityUnitOfWork(app.database_url) as uow:
         uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o WHERE project_id=%s
             AND idempotency_scope='project:chapter-slice' AND idempotency_key=%s""", [book["project_id"], root_key])
         existing = uow.cursor.fetchone()
         if existing:
             root = existing[0]
+            existing_root = root
             binding = (root["command_payload"].get("preparation_report") or {}).get("working_revision") or {}
             if (root["definition_version"] != ROOT_VERSION or root["actor_id"] != principal.principal_id
                     or binding.get("book_run_id") != book_run_id or binding.get("expected_book_version") != expected_version
@@ -239,7 +241,7 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
         available_handlers=app.registry.available_handler_keys | frozenset({CHAPTER_SLICE_ROOT_HANDLER_KEY}),
         application_build_id=app.application_build_id, commit_sha=app.commit_sha)
     frozen = (request.preparation_report or {})["working_revision"]
-    root = admit_command(app.database_url, _command(request, definition_name="chapter.slice.run",
+    root = {**existing_root, "replayed": True} if existing_root is not None else admit_command(app.database_url, _command(request, definition_name="chapter.slice.run",
         definition_version=ROOT_VERSION, idempotency_key=root_key, input_assets=[*frozen["source_inputs"].values(),
             *({"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]} for row in frozen["previous_sources"])]), context=admission)
     root_id = str(root["operation_id"])
