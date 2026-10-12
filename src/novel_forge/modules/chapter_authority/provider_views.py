@@ -1651,6 +1651,11 @@ def build_provider_context_view(
             omitted_segments += 1
             continue
         asset_type = str(raw.get("asset_type") or "")
+        if stage in {"review", "revision", "rereview"} and task_view.get("creative_baseline") and asset_type in {
+                "chapter_memo", "chapter_execution_intent"}:
+            omitted_segments += 1
+            omitted_facts += len(raw.get("structured_facts") or ())
+            continue
         if stage == "canon_extraction" and task_view.get("canon_context_projection") == "canon-source-context.v1" and asset_type in {
             "chapter_execution_intent", "chapter_memo", "retrieval_result", "style_policy"}:
             omitted_segments += 1
@@ -1827,7 +1832,10 @@ def build_provider_context_view(
             (correctness or {}).get("receipt_hash") or ""
         ),
     }
-    if context_bundle.get("working_manuscript") is not None and stage in {"draft", "memo", "revision"}:
+    review_source_window = (task_view.get("cross_chapter_window") or task_view.get("source_window")
+        or (task_view.get("targeted_repair") or {}).get("selected_source_window")
+        or (task_view.get("targeted_repair") or {}).get("accepted_source_window"))
+    if context_bundle.get("working_manuscript") is not None and stage in {"draft", "memo", "revision"} and not review_source_window:
         if context_bundle["working_manuscript"].get("projection_policy") is not None:
             from novel_forge.modules.book_authority.working_prose import validate_working_projection
             validate_working_projection(context_bundle["working_manuscript"],

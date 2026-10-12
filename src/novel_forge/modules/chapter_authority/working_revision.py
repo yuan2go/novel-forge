@@ -49,7 +49,9 @@ def working_review_window(request, draft, context, prior=None):
     return freeze_review_window(snapshot, candidate_id=draft.asset_version_id, text=draft.content["text"],
         context_token_budget=budget, protected_context={"current_context_asset_version_id": context.asset_version_id,
             "current_context_content_hash": context.content_hash, "authority": "FROZEN_REQUIREMENTS_AND_SELECTED_PROSE"},
-        required_context=build_provider_context_view("review", context.content, {}))
+        required_context=build_provider_context_view("review", context.content,
+            {"creative_baseline": draft.content.get("creative_baseline"), "cross_chapter_window": {"source_isolation": "SELECTED_PROSE_NO_CANON_AUTHORITY"}},
+            writer_projection_version="accepted-writer-history.v2"))
 
 
 def working_revision_definition(*, application_build_id: str, commit_sha: str) -> dict[str, Any]:

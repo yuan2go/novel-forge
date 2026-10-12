@@ -2552,6 +2552,17 @@ continuation depth rejection while preserving immutable continuation records and
 isolation identity/commit-right guards. Back up and verify a restore first. Historical
 `failure_retry_counter`, deadline and max-attempt values are retained, including values
 already at their former ceilings; recovery does not reset them.
+Migration 0201 extends the same isolation guard to the exact working-revision Root,
+owning Book and Saga, including ReReview. It requires the frozen source/hash binding,
+stopped model Effect, no live lease or primary output, and revoked commit/activation rights.
+It creates no production Chapter Request and never changes UNKNOWN or fees. Verify the
+forward migration on a restore and run `test_working_revision_isolation_guard_postgres.py`
+before deployment. Review, Revision and ReReview project original requirements, plan,
+characters and exact prose sources while excluding duplicate Memo/ExecutionIntent directives.
+Whole-chapter revision transports one body plus the frozen source window; slot copies
+are retained host evidence. A new independent Review cannot erase an older OPEN major
+contradiction by omission. Exact ReReview disposition may resolve it; frozen continuation
+rechecks current propagation eligibility before execution.
 Ordinary creation continue also resumes a Book paused by the former generation retry
 ceiling once its native, scope-checked successor is runnable. Author pauses are separate.
 The manuscript resume CLI composes the real Chapter port before reconciling an active

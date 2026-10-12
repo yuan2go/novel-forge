@@ -2,6 +2,7 @@ from __future__ import annotations
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
 from novel_forge.modules.production_execution.contracts import local_cli_remote_outcome_unknown
 from dataclasses import dataclass, replace
+from copy import deepcopy
 import hashlib
 import json
 import re
@@ -4583,6 +4584,18 @@ def _materialize_production_codex_prompt(
         == "prompt-template:chapter-generation-pack"
         and template.get("version") in {"v8", "v9", "v10", "v11", "v12", "v13", "v15"},
     )
+    if stage == "revision" and schema.get("ref") == "schema:chapter-provider-output:revision:v7":
+        source = dict(inputs.get("draft") or {})
+        prior_window = (inputs.get("review") or {}).get("cross_chapter_window")
+        if prior_window:
+            task_view["source_window"] = deepcopy(prior_window)
+        task_view["chapter"] = {key: source[key] for key in ("chapter", "title", "text") if key in source}
+        task_view.pop("scene_artifacts", None)
+        task_view.pop("scene_separators", None)
+        task_view.pop("realization_contract", None)
+        task_view.pop("targeted_repair", None)
+        task_view.pop("targeted_editing", None)
+        task_view["revision_scope"] = "WHOLE_CHAPTER_TEXT_WITH_FROZEN_CORE_REQUIREMENTS"
     context_view = build_provider_context_view(
         stage,
         context_content,
@@ -4692,9 +4705,6 @@ def _materialize_production_codex_prompt(
         ),
     )
     if stage == "revision" and schema.get("ref") == "schema:chapter-provider-output:revision:v7":
-        task_view.pop("targeted_repair", None)
-        task_view.pop("targeted_editing", None)
-        task_view["revision_scope"] = "WHOLE_CHAPTER_TEXT_WITH_FROZEN_CORE_REQUIREMENTS"
         stage_semantic_contract = _bind_language_contract(
             "Return the complete revised chapter in the single text field, with resolved_issue_codes only for repairs claimed. "
             "The frozen whole-chapter repair or measured length scope permits merging repeated scenes, transitions and noncritical order. "

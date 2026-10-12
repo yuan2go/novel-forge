@@ -202,6 +202,7 @@ from . import (
     v20261010_0198_recovery_reference_indexes,
     v20261011_0199_plan_change_capacity,
     v20261012_0200_generation_history_observations,
+    v20261012_0201_working_revision_generation_isolation,
 )
 
 VERSION_MODULES = [
@@ -406,6 +407,7 @@ VERSION_MODULES = [
     v20261010_0198_recovery_reference_indexes,
     v20261011_0199_plan_change_capacity,
     v20261012_0200_generation_history_observations,
+    v20261012_0201_working_revision_generation_isolation,
 ]
 
 __all__ = ["VERSION_MODULES"]

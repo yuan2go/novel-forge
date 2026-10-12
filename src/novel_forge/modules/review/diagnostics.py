@@ -136,7 +136,7 @@ def major_contradiction_codes(review: dict[str, Any], *, text: str, source_id: s
             or review.get("target_text_hash") != prose_hash(text)):
         return ()
     return tuple(sorted({str(item["code"]) for item in open_diagnoses(review)
-        if item.get("judgment_kind") in {"HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION"}
+        if item.get("judgment_kind") in {"HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "SEMANTIC_CONFLICT"}
         and item.get("status", "OPEN") == "OPEN"
         and item.get("severity") in {"blocking", "blocker", "critical", "high", "major"}}))
 

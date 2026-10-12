@@ -412,20 +412,33 @@ def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> No
     from novel_forge.modules.review.diagnostics import major_contradiction_codes
     content = source_draft_content(source)
     source_id = content.get("selected_source_asset_version_id") or source.asset_version_id
-    reviews = [content["selected_review"]] if isinstance(content.get("selected_review"), dict) else []
-    uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset output
+    embedded = content.get("selected_review")
+    reviews = [(embedded.get("selection_review_source_asset_version_id"), embedded)] if isinstance(embedded, dict) else []
+    uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
         JOIN authority_operation operation USING(operation_id)
         JOIN authority_asset_version v USING(asset_version_id)
         JOIN authority_asset asset ON asset.asset_id=v.asset_id
         WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
           AND asset.asset_type IN ('review_report','re_review_report')
           AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
-        ORDER BY operation.created_at DESC LIMIT 1""", [book["project_id"], source_id])
-    latest = [row[0] for row in uow.cursor.fetchall()]
-    if latest:
-        reviews = latest
-    problems = sorted({code for review in reviews for code in major_contradiction_codes(
-        review, text=content["text"], source_id=source_id)})
+        ORDER BY operation.created_at""", [book["project_id"], source_id])
+    reviews.extend(uow.cursor.fetchall())
+    pending = {}
+    from novel_forge.modules.review.diagnostics import prose_hash
+    for review_id, review in reviews:
+        if (review.get("revision_version_id") or review.get("target_asset_version_id")) != source_id or review.get("target_text_hash") != prose_hash(content["text"]):
+            continue
+        if review.get("report_type") == "ReReviewReport":
+            prior_id = (review.get("prior_review_evidence") or {}).get("asset_version_id")
+            verified = {check["code"] for check in review.get("resolution_checks", [])
+                if check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED"}
+            for disposition in review.get("issue_lineage", []):
+                if (disposition.get("verified_by_rereview") is True and disposition.get("to_status") == "RESOLVED"
+                        and disposition.get("code") in verified):
+                    pending.pop((prior_id, disposition["code"]), None)
+        for code in major_contradiction_codes(review, text=content["text"], source_id=source_id):
+            pending[(review_id, code)] = code
+    problems = sorted(set(pending.values()))
     if problems:
         raise KernelError("MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED",
             "Retain this complete candidate for targeted revision; it cannot become affected later prose's automatic source",
@@ -454,6 +467,8 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     for item in snapshot["sources"]:
         source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=item["asset_version_id"])
+        if require_current:
+            require_prose_propagation(uow, book, source)
         if source.content_hash != item["content_hash"] or text_hash(source_draft_content(source)["text"]) != item["text_hash"]:
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working manuscript source failed its exact version binding")
         if snapshot.get("working_memory"):

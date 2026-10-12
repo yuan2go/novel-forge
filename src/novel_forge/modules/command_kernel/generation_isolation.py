@@ -342,6 +342,7 @@ def append_isolation(uow, effect, command):
         "chapter.draft.generate",
         "chapter.review.evaluate",
         "chapter.revision.apply",
+        "chapter.revision.review",
         "chapter.canon.extract",
     }
     if (
