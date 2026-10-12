@@ -152,7 +152,7 @@ def replace_failed_step(
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memory_transport or schema_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or optional_memo_repair else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if known_isolated_effects or unsent_transport or memory_transport or schema_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or optional_memo_repair else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not schema_transport and not historical_input_repair and not optional_memo_repair)

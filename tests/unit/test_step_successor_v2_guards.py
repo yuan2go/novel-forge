@@ -7,6 +7,46 @@ from novel_forge.modules.command_kernel import step_successor_v2 as recovery
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+@pytest.mark.parametrize('isolated,source_status,root_status,expected', [
+    (True, 'FAILED_FINAL', 'WAITING_CHILDREN', 'FIXTURE_NEXT_RECONCILIATION_BOUNDARY'),
+    (False, 'FAILED_FINAL', 'WAITING_CHILDREN', 'STEP_SUCCESSOR_SOURCE_INVALID'),
+    (True, 'CANCELLED', 'WAITING_CHILDREN', 'STEP_SUCCESSOR_SOURCE_INVALID'),
+    (True, 'FAILED_FINAL', 'CANCELLATION_REQUESTED', 'STEP_SUCCESSOR_SOURCE_INVALID'),
+])
+def test_forward_recovery_saga_requires_stopped_isolation_before_successor(monkeypatch, isolated, source_status, root_status, expected):
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.service import AdmissionContext
+    from novel_forge.modules.command_kernel import context_transport_recovery
+    from novel_forge.modules.chapter_authority import context_transport_recovery as chapter_transport
+    from novel_forge.modules.book_authority import manuscript
+    source = {'operation_id': 'source', 'project_id': 'project', 'actor_id': 'actor', 'root_operation_id': 'root',
+              'saga_id': 'saga', 'status': source_status, 'definition_name': 'chapter.revision.apply',
+              'definition_version': '3.10.0', 'definition_snapshot': {'permissions': []}}
+    root = {'operation_id': 'root', 'actor_id': 'actor', 'status': root_status}
+    cursor = Mock()
+    cursor.fetchone.side_effect = [(source,), (source,), None, (root,), ({'operation_id': 'source'},)]
+    repo = Mock()
+    repo.saga_for_update.return_value = {'saga_id': 'saga', 'status': 'FORWARD_RECOVERY'}
+    uow = SimpleNamespace(cursor=cursor, repositories=SimpleNamespace(operation_graph=repo))
+    monkeypatch.setattr(recovery, 'AuthorityUnitOfWork', lambda *args: nullcontext(uow))
+    monkeypatch.setattr(recovery, 'require_live_chapter_frontier', lambda *args, **kwargs: None)
+    monkeypatch.setattr(context_transport_recovery, 'require_unsent_context_transport', lambda *args, **kwargs: False)
+    monkeypatch.setattr(chapter_transport, 'require_optional_memory_transport', lambda *args, **kwargs: False)
+    monkeypatch.setattr(chapter_transport, 'require_changed_schema_transport', lambda *args, **kwargs: False)
+    monkeypatch.setattr(manuscript, 'require_historical_input_scope_repair', lambda *args: False)
+    boundary = Mock(side_effect=KernelError('FIXTURE_NEXT_RECONCILIATION_BOUNDARY', 'Fixture stops before effect validation or mutation'))
+    monkeypatch.setattr(recovery, '_require_reconciled_graph', boundary)
+    with pytest.raises(KernelError, match=expected):
+        recovery.replace_failed_step('fixture-only', predecessor_id='source',
+            target_version='3.10.0' if isolated else '3.10.1',
+            context=AdmissionContext('actor', frozenset(), frozenset(), 'fixture-build', 'fixture-sha'),
+            policy_evidence={'contract_version': 'chapter-pure-generation-successor.v1'},
+            expected_failure_code='GENERATION_ATTEMPT_ISOLATED',
+            known_isolated_effects=(('effect', 'request-hash'),) if isolated else ())
+    assert boundary.call_count == int(expected == 'FIXTURE_NEXT_RECONCILIATION_BOUNDARY')
+
+
 @pytest.mark.parametrize("facts", [(True, False, False), (False, True, False), (False, False, True)])
 def test_unknown_accounting_lease_or_cancellation_prevents_successor_mutation(facts):
     cursor = Mock()

@@ -51,6 +51,8 @@ Profiles that freeze length bounds without a unit use the existing manuscript
 bound to the repair; a conflicting explicit unit requires configuration correction.
 New Quality receipts freeze `compiled-platform-policy-v2` with that same measurement;
 historical v1 receipts retain their original Unicode default when verifying old reports.
+Stopped isolated pure generation may register its native successor from a Saga's
+`FORWARD_RECOVERY` checkpoint, with the same ownership, proof, lease and cancellation checks.
 Known unresolved major contradictions prevent automatic affected continuation; saved
 candidates, partial repair and original failure evidence remain available. This path
 does not grant author selection, formal acceptance or literary quality proof.

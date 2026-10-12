@@ -994,6 +994,8 @@ or `revision-status --revision-root …`, and use `use-working-candidate` to act
 Status and completed-result reads require no new Provider eligibility. UNKNOWN continuation
 first reconciles retained results; only an owned stopped pure invocation may be isolated
 and replaced by the existing StepSuccessor. Original UNKNOWN and cost evidence remain unchanged.
+That atomic successor can resume a `FORWARD_RECOVERY` Saga after stopped pure-generation
+isolation; ordinary failed steps without that proof retain their existing state restrictions.
 An out-of-range chapter triggers whole-chapter repair against its original frozen length bounds,
 even when optional Review finds no issue. A frozen profile with omitted length unit uses
 the same `HAN_CHARACTERS_V1` count as manuscript readback, retaining its exact version,
