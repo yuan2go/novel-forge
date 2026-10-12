@@ -305,6 +305,17 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
         monkeypatch.setattr(WorkerFailureClassifier, "classify", staticmethod(historical_failure_class))
 
+        if mode == "world-causal-dead-letter-replay":
+            from novel_forge.modules.command_kernel import generation_policy
+            current_generation_operation = generation_policy.pure_generation_operation
+
+            def historical_attempt_policy(cursor, operation_id, project_id):
+                if legacy_block and operation_id == legacy_block[0] and not historical_classifier_restored:
+                    return False
+                return current_generation_operation(cursor, operation_id, project_id)
+
+            monkeypatch.setattr(generation_policy, "pure_generation_operation", historical_attempt_policy)
+
         def historical_gate_checkpoint(preparation, **values):
             try:
                 return native_world_prepare(preparation, **values)
