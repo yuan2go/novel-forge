@@ -96,6 +96,9 @@ Style source identity does not prove prose quality.
 Scripted author adoption binds `2.2.1-author-input.v1` to the same fixture graph semantics;
 it cannot borrow the current production author's creative baseline or claim its quality
 qualification. Production author input retains its coordinated contract and exact provenance.
+Authority handlers receive database context from the host request loader, outside the
+command payload. Coordinated ChapterOutcome verifies stored quality evidence in that
+database before committing its outcome; candidates do not bypass acceptance.
 
 Ordinary continuation freezes exact currently selected manuscript versions in the existing
 input snapshot and Arc Working Set. A bounded recent-source projection carries actual
@@ -1855,6 +1858,14 @@ Mission/Scene decisions: it cannot fill an absent hook, reward, emotional or sus
 curve, protagonist charm, antagonist pressure or escalating conflict. Frozen projection
 1.0.0/2.0.0 and Mission/Scene v2/v3 preserve their historical semantics; existing projections
 are reused by immutable source identity.
+
+Book acceptance keeps the frozen typed Planning version in realization consumption,
+and verifies the ChapterOutcome against the exact executed ChapterPlan projection.
+The selected acceptance evidence must first prove that projection's source version,
+hash and chapter binding; the two plan identities are not interchangeable.
+Edition revalidation matches the submitted slot identities and order against the
+published continuous-scene and legacy core-slot interpretations. Auxiliary capabilities
+in a new plan do not turn one saved prose scene into several required source slots.
 
 Chapter 3.8.0 and Pack 2.12.0/template v9 retain their frozen `work-requirements.v1` inputs
 and emit `work-quality.v2` evidence. Selected method values reach Draft Plan v3,

@@ -1225,8 +1225,12 @@ called a best-of-two comparison. `TECHNICAL_WAIT` uses bounded exponential delay
 seconds). Twelve windows without usable stage output or stage/cursor advancement stop at
 `CREATION_NO_PROGRESS`; failure/resume versions and isolation counts are not progress. Native
 Formation failure counts remain diagnostics and do not deny a later authorized continue.
-Three identical reconciled failures without a successful logical stage stop the current
+Three identical failure classes without a successful logical stage stop the current
 Book drive at `GENERATION_NO_PROGRESS`; a later continue starts a fresh progress check.
+Unknown outcomes still complete required reconciliation or durable isolation first.
+Pure generation does not request an execution-window extension for a retained deadline;
+the same owned live Chapter frontier is still checked, and a no-op window cannot be
+reported as recovery progress. Unmet prose length remains a visible diagnosis.
 The worker carries its current continuation's stagnant windows across scheduling yields;
 an explicitly restarted continuation begins a new check. Known final Formation model
 failures stop automatic scheduling with `FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION`.

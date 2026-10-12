@@ -19,6 +19,8 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
     root = Path(__file__).resolve().parents[2]
     from tests.integration.synthesis_production_support import SynthesisTransport
     transport = SynthesisTransport() if full_creation else None
+    if transport:
+        transport.chapter.controlled_prose = (Path(__file__).resolve().parents[1] / "fixtures/creation/short-arc/controlled-prose.txt").read_text()
     if full_creation:
         from novel_forge.api import authority_dependencies
         build_book = authority_dependencies.build_book_production_composition
@@ -50,7 +52,7 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
             if stage == "creative.candidates.generate":
                 result["serialization_potential"] = None
                 for declaration in result.get("applicability", []):
-                    if declaration["field_path"] == "$.serialization_potential":
+                    if declaration["field_path"] in {"$.serialization_potential", "/serialization_potential"}:
                         declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
             def visit(value):
                 if isinstance(value, dict):
@@ -131,6 +133,17 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         uow.cursor.execute("SELECT count(*) FROM authority_capability_pack_approval approval JOIN authority_operation op ON op.operation_id=approval.decided_by_operation_id WHERE op.project_id=%s", [project])
         assert uow.cursor.fetchone()[0] == 0
         if full_creation:
+            uow.cursor.execute("""SELECT consumption.chapter_plan_asset_version_id,
+                outcome.content->>'chapter_plan_version_id', plan.asset_type
+                FROM authority_narrative_realization_consumption consumption
+                JOIN authority_asset_version outcome ON outcome.asset_version_id=consumption.chapter_outcome_asset_version_id
+                JOIN authority_asset outcome_asset ON outcome_asset.asset_id=outcome.asset_id
+                JOIN authority_asset_version execution_plan ON execution_plan.asset_version_id=outcome.content->>'chapter_plan_version_id'
+                JOIN authority_asset plan ON plan.asset_id=execution_plan.asset_id
+                WHERE outcome_asset.project_id=%s""", [project])
+            accepted_plan_bindings = uow.cursor.fetchall()
+            assert accepted_plan_bindings
+            assert all(source != execution and kind == "chapter_plan" for source, execution, kind in accepted_plan_bindings)
             uow.cursor.execute("SELECT count(*) FROM state_event WHERE project_id=%s AND event_type='external_effect.storage_admitted'", [project])
             assert uow.cursor.fetchone()[0] > 0
             uow.cursor.execute("SELECT external_effect_id,operation_id FROM authority_external_effect WHERE project_id=%s AND effect_type='blob.upload' LIMIT 1", [project])
@@ -213,6 +226,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
+    transport.chapter.controlled_prose = (Path(__file__).resolve().parents[1] / "fixtures/creation/short-arc/controlled-prose.txt").read_text()
     if mode.startswith("capacity-"):
         from novel_forge.modules.story_planning_runtime.execution import (
             PostgresPlanningExecutionPreparer,
@@ -408,7 +422,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             creative_calls.append(stage)
             result["serialization_potential"] = None
             for declaration in result.get("applicability", []):
-                if declaration["field_path"] == "$.serialization_potential":
+                if declaration["field_path"] in {"$.serialization_potential", "/serialization_potential"}:
                     declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
         def visit(value):
             if isinstance(value, dict):
@@ -446,7 +460,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     parser = _authority_parser()
     args = parser.parse_args(["authority-creation", "start", "--project-id", project,
         "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
-        "--idempotency-key", "durable", "--repository-root", str(root)])
+        "--idempotency-key", "durable", "--creative-selection", "AUTHOR_COMPARISON", "--repository-root", str(root),
+        "--execution-template-file", str(root / "config/execution_templates/creative_validation.json")])
     if mode.startswith("world-"):
         execution_template = json.loads((root / "config/execution_templates/creative_validation.json").read_text())
         execution_template["world_future_preparation"] = "REQUIRED"
@@ -893,7 +908,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     final = creation_status(DATABASE_URL, project_id=project, formation_run_id=identity, principal=author)
     assert final["author_state"] == "INTERNAL_ACCEPTANCE_COMPLETE"
     assert final["production"]["accepted_chapters"] == inputs["target_chapters"]
-    assert final["delivery"]["required_action"] == "SELECT_EXACT_EDITION_AND_EXPORT"
+    assert final["delivery"]["required_action"] == "READ_EDIT_OR_EXPORT_CURRENT_MANUSCRIPT"
     cancelled = parser.parse_args(["authority-creation", "cancel", "--project-id", project,
         "--formation-run-id", identity, "--reason", "Cannot cancel terminal production", "--idempotency-key", "late-cancel", "--repository-root", str(root)])
     from novel_forge.modules.command_kernel.errors import KernelError

@@ -1591,6 +1591,7 @@ class PostgresBookAuthority:
                     realization_id=realization_id,
                     chapter_number=int(request["chapter_number"]),
                     chapter_plan_asset_version_id=str(request["chapter_plan_version"]),
+                    execution_chapter_plan_asset_version_id=execution_chapter_plan_asset_version_id,
                     acceptance_id=acceptance_id,
                     chapter_outcome_asset_version_id=outcome.asset_version_id,
                     realization_evidence=[

@@ -160,6 +160,15 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
         from copy import deepcopy
 
         result = super().__call__(stage, inputs)
+        if stage == "draft" and getattr(self, "controlled_prose", ""):
+            from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+            artifacts = result.get("scene_artifacts") or []
+            if artifacts:
+                artifacts[0]["text"] = self.controlled_prose + "\n\n" + artifacts[0]["text"]
+                result["text"] = serialize_realization(artifacts)
+            else:
+                result["text"] = self.controlled_prose + "\n\n" + result["text"]
+            self.calls[-1]["output"] = deepcopy(result)
         if stage == "memo":
             references = inputs["execution_intent"].get("character_reference_contract")
             if references:

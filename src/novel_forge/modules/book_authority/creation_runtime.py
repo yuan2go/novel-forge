@@ -89,6 +89,19 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
     recovery_actions = 0
     stalled_failures = {}
 
+    def repeated_failure(error: KernelError, root_id: str) -> bool:
+        from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+        details = error.details or {}
+        signature = canonical_hash({"root": root_id, "code": error.code,
+            "cause": details.get("cause_code"), "stage": details.get("stage")})
+        stalled_failures[signature] = stalled_failures.get(signature, 0) + 1
+        if stalled_failures[signature] < 3:
+            return False
+        events({"kind": "GENERATION_NO_PROGRESS", "book_run_id": book_run_id,
+            "operation_id": root_id, "failure": details, "scope": "CURRENT_DRIVE",
+            "same_failure_observations": stalled_failures[signature]})
+        return True
+
     def recover(action: Callable[[], bool]) -> bool:
         nonlocal recovery_actions
         execution_probe()
@@ -215,17 +228,11 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                     if error.code.startswith("MODEL_EFFECT_OUTCOME_UNKNOWN") or error.code == "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED":
                         from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
                         if recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal):
-                            details = error.details or {}
-                            from novel_forge.modules.story_planning_runtime.domain import canonical_hash
-                            signature = canonical_hash({"root": active, "code": error.code,
-                                "cause": details.get("cause_code"), "stage": details.get("stage")})
-                            stalled_failures[signature] = stalled_failures.get(signature, 0) + 1
-                            if stalled_failures[signature] >= 3:
-                                events({"kind": "GENERATION_NO_PROGRESS", "book_run_id": book_run_id,
-                                    "operation_id": active, "failure": details, "scope": "CURRENT_DRIVE",
-                                    "same_failure_observations": stalled_failures[signature]})
+                            if repeated_failure(error, active):
                                 return "GENERATION_NO_PROGRESS"
                             continue
+                    elif repeated_failure(error, active):
+                        return "GENERATION_NO_PROGRESS"
                     if error.code == "CHAPTER_ATTEMPT_EXHAUSTED" and recover_unsent_context_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal):
                         continue
                     if author_first(book):

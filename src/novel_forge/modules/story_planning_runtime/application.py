@@ -358,10 +358,8 @@ class _PlanningGenerationHandler:
                 raise KernelError("EDITION_SCENE_MAPPING_DRIFT", "Edition planning must preserve the mapped source Scene identities and order")
             target_slots = command.edition_execution.get("target_slot_ids") or []
             if target_slots:
-                from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
-                slots = compile_realization_contract(candidate.candidate_payload, {})["slots"]
-                if [slot["slot_id"] for slot in slots] != list(target_slots):
-                    raise KernelError("EDITION_SLOT_MAPPING_DRIFT", "The new plan must realize every submitted Scene slot in frozen order")
+                from novel_forge.modules.book_authority.edition_planning import require_edition_slot_mapping
+                require_edition_slot_mapping(candidate.candidate_payload, list(target_slots))
             envelope["edition_execution"] = deepcopy(dict(command.edition_execution))
             envelope["envelope_digest"] = canonical_hash({key: value for key, value in envelope.items() if key != "envelope_digest"})
         content = candidate.authority_content(

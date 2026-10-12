@@ -201,7 +201,8 @@ def current_planning_fixture_inputs(inputs, database_url):
         from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
         with AuthorityUnitOfWork(database_url) as uow:
-            uow.cursor.execute("SELECT s.foundation_set FROM authority_book_production b JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id WHERE b.project_id=%s AND b.book_id=%s", [command["project_id"], command["book_id"]])
+            edition_run = (command.get("edition_execution") or {}).get("book_run_id")
+            uow.cursor.execute("SELECT s.foundation_set FROM authority_book_production b JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id WHERE b.project_id=%s AND b.book_id=%s AND (%s::text IS NULL OR b.book_run_id=%s)", [command["project_id"], command["book_id"], edition_run, edition_run])
             snapshots = uow.cursor.fetchall()
             if len(snapshots) != 1:
                 raise ValueError("Chapter fixture requires one exact active Book input snapshot")

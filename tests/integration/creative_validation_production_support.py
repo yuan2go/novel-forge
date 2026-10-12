@@ -133,6 +133,8 @@ else:
                         dimension.update(gate_status='NOT_APPLICABLE',score=None,evidence_locations=[],issue_codes=[],revision_strategies=[])
             for dimension in result.get("dimensions", []):
                 for location in dimension.get("evidence_locations", []):
+                    if "span_id" in location:
+                        continue
                     quote = inputs["revision"]["text"][location["start"]:location["end"]]
                     location.clear()
                     location["quote"] = quote
@@ -167,6 +169,9 @@ else:
             if typed_envelope:
                 result = {"payload_json": json.dumps(result, ensure_ascii=False)}
         if stage in {"review", "rereview"}:
+            if payload.output_schema_version.endswith(":repair-scope-v1"):
+                for diagnosis in result.get("issues", []):
+                    diagnosis.setdefault("repair", None)
             for collection in ("issues", "resolution_checks", "knowledge_checks"):
                 for issue in result.get(collection, []):
                     if isinstance(issue.get("evidence"), dict) and "quote" in issue["evidence"]:

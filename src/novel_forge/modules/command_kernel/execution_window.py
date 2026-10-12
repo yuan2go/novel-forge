@@ -29,6 +29,9 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         require_live_chapter_frontier(cursor, root_id=root_id, project_id=root['project_id'], book_run_id=book_run_id)
         cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s', [root_id])
         deadline = cursor.fetchone()[0]
+        from .generation_policy import generation_graph
+        if generation_graph(cursor, root_id, root['project_id']):
+            return {'continued': False, 'deadline': deadline, 'generation_deadline_enforced': False}
         now = clock()
         if not deadline or (deadline > now and not start_repair_phase):
             return {'continued':False,'deadline':deadline}

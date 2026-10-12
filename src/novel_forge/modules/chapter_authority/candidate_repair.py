@@ -272,9 +272,9 @@ def recover_length_retry_phase(authority, *, book_run_id, principal):
         if row[1] != principal.principal_id:
             raise KernelError('CHAPTER_LENGTH_RETRY_ACTOR_INVALID','Retry requires the original actor')
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
-    continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
+    continuation = continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
         predecessor_id=row[0],target_version=row[5],book_run_id=book_run_id,principal=principal,start_repair_phase=True)
-    return True
+    return bool(continuation['continued'])
 
 
 def recover_canon_capacity_phase(authority, *, book_run_id, principal):
@@ -305,9 +305,9 @@ def recover_canon_capacity_phase(authority, *, book_run_id, principal):
         if not row:
             return False
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
-    continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
+    continuation = continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
         predecessor_id=row[0],target_version='3.9.0',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
-    return True
+    return bool(continuation['continued'])
 
 
 def recover_canon_capacity_frontier(authority, *, book_run_id, principal):
@@ -404,9 +404,9 @@ def recover_canon_schema_retry_phase(authority, *, book_run_id, principal):
         if not row or not codex_wire_correction_evidence(row[1]['provider_evidence']['production_execution']['process_evidence']):
             return False
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
-    continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
+    continuation = continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
         predecessor_id=row[0],target_version='3.9.5',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
-    return True
+    return bool(continuation['continued'])
 
 
 def recover_canon_protocol_frontier(authority, *, book_run_id, principal):
