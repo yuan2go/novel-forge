@@ -357,24 +357,14 @@ def test_agent_turn_reserves_only_remaining_aggregate_budget() -> None:
     )
 
     assert amount == "0.8"
-    assert tokens == 60
+    assert tokens == 100
 
 
-def test_agent_turn_reservation_fails_before_effect_when_input_budget_is_spent() -> (
-    None
-):
-    session = replace(
-        _session(),
-        usage=AgentHarnessUsage(input_tokens=100),
-    )
-
-    with pytest.raises(KernelError) as raised:
-        _agent_turn_reservation_limits(
-            session=session,
-            provider_call_cap="1.0",
-        )
-
-    assert raised.value.code == "AGENT_HARNESS_BUDGET_EXHAUSTED"
+def test_agent_turn_history_does_not_exhaust_new_model_input_capacity() -> None:
+    session = replace(_session(), usage=AgentHarnessUsage(input_tokens=1000))
+    amount, tokens = _agent_turn_reservation_limits(session=session, provider_call_cap="1.0")
+    assert tokens == 100
+    assert amount == "1.0"
 
 
 def test_harness_turn_budget_fails_closed_without_committing_request() -> None:
@@ -480,3 +470,30 @@ def test_harness_cancellation_stops_before_the_next_model_effect() -> None:
         AgentTranscriptEventType.REQUEST_STARTED,
         AgentTranscriptEventType.SESSION_STOPPED,
     ]
+
+
+def test_native_pure_generation_session_ignores_historical_consumption_limits():
+    from novel_forge.modules.agent_runtime.policy import SERVER_AGENT_TOOL_CATALOG
+    session = replace(_session(max_turns=1), tool_policy=(SERVER_AGENT_TOOL_CATALOG['narrative.query_accepted'], SKILL_ACTIVATION_TOOL),
+        usage=AgentHarnessUsage(turns=10, tool_calls=10, external_effects=20, input_tokens=1000, output_tokens=1000))
+    model = _Model((AgentModelTurn(message='query', operation_id='operation-1', attempt_id='attempt-1', external_effect_id='effect-1',
+        input_tokens=200, output_tokens=200, cost_amount='0', tool_call=AgentToolCall('narrative.query_accepted', {}, 'ground source')),
+        AgentModelTurn(message='done', operation_id='operation-1', attempt_id='attempt-1', external_effect_id='effect-2',
+            input_tokens=200, output_tokens=200, cost_amount='0', final_response={'candidate_only':True})))
+    result = UnifiedAgentHarness(transcript=_Transcript(), model=model, tools=_Tools(), cancellation=_Cancellation()).execute_request(
+        session=session, request_id='generation-request', instruction='use actual facts', attempt_id='attempt-1', trace_id='trace-1')
+    assert result.session.status is AgentHarnessStatus.COMPLETED
+    assert result.session.usage.turns == 12
+    assert result.session.usage.input_tokens == 1400
+
+
+def test_native_generation_repeated_observations_fail_without_lifetime_quota():
+    from novel_forge.modules.agent_runtime.policy import SERVER_AGENT_TOOL_CATALOG
+    session = replace(_session(max_turns=1), tool_policy=(SERVER_AGENT_TOOL_CATALOG['narrative.query_accepted'], SKILL_ACTIVATION_TOOL))
+    turn = AgentModelTurn(message='same query', operation_id='operation-1', attempt_id='attempt-1', external_effect_id='effect-1',
+        input_tokens=1, output_tokens=1, cost_amount='0', tool_call=AgentToolCall('narrative.query_accepted', {}, 'ground source'))
+    transcript = _Transcript()
+    with pytest.raises(KernelError, match='AGENT_HARNESS_NO_PROGRESS'):
+        UnifiedAgentHarness(transcript=transcript, model=_Model((turn, turn, turn)), tools=_Tools(), cancellation=_Cancellation()).execute_request(
+            session=session, request_id='same-request', instruction='use actual facts', attempt_id='attempt-1', trace_id='trace-1')
+    assert transcript.events[-1]['event_type'] is AgentTranscriptEventType.REQUEST_FAILED

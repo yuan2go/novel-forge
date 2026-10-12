@@ -41,8 +41,8 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         args = SimpleNamespace(**vars(args))
         args.project_id = owned[0]
 
-    if args.action in {"recover-plan-references", "recover-upstream-plan"}:
-        if not args.proposal_id:
+    if args.action in {"recover-plan-references", "recover-upstream-plan", "resume"}:
+        if args.action != "resume" and not args.proposal_id:
             raise ValueError("Require the active Chapter PlanChange --proposal-id")
         from novel_forge.api.authority_dependencies import build_book_production_composition, build_production_execution_composition, build_chapter_authority_application
         from novel_forge.modules.book_authority.plan_recovery import retire_reference_failed_chapter, retire_upstream_stale_chapter
@@ -52,6 +52,9 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             composition = build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter)
             if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
                 raise PermissionError("Work is outside this Project")
+            if args.action == "resume":
+                return composition.authority.resume(args.book_run_id, reason=args.reason or "Requested manuscript resume",
+                    principal=principal, expected_version=args.expected_version)
             if args.action == "recover-upstream-plan":
                 if not args.corrected_plan_version:
                     raise ValueError("Require exact current --corrected-plan-version")

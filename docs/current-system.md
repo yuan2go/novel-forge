@@ -1215,7 +1215,9 @@ separate credentialed and budgeted qualification campaign.
 Pure model Operations and their generation graphs retain automatic deadline and
 retry counters as execution observations. The current Kernel probes, successor
 admission and deadline scanner do not use those observations to cancel generation;
-explicit cancellation and current leases/fences still apply. A graph containing a
+explicit cancellation and current leases/fences still apply. A Book paused solely for
+historical generation retry exhaustion can resume its verified runnable successor through
+ordinary continue; an author pause retains its own explicit resume requirement. A graph containing a
 non-generation external capability keeps its original execution boundary. Codex
 supervision has no elapsed generation lifetime limit; infrastructure probes, durable
 process identity, heartbeat, cancellation and duplicate-submission recovery remain.
@@ -1226,6 +1228,13 @@ latency insufficiency as diagnostics. Model/task authorization, actual Context/o
 capacity, in-flight exclusion, Retry-After and priced monetary authorization still
 reject new calls. Provider consumption Token/call ceilings are ledger observations;
 removing them does not increase model Context capacity or grant a paid channel.
+
+The server-owned Director/Research Tool catalog is limited to accepted-state queries,
+planning candidates and Plan Change proposals. Sessions bound to that exact catalog treat
+cumulative turns, Tool calls and Token observations as diagnostics. Three identical
+consecutive Tool input/result observations stop for no progress; explicit Tool authorization,
+accepted-fact mutation prohibitions and monetary authorization remain. An unknown or
+non-generation Tool contract keeps its original limits.
 
 Raw model results are persisted through the existing ExecutionRecordStore before
 local schema and accounting checks. Unambiguous complete-source prose has a separate

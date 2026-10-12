@@ -60,20 +60,13 @@ AGENT_SESSION_STAGE = "agent_session"
 def _agent_turn_reservation_limits(
     *, session: AgentHarnessSession, provider_call_cap: str
 ) -> tuple[str, int]:
-    """INVARIANT: Reserve only the unspent Session budget for the next model effect.
-
-    The authoritative aggregate gate still lives in the shared budget runtime.
-    This sizing prevents each Agent turn from presenting the whole Session cap
-    as a new reservation after earlier turns have already settled.
-    """
+    """INVARIANT: Monetary authorization and model capacity remain distinct from historical token consumption."""
     provider_maximum = Decimal(provider_call_cap)
     remaining_cost = Decimal(session.budget.max_cost_amount) - Decimal(
         session.usage.cost_amount
     )
-    remaining_input_tokens = (
-        session.budget.max_input_tokens - session.usage.input_tokens
-    )
-    if remaining_cost < 0 or remaining_input_tokens <= 0:
+    remaining_input_tokens = session.budget.max_input_tokens
+    if remaining_cost < 0:
         raise KernelError(
             "AGENT_HARNESS_BUDGET_EXHAUSTED",
             "Agent Session has no reservable model-turn budget remaining",

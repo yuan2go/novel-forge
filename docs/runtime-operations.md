@@ -2532,6 +2532,10 @@ continuation depth rejection while preserving immutable continuation records and
 isolation identity/commit-right guards. Back up and verify a restore first. Historical
 `failure_retry_counter`, deadline and max-attempt values are retained, including values
 already at their former ceilings; recovery does not reset them.
+Ordinary creation continue also resumes a Book paused by the former generation retry
+ceiling once its native, scope-checked successor is runnable. Author pauses are separate.
+The manuscript resume CLI composes the real Chapter port before reconciling an active
+request; it never uses an unbound Authority for that action.
 
 
 Inspect the actual installed release and original Book before recovery. Historical
