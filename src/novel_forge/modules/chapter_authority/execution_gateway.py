@@ -386,11 +386,11 @@ def _provider_effective_context_policy(
             "intent_fingerprint": content["intent_fingerprint"],
         }
     if selected_physical == ("chapter_memo",):
-        from .execution_artifacts import _hash
+        from .execution_artifacts import _hash, MEMO_INPUT_QUALIFICATIONS
 
         memo_body = dict(content)
         fingerprint = str(memo_body.pop("memo_fingerprint", ""))
-        if content.get("qualification") != "QUALIFIED" or not fingerprint or fingerprint != _hash(memo_body):
+        if content.get("qualification") not in MEMO_INPUT_QUALIFICATIONS or not fingerprint or fingerprint != _hash(memo_body):
             raise KernelError("CHAPTER_MEMO_FINGERPRINT_INVALID", "Provider context requires an exact qualified Memo")
         return {
             "compiler_version": "frozen-memo-context-physical-admission-v1",

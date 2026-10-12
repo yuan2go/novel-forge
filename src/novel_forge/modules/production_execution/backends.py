@@ -3,15 +3,18 @@ from __future__ import annotations
 from novel_forge.logging.execution import execution_event, execution_step
 
 from dataclasses import dataclass, replace
+from contextvars import copy_context
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
 import inspect
 import json
+import os
 from pathlib import Path
 import subprocess
 from threading import Event, Lock, Thread
 from typing import Any, Callable, Mapping, Protocol
+
 
 from novel_forge.modules.provider_control.contracts import (
     ProviderCancellationRequest,
@@ -48,6 +51,7 @@ from .process_supervisor import (
     ProcessLaunchRequest,
     ProcessReceiptStatus,
     ProcessTimeout,
+    PosixProcessIdentityProbe,
     ResultIntegrity,
 )
 from .provider_protocol_failure import codex_protocol_failure, read_codex_stream_summary
@@ -56,6 +60,26 @@ from .codex_configuration import (
     CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
     codex_output_schema, decode_codex_output, strict_codex_json_loads, CODEX_CANONICAL_JSON_SCHEMA_REF, CODEX_CANONICAL_JSON_CODEC, codex_retry_overrides, require_codex_home,
 )
+
+
+_active_provider_invocations = set()
+_provider_invocation_lock = Lock()
+_provider_process_probe = PosixProcessIdentityProbe()
+
+
+def provider_invocation_inflight(record):
+    process_id = (record.get("raw_evidence") or {}).get("invocation_process_id")
+    execution_id = (record.get("request") or {}).get("execution_id")
+    if process_id == os.getpid():
+        with _provider_invocation_lock:
+            return execution_id in _active_provider_invocations
+    if type(process_id) is not int or (record.get("raw_evidence") or {}).get("invocation_finished"):
+        return False
+    if not _provider_process_probe.is_alive(process_id):
+        return False
+    expected_token = (record.get("raw_evidence") or {}).get("invocation_process_start_identity")
+    current_token = _provider_process_probe.process_start_token(process_id)
+    return not expected_token or not current_token or expected_token == current_token
 
 
 def _utc_now() -> str:
@@ -1007,33 +1031,75 @@ class RemoteProviderExecutionBackend:
         self.callback_consumer = callback_consumer
         self._callback_lock = Lock()
 
+    def _retain_late_result(self, record, result, provider_request):
+        raw_ref = self.record_store.put_evidence("late-provider-response", record.request.execution_id,
+            {"outcome": result.outcome, "evidence": dict(result.evidence), "commit_rights": "REVOKED"})
+        evidence = dict(result.evidence)
+        raw_text = evidence.get("raw_output_text")
+        if not isinstance(raw_text, str) and isinstance(evidence.get("result"), Mapping):
+            raw_text = _canonical_json(evidence["result"])
+        if not isinstance(raw_text, str):
+            return
+        identity = {'operation_id':record.request.operation_id,'attempt_id':record.request.attempt_id,
+            'fencing_token':record.request.fencing_token,'request_hash':provider_request.request_hash,
+            'external_effect_id':record.request.external_effect_id, 'execution_request_hash':record.request.contract_hash,
+            'provider_request_id':result.handle.provider_request_id if result.handle else None}
+        complete = bool(evidence.get('source_complete') and evidence.get('model_id') == provider_request.model
+            and result.handle and result.handle.provider_request_id
+            and all(key not in evidence or evidence[key] == value for key,value in identity.items()))
+        from .result_retention import retain_model_result
+        latest = self.record_store.get_record(record.request.execution_id)
+        retain_model_result(latest, self.record_store, raw_text=raw_text, complete=complete,
+            source={"provider_response_ref": raw_ref, "commit_rights": "REVOKED", "outcome": result.outcome})
+
     def _invoke_interruptibly(self, record, provider_request):
         from novel_forge.modules.command_kernel.lease_heartbeat import assert_active_leases_healthy
+        assert_active_leases_healthy()
+        invocation_context = copy_context()
         done, abandoned, lock = Event(), Event(), Lock()
         observed = {}
+        record.raw_evidence["invocation_process_id"] = os.getpid()
+        record.raw_evidence["invocation_process_start_identity"] = _provider_process_probe.process_start_token(os.getpid())
+        record.raw_evidence["invocation_finished"] = False
+        self.record_store.save_record(record)
+        with _provider_invocation_lock:
+            if record.request.execution_id in _active_provider_invocations:
+                raise ValueError("PROVIDER_INVOCATION_ALREADY_INFLIGHT")
+            _active_provider_invocations.add(record.request.execution_id)
         def invoke():
             try:
+                assert_active_leases_healthy()
                 result = self.provider_adapter.invoke(provider_request)
                 with lock:
                     if abandoned.is_set():
-                        raw_ref = self.record_store.put_evidence("late-provider-response", record.request.execution_id,
-                            {"outcome": result.outcome, "evidence": dict(result.evidence), "commit_rights": "REVOKED"})
-                        evidence = dict(result.evidence)
-                        raw_text = evidence.get("raw_output_text")
-                        if not isinstance(raw_text, str) and isinstance(evidence.get("result"), Mapping):
-                            raw_text = _canonical_json(evidence["result"])
-                        if isinstance(raw_text, str):
-                            from .result_retention import retain_model_result
-                            latest = self.record_store.get_record(record.request.execution_id)
-                            retain_model_result(latest, self.record_store, raw_text=raw_text, complete=False,
-                                source={"provider_response_ref": raw_ref, "commit_rights": "REVOKED", "outcome": result.outcome})
+                        self._retain_late_result(record, result, provider_request)
                     else:
                         observed["result"] = result
+                        record.raw_evidence["received_provider_response_ref"] = self.record_store.put_evidence(
+                            "provider-response", record.request.execution_id,
+                            {"outcome": result.outcome, "request_sent": result.request_sent,
+                             "evidence": dict(result.evidence)})
             except Exception as error:
-                observed["error"] = error
+                if "result" in observed:
+                    record.raw_evidence.setdefault("invocation_observation_errors", []).append({
+                        "stage": "RESPONSE_RETENTION", "error_type": type(error).__name__})
+                else:
+                    observed["error"] = error
             finally:
-                done.set()
-        Thread(target=invoke, name="provider-invocation:" + record.request.execution_id, daemon=True).start()
+                with _provider_invocation_lock:
+                    _active_provider_invocations.discard(record.request.execution_id)
+                try:
+                    with lock:
+                        record.raw_evidence["invocation_finished"] = True
+                        latest = self.record_store.get_record(record.request.execution_id)
+                        latest.raw_evidence["invocation_finished"] = True
+                        self.record_store.save_record(latest)
+                except Exception as error:
+                    record.raw_evidence.setdefault("invocation_observation_errors", []).append({
+                        "stage": "FINISHED_MARKER", "error_type": type(error).__name__})
+                finally:
+                    done.set()
+        Thread(target=lambda: invocation_context.run(invoke), name="provider-invocation:" + record.request.execution_id, daemon=True).start()
         try:
             while not done.wait(0.1):
                 assert_active_leases_healthy()
@@ -1044,8 +1110,7 @@ class RemoteProviderExecutionBackend:
                 record.raw_evidence["local_wait_revoked"] = True
                 self.record_store.save_record(record)
                 if "result" in observed:
-                    self.record_store.put_evidence("late-provider-response", record.request.execution_id,
-                        {"outcome": observed["result"].outcome, "evidence": dict(observed["result"].evidence), "commit_rights": "REVOKED"})
+                    self._retain_late_result(record, observed['result'], provider_request)
             raise
         if "error" in observed:
             raise observed["error"]
@@ -1078,6 +1143,8 @@ class RemoteProviderExecutionBackend:
                      "provider_request_id": record.handle.provider_request_id,
                      "provider_response_ref": raw_ref, "submission_phase": "PROVIDER_RESULT_RECORDED",
                      "callback_evidence_hashes": record.raw_evidence.get("callback_evidence_hashes", {})})
+        host.update({key:record.raw_evidence[key] for key in ('invocation_process_id','invocation_process_start_identity','invocation_finished','local_wait_revoked')
+                     if key in record.raw_evidence})
         evidence = dict(result.evidence)
         conflicts = [key for key, value in host.items() if key in evidence and evidence[key] != value]
         if "frozen_output_contract" in evidence and evidence["frozen_output_contract"] != frozen:

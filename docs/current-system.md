@@ -1231,6 +1231,9 @@ capacity, in-flight exclusion, Retry-After and priced monetary authorization sti
 reject new calls. Automatic Craft delivery and Plan/Intent/Memo strategy-copy discrepancies remain
 diagnostic evidence on the Draft. Explicit required knowledge still follows the frozen
 Context and Capability Pack input contracts; cryptographic source/version checks remain.
+Context replaces duplicate automatic Craft guidance by a protected reference only when
+the copies actually agree. Discrepant Memo/card copies remain independent suggestions
+with diagnostic evidence; they neither claim equivalence nor veto Context assembly.
 Provider consumption Token/call ceilings are ledger observations;
 removing them does not increase model Context capacity or grant a paid channel.
 
@@ -1245,10 +1248,15 @@ Raw model results are persisted through the existing ExecutionRecordStore before
 local schema and accounting checks. Unambiguous complete-source prose has a separate
 retained candidate reference; partial or ambiguous output remains raw evidence.
 Chapter workspace exposes those references. Candidate retention does not imply
-structural validation, review, selection, accepted facts or settled usage. Native
+structural validation, review, selection, accepted facts or settled usage.
+Known live native API invocations retain their real in-flight exclusion after local
+waiting is cancelled. Isolation checks the captured process identity and active invocation;
+late complete responses retain revoked selection rights and their original accounting state. Native
 manuscript read/export can select an exact retained candidate reference independently
 of publication gates. Cancelled results retain revoked selection rights.
 Remote waiting polls active lease/cancellation probes without a total generation deadline.
+The send path checks cancellation and lease health before starting and immediately before
+the Provider invocation, including the inherited owning guards in its invocation thread.
 A returned response after local wait revocation is retained separately with revoked commit
 rights; it cannot settle the interrupted operation as successful.
 

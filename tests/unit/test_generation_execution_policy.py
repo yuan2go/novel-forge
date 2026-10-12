@@ -83,6 +83,9 @@ def test_optional_memo_uses_frozen_inputs_without_inventing_model_success():
     assert memo["execution_evidence"]["model_call"] == "NOT_RUN"
     assert memo["source_chapter_plan"] == intent["source_chapter_plan"]
     assert validate_chapter_memo(memo, intent=intent, intent_asset_version_id="intent-v5") == memo
+    from novel_forge.modules.context_builder.production_retrieval import build_retrieval_query_plan
+    retrieval = build_retrieval_query_plan(intent=intent, memo=memo)
+    assert retrieval["memo_fingerprint"] == memo["memo_fingerprint"]
 
 
 def test_ambiguous_json_retains_raw_without_choosing_a_prose_interpretation():
@@ -193,22 +196,89 @@ def test_remote_wait_observes_cancellation_without_total_generation_deadline(mon
     backend.submit(request)
     record = store.get_record(request.execution_id)
     response = record.provider_result
-    release, entered = Event(), Event()
+    release, entered, finished = Event(), Event(), Event()
+    original_save = store.save_record
+    def save(record):
+        original_save(record)
+        if record.raw_evidence.get("invocation_finished"):
+            finished.set()
+    monkeypatch.setattr(store, "save_record", save)
     def invoke(_):
         entered.set()
         release.wait()
         return response
     backend.provider_adapter = SimpleNamespace(invoke=invoke)
     def cancelled():
-        raise KernelError("OPERATION_CANCELLATION_REQUESTED", "cancelled")
+        if entered.is_set():
+            raise KernelError("OPERATION_CANCELLATION_REQUESTED", "cancelled")
     monkeypatch.setattr(lease_heartbeat, "assert_active_leases_healthy", cancelled)
     try:
         with pytest.raises(KernelError, match="OPERATION_CANCELLATION_REQUESTED"):
-            backend._invoke_interruptibly(record, request)
+            backend._invoke_interruptibly(record, SimpleNamespace(
+                request_hash=record.frozen_output_contract["request_hash"], model="gpt-test"))
         assert entered.is_set()
         assert store.get_record(request.execution_id).raw_evidence["local_wait_revoked"] is True
+        from novel_forge.modules.production_execution.backends import provider_invocation_inflight
+        assert provider_invocation_inflight({"request": request.to_dict(), "raw_evidence": record.raw_evidence})
     finally:
         release.set()
+        assert finished.wait(2)
+    assert not provider_invocation_inflight({"request": request.to_dict(), "raw_evidence": record.raw_evidence})
+    latest=store.get_record(request.execution_id)
+    raw=store.read_evidence(latest.raw_evidence["retained_model_result_ref"])
+    assert raw["selection_status"] == "REVOKED"
+    assert raw["acceptance_status"] == "NOT_ACCEPTED"
+
+
+def test_remote_cancel_before_dispatch_never_sends_provider_request(monkeypatch):
+    from types import SimpleNamespace
+    import pytest
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.command_kernel import lease_heartbeat
+    backend, request, store = _remote_backend()
+    backend.submit(request)
+    record = store.get_record(request.execution_id)
+    calls = []
+    backend.provider_adapter = SimpleNamespace(invoke=lambda request: calls.append(request))
+    before = dict(record.raw_evidence)
+    def cancelled():
+        raise KernelError("OPERATION_CANCELLATION_REQUESTED", "cancelled before dispatch")
+    monkeypatch.setattr(lease_heartbeat, "assert_active_leases_healthy", cancelled)
+    with pytest.raises(KernelError, match="OPERATION_CANCELLATION_REQUESTED"):
+        backend._invoke_interruptibly(record, SimpleNamespace())
+    assert calls == []
+    assert record.raw_evidence == before
+
+
+def test_remote_finished_marker_failure_cannot_discard_received_prose(monkeypatch):
+    from dataclasses import replace
+    from types import SimpleNamespace
+    backend, request, store = _remote_backend()
+    backend.submit(request)
+    record = store.get_record(request.execution_id)
+    response = replace(record.provider_result, evidence={
+        "result": {"chapter": 1, "title": "留存", "text": "完整返回的正文。"},
+        "model_id": backend.admission.resolve_route(request).model_id,
+        "source_complete": True})
+    original_save = store.save_record
+    failed = []
+    def save(value):
+        if value.raw_evidence.get("invocation_finished") and not failed:
+            failed.append(True)
+            raise OSError("injected finished marker outage")
+        original_save(value)
+    record.raw_evidence["invocation_finished"] = False
+    monkeypatch.setattr(store, "save_record", save)
+    backend.provider_adapter = SimpleNamespace(invoke=lambda request: response)
+    result = backend._invoke_interruptibly(record, SimpleNamespace(
+        request_hash=record.frozen_output_contract["request_hash"], model="gpt-test"))
+    assert result is response
+    raw_response = store.read_evidence(record.raw_evidence["received_provider_response_ref"])
+    assert raw_response["evidence"]["result"]["text"] == response.evidence["result"]["text"]
+    assert record.raw_evidence["invocation_observation_errors"][0]["stage"] == "FINISHED_MARKER"
+    backend._record_provider_result(record, result)
+    retained = store.read_evidence(store.get_record(request.execution_id).raw_evidence["retained_prose_candidate_ref"])
+    assert retained["text"] == response.evidence["result"]["text"]
 
 
 def test_expired_membership_price_observation_does_not_revoke_generation_authorization():
@@ -228,3 +298,17 @@ def test_expired_membership_price_observation_does_not_revoke_generation_authori
     paid_base=candidate()
     paid=replace(paid_base,pricing=replace(paid_base.pricing,effective_until=(NOW-timedelta(days=1)).isoformat(),effective_from=(NOW-timedelta(days=2)).isoformat()))
     assert 'PRICING_NOT_EFFECTIVE' in route(request,[paid],{})['candidates'][0]['rejected_reasons']
+
+
+def test_reused_process_id_does_not_create_a_historical_inflight_lock(monkeypatch):
+    from types import SimpleNamespace
+    from novel_forge.modules.production_execution import backends
+    monkeypatch.setattr(backends, '_provider_process_probe', SimpleNamespace(
+        is_alive=lambda pid: True, process_start_token=lambda pid: 'new-process-identity'))
+    record={'request':{'execution_id':'old-execution'},'raw_evidence':{
+        'invocation_process_id':999999, 'invocation_process_start_identity':'old-process-identity'}}
+    assert not backends.provider_invocation_inflight(record)
+    record['raw_evidence']['invocation_process_start_identity']='new-process-identity'
+    assert backends.provider_invocation_inflight(record)
+    record['raw_evidence']['invocation_finished']=True
+    assert not backends.provider_invocation_inflight(record)

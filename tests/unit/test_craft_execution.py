@@ -116,6 +116,32 @@ def test_scene_removal_and_strategy_tampering_fail_before_provider():
         compile_realization_contract(changed, {"policies": []})
 
 
+def test_context_preserves_drifted_optional_memo_guidance_without_false_reference():
+    import json
+    from novel_forge.modules.chapter_authority.domain_handlers import build_context_bundle
+    plan = craft_plan()
+    plan["premise"] = "沿手势选择既定退路"
+    plan["scene_sequence"] = ["追踪手势并选择退路"]
+    intent, memo = intent_and_memo(plan)
+    memo = deepcopy(memo)
+    memo["craft_strategy"]["schema_version"] = "narrative-craft-strategy.v3"
+    memo["craft_strategy"]["strategy_digest"] = "independent-copy"
+    from novel_forge.modules.chapter_authority.execution_artifacts import _hash
+    memo["memo_fingerprint"] = _hash({key: value for key, value in memo.items() if key != "memo_fingerprint"})
+    bundle = build_context_bundle(plan=plan, plan_asset_version_id="plan:v1",
+        plan_content_hash="sha256:" + "c" * 64, project_id="project:craft",
+        created_by_operation_id="operation:context", execution_intent=intent,
+        execution_intent_asset_version_id="intent:v1", chapter_memo=memo,
+        chapter_memo_asset_version_id="memo:v1")
+    segment = next(item for item in bundle["context_segments"] if item["asset_type"] == "chapter_memo")
+    rendered = json.loads(segment["safe_summary"])
+    assert rendered["craft_strategy"] == memo["craft_strategy"]
+    assert "craft_strategy_reference" not in rendered
+    assert rendered["context_diagnostics"][0]["status"] == "DIAGNOSTIC_ONLY"
+    protected = next(item for item in bundle["context_segments"] if item["asset_type"] == "chapter_execution_intent")
+    assert json.loads(protected["safe_summary"])["craft_strategy"] == intent["craft_strategy"]
+
+
 def test_legacy_plan_keeps_its_frozen_realization_contract():
     plan = craft_plan()
     plan.pop("craft_strategy")

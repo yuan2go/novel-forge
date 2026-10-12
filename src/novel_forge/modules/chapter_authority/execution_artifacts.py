@@ -8,6 +8,8 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+MEMO_INPUT_QUALIFICATIONS = frozenset({"QUALIFIED", "INPUT_FALLBACK"})
+
 def _hash(value: Mapping[str, Any]) -> str:
     return (
         "sha256:"
@@ -162,7 +164,7 @@ def validate_chapter_memo(
     if (
         normalized.get("type") != "ChapterMemo"
         or normalized.get("contract_version") != "chapter-memo-v2"
-        or normalized.get("qualification") not in {"QUALIFIED", "INPUT_FALLBACK"}
+        or normalized.get("qualification") not in MEMO_INPUT_QUALIFICATIONS
         or normalized.get("source_chapter_execution_intent_asset_version_id")
         != intent_asset_version_id
         or normalized.get("source_chapter_plan")

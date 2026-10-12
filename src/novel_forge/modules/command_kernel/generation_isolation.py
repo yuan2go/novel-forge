@@ -43,6 +43,9 @@ def require_native_api_isolation_record(content, *, project_id, book_id, operati
     from .external_effect_runtime import _hash
 
     record = content.get("record") or {}
+    from novel_forge.modules.production_execution.backends import provider_invocation_inflight
+    if provider_invocation_inflight(record):
+        raise KernelError("GENERATION_ISOLATION_PROCESS_LIVE", "The original local Provider invocation is still in flight")
     original = ExecutionRequest.from_dict(record.get("request") or {})
     frozen = record.get("frozen_output_contract") or {}
     if (original.project_id != project_id or original.book_id != book_id

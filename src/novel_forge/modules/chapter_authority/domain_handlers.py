@@ -341,14 +341,19 @@ def build_context_bundle(
         )
         if asset_type == "chapter_memo" and (content.get("craft_strategy") or {}).get("schema_version") in {"narrative-craft-strategy.v2", "narrative-craft-strategy.v3"}:
             strategy = content["craft_strategy"]
-            if not execution_intent_asset_version_id or strategy != (execution_intent or {}).get("craft_strategy"):
-                raise KernelError("CRAFT_STRATEGY_DRIFT", "Memo may reference only the identical protected execution-intent strategy")
-            rendered_content.pop("craft_strategy")
-            rendered_content["craft_strategy_reference"] = {
-                "asset_version_id": execution_intent_asset_version_id,
-                "json_pointer": "/craft_strategy", "strategy_digest": strategy["strategy_digest"],
-                "projection": "EXACT_DUPLICATE_REPLACED_BY_PROTECTED_CONTEXT_REFERENCE",
-            }
+            if execution_intent_asset_version_id and strategy == (execution_intent or {}).get("craft_strategy"):
+                rendered_content.pop("craft_strategy")
+                rendered_content["craft_strategy_reference"] = {
+                    "asset_version_id": execution_intent_asset_version_id,
+                    "json_pointer": "/craft_strategy", "strategy_digest": strategy["strategy_digest"],
+                    "projection": "EXACT_DUPLICATE_REPLACED_BY_PROTECTED_CONTEXT_REFERENCE",
+                }
+            else:
+                rendered_content.setdefault("context_diagnostics", []).append({
+                    "code": "CRAFT_STRATEGY_DRIFT", "status": "DIAGNOSTIC_ONLY",
+                    "protected_intent_asset_version_id": execution_intent_asset_version_id,
+                    "instruction": "Use the protected intent; this Memo copy is an unverified suggestion.",
+                })
         if asset_type == "chapter_memo" and content.get("narrative_realization"):
             from novel_forge.modules.narrative_state.reality import narrative_hash
             realization = content["narrative_realization"]
