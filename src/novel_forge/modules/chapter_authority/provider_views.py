@@ -873,7 +873,7 @@ def build_provider_task_view(
                 "source_window_hash": review["cross_chapter_window"][
                     "source_window_hash"
                 ],
-                "accepted_source_window": deepcopy(review["cross_chapter_window"]),
+                ("selected_source_window" if review["cross_chapter_window"].get("source_isolation") == "SELECTED_PROSE_NO_CANON_AUTHORITY" else "accepted_source_window"): deepcopy(review["cross_chapter_window"]),
                 "preservation_requirements": deepcopy(
                     review["cross_chapter_window"]["preservation_requirements"]
                 ),
@@ -3323,11 +3323,12 @@ def _cross_chapter_task(inputs: Mapping[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.review.prose_window import CROSS_CHAPTER_CATEGORIES, validate_window
     validate_window(window)
     candidate = inputs.get("revision") or inputs.get("draft") or {}
+    source_kind = "selected working prose, which grants no Canon or formal acceptance" if window.get("source_isolation") == "SELECTED_PROSE_NO_CANON_AUTHORITY" else "accepted prose"
     return {
         "cross_chapter_window": deepcopy(window),
         "cross_chapter_categories": sorted(CROSS_CHAPTER_CATEGORIES),
         "target_identity": {"asset_version_id": inputs["target_candidate_asset_version_id"], "text_hash": prose_hash(str(candidate.get("text") or ""))},
-        "review_objective": "Diagnose cross-chapter continuity using only covered accepted prose. Sources are read-only; never repair history or turn a Review into Canon. Locate literal target and source Unicode spans with exact identities. Assess retelling, action/space, causal cost, motivation, relationship and voice. Distinguish intentional recap, motif, reinterpretation, new POV, information gain and motivated change. Aesthetic or uncertain judgment cannot block. No issue is a valid result. Return structured evidence, not chain-of-thought. ReReview must disposition every prior code and preservation dimension; reuse lineage_code only for that same problem. No claims about excluded prose.",
+        "review_objective": f"Diagnose cross-chapter continuity using only covered {source_kind}. Sources are read-only; never repair history or turn a Review into Canon. Locate literal target and source Unicode spans with exact identities. Assess retelling, action/space, causal cost, motivation, relationship and voice. Distinguish intentional recap, motif, reinterpretation, new POV, information gain and motivated change. Aesthetic or uncertain judgment cannot block. No issue is a valid result. Return structured evidence, not chain-of-thought. ReReview must disposition every prior code and preservation dimension; reuse lineage_code only for that same problem. No claims about excluded prose.",
     }
 
 

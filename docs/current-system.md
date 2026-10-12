@@ -41,6 +41,14 @@ The default is authorized automatic direction comparison; an approved fixed dire
 and explicit author selection remain available. Formation and Opening create the existing
 Book, plans, source snapshots and Pack bindings. The native Chapter Saga uses
 `3.10.0-author-first.v1`: Plan, ExecutionIntent, Memo, Retrieval, Context and Draft.
+Delivered unaccepted prose can enter `3.10.0-working-revision.v1` through the native
+manuscript revision command or Editor API. This freezes exact selected prose and
+governed Context/Plan, then uses Review, Revision, ReReview and BestCandidate without
+Foundation or Canon mutation. Working selection rechecks earlier versions as well as
+the target. Frozen length correction uses actual Han counts, separate from model scores.
+Known unresolved major contradictions prevent automatic affected continuation; saved
+candidates, partial repair and original failure evidence remain available. This path
+does not grant author selection, formal acceptance or literary quality proof.
 After the native Draft output is committed, Book Authority appends immutable manuscript
 delivery and advances the existing writing cursor. Review, revision, Canon extraction,
 support review and grouped Quality are absent from this default graph. No background

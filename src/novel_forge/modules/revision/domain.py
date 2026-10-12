@@ -66,7 +66,7 @@ def apply_revision_result(
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
     targeted = {}
     from novel_forge.modules.review.diagnostics import structural_repair_scope
-    structural = structural_repair_scope(repair_diagnoses) == "CHAPTER_REVISION"
+    structural = length_scope is not None or structural_repair_scope(repair_diagnoses) == "CHAPTER_REVISION"
     if not structural and (review.get("cross_chapter_window") or review.get("craft_targets")):
         result, targeted = _materialize_targeted_result(draft, review, result)
     text = prose_from_output(result, separators=draft.get("scene_separators"))

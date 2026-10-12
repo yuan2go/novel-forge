@@ -1238,9 +1238,9 @@ class PostgresChapterExecutionContractBinder:
     ) -> tuple[dict[str, Any], str]:
         inputs = request_payload.get("input") or {}
         from novel_forge.modules.review.diagnostics import structural_repair_scope
-        structural_revision = stage == "revision" and structural_repair_scope(
+        structural_revision = stage == "revision" and (bool(inputs.get("chapter_length_repair_scope")) or structural_repair_scope(
             [*(inputs.get("review") or {}).get("issues", []),
-             *(inputs.get("review") or {}).get("unresolved_issues", [])]) == "CHAPTER_REVISION"
+             *(inputs.get("review") or {}).get("unresolved_issues", [])]) == "CHAPTER_REVISION")
         causal_batch = bool(
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
@@ -4692,9 +4692,12 @@ def _materialize_production_codex_prompt(
         ),
     )
     if stage == "revision" and schema.get("ref") == "schema:chapter-provider-output:revision:v7":
+        task_view.pop("targeted_repair", None)
+        task_view.pop("targeted_editing", None)
+        task_view["revision_scope"] = "WHOLE_CHAPTER_TEXT_WITH_FROZEN_CORE_REQUIREMENTS"
         stage_semantic_contract = _bind_language_contract(
             "Return the complete revised chapter in the single text field, with resolved_issue_codes only for repairs claimed. "
-            "This exact source-bound PROSE/CHAPTER_REVISION diagnosis permits merging repeated scenes, transitions and noncritical order. "
+            "The frozen whole-chapter repair or measured length scope permits merging repeated scenes, transitions and noncritical order. "
             "Preserve author commitments, selected story facts, character knowledge, causal consequences and due promises. "
             "Do not change upper plot; propose Plan Change for that. Do not return scene_artifacts or an edits protocol. "
             "Keep unresolved diagnoses open. This candidate is not accepted Canon and its scene mapping requires separate validation.",

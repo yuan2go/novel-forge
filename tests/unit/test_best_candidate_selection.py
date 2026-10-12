@@ -6,6 +6,47 @@ from novel_forge.modules.chapter_authority.candidate_selection import (
 )
 
 
+def _length_candidates():
+    from dataclasses import replace
+    from novel_forge.modules.review.diagnostics import prose_hash
+    previous = replace(_candidate("draft", 80), content={"text": "山" * 3520})
+    challenger = replace(_candidate("revision", 80), content={"text": "河" * 4500},
+        diagnostic_contract_version="actionable-diagnostics.v1")
+    scope = {"contract_version": "chapter-length-repair.v1", "unit": "HAN_CHARACTERS_V1",
+        "scope": "WHOLE_CHAPTER_LENGTH_CORRECTION", "source_asset_version_id": "draft",
+        "source_text_hash": prose_hash(previous.content["text"]), "source_han_characters": 3520,
+        "context_asset_version_id": "context", "minimum": 4000, "maximum": 5000}
+    return previous, challenger, scope
+
+
+def test_measured_length_correction_does_not_require_a_model_score_gain():
+    previous, challenger, scope = _length_candidates()
+    result = compare_candidates(project_id="p", chapter_root_operation_id="root", previous=previous,
+        challenger=challenger, minimum_net_improvement=3, length_repair_scope=scope)
+    assert result["selected_asset_version_id"] == "revision"
+    assert result["length_measurement"]["challenger"] == 4500
+    assert result["resolution_checks"] == [] and not result["literary_quality_proven"]
+
+
+def test_measured_length_correction_cannot_hide_new_major_problem():
+    from dataclasses import replace
+    previous, challenger, scope = _length_candidates()
+    result = compare_candidates(project_id="p", chapter_root_operation_id="root", previous=previous,
+        challenger=replace(challenger, blocker_codes=("CANON_CONFLICT",)),
+        minimum_net_improvement=3, length_repair_scope=scope)
+    assert result["selected_asset_version_id"] == "draft"
+
+
+def test_measured_length_correction_requires_exact_source():
+    import pytest
+    from novel_forge.modules.command_kernel.errors import KernelError
+    previous, challenger, scope = _length_candidates()
+    for drift in ({"source_asset_version_id": "other"}, {"source_text_hash": "sha256:" + "f" * 64}):
+        with pytest.raises(KernelError, match="exact out-of-bounds"):
+            compare_candidates(project_id="p", chapter_root_operation_id="root", previous=previous,
+                challenger=challenger, minimum_net_improvement=3, length_repair_scope={**scope, **drift})
+
+
 def _candidate(identity: str, score: float, blockers: tuple[str, ...] = ()) -> CandidateEvidence:
     return CandidateEvidence(
         asset_version_id=identity,

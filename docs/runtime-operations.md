@@ -964,8 +964,9 @@ Memo execution, including after process restart.
 Editing compares the full submitted chapter with the selected base and freezes only actual
 changed Unicode ranges. Preserve unsubmitted input on conflict, reload the selected base and
 rebase explicitly. Diff returns the original-protecting candidates, before/after edits and
-adoption decisions. Export creates a new JSON artifact containing exact source versions,
-statuses, prose and hashes; it refuses to overwrite an existing output file. `--chapters`
+adoption decisions. Export creates readable Markdown or text for `.md`/`.txt`, and JSON
+for other suffixes, containing exact source versions and statuses. It refuses to overwrite
+an existing output file. `--chapter` filters one chapter; `--chapters`
 selects an ordered available range, and `--versions` binds an expected version list.
 An editor session selection applies only to the exact native source of that working
 run, or an edit whose originating draft is that source. A same-Book session from an
@@ -973,7 +974,7 @@ older run remains readable but cannot replace a newer run's delivered text or it
 continuation dependencies. Saving against a changed native base retains the old session
 versions and begins from the supplied current base without recording adoption.
 `authority-manuscript use-working-candidate` records delegated use of an exact saved
-assistant revision in one settled author-first Book run. Supply `--chapter`,
+assistant or native revision in one settled author-first Book run. Supply `--chapter`,
 `--candidate-version`, `--expected-version`, `--idempotency-key` and `--reason`.
 It preserves original delivery and candidate versions, requires the current base
 and its hash, and updates working continuation dependencies. Planning must consume
@@ -984,6 +985,25 @@ remain uncertain. A structural repetition finding returns to scoped Plan Change 
 continuation. It creates no author
 choice, review pass or formal acceptance; human input and an existing author choice
 retain their separate decision path. Repeating the exact command is idempotent.
+For native revision, `authority-manuscript revise` takes the same Book, `--chapter`,
+`--expected-version`, `--idempotency-key` and an explicit `--reason`. It freezes the current
+prose, original governed Context/Plan and exact selected earlier prose, then runs the existing
+Review → Revision → ReReview → BestCandidate nodes. It does not rerun Foundation or submit Canon.
+Use `--foreground` for a scheduling window, retain the returned Root for `continue-revision`
+or `revision-status --revision-root …`, and use `use-working-candidate` to activate a result.
+Status and completed-result reads require no new Provider eligibility. UNKNOWN continuation
+first reconciles retained results; only an owned stopped pure invocation may be isolated
+and replaced by the existing StepSuccessor. Original UNKNOWN and cost evidence remain unchanged.
+An out-of-range chapter triggers whole-chapter repair against its original frozen length bounds,
+even when optional Review finds no issue. BestCandidate records measured length correction
+separately from model score/resolution evidence; new blockers and preservation regression
+still prevent automatic preference. Selection rechecks the target and all earlier source versions.
+An evidenced unresolved major contradiction in the exact prose prevents its use as affected
+later prose's automatic input; the saved candidate remains readable and revisable. Suspected
+problems and aesthetic advice do not acquire this veto. Unreviewed prose is labelled honestly.
+Run `test_working_manuscript_revision.py`, `test_best_candidate_selection.py`,
+`test_working_manuscript_selection.py`, `test_cross_chapter_prose_review.py`,
+`test_native_api_generation_isolation.py` and the related Chapter/runtime matrix for these paths.
 The UI also downloads a readable text manuscript with the same version/status provenance.
 An Editor link containing the Project and Book run opens the current manuscript directly.
 Provider-dependent API services assemble only for related execution operations; API restart

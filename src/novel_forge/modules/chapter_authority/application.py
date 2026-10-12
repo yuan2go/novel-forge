@@ -200,5 +200,12 @@ class ChapterAuthorityApplication:
             model_effect_adapter=self._model_port.adapter,
         )
 
+    def admit_manuscript_revision(self, *, authority, book_run_id, chapter, expected_version,
+                                 idempotency_key, reason, principal):
+        from .working_revision import admit_working_revision
+        return admit_working_revision(self, authority=authority, book_run_id=book_run_id,
+            chapter=chapter, expected_version=expected_version, idempotency_key=idempotency_key,
+            reason=reason, principal=principal)
+
 
 __all__ = ["ChapterAuthorityApplication"]

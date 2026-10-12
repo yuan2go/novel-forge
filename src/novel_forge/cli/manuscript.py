@@ -7,7 +7,7 @@ from typing import Any
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "use-working-candidate", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -22,6 +22,9 @@ def add_manuscript_parser(subparsers: Any) -> None:
     parser.add_argument("--stop-after-chapter", type=int)
     parser.add_argument("--expected-version", type=int)
     parser.add_argument("--idempotency-key", default="")
+    parser.add_argument("--revision-root", default="")
+    parser.add_argument("--foreground", action="store_true")
+    parser.add_argument("--work-window-seconds", type=int, default=300)
 
 
 def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
@@ -40,6 +43,9 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             raise ValueError("Choose an existing work")
         args = SimpleNamespace(**vars(args))
         args.project_id = owned[0]
+
+    if args.action in {"revise", "continue-revision", "revision-status"}:
+        return _run_working_revision_command(settings, args, principal=principal)
 
     if args.action in {"recover-plan-references", "recover-upstream-plan", "resume"}:
         if args.action != "resume" and not args.proposal_id:
@@ -114,18 +120,29 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
                 else:
                     stream.write(json.dumps(candidate, ensure_ascii=False, indent=2))
         return candidate
+    chapters = args.chapters or ([args.chapter] if args.chapter is not None else None)
+    if args.chapters and args.chapter is not None and args.chapters != [args.chapter]:
+        raise ValueError("Choose a single --chapter or a --chapters range")
     manifest = require_manuscript(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id,
-        principal=principal, version_ids=args.versions, chapters=args.chapters)
+        principal=principal, version_ids=args.versions, chapters=chapters)
     if args.action == "read":
         return manifest
     if args.action == "export":
         if not manifest["units"]:
             raise ValueError("No complete saved prose is available")
         exact = require_manuscript(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id,
-            principal=principal, version_ids=[item["asset_version_id"] for item in manifest["units"]], chapters=args.chapters)
+            principal=principal, version_ids=[item["asset_version_id"] for item in manifest["units"]], chapters=chapters)
         if args.output:
             with args.output.open("x", encoding="utf-8") as stream:
-                stream.write(json.dumps(exact, ensure_ascii=False, indent=2))
+                if args.output.suffix.lower() in {".md", ".txt"}:
+                    for unit in exact["units"]:
+                        heading = "# " if args.output.suffix.lower() == ".md" else ""
+                        stream.write(f"{heading}第{unit['chapter']}章 {unit['title']}\n\n{unit['text']}\n\n")
+                        stream.write(f"版本：{unit['asset_version_id']}\n\n"
+                            f"状态：{unit['manuscript_status']}；审读 {unit['review_status']}；质量 {unit['quality_status']}；"
+                            f"选稿 {unit['author_selection']}；正式接纳至第{exact['accepted_through_chapter']}章\n\n")
+                else:
+                    stream.write(json.dumps(exact, ensure_ascii=False, indent=2))
         return exact
     unit = next((item for item in manifest["units"] if item["chapter"] == args.chapter), None)
     if unit is None:
@@ -223,5 +240,54 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
             if outcome not in {"YIELDED_CHECKPOINT", "WAITING_CHAPTER_DEPENDENCY", "MANUSCRIPT_READY"}:
                 return report(outcome, composition.authority.require(run))
         return report("YIELDED_CHECKPOINT", composition.authority.require(run))
+    finally:
+        execution.close()
+
+
+def _run_working_revision_command(settings, args, *, principal):
+    from novel_forge.modules.chapter_authority.working_revision import working_revision_status
+    from dataclasses import asdict
+    from time import monotonic
+    from novel_forge.api.authority_dependencies import (build_book_production_composition,
+        build_chapter_authority_application, build_production_execution_composition, build_trusted_principal_resolver)
+    if args.action in {"revision-status", "continue-revision"}:
+        if not args.revision_root:
+            raise ValueError("Retain the original --revision-root for status or continuation")
+        result = working_revision_status(settings.database_url, project_id=args.project_id,
+            book_run_id=args.book_run_id, root_operation_id=args.revision_root, principal=principal)
+        if args.action == "revision-status" or result["status"] in {"SUCCEEDED", "CANCELLED"}:
+            return result
+    if args.work_window_seconds <= 0:
+        raise ValueError("A positive scheduling work window is required")
+    execution = build_production_execution_composition(settings)
+    try:
+        chapter = build_chapter_authority_application(settings, execution=execution)
+        if args.action == "revise":
+            if args.expected_version is None or not args.chapter or not args.idempotency_key or not args.reason:
+                raise ValueError("Revision requires chapter, expected Book version, original idempotency key and purpose")
+            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+            if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
+                raise PermissionError("Revision is outside this Project")
+            admitted = chapter.admit_manuscript_revision(authority=composition.authority, book_run_id=args.book_run_id,
+                chapter=args.chapter, expected_version=args.expected_version, idempotency_key=args.idempotency_key,
+                reason=args.reason, principal=principal)
+            root_id = admitted.root_operation_id
+            if not args.foreground:
+                return {**asdict(admitted), "book_run_id": args.book_run_id, "chapter": args.chapter}
+        else:
+            root_id = args.revision_root
+            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+            from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
+            recover_chapter_generations(composition.authority, book_run_id=args.book_run_id,
+                principal=principal, working_revision_root_id=root_id)
+        worker = build_trusted_principal_resolver().resolve_worker_principal("manuscript-revision-worker")
+        scheduler = chapter.scheduler(principal=worker)
+        deadline = monotonic() + args.work_window_seconds
+        while monotonic() < deadline:
+            tick = scheduler.tick(project_id=args.project_id, root_operation_id=root_id)
+            if tick.operation_status not in {"SUCCEEDED", "ADMITTED", "READY"} or tick.saga_status == "SUCCEEDED":
+                break
+        return working_revision_status(settings.database_url, project_id=args.project_id,
+            book_run_id=args.book_run_id, root_operation_id=root_id, principal=principal)
     finally:
         execution.close()

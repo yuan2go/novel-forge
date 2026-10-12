@@ -56,6 +56,11 @@ class AuthorWorkflowRequest(BaseModel):
     idempotency_key: str = Field(min_length=1)
 
 
+class ManuscriptRevisionRequest(AuthorWorkflowRequest):
+    chapter: int = Field(ge=1, strict=True)
+    reason: str = Field(min_length=1)
+
+
 class ManuscriptExportRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_id: str = Field(min_length=1)
@@ -342,5 +347,23 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             return {**result,"root_operation_id":result["chapter_root_operation_id"],"query_url":
                 f"/product/production/chapter-authority/run?project_id={request.project_id}&root_operation_id={result['chapter_root_operation_id']}"}
         return execute(submit)
+
+    @router.post("/manuscript-revisions", status_code=202)
+    def manuscript_revision(request: ManuscriptRevisionRequest):
+        def submit(principal):
+            from dataclasses import asdict
+            authority = ctx.services.book_production.authority
+            if authority.require(request.book_run_id)["project_id"] != request.project_id:
+                raise KernelError("AUTHOR_BOOK_SCOPE_CONFLICT", "Working revision requires this exact Project")
+            result = ctx.services.chapter_application.admit_manuscript_revision(authority=authority,
+                principal=principal, **request.model_dump(exclude={"project_id"}))
+            return {**asdict(result), "book_run_id": request.book_run_id}
+        return execute(submit)
+
+    @router.get("/manuscript-revisions/{root_operation_id}")
+    def manuscript_revision_status(root_operation_id: str, project_id: str, book_run_id: str):
+        from novel_forge.modules.chapter_authority.working_revision import working_revision_status
+        return execute(lambda principal: working_revision_status(ctx.services.chapter_query.database_url,
+            project_id=project_id, book_run_id=book_run_id, root_operation_id=root_operation_id, principal=principal))
 
     return router

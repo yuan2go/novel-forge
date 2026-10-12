@@ -8,8 +8,10 @@ from novel_forge.modules.chapter_authority.scheduler import ChapterAuthoritySche
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-def native(monkeypatch, *, failure=None, drift=None, expired=False):
+def native(monkeypatch, *, failure=None, drift=None, expired=False, generation=False):
     from novel_forge.modules.command_kernel import step_successor, step_successor_v2, derived_step_revalidation
+    from novel_forge.modules.command_kernel import generation_policy
+    monkeypatch.setattr(generation_policy, "generation_graph", lambda *args: generation)
     root = {"operation_id": "root", "project_id": "project", "workspace_id": "workspace", "actor_id": "author",
         "definition_name": "chapter.slice.run", "definition_version": "3.10.0", "status": "WAITING_GATE",
         "command_payload": {}, "input_asset_snapshot": [], "definition_snapshot": {}, "version": 1}
@@ -67,6 +69,12 @@ def test_implementation_change_cannot_extend_frozen_business_deadline(monkeypatc
     with pytest.raises(KernelError, match="OPERATION_BUSINESS_TIMEOUT"):
         scheduler._require_technical_gate_frontier(uow, root, saga)
     assert [name for name, _ in calls] == ["lock-saga", "lock-root"]
+
+
+def test_corrected_generation_technical_gate_is_not_locked_by_old_deadline(monkeypatch):
+    scheduler, uow, root, saga, calls = native(monkeypatch, expired=True, generation=True)
+    assert scheduler._require_technical_gate_frontier(uow, root, saga) == root
+    assert [name for name, _ in calls][-3:] == ["book-frontier", "graph-reconciliation", "exact-settlement"]
 
 
 def test_current_cancellation_only_visits_existing_cancelled_work(monkeypatch):

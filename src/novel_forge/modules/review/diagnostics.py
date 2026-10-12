@@ -76,9 +76,14 @@ def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = 
     diagnoses = open_diagnoses(review)
     if not work_requirements:
         return diagnoses
-    return [item for item in diagnoses if item.get("judgment_kind") in {
+    requested = review.get("working_revision_request") or {}
+    aesthetic_requested = (requested.get("contract_version") == "chapter-working-revision.v1"
+        and requested.get("aesthetic_revision_requested") is True
+        and requested.get("source_asset_version_id") == review.get("target_asset_version_id"))
+    return [item for item in diagnoses if (item.get("judgment_kind") in {
         "SEMANTIC_CONFLICT", "HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM"
-    } and item.get("status", "OPEN") == "OPEN"]
+    } or aesthetic_requested and item.get("judgment_kind") == "AESTHETIC_SUGGESTION")
+        and item.get("status", "OPEN") == "OPEN"]
 
 
 def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None) -> None:
@@ -124,6 +129,16 @@ def blocking_diagnosis_codes(review: dict[str, Any]) -> tuple[str, ...]:
     if (review.get("blocking_issue_count", 0) and not codes) or (review.get("decision") == "BLOCKED" and not codes):
         raise KernelError("REVIEW_EVIDENCE_REQUIRED", "blocking review requires retained blocking diagnoses")
     return codes
+
+
+def major_contradiction_codes(review: dict[str, Any], *, text: str, source_id: str) -> tuple[str, ...]:
+    if (review.get("target_asset_version_id") != source_id and review.get("revision_version_id") != source_id
+            or review.get("target_text_hash") != prose_hash(text)):
+        return ()
+    return tuple(sorted({str(item["code"]) for item in open_diagnoses(review)
+        if item.get("judgment_kind") in {"HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION"}
+        and item.get("status", "OPEN") == "OPEN"
+        and item.get("severity") in {"blocking", "blocker", "critical", "high", "major"}}))
 
 
 def prose_hash(text: str) -> str:

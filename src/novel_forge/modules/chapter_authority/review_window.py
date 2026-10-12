@@ -59,6 +59,13 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
 
 
 def require_review_frontier(request: ChapterHandlerRequest) -> None:
+    if (request.command.get("preparation_report") or {}).get("working_revision"):
+        from .working_revision import require_working_revision_frontier
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        with AuthorityUnitOfWork(request.database_url) as uow:
+            uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [request.command["chapter_root_operation_id"]])
+            require_working_revision_frontier(uow, root=uow.cursor.fetchone()[0])
+        return
     snapshot = (request.command.get("preparation_report") or {}).get(
         "accepted_prose_snapshot"
     )
@@ -82,6 +89,9 @@ def prepare_review_window(
     context: ChapterInputAsset,
     prior: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
+    if (request.command.get("preparation_report") or {}).get("working_revision"):
+        from .working_revision import working_review_window
+        return working_review_window(request, draft, context, prior)
     snapshot = (request.command.get("preparation_report") or {}).get(
         "accepted_prose_snapshot"
     )
