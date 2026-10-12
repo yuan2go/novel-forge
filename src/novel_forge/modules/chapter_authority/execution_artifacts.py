@@ -162,7 +162,7 @@ def validate_chapter_memo(
     if (
         normalized.get("type") != "ChapterMemo"
         or normalized.get("contract_version") != "chapter-memo-v2"
-        or normalized.get("qualification") != "QUALIFIED"
+        or normalized.get("qualification") not in {"QUALIFIED", "INPUT_FALLBACK"}
         or normalized.get("source_chapter_execution_intent_asset_version_id")
         != intent_asset_version_id
         or normalized.get("source_chapter_plan")
@@ -182,8 +182,6 @@ def validate_chapter_memo(
             "CHAPTER_MEMO_FINGERPRINT_INVALID",
             "ChapterMemo content differs from its immutable fingerprint",
         )
-    if normalized.get("craft_strategy") != validated_intent.get("craft_strategy"):
-        raise KernelError("CHAPTER_MEMO_CRAFT_DRIFT", "Memo must retain the frozen planning Craft strategy")
     expected_scene_ids = {
         str(item.get("scene_id") or "")
         for item in validated_intent.get("scene_plans") or ()

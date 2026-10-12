@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261011_0199_plan_change_capacity",
+  "head": "20261012_0200_generation_history_observations",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -202,6 +202,7 @@
     "20261010_0196_stopped_cli_timeout_isolation",
     "20261010_0197_authorized_planning_capacity",
     "20261010_0198_recovery_reference_indexes",
-    "20261011_0199_plan_change_capacity"
+    "20261011_0199_plan_change_capacity",
+    "20261012_0200_generation_history_observations"
   ]
 }

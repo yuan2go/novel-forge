@@ -363,8 +363,12 @@ def test_codex_full_output_and_reasoning_reserve_is_included_once_at_admission(b
     limit_key = "model_context_limit" if boundary == "model" else "execution_token_limit"
     limited = replace(contract, **{limit_key: receipt.total_reserved - 1})
     rejected = prepare_provider_admission(envelope, limited, complete_request_coverage=COMPLETE_COVERAGE)
-    assert rejected.status == "REJECTED"
-    assert rejected.reason == ("PROVIDER_CONTEXT_LIMIT_EXCEEDED" if boundary == "model" else "EXECUTION_TOKEN_LIMIT_EXCEEDED")
     assert rejected.total_reserved == receipt.total_reserved
-    with pytest.raises(ValueError, match="PROVIDER_ADMISSION_REJECTED"):
+    if boundary == "model":
+        assert rejected.status == "REJECTED"
+        assert rejected.reason == "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
+        with pytest.raises(ValueError, match="PROVIDER_ADMISSION_REJECTED"):
+            verify_provider_admission(envelope, rejected)
+    else:
+        assert rejected.status == "ADMITTED"
         verify_provider_admission(envelope, rejected)

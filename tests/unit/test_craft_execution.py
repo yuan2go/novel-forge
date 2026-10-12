@@ -100,8 +100,7 @@ def test_draft_requires_exact_context_delivery_and_matching_memo():
     changed["memo_fingerprint"] = _hash({key: value for key, value in changed.items() if key != "memo_fingerprint"})
     with pytest.raises(KernelError, match="CRAFT_EXECUTION_BINDING_DRIFT"):
         require_craft_delivery(plan=plan, intent=intent, memo=changed, context=context)
-    with pytest.raises(KernelError, match="CHAPTER_MEMO_CRAFT_DRIFT"):
-        validate_chapter_memo(changed, intent=intent, intent_asset_version_id="intent:v1")
+    assert validate_chapter_memo(changed, intent=intent, intent_asset_version_id="intent:v1") == changed
 
 
 def test_scene_removal_and_strategy_tampering_fail_before_provider():

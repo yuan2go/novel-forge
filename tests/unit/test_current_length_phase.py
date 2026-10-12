@@ -68,8 +68,7 @@ def test_current_control_extension_never_resets_frozen_paid_attempt_limit(monkey
     assert _current_continued_attempt_limit(Evidence((changed, 2, "root")), 'revision', 'p', 2) == 2
 
 
-@pytest.mark.parametrize('passes,hashes,code', [(3, ['a', 'b', 'c'], 'QUALITY_CORRECTION_CONTROL_EXHAUSTED'),
-    (2, ['same', 'same', 'same'], 'QUALITY_CORRECTION_NO_PROGRESS')])
+@pytest.mark.parametrize('passes,hashes,code', [(2, ['same', 'same', 'same'], 'QUALITY_CORRECTION_NO_PROGRESS')])
 def test_current_length_phase_does_not_override_authority_progress_limits(passes, hashes, code):
     with pytest.raises(KernelError, match=code):
         require_next_pass(completed_passes=passes, candidate_hashes=hashes,

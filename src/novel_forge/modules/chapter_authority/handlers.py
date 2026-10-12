@@ -442,6 +442,18 @@ class _MemoHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         intent = request.require_input("chapter_execution_intent")
+        if request.database_url:
+            from novel_forge.modules.production_execution.execution_template import selected_book_template, selected_template
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            with AuthorityUnitOfWork(request.database_url) as uow:
+                admission = selected_book_template(uow.cursor, project_id=request.project_id, book_id=str(request.command.get("book_id") or intent.content.get("book_id") or ""))
+                from .creative_memo import optional_memo_failure_source
+                failed_memo = optional_memo_failure_source(uow.cursor, request.operation_id, request.project_id)
+            template = selected_template(admission["policy_snapshot"]["policy"], admission["book_id"]) if admission else None
+            if template and ("memo" not in template.get("optional_enhancements", []) or failed_memo):
+                from .creative_memo import input_only_memo
+                return _output(ChapterNode.MEMO, input_only_memo(intent.content, intent.asset_version_id,
+                    failed_operation_id=failed_memo))
         from .memo_recovery import consume_memo_receipt
         retained = consume_memo_receipt(request)
         generated, references = retained if retained else (self.provider.invoke(request, stage="memo", payload={"execution_intent": intent.content}), None)

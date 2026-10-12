@@ -914,7 +914,7 @@ class CostAwareRouter:
             if candidate.authorized_tasks is not None and task.task_type not in candidate.authorized_tasks:
                 reasons.append("MODEL_TASK_NOT_AUTHORIZED")
             cross_review = task.declared_requirements.get("cross_model_review")
-            if cross_review:
+            if cross_review and not task.declared_requirements.get("pure_generation"):
                 from .cross_model_review import reviewer_rejection
                 review_rejection = reviewer_rejection(cross_review, asdict(candidate))
                 if review_rejection:
@@ -1066,11 +1066,28 @@ class CostAwareRouter:
             )
             if soft_pressure:
                 effective += worst_case - Decimal(task.soft_money_limit)
+            diagnostics = []
+            if task.declared_requirements.get("pure_generation"):
+                diagnostic_rules = {
+                    "CHAIN_ATTEMPTS_EXHAUSTED", "RECONCILIATION_OR_POLICY_RESOLUTION_REQUIRED",
+                    "ESCALATION_THRESHOLD_NOT_MET", "ESCALATION_LIMIT_REACHED",
+                    "SEMANTIC_ARBITRATION_REQUIRED", "FAILED_ROUTE_EXCLUDED",
+                    "ROUTE_RETRY_LIMIT_REACHED", "LATENCY_SLA_UNPROVEN",
+                    "QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT",
+                }
+                diagnostics = [reason for reason in reasons if reason in diagnostic_rules]
+                reasons = [reason for reason in reasons if reason not in diagnostic_rules]
+                if "BUDGET_HARD_LIMIT" in reasons and not (
+                    price.accounting_basis == "PRICED" and worst_case > remaining_money
+                ):
+                    diagnostics.append("BUDGET_HARD_LIMIT")
+                    reasons.remove("BUDGET_HARD_LIMIT")
             rows.append(
                 {
                     "candidate": asdict(candidate),
                     "benchmark": evidence,
                     "rejected_reasons": reasons,
+                    "diagnostic_reasons": diagnostics,
                     "expected_quality": evidence["predicted_quality"],
                     "estimated_monetary_cost": str(estimated)
                     if price.accounting_basis == "PRICED"

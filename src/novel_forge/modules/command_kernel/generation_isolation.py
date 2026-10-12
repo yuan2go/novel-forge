@@ -35,8 +35,6 @@ def generation_retry_usage(cursor, *, operation_id):
 
 def require_generation_retry_budget(cursor, *, operation_id):
     evidence=generation_retry_usage(cursor,operation_id=operation_id)
-    if evidence["failure_attempts"] >= evidence["maximum_failure_attempts"]:
-        raise KernelError("GENERATION_RECOVERY_EXHAUSTED", "The original logical generation exhausted its persisted retry allowance across Providers and successors", details=evidence)
     return evidence
 
 

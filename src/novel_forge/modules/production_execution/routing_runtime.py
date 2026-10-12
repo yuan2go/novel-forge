@@ -914,6 +914,8 @@ class ProductionProviderRouter:
                         if request_input is not None
                         else "",
                         "declared_requirements": {
+                            **({"pure_generation": original["declared_requirements"]["pure_generation"]}
+                               if "pure_generation" in original.get("declared_requirements", {}) else {}),
                             "risk": risk,
                             "quality_floor": quality_floor,
                             "chapter": chapter,
@@ -1081,6 +1083,7 @@ class ProductionProviderRouter:
             else "",
             stable_key=stable_key,
             declared_requirements={
+                "pure_generation": True,
                 "risk": risk,
                 "quality_floor": quality_floor,
                 "chapter": chapter,

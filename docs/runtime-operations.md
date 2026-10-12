@@ -188,7 +188,8 @@ root successor and its scheduling intent commit atomically. The original window 
 through the durable successor journal; its source Operation and remote/usage facts remain
 unchanged. Persistent retry exhaustion stops this review without blocking baseline prose.
 Current author manuscript windows reserve one bounded process window inside the frozen Effect
-deadline, retaining settlement time; CLI stream/request retries remain disabled.
+deadline as a historical observation; the supervised model process has no total elapsed
+generation deadline. CLI stream/request retries remain disabled.
 
 For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning
@@ -2103,9 +2104,9 @@ The same command exercises Creative Memo, directed revision and grounded Canon o
 current Chapter route. `NOVEL_FORGE_MEMO_PROVIDER`/`NOVEL_FORGE_MEMO_MODEL` and
 `NOVEL_FORGE_CANON_SUPPORT_PROVIDER`/`NOVEL_FORGE_CANON_SUPPORT_MODEL` select their
 routes; if omitted they inherit the explicitly configured Review route. They use the
-existing Provider admission, token and cost limits. Memo has the Planning capability's
-60-second operation bound in frozen Chapter 3.8 definitions. Chapter 3.9 Memo uses
-its explicit 600-second model-operation policy; Canon support uses its frozen bound.
+existing Provider admission, actual model capacity and priced authorization. The 60-second
+Chapter 3.8 and 600-second Chapter 3.9 Memo policies remain frozen historical observations;
+current pure model execution does not enforce them as generation deadlines.
 
 The export also writes `chapter-workspaces.json`, including candidate prose, diagnoses,
 claim support, accepted state references, attempt errors and receipt/cost references.
@@ -2512,6 +2513,34 @@ their ledgers, or establish model qualification for the new input contract. The 
 engineering scenario freezes 20,000 tokens; Provider usage is still settled from receipts.
 
 ## Failure and recovery procedure
+
+For an exact retained model candidate exposed by Chapter workspace, use the existing
+manuscript CLI without starting a Provider call:
+
+```sh
+novel-forge authority-manuscript read --project-id "$PROJECT" --book-run-id "$BOOK_RUN" --candidate-version "$RETAINED_ASSET_VERSION"
+novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$BOOK_RUN" --candidate-version "$RETAINED_ASSET_VERSION" --output "$NEW_CANDIDATE_PATH"
+```
+
+`.md` and `.txt` exports contain readable source text plus its candidate status;
+other suffixes retain the exact JSON projection and raw result. Export never selects
+or accepts a candidate. A fragment or ambiguous JSON remains raw and is not labeled
+complete prose. A repeated export cannot overwrite an existing file.
+
+Migration 0200 removes cumulative Planning
+continuation depth rejection while preserving immutable continuation records and
+isolation identity/commit-right guards. Back up and verify a restore first. Historical
+`failure_retry_counter`, deadline and max-attempt values are retained, including values
+already at their former ceilings; recovery does not reset them.
+
+
+Inspect the actual installed release and original Book before recovery. Historical
+retry exhaustion, automatic generation deadlines and resource observations are
+execution diagnostics; they are not literary acceptance evidence. Preserve failed
+Attempts, UNKNOWN Effects, reservations and frozen snapshots when applying a
+forward recovery. Candidate retention, prose selection and accepted narrative facts
+are separate checks. No counter reset or replacement Book is a recovery procedure.
+
 
 1. Freeze the project, operation, attempt, lease, fence, RuntimeJob and ExternalEffect
    identities from PostgreSQL before acting.
@@ -3242,9 +3271,9 @@ start remain conservatively counted without rewriting their history; pre-start f
 remain distinguishable. Unknown use is never reported as measured zero. New requests must
 use the remaining allowance while keeping the original absolute project caps.
 
-Source Codex requests allocate the Effect deadline to one local invocation, retaining
-settlement headroom. The preview reports both the Effect timeout and actual local process
-timeout. A local CLI timeout/cancellation without a final usage receipt is an unknown
+Source Codex requests retain frozen Effect deadline observations. Pure model invocations
+have no local elapsed timeout or attempt-based time slice. The preview retains the historical
+Effect policy; it is not an elapsed-time stop for the supervised process. A local CLI timeout/cancellation without a final usage receipt is an unknown
 remote outcome, not permission to resend. Source preflight/status exposes the original
 Effect and process receipt; pre-send checks block dependent requests in the original
 execution lineage until governed reconciliation resolves it. Independent curated research

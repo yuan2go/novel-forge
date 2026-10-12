@@ -234,7 +234,7 @@ class ExternalEffectRepository:
         if effect["status"] not in {"READY", "FAILED_RETRYABLE"}:
             raise KernelError("EFFECT_STATUS_CONFLICT", "effect is not dispatchable")
         generation = int(latest[1]) + 1 if latest else 1
-        if generation - self._paused_dispatch_count(effect["external_effect_id"]) > effect["max_attempts"]:
+        if effect["effect_type"] != "model.invoke" and generation - self._paused_dispatch_count(effect["external_effect_id"]) > effect["max_attempts"]:
             raise KernelError("EFFECT_RETRY_EXHAUSTED", "effect retry policy is exhausted")
         self.cursor.execute(
             """
@@ -406,7 +406,9 @@ class ExternalEffectRepository:
         paused = (evidence.get("dispatch_pause_contract") == "runtime-dispatch-control.v1"
             and evidence.get("error_code") == "RUNTIME_DISPATCH_PAUSED" and evidence.get("request_sent") is False)
         counted = dispatch["generation"] - self._paused_dispatch_count(dispatch["external_effect_id"])
-        if outcome == "retryable_failure" and not paused and counted >= dispatch["max_attempts"]:
+        self.cursor.execute("SELECT effect_type FROM authority_external_effect WHERE external_effect_id=%s", [dispatch["external_effect_id"]])
+        generation = self.cursor.fetchone()[0] == "model.invoke"
+        if outcome == "retryable_failure" and not generation and not paused and counted >= dispatch["max_attempts"]:
             accepted_outcome = "final_failure"
             dispatch_status = "DEAD_LETTER"
             effect_status = "DEAD_LETTER"

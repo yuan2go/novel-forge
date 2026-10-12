@@ -81,10 +81,16 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
     retained_effects = retained_completion_evidence(uow, operation, effect_states)
     completion_effects = effect_states + [(item["capability"], item["status"]) for item in retained_effects]
     effect_unknown = False
+    optional_memo = False
+    if any(item.get("capability") == "model.memo" for item in contract.get("required_external_effects", [])):
+        from novel_forge.modules.chapter_authority.creative_memo import optional_memo_completion
+        optional_memo = optional_memo_completion(uow, operation)
     for requirement in contract.get("required_external_effects", []):
         if not isinstance(requirement, dict):
             raise _invalid("required_external_effects")
         capability = str(requirement.get("capability") or "")
+        if capability == "model.memo" and optional_memo:
+            continue
         allowed = set(requirement.get("allowed_states") or ["SUCCEEDED"])
         matching = [status for current, status in completion_effects if current == capability]
         if any(status in {"UNKNOWN", "RECONCILIATION_REQUIRED"} for status in matching):
@@ -179,7 +185,7 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
         if action not in audit_actions:
             missing.append(f"audit:{action}")
     provider_used = bool(effect_states) or bool(
-        (operation.get("definition_snapshot") or {}).get("external_capabilities")
+        (operation.get("definition_snapshot") or {}).get("external_capabilities") and not optional_memo
     )
     if (
         "cost_when_provider_used" in required_evidence

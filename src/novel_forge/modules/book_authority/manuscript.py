@@ -671,3 +671,31 @@ def require_current_editor_base(uow: Any, scope: dict[str, Any], version_id: str
     row = uow.cursor.fetchone()
     if row and selected_source(uow, row[0], scope["chapter"]).asset_version_id != version_id:
         raise KernelError("AUTHOR_BASE_STALE", "The current author manuscript changed; keep unsaved input and rebase on its exact selected version")
+
+
+def require_retained_model_candidate(database_url, *, project_id, book_run_id, asset_version_id, principal):
+    principal.require("book.authority.query", project_id)
+    with AuthorityUnitOfWork(database_url) as uow:
+        source = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=asset_version_id)
+        payload = source.content.get("payload") or {}
+        uow.cursor.execute("""SELECT book.book_id,book.workspace_id,request.chapter_number
+            FROM authority_book_production book JOIN authority_book_chapter_request request USING(book_run_id)
+            JOIN authority_operation op ON op.root_operation_id=request.chapter_root_operation_id
+            JOIN authority_operation_output_asset output USING(operation_id)
+            WHERE book.book_run_id=%s AND book.project_id=%s AND op.project_id=book.project_id
+              AND op.workspace_id=book.workspace_id AND output.asset_version_id=%s
+              AND op.operation_id=%s""", [book_run_id, project_id, asset_version_id, payload.get("operation_id")])
+        row = uow.cursor.fetchone()
+        if (row is None or source.asset_type != "execution_evidence"
+                or source.content.get("kind") not in {"model-result", "prose-candidate"}
+                or payload.get("project_id") != project_id or payload.get("book_id") != row[0]):
+            raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
+        if canonical_hash(payload).split(":", 1)[1] != source.content.get("payload_hash"):
+            raise KernelError("MANUSCRIPT_CANDIDATE_HASH_INVALID", "Retained source bytes changed")
+        return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_MODEL_CANDIDATE",
+            "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,
+            "chapter": row[2], "asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
+            "text": payload.get("text"), "raw_text": payload["raw_text"],
+            **{key: payload[key] for key in ("completeness", "structural_status", "review_status",
+                "selection_status", "acceptance_status", "accounting_status")},
+            "publication": "NOT_AUTHORIZED"}

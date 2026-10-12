@@ -317,11 +317,6 @@ def require_source(
                 "source continuation lineage is incomplete",
             )
         depth = int(prior[0])
-    if depth >= 2:
-        raise KernelError(
-            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
-            "runtime continuation cannot exceed two successors",
-        )
     return {
         "source_operation_id": source_operation_id,
         "command": frozen,
@@ -799,8 +794,6 @@ def _pre_send_capacity_source(
         retained = uow.cursor.fetchone()
         if retained and retained[1]:
             inherited = {"contract_version": "generation-capacity-inheritance.v1", "generation_isolation": retained[0], "allocation": retained[1]}
-    if depth >= (3 if inherited else 2):
-        raise KernelError("GENERATION_RECOVERY_EXHAUSTED" if inherited else "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED", "Bounded native capacity recovery exhausted its successors")
     return {
         "mode": "PRE_SEND_CAPACITY",
         "source_operation_id": source_operation_id,

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-import json
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Mapping
@@ -352,8 +351,8 @@ def integrate_realization(
             "Every selected Scene slot must occur once in frozen order",
         )
     scoped = contract.get("contract_version") == "scene-realization-composition.v3"
+    diagnostics = []
     if scoped:
-        diagnostics = []
         scoped = contract.get("contract_version") == "scene-realization-composition.v3"
         for slot, artifact in zip(expected, artifacts, strict=True):
             keys = {"slot_id", "text", "used_fact_ids"} | ({"character_source_uses"} if scoped else set())
@@ -390,38 +389,29 @@ def integrate_realization(
                         or not set(refs).issubset(set(allowed) & set(facts)) or set(use) != {"character_id", "used_fact_ids"}):
                         diagnostics.append({"slot_id": slot["slot_id"], "defect": "CHARACTER_SOURCE_SCOPE", "character_id": actor, "allowed_refs": allowed, "invalid_actor_refs": sorted(set(refs or []) - set(allowed)) if isinstance(refs, list) and all(isinstance(ref, str) for ref in refs) else [], "missing_scene_use_refs": sorted(set(refs or []) - set(facts)) if isinstance(refs, list) and all(isinstance(ref, str) for ref in refs) else []})
                     seen.add(actor)
-        if diagnostics:
-            code = "REALIZATION_EPISTEMIC_SCOPE_VIOLATION"
-            if not scoped:
-                code = {"ARTIFACT_FIELDS_OR_PROSE": "REALIZATION_ARTIFACT_INVALID", "FACT_REFERENCE_TYPE_OR_DUPLICATE": "REALIZATION_EPISTEMIC_EVIDENCE_INVALID"}.get(diagnostics[0]["defect"], code)
-            raise KernelError(code, json.dumps({"defects": diagnostics}, ensure_ascii=False, sort_keys=True))
+        if any(not isinstance(item.get("text"), str) or not item["text"].strip() for item in artifacts):
+            raise KernelError("REALIZATION_ARTIFACT_INVALID", "Scene prose is missing")
 
     else:
         for slot, artifact in zip(expected, artifacts, strict=True):
             if (
-                set(artifact) != {"slot_id", "text", "used_fact_ids"}
-                or not isinstance(artifact["text"], str)
+                not isinstance(artifact["text"], str)
                 or not artifact["text"].strip()
             ):
                 raise KernelError(
                     "REALIZATION_ARTIFACT_INVALID",
                     "Slots require prose and explicit information-use evidence",
                 )
-            facts = artifact["used_fact_ids"]
+            facts = artifact.get("used_fact_ids")
             if (
                 not isinstance(facts, list)
                 or any(not isinstance(ref, str) for ref in facts)
                 or len(set(facts)) != len(facts)
             ):
-                raise KernelError(
-                    "REALIZATION_EPISTEMIC_EVIDENCE_INVALID",
-                    "Slot information use must name unique fact references",
-                )
+                diagnostics.append({"slot_id": slot["slot_id"], "defect": "FACT_REFERENCE_TYPE_OR_DUPLICATE"})
+                facts = []
             if not set(facts).issubset(set(slot["accessible_knowledge"])):
-                raise KernelError(
-                    "REALIZATION_EPISTEMIC_SCOPE_VIOLATION",
-                    "Scene realization used information outside its frozen epistemic scope",
-                )
+                diagnostics.append({"slot_id": slot["slot_id"], "defect": "OUTSIDE_SCENE_SCOPE"})
     integrated = serialize_realization(artifacts, separators)
     if integrated != text:
         raise KernelError(
@@ -476,10 +466,6 @@ def integrate_realization(
                 "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
             }
         )
-    if enforce_voice_contract and any(evidence["status"] == "DRIFT_DETECTED" for evidence in voice_evidence):
-        raise KernelError(
-            "REALIZATION_VOICE_DRIFT", "Candidate violates its frozen style contract"
-        )
     return {
         "realization_contract": dict(contract),
         "scene_artifacts": artifacts,
@@ -490,6 +476,8 @@ def integrate_realization(
              **({"scene_separators": separators} if separators is not None else {})}
         ),
         "voice_evidence": voice_evidence,
+        "declaration_evidence": {"status": "DIAGNOSTIC_ONLY", "defects": diagnostics,
+                                 "semantic_validation": "NOT_PROVEN_BY_MODEL_DECLARATIONS"},
     }
 
 

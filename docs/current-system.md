@@ -337,7 +337,7 @@ append a capacity successor; a retained Arc Context additionally requires its na
 projection evidence. Both use the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
 reserves the configured model output and framing margin, and permits at most two successors.
-The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains counted for fault limits but does not lock the Book. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact hard gate and verifying the Director receipt and settled usage; it consumes the same Planning allowance and cannot add accepted support or relax the gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
+The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains recorded; it does not consume a new generation entitlement or impose a lifetime fault ceiling. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact hard gate and verifying the Director receipt and settled usage; it consumes the same Planning allowance and cannot add accepted support or relax the gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
 no-progress windows become an explicit owner recovery state. The controlled process/PostgreSQL regression
@@ -419,9 +419,9 @@ preserves nullable canonical schema semantics and validates strictly decoded JSO
 against the host schema. Revalidation does not advance accepted Canon or Narrative
 State; Book acceptance still binds their projections atomically.
 
-Execution-window continuation retains the author deadline, actual child timeout and
-no-progress evidence. Creation checks cancellation, execution lease, deadline and finite
-work bounds before recovery hooks. Book and ChapterGroup coordinate owned references;
+Execution-window continuation retains historical deadline observations and no-progress
+evidence. Pure generation ignores automatic elapsed deadlines. Creation checks explicit
+cancellation, execution lease and scheduling work bounds before recovery hooks. Book and ChapterGroup coordinate owned references;
 they do not duplicate Chapter Attempt, Lease, Fence or Effect state. Migrations
 0000–0168 retain their published identities. The continuous forward chain 0169–0180
 adds World agency, host and projection succession, failed-step v2, retained graphs,
@@ -669,7 +669,7 @@ from one source Project is rejected rather than silently truncating the denomina
 Quality predictions are bounded by observed schema and acceptance yield, so failed
 outputs cannot disappear behind scores from successful outputs. Cache estimates use
 measured hit tokens from the same stable instruction prefix. Recent dispatch failures
-temporarily remove an affected model from new decisions across task chains. Kernel
+remain diagnostic for pure generation. Retry-After and actual in-flight exclusion still apply. Kernel
 reservation and dispatch also enforce retry deferral on the frozen existing effect.
 Independent Planning and Source outcome references participate in retry history.
 
@@ -684,11 +684,12 @@ Planning's frozen-effect recovery preserves its original route. New repair Opera
 derive a bounded root-to-current lineage from durable repair relationships and share
 failure, escalation and task budget history. Historical decisions remain legacy/unknown,
 with no fabricated routing or Provider identities.
-The current four-attempt routing bound and eight-Operation repair traversal bound are
-`CURRENT_RUNTIME_FACT`; neither establishes a permanent business invariant.
+The historical four-attempt routing ceiling is an observation for new pure generation.
+Traversal bounds are infrastructure checks and must not be interpreted as a literary gate.
 
 DeepSeek uses the official chat-completions protocol, explicit low/high/max reasoning,
-structured JSON, bounded timeout, and observed usage/cache receipts. The configured API
+structured JSON, bounded connection establishment and observed usage/cache receipts.
+Its generation read has no total lifetime deadline. The configured API
 catalog maps `deepseek-flash` to V4.1 Flash and `deepseek-v4-pro` to V4 Pro-0813.
 Recheck official model and pricing identities before each frozen campaign. Old V4
 Flash aliases do not prove V4 Flash execution. Peak prices bound reservations; measured
@@ -1211,6 +1212,38 @@ separate credentialed and budgeted qualification campaign.
 
 ## Creative execution and prose evidence
 
+Pure model Operations and their generation graphs retain automatic deadline and
+retry counters as execution observations. The current Kernel probes, successor
+admission and deadline scanner do not use those observations to cancel generation;
+explicit cancellation and current leases/fences still apply. A graph containing a
+non-generation external capability keeps its original execution boundary. Codex
+supervision has no elapsed generation lifetime limit; infrastructure probes, durable
+process identity, heartbeat, cancellation and duplicate-submission recovery remain.
+
+Production generative routing treats cumulative attempts, prior failed-route
+exclusion, mechanical arbitration/escalation thresholds, benchmark insufficiency and
+latency insufficiency as diagnostics. Model/task authorization, actual Context/output
+capacity, in-flight exclusion, Retry-After and priced monetary authorization still
+reject new calls. Provider consumption Token/call ceilings are ledger observations;
+removing them does not increase model Context capacity or grant a paid channel.
+
+Raw model results are persisted through the existing ExecutionRecordStore before
+local schema and accounting checks. Unambiguous complete-source prose has a separate
+retained candidate reference; partial or ambiguous output remains raw evidence.
+Chapter workspace exposes those references. Candidate retention does not imply
+structural validation, review, selection, accepted facts or settled usage. Native
+manuscript read/export can select an exact retained candidate reference independently
+of publication gates. Cancelled results retain revoked selection rights.
+Remote waiting polls active lease/cancellation probes without a total generation deadline.
+A returned response after local wait revocation is retained separately with revoked commit
+rights; it cannot settle the interrupted operation as successful.
+
+
+Source-bound prose diagnostics can declare the existing `CHAPTER_REVISION` repair scope.
+That scope uses one complete text field and permits scene merging/reordering while keeping
+author commitments and selected facts. Its derived scene mapping remains `NOT_MAPPED`;
+Plan-owned problems stay future-replan proposals. Local repair retains its unaffected ranges.
+
 The selection node projects the immutable review of its selected prose. If a proposed
 revision does not establish improvement or preservation, downstream gates retain the
 original review and its unresolved issues; they do not reuse the rejected prose's
@@ -1244,6 +1277,11 @@ The existing Chapter Memo node invokes the governed Provider path from a frozen
 ExecutionIntent. Its creative guidance describes motivated choices and costs, POV and
 voice, scene conflict and information release, emotional movement and the ending change.
 Draft receives this guidance and the Memo fingerprint as suggestions, not Canon.
+For a selected creative execution template without the optional `memo` enhancement,
+the Memo owner projects the exact frozen ExecutionIntent instead of calling a model.
+That artifact records `INPUT_FALLBACK / NOT_REQUESTED`; it does not claim generated
+Memo success or introduce creative facts. Explicitly enabled Memo keeps its Provider
+execution and diagnostics.
 Provider execution receipts remain on the immutable Memo for audit. Its governed
 writing projection excludes those receipts; they are not narrative material and do
 not consume the chapter's writing Context budget.
@@ -1258,7 +1296,9 @@ uses Story Design and a new scoped input version. Historical contexts without th
 retain their original contract; Memo still checks their exact frozen participants.
 
 Current Provider reviews return located diagnoses, constraints, repair goals, preservation
-requirements and acceptance criteria. Revision consumes these diagnoses. Re-review records
+requirements and acceptance criteria. Revision consumes these diagnoses. A non-empty
+partial revision is retained even when some eligible blockers remain OPEN; only the
+actually claimed resolutions advance to RESOLUTION_CLAIMED, pending re-review. Re-review records
 explicit checks; omission of an issue or a higher score does not establish resolution.
 Candidate selection preserves the earlier candidate when no checked improvement exists or
 required content regresses. Aesthetic suggestions cannot alone become objective blockers.
@@ -2151,7 +2191,7 @@ source contract has been verified. Provider receipts remain pending domain valid
 the later Candidate and validation reports establish successful materialization.
 Opening recovery passes no monetary claim for a replay assessment and obtains any next
 Provider allowance from the frozen budget policy. Historical account entitlement retains
-its frozen token and call limits without inventing a zero-dollar measurement. Native
+its frozen token and call observations without inventing a zero-dollar measurement. Native
 resource successors apply the authenticated membership execution contract only to future
 work and preserve every past reservation and receipt.
 An exact unstarted Opening blocked by capacity can append one native
@@ -2269,8 +2309,10 @@ The current proven set includes atomic Book chapter acceptance, no blind resend 
 ambiguous external effect, candidate/accepted-actual separation, raw-source isolation,
 and Arc identity independent of Volume containment. The typed planning levels, planning
 horizons, five Book Opening layers and the minimum evaluator behavior are current runtime
-facts, not claims of final design. Quality thresholds, retry counts and context budgets
-are configurable policies. The pre-hierarchy import flag is compatibility-only.
+facts, not claims of final design. Quality thresholds and context capacities are configurable policies. Persisted
+generation retry counts and automatic deadlines are current runtime facts, not
+literary invariants. Historical failures and accounting uncertainty cannot establish
+a contradiction in prose or justify rejecting a readable candidate. The pre-hierarchy import flag is compatibility-only.
 
 ChapterGroup now requires only positive ordered bounds at the domain boundary. Maximum
 and preferred execution lengths belong to immutable, project-selected policy frozen per

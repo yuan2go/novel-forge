@@ -84,6 +84,10 @@ def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = 
 def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None) -> None:
     from difflib import SequenceMatcher
     original = str(source.get("text") or "")
+    if structural_repair_scope(diagnoses) == "CHAPTER_REVISION":
+        for issue in diagnoses:
+            validate_location(dict(issue.get("evidence_locator") or {}), original)
+        return
     scopes = []
     artifacts = source.get("scene_artifacts") or []
     separators = source.get("scene_separators") or ["\n\n"] * max(0, len(artifacts) - 1)
@@ -158,9 +162,28 @@ def validate_diagnosis(issue: dict[str, Any], text: str) -> dict[str, Any]:
         raise KernelError("REVIEW_JUDGMENT_INVALID", "an aesthetic preference alone cannot block acceptance")
     if issue["judgment_kind"] == "UNCERTAIN" and issue.get("severity") == "blocking":
         raise KernelError("REVIEW_JUDGMENT_INVALID", "uncertain evidence cannot block acceptance")
+    repair = issue.get("repair")
+    if repair is not None:
+        from .repair_scope import validate_repair
+        validate_repair(repair)
     return {**{key: issue[key] for key in (*required, "preserve", "acceptance_criteria")},
+            **({"repair": dict(repair)} if repair is not None else {}),
             "evidence_locator": validate_location(dict(issue.get("evidence") or {}), text),
             "revision_strategy": issue["revision_goal"]}
+
+
+def structural_repair_scope(diagnoses):
+    from .repair_scope import validate_repair
+    scopes = []
+    for issue in diagnoses:
+        repair = issue.get("repair")
+        if repair is None:
+            continue
+        validate_repair(repair)
+        if (repair["problem_owner"] == "PROSE" and issue.get("status", "OPEN") == "OPEN"
+                and issue.get("judgment_kind") not in {"UNCERTAIN", "AESTHETIC_SUGGESTION"}):
+            scopes.append(repair["repair_scope"])
+    return "CHAPTER_REVISION" if "CHAPTER_REVISION" in scopes else "SCENE_REVISION" if "SCENE_REVISION" in scopes else "LOCAL_PROSE"
 
 
 def verified_resolutions(result: dict[str, Any], initial: dict[str, Any], text: str) -> set[str]:

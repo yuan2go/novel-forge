@@ -1237,11 +1237,16 @@ class PostgresChapterExecutionContractBinder:
         prompt_contract_version: str = "v3",
     ) -> tuple[dict[str, Any], str]:
         inputs = request_payload.get("input") or {}
+        from novel_forge.modules.review.diagnostics import structural_repair_scope
+        structural_revision = stage == "revision" and structural_repair_scope(
+            [*(inputs.get("review") or {}).get("issues", []),
+             *(inputs.get("review") or {}).get("unresolved_issues", [])]) == "CHAPTER_REVISION"
         causal_batch = bool(
             (inputs.get("execution_expectations") or {}).get("world_preparation")
         )
         targeted_revision = bool(
             stage == "revision"
+            and not structural_revision
             and prompt_contract_version in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v15"}
             and (
                 inputs.get("quality_edit_contract")
@@ -1339,6 +1344,12 @@ class PostgresChapterExecutionContractBinder:
             from .realization_composition import scoped_realization_schema
             schema = scoped_realization_schema(schema, inputs["draft"]["realization_contract"])
             schema_ref = "schema:chapter-provider-output:revision:v6"
+        if structural_revision:
+            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+                      "properties": {"text": {"type": "string", "minLength": 1},
+                          "resolved_issue_codes": {"type": "array", "items": {"type": "string"}}},
+                      "required": ["text", "resolved_issue_codes"], "additionalProperties": False}
+            schema_ref = "schema:chapter-provider-output:revision:v7"
         if stage == "canon_support" and inputs.get("support_kind_contract")=="canon-support-kinds.v2":
             from novel_forge.modules.canon_graph.grounding import SUPPORT_CLAIM_KINDS
             schema['properties']['claims']['items']['properties']['observed_kind']={'type':'string','enum':list(SUPPORT_CLAIM_KINDS)}
@@ -1373,6 +1384,21 @@ class PostgresChapterExecutionContractBinder:
                 "properties": {"payload_json": {"type": "string", "minLength": 2}}, "required": ["payload_json"],
                 "x-host-payload-schema": schema}
             schema_ref = "schema:chapter-provider-output:canon_extraction:v30"
+        if current_review:
+            from novel_forge.modules.review.repair_scope import repair_schema
+            def bind_repair(value):
+                if isinstance(value, dict):
+                    properties = value.get("properties", {})
+                    if {"judgment_kind", "revision_goal", "evidence"}.issubset(properties):
+                        properties["repair"] = {"anyOf": [repair_schema(), {"type": "null"}]}
+                        value["required"] = [*value["required"], "repair"]
+                    for item in list(value.values()):
+                        bind_repair(item)
+                elif isinstance(value, list):
+                    for item in value:
+                        bind_repair(item)
+            bind_repair(schema)
+            schema_ref += ":repair-scope-v1"
         return schema, schema_ref
 
     def bind(
@@ -3255,19 +3281,11 @@ def default_chapter_fixture_response(
 def _provider_process_timeout_seconds(
     external_effect_timeout_seconds: int, *, max_attempts: int = 1
 ) -> int:
-    """CONSTRAINT: Bound each call inside the immutable total Effect deadline."""
-    if max_attempts <= 0:
-        raise ValueError("ExternalEffect max_attempts must be positive")
-    attempt_window = external_effect_timeout_seconds // max_attempts
-    if attempt_window <= 1:
-        raise ValueError(
-            "ExternalEffect timeout must leave time to persist Provider evidence"
-        )
-    settlement_headroom = max(
-        1,
-        min(30, attempt_window // 10),
-    )
-    return attempt_window - settlement_headroom
+    """COMPATIBILITY: Preserve the declared timeout in frozen request evidence."""
+    if external_effect_timeout_seconds <= 0 or max_attempts <= 0:
+        raise ValueError("declared Effect timeout and attempts must be positive")
+    return external_effect_timeout_seconds
+
 
 
 class PostgresProductionExecutionPayloadResolver:
@@ -4673,6 +4691,15 @@ def _materialize_production_codex_prompt(
             else None
         ),
     )
+    if stage == "revision" and schema.get("ref") == "schema:chapter-provider-output:revision:v7":
+        stage_semantic_contract = _bind_language_contract(
+            "Return the complete revised chapter in the single text field, with resolved_issue_codes only for repairs claimed. "
+            "This exact source-bound PROSE/CHAPTER_REVISION diagnosis permits merging repeated scenes, transitions and noncritical order. "
+            "Preserve author commitments, selected story facts, character knowledge, causal consequences and due promises. "
+            "Do not change upper plot; propose Plan Change for that. Do not return scene_artifacts or an edits protocol. "
+            "Keep unresolved diagnoses open. This candidate is not accepted Canon and its scene mapping requires separate validation.",
+            required_language,
+        )
     if targeted_edits_only:
         stage_semantic_contract = _bind_language_contract(
             "Return only ordered non-overlapping edits with exact old quotes, replacement prose and linked issue codes. "

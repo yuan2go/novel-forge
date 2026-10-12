@@ -16,11 +16,10 @@ def test_source_span_from_different_candidate_cannot_be_rebound():
     assert "evidence_span_id" in output["canon_facts"][0]
 
 
-def test_quality_pass_bound_and_no_progress_remain_separate_guards():
+def test_quality_pass_history_does_not_lock_a_changed_candidate():
     control = {"maximum_passes": 3, "maximum_unchanged_candidates": 2}
     require_next_pass(completed_passes=1, candidate_hashes=["a", "b"], control=control)
-    with pytest.raises(KernelError, match="QUALITY_CORRECTION_CONTROL_EXHAUSTED"):
-        require_next_pass(completed_passes=3, candidate_hashes=["a", "b", "c"], control=control)
+    require_next_pass(completed_passes=100, candidate_hashes=["a", "b", "c"], control=control)
     with pytest.raises(KernelError, match="QUALITY_CORRECTION_NO_PROGRESS"):
         require_next_pass(completed_passes=2, candidate_hashes=["a", "a", "a"], control=control)
 

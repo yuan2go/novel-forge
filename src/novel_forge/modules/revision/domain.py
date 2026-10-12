@@ -65,7 +65,9 @@ def apply_revision_result(
             or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
     targeted = {}
-    if review.get("cross_chapter_window") or review.get("craft_targets"):
+    from novel_forge.modules.review.diagnostics import structural_repair_scope
+    structural = structural_repair_scope(repair_diagnoses) == "CHAPTER_REVISION"
+    if not structural and (review.get("cross_chapter_window") or review.get("craft_targets")):
         result, targeted = _materialize_targeted_result(draft, review, result)
     text = prose_from_output(result, separators=draft.get("scene_separators"))
     if length_scope is not None:
@@ -78,17 +80,10 @@ def apply_revision_result(
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
     resolved = sorted({str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()})
-    open_blocking = {
-        str(item.get("code") or "")
-        for item in diagnoses
-        if item.get("severity") == "blocking"
-        and item.get("status", "OPEN") == "OPEN"
-        and item.get("qualification", "ELIGIBLE") == "ELIGIBLE"
-    }
-    if not text.strip() or not open_blocking.issubset(set(resolved)):
+    if not text.strip():
         raise KernelError(
             "CHAPTER_REVISION_INCOMPLETE",
-            "revision must provide text and resolve every eligible blocking issue",
+            "revision must provide prose",
         )
     resolutions = [
         {
@@ -107,7 +102,9 @@ def apply_revision_result(
     if not isinstance(assertions, list) or any(not isinstance(item, dict) for item in assertions):
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "canon_assertions must be objects")
     return {
-        **reconcile_revision_composition(draft, result),
+        **({"realization_mapping_status": "NOT_MAPPED", "scene_artifacts": [],
+            "previous_composition_digest": draft.get("composition_digest")}
+           if structural else reconcile_revision_composition(draft, result)),
         **targeted,
         "project_id": project_id,
         "chapter": draft["chapter"],
@@ -130,6 +127,7 @@ def apply_revision_result(
         "resolved_issue_codes": resolved,
         "resolution_claimed_issue_codes": resolved,
         "issue_resolutions": resolutions,
+        "repair_scope": "CHAPTER_REVISION" if structural else "LOCAL_PROSE",
         "canon_assertions": assertions,
         "provider_evidence": dict(provider_evidence),
         **({"chapter_length_repair_scope": {**length_scope, "revised_han_characters": han_characters(text)}} if length_scope is not None else {}),

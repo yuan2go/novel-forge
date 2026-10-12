@@ -591,17 +591,18 @@ def test_selected_blocking_finding_cannot_be_discarded_by_empty_revision():
     from novel_forge.modules.revision.domain import apply_revision_result
 
     draft, review, _ = review_candidate("SEMANTIC_CONFLICT")
-    with pytest.raises(KernelError, match="CHAPTER_REVISION_INCOMPLETE"):
-        apply_revision_result(
-            project_id="p",
-            draft=draft,
-            review=review,
-            draft_asset_version_id="draft:2",
-            review_asset_version_id="review:2",
-            context_bundle_version_id="context:2",
-            result={"edits": [], "resolved_issue_codes": []},
-            provider_evidence={},
-        )
+    partial = apply_revision_result(
+        project_id="p",
+        draft=draft,
+        review=review,
+        draft_asset_version_id="draft:2",
+        review_asset_version_id="review:2",
+        context_bundle_version_id="context:2",
+        result={"edits": [], "resolved_issue_codes": []},
+        provider_evidence={},
+    )
+    assert partial["text"] == draft["text"]
+    assert all(row["to_status"] == "OPEN" for row in partial["issue_resolutions"])
     edited = apply_revision_result(
         project_id="p",
         draft=draft,

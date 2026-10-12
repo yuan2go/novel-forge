@@ -139,6 +139,10 @@ def replace_failed_step(
             and source["definition_version"] == "3.10.0" and target_version == "3.10.1"
             and expected_failure_code == "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID"
             and policy_evidence.get("contract_version") == "chapter-intent-reference-revalidation.v1")
+        optional_memo_repair = policy_evidence.get("contract_version") == "optional-memo-input-fallback.v1"
+        if optional_memo_repair:
+            from novel_forge.modules.chapter_authority.creative_memo import require_optional_memo_fallback
+            require_optional_memo_fallback(cursor, source, policy_evidence)
         if intent_contract_repair:
             from novel_forge.modules.chapter_authority.memo_recovery import require_intent_reference_repair
             require_intent_reference_repair(cursor, source, policy_evidence, database_url)
@@ -146,10 +150,10 @@ def replace_failed_step(
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memory_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memory_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or optional_memo_repair else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
-            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not historical_input_repair)
+            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not historical_input_repair and not optional_memo_repair)
         ):
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID",
@@ -181,7 +185,8 @@ def replace_failed_step(
             [root["operation_id"]],
         )
         deadline = cursor.fetchone()[0]
-        if deadline and deadline <= datetime.now(timezone.utc) and not window_successor:
+        from .generation_policy import generation_graph
+        if deadline and deadline <= datetime.now(timezone.utc) and not window_successor and not generation_graph(cursor, root["operation_id"], project):
             raise KernelError(
                 "OPERATION_BUSINESS_TIMEOUT",
                 "The frozen Root deadline remains authoritative",
@@ -197,6 +202,8 @@ def replace_failed_step(
         external, output, dependent, live_lease = cursor.fetchone()
         if output:
             output = has_domain_outputs(cursor, predecessor_id)
+        if optional_memo_repair:
+            external = False
         if memo_completion_repair:
             from novel_forge.modules.chapter_authority.memo_recovery import original_memo_source
             original_memo_source(cursor, source, policy_evidence)

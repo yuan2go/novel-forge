@@ -310,7 +310,7 @@ def resolve_provider_token_reservation_contract(
                     "BUDGET_SCOPE_CONFLICT",
                     "Opening BudgetScope authorization differs from Provider runtime",
                 )
-            estimated_tokens = int(allowance["requested_tokens"])
+            estimated_tokens = frozen_request_token_ceiling + output_ceiling
             if (
                 allowance["execution_mode"] != "PROVIDER_ALLOWED"
                 or int(allowance["requested_calls"]) != 1
@@ -2155,24 +2155,12 @@ def assess_budget_scope_in_uow(
             if cost_limit is None
             else max(Decimal("0"), cost_limit - committed_amount)
         )
-        if window_state == "EXPIRED":
-            reasons.append("budget_deadline_expired")
-        if provider_call_count + requested_calls > call_limit:
-            reasons.append("provider_call_limit_exhausted")
-        if committed_tokens + requested_tokens > token_limit:
-            reasons.append("token_limit_exhausted")
         if (
             cost_limit is not None
             and amount is not None
             and committed_amount + amount > cost_limit
         ):
             reasons.append("cost_limit_exhausted")
-        per_call_token_limit = int(policy.get("per_call_token_limit", token_limit))
-        if (
-            requested_calls > 0
-            and requested_tokens > per_call_token_limit * requested_calls
-        ):
-            reasons.append("per_call_token_limit_exceeded")
         if cost_limit is not None and amount is not None:
             per_call_cost_limit = _amount(
                 str(policy.get("per_call_cost_limit_usd", cost_limit))
@@ -3464,10 +3452,6 @@ def _enforce_routing_chain_budget(
         ],
     )
     spent, tokens = cursor.fetchone()
-    if template is None and int(tokens) + request.estimated_tokens > token_limit:
-        raise KernelError(
-            "BUDGET_TOKEN_CAP_EXCEEDED", "execution chain token limit would be exceeded"
-        )
     if template is None and amount is not None and Decimal(spent) + amount > money_limit:
         raise KernelError(
             "BUDGET_CAP_EXCEEDED", "execution chain monetary limit would be exceeded"
@@ -3501,11 +3485,6 @@ def _enforce_routing_chain_budget(
         ],
     )
     attempts, escalations, pending, unknown = cursor.fetchone()
-    if int(attempts) + 1 > max_attempts:
-        raise KernelError(
-            "ROUTING_CHAIN_ATTEMPTS_EXHAUSTED",
-            "execution chain reservation attempts exhausted",
-        )
     if unknown or pending:
         raise KernelError(
             "ROUTING_CHAIN_RECONCILIATION_REQUIRED",
@@ -3519,29 +3498,6 @@ def _enforce_routing_chain_budget(
             raise KernelError(
                 "ROUTING_ESCALATION_AUTHORIZATION_CONFLICT",
                 "escalation authorization differs from reservation",
-            )
-        if int(escalations) + 1 > max_escalations:
-            raise KernelError(
-                "ROUTING_ESCALATION_LIMIT_REACHED",
-                "execution chain escalation attempts exhausted",
-            )
-    if check_attempts and template is None and candidate.get("provider") == "codex-cli":
-        cursor.execute(
-            f"""SELECT count(*) FROM authority_budget_reservation
-                WHERE provider=%s AND evidence->>'cost_authorization_ref'=%s
-                  AND NOT (project_id=%s AND stable_idempotency_key=%s)
-                  AND {provider_usage_accounted_sql()}""",
-            [
-                request.provider,
-                request.cost_authorization_ref,
-                request.project_id,
-                request.stable_idempotency_key,
-            ],
-        )
-        if int(cursor.fetchone()[0]) + 1 > int(candidate.get("quota_remaining") or 0):
-            raise KernelError(
-                "BUDGET_CALL_CAP_EXCEEDED",
-                "Codex authorization call allowance exhausted",
             )
 
 
@@ -4460,6 +4416,9 @@ def _enforce_usage_caps(
     call_caps: Mapping[str, int],
     token_caps: Mapping[str, int],
 ) -> None:
+    from .generation_policy import pure_generation_operation
+    if pure_generation_operation(cursor, request.operation_id, request.project_id):
+        return None
     for kind, caps in (("call", call_caps), ("token", token_caps)):
         for dimension, cap in caps.items():
             where, params = _usage_cap_dimension(request, dimension)

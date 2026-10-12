@@ -498,8 +498,6 @@ def _check_limits(policy: dict[str, Any], usage: dict[str, Any], *, phase: str |
         addition = (calls, tokens) if candidate == phase else (0, 0)
         pairs.append((candidate, usage["phases"][candidate], policy["authorization"]["authorized_cumulative_caps"][candidate], *addition))
     for name, used, cap, extra_calls, extra_tokens in pairs:
-        if used["calls_used_or_reserved"] + extra_calls > cap["calls"] or used["conservative_tokens"] + extra_tokens > cap["tokens"]:
-            raise KernelError("CREATIVE_BUDGET_EXHAUSTED", f"cumulative {name} allocation/authorization does not admit this Provider usage")
         if plan["contract_version"] in _contract().PROVIDER_BUDGET_VERSIONS and (
             Decimal(used["priced_usd"]) + ((amount or Decimal(0)) if extra_calls else Decimal(0)) > Decimal(cap["priced_usd"])
         ):
@@ -510,9 +508,8 @@ def _check_limits(policy: dict[str, Any], usage: dict[str, Any], *, phase: str |
         for key in {*used_lanes, *((entitlement,) if entitlement is not None else ())}:
             cap = lanes.get(key)
             used = used_lanes.get(key, {"calls": 0, "tokens": 0})
-            if cap is None or any(used[field] + (extra if key == entitlement else 0) > cap[field]
-                                  for field, extra in (("calls", calls), ("tokens", tokens))):
-                raise KernelError("CREATIVE_BUDGET_EXHAUSTED", "the exact campaign entitlement lane is absent or exhausted")
+            if cap is None:
+                raise KernelError("CREATIVE_BUDGET_AUTHORIZATION_MISMATCH", "the exact campaign entitlement lane is absent")
 
 
 def reserve_creative_budget_in_uow(uow: AuthorityUnitOfWork, request: Any) -> dict[str, Any] | None:

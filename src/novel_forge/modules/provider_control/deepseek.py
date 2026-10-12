@@ -5,13 +5,14 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from email.utils import parsedate_to_datetime
 import hashlib
+import http.client
 import json
 import math
 import socket
 import time
 from typing import Any, Callable, Mapping
 from urllib.error import HTTPError, URLError
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
 
 from novel_forge.modules.production_execution.cost_routing import (
     PricingSnapshot,
@@ -49,6 +50,17 @@ class _NoRedirect(HTTPRedirectHandler):
         return None
 
 
+class _GenerationHTTPSConnection(http.client.HTTPSConnection):
+    def connect(self):
+        super().connect()
+        self.sock.settimeout(None)
+
+
+class _GenerationHTTPSHandler(HTTPSHandler):
+    def https_open(self, request):
+        return self.do_open(_GenerationHTTPSConnection, request, context=self._context)
+
+
 class DeepSeekProviderAdapter:
     provider = "deepseek"
 
@@ -64,7 +76,7 @@ class DeepSeekProviderAdapter:
             raise ValueError("DEEPSEEK_CREDENTIAL_AND_PRICING_REQUIRED")
         self._api_key = api_key
         self.pricing = dict(pricing)
-        self._transport = transport or build_opener(_NoRedirect()).open
+        self._transport = transport or build_opener(_NoRedirect(), _GenerationHTTPSHandler()).open
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self.capability_profile = ProviderCapabilityProfile(
             provider=self.provider,
@@ -158,7 +170,7 @@ class DeepSeekProviderAdapter:
         )
         started = time.monotonic()
         try:
-            with self._transport(wire, timeout=envelope.timeout_seconds) as response:
+            with self._transport(wire, timeout=30.0) as response:
                 raw = response.read(16_000_001)
                 if len(raw) > 16_000_000:
                     return self._failure(
@@ -216,7 +228,14 @@ class DeepSeekProviderAdapter:
                 started,
             )
         except (ValueError, TypeError, KeyError, IndexError) as exc:
-            return self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started, failure_cause=_safe_cause(exc))
+            failed = self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started, failure_cause=_safe_cause(exc))
+            safe_output = _received_output(content)
+            if safe_output is not None:
+                failed = ProviderInvocationResult(failed.outcome, failed.handle, {**failed.evidence,
+                    "raw_output_text": safe_output, "source_complete": False,
+                    "request_hash": request.request_hash, "usage": {"availability": "UNAVAILABLE", "input_tokens": None, "output_tokens": None},
+                    "cost": {"status": "UNKNOWN", "currency": "USD"}}, failed.request_sent)
+            return failed
 
     def _completed(
         self,
@@ -227,39 +246,45 @@ class DeepSeekProviderAdapter:
         submitted_at: datetime,
         started: float,
     ) -> ProviderInvocationResult:
-        usage = content.get("usage")
-        input_tokens = output_tokens = total_tokens = cached = missed = reasoning_tokens = None
-        if usage is not None:
-            input_tokens = usage["prompt_tokens"]
-            output_tokens = usage["completion_tokens"]
-            total_tokens = usage["total_tokens"]
-            cached = usage["prompt_cache_hit_tokens"]
-            missed = usage["prompt_cache_miss_tokens"]
-            if any(
-                type(value) is not int or value < 0
-                for value in (
-                    input_tokens,
-                    output_tokens,
-                    total_tokens,
-                    cached,
-                    missed,
+        usage_error = None
+        try:
+            usage = content.get("usage")
+            input_tokens = output_tokens = total_tokens = cached = missed = reasoning_tokens = None
+            if usage is not None:
+                input_tokens = usage["prompt_tokens"]
+                output_tokens = usage["completion_tokens"]
+                total_tokens = usage["total_tokens"]
+                cached = usage["prompt_cache_hit_tokens"]
+                missed = usage["prompt_cache_miss_tokens"]
+                if any(
+                    type(value) is not int or value < 0
+                    for value in (
+                        input_tokens,
+                        output_tokens,
+                        total_tokens,
+                        cached,
+                        missed,
+                    )
+                ):
+                    raise ValueError("DEEPSEEK_USAGE_INVALID")
+                if (
+                    cached + missed != input_tokens
+                    or input_tokens + output_tokens != total_tokens
+                ):
+                    raise ValueError("DEEPSEEK_CACHE_USAGE_INVALID")
+                reasoning_tokens = dict(usage.get("completion_tokens_details") or {}).get(
+                    "reasoning_tokens"
                 )
-            ):
-                raise ValueError("DEEPSEEK_USAGE_INVALID")
-            if (
-                cached + missed != input_tokens
-                or input_tokens + output_tokens != total_tokens
-            ):
-                raise ValueError("DEEPSEEK_CACHE_USAGE_INVALID")
-            reasoning_tokens = dict(usage.get("completion_tokens_details") or {}).get(
-                "reasoning_tokens"
-            )
-            if reasoning_tokens is not None and (
-                type(reasoning_tokens) is not int
-                or reasoning_tokens < 0
-                or reasoning_tokens > output_tokens
-            ):
-                raise ValueError("DEEPSEEK_REASONING_USAGE_INVALID")
+                if reasoning_tokens is not None and (
+                    type(reasoning_tokens) is not int
+                    or reasoning_tokens < 0
+                    or reasoning_tokens > output_tokens
+                ):
+                    raise ValueError("DEEPSEEK_REASONING_USAGE_INVALID")
+        except (ValueError, TypeError, KeyError) as exc:
+            usage_error = str(exc)
+            usage = None
+            input_tokens = output_tokens = total_tokens = cached = missed = reasoning_tokens = None
         request_id = content["id"]
         served_model = content["model"]
         system_fingerprint = content["system_fingerprint"]
@@ -383,6 +408,9 @@ class DeepSeekProviderAdapter:
         )
         evidence = {
             "result": output,
+            "raw_output_text": text,
+            "source_complete": finish_reason in {"stop", "tool_calls"} and not failure,
+            **({"usage_error": usage_error, "raw_usage": content.get("usage")} if usage_error else {}),
             **(
                 {
                     "output_protocol": DEEPSEEK_STRICT_PROTOCOL,
@@ -458,7 +486,7 @@ class DeepSeekProviderAdapter:
                 "accounting_basis": price.accounting_basis,
             },
             "finish_reason": finish_reason,
-            "failure_class": failure,
+            "failure_class": "MALFORMED_PROVIDER_RECEIPT" if usage_error else failure,
         }
         if failure:
             # SECURITY: Retain final content only, never transport headers or hidden reasoning.
@@ -471,6 +499,7 @@ class DeepSeekProviderAdapter:
                 "accepted": False,
             }
         outcome = (
+            "unknown" if usage_error else
             "retryable_failure"
             if finish_reason == "insufficient_system_resource"
             else "final_failure"
@@ -565,6 +594,23 @@ def _safe_cause(error):
         chain.append(item)
         error = error.__cause__ or error.__context__ or getattr(error, "reason", None)
     return json.dumps(chain, sort_keys=True)
+
+
+def _received_output(content):
+    if not isinstance(content, Mapping):
+        return None
+    choices = content.get("choices")
+    if not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], Mapping):
+        return None
+    message = choices[0].get("message")
+    if not isinstance(message, Mapping):
+        return None
+    calls = message.get("tool_calls")
+    if isinstance(calls, list) and len(calls) == 1 and isinstance(calls[0], Mapping):
+        function = calls[0].get("function")
+        if isinstance(function, Mapping) and function.get("name") == DEEPSEEK_OUTPUT_TOOL and isinstance(function.get("arguments"), str):
+            return function["arguments"]
+    return message.get("content") if isinstance(message.get("content"), str) else None
 
 
 def _contract_failure(response: HTTPError) -> str:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from datetime import datetime, timezone
 from typing import Any, Mapping, Protocol
 
@@ -137,11 +136,16 @@ class OpenAIProviderAdapterV2:
                 not isinstance(usage.get(key), int) or usage[key] < 0
                 for key in ("input_tokens", "output_tokens")
             ):
-                raise ValueError("provider usage receipt is malformed")
+                evidence = {**evidence, "raw_usage": usage, "usage_error": "MALFORMED_PROVIDER_USAGE",
+                            "usage": {"input_tokens": None, "output_tokens": None},
+                            "cost": {"status": "UNKNOWN", "currency": "USD"}}
+                outcome = "unknown"
             if self.capability_profile.supports_cost_receipt:
                 cost = evidence.get("cost")
                 if not isinstance(cost, dict) or not str(cost.get("currency") or ""):
-                    raise ValueError("provider cost receipt is malformed")
+                    evidence = {**evidence, "raw_cost": cost,
+                                "cost": {"status": "UNKNOWN", "currency": "USD"}}
+                    outcome = "unknown"
         return ProviderInvocationResult(outcome, handle, dict(evidence), request_sent)
 
 
@@ -173,7 +177,7 @@ class OpenAISdkTransport:
         request_options: dict[str, Any] = {
             "model": envelope.model,
             "input": envelope.input_text,
-            "timeout": envelope.timeout_seconds,
+            "timeout": self._generation_timeout(),
             "extra_headers": {"Idempotency-Key": envelope.stable_idempotency_key},
         }
         request_options["max_output_tokens"] = envelope.max_output_tokens
@@ -186,28 +190,42 @@ class OpenAISdkTransport:
         if not request_id:
             raise ValueError("OpenAI SDK response did not include a request ID")
         text = str(getattr(response, "output_text", "") or "")
+        from novel_forge.modules.production_execution.codex_configuration import strict_codex_json_loads
+        structured_error = None
         try:
-            result = json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise ValueError("OpenAI SDK response was not a JSON object") from exc
-        if not isinstance(result, dict):
-            raise ValueError("OpenAI SDK response was not a JSON object")
+            result = strict_codex_json_loads(text)
+            if not isinstance(result, dict):
+                raise ValueError("JSON_OBJECT_REQUIRED")
+        except (ValueError, RecursionError) as exc:
+            result = None
+            structured_error = type(exc).__name__
         usage = getattr(response, "usage", None)
-        input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
-        output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+        input_tokens = getattr(usage, "input_tokens", None)
+        output_tokens = getattr(usage, "output_tokens", None)
+        status = str(getattr(response, "status", "") or "")
         return {
-            "outcome": "success",
+            "outcome": "success" if status == "completed" and result is not None else "unknown",
             "request_sent": True,
             "provider_request_id": request_id,
             "provider_correlation_id": request_id,
             "completion_mode": "synchronous",
             "evidence": {
                 "result": result,
+                "raw_output_text": text,
+                "source_complete": status == "completed",
+                "structured_output_error": structured_error,
+                "model_id": str(getattr(response, "model", "") or ""),
+                "provider_request_id": request_id,
                 "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens},
-                "cost": {"amount": "0", "currency": "USD", "source": "not_provided"},
+                "cost": {"status": "UNKNOWN", "currency": "USD", "source": "not_provided"},
                 "request_hash": request.request_hash,
             },
         }
+
+    @staticmethod
+    def _generation_timeout():
+        import httpx
+        return httpx.Timeout(None, connect=30.0, pool=30.0)
 
     def query(self, request: ProviderQueryRequest) -> Mapping[str, Any]:
         response = self.client.responses.retrieve(request.provider_request_id)

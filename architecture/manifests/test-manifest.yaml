@@ -8,6 +8,19 @@
   ],
   "classification_rules": [
     {
+      "id": "generation-execution-observations",
+      "patterns": [
+        "tests/unit/test_generation_execution_policy.py",
+        "tests/integration/test_generation_execution_policy_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "retry-recovery-and-replay",
+      "production_target": "src/novel_forge/modules/command_kernel/generation_policy.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
       "id": "working-prose-source-projection",
       "patterns": [
         "tests/unit/test_working_prose_projection.py",

@@ -99,6 +99,18 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             return run_creation_command(settings, request)
         return adopt_author_workflow(authority, args.book_run_id, principal=principal, expected_version=None, settings=settings,
             idempotency_key="author-workflow:" + canonical_hash({"book": args.book_run_id, "profile": book["production_profile_version"]}))
+    if args.action in {"read", "export"} and args.candidate_version:
+        from novel_forge.modules.book_authority.manuscript import require_retained_model_candidate
+        candidate = require_retained_model_candidate(settings.database_url, project_id=args.project_id,
+            book_run_id=args.book_run_id, asset_version_id=args.candidate_version, principal=principal)
+        if args.action == "export" and args.output:
+            with args.output.open("x", encoding="utf-8") as stream:
+                if args.output.suffix.lower() in {".md", ".txt"}:
+                    body = candidate["text"] if candidate["text"] is not None else candidate["raw_text"]
+                    stream.write(f"第{candidate['chapter']}章 — 候选正文\n\n来源：{candidate['asset_version_id']}\n状态：{candidate['completeness']}；{candidate['review_status']}；{candidate['selection_status']}；{candidate['acceptance_status']}\n\n{body}\n")
+                else:
+                    stream.write(json.dumps(candidate, ensure_ascii=False, indent=2))
+        return candidate
     manifest = require_manuscript(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id,
         principal=principal, version_ids=args.versions, chapters=args.chapters)
     if args.action == "read":

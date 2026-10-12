@@ -484,6 +484,9 @@ class ChapterAuthorityQuery:
             "run": {key: value for key, value in evidence.items() if key != "outputs"},
             "artifacts": {stage: [item for item in evidence["outputs"] if item["asset_type"] in types]
                           for stage, types in stages.items()},
+            "retained_model_results": [item for item in evidence["outputs"]
+                if item["asset_type"] == "execution_evidence"
+                and item["content"].get("kind") in {"model-result", "prose-candidate"}],
             "acceptance": None if row is None or row[0] is None else {
                 "acceptance_id": row[0], "status": row[1], "accepted_through_chapter": int(row[2]),
                 "outcome_asset_version_id": row[3], "story_state_asset_version_id": row[4],
