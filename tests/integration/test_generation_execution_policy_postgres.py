@@ -80,3 +80,22 @@ def test_recovery_finds_each_completed_context_chunk_before_selecting_latest(mon
             result = receipt_recovery.consume_completed_generation_result(request, stage='context_compress', payload={'chunk': index})
             assert result.output['text'] == 'chunk'+str(index)
         assert seen == ['chunk1', 'chunk2']
+
+
+def test_completed_revalidation_graph_preserves_unknown_cost_and_rejects_live_outcomes():
+    from novel_forge.modules.command_kernel.step_successor_v2 import _require_reconciled_graph
+    ensure_migrated()
+    with transaction() as connection, connection.cursor() as cursor:
+        for table in ('authority_operation', 'authority_external_effect', 'authority_budget_reservation',
+                      'authority_attempt', 'authority_lease_acquisition', 'authority_cancellation_command'):
+            cursor.execute(f'CREATE TEMP TABLE {table} AS SELECT * FROM public.{table} WITH NO DATA')
+        cursor.execute("INSERT INTO authority_operation(operation_id,project_id,root_operation_id) VALUES ('root','p','root'),('source','p','root')")
+        cursor.execute("INSERT INTO authority_external_effect(external_effect_id,operation_id,status) VALUES ('retained','source','SUCCEEDED')")
+        cursor.execute("INSERT INTO authority_budget_reservation(external_effect_id,status) VALUES ('retained','HELD_UNKNOWN')")
+        _require_reconciled_graph(cursor, root_id='root', predecessor_id='source', completed_receipts=(('retained','hash'),))
+        cursor.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id='retained'")
+        assert cursor.fetchone() == ('HELD_UNKNOWN',)
+        for status in ('UNKNOWN', 'DISPATCHING', 'PENDING'):
+            cursor.execute("UPDATE authority_external_effect SET status=%s WHERE external_effect_id='retained'", [status])
+            with pytest.raises(KernelError, match='STEP_SUCCESSOR_GRAPH_UNRECONCILED'):
+                _require_reconciled_graph(cursor, root_id='root', predecessor_id='source', completed_receipts=(('retained','hash'),))

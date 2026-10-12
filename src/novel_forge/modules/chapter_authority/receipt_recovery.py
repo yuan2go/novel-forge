@@ -434,3 +434,93 @@ def consume_completed_generation_result(request, *, stage, payload):
                 "source_request_hash": proof["request_hash"], "successor_operation_id": request.operation_id,
                 "stage": stage, "provider_invoked": False, "accounting_status": verified['budget_reservation_status'],
                 "original_submission_right": "REVOKED"}})
+
+
+def recover_completed_chapter_results(authority, *, book_run_id, principal, root_operation_id):
+    from dataclasses import replace
+    from .contracts import ChapterHandlerRequest, ChapterInputAsset, ChapterNode
+    from .model_effects import ModelProviderResult
+    from novel_forge.modules.command_kernel.step_successor import require_live_chapter_frontier
+    book = authority.require(book_run_id)
+    app = authority.chapter_port.application
+    principal.require("book.authority.execute", book["project_id"])
+    principal.require("chapter.authority.execute", book["project_id"])
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        require_live_chapter_frontier(uow.cursor, root_id=root_operation_id,
+            project_id=book["project_id"], book_run_id=book_run_id)
+        uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+            JOIN authority_saga_step step USING(operation_id)
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.actor_id=%s
+              AND o.status IN ('FAILED_FINAL','DEAD_LETTER') AND o.definition_snapshot->>'commit_sha'<>%s
+              AND EXISTS(SELECT 1 FROM authority_external_effect e WHERE e.operation_id=o.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect e WHERE e.operation_id=o.operation_id
+                AND (e.status<>'SUCCEEDED' OR e.effect_type<>'model.invoke'))
+              AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor s WHERE s.predecessor_operation_id=o.operation_id)
+            ORDER BY o.created_at""", [root_operation_id, book["project_id"], principal.principal_id, authority.commit_sha])
+        sources = [row[0] for row in uow.cursor.fetchall()]
+    changed = False
+    for source in sources:
+        node = next((item for item in ChapterNode if item.definition_name == source["definition_name"]), None)
+        if node is None:
+            continue
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            if has_domain_outputs(uow.cursor, source["operation_id"]):
+                continue
+            inputs = []
+            for binding in source["input_asset_snapshot"]:
+                doc = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=binding["asset_version_id"])
+                if doc.content_hash != binding["content_hash"]:
+                    raise KernelError("KNOWN_RECEIPT_INPUT_DRIFT", "Retain exact frozen source content")
+                inputs.append(ChapterInputAsset(doc.asset_version_id, doc.asset_type, doc.content_hash, doc.content))
+            uow.cursor.execute("SELECT to_jsonb(e) FROM authority_external_effect e WHERE operation_id=%s ORDER BY created_at", [source["operation_id"]])
+            effects = [row[0] for row in uow.cursor.fetchall()]
+            retained = []
+            context = EffectCommandContext(source["operation_id"], book["project_id"], source["actor_id"], source["trace_id"], source["correlation_id"])
+            for effect in effects:
+                verified = _read_verified_success(uow, uow.repositories.external_effects, context,
+                    effect["external_effect_id"], retained_generation_stage=True)
+                if verified is None:
+                    raise KernelError("KNOWN_RECEIPT_SOURCE_INVALID", "A complete verified pure generation is required")
+                result = ModelProviderResult.from_evidence(verified["provider_evidence"])
+                retained.append((effect["request_payload"], replace(result,
+                    execution_evidence={**(result.execution_evidence or {}), "completed_attempt_reuse": {
+                        "contract_version": "chapter-completed-result-validation.v1",
+                        "source_operation_id": source["operation_id"], "source_effect_id": effect["external_effect_id"],
+                        "source_request_hash": effect["request_hash"], "provider_invoked": False,
+                        "accounting_status": verified["budget_reservation_status"]}})))
+            uow.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [source["operation_id"]])
+            failure_code = uow.cursor.fetchone()[0]
+        request = ChapterHandlerRequest(source["operation_id"], source["project_id"], source["workspace_id"],
+            source["trace_id"], source["correlation_id"], source["command_payload"], tuple(inputs),
+            definition_version=source["definition_version"], database_url=authority.database_url)
+        from .runtime import bind_working_revision_inputs
+        request = bind_working_revision_inputs(request)
+        handler = app.registry.require(node)
+        port = _CompletedOnlyPort(retained, getattr(handler.provider, "adapter", None))
+        replace(handler, provider=port).execute(request)
+        policy = {"contract_version": "chapter-pure-generation-successor.v1", "completed_revalidation": True,
+            "book_run_id": book_run_id, "release_sha": authority.commit_sha, "provider_invoked": False,
+            "completion_checks": "UNCHANGED", "completed_model_effects": [
+                {"external_effect_id": item["external_effect_id"], "request_hash": item["request_hash"],
+                 "stage": item["request_payload"]["stage"]} for item in effects]}
+        replace_failed_step(authority.database_url, predecessor_id=source["operation_id"],
+            target_version=source["definition_version"], expected_failure_code=failure_code,
+            context=AdmissionContext(principal.principal_id, principal.permissions,
+                app.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
+            policy_evidence=policy, known_receipt_effects=tuple(
+                (item["external_effect_id"], item["request_hash"]) for item in effects))
+        changed = True
+    return changed
+
+
+class _CompletedOnlyPort:
+    def __init__(self, retained, adapter=None):
+        self.retained = retained
+        self.adapter = adapter
+
+    def invoke(self, request, *, stage, payload, **kwargs):
+        matches = [result for original, result in self.retained
+                   if original.get("stage") == stage and original.get("input") == payload]
+        if len(matches) != 1:
+            raise KernelError("KNOWN_RECEIPT_INPUT_DRIFT", "Completed-result revalidation cannot send changed or new model input")
+        return matches[0]

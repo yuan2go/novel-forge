@@ -736,6 +736,9 @@ def recover_chapter_generations(authority, *, book_run_id, principal, working_re
         root_id = request["chapter_root_operation_id"]
     from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
 
+    from novel_forge.modules.chapter_authority.receipt_recovery import recover_completed_chapter_results
+    revalidated = recover_completed_chapter_results(authority, book_run_id=book_run_id,
+        principal=principal, root_operation_id=root_id)
     recovered = recover_saved_local_results(authority.chapter_port.application._model_port.adapter,
         database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal)
     with AuthorityUnitOfWork(authority.database_url) as uow:
@@ -749,7 +752,7 @@ def recover_chapter_generations(authority, *, book_run_id, principal, working_re
             [root_id],
         )
         sources = [row[0] for row in uow.cursor.fetchall()]
-    changed = recovered
+    changed = recovered or revalidated
     for source in sources:
         exhausted = None
         with AuthorityUnitOfWork(authority.database_url, coordinate_nested=True) as uow:

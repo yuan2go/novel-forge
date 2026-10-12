@@ -87,6 +87,22 @@ def test_foreign_success_cannot_authorize_this_successor(monkeypatch):
     reader.assert_not_called()
 
 
+@pytest.mark.parametrize("verified", [False, True])
+def test_completed_revalidation_preserves_unknown_accounting_but_requires_verified_result(monkeypatch, verified):
+    repository = Mock()
+    repository.get_for_update.return_value = {"operation_id": "source", "request_hash": "request"}
+    monkeypatch.setattr(recovery, "ExternalEffectRepository", lambda _: repository)
+    reader = Mock(return_value={"budget_reservation_status": "HELD_UNKNOWN"} if verified else None)
+    monkeypatch.setattr(recovery, "_read_verified_success", reader)
+    source = dict(operation_id="source", project_id="project", actor_id="actor", trace_id="trace", correlation_id="correlation")
+    if verified:
+        recovery._require_verified_receipts(Mock(), source=source, expected=[("effect", "request")], completed_revalidation=True)
+    else:
+        with pytest.raises(KernelError, match="STEP_SUCCESSOR_RECEIPT_UNSETTLED"):
+            recovery._require_verified_receipts(Mock(), source=source, expected=[("effect", "request")], completed_revalidation=True)
+    assert reader.call_args.kwargs["retained_generation_stage"] is True
+
+
 @pytest.mark.parametrize("explicit_deadline", [None, "business_deadline_at", "author_deadline_at"])
 def test_unsent_transport_window_preserves_explicit_deadlines(explicit_deadline):
     cursor = Mock()

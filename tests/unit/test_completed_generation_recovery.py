@@ -10,6 +10,17 @@ from novel_forge.modules.chapter_authority.provider_views import compile_exact_c
 from novel_forge.modules.chapter_authority.author_editor import author_input_provenance
 
 
+def test_completed_only_validation_port_never_dispatches_changed_or_missing_input():
+    from novel_forge.modules.chapter_authority.receipt_recovery import _CompletedOnlyPort
+    expected = {"draft": {"text": "真实原始正文"}}
+    result = object()
+    port = _CompletedOnlyPort([({"stage": "review", "input": expected}, result)])
+    assert port.invoke(None, stage="review", payload=expected) is result
+    for stage, payload in (("revision", expected), ("review", {"draft": {"text": "改过的输入"}})):
+        with pytest.raises(KernelError, match="KNOWN_RECEIPT_INPUT_DRIFT"):
+            port.invoke(None, stage=stage, payload=payload)
+
+
 @pytest.mark.parametrize('fault', [None, 'changed-input', 'foreign-book', 'unverified'])
 def test_retry_reuses_exact_verified_result_without_new_dispatch_or_settlement(monkeypatch, fault):
     from contextlib import nullcontext

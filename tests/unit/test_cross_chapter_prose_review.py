@@ -254,6 +254,31 @@ def test_exact_quote_outside_frozen_excerpt_is_not_reviewed_evidence():
         validate_support([evidence], frozen)
 
 
+def test_current_candidate_support_is_located_without_claiming_earlier_acceptance():
+    local = issue("SPATIAL_ACTION_CONTINUITY")
+    local["supporting_evidence"] = [{"asset_version_id": "draft:2", "quote": TARGET[-7:],
+        "relation_to_issue": "A second action within the same current candidate."}]
+    result = paired_diagnosis(local, text=TARGET, window=window())
+    assert result["supporting_evidence"] == []
+    support = result["candidate_supporting_evidence"][0]
+    assert support["evidence_scope"] == "CURRENT_CANDIDATE" and support["text_hash"] == prose_hash(TARGET)
+    assert TARGET[support["start"]:support["end"]] == support["quote"]
+    with pytest.raises(KernelError):
+        validate_support(local["supporting_evidence"], window())
+
+
+def test_mixed_current_and_earlier_support_preserves_separate_exact_sources():
+    local = issue("SPATIAL_ACTION_CONTINUITY")
+    local["supporting_evidence"].append({"asset_version_id": "revision:2", "quote": TARGET[-7:],
+        "relation_to_issue": "Current revised action."})
+    result = paired_diagnosis(local, text=TARGET, window=window(), target_asset_version_id="revision:2")
+    assert result["supporting_evidence"][0]["asset_version_id"] == "accepted:1"
+    assert result["candidate_supporting_evidence"][0]["asset_version_id"] == "revision:2"
+    local["supporting_evidence"][-1]["quote"] = "fabricated passage"
+    with pytest.raises(KernelError):
+        paired_diagnosis(local, text=TARGET, window=window(), target_asset_version_id="revision:2")
+
+
 @pytest.mark.parametrize(
     "field,value",
     [

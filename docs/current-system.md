@@ -56,6 +56,11 @@ Stopped isolated pure generation may register its native successor from a Saga's
 Working prose keeps its persisted Asset type and hash when used in the Draft input role;
 the host role projection does not relabel a Revision or author edit as a stored Draft.
 The frozen revision purpose reaches the Review, Revision and ReReview task views.
+Review distinguishes supporting passages in the exact current candidate from frozen
+earlier prose. Both require literal, unambiguous locations; a current passage is never
+represented as accepted or earlier evidence. After an implementation correction,
+ordinary continuation may revalidate a verified completed generation on unchanged
+inputs without another Provider call; it preserves the failed Attempt and receipt.
 Planning and prose transport keep contiguous selected passages as one exact text plus
 Unicode boundaries; the host reconstructs their original locations and hashes. This
 reduces repeated protocol metadata within real model capacity without omitting prose.

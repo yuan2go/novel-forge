@@ -51,6 +51,7 @@ def paired_diagnosis(
     text: str,
     window: dict[str, Any],
     prior: dict[str, Any] | None = None,
+    target_asset_version_id: str = "",
 ) -> dict[str, Any]:
     category, judgment = issue.get("category"), issue.get("judgment_kind")
     if (
@@ -70,7 +71,28 @@ def paired_diagnosis(
         raise KernelError(
             "REVIEW_JUDGMENT_INVALID", "cross-chapter judgment and confidence required"
         )
-    support = validate_support(issue.get("supporting_evidence"), window)
+    current_id = target_asset_version_id or window.get("target_candidate_asset_version_id")
+    supplied = issue.get("supporting_evidence")
+    if not isinstance(supplied, list) or not supplied:
+        support = validate_support(supplied, window)
+        candidate_support = []
+    else:
+        candidate_support = []
+        earlier_support = []
+        for item in supplied:
+            if not isinstance(item, dict) or item.get("asset_version_id") != current_id:
+                earlier_support.append(item)
+                continue
+            if (not str(item.get("relation_to_issue") or "").strip()
+                or item.get("text_hash", prose_hash(text)) != prose_hash(text)
+                or item.get("chapter_number", window.get("target_chapter_number")) != window.get("target_chapter_number")
+                or "content_hash" in item):
+                raise KernelError("REVIEW_EVIDENCE_INVALID", "current support requires exact candidate prose identity")
+            candidate_support.append({**validate_location(item, text),
+                "asset_version_id": current_id, "text_hash": prose_hash(text),
+                "chapter_number": window.get("target_chapter_number"),
+                "relation_to_issue": item["relation_to_issue"], "evidence_scope": "CURRENT_CANDIDATE"})
+        support = validate_support(earlier_support, window) if earlier_support else []
     location = validate_location(dict(issue.get("evidence") or {}), text)
     intentional = issue.get("interpretation")
     if intentional not in {
@@ -121,6 +143,8 @@ def paired_diagnosis(
             {k: value[k] for k in ("asset_version_id", "start", "end")}
             for value in support
         ],
+        "candidate_support": [{k: value[k] for k in ("asset_version_id", "start", "end")}
+                              for value in candidate_support],
         "window": window["source_window_hash"],
     }
     code = "CC-" + str(category) + "-" + digest(identity).split(":")[1][:20].upper()
@@ -153,6 +177,7 @@ def paired_diagnosis(
         "confidence": issue["confidence"],
         "interpretation": intentional,
         "supporting_evidence": support,
+        **({"candidate_supporting_evidence": candidate_support} if candidate_support else {}),
         "source_window_hash": window["source_window_hash"],
     }
 
