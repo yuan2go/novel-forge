@@ -173,6 +173,11 @@ class _ChapterHandlerAdapter:
                     binding=chapter_request.command["reference_evaluation"], evaluator_actor_id=request.actor_id,
                     chapter=chapter_request.command["chapter"], generation_sample=subject)
         output = self.registry.require(self.node).execute(chapter_request)
+        from .receipt_recovery import completed_result_proof
+        retained_proof = completed_result_proof(chapter_request)
+        if retained_proof is not None:
+            from dataclasses import replace
+            output = replace(output, content={**output.content, "completed_result_revalidation": retained_proof})
         agreement = None
         if reference is not None:
             from novel_forge.modules.chapter_quality_authority.reference_sampling import (

@@ -1733,6 +1733,18 @@ class ChapterAuthorityScheduler:
         operation_id = str(operation["operation_id"])
         project_id = request.project_id
         active = self._active_attempt(operation_id, project_id)
+        if (operation["status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
+            and active is not None and active["status"] == "RESULT_SUBMITTED"):
+            from novel_forge.modules.command_kernel.completion import (
+                CompletionCommandContext, evaluate_completion_contract, finalize_operation_completion,
+            )
+            completed = evaluate_completion_contract(self.database_url, operation_id, project_id)
+            if completed["satisfied"] and completed["target_status"] == "SUCCEEDED":
+                finalize_operation_completion(self.database_url,
+                    CompletionCommandContext(project_id, self.worker_id, request.trace_id, request.correlation_id),
+                    operation_id=operation_id, expected_status=operation["status"], expected_version=operation["version"],
+                    require_uncancelled=True)
+                return "submitted_completion_finalized"
         recovery_mode = "fresh_attempt"
         if operation["status"] in {"READY", "FAILED_RETRYABLE"}:
             recovery_mode = (

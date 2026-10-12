@@ -218,9 +218,25 @@ def finalize_operation_completion(
     operation_id: str,
     expected_status: str,
     expected_version: int,
+    require_uncancelled: bool = False,
 ) -> dict[str, Any]:
     _validate_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
+        if require_uncancelled:
+            uow.cursor.execute("""SELECT COALESCE(NULLIF(root_operation_id,''),operation_id)
+                FROM authority_operation WHERE operation_id=%s AND project_id=%s""",
+                [operation_id, context.project_id])
+            owner = uow.cursor.fetchone()
+            if owner is None:
+                raise KernelError("OPERATION_NOT_FOUND", "completion owner is missing")
+            uow.cursor.execute("SELECT operation_id FROM authority_operation WHERE operation_id=%s AND project_id=%s FOR UPDATE",
+                [owner[0], context.project_id])
+            if uow.cursor.fetchone() is None:
+                raise KernelError("OPERATION_NOT_FOUND", "completion Root is missing")
+            uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=ANY(%s))",
+                [[operation_id, owner[0]]])
+            if uow.cursor.fetchone()[0]:
+                raise KernelError("OPERATION_CANCELLATION_ACTIVE", "Cancelled submitted work cannot be automatically finalized")
         operation = uow.repositories.completion_contracts.operation(
             operation_id,
             context.project_id,

@@ -417,6 +417,8 @@ def consume_completed_generation_result(request, *, stage, payload):
             if effect[3].get("input") == payload:
                 matches.append(proof)
         if not matches:
+            if policy.get("completed_revalidation"):
+                raise KernelError("KNOWN_RECEIPT_INPUT_DRIFT", "Completed-only succession cannot dispatch a changed model request")
             return None
         if len(matches) != 1:
             raise KernelError("KNOWN_RECEIPT_SOURCE_AMBIGUOUS", "Exactly one completed sibling may satisfy the current stage and input")
@@ -524,3 +526,18 @@ class _CompletedOnlyPort:
         if len(matches) != 1:
             raise KernelError("KNOWN_RECEIPT_INPUT_DRIFT", "Completed-result revalidation cannot send changed or new model input")
         return matches[0]
+
+
+def completed_result_proof(request):
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        uow.cursor.execute("""SELECT j.policy_evidence,j.source_failure_snapshot FROM authority_saga_step_successor j
+            WHERE j.successor_operation_id=%s AND j.project_id=%s AND j.contract_version='kernel-failed-step-successor.v2'""",
+            [request.operation_id, request.project_id])
+        row = uow.cursor.fetchone()
+    if not row or row[0].get("completed_revalidation") is not True:
+        return None
+    policy, frozen = row
+    return {"contract_version": "chapter-completed-result-revalidation.v1",
+        "source_operation_id": frozen["operation"]["operation_id"],
+        "successor_operation_id": request.operation_id, "provider_invoked": False,
+        "strict_certification_eligible": False, "completed_model_effects": policy["completed_model_effects"]}

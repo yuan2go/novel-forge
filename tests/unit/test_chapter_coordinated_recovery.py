@@ -6,6 +6,36 @@ from novel_forge.modules.revision.domain import retain_reviewed_draft, reuse_unc
 from novel_forge.modules.review.diagnostics import prose_hash
 
 
+@pytest.mark.parametrize("satisfied", [False, True])
+def test_submitted_completion_recovery_uses_kernel_proof_before_effect_reconciliation(monkeypatch, satisfied):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.modules.chapter_authority import scheduler
+    from novel_forge.modules.command_kernel import completion
+    worker = object.__new__(scheduler.ChapterAuthorityScheduler)
+    worker.database_url = "fixture-only"
+    worker.worker_id = "worker"
+    worker.lease_seconds = 30
+    worker._active_attempt = Mock(return_value={"status": "RESULT_SUBMITTED", "attempt_id": "submitted"})
+    evaluated = Mock(return_value={"satisfied": satisfied, "target_status": "SUCCEEDED" if satisfied else "WAITING_EXTERNAL_RESULT"})
+    finalized = Mock()
+    lease = Mock(side_effect=KernelError("FIXTURE_LEASE_BOUNDARY", "stop before execution or Provider reconciliation"))
+    monkeypatch.setattr(completion, "evaluate_completion_contract", evaluated)
+    monkeypatch.setattr(completion, "finalize_operation_completion", finalized)
+    monkeypatch.setattr(scheduler, "acquire_attempt_lease", lease)
+    request = SimpleNamespace(project_id="p", trace_id="trace", correlation_id="root")
+    operation = {"operation_id": "current", "status": "WAITING_EXTERNAL_RESULT", "version": 7}
+    if satisfied:
+        assert worker._execute_node(request, scheduler.ChapterNode.REVIEW, operation) == "submitted_completion_finalized"
+        assert finalized.call_args.kwargs["expected_version"] == 7
+        assert finalized.call_args.kwargs["require_uncancelled"] is True
+        lease.assert_not_called()
+    else:
+        with pytest.raises(KernelError, match="FIXTURE_LEASE_BOUNDARY"):
+            worker._execute_node(request, scheduler.ChapterNode.REVIEW, operation)
+        finalized.assert_not_called()
+
+
 def test_source_span_from_different_candidate_cannot_be_rebound():
     source = source_spans("他看见门开了。")
     output = {"canon_facts": [{"evidence_span_id": source["spans"][0]["span_id"]}]}

@@ -61,6 +61,9 @@ earlier prose. Both require literal, unambiguous locations; a current passage is
 represented as accepted or earlier evidence. After an implementation correction,
 ordinary continuation may revalidate a verified completed generation on unchanged
 inputs without another Provider call; it preserves the failed Attempt and receipt.
+Kernel completion validates that immutable receipt lineage against the qualified
+derived output. It does not require a fresh Effect, CommitManifest or settled usage
+for a completed-only generation revalidation, and it never masks a new in-flight Effect.
 Planning and prose transport keep contiguous selected passages as one exact text plus
 Unicode boundaries; the host reconstructs their original locations and hashes. This
 reduces repeated protocol metadata within real model capacity without omitting prose.
