@@ -9,8 +9,13 @@ from .backends import CodexCliExecutionBackend, RemoteProviderExecutionBackend
 from .contracts import ExecutionOutcome
 
 
-def recover_saved_local_results(transport, *, database_url, project_id, book_id, principal, operation_ids=()):
+def recover_saved_local_results(transport, *, database_url, project_id, book_id, principal, operation_ids=(), source_actor_id=None):
     principal.require("external_effect.resolve", project_id)
+    source_actor_id = source_actor_id or principal.principal_id
+    if source_actor_id != principal.principal_id:
+        from novel_forge.modules.authority_security.service import PrincipalType
+        if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
+            raise PermissionError("Only a scoped trusted operator can recover another native actor's original result")
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("""SELECT effect.external_effect_id,operation.operation_id,operation.trace_id,operation.correlation_id
             FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
@@ -19,7 +24,7 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
               AND effect.request_payload #>> '{_production_execution,book_id}'=%s
               AND effect.status='SUCCEEDED' AND budget.status IN ('RESERVED','HELD_UNKNOWN')
               AND NOT authority_generation_isolated(effect.external_effect_id)
-              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""", [project_id,principal.principal_id,book_id,list(operation_ids),list(operation_ids)])
+              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""", [project_id,source_actor_id,book_id,list(operation_ids),list(operation_ids)])
         unsettled=uow.cursor.fetchall()
         accounting=[]
         for effect_id,operation_id,trace_id,correlation_id in unsettled:
@@ -38,7 +43,7 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
               AND operation.status IN ('EXECUTING','FAILED_RETRYABLE','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
               AND NOT authority_generation_isolated(effect.external_effect_id)
               AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""",
-            [project_id, principal.principal_id, book_id,list(operation_ids),list(operation_ids)])
+            [project_id, source_actor_id, book_id,list(operation_ids),list(operation_ids)])
         identities = [row[0] for row in uow.cursor.fetchall()]
     for effect_id,evidence in accounting:
         _resolve_reconciled_budget(database_url,project_id=project_id,effect_id=effect_id,outcome="success",evidence=evidence)
@@ -59,6 +64,11 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
         result = (backend.reconcile(handle, _consume_callback=False) if type(backend) is RemoteProviderExecutionBackend else backend.reconcile(handle))
         session.gateway._validate_result(handle, result)
         if result.outcome != ExecutionOutcome.SUCCEEDED:
+            if type(backend) is CodexCliExecutionBackend and result.outcome == ExecutionOutcome.ORPHANED:
+                from novel_forge.modules.command_kernel.generation_isolation import checkpoint_orphaned_cli_dispatch
+                recovered = checkpoint_orphaned_cli_dispatch(database_url, project_id=project_id,
+                    book_id=book_id, principal=principal, execution_id=identity,
+                    evidence=transport.saved_result_evidence(request, handle, result)) or recovered
             continue
         record = session.evidence_store.get_record(identity)
         evidence = {**transport.saved_result_evidence(request, handle, result),

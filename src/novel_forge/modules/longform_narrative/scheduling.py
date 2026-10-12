@@ -11,6 +11,7 @@ from .reducers import normalize_frozen_arc_plan
 
 
 ARC_WORKING_SET_POLICY_VERSION = "accepted-reality-arc-working-set-v1"
+_CHAPTER_SCHEDULE_POLICY_VERSION = "frozen-chapter-arc-working-set-v2"
 _TERMINAL_LIFECYCLES = frozenset({"COMPLETED", "ABANDONED"})
 _REPLAN_DECISIONS = frozenset({"REPLAN_REQUIRED"})
 
@@ -105,6 +106,44 @@ def _selected_action(candidate: Mapping[str, Any]) -> str:
     return "ADVANCE"
 
 
+def _chapter_required_arc_ids(
+    schedule_row: Mapping[str, Any] | None,
+    *, chapter_number: int, arc_ids: set[str], maximum: int,
+) -> set[str] | None:
+    if schedule_row is None or "required_arc_contributions" not in schedule_row:
+        return None
+    contributions = schedule_row["required_arc_contributions"]
+    cadence = schedule_row.get("arc_cadence")
+    if (
+        schedule_row.get("chapter_number") != chapter_number
+        or not isinstance(contributions, list)
+        or not isinstance(cadence, list)
+        or any(not isinstance(item, Mapping) for item in contributions + cadence)
+    ):
+        raise KernelError("ARC_WORKING_SET_CHAPTER_SCHEDULE_INVALID", "Frozen Chapter row must match its target and declare contributions and cadence")
+    required = [_identity(item) for item in contributions]
+    cadence_ids = [_identity(item) for item in cadence]
+    actions = {"PAYOFF", "REACTIVATE", "SETUP", "ADVANCE", "TOUCH", "DORMANT"}
+    if (
+        not required
+        or "" in required
+        or len(set(required)) != len(required)
+        or not set(required) <= arc_ids
+        or "" in cadence_ids
+        or len(set(cadence_ids)) != len(cadence_ids)
+        or not set(cadence_ids) <= arc_ids
+        or any(str(item.get("action") or "").upper() not in actions for item in cadence)
+        or set(required) != {
+            _identity(item) for item in cadence
+            if str(item.get("action") or "").upper() != "DORMANT"
+        }
+    ):
+        raise KernelError("ARC_WORKING_SET_CHAPTER_SCHEDULE_INVALID", "Frozen Chapter contributions must be unique legal Arcs with matching non-dormant cadence")
+    if len(required) > maximum:
+        raise KernelError("ARC_WORKING_SET_CHAPTER_CAPACITY_EXCEEDED", "Frozen Chapter contributions exceed the governed active-Arc capacity; return to Planning/Plan Change")
+    return set(required)
+
+
 def build_arc_working_set(
     *,
     project_id: str,
@@ -163,6 +202,10 @@ def build_arc_working_set(
         limits=limits, schedule_row=schedule_row
     )
     preferences = _schedule_preferences(schedule_row)
+    required_ids = _chapter_required_arc_ids(
+        schedule_row, chapter_number=chapter_number,
+        arc_ids=set(arc_plan_snapshots), maximum=int(limits.get("max_active_arcs") or 3),
+    )
     states = {
         _identity(item): dict(item)
         for item in projection.get("arc_states") or ()
@@ -364,6 +407,12 @@ def build_arc_working_set(
         (item for item in candidates if item["eligible"]),
         key=lambda item: (-int(item["score"]), item["arc_plan_version_id"]),
     )
+    if required_ids is not None:
+        ranked = [item for item in ranked if item["arc_plan_version_id"] in required_ids]
+        if {item["arc_plan_version_id"] for item in ranked} != required_ids:
+            raise KernelError("ARC_WORKING_SET_CHAPTER_ARC_ILLEGAL", "A required frozen Chapter Arc is no longer eligible; return to Planning/Plan Change")
+        capacity = len(required_ids)
+        capacity_source = "FROZEN_CHAPTER_SCHEDULE"
     if not ranked:
         raise KernelError(
             "ARC_WORKING_SET_EMPTY",
@@ -376,7 +425,7 @@ def build_arc_working_set(
             {
                 "arc_plan_version_id": candidate["arc_plan_version_id"],
                 "role": role,
-                "action": _selected_action(candidate),
+                "action": candidate["cadence_preference"] if required_ids is not None else _selected_action(candidate),
                 "score": candidate["score"],
                 "reason_codes": list(candidate["reasons"]),
             }
@@ -399,7 +448,7 @@ def build_arc_working_set(
     body = {
         "type": "ArcWorkingSet",
         "contract_version": "arc-working-set-v1",
-        "policy_version": ARC_WORKING_SET_POLICY_VERSION,
+        "policy_version": _CHAPTER_SCHEDULE_POLICY_VERSION if required_ids is not None else ARC_WORKING_SET_POLICY_VERSION,
         "project_id": project_id,
         "book_id": book_id,
         "target_chapter": chapter_number,
