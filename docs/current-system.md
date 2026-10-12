@@ -145,7 +145,11 @@ Author adoption uses the existing
 editor candidate/session mechanism. Book locking and source/hash checks prevent stale edits,
 late extraction or late review from replacing a newer selection. Later chapters retain
 exact predecessor dependencies and display direct and transitive source changes without deleting
-their prose. The working projection carries those unresolved dependencies as uncertainty.
+their prose. A selected native revision projects dependencies from its exact working Root
+and frozen earlier-source hashes; original delivery snapshots remain immutable. An editor
+candidate inherits the dependencies of its exact base. An unselected revision or an
+incumbent with only an older Review cannot erase source changes. Later predecessor changes
+remain visible and propagate to unrepaired chapters as uncertainty.
 A completed writing target has no runnable Book coordination tick until new work is requested.
 
 `/product/editor/manuscripts` reads saved selected versions without a Provider call.

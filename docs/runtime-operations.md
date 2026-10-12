@@ -981,9 +981,13 @@ and its hash, and updates working continuation dependencies. Planning must consu
 that exact working prefix for continuity while retaining the actual accepted boundary.
 A witnessed action in the selected prose does not need to be repeated merely because
 it has no formal acceptance; unsupported claims, POV restrictions and changed dependencies
-remain uncertain. A structural repetition finding returns to scoped Plan Change before
-continuation. It creates no author
-choice, review pass or formal acceptance; human input and an existing author choice
+remain uncertain. Once a native working revision is selected, current dependency reads use
+that Root’s exact frozen earlier sources, while retaining the original delivery snapshot.
+BestCandidate reuse of an incumbent requires this Root’s fresh exact-text Review to rebind
+dependencies. A local editor candidate inherits its exact base. Replacing an earlier source
+again marks affected continuation stale. Changes to active story commitments require the
+existing Plan Change owner; local prose merging does not itself require Plan Change.
+Working selection creates no author choice, review pass or formal acceptance; human input and an existing author choice
 retain their separate decision path. Repeating the exact command is idempotent.
 For native revision, `authority-manuscript revise` takes the same Book, `--chapter`,
 `--expected-version`, `--idempotency-key` and an explicit `--reason`. It freezes the current

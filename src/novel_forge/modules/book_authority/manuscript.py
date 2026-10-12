@@ -336,6 +336,114 @@ def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
     return source
 
 
+
+def _working_dependency_binding(book, selection, source, root):
+    from novel_forge.modules.chapter_authority.working_revision import CONTRACT, ROOT_VERSION
+    binding = (root.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
+    chapter = source_draft_content(source)["chapter"]
+    refs = {row["asset_version_id"]: row["content_hash"] for row in root.get("input_asset_snapshot", [])}
+    inputs = binding.get("source_inputs") or {}
+    previous = binding.get("previous_sources", [])
+    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") != ROOT_VERSION
+            or root.get("definition_snapshot", {}).get("policy", {}).get("working_revision_contract") != CONTRACT
+            or root.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}
+            or any(root.get(key) != book[key] for key in ("project_id", "workspace_id"))
+            or root.get("command_payload", {}).get("book_id") != book["book_id"]
+            or root.get("command_payload", {}).get("chapter") != chapter
+            or binding.get("contract_version") != CONTRACT or binding.get("book_run_id") != book["book_run_id"]
+            or selection.get("selected_asset_version_id") != source.asset_version_id
+            or selection.get("selected_content_hash") != source.content_hash or selection.get("chapter") != chapter
+            or any(selection.get(key) != book[key] for key in ("project_id", "workspace_id", "book_id", "book_run_id"))
+            or binding.get("source_asset_version_id") != selection.get("source_asset_version_id")
+            or binding.get("source_content_hash") != selection.get("source_content_hash")
+            or set(inputs) != {"draft", "context", "plan"}
+            or inputs["draft"] != {"asset_version_id": binding.get("source_asset_version_id"), "content_hash": binding.get("source_content_hash")}
+            or any(refs.get(row.get("asset_version_id")) != row.get("content_hash") for row in inputs.values())
+            or [row.get("chapter") for row in previous] != list(range(1, chapter))
+            or any(refs.get(row.get("asset_version_id")) != row.get("content_hash") for row in previous)):
+        raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Selected revision dependencies require exact native source, Book and frozen inputs")
+    return {"sources": previous}
+
+
+def _selected_working_dependencies(uow, book, source):
+    from novel_forge.modules.chapter_authority.author_editor import require_source
+    seen, editors, bases = set(), {}, {}
+    while source.asset_type == "author_edit_candidate":
+        if source.asset_version_id in seen:
+            raise KernelError("MANUSCRIPT_REVISION_LINEAGE_INVALID", "Editor dependency lineage contains a cycle")
+        seen.add(source.asset_version_id)
+        if not source.content.get("base_asset_version_id"):
+            return None
+        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
+        scope["chapter"] = source_draft_content(source)["chapter"]
+        parent = require_source(uow, scope, source.content["base_asset_version_id"])
+        if source.content.get("base_asset_hash") != parent.content_hash:
+            raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Editor dependencies require the exact base hash")
+        editors[source.asset_version_id], bases[source.asset_version_id] = source, parent
+        source = parent
+    chapter = source_draft_content(source)["chapter"]
+    selection = _optional_document(uow, book["project_id"], _working_selection_ref(book, chapter))
+    if not selection:
+        return None
+    selection_content = selection.content
+    if selection_content.get("selected_asset_version_id") != source.asset_version_id:
+        selected_id = selection.content.get("selected_asset_version_id")
+        if selected_id not in editors:
+            return None
+        editor, base = editors[selected_id], bases[selected_id]
+        if (selection.content.get("selected_content_hash") != editor.content_hash
+                or selection.content.get("source_asset_version_id") != base.asset_version_id
+                or selection.content.get("source_content_hash") != base.content_hash
+                or selection.content.get("chapter") != chapter
+                or any(selection.content.get(key) != book[key] for key in ("project_id", "workspace_id", "book_id", "book_run_id"))):
+            raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Editor working selection must retain its exact source")
+        uow.cursor.execute("""SELECT content FROM authority_asset_version WHERE asset_id=%s
+            AND content->>'selected_asset_version_id'=%s ORDER BY created_at DESC LIMIT 2""",
+            [selection.asset_id, source.asset_version_id])
+        versions = uow.cursor.fetchall()
+        if len(versions) != 1:
+            return None
+        selection_content = versions[0][0]
+    uow.cursor.execute("""SELECT to_jsonb(root), child.definition_name FROM authority_operation_output_asset output
+        JOIN authority_operation child USING(operation_id)
+        JOIN authority_operation root ON root.operation_id=child.root_operation_id
+        WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
+          AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best')""",
+        [source.asset_version_id, book["project_id"]])
+    origins = uow.cursor.fetchall()
+    if len(origins) != 1:
+        raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Selected work requires one native revision origin")
+    root, stage = origins[0]
+    if root.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}:
+        return None
+    dependencies = _working_dependency_binding(book, selection_content, source, root)
+    if stage == "chapter.candidate.select_best":
+        content = source_draft_content(source)
+        chosen = content.get("selected_source_asset_version_id")
+        review_id = (content.get("selected_review") or {}).get("selection_review_source_asset_version_id")
+        uow.cursor.execute("""SELECT child.definition_name FROM authority_operation_output_asset output
+            JOIN authority_operation child USING(operation_id)
+            WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
+              AND child.root_operation_id=%s AND child.project_id=%s""",
+            [chosen, root["operation_id"], book["project_id"]])
+        revised = uow.cursor.fetchall()
+        if revised != [("chapter.revision.apply",)]:
+            binding = root["command_payload"]["preparation_report"]["working_revision"]
+            if chosen != binding["source_asset_version_id"]:
+                return None
+            uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset output
+                JOIN authority_operation child USING(operation_id) JOIN authority_asset_version v USING(asset_version_id)
+                WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
+                  AND child.root_operation_id=%s AND child.project_id=%s AND child.definition_name='chapter.review.evaluate'""",
+                [review_id, root["operation_id"], book["project_id"]])
+            rows = uow.cursor.fetchall()
+            from novel_forge.modules.review.diagnostics import prose_hash
+            if (len(rows) != 1 or rows[0][0].get("target_asset_version_id") != chosen
+                    or rows[0][0].get("target_text_hash") != prose_hash(content["text"])):
+                return None
+    return dependencies
+
+
 def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any], dict[int, list[dict[str, Any]]]]:
     uow.cursor.execute("""SELECT DISTINCT ON (r.chapter_number) r.chapter_number, output.asset_version_id,
             COALESCE(d.context_snapshot,r.command_payload #> '{preparation_report,working_manuscript}','{\"sources\":[]}'::jsonb)
@@ -347,9 +455,11 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
               AND output.output_key='chapter.draft' AND output.role='primary'
             ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
     deliveries = uow.cursor.fetchall()
-    selected = {number: selected_source(uow, book, number).asset_version_id for number, _, _ in deliveries}
+    sources = {number: selected_source(uow, book, number) for number, _, _ in deliveries}
+    selected = {number: source.asset_version_id for number, source in sources.items()}
     changes = {}
     for number, _, dependencies in deliveries:
+        dependencies = _selected_working_dependencies(uow, book, sources[number]) or dependencies
         affected = {}
         for row in dependencies.get("sources", []):
             predecessor = row["chapter"]

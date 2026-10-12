@@ -569,3 +569,132 @@ def test_physical_working_candidate_review_is_not_hidden_by_prose_alias(monkeypa
     with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
         require_prose_propagation(SimpleNamespace(cursor=Cursor()),
             {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}, partial)
+
+
+def _working_dependency_case():
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "book_run_id": "run"}
+    source = SimpleNamespace(asset_version_id="best:2", content_hash="best-hash", asset_type="best_draft_candidate",
+        content={"chapter": 2, "text": "正文", "selected_source_asset_version_id": "revision:2"})
+    selection = {**book, "chapter": 2, "selected_asset_version_id": source.asset_version_id,
+        "selected_content_hash": source.content_hash, "source_asset_version_id": "old:2", "source_content_hash": "old-hash"}
+    inputs = {key: {"asset_version_id": value, "content_hash": value + "-hash"}
+        for key, value in (("draft", "old:2"), ("context", "context"), ("plan", "plan"))}
+    inputs["draft"]["content_hash"] = "old-hash"
+    previous = [{"chapter": 1, "asset_version_id": "new:1", "content_hash": "new:1-hash"}]
+    root = {"operation_id": "root", "definition_name": "chapter.slice.run", "definition_version": ROOT_VERSION,
+        "project_id": "project", "workspace_id": "workspace", "status": "SUCCEEDED",
+        "definition_snapshot": {"policy": {"working_revision_contract": CONTRACT}},
+        "command_payload": {"book_id": "book", "chapter": 2, "preparation_report": {"working_revision": {
+            "contract_version": CONTRACT, "book_run_id": "run", "source_asset_version_id": "old:2",
+            "source_content_hash": "old-hash", "source_inputs": inputs, "previous_sources": previous}}},
+        "input_asset_snapshot": [*inputs.values(), {key: previous[0][key] for key in ("asset_version_id", "content_hash")}]}
+    return book, source, selection, root
+
+
+def test_selected_revision_dependency_binding_uses_its_frozen_source_after_selection():
+    from novel_forge.modules.book_authority.manuscript import _working_dependency_binding
+    book, source, selection, root = _working_dependency_case()
+    assert _working_dependency_binding(book, selection, source, root) == {"sources": [
+        {"chapter": 1, "asset_version_id": "new:1", "content_hash": "new:1-hash"}]}
+    assert selection["source_asset_version_id"] != source.asset_version_id
+
+
+@pytest.mark.parametrize("drift", ["book", "workspace", "chapter", "cancelled", "source_hash", "selection_hash", "missing_input", "missing_predecessor"])
+def test_selected_revision_dependency_binding_rejects_scope_and_frozen_drift(drift):
+    from novel_forge.modules.book_authority.manuscript import _working_dependency_binding
+    book, source, selection, root = _working_dependency_case()
+    binding = root["command_payload"]["preparation_report"]["working_revision"]
+    if drift == "book": binding["book_run_id"] = "another"
+    elif drift == "workspace": root["workspace_id"] = "another"
+    elif drift == "chapter": root["command_payload"]["chapter"] = 3
+    elif drift == "cancelled": root["status"] = "CANCELLED"
+    elif drift == "source_hash": binding["source_content_hash"] = "another"
+    elif drift == "selection_hash": selection["selected_content_hash"] = "another"
+    elif drift == "missing_input": root["input_asset_snapshot"].pop()
+    elif drift == "missing_predecessor": binding["previous_sources"] = []
+    with pytest.raises(KernelError, match="MANUSCRIPT_WORK_DEPENDENCY_INVALID"):
+        _working_dependency_binding(book, selection, source, root)
+
+
+@pytest.mark.parametrize("first", ["new:1", "newer:1"])
+def test_rebound_selected_dependencies_clear_only_the_repaired_chapter(monkeypatch, first):
+    from novel_forge.modules.book_authority import manuscript
+    original = [(1, "old:1", {"sources": []}),
+        (2, "old:2", {"sources": [{"chapter": 1, "asset_version_id": "old:1"}]}),
+        (3, "old:3", {"sources": [{"chapter": 2, "asset_version_id": "old:2"}]})]
+    class Cursor:
+        def execute(self, *_): pass
+        def fetchall(self): return original
+    sources = {number: SimpleNamespace(asset_version_id=version) for number, version in ((1, first), (2, "new:2"), (3, "old:3"))}
+    monkeypatch.setattr(manuscript, "selected_source", lambda uow, book, number: sources[number])
+    monkeypatch.setattr(manuscript, "_selected_working_dependencies", lambda uow, book, source:
+        {"sources": [{"chapter": 1, "asset_version_id": "new:1"}]} if source.asset_version_id == "new:2" else None)
+    deliveries, changes = manuscript.working_dependency_changes(SimpleNamespace(cursor=Cursor()), {"book_run_id": "run"})
+    assert deliveries == [(number, dependencies) for number, _, dependencies in original]
+    assert (changes[2] == []) is (first == "new:1")
+    assert changes[3][0]["chapter"] == 2
+    if first == "newer:1": assert changes[3][1]["chapter"] == 1
+
+
+@pytest.mark.parametrize("revised,fresh", [(True, False), (False, True), (False, False)])
+def test_best_dependency_rebinding_requires_this_root_revision_or_fresh_incumbent_review(monkeypatch, revised, fresh):
+    from novel_forge.modules.book_authority import manuscript
+    from novel_forge.modules.review.diagnostics import prose_hash
+    book, source, selection, root = _working_dependency_case()
+    source.content["selected_review"] = {"selection_review_source_asset_version_id": "review"}
+    if not revised: source.content["selected_source_asset_version_id"] = "old:2"
+    class Cursor:
+        def __init__(self): self.query = 0
+        def execute(self, *_): self.query += 1
+        def fetchall(self):
+            if self.query == 1: return [(root, "chapter.candidate.select_best")]
+            if self.query == 2: return [("chapter.revision.apply",)] if revised else []
+            return [({"target_asset_version_id": "old:2", "target_text_hash": prose_hash("正文")},)] if fresh else []
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(content=selection))
+    result = manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, source)
+    assert (result is not None) is (revised or fresh)
+
+
+@pytest.mark.parametrize("drift", [None, "base_hash", "workspace", "selection_hash", "ambiguous_history"])
+def test_working_editor_selection_inherits_rebound_native_base(monkeypatch, drift):
+    from novel_forge.modules.book_authority import manuscript
+    from novel_forge.modules.chapter_authority import author_editor
+    book, source, original_selection, root = _working_dependency_case()
+    editor = SimpleNamespace(asset_version_id="editor:2", content_hash="editor-hash", asset_type="author_edit_candidate",
+        content={"base_asset_version_id": source.asset_version_id, "base_asset_hash": source.content_hash,
+            "text": "润色正文", "draft_content": {"chapter": 2, "text": "润色正文"}})
+    selected = {**book, "chapter": 2, "selected_asset_version_id": editor.asset_version_id,
+        "selected_content_hash": editor.content_hash, "source_asset_version_id": source.asset_version_id,
+        "source_content_hash": source.content_hash}
+    if drift == "base_hash": editor.content["base_asset_hash"] = "wrong"
+    elif drift == "workspace": selected["workspace_id"] = "another"
+    elif drift == "selection_hash": selected["selected_content_hash"] = "wrong"
+    class Cursor:
+        def __init__(self): self.query = 0
+        def execute(self, *_): self.query += 1
+        def fetchall(self):
+            if self.query == 1: return [(original_selection,)] * (2 if drift == "ambiguous_history" else 1)
+            if self.query == 2: return [(root, "chapter.candidate.select_best")]
+            return [("chapter.revision.apply",)]
+    monkeypatch.setattr(author_editor, "require_source", lambda *_: source)
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(asset_id="work-selection", content=selected))
+    if drift in {"base_hash", "workspace", "selection_hash"}:
+        with pytest.raises(KernelError, match="MANUSCRIPT_WORK_DEPENDENCY_INVALID"):
+            manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, editor)
+    else:
+        result = manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, editor)
+        assert (result is None) is (drift == "ambiguous_history")
+        if result: assert result["sources"][0]["asset_version_id"] == "new:1"
+
+
+
+def test_cancelled_revision_does_not_rebind_or_withhold_already_selected_prose(monkeypatch):
+    from novel_forge.modules.book_authority import manuscript
+    book, source, selection, root = _working_dependency_case()
+    root["status"] = "CANCELLED"
+    class Cursor:
+        def execute(self, *_): pass
+        def fetchall(self): return [(root, "chapter.candidate.select_best")]
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(content=selection))
+    assert manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, source) is None
+    assert source.content["text"] == "正文"
