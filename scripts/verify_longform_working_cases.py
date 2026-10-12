@@ -132,7 +132,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--evidence-directory",
         type=Path,
-        default=Path("reports/audits/wp-longform-ownership-craft-evidence-01"),
+        required=True,
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

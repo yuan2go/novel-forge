@@ -95,3 +95,81 @@ def test_internal_v2_cannot_promote_fixture_claims_to_real_assessment():
     row.update(fixture=True,calibration_status='FIXTURE_UNCALIBRATED')
     result=assess_internal_quality(groups=reports,target='draft',disposition_version=2)
     assert result['status']=='BLOCKED' and row['dimension'] in result['blocked_dimensions']
+
+
+@pytest.mark.parametrize('unit,expected', [({}, 4000), ({'unit': 'HAN_CHARACTERS_V1'}, 4000),
+                                         ({'unit': 'UNICODE_CODE_POINTS_V1'}, 5001)])
+@pytest.mark.parametrize('policy_version', ['compiled-platform-policy-v1', 'compiled-platform-policy-v2'])
+def test_quality_receipt_measures_frozen_unit_without_rewriting_policy(monkeypatch, unit, expected, policy_version):
+    from types import SimpleNamespace
+    from novel_forge.modules.chapter_quality_authority import creative_validation as validation
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    policy = {'source_asset_version_id': 'platform:original:v1', 'policy_digest': 'frozen-policy-digest',
+              'contract_version': policy_version,
+              'chapter_length_rules': {'minimum': 4000, 'maximum': 5000, **unit}}
+    if not unit and policy_version == 'compiled-platform-policy-v1':
+        expected = 5001
+    original = deepcopy(policy)
+    receipt = {'stage': 'quality_platform', 'external_effect_id': 'effect:fixture'}
+    class Uow:
+        def __enter__(self):
+            self.cursor = SimpleNamespace(execute=lambda *args: None, fetchone=lambda: (policy,))
+            return self
+        def __exit__(self, *args):
+            pass
+    monkeypatch.setattr(validation, 'AuthorityUnitOfWork', lambda *args: Uow())
+    monkeypatch.setattr(validation, 'quality_receipt', lambda *args, **kwargs: receipt)
+    monkeypatch.setattr(AuthorityAssetQuery, 'require', lambda *args, **kwargs:
+                        SimpleNamespace(content={'text': '甲' * 4000 + '，' * 1001}))
+    result, = validation.receipt_work_constraints('fixture-only', project_id='project:fixture',
+                                                receipts=[receipt], target='draft:fixture:v1')
+    assert result['observed'] == expected
+    assert result['status'] == ('PASSED' if expected == 4000 else 'FAILED')
+    assert result['source_policy'] == policy['source_asset_version_id']
+    assert result['policy_digest'] == policy['policy_digest']
+    assert result['compatibility'] == ('EXPLICIT_UNIT' if unit else 'LEGACY_CHARACTER_BOUNDS_UNICODE'
+                                       if policy_version == 'compiled-platform-policy-v1' else 'MANUSCRIPT_HAN_CHARACTER_BOUNDS')
+    assert policy == original
+
+
+def test_original_unitless_v3_quality_report_still_verifies(monkeypatch):
+    from types import SimpleNamespace
+    from novel_forge.modules.chapter_quality_authority import creative_validation as validation
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    reports = groups()
+    for report in reports:
+        report['validation_receipt'].update(stage='quality_' + report['group'],
+            external_effect_id='effect:' + report['group'])
+    receipts = {r['validation_receipt']['external_effect_id']: r['validation_receipt'] for r in reports}
+    policy = {'source_asset_version_id': 'platform:old:v1', 'policy_digest': 'old-policy-digest',
+        'contract_version': 'compiled-platform-policy-v1', 'chapter_length_rules': {'minimum': 4000, 'maximum': 5000}}
+    constraints = ({'dimension': 'chapter_length', 'status': 'PASSED', 'source_policy': 'platform:old:v1',
+        'policy_digest': 'old-policy-digest', 'target_asset_version_id': 'draft', 'unit': 'UNICODE_CODE_POINTS_V1',
+        'minimum': 4000, 'maximum': 5000, 'observed': 4020, 'compatibility': 'LEGACY_CHARACTER_BOUNDS_UNICODE'},)
+    admission = validation.assess_coordinated_internal_quality(groups=reports, target='draft', work_constraints=constraints)
+    original = deepcopy(admission)
+    class Cursor:
+        def execute(self, sql, params):
+            self.params = params
+        def fetchall(self):
+            import json
+            receipt = json.loads(self.params[1])
+            return [(r,) for r in reports if r['validation_receipt'] == receipt]
+        def fetchone(self):
+            return (policy,)
+    class Uow:
+        def __enter__(self):
+            self.cursor = Cursor()
+            return self
+        def __exit__(self, *args):
+            pass
+    monkeypatch.setattr(validation, 'AuthorityUnitOfWork', lambda *args: Uow())
+    monkeypatch.setattr(validation, 'quality_receipt', lambda *args, **kwargs: receipts[kwargs['effect_id']])
+    monkeypatch.setattr(AuthorityAssetQuery, 'require', lambda *args, **kwargs:
+                        SimpleNamespace(content={'text': '甲' * 4000 + '，' * 20}))
+    validation.verify_internal_quality('fixture-only', admission, project_id='project:fixture', book_id='book')
+    assert admission == original
+    tampered = deepcopy(admission)
+    tampered['work_constraints'][0]['observed'] = 4000
+    with pytest.raises(KernelError, match='VALIDATION_QUALITY_ADMISSION_TAMPERED'):
+        validation.verify_internal_quality('fixture-only', tampered, project_id='project:fixture', book_id='book')

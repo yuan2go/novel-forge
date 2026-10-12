@@ -995,7 +995,13 @@ Status and completed-result reads require no new Provider eligibility. UNKNOWN c
 first reconciles retained results; only an owned stopped pure invocation may be isolated
 and replaced by the existing StepSuccessor. Original UNKNOWN and cost evidence remain unchanged.
 An out-of-range chapter triggers whole-chapter repair against its original frozen length bounds,
-even when optional Review finds no issue. BestCandidate records measured length correction
+even when optional Review finds no issue. A frozen profile with omitted length unit uses
+the same `HAN_CHARACTERS_V1` count as manuscript readback, retaining its exact version,
+digest and bounds. An incompatible explicit unit fails with `CHAPTER_LENGTH_UNIT_UNSUPPORTED`;
+it cannot silently remove the length requirement. New Quality receipts bind
+`compiled-platform-policy-v2`; replay of historical
+v1 receipts preserves their original Unicode default and compatibility marker. It does
+not reinterpret or rewrite an existing Quality report. BestCandidate records measured correction
 separately from model score/resolution evidence; new blockers and preservation regression
 still prevent automatic preference. Selection rechecks the target and all earlier source versions.
 An evidenced unresolved major contradiction in the exact prose prevents its use as affected

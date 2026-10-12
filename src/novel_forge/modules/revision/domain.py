@@ -366,7 +366,7 @@ def han_characters(text: str) -> int:
 
 def freeze_chapter_length_scope(source: dict[str, Any], *, source_asset_version_id: str,
                                 context: dict[str, Any], context_asset_version_id: str) -> dict[str, Any] | None:
-    from novel_forge.modules.chapter_quality_authority.context_views import compile_platform_policy
+    from novel_forge.modules.chapter_quality_authority.context_views import chapter_length_unit, compile_platform_policy
     from novel_forge.modules.review.diagnostics import prose_hash
     profiles = []
     for segment in context.get('context_segments', []):
@@ -374,8 +374,11 @@ def freeze_chapter_length_scope(source: dict[str, Any], *, source_asset_version_
             continue
         profile_id = segment['asset_version_id']
         rules = compile_platform_policy(profile_asset_version_id=profile_id, segment=segment).chapter_length_rules
-        if rules.get('unit') == 'HAN_CHARACTERS_V1':
-            profiles.append((segment, rules))
+        if not ({'minimum', 'maximum'} & rules.keys()):
+            continue
+        if chapter_length_unit(rules) != 'HAN_CHARACTERS_V1':
+            raise KernelError('CHAPTER_LENGTH_UNIT_UNSUPPORTED', 'Frozen length bounds require the manuscript Han-character measurement; correct an incompatible explicit unit')
+        profiles.append((segment, rules))
     if not profiles:
         return None
     if len(profiles) != 1:

@@ -102,7 +102,7 @@ class CompiledPlatformPolicy:
     rhythm_expectations: tuple[str, ...]
     publish_metadata_rules: dict[str, Any]
     policy_digest: str
-    contract_version: str = "compiled-platform-policy-v1"
+    contract_version: str = "compiled-platform-policy-v2"
 
 
 def compile_quality_policy(
@@ -226,6 +226,10 @@ def compile_quality_policy(
         else "compiled-quality-policy-v1",
         **({"dimension_weights": weights} if work_requirements else {}),
     )
+
+
+def chapter_length_unit(rules: dict[str, Any], *, contract_version: str = "compiled-platform-policy-v2") -> str:
+    return rules.get("unit", "UNICODE_CODE_POINTS_V1" if contract_version == "compiled-platform-policy-v1" else "HAN_CHARACTERS_V1")
 
 
 def compile_platform_policy(

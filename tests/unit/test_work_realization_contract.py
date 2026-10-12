@@ -273,7 +273,8 @@ def test_scene_information_flow_keeps_future_actor_and_withheld_scopes():
     assert current['slots'][1]['accessible_knowledge'] == []
 
 
-def test_measured_frozen_length_scope_does_not_promote_local_advice():
+@pytest.mark.parametrize('declared_unit', [{}, {'unit': 'HAN_CHARACTERS_V1'}])
+def test_measured_frozen_length_scope_does_not_promote_local_advice(declared_unit):
     import pytest
     from novel_forge.modules.revision.domain import freeze_chapter_length_scope, validate_chapter_length_scope
     from novel_forge.modules.review.diagnostics import validate_prose_repair_scope
@@ -281,7 +282,7 @@ def test_measured_frozen_length_scope_does_not_promote_local_advice():
     artifacts = [{'text':'First choice 甲.'}, {'text':'Second choice preserved.'}]
     source = {'text':'\n\n'.join(a['text'] for a in artifacts), 'scene_artifacts':artifacts}
     profile = {'asset_type':'platform_profile','asset_version_id':'platform:v1','content_digest':'sha256:'+'a'*64,
-        'structured_facts':[{'key':'platform_rules','value':{'chapter_length':{'unit':'HAN_CHARACTERS_V1','minimum':3,'maximum':4}}}]}
+        'structured_facts':[{'key':'platform_rules','value':{'chapter_length':{**declared_unit,'minimum':3,'maximum':4}}}]}
     context = {'context_segments':[profile]}
     scope = freeze_chapter_length_scope(source,source_asset_version_id='draft:v1',context=context,context_asset_version_id='context:v1')
     assert scope['source_han_characters'] == 1 and scope['platform_profile_asset_version_id'] == 'platform:v1'
@@ -300,3 +301,40 @@ def test_measured_frozen_length_scope_does_not_promote_local_advice():
         validate_prose_repair_scope(already_in_bounds,diagnoses,revised+'戊',length_scope=scope)
     with pytest.raises(KernelError,match='CHAPTER_LENGTH_SCOPE_PROFILE_CONFLICT'):
         freeze_chapter_length_scope(source,source_asset_version_id='draft:v1',context={'context_segments':[profile,profile]},context_asset_version_id='context:v1')
+
+
+def test_original_frozen_bounds_without_unit_require_han_length_repair():
+    from novel_forge.modules.revision.domain import freeze_chapter_length_scope, validate_chapter_length_scope
+    from novel_forge.modules.chapter_authority.quality_length_requirement import freeze_requirement, require_length
+    from novel_forge.modules.chapter_quality_authority.context_views import chapter_length_unit
+    from novel_forge.modules.chapter_quality_authority.creative_validation import measure_length
+    source = {'text': '甲' * 3520 + '，abc。'}
+    profile = {'asset_type': 'platform_profile', 'asset_version_id': 'platform:original:v1',
+        'content_digest': 'sha256:' + 'b' * 64, 'structured_facts': [{'key': 'platform_rules',
+        'value': {'format': {'paragraph_max': 500}, 'chapter_length': {'maximum': 5000, 'minimum': 4000}}}]}
+    original = deepcopy(profile)
+    scope = freeze_chapter_length_scope(source, source_asset_version_id='draft:original:v1',
+        context={'context_segments': [profile]}, context_asset_version_id='context:original:v1')
+    assert profile == original
+    assert scope['unit'] == 'HAN_CHARACTERS_V1'
+    assert (scope['minimum'], scope['maximum'], scope['source_han_characters']) == (4000, 5000, 3520)
+    assert scope['platform_profile_asset_version_id'] == profile['asset_version_id']
+    assert scope['platform_profile_content_hash'] == profile['content_digest']
+    requirement = freeze_requirement({'context_segments': [profile]}, context_id='context:original:v1')
+    assert (requirement['minimum'], requirement['maximum'], requirement['unit']) == (4000, 5000, scope['unit'])
+    assert requirement['platform_profile_content_hash'] == profile['content_digest']
+    with pytest.raises(KernelError, match='CHAPTER_LENGTH_REPAIR_INCOMPLETE'):
+        require_length(requirement, source['text'])
+    qualified = '甲' * 4000 + '，' * 1001
+    require_length(requirement, qualified)
+    assert measure_length(qualified, chapter_length_unit(profile['structured_facts'][0]['value']['chapter_length'])) == 4000
+    with pytest.raises(KernelError, match='CHAPTER_LENGTH_REPAIR_INCOMPLETE'):
+        validate_chapter_length_scope(scope, source, source['text'],
+            source_asset_version_id='draft:original:v1', context_asset_version_id='context:original:v1')
+    for conflicting_unit in ('CODEPOINTS', 'WHITESPACE_WORDS', None):
+        profile['structured_facts'][0]['value']['chapter_length']['unit'] = conflicting_unit
+        with pytest.raises(KernelError, match='CHAPTER_LENGTH_UNIT_UNSUPPORTED'):
+            freeze_chapter_length_scope(source, source_asset_version_id='draft:original:v1',
+                context={'context_segments': [profile]}, context_asset_version_id='context:original:v1')
+        with pytest.raises(KernelError, match='CHAPTER_LENGTH_UNIT_UNSUPPORTED'):
+            freeze_requirement({'context_segments': [profile]}, context_id='context:original:v1')

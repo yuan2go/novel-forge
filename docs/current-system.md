@@ -46,6 +46,11 @@ manuscript revision command or Editor API. This freezes exact selected prose and
 governed Context/Plan, then uses Review, Revision, ReReview and BestCandidate without
 Foundation or Canon mutation. Working selection rechecks earlier versions as well as
 the target. Frozen length correction uses actual Han counts, separate from model scores.
+Profiles that freeze length bounds without a unit use the existing manuscript
+`HAN_CHARACTERS_V1` measurement. The original profile version, digest and bounds remain
+bound to the repair; a conflicting explicit unit requires configuration correction.
+New Quality receipts freeze `compiled-platform-policy-v2` with that same measurement;
+historical v1 receipts retain their original Unicode default when verifying old reports.
 Known unresolved major contradictions prevent automatic affected continuation; saved
 candidates, partial repair and original failure evidence remain available. This path
 does not grant author selection, formal acceptance or literary quality proof.
