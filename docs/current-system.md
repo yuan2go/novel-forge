@@ -1228,7 +1228,10 @@ latency insufficiency as diagnostics. An expired price observation on an authori
 account-entitlement route is also diagnostic; priced channels retain their price period
 and monetary authorization checks. Model/task authorization, actual Context/output
 capacity, in-flight exclusion, Retry-After and priced monetary authorization still
-reject new calls. Provider consumption Token/call ceilings are ledger observations;
+reject new calls. Automatic Craft delivery and Plan/Intent/Memo strategy-copy discrepancies remain
+diagnostic evidence on the Draft. Explicit required knowledge still follows the frozen
+Context and Capability Pack input contracts; cryptographic source/version checks remain.
+Provider consumption Token/call ceilings are ledger observations;
 removing them does not increase model Context capacity or grant a paid channel.
 
 The server-owned Director/Research Tool catalog is limited to accepted-state queries,

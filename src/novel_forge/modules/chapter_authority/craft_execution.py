@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Mapping
 
-from novel_forge.modules.command_kernel.errors import KernelError
-
 
 def bind_craft_realization(
     contract: Mapping[str, Any], strategy: Mapping[str, Any], *, scenes: list,
@@ -48,15 +46,13 @@ def bind_craft_realization(
 def require_craft_delivery(
     *, plan: Mapping[str, Any], intent: Mapping[str, Any],
     memo: Mapping[str, Any], context: Mapping[str, Any],
-) -> None:
+) -> dict[str, Any]:
     strategy = plan.get("craft_strategy")
+    diagnostics = []
     if strategy != intent.get("craft_strategy") or strategy != memo.get("craft_strategy"):
-        raise KernelError(
-            "CRAFT_EXECUTION_BINDING_DRIFT",
-            "Plan, ExecutionIntent and Memo must bind the same frozen Craft strategy",
-        )
+        diagnostics.append({"code": "CRAFT_EXECUTION_BINDING_DRIFT", "canonical_source": "CHAPTER_PLAN"})
     if not strategy:
-        return
+        return {"status": "DIAGNOSTIC_ONLY", "diagnostics": diagnostics}
     from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_strategy
 
     validated = validate_craft_strategy(strategy, scenes=plan.get("scene_plan", []))
@@ -67,7 +63,7 @@ def require_craft_delivery(
     for use in validated["uses"]:
         card = selected.get(use["knowledge_card_asset_version_id"], {})
         if card.get("content_digest") != use["content_hash"]:
-            raise KernelError(
-                "CRAFT_CONTEXT_DELIVERY_MISSING",
-                "Every adopted Craft needs its exact governed Card in the frozen Context",
-            )
+            diagnostics.append({"code": "CRAFT_CONTEXT_DELIVERY_MISSING",
+                "knowledge_card_asset_version_id": use["knowledge_card_asset_version_id"]})
+    return {"status": "DIAGNOSTIC_ONLY", "diagnostics": diagnostics,
+            "author_required_inputs": "ENFORCED_BY_FROZEN_CONTEXT_AND_CAPABILITY_BINDINGS"}

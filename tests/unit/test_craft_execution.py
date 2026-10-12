@@ -92,14 +92,15 @@ def test_draft_requires_exact_context_delivery_and_matching_memo():
         "asset_version_id": "card:original:v1", "content_digest": "sha256:" + "b" * 64,
     }]}}
     require_craft_delivery(plan=plan, intent=intent, memo=memo, context=context)
-    with pytest.raises(KernelError, match="CRAFT_CONTEXT_DELIVERY_MISSING"):
-        require_craft_delivery(plan=plan, intent=intent, memo=memo, context={})
+    missing = require_craft_delivery(plan=plan, intent=intent, memo=memo, context={})
+    assert missing["status"] == "DIAGNOSTIC_ONLY"
+    assert missing["diagnostics"][0]["code"] == "CRAFT_CONTEXT_DELIVERY_MISSING"
     changed = deepcopy(memo)
     changed.pop("craft_strategy")
     from novel_forge.modules.chapter_authority.execution_artifacts import _hash
     changed["memo_fingerprint"] = _hash({key: value for key, value in changed.items() if key != "memo_fingerprint"})
-    with pytest.raises(KernelError, match="CRAFT_EXECUTION_BINDING_DRIFT"):
-        require_craft_delivery(plan=plan, intent=intent, memo=changed, context=context)
+    drift = require_craft_delivery(plan=plan, intent=intent, memo=changed, context=context)
+    assert drift["diagnostics"][0]["code"] == "CRAFT_EXECUTION_BINDING_DRIFT"
     assert validate_chapter_memo(changed, intent=intent, intent_asset_version_id="intent:v1") == changed
 
 

@@ -1528,7 +1528,7 @@ class _DraftHandler:
         from .realization_composition import compile_realization_contract
         from .craft_execution import require_craft_delivery
 
-        require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
+        craft_delivery = require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
         style = build_draft_style_view(
             context.content, work_requirements=request.work_requirements_enabled
         )
@@ -1584,6 +1584,7 @@ class _DraftHandler:
             "scene_directives": list(memo.content.get("scene_directives") or []),
             "authority": "CREATIVE_SUGGESTION_ONLY",
         }
+        content["craft_delivery_evidence"] = craft_delivery
         if request.work_requirements_enabled:
             from .chapter_plan_views import build_creative_baseline
 
