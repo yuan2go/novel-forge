@@ -26,6 +26,7 @@ def drive(monkeypatch):
         (canon_contract_recovery, "recover_canon_contract"),
         (canon_contract_recovery, "recover_completed_canon_window"),
         (receipt_recovery, "recover_known_draft_receipt"),
+        (receipt_recovery, "recover_applicability_scope_receipt"),
         (current_semantic_recovery, "retire_semantic_frontier"),
         (retained_recovery, "recover_retained_quality"),
     ):

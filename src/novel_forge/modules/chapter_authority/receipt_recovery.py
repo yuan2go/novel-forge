@@ -123,7 +123,12 @@ def revalidate_applicability_scope(source, result, *, asset_reader):
         "prose_changed": False, "author_constraints_changed": False, "fact_mutation_allowed": False}
 
 
-def recover_known_draft_receipt(authority, *, book_run_id, principal):
+def recover_applicability_scope_receipt(authority, *, book_run_id, principal):
+    return recover_known_draft_receipt(authority, book_run_id=book_run_id, principal=principal,
+        failure_code="QUALITY_APPLICABILITY_CONFLICT")
+
+
+def recover_known_draft_receipt(authority, *, book_run_id, principal, failure_code=""):
     book = authority.require(book_run_id)
     principal.require("book.authority.execute", book["project_id"])
     principal.require("chapter.authority.execute", book["project_id"])
@@ -147,8 +152,9 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
             """SELECT DISTINCT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
             AND o.status='FAILED_FINAL' AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor j WHERE j.predecessor_operation_id=o.operation_id)
-            AND ((o.definition_name='chapter.draft.generate' AND o.definition_version='3.10.0' AND a.result->>'error_code' IN ('PROGRAMMING_BUG','QUALITY_APPLICABILITY_CONFLICT')) OR (o.definition_name='chapter.review.evaluate' AND o.definition_version='3.9.0' AND a.result->>'error_code'='REVIEW_KNOWLEDGE_CHECK_INVALID') OR (o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.5' AND a.result->>'error_code'='MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE'))""",
-            [request["chapter_root_operation_id"], book["project_id"]],
+            AND ((o.definition_name='chapter.draft.generate' AND o.definition_version='3.10.0' AND a.result->>'error_code' IN ('PROGRAMMING_BUG','QUALITY_APPLICABILITY_CONFLICT')) OR (o.definition_name='chapter.review.evaluate' AND o.definition_version='3.9.0' AND a.result->>'error_code'='REVIEW_KNOWLEDGE_CHECK_INVALID') OR (o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.5' AND a.result->>'error_code'='MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE'))
+            AND (%s='' OR a.result->>'error_code'=%s)""",
+            [request["chapter_root_operation_id"], book["project_id"], failure_code, failure_code],
         )
         rows = u.cursor.fetchall()
         if not rows:

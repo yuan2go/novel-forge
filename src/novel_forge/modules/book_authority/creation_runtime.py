@@ -147,6 +147,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         recover_optional_memory_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.context_transport_recovery import recover_schema_transport
         recover(lambda: recover_schema_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.receipt_recovery import recover_applicability_scope_receipt
+        recover(lambda: recover_applicability_scope_receipt(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
