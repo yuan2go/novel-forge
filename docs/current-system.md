@@ -459,6 +459,18 @@ unresolved effects or a different failure cause reject this path. Ordinary gener
 recovery scanning and candidate consumption share this contract. The v1 terminal-failure
 contract remains unchanged, and materialization remains candidate evidence rather than
 Story Design approval or literary qualification.
+An already isolated pure-generation Planning continuation that has no admitted successor
+may append `planning-runtime-continuation.v4` deployment evidence through the same registration
+Owner. The original Creator authorization, scope, request, account, model, reasoning and
+all resolved story/policy/submission contracts must agree; persisted Pack manifests may
+differ only in their version identity. Only deployment, compilation, binding, release and
+version-derived aggregate identities can change. The original continuation row, failure,
+isolation and unknown usage remain immutable. Successor admission locks that continuation
+and rechecks its effective deployment in the admission transaction; an old worker that
+already preflighted a superseded deployment cannot enter. Exact duplicate registration
+and admission retain native idempotency, including after successor attachment. Creation
+registers this control evidence only for its exact deployment-drift checkpoint; a started
+successor or changed creative contract needs its separate existing recovery authority.
 
 World future preparation is explicitly `REQUIRED`, `OPTIONAL` or `DISABLED` under
 the frozen template. Governed optional deferral records `DEFER` / `NOT_RUN`; it creates

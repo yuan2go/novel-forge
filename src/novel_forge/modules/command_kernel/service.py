@@ -155,6 +155,7 @@ def admit_command(
     command: dict[str, Any],
     *,
     context: AdmissionContext | None = None,
+    transaction_guard: TransactionGuard | None = None,
 ) -> dict[str, Any]:
     if context is None:
         raise KernelError(
@@ -163,6 +164,8 @@ def admit_command(
         )
 
     with AuthorityUnitOfWork(database_url) as uow:
+        if transaction_guard is not None:
+            transaction_guard(uow)
         result = admit_command_in_uow(uow, command, context=context)
         if not result["replayed"]:
             uow.commit()

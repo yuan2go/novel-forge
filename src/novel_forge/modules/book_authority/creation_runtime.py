@@ -404,6 +404,8 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
         if opened["lifecycle"] == "FAILED":
             from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
             try:
+                if opened.get("failure", {}).get("code") == "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT":
+                    _recover_pending_planning_deployment(composition, run, policy, execution_probe=execution_probe)
                 recover_book_generations(composition.planning, project_id=project, book_id=book,
                     principal=composition.principal)
             except KernelError as error:
@@ -452,6 +454,11 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             except KernelError as error:
                 from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
                 try:
+                    if error.code == "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT":
+                        _recover_pending_planning_deployment(composition, run, policy, execution_probe=execution_probe)
+                        return {"opening_run_id":opening[0],"stop_reason":"YIELDED_CHECKPOINT",
+                            "recovery_action":"CONTINUE_REVALIDATED_NATIVE_DEPLOYMENT",
+                            "checkpoint":composition.opening.require(opening[0])}
                     if recover_book_generations(composition.planning, project_id=project, book_id=book,
                             principal=composition.principal):
                         return {"opening_run_id": opening[0], "stop_reason": "YIELDED_CHECKPOINT",
@@ -480,6 +487,27 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
         continuation_live=lambda: not creation_cancellation(composition.authority.database_url, formation_run_id), execution_probe=execution_probe)
     return {"formation_run_id": formation_run_id, "book_run_id": existing[0], "stop_reason": stop,
             "checkpoint": composition.authority.require(existing[0])}
+
+
+def _recover_pending_planning_deployment(composition, run, policy, *, execution_probe):
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import require_binding
+    from novel_forge.modules.story_planning_runtime.runtime_deployment import register
+
+    auth = policy.get("auto_authorization", {})
+    if auth.get("authorized_by_principal_id") != composition.principal.principal_id:
+        raise KernelError("PLANNING_DEPLOYMENT_REVALIDATION_AUTHORIZATION_REQUIRED", "Require original Creator authorization")
+    with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+        uow.cursor.execute("""SELECT continuation_id FROM authority_story_planning_runtime_continuation
+            WHERE project_id=%s AND book_id=%s AND successor_operation_id IS NULL
+              AND target_release_sha<>%s ORDER BY created_at""",
+            [run["project_id"], run["book_id"], composition.planning.commit_sha])
+        pending = uow.cursor.fetchall()
+    for (identity,) in pending:
+        if require_binding(composition.authority.database_url, identity)["target_release_sha"] == composition.planning.commit_sha:
+            continue
+        register(composition.planning, identity, project_id=run["project_id"], principal=composition.principal,
+            authorization_ref=auth["authorization_ref"], reason="Preserve unstarted native task across actual Creator deployment; unchanged story inputs and contracts",
+            execution_probe=execution_probe)
 
 
 def creation_cancellation(database_url: str, formation_run_id: str) -> dict[str, str] | None:

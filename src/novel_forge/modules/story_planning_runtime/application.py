@@ -699,6 +699,13 @@ class StoryPlanningGenerationApplication:
                 )
             )
         self._probe(execution_probe)
+        def continuation_admission_guard(uow):
+            from .runtime_continuation import require_binding
+            from .runtime_deployment import binding_identity
+            uow.cursor.execute("SELECT continuation_id FROM authority_story_planning_runtime_continuation WHERE continuation_id=%s AND project_id=%s FOR UPDATE", [command.runtime_continuation_id,command.project_id])
+            if uow.cursor.fetchone() is None or binding_identity(require_binding(self.database_url,command.runtime_continuation_id)) != binding_identity(continuation):
+                raise KernelError("PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT", "Effective deployment changed before atomic successor admission")
+
         admitted = admit_command(
             self.database_url,
             {
@@ -736,6 +743,7 @@ class StoryPlanningGenerationApplication:
                 application_build_id=self.application_build_id,
                 commit_sha=self.commit_sha,
             ),
+            **({"transaction_guard":continuation_admission_guard} if continuation is not None else {}),
         )
         operation_id = str(admitted["operation_id"])
         self._record_generation(

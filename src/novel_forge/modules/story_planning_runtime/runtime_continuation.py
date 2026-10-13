@@ -36,7 +36,7 @@ def _context_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
@@ -64,6 +64,7 @@ def runtime_continuation_definition(
             "execution_classification": "transaction_command",
             "trusted_operator_required": True,
             "zero_dispatch_required": definition_version == "1.0.0",
+            **({'unstarted_isolated_successor_required': True} if definition_version == '4.0.0' else {}),
             **({'unsent_main_call_required': True, 'verified_preparation_required': True} if definition_version == '3.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
@@ -1747,7 +1748,7 @@ def register(
 
 
 
-def require_binding(database_url: str, continuation_id: str) -> dict[str, Any]:
+def require_binding(database_url: str, continuation_id: str, *, effective: bool = True) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             "SELECT project_id, workspace_id, book_id, source_operation_id, source_command, successor_command, target_runtime, target_release_sha, successor_operation_id FROM authority_story_planning_runtime_continuation WHERE continuation_id=%s",
@@ -1759,7 +1760,7 @@ def require_binding(database_url: str, continuation_id: str) -> dict[str, Any]:
             "PLANNING_RUNTIME_CONTINUATION_NOT_REGISTERED",
             "a worker may only follow an operator-registered continuation",
         )
-    return dict(
+    binding = dict(
         zip(
             (
                 "project_id",
@@ -1776,6 +1777,10 @@ def require_binding(database_url: str, continuation_id: str) -> dict[str, Any]:
             strict=True,
         )
     )
+    if effective:
+        from .runtime_deployment import effective_binding
+        return effective_binding(database_url, binding)
+    return binding
 
 
 def require_successor(

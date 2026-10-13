@@ -99,6 +99,11 @@ if "--version" in sys.argv:
 else:
  sys.stdin.read()
  target=pathlib.Path(sys.argv[sys.argv.index("--output-last-message")+1])
+ if target.with_name("fixture-interruption.json").exists():
+  print(json.dumps({{"type":"thread.started","thread_id":"controlled-fixture"}}))
+  print(json.dumps({{"type":"error","message":"stream disconnected before completion: controlled connection interruption"}}))
+  print(json.dumps({{"type":"turn.failed","error":{{"message":"stream disconnected before completion: controlled connection interruption"}}}}))
+  sys.exit(1)
  target.write_bytes(target.with_name("fixture-response.json").read_bytes())
  print(json.dumps({{"type":"thread.started","thread_id":"controlled-fixture"}}))
  print(json.dumps({{"type":"turn.completed","usage":{{"input_tokens":100,"output_tokens":100,"cached_input_tokens":0}}}}))
@@ -182,6 +187,9 @@ else:
         if payload.output_schema_version == "schema:chapter-provider-output:canon_extraction:v25":
             result = {"output_json": json.dumps(result, ensure_ascii=False, allow_nan=False)}
         layout = PersistentExecutionDirectory(values["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+        if getattr(transport, "interrupt_once_stage", "") == stage:
+            transport.interrupt_once_stage = ""
+            layout.result_path("fixture-interruption.json").write_text('{"cause":"CONTROLLED_CONNECTION_INTERRUPTION"}')
         layout.result_path("fixture-response.json").write_text(json.dumps(result, ensure_ascii=False))
         return payload
 

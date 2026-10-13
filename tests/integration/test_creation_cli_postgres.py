@@ -218,6 +218,7 @@ def replace_args(args, **changes):
         "capacity-recovery",
         "capacity-foundation",
         "capacity-foundation-new-cause",
+        "pending-deployment",
         "capacity-repair",
         "capacity-retained-repair-cause",
         "world-result-repair",
@@ -242,6 +243,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
+    if mode == "pending-deployment":
+        transport.interrupt_once_stage = "book_plan.generate"
     transport.chapter.controlled_prose = (Path(__file__).resolve().parents[1] / "fixtures/creation/short-arc/controlled-prose.txt").read_text()
     if mode.startswith("capacity-"):
         from novel_forge.modules.story_planning_runtime.execution import (
@@ -780,6 +783,121 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             return {"stop_reason": "YIELDED_CHECKPOINT", "error_code": error.code}
 
     result = execute_window(claim())
+    if mode == "pending-deployment":
+        assert result["stop_reason"] == "YIELDED_CHECKPOINT", result
+        from novel_forge.api import authority_dependencies as dependencies
+        from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment, creation_narrative_execution
+        from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+        from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_longform_validation_pack
+        from novel_forge.modules.story_planning_runtime.runtime_continuation import require_binding
+        from novel_forge.modules.story_planning_runtime.runtime_deployment import register
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT continuation_id,to_jsonb(link) FROM authority_story_planning_runtime_continuation link WHERE project_id=%s AND successor_operation_id IS NULL", [project])
+            pending = uow.cursor.fetchone()
+            assert pending
+            uow.cursor.execute("SELECT to_jsonb(op) FROM authority_operation op WHERE operation_id=%s", [pending[1]["source_operation_id"]])
+            original_source=uow.cursor.fetchone()[0]
+            uow.cursor.execute("SELECT frozen_stage_inputs FROM authority_story_formation_run WHERE formation_run_id=%s", [identity])
+            frozen_policy=uow.cursor.fetchone()[0]["generation_policy"]
+        assert original_source["status"] == "FAILED_FINAL"
+        calls_before=(len(transport.calls),len(transport.chapter.calls))
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Event
+        from novel_forge.modules.story_planning_runtime import application as planning_module
+        from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+        old_values=creation_runtime_environment(project)
+        old_execution=dependencies.build_production_execution_composition(settings,env=old_values)
+        old_chapter=dependencies.build_chapter_authority_application(settings,execution=old_execution,env=old_values)
+        old_native=dependencies.build_book_production_composition(settings,principal=author,execution=old_execution,chapter_application=old_chapter,env=old_values)
+        old_binding=require_binding(DATABASE_URL,pending[0])
+        old_preflight,allow_admission=Event(),Event()
+        native_admit=planning_module.admit_command
+        def hold_old_admission(*arguments,**options):
+            if options["context"].commit_sha==old_binding["target_release_sha"]:
+                old_preflight.set()
+                assert allow_admission.wait(30), "controlled admission barrier was not released"
+            return native_admit(*arguments,**options)
+        monkeypatch.setattr(planning_module,"admit_command",hold_old_admission)
+        pool=ThreadPoolExecutor(max_workers=1)
+        old_attempt=pool.submit(old_native.planning.generate,_command_from_payload(old_binding["successor_command"]),principal=author)
+        assert old_preflight.wait(30), "old worker did not finish frozen deployment preflight"
+        target_sha="d"*40
+        monkeypatch.setenv("NOVEL_FORGE_COMMIT_SHA", target_sha)
+        values=creation_runtime_environment(project)
+        hashes=register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=target_sha)
+        path=creation_narrative_execution(frozen_policy["creation_input_policy"])
+        pack=values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"]
+        profile=build_story_planning_pack_profile(root,operation_definition_hash=hashes["planning"],pack_id=pack,**path["planning"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT activation_version FROM authority_capability_pack_activation WHERE project_id=%s AND book_id=%s AND pack_id=%s", [project,project+"-book",pack])
+            activation=uow.cursor.fetchone()[0]
+        install_longform_validation_pack(DATABASE_URL,profile=profile,pack_version="2.14.999",agent_generation=1,
+            agent_domain="story_planning",agent_scope_type="BOOK",project_id=project,workspace_id=harness.workspace_id+"-new",book_id=project+"-book",
+            application_build_id=harness.application_build_id,commit_sha=target_sha,compiler=author,approver=author,agent_admin=author,
+            expected_activation_version=activation,runtime_environment=settings.environment)
+        from novel_forge.modules.capability_packs.longform_profiles import build_reader_outcome_pack_profile
+        reader_pack=values["NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID"]
+        reader_profile=build_reader_outcome_pack_profile(root,operation_definition_hash=hashes["reader_proxy_current"],pack_id=reader_pack,coordinated_contract=True)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT activation_version FROM authority_capability_pack_activation WHERE project_id=%s AND book_id=%s AND pack_id=%s", [project,project+"-book",reader_pack])
+            reader_activation=uow.cursor.fetchone()[0]
+        install_longform_validation_pack(DATABASE_URL,profile=reader_profile,pack_version="1.6.999",agent_generation=1,
+            agent_domain="reader_outcome",agent_scope_type="BOOK",project_id=project,workspace_id=harness.workspace_id+"-new",book_id=project+"-book",
+            application_build_id=harness.application_build_id,commit_sha=target_sha,compiler=author,approver=author,agent_admin=author,
+            expected_activation_version=reader_activation,runtime_environment=settings.environment)
+        native_execution=dependencies.build_production_execution_composition(settings,env=values)
+        try:
+            native_chapter=dependencies.build_chapter_authority_application(settings,execution=native_execution,env=values)
+            native=dependencies.build_book_production_composition(settings,principal=author,execution=native_execution,chapter_application=native_chapter,env=values)
+            worker=build_trusted_principal_resolver(env=values).resolve_book_formation_worker_principal("not-operator")
+            request=dict(project_id=project,authorization_ref=frozen_policy["auto_authorization"]["authorization_ref"],reason="Exact pending deployment after controlled release change")
+            with pytest.raises(PermissionError):
+                register(native.planning,pending[0],principal=worker,**request)
+            with pytest.raises(KernelError,match="PLANNING_DEPLOYMENT_REVALIDATION_AUTHORIZATION_REQUIRED"):
+                register(native.planning,pending[0],principal=author,**{**request,"authorization_ref":"foreign"})
+            with ThreadPoolExecutor(max_workers=2) as registration_pool:
+                records=list(registration_pool.map(lambda _:register(native.planning,pending[0],principal=author,**request),range(2)))
+            assert len({item["operation_id"] for item in records})==1
+            record=records[0]
+            assert (len(transport.calls),len(transport.chapter.calls))==calls_before
+            allow_admission.set()
+            with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT"):
+                old_attempt.result(30)
+            assert register(native.planning,pending[0],principal=author,**request)["asset_version_id"]==record["asset_version_id"]
+            binding=require_binding(DATABASE_URL,pending[0])
+            assert binding["target_release_sha"]==target_sha
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT to_jsonb(link) FROM authority_story_planning_runtime_continuation link WHERE continuation_id=%s", [pending[0]])
+                assert uow.cursor.fetchone()[0]==pending[1]
+                uow.cursor.execute("SELECT to_jsonb(op) FROM authority_operation op WHERE operation_id=%s", [pending[1]["source_operation_id"]])
+                assert uow.cursor.fetchone()[0]==original_source
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND command_payload#>>'{payload,runtime_continuation_id}'=%s", [project,pending[0]])
+                assert uow.cursor.fetchone()[0]==0
+            resume=parser.parse_args(["authority-creation","continue","--project-id",project,"--formation-run-id",identity,
+                "--repository-root",str(root),"--foreground","--yield-after-window","--maximum-ticks","1","--work-window-seconds","1"])
+            for _ in range(3):
+                result=run_creation_command(settings,resume)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT op.operation_id,op.status,g.candidate_asset_version_id FROM authority_story_planning_runtime_continuation link
+                        JOIN authority_operation op ON op.operation_id=link.successor_operation_id
+                        JOIN authority_story_planning_generation g ON g.operation_id=op.operation_id WHERE link.continuation_id=%s""", [pending[0]])
+                    generated=uow.cursor.fetchone()
+                if generated and generated[1]=="SUCCEEDED":
+                    break
+            assert generated and generated[1]=="SUCCEEDED" and generated[2], result
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status", [generated[0]])
+                assert uow.cursor.fetchall()==[("SUCCEEDED",1)]
+                uow.cursor.execute("SELECT to_jsonb(op) FROM authority_operation op WHERE operation_id=%s", [pending[1]["source_operation_id"]])
+                assert uow.cursor.fetchone()[0]==original_source
+            assert register(native.planning,pending[0],principal=author,**request)["replayed"]
+        finally:
+            allow_admission.set()
+            pool.shutdown(wait=True)
+            old_execution.close()
+            native_execution.close()
+        return
     if mode == "capacity-foundation-new-cause":
         assert result["stop_reason"] == "YIELDED_CHECKPOINT"
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
