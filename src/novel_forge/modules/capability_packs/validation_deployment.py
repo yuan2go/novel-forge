@@ -442,6 +442,29 @@ def install_longform_validation_pack(
     )
 
 
+def install_agent_validation_pack(database_url: str, *, repository_root: str | Path,
+    project_id: str, workspace_id: str, book_id: str, application_build_id: str,
+    commit_sha: str, compiler: Principal, approver: Principal, agent_admin: Principal,
+    expected_activation_version: int = 0) -> dict[str, Any]:
+    from novel_forge.modules.agent_runtime.definitions import agent_runtime_operation_definitions
+
+    root = Path(repository_root).resolve()
+    manifest = json.loads((root / "config/capability_packs/agent_session_pack.json").read_text(encoding="utf-8"))
+    resolver = default_chapter_artifact_resolver(root)
+    catalog = {"schema_version": "novelos.capability_pack.artifact_catalog.v1",
+        "artifacts": [item.to_dict() for item in resolver.artifacts()]}
+    with AuthorityUnitOfWork(database_url) as uow:
+        for definition in agent_runtime_operation_definitions(application_build_id=application_build_id, commit_sha=commit_sha):
+            uow.repositories.definitions.register(definition)
+        uow.commit()
+    return _install_validation_manifest(database_url, manifest=manifest, artifact_catalog=catalog,
+        workflow_ref="agent_session_runtime@2.1.0", project_id=project_id, workspace_id=workspace_id,
+        book_id=book_id, application_build_id=application_build_id, commit_sha=commit_sha,
+        compiler=compiler, approver=approver, agent_admin=agent_admin,
+        agent_skill_ref="agent-loop-governance", agent_domain="agent_runtime", agent_scope_type="BOOK",
+        agent_generation=1, expected_activation_version=expected_activation_version, runtime_environment="validation")
+
+
 def _install_validation_manifest(
     database_url: str,
     *,
@@ -774,18 +797,20 @@ def _register_agents(
             execution_requirements={"production_execution_gateway_required": True},
             qualification_status="QUALIFIED_REAL_RUNTIME",
         )
+        agent_session = stage == "agent_session"
         definition = AgentDefinition(
             agent_id=agent_id,
             version=definition_version,
-            agent_type=f"{agent_domain.upper()}_STAGE",
+            agent_type="AUTONOMOUS_SESSION" if agent_session else f"{agent_domain.upper()}_STAGE",
             domain=agent_domain,
-            role=f"{agent_domain.upper()}_STAGE_AGENT",
+            role="STUDIO_DIRECTOR" if agent_session else f"{agent_domain.upper()}_STAGE_AGENT",
             capability_refs=(f"{capability.capability_id}@{capability_version}",),
             input_contract_ref=capability.input_schema_ref,
             output_contract_ref=capability.output_schema_ref,
-            authority_scope_ref="scope:bounded-quality@1",
-            default_scope_policy_ref="scope:bounded-quality-frozen@1",
-            allowed_tools=("request_production_execution",),
+            authority_scope_ref="scope:book@1" if agent_session else "scope:bounded-quality@1",
+            default_scope_policy_ref="scope:accepted-book-boundary@1" if agent_session else "scope:bounded-quality-frozen@1",
+            allowed_tools=("narrative.query_accepted", "story_planning.generate_candidate", "plan_change.submit")
+                if agent_session else ("request_production_execution",),
             allowed_context_types=("context_bundle",),
             execution_policy_ref="execution:pep@1",
             approval_policy_ref="approval:canonical-authority@1",
@@ -900,6 +925,7 @@ def _scope_identity(
 __all__ = [
     "VALIDATION_PACK_PERMISSIONS",
     "install_chapter_validation_pack",
+    "install_agent_validation_pack",
     "model_reference_creation_manifest",
     "install_longform_validation_pack",
     "register_validation_runtime_definitions",

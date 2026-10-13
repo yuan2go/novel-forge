@@ -240,3 +240,25 @@ def test_model_reference_creation_pack_compiles_and_deploys_only_in_offline_vali
         "quality.model_reference.evaluate", "quality.model_reference.adjudicate"}
     assert all(node["authoritative_completion_contract"]["required_asset_selectors"][0]
         ["eligibility"] == "INELIGIBLE" for node in nodes)
+
+
+def test_existing_agent_session_pack_installs_with_server_harness_role_and_tools() -> None:
+    from novel_forge.modules.capability_packs.validation_deployment import install_agent_validation_pack
+    from novel_forge.modules.agent_runtime.policy import ServerAgentHarnessPolicyResolver
+    from novel_forge.modules.agent_runtime.harness import AutonomousAgentRole
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    harness = CapabilityPackPostgresHarness("agent-reference-deployment")
+    result = install_agent_validation_pack(DATABASE_URL, repository_root=ROOT,
+        project_id=harness.project_id, workspace_id=harness.workspace_id, book_id=harness.book_ids[0],
+        application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
+        compiler=harness.compiler, approver=harness.approver, agent_admin=harness.agent_admin)
+    assert result["pack_id"] == "agent_session_pack"
+    assert {node["node_id"] for node in result["compilation"]["compiled"]["workflow_nodes"]} == {"agent_session"}
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        tools, skills, policy = ServerAgentHarnessPolicyResolver(DATABASE_URL,
+            production_model_binding={"capability_pack_id": "agent_session_pack"}).resolve_in_uow(uow,
+                agent_id="studio-director", role=AutonomousAgentRole.STUDIO_DIRECTOR, caller_tools=(), caller_skills=())
+        assert policy["role"] == "STUDIO_DIRECTOR"
+        assert {tool.tool_name for tool in tools} >= {"narrative.query_accepted", "story_planning.generate_candidate", "plan_change.submit"}
+        assert skills[0]["skill_id"].startswith("agent-loop-governance@")
