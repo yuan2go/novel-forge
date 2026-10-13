@@ -318,6 +318,14 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 ## Validation matrix
 
+For Production Preparation Book isolation, run the Authority production-preparation unit
+suite and the `preparation_book_scope` PostgreSQL test in
+`test_chapter_authority_scheduler_postgres.py`. Check foreign candidates beyond the
+collection limit, conflicting declarations, native owner lineage, shared unbound
+profiles, explicit overrides and frozen platform identity. Recover the original Ready
+Book through ordinary continuation; do not replace its active plan or relax the final
+Context scope guard. Frozen requests keep their original manifest for recovery.
+
 For creative-requirement changes, focused regression coverage includes
 `test_work_intent_consistency.py`, `test_work_foundation_contract.py` and
 `test_work_realization_contract.py`, plus existing Pack materialization, Provider

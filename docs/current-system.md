@@ -1990,7 +1990,13 @@ New Longform Prose Review Pack 1.3 and windows/manifests v2 freeze the accepted 
 source chapter, including an explicit UNKNOWN legacy basis. They do not infer a genre or
 require transformation; old v1 windows rebuild and resume with their original source identity.
 Production Preparation preserves independent `style_policy.constraints` and rejects
-conflicting duplicate representations. Current Draft Plan v3 (projection2), Draft Style v2 and ExecutionIntent v4
+conflicting duplicate representations. Book-scoped fallback retrieval filters declared and
+domain-owned Book identities before its collection limit; truly unbound shared profiles
+remain eligible. Conflicting identities and explicit foreign overrides fail closed.
+Creative Briefs retain their native input-selection provenance. Frozen Chapter requests
+replay their existing manifest; a new preparation cannot treat an explicit legacy Brief as
+authorization for a new Book. Supervisor binds the Book's frozen platform version.
+Current Draft Plan v3 (projection2), Draft Style v2 and ExecutionIntent v4
 carry Chapter style, POV, target length, author guidance and selected methods. The
 public `creative-baseline.v1` binds the exact source plan and these stage projections;
 it is derived evidence, not another semantic Authority. Draft, Review, Revision,

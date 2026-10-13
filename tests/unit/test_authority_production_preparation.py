@@ -147,6 +147,47 @@ def _asset(
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_foreign_fallbacks_are_skipped_but_explicit_scope_and_context_conflicts_fail_closed(self) -> None:
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        request = ProductionPreparationRequest(project_id="project-1", workspace_id="workspace-1",
+            book_id="book-1", chapter=1, idempotency_key="book-scoped")
+        assets = {kind: [_asset(kind)] for kind in (
+            "chapter_plan", "style_policy", "quality_rubric", "platform_profile")}
+        own = assets["style_policy"][0]
+        foreign_scopes = (
+            {"book_id": "book-2"}, {"scope": {"book_id": "book-2"}},
+            {"creative_input_selection": {"book_id": "book-2"}},
+            {"book_id": "book-1", "scope": {"book_id": "book-2"}},
+        )
+        for content in foreign_scopes:
+            with self.subTest(content=content):
+                foreign = replace(own, asset_version_id="foreign:v1", content={**own.content, **content})
+                assets["style_policy"] = [foreign, own]
+                service = ProductionPreparationService(_MultiResolver(assets))
+                prepared = service.prepare(request)
+                self.assertEqual(prepared.report.decision, "READY")
+                ids = {item["asset_version_id"] for item in prepared.command.context_candidates}
+                self.assertIn(own.asset_version_id, ids)
+                self.assertNotIn(foreign.asset_version_id, ids)
+                self.assertTrue(any(item["asset_version_id"] == foreign.asset_version_id
+                    for item in prepared.report.production_input_manifest["rejected_asset_versions"]))
+                with self.assertRaisesRegex(KernelError, "PREPARATION_(CROSS_BOOK_INPUT|BOOK_SCOPE_CONFLICT)"):
+                    service.prepare(replace(request, explicit_asset_version_overrides={"style_policy": "foreign:v1"}))
+                with self.assertRaisesRegex(KernelError, "PREPARATION_(CROSS_BOOK_INPUT|BOOK_SCOPE_CONFLICT)"):
+                    service._context_candidate(foreign, evidence_only_types=(), task_narrative_projection={},
+                        chapter=1, book_id="book-1", accepted_boundary={})
+        foreign = replace(own, asset_version_id="owned-foreign:v1", book_scope_ids=("book-2",))
+        assets["style_policy"] = [foreign, own]
+        prepared = ProductionPreparationService(_MultiResolver(assets)).prepare(request)
+        self.assertEqual(prepared.report.decision, "READY")
+        self.assertNotIn(foreign.asset_version_id, {item["asset_version_id"] for item in prepared.command.context_candidates})
+        for invalid in (0, False, []):
+            assets["style_policy"] = [replace(own, content={**own.content, "book_id": invalid})]
+            with self.assertRaisesRegex(KernelError, "PREPARATION_BOOK_SCOPE_INVALID"):
+                ProductionPreparationService(_MultiResolver(assets)).prepare(replace(request,
+                    explicit_asset_version_overrides={"style_policy": own.asset_version_id}))
+
     def test_optional_candidate_unavailability_does_not_bypass_adopted_or_explicit_bindings(self) -> None:
         from novel_forge.modules.command_kernel.errors import KernelError
 

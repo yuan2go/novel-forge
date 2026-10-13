@@ -748,6 +748,18 @@ class PostgresBookProductionSupervisor:
                 "BOOK_PRODUCTION_PROFILE_TYPE_INVALID",
                 "Book production profile version resolves to the wrong Authority type",
             )
+        from novel_forge.modules.production_preparation.book_scope import book_scope_issue
+
+        scope_issue = book_scope_issue(profile, str(book["book_id"]))
+        if scope_issue:
+            raise KernelError(scope_issue, "frozen production profile has incompatible Book scope")
+        frozen_platform = (book.get("longform_context_versions") or {}).get("platform_profile_version")
+        overrides = dict(explicit_overrides)
+        if frozen_platform:
+            if overrides.get("platform_profile", frozen_platform) != frozen_platform:
+                raise KernelError("BOOK_FROZEN_PLATFORM_PROFILE_MISMATCH",
+                    "Chapter preparation must retain the Book's frozen platform profile")
+            overrides["platform_profile"] = str(frozen_platform)
         knowledge_access_policy = resolve_book_knowledge_access_policy(
             production_profile=profile.content,
             project_id=str(book["project_id"]),
@@ -763,7 +775,7 @@ class PostgresBookProductionSupervisor:
             idempotency_key=(
                 f"{book['stable_idempotency_key']}:chapter:{next_chapter}"
             ),
-            explicit_asset_version_overrides=explicit_overrides,
+            explicit_asset_version_overrides=overrides,
             accepted_through_chapter=int(book["accepted_through_chapter"]) if author_first(book) else None,
             capability_required_asset_types=("character_cast", "reader_promise"),
             context_token_budget=context_policy["draft_token_budget"] if context_policy else self.context_token_budget,
