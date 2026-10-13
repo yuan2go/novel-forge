@@ -887,6 +887,18 @@ def build_provider_task_view(
                     else "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
                 ),
             }
+            requested = review.get("working_revision_request") or {}
+            if (work_requirements and requested.get("contract_version") == "chapter-working-revision.v1"
+                    and isinstance(requested.get("reason"), str) and bool(requested["reason"].strip())
+                    and requested.get("source_asset_version_id") == review.get("target_asset_version_id")):
+                payload["targeted_repair"]["scope_policy"] = "ANCHORED_SCOPE_PROPOSAL_V1"
+                payload["targeted_repair"]["instructions"] = (
+                    "Return ordered non-overlapping edits with exact old quotes, replacements and issue_codes. "
+                    "Each edit must intersect every named prose diagnosis anchor. A wider local edit is a scope proposal, "
+                    "not validated permission: preserve unrelated paragraphs and frozen commitments. The host derives "
+                    "the complete text and requires exact-source ReReview preservation before downstream use. "
+                    "Plan-owned investigations do not authorize prose edits. Keep all other text byte-for-byte."
+                )
             if not compact_contract:
                 payload["chapter"]["text"] = str(source.get("text") or "")
         if review.get("craft_targets") and inputs.get("required_actions") is None:
@@ -949,6 +961,12 @@ def build_provider_task_view(
             **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
+            **({"prose_scope_reassessment": {"proposal": deepcopy(revision["prose_scope_proposal"]),
+                "instructions": "Assess each proposed expanded finding against the complete before/after prose. "
+                    "Verify unrelated paragraphs, frozen commitments and character/knowledge/voice boundaries. "
+                    "Preservation is not the same as complete resolution: keep partial or uncertain issues explicit. "
+                    "Uncertainty in unchanged prose remains unresolved; it is not by itself a new preservation regression."}}
+               if (revision or {}).get("prose_scope_proposal") else {}),
             **_realization_source_review(revision or {}),
             **(
                 {

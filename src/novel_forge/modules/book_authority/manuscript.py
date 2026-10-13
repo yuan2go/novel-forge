@@ -578,8 +578,44 @@ def _prose_diagnosis_identity(review, code, version, text):
         "evidence": {key: location[key] for key in ("start", "end", "quote", "excerpt_digest", "offset_unit")}})
 
 
+def _require_scope_proposal_review(uow, book, source):
+    from novel_forge.modules.review.diagnostics import prose_hash, scope_proposal_preserved
+    content = source_draft_content(source)
+    proposal = content.get("prose_scope_proposal")
+    if not proposal or source.asset_type not in {"draft_version", "best_draft_candidate"}:
+        return
+    if (proposal.get("contract_version") != "working-prose-scope-proposal.v1"
+            or proposal.get("target_text_hash") != prose_hash(content["text"]) or not proposal.get("issue_codes")
+            or not proposal.get("changed_target_ranges")
+            or any(type(span.get("start")) is not int or type(span.get("end")) is not int
+                or not 0 <= span["start"] <= span["end"] <= len(content["text"])
+                for span in proposal.get("changed_target_ranges") or [])):
+        raise KernelError("MANUSCRIPT_SCOPE_PROPOSAL_INVALID", "Scope proposal must bind the exact complete prose")
+    aliases = [source.asset_version_id, content.get("selected_source_asset_version_id") or source.asset_version_id]
+    uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset produced
+        JOIN authority_operation producer ON producer.operation_id=produced.operation_id
+        JOIN authority_operation reviewer ON reviewer.root_operation_id=producer.root_operation_id
+        JOIN authority_operation_output_asset reviewed ON reviewed.operation_id=reviewer.operation_id
+        JOIN authority_asset_version v ON v.asset_version_id=reviewed.asset_version_id
+        WHERE produced.asset_version_id=%s AND produced.role='primary'
+          AND producer.project_id=%s AND producer.workspace_id=%s
+          AND reviewer.project_id=producer.project_id AND reviewer.workspace_id=producer.workspace_id
+          AND reviewer.definition_name='chapter.revision.review' AND reviewer.status='SUCCEEDED'
+          AND reviewed.output_key='chapter.rereview' AND reviewed.role='primary'
+          AND v.content->>'revision_version_id'=ANY(%s)""",
+        [source.asset_version_id, book["project_id"], book["workspace_id"], aliases])
+    for (review,) in uow.cursor.fetchall():
+        if scope_proposal_preserved(proposal, content["text"], target_text_hash=review.get("target_text_hash"),
+                report_type=review.get("report_type"), resolution_checks=review.get("resolution_checks") or [],
+                preservation_checks=review.get("preservation_checks") or []):
+            return
+    raise KernelError("MANUSCRIPT_SCOPE_PROPOSAL_PENDING_REVIEW",
+        "Keep the complete expanded-scope candidate readable; exact-source preservation is required before downstream use")
+
+
 def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
     from novel_forge.modules.review.diagnostics import major_contradiction_codes, prose_hash
+    _require_scope_proposal_review(uow, book, source)
     pending, seen_reviews = {}, {}
     for version in _prose_source_lineage(uow, book, source):
         content = source_draft_content(version)
@@ -967,6 +1003,7 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
                 "chapter": row[2], "asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
                 "text": source.content["text"], "raw_text": None, "completeness": "COMPLETE",
                 "structural_status": "VALIDATED_DOMAIN_RESULT", "review_status": "NOT_PROJECTED",
+                "repair_scope_status": (source.content.get("prose_scope_proposal") or {}).get("qualification_status", "NOT_PROJECTED"),
                 "selection_status": "NOT_PROJECTED", "acceptance_status": "NOT_PROJECTED",
                 "accounting_status": "NOT_PROJECTED", "publication": "NOT_AUTHORIZED"}
         if (row is None or source.asset_type != "execution_evidence"

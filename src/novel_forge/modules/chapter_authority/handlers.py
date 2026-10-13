@@ -1900,6 +1900,8 @@ class _BestCandidateHandler:
                 quality_resolution_checks=tuple(rereview.content.get("quality_resolution_checks") or []),
                 resolved_issue_codes=tuple(rereview.content.get("resolved_issue_codes") or []),
                 remaining_issue_codes=tuple(rereview.content.get("remaining_issue_codes") or []),
+                review_target_text_hash=str(rereview.content.get("target_text_hash") or ""),
+                review_report_type=str(rereview.content.get("report_type") or ""),
             ),
             minimum_net_improvement=threshold,
             length_repair_scope=revision.content.get("chapter_length_repair_scope"),

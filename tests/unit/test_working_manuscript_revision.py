@@ -151,6 +151,103 @@ def test_unmapped_prose_local_edits_retain_complete_body_without_inventing_slots
                 review_asset_version_id='review', context_bundle_version_id='ctx', result=result, provider_evidence={})
 
 
+def _working_scope_proposal_case():
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from tests.unit.test_work_intent_consistency import work_input
+    _, _, source = work_input("保留人物声音")
+    source.update(text="老师让他放松肩膀。\n\n他又问了一遍如何练习。\n\n母亲忙着收好摊子的账。",
+        realization_mapping_status="NOT_MAPPED", scene_artifacts=[])
+    quote = "老师让他放松肩膀。"
+    review = {"issues": [{"code": "repeat", "severity": "minor", "judgment_kind": "AESTHETIC_SUGGESTION",
+        "evidence_locator": {"start": 0, "end": len(quote), "quote": quote}}],
+        "creative_baseline_digest": source["creative_baseline"]["baseline_digest"],
+        "diagnostic_contract_version": "actionable-diagnostics.v1", "target_asset_version_id": "draft",
+        "target_text_hash": prose_hash(source["text"]), "context_bundle_version_id": "ctx",
+        "cross_chapter_window": {"source_window_hash": "window", "preservation_requirements": {}},
+        "working_revision_request": {"contract_version": CONTRACT, "source_asset_version_id": "draft",
+            "aesthetic_revision_requested": True, "reason": "合并重复教学，保护家庭段。"}}
+    result = {"edits": [{"quote": source["text"].split("\n\n母亲")[0], "replacement": "他放松肩膀，向老师问清下一回的练习。",
+        "issue_codes": ["repeat"]}], "resolved_issue_codes": ["repeat"]}
+    return source, review, result
+
+
+def test_scope_proposal_keeps_unrepairable_open_ledger_out_of_the_temporary_edit_view():
+    from novel_forge.modules.revision.domain import apply_revision_result
+    source, review, result = _working_scope_proposal_case()
+    review["unresolved_issues"] = [{"code": "timeline", "severity": "minor", "judgment_kind": "UNCERTAIN"}]
+    review["remaining_issue_codes"] = ["timeline"]
+    value = apply_revision_result(project_id="p", draft=source, review=review, draft_asset_version_id="draft",
+        review_asset_version_id="review", context_bundle_version_id="ctx", result=result, provider_evidence={})
+    assert next(item for item in value["issue_resolutions"] if item["code"] == "timeline")["to_status"] == "OPEN"
+    assert review["remaining_issue_codes"] == ["timeline"]
+
+
+def test_working_scope_expansion_materializes_complete_proposal_and_preserves_other_paragraphs():
+    from novel_forge.modules.revision.domain import apply_revision_result
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    source, review, result = _working_scope_proposal_case()
+    value = apply_revision_result(project_id="p", draft=source, review=review, draft_asset_version_id="draft",
+        review_asset_version_id="review", context_bundle_version_id="ctx", result=result, provider_evidence={})
+    assert value["text"] == result["edits"][0]["replacement"] + "\n\n母亲忙着收好摊子的账。"
+    assert value["repair_scope"] == "PROPOSED_EXPANSION"
+    assert value["prose_scope_proposal"]["qualification_status"] == "PROPOSAL_ONLY"
+    assert value["prose_scope_proposal"]["issue_codes"] == ["repeat"]
+    assert value["prose_scope_proposal"]["source_asset_version_id"] == "draft"
+    task = build_provider_task_view("revision", {"draft": source, "review": review}, work_requirements=True)
+    assert task["targeted_repair"]["scope_policy"] == "ANCHORED_SCOPE_PROPOSAL_V1"
+
+
+@pytest.mark.parametrize("invalid", ["stale-request", "no-request", "wrong-anchor", "plan-investigation"])
+def test_scope_proposal_never_grants_unrelated_or_plan_owned_edit_permission(invalid):
+    from novel_forge.modules.revision.domain import apply_revision_result
+    source, review, result = _working_scope_proposal_case()
+    if invalid == "stale-request":
+        review["working_revision_request"]["source_asset_version_id"] = "old"
+    elif invalid == "no-request":
+        review.pop("working_revision_request")
+    elif invalid == "wrong-anchor":
+        result["edits"][0]["quote"] = "母亲忙着收好摊子的账。"
+    else:
+        review["issues"][0]["repair"] = {"root_cause": "UNCERTAIN", "problem_owner": "PLAN", "repair_scope": "INVESTIGATE"}
+    with pytest.raises(KernelError):
+        apply_revision_result(project_id="p", draft=source, review=review, draft_asset_version_id="draft",
+            review_asset_version_id="review", context_bundle_version_id="ctx", result=result, provider_evidence={})
+
+
+@pytest.mark.parametrize("evidence", ["missing", "wrong-text", "uncertain", "regression", "partial-preserved"])
+def test_scope_proposal_stays_readable_but_needs_exact_rereview_before_downstream_use(evidence):
+    from novel_forge.modules.book_authority.manuscript import _require_scope_proposal_review
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+    text = "他问清了下一次怎么练。"
+    source = SimpleNamespace(asset_type="draft_version", asset_version_id="revision", content={"text": text,
+        "prose_scope_proposal": {"contract_version": "working-prose-scope-proposal.v1", "target_text_hash": prose_hash(text),
+            "issue_codes": ["repeat"], "changed_target_ranges": [{"start": 0, "end": len(text)}]}})
+    review = {"report_type": "ReReviewReport", "revision_version_id": "revision", "target_text_hash": prose_hash(text),
+        "preservation_checks": [{"dimension": dimension, "status": "PRESERVED", "evidence": {"quote": text},
+            "reason": "比对前后正文。"} for dimension in PRESERVATION_DIMENSIONS],
+        "decision": "NEEDS_REVISION", "resolution_checks": [{"code": "repeat", "status": "PARTIALLY_RESOLVED",
+            "preservation": "PRESERVED", "reason": "局部进展有效，其他问题仍保留。", "evidence": {"quote": text}}]}
+    if evidence == "wrong-text":
+        review["target_text_hash"] = "old"
+    elif evidence == "uncertain":
+        review["resolution_checks"][0]["preservation"] = "UNCERTAIN"
+    elif evidence == "regression":
+        review["preservation_checks"][0]["status"] = "REGRESSED"
+    class Cursor:
+        def execute(self, sql, params):
+            assert "reviewer.root_operation_id=producer.root_operation_id" in sql
+            assert "reviewed.output_key='chapter.rereview'" in sql and params[0] == "revision"
+        def fetchall(self):
+            return [] if evidence == "missing" else [(review,)]
+    if evidence == "partial-preserved":
+        _require_scope_proposal_review(SimpleNamespace(cursor=Cursor()), {"project_id": "p", "workspace_id": "w"}, source)
+    else:
+        with pytest.raises(KernelError, match="MANUSCRIPT_SCOPE_PROPOSAL_PENDING_REVIEW"):
+            _require_scope_proposal_review(SimpleNamespace(cursor=Cursor()), {"project_id": "p", "workspace_id": "w"}, source)
+    assert source.content["text"] == text
+
+
 def test_quality_edit_crossing_slot_retains_body_and_previous_mapping_only():
     from novel_forge.modules.revision.domain import apply_quality_revision_result
     from novel_forge.modules.review.diagnostics import prose_hash

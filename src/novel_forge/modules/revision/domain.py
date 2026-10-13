@@ -72,17 +72,49 @@ def apply_revision_result(
             or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
             raise KernelError("REVISION_DIAGNOSIS_STALE", "revision must consume diagnostics for its exact source candidate and Context")
     targeted = {}
-    from novel_forge.modules.review.diagnostics import structural_repair_scope
+    from novel_forge.modules.review.diagnostics import prose_hash, structural_repair_scope
     structural = length_scope is not None or structural_repair_scope(repair_diagnoses, review=review) == "CHAPTER_REVISION"
     if not structural and (review.get("cross_chapter_window") or review.get("craft_targets")):
-        result, targeted = _materialize_targeted_result(draft, review, result)
+        requested = review.get("working_revision_request") or {}
+        proposed_scope = ("creative_baseline" in draft
+            and requested.get("contract_version") == "chapter-working-revision.v1"
+            and isinstance(requested.get("reason"), str) and bool(requested["reason"].strip())
+            and requested.get("source_asset_version_id") == draft_asset_version_id
+            and review.get("target_asset_version_id") == draft_asset_version_id)
+        scoped_review = {**review, "issues": repair_diagnoses, "unresolved_issues": [],
+            "remaining_issue_codes": [code for code in review.get("remaining_issue_codes", [])
+                if code in {item["code"] for item in repair_diagnoses}]} if proposed_scope else review
+        result, targeted = _materialize_targeted_result(draft, scoped_review, result,
+            range_policy="ANCHORED_SCOPE_PROPOSAL_V1" if proposed_scope else "INTERSECTION_V1")
+        if proposed_scope:
+            diagnoses_by_code = {item["code"]: item for item in repair_diagnoses}
+            expanded = [edit for edit in targeted["targeted_edits"] if any(
+                edit["start"] < diagnoses_by_code[code]["evidence_locator"]["start"]
+                or edit["end"] > diagnoses_by_code[code]["evidence_locator"]["end"] for code in edit["issue_codes"])]
+            if expanded:
+                target_ranges, delta = [], 0
+                for edit in targeted["targeted_edits"]:
+                    target_ranges.append({"start": edit["start"] + delta,
+                        "end": edit["start"] + delta + len(edit["replacement"])})
+                    delta += len(edit["replacement"]) - (edit["end"] - edit["start"])
+                targeted["prose_scope_proposal"] = {"contract_version": "working-prose-scope-proposal.v1",
+                    "source_asset_version_id": draft_asset_version_id,
+                    "source_text_hash": review["target_text_hash"], "qualification_status": "PROPOSAL_ONLY",
+                    "issue_codes": sorted({code for edit in expanded for code in edit["issue_codes"]}),
+                    "changed_target_ranges": target_ranges,
+                    "edit_ranges": [{"start": edit["start"], "end": edit["end"],
+                        "excerpt_digest": prose_hash(edit["quote"])} for edit in expanded]}
     text = prose_from_output(result, separators=draft.get("scene_separators"))
     if length_scope is not None:
         validate_chapter_length_scope(length_scope, draft, text, source_asset_version_id=draft_asset_version_id,
             context_asset_version_id=context_bundle_version_id)
     if "creative_baseline" in draft:
         from novel_forge.modules.review.diagnostics import validate_prose_repair_scope
-        validate_prose_repair_scope(draft, repair_diagnoses, text, length_scope=length_scope, review=review)
+        validate_prose_repair_scope(draft, repair_diagnoses, text, length_scope=length_scope, review=review,
+            proposed_edits=targeted.get("targeted_edits") if targeted.get("prose_scope_proposal") else None)
+    if targeted.get("prose_scope_proposal"):
+        from novel_forge.modules.review.diagnostics import prose_hash
+        targeted["prose_scope_proposal"]["target_text_hash"] = prose_hash(text)
     if review.get("craft_targets"):
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
@@ -134,7 +166,7 @@ def apply_revision_result(
         "resolved_issue_codes": resolved,
         "resolution_claimed_issue_codes": resolved,
         "issue_resolutions": resolutions,
-        "repair_scope": "CHAPTER_REVISION" if structural else "LOCAL_PROSE",
+        "repair_scope": "PROPOSED_EXPANSION" if targeted.get("prose_scope_proposal") else "CHAPTER_REVISION" if structural else "LOCAL_PROSE",
         "canon_assertions": assertions,
         "provider_evidence": dict(provider_evidence),
         **({"chapter_length_repair_scope": {**length_scope, "revised_han_characters": han_characters(text)}} if length_scope is not None else {}),

@@ -47,6 +47,36 @@ def test_measured_length_correction_requires_exact_source():
                 challenger=challenger, minimum_net_improvement=3, length_repair_scope={**scope, **drift})
 
 
+def test_partial_scope_repair_with_unchanged_uncertainty_uses_the_same_preservation_rule_as_propagation():
+    from dataclasses import replace
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+    text = "赴约日期尚待核实。\n\n他把练习的方法问清了。"
+    start = text.index("他把")
+    proposal = {"contract_version": "working-prose-scope-proposal.v1", "target_text_hash": prose_hash(text),
+        "issue_codes": ["repeat"], "changed_target_ranges": [{"start": start, "end": len(text)}]}
+    dimensions = [{"dimension": key, "status": "PRESERVED", "reason": "核对修改和未改段。",
+        "evidence": {"quote": text[start:]}} for key in PRESERVATION_DIMENSIONS]
+    dimensions[0] = {**dimensions[0], "status": "UNCERTAIN", "evidence": {"quote": text[:9]}}
+    challenger = CandidateEvidence("new", {"text": text, "prose_scope_proposal": proposal}, 88, (), "rereview",
+        diagnostic_contract_version="actionable-diagnostics.v1", cross_chapter_review=True,
+        resolution_checks=({"code": "repeat", "status": "PARTIALLY_RESOLVED", "preservation": "PRESERVED",
+            "reason": "合并有效，仍有余项。", "evidence": {"quote": text[start:]}},
+            {"code": "timeline", "status": "UNRESOLVED", "preservation": "UNCERTAIN",
+             "reason": "未改的日期疑问保留。", "evidence": {"quote": text[:9]}}),
+        preservation_checks=tuple(dimensions), remaining_issue_codes=("repeat", "timeline"),
+        review_target_text_hash=prose_hash(text), review_report_type="ReReviewReport")
+    previous = _candidate("old", 95)
+    def selected(candidate):
+        return compare_candidates(project_id="p", chapter_root_operation_id="root", previous=previous,
+            challenger=candidate, minimum_net_improvement=100)["selected_asset_version_id"]
+    assert selected(challenger) == "new"
+    assert selected(replace(challenger, review_target_text_hash="other")) == "old"
+    assert selected(replace(challenger, preservation_checks=tuple({**check, "status": "REGRESSED"}
+        if index == 1 else check for index, check in enumerate(dimensions)))) == "old"
+    assert selected(replace(challenger, blocker_codes=("NEW_CONTRADICTION",))) == "old"
+
+
 def _candidate(identity: str, score: float, blockers: tuple[str, ...] = ()) -> CandidateEvidence:
     return CandidateEvidence(
         asset_version_id=identity,

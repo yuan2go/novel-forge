@@ -301,6 +301,11 @@ def apply_targeted_edits(
                     merged.append([low,high])
             if not any(low <= location['start'] < location['end'] <= high for low,high in merged):
                 raise KernelError('REVISION_TARGETED_EDIT_INVALID','Every changed code point must remain in the connected named frozen scope')
+        elif range_policy == 'ANCHORED_SCOPE_PROPOSAL_V1':
+            for code in codes:
+                target = diagnoses[code]["evidence_locator"]
+                if max(target["start"], location["start"]) >= min(target["end"], location["end"]):
+                    raise KernelError("REVISION_TARGETED_EDIT_INVALID", "Each proposed edit must intersect every named prose diagnosis")
         elif range_policy == 'INTERSECTION_V1':
             for code in codes:
                 target = diagnoses[code]["evidence_locator"]

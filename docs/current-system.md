@@ -1875,6 +1875,11 @@ proposal on a distinct diagnosis. Incomplete resolution evidence retains an unre
 disposition rather than a false resolution. Complete typed
 prose, including a host-materialized targeted revision, is readable through the existing
 candidate API before selection; that read does not project review, selection or acceptance.
+An exact working-revision request may propose a wider local edit around a prose diagnosis
+anchor. The host verifies and materializes the source quotes, preserves every other byte,
+and records the actual scope as a proposal. It cannot become subsequent prose's basis
+before same-root, exact-text ReReview preservation evidence covers the expanded findings.
+This does not authorize plan-owned investigations or changes to frozen commitments.
 
 Chapter 3.8.0 and Pack 2.12.0/template v9 retain their frozen `work-requirements.v1` inputs
 and emit `work-quality.v2` evidence. Selected method values reach Draft Plan v3,
