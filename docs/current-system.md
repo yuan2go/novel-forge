@@ -2388,10 +2388,12 @@ sources retain their original empty-genesis behavior for exact replay.
 first unexecuted Chapter after the legacy missing-background rejection. Generation and
 Director may retain different original owners only with the same source, Creator,
 Book request and trusted receipts. Migration 0209 binds full source/successor commands,
-compiled Foundation, isolated unknowns, reservations and leases. Registration, Action
-and primary materialization lock the Formation cancellation boundary and current Book
-frontier; downstream causal preparation and Canon validation consume the same derived
-view. The original Source, rejected Action and failed Attempts remain immutable.
+compiled Foundation, isolated unknowns, reservations and leases. Registration locks the Formation cancellation boundary and verifies its Source,
+version and settled leases. Action and primary materialization verify the current
+Attempt fence and lock the same Formation boundary and current Book frontier. Zero-send capacity consumers bind their
+existing durable registration and typed admission evidence, including the exact parent
+proof, original inputs and repair fields; they do not substitute another capacity gate.
+Downstream causal preparation and Canon validation consume the same derived view. The original Source, rejected Action and failed Attempts remain immutable.
 Focused SQL/backup-restore evidence and source-owner validation are separate from
 installed native recovery, real-Provider execution and literary qualification.
 Earlier source/task v2 inputs preserve their original inconsistent nested schema and

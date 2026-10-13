@@ -134,7 +134,7 @@ def require_world_foundation_revalidation(database_url: str, *, command: Any, op
 
 def require_world_foundation_frontier(uow, request):
     uow.cursor.execute("""SELECT link.continuation_id,link.target_runtime#>>'{world_host_revalidation,source,asset_version_id}',
-        operation.project_id,operation.workspace_id,operation.actor_id,operation.command_payload#>>'{payload,book_id}'
+        operation.project_id,operation.workspace_id,operation.actor_id,operation.command_payload#>>'{payload,book_id}',link.target_runtime->'world_host_revalidation'
         FROM authority_operation operation JOIN authority_story_planning_runtime_continuation link
           ON link.continuation_id=operation.command_payload#>>'{payload,runtime_continuation_id}'
         WHERE operation.operation_id=%s AND link.target_runtime#>>'{world_host_revalidation,contract_version}'='world-host-revalidation.v3'""", [request.operation_id])
@@ -158,12 +158,46 @@ def require_world_foundation_frontier(uow, request):
     book = uow.cursor.fetchone()
     uow.cursor.execute("""SELECT CASE WHEN link.decision_evidence->>'host_revalidation'='world-host-revalidation.v3'
         THEN authority_world_contract_continuation_permitted(link.continuation_id,generation.operation_id,to_jsonb(generation))
-        ELSE authority_unsent_context_continuation_permitted(link.continuation_id,generation.operation_id,to_jsonb(generation)) END
+        ELSE EXISTS(SELECT 1 FROM authority_operation current JOIN authority_operation original ON original.operation_id=link.source_operation_id
+            JOIN authority_story_planning_generation source ON source.operation_id=original.operation_id
+            JOIN authority_operation registration ON registration.operation_id=link.registered_by_operation_id
+            JOIN authority_story_planning_runtime_continuation parent ON parent.continuation_id=original.command_payload#>>'{payload,runtime_continuation_id}'
+            JOIN authority_operation parent_registration ON parent_registration.operation_id=parent.registered_by_operation_id
+            WHERE current.operation_id=generation.operation_id AND link.successor_operation_id=current.operation_id
+              AND link.source_command=original.command_payload->'payload' AND link.successor_command=current.command_payload->'payload'
+              AND current.causation_operation_id=original.operation_id AND current.actor_id=original.actor_id
+              AND current.project_id=link.project_id AND current.workspace_id=link.workspace_id
+              AND original.project_id=link.project_id AND original.workspace_id=link.workspace_id
+              AND registration.actor_id=original.actor_id AND registration.project_id=link.project_id AND registration.workspace_id=link.workspace_id
+              AND registration.status='SUCCEEDED' AND registration.definition_name='story_planning.runtime_continuation.register'
+              AND link.decision_evidence->>'capacity_only'='true' AND link.target_runtime#>>'{planning_capacity,version}'='planning-capacity-allocation.v1'
+              AND source.project_id=generation.project_id AND source.workspace_id=generation.workspace_id AND source.book_id=generation.book_id
+              AND source.generator_operation_name=generation.generator_operation_name AND source.logical_key=generation.logical_key
+              AND source.planning_scope=generation.planning_scope AND source.input_snapshot_hash=generation.input_snapshot_hash AND source.input_snapshot=generation.input_snapshot
+              AND source.repair_number=generation.repair_number AND source.repair_reason IS NOT DISTINCT FROM generation.repair_reason
+              AND source.repair_of_candidate_id IS NOT DISTINCT FROM generation.repair_of_candidate_id
+              AND source.repair_of_operation_id IS NOT DISTINCT FROM generation.repair_of_operation_id
+              AND source.repair_result_asset_version_id IS NOT DISTINCT FROM generation.repair_result_asset_version_id
+              AND source.candidate_asset_version_id IS NULL AND original.status='FAILED_FINAL'
+              AND EXISTS(SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=original.operation_id AND attempt.status='FAILED_FINAL'
+                AND attempt.attempt_number=(SELECT max(last.attempt_number) FROM authority_attempt last WHERE last.operation_id=original.operation_id)
+                AND COALESCE(attempt.result->>'error_code',attempt.error->>'error_code') IN ('PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED','PROVIDER_ROUTING_BLOCKED'))
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=original.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=original.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id) WHERE attempt.operation_id=original.operation_id AND lease.status='HELD')
+              AND parent.successor_operation_id=original.operation_id AND parent.successor_command=original.command_payload->'payload'
+              AND parent.project_id=link.project_id AND parent.workspace_id=link.workspace_id AND parent.book_id=link.book_id
+              AND parent_registration.status='SUCCEEDED' AND parent_registration.definition_name='story_planning.runtime_continuation.register'
+              AND parent_registration.actor_id=original.actor_id AND parent_registration.project_id=link.project_id AND parent_registration.workspace_id=link.workspace_id
+              AND parent.target_runtime->'world_host_revalidation'=link.target_runtime->'world_host_revalidation') END
         FROM authority_story_planning_generation generation JOIN authority_story_planning_runtime_continuation link ON link.continuation_id=%s
         WHERE generation.operation_id=%s""", [bound[0],request.operation_id])
     allowed = uow.cursor.fetchone()
     if not formation or formation[1] != bound[4] or not book or not allowed or allowed[0] is not True:
         raise KernelError("WORLD_FOUNDATION_REVALIDATION_FRONTIER_CHANGED", "Known-result adoption requires the original Creator, uncancelled exact frontier and settled fenced lineage")
+    from .runtime_continuation import _require_world_lineage_settled
+    _require_world_lineage_settled(uow, source_operation_id=bound[6]["source_operation_id"], project_id=bound[2], book_id=bound[5],
+        active_successor_operation_id=request.operation_id, verified_complete_effect_ids=bound[6]["retained_effect_ids"])
 
 
 def require_world_disclosure_revalidation(database_url: str, *, command: Any, operation_id: str) -> dict[str, Any]:
@@ -601,7 +635,9 @@ class PlanningWorldPreparation:
         command: Any,
         execute_stage: Callable[[PlanningProviderStage], Any],
         knowledge_selection: Mapping[str, Any] | None = None,
+        execution_lease: Any = None,
     ) -> Any:
+        self.execution_lease = execution_lease
         from .schema_recovery import continuation_action as schema_continuation_action
         schema_action = schema_continuation_action(self.preparer.database_url, command)
         if schema_action is not None:
@@ -1518,6 +1554,8 @@ class PlanningWorldPreparation:
             contract=contract,
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
+            **({"execution_lease": self.execution_lease} if asset_type == "narrative_governance_action"
+                and (contract.get("host_revalidation") or {}).get("contract_version") == "world-host-revalidation.v3" else {}),
         )
 
 

@@ -2076,16 +2076,19 @@ def _require_world_lineage_settled(uow, *, source_operation_id, project_id, book
             SELECT 1 FROM authority_operation child
             JOIN authority_story_planning_runtime_continuation r ON r.successor_operation_id=child.operation_id
             JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id
-            WHERE child.operation_id=a.operation_id AND child.status='EXECUTING' AND child.causation_operation_id=%s
+            WHERE child.operation_id=a.operation_id AND child.status='EXECUTING' AND child.causation_operation_id=r.source_operation_id
               AND child.project_id=%s AND r.project_id=child.project_id AND r.book_id=%s
               AND child.workspace_id=r.workspace_id AND child.actor_id=registration.actor_id
               AND registration.status='SUCCEEDED' AND registration.definition_name='story_planning.runtime_continuation.register'
-              AND registration.definition_version='2.0.0' AND r.source_operation_id=%s
+              AND ((r.source_operation_id=%s AND registration.definition_version='2.0.0') OR (
+                r.target_runtime#>>'{world_host_revalidation,contract_version}'='world-host-revalidation.v3'
+                AND r.target_runtime#>>'{world_host_revalidation,source_operation_id}'=%s AND r.decision_evidence->>'capacity_only'='true'
+                AND registration.definition_version IN ('1.0.0','2.0.0','3.0.0')))
               AND child.command_payload->'payload'=r.successor_command
               AND child.command_payload #>> '{payload,runtime_continuation_id}'=r.continuation_id)))
         OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state IN ('ABORTED','COMPLETED','CANCELLED'))
         OR EXISTS(SELECT 1 FROM authority_story_creation_cancellation c JOIN authority_book_production book ON book.stable_idempotency_key=c.formation_run_id || ':production' WHERE c.project_id=book.project_id AND book.project_id=%s AND book.book_id=%s)
-        """, [source_operation_id, project_id, book_id, project_id, book_id, list(verified_complete_effect_ids), active_successor_operation_id, source_operation_id, project_id, book_id, source_operation_id, project_id, book_id, project_id, book_id])
+        """, [source_operation_id, project_id, book_id, project_id, book_id, list(verified_complete_effect_ids), active_successor_operation_id, project_id, book_id, source_operation_id, source_operation_id, project_id, book_id, project_id, book_id])
     if uow.cursor.fetchone()[0]:
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE", "World contract succession requires settled live lineage; only the exact registered running child may hold its execution lease")
     from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage

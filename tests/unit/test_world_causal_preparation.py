@@ -13,6 +13,37 @@ def generated_paths():
     return json.loads(json.dumps(_generated_paths()))
 
 
+@pytest.mark.parametrize("lease_scope", [None, "foreign-operation", "foreign-project", "owned"])
+def test_known_world_action_requires_its_own_current_fence_before_frontier_adoption(monkeypatch, lease_scope):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
+    from novel_forge.modules.authority_handler_runtime import runtime as handler_runtime
+    from novel_forge.modules.story_planning_runtime import world_preparation
+    def absent(**values):
+        raise KernelError("AUTHORITY_ASSET_NOT_FOUND", "New Action")
+    visited = []
+    def materialize(command, *, materialization_guard):
+        materialization_guard(SimpleNamespace(), command)
+        return SimpleNamespace(asset_version_id="saved-action")
+    preparer = object.__new__(PostgresPlanningExecutionPreparer)
+    preparer.query = SimpleNamespace(require=absent)
+    preparer.writer = SimpleNamespace(materialize_output=materialize)
+    monkeypatch.setattr(handler_runtime, "require_current_fence", lambda uow, lease: {"operation_id": "foreign" if lease_scope == "foreign-operation" else "current"})
+    monkeypatch.setattr(world_preparation, "require_world_foundation_frontier", lambda uow, command: visited.append(command.operation_id))
+    lease = WorkerLeaseCommand("attempt", "foreign" if lease_scope == "foreign-project" else "project", "worker", 1, "trace", "correlation") if lease_scope else None
+    values = dict(operation_id="current", project_id="project", logical_ref="world_preparation/current/action",
+        asset_type="narrative_governance_action", contract={"host_revalidation": {"contract_version": "world-host-revalidation.v3"}},
+        trace_id="trace", correlation_id="correlation", execution_lease=lease)
+    if lease_scope == "owned":
+        assert preparer._ensure_contract(**values).asset_version_id == "saved-action"
+        assert visited == ["current"]
+    else:
+        with pytest.raises(KernelError, match="FENCE_REQUIRED" if lease_scope is None else "FENCE_MISMATCH"):
+            preparer._ensure_contract(**values)
+        assert visited == []
+
+
 def test_serialized_world_contract_exposes_native_time_and_causal_predicates():
     from novel_forge.modules.chapter_authority.provider_output_contracts import (
         validate_native_world_schema_fragment,

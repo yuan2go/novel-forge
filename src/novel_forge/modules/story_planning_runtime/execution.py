@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
+
 from novel_forge.logging.execution import execution_step
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -4248,6 +4250,7 @@ class PostgresPlanningExecutionPreparer:
             action = PlanningWorldPreparation(self).prepare(
                 operation_id=operation_id, command=command, execute_stage=execute_stage,
                 knowledge_selection=knowledge_context.content.get("narrative_intelligence") or {},
+                execution_lease=WorkerLeaseCommand(attempt_id, command.project_id, worker_id, fencing_token, command.trace_id, command.correlation_id),
             )
         return self._prepare_stage(**arguments, world_action=action)
 
@@ -6863,6 +6866,7 @@ class PostgresPlanningExecutionPreparer:
         contract: dict[str, Any],
         trace_id: str,
         correlation_id: str,
+        execution_lease: WorkerLeaseCommand | None = None,
     ) -> AuthorityAssetDocument:
         try:
             existing = self.query.require(
@@ -6886,7 +6890,14 @@ class PostgresPlanningExecutionPreparer:
         guard = None
         if asset_type == "narrative_governance_action" and (contract.get("host_revalidation") or {}).get("contract_version") == "world-host-revalidation.v3":
             from .world_preparation import require_world_foundation_frontier
-            guard = require_world_foundation_frontier
+            from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
+            if execution_lease is None:
+                raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_REQUIRED", "Known-result action adoption requires its actual executing Attempt fence")
+            def guard(uow, request):
+                attempt = require_current_fence(uow, execution_lease)
+                if attempt["operation_id"] != request.operation_id or execution_lease.project_id != request.project_id:
+                    raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_MISMATCH", "The current fence must belong to this exact Action operation and project")
+                require_world_foundation_frontier(uow, request)
         try:
             return self.writer.materialize_output(
                 AuthorityAssetWriteCommand(
