@@ -10,11 +10,30 @@ from novel_forge.modules.source_import.analysis_profiles import (
 )
 from novel_forge.modules.source_import.craft_discovery import (
     CRAFT_DISCOVERY_POLICY, CRAFT_DISCOVERY_ROUTING, WRITING_METHODS_ROUTING, WRITING_METHODS_EVIDENCE_ROUTING, craft_discovery_schema,
+    CRAFT_OUTPUT_CONTRACT, LEGACY_CRAFT_OUTPUT_CONTRACT, validate_discovery_schema,
 )
 from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
 from novel_forge.modules.source_import.execution_contracts import MKAOS_STAGE, validate_content_intelligence_output
 from novel_forge.modules.source_import.methodologies import SourceMethodologyRegistry
 from novel_forge.modules.source_import.profiling import SourceContentType
+
+
+@pytest.mark.parametrize("field", ["mkaos_capability", "mkaos_skill_id", "mkaos_skill_version", "mkaos_methodology_content_hash"])
+def test_schema_recovery_admission_rejects_method_drift_before_creating_child(field):
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.source_import.application import SourceImportApplication
+
+    registry = SourceMethodologyRegistry(Path("skills"))
+    method = registry.require("anti-copy-abstraction")
+    app = SimpleNamespace(methodology_registry=registry)
+    payload = {"mkaos_capability": "mkaos.knowledge.extract", "abstraction_policy_version": CRAFT_DISCOVERY_POLICY,
+        "mkaos_skill_id": method.skill_id, "mkaos_skill_version": method.skill_version,
+        "mkaos_methodology_content_hash": method.content_digest}
+    payload[field] = "drift"
+    with pytest.raises(KernelError, match="Retain the original abstraction method"):
+        SourceImportApplication._admit_mkaos_from_scope(app, project_id="project", parent_operation_id="old",
+            trace_id="trace", correlation_id="job", job={}, observation={"observation_asset_version_id": "observation:1"},
+            payload=payload, schema_recovery={"original_operation_id": "old"})
 
 
 def discovered():
@@ -86,6 +105,7 @@ def test_discovery_cannot_claim_editorial_reader_or_other_source_evidence(tamper
 
 
 def test_real_extraction_entry_uses_strict_contract_and_immutable_observation_reference(monkeypatch):
+    from novel_forge.modules.source_authority.corpus import corpus_hash
     port = object.__new__(PostgresContentIntelligenceExecutionPort)
     port.methodology_registry = SourceMethodologyRegistry(Path("skills"))
     seen = []
@@ -96,10 +116,54 @@ def test_real_extraction_entry_uses_strict_contract_and_immutable_observation_re
 
     monkeypatch.setattr(port, "_execute", execute)
     monkeypatch.setattr(port, "_execution_log", lambda **kwargs: SimpleNamespace(asset_version_id="execution:fixture"))
-    output = port.execute_mkaos_extraction(worker=SimpleNamespace(project_id="p"), capability="mkaos.knowledge.extract", abstraction_policy_version=CRAFT_DISCOVERY_POLICY, observation_asset_version_id="observation:1", observation={"findings": [{"finding_code": "FOCUS", "statement": "unprojected-observation-text"}]}, evidence_spans=())
+    contract = {"version": CRAFT_OUTPUT_CONTRACT, "observation_asset_version_id": "observation:1",
+        "output_schema_hash": corpus_hash(craft_discovery_schema(grounded=False, observation_id="observation:1"))}
+    output = port.execute_mkaos_extraction(worker=SimpleNamespace(project_id="p"), capability="mkaos.knowledge.extract", abstraction_policy_version=CRAFT_DISCOVERY_POLICY, observation_asset_version_id="observation:1", observation={"findings": [{"finding_code": "FOCUS", "statement": "unprojected-observation-text"}]}, evidence_spans=(), output_contract=contract)
     spec = seen[0]
     assert spec.output_schema == craft_discovery_schema(grounded=False, observation_id="observation:1")
     assert spec.context_contract["source_expression_available"] is False
     assert spec.artifact_version_ids == ("observation:1",)
     assert "unprojected-observation-text" not in str(spec.input_payload)
     assert output["candidate"]["craft_mechanism"]["provenance"]["confidence"] == "HYPOTHESIS"
+    assert spec.input_payload["craft_output_contract"]["version"] == CRAFT_OUTPUT_CONTRACT
+    assert spec.context_contract["craft_output_contract"] == spec.input_payload["craft_output_contract"]
+
+
+def test_supported_wire_schema_preserves_exact_source_array_and_legacy_validation():
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+
+    current = craft_discovery_schema(grounded=False, observation_id="observation:1")
+    legacy = craft_discovery_schema(grounded=False, observation_id="observation:1", contract_version=LEGACY_CRAFT_OUTPUT_CONTRACT)
+    assert current != legacy
+    for schema in (current, legacy):
+        assert validate_discovery_schema(schema)
+        validate_content_intelligence_output(MKAOS_STAGE, schema, discovered())
+        for ids in ([], ["other"], ["observation:1", "observation:1"]):
+            bad = discovered()
+            bad["craft_mechanism"]["provenance"]["source_observation_asset_version_ids"] = ids
+            with pytest.raises(ValueError):
+                validate_content_intelligence_output(MKAOS_STAGE, schema, bad)
+    field = codex_output_schema(current)["properties"]["craft_mechanism"]["properties"]["provenance"]["properties"]["source_observation_asset_version_ids"]
+    assert "const" not in field
+    assert field["items"]["const"] == "observation:1"
+    assert field["minItems"] == field["maxItems"] == 1
+
+
+def test_legacy_mkaos_execution_keeps_old_schema_and_cache_inputs(monkeypatch):
+    from novel_forge.modules.source_authority.corpus import corpus_hash
+
+    port = object.__new__(PostgresContentIntelligenceExecutionPort)
+    port.methodology_registry = SourceMethodologyRegistry(Path("skills"))
+    seen = []
+    monkeypatch.setattr(port, "_execute", lambda **kwargs: seen.append(kwargs["spec"]) or {"result": discovered(), "provider_execution_reused": False})
+    monkeypatch.setattr(port, "_execution_log", lambda **kwargs: SimpleNamespace(asset_version_id="execution:fixture"))
+    schema = craft_discovery_schema(grounded=False, observation_id="observation:1", contract_version=LEGACY_CRAFT_OUTPUT_CONTRACT)
+    contract = {"version": LEGACY_CRAFT_OUTPUT_CONTRACT, "observation_asset_version_id": "observation:1", "output_schema_hash": corpus_hash(schema)}
+    args = dict(worker=SimpleNamespace(project_id="p"), capability="mkaos.knowledge.extract", abstraction_policy_version=CRAFT_DISCOVERY_POLICY,
+        observation_asset_version_id="observation:1", observation={"findings": [{"finding_code": "FOCUS", "statement": "abstract"}]}, evidence_spans=())
+    port.execute_mkaos_extraction(**args, output_contract=contract)
+    assert seen[0].output_schema == schema
+    assert "craft_output_contract" not in seen[0].input_payload
+    assert "craft_output_contract" not in seen[0].context_contract
+    with pytest.raises(Exception, match="SOURCE_CRAFT_OUTPUT_CONTRACT_DRIFT"):
+        port.execute_mkaos_extraction(**args, output_contract={**contract, "output_schema_hash": "wrong"})

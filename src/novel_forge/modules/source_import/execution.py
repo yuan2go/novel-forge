@@ -1152,13 +1152,22 @@ class PostgresContentIntelligenceExecutionPort:
         observation_asset_version_id: str,
         observation: dict[str, Any],
         evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
+        output_contract: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not observation or not observation.get("findings"):
             raise ValueError("MKAOS execution requires a supported nonempty Observation")
         from .execution_contracts import grounded_knowledge_output_schema
-        from .craft_discovery import CRAFT_DISCOVERY_POLICY, craft_discovery_schema
+        from .craft_discovery import CRAFT_DISCOVERY_POLICY, CRAFT_OUTPUT_CONTRACT, LEGACY_CRAFT_OUTPUT_CONTRACT, craft_discovery_schema
         grounded = any("certainty" in f for f in observation["findings"])
         craft_discovery = abstraction_policy_version == CRAFT_DISCOVERY_POLICY
+        schema = craft_discovery_schema(grounded=grounded, observation_id=observation_asset_version_id,
+            contract_version=output_contract["version"] if output_contract else LEGACY_CRAFT_OUTPUT_CONTRACT) if craft_discovery else grounded_knowledge_output_schema() if grounded else content_intelligence_output_schema(MKAOS_STAGE)
+        if output_contract and (output_contract["observation_asset_version_id"] != observation_asset_version_id
+                or output_contract["output_schema_hash"] != _hash(schema)):
+            raise KernelError("SOURCE_CRAFT_OUTPUT_CONTRACT_DRIFT", "Provider must consume the exact frozen Craft output Schema")
+        wire_contract = dict(output_contract or {"version": LEGACY_CRAFT_OUTPUT_CONTRACT,
+            "observation_asset_version_id": observation_asset_version_id, "output_schema_hash": _hash(schema)}) if craft_discovery else {}
+        current_contract = bool(craft_discovery and wire_contract["version"] == CRAFT_OUTPUT_CONTRACT)
         methodology = self.methodology_registry.require("anti-copy-abstraction")
         spec = _ExecutionSpec(
             kind="mkaos",
@@ -1181,6 +1190,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "observation_hash": _hash(observation),
                 "abstraction_policy_version": abstraction_policy_version,
                 "evidence_manifest_hash": _evidence_manifest_hash(evidence_spans),
+                **({"craft_output_contract": wire_contract} if current_contract else {}),
                 **({"craft_discovery_contract": {
                     "schema_version": "narrative-craft-discovery.v1",
                     "instruction": "Abstract one conditional, transferable Craft hypothesis supported by this Observation. Preserve prerequisites, contraindications, failure modes and uncertainty. Do not reproduce names, settings, distinctive scenes, event sequences or expression. Bind only this Observation, claim no editorial, model-validation or reader-effect evidence, and propose no Canon or active plan changes. Governance approval is separate from discovery; similar candidates require operator comparison before approval.",
@@ -1197,8 +1207,9 @@ class PostgresContentIntelligenceExecutionPort:
                 "abstraction_policy_version": abstraction_policy_version,
                 "source_expression_available": False,
                 "generation_context_allowed": False,
+                **({"craft_output_contract": wire_contract} if current_contract else {}),
             },
-            output_schema=craft_discovery_schema(grounded=grounded, observation_id=observation_asset_version_id) if craft_discovery else grounded_knowledge_output_schema() if grounded else content_intelligence_output_schema(MKAOS_STAGE),
+            output_schema=schema,
         )
         execution = self._execute(worker=worker, spec=spec)
         candidate = validate_content_intelligence_output(

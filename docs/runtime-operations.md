@@ -860,6 +860,17 @@ reconciliation. Kernel verifies the original checkpoint reason, no owned Effect 
 output and no remaining unresolved lineage; it appends the Operation transition without
 inventing an external receipt or changing the original checkpoint.
 This does not approve extracted knowledge or qualify its literary effect.
+Ordinary writing-method Craft extraction uses `narrative-craft-output.v2`: exactly one
+Observation identifier, constrained as a scalar item, preserves the prior array-level
+identity constraint while fitting the controlled Provider output contract. Frozen requests
+without that contract retain v1 Schema and cache inputs. For a known final v1 Schema
+rejection, use `corpus recover-abstraction-schema --project-id <project>
+--operation-id <original-operation> --expected-version <original-version>
+--authorization-ref <authorization> --reason <correction>`. Source verifies the original
+ordinary Observation, operator, materialization, method version/digest and terminal dispatch
+before admitting an idempotent v2 child in the same job. It reuses the Observation and
+retains the original failed work; bounded reading, unresolved outcomes and method drift
+require their existing recovery owners. Run the returned child through the Source scheduler.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool

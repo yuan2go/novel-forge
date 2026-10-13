@@ -148,6 +148,7 @@ class ContentIntelligenceExecutionPort(Protocol):
         observation_asset_version_id: str,
         observation: dict[str, Any],
         evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
+        output_contract: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
 
@@ -4225,13 +4226,32 @@ class SourceImportApplication:
         self, *, project_id: str, parent_operation_id: str, trace_id: str,
         correlation_id: str, job: dict[str, Any], observation: dict[str, Any],
         payload: dict[str, Any],
+        schema_recovery: dict[str, Any] | None = None,
     ) -> str | None:
         if observation.get("has_findings") is False:
             return
         capability = str(payload["mkaos_capability"])
         abstraction_policy_version = str(payload["abstraction_policy_version"])
-        mkaos_methodology = self.methodology_registry.require("anti-copy-abstraction")
+        if schema_recovery:
+            if capability != "mkaos.knowledge.extract" or payload.get("mkaos_skill_id") != "anti-copy-abstraction":
+                raise KernelError("SOURCE_ABSTRACTION_RECOVERY_METHOD_DRIFT", "Retain the original abstraction method")
+            mkaos_methodology = self.methodology_registry.require("anti-copy-abstraction")
+            if (mkaos_methodology.skill_version != payload.get("mkaos_skill_version")
+                    or mkaos_methodology.content_digest != payload.get("mkaos_methodology_content_hash")):
+                raise KernelError("SOURCE_ABSTRACTION_RECOVERY_METHOD_DRIFT", "Retain the original abstraction method version")
+        else:
+            mkaos_methodology = self.methodology_registry.require("anti-copy-abstraction")
         observation_version = str(observation["observation_asset_version_id"])
+        from .craft_discovery import CRAFT_DISCOVERY_POLICY
+        output_contract = None
+        if abstraction_policy_version == CRAFT_DISCOVERY_POLICY:
+            from .abstraction_recovery import freeze_craft_output
+
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                output_contract = freeze_craft_output(uow.cursor, project_id, observation_version)
+        contract_key = ":" + output_contract["version"] + ":" + output_contract["output_schema_hash"] if output_contract else ""
+        if schema_recovery:
+            contract_key += ":recovery:" + schema_recovery["original_operation_id"]
         child = self._admit_child(
             definition_name=SOURCE_IMPORT_MKAOS_OPERATION,
             project_id=project_id,
@@ -4242,7 +4262,7 @@ class SourceImportApplication:
                 f"{observation_version}:"
                 f"{abstraction_policy_version}:{capability}:"
                 f"{mkaos_methodology.skill_version}:"
-                f"{mkaos_methodology.content_digest}"
+                f"{mkaos_methodology.content_digest}{contract_key}"
             ),
             trace_id=trace_id,
             correlation_id=correlation_id,
@@ -4260,6 +4280,8 @@ class SourceImportApplication:
                 "mkaos_skill_id": mkaos_methodology.skill_id,
                 "mkaos_skill_version": mkaos_methodology.skill_version,
                 "mkaos_methodology_content_hash": (mkaos_methodology.content_digest),
+                **({"craft_output_contract": output_contract} if output_contract else {}),
+                **({"abstraction_schema_recovery": schema_recovery} if schema_recovery else {}),
             },
             input_assets=(
                 {
@@ -4279,7 +4301,7 @@ class SourceImportApplication:
                     "stable_key": (
                         f"{observation_version}:{abstraction_policy_version}:"
                         f"{capability}:{mkaos_methodology.skill_version}:"
-                        f"{mkaos_methodology.content_digest}"
+                        f"{mkaos_methodology.content_digest}{contract_key}"
                     ),
                     "source_path": "",
                     "target_asset_version_id": observation_version,
@@ -4325,6 +4347,16 @@ class SourceImportApplication:
             )
             payload = dict(operation_payload)
             observation_version = str(payload["observation_asset_version_id"])
+            from .craft_discovery import CRAFT_DISCOVERY_POLICY, LEGACY_CRAFT_OUTPUT_CONTRACT
+            output_contract = None
+            if payload["abstraction_policy_version"] == CRAFT_DISCOVERY_POLICY:
+                from .abstraction_recovery import freeze_craft_output
+
+                frozen_output = payload.get("craft_output_contract")
+                output_contract = freeze_craft_output(uow.cursor, worker.project_id, observation_version,
+                    frozen_output["version"] if frozen_output else LEGACY_CRAFT_OUTPUT_CONTRACT)
+                if frozen_output and frozen_output != output_contract:
+                    raise KernelError("SOURCE_CRAFT_OUTPUT_CONTRACT_DRIFT", "Use the exact admitted Craft output contract")
             uow.cursor.execute(
                 """
                 SELECT version.content
@@ -4416,6 +4448,7 @@ class SourceImportApplication:
             observation_asset_version_id=observation_version,
             observation=dict(observation_content["observation"]),
             evidence_spans=evidence_spans,
+            **({"output_contract": output_contract} if output_contract else {}),
         )
         if payload.get("source_sampling"):
             return finish_sample(self, worker, executed)

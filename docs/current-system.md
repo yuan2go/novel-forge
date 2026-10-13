@@ -1037,6 +1037,12 @@ quotation in `supports[].support_text` with UTF-8 locations; statements, Knowled
 and fiction must remain independent of source expression. Prior methods and prompts
 retain their exact digest and cannot be reinterpreted by the new version.
 
+New Craft extraction freezes `narrative-craft-output.v2`, its exact Observation and Schema
+hash. Historical requests retain their v1 input/cache contract. A known Provider v1 Schema
+rejection from an ordinary writing-method Observation can admit a verified v2 successor
+through Source's schema-recovery entry; the existing Observation and failed history remain.
+This recovery does not approve a KnowledgeCard or establish prose improvement.
+
 New Craft selections freeze `craft-need-driven-selection.v2`, separately from the
 unchanged density/frequency budget versions. Problem, scene demand and reader-effect
 matches use explicit semantic dimensions. Genre, POV, scene-type labels, identifiers
