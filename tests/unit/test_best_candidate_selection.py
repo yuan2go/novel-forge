@@ -75,6 +75,39 @@ def test_partial_scope_repair_with_unchanged_uncertainty_uses_the_same_preservat
     assert selected(replace(challenger, preservation_checks=tuple({**check, "status": "REGRESSED"}
         if index == 1 else check for index, check in enumerate(dimensions)))) == "old"
     assert selected(replace(challenger, blocker_codes=("NEW_CONTRADICTION",))) == "old"
+    assert selected(replace(challenger, resolution_checks=(challenger.resolution_checks[0],
+        {**challenger.resolution_checks[1], "evidence": {"quote": text[start:]}}))) == "old"
+
+
+def test_scope_preservation_distinguishes_adjacent_passages_and_deletion_points():
+    from novel_forge.modules.review.diagnostics import prose_hash, scope_proposal_preserved
+    from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+    text = "日期尚待核实。练习方法问清。后续安排待定。"
+    boundary = text.index("练习")
+    end = text.index("后续")
+    for kind in ("dimension", "issue"):
+        for change, evidence, expected in (
+            ((boundary, end), (0, boundary), True),
+            ((boundary, end), (end, len(text)), True),
+            ((boundary, end), (boundary, end), False),
+            ((boundary, boundary), (0, boundary), True),
+            ((boundary, boundary), (boundary, end), True),
+            ((boundary + 1, boundary + 1), (boundary, end), False),
+        ):
+            proposal = {"contract_version": "working-prose-scope-proposal.v1", "target_text_hash": prose_hash(text),
+                "issue_codes": ["repeat"], "changed_target_ranges": [{"start": change[0], "end": change[1]}]}
+            checks = [{"dimension": key, "status": "PRESERVED", "reason": "核对正文。",
+                "evidence": {"quote": text[boundary:end]}} for key in PRESERVATION_DIMENSIONS]
+            resolutions = [{"code": "repeat", "status": "PARTIALLY_RESOLVED", "preservation": "PRESERVED",
+                "reason": "部分改善。", "evidence": {"quote": text[boundary:end]}}]
+            location = {"start": evidence[0], "end": evidence[1], "quote": text[evidence[0]:evidence[1]]}
+            if kind == "dimension":
+                checks[0] = {**checks[0], "status": "UNCERTAIN", "evidence": location}
+            else:
+                resolutions.append({"code": "timeline", "status": "UNRESOLVED", "preservation": "UNCERTAIN",
+                    "reason": "日期疑问仍保留。", "evidence": location})
+            assert scope_proposal_preserved(proposal, text, target_text_hash=prose_hash(text),
+                report_type="ReReviewReport", resolution_checks=resolutions, preservation_checks=checks) is expected, (kind, change, evidence)
 
 
 def _candidate(identity: str, score: float, blockers: tuple[str, ...] = ()) -> CandidateEvidence:

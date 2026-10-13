@@ -1879,6 +1879,11 @@ An exact working-revision request may propose a wider local edit around a prose 
 anchor. The host verifies and materializes the source quotes, preserves every other byte,
 and records the actual scope as a proposal. It cannot become subsequent prose's basis
 before same-root, exact-text ReReview preservation evidence covers the expanded findings.
+Evidence and edits use half-open Unicode ranges: adjacent endpoints do not overlap;
+a deleted span's zero-width target point affects evidence only inside that passage.
+Both overall and per-issue preservation uncertainty may remain only outside the actual
+changed ranges. Uncertainty within a changed passage prevents automatic propagation,
+while the complete candidate and its unresolved findings remain readable.
 This does not authorize plan-owned investigations or changes to frozen commitments.
 
 Chapter 3.8.0 and Pack 2.12.0/template v9 retain their frozen `work-requirements.v1` inputs

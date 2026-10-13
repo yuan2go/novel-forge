@@ -157,17 +157,29 @@ def scope_proposal_preserved(proposal, text, *, target_text_hash, report_type, r
             or len(preservation_checks) != len(PRESERVATION_DIMENSIONS)
             or {check.get("dimension") for check in preservation_checks} != set(PRESERVATION_DIMENSIONS)):
         return False
+    def overlaps_changed(location):
+        return any(location["start"] < span["start"] < location["end"] if span["start"] == span["end"]
+            else max(location["start"], span["start"]) < min(location["end"], span["end"]) for span in ranges)
+
     for check in preservation_checks:
         try:
             location = validate_location(check.get("evidence") or {}, text)
         except KernelError:
             return False
-        overlaps = any(location["start"] <= span["end"] and location["end"] >= span["start"] for span in ranges)
         if (not str(check.get("reason") or "").strip() or check.get("status") not in {"PRESERVED", "UNCERTAIN"}
-                or check.get("status") == "UNCERTAIN" and overlaps):
+                or check.get("status") == "UNCERTAIN" and overlaps_changed(location)):
             return False
     preserved = set()
     for check in resolution_checks:
+        if check.get("preservation") == "REGRESSED":
+            return False
+        if check.get("preservation") == "UNCERTAIN":
+            try:
+                location = validate_location(check.get("evidence") or {}, text)
+            except KernelError:
+                return False
+            if not str(check.get("reason") or "").strip() or overlaps_changed(location):
+                return False
         if (check.get("preservation") != "PRESERVED" or not str(check.get("reason") or "").strip()
                 or check.get("status") not in {"SATISFIED", "PARTIALLY_RESOLVED", "UNRESOLVED"}):
             continue
