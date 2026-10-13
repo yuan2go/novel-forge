@@ -823,8 +823,9 @@ The successor retains previously admitted per-task Context capacity. A typed pre
 capacity-inheritance continuation may restore that exact allocation without increasing it.
 Opening, Chapter, Book coordination, delivery windows and budget lineage consume this same
 disposition; paid reservations
-remain conservative exposure. Two continuations bound one logical task. Exhaustion
-returns `GENERATION_RECOVERY_EXHAUSTED`; it does not impose a Book-wide membership quota.
+remain conservative exposure. Planning and Chapter retain historical continuation and
+failure counts as diagnostics; those counts do not stop a new owned pure generation.
+The optional read-only prose-review sidecar has its separate frozen recovery policy.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool
@@ -1563,7 +1564,7 @@ with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idemp
 and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
 The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
 `chapter.revision.apply` or `chapter.canon.extract` Operation at the current formal
-semantic version `3.9.0` with its exact node definition, or frozen published
+semantic version `3.10.0` with its exact node definition, or frozen published
 predecessors `3.8.0`/`3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`. Sampler definitions 2.4/2.5
 retain source semantic versions separately from their own execution versions;
 earlier sampler definitions keep their published frozen source contracts.
@@ -1576,15 +1577,16 @@ advance the source Chapter Saga. The worker root is the single registered Saga s
 Saga coordination follows terminal worker completion, so ordinary Chapter orchestration
 cannot admit production descendants from a sample.
 
-Install the separately approved `chapter_provider_sampling@2.4.0` binding through
+Install the separately approved `chapter_provider_sampling@2.6.0` binding through
 `install_chapter_validation_pack(..., provider_sampling=True)` in the existing Capability
 Pack authority workflow. It derives `<configured_chapter_pack_id>.provider_sampling`
 from the supplied Chapter pack and retains its Prompt, Skill, Schema and source isolation.
-New sampler definitions use version `2.2.0`; sample-target review/rereview use `2.3.0`.
+New sampler definitions use version `2.6.0`; sample-target review/rereview use `2.7.0`.
 Their source handler semantics bind the exact native source version separately from
 the sampler Operation version; frozen `2.0.0`/`2.1.0` keep their original codec and policy.
-Their derived Pack advances the supplied Pack major version (currently `2.12.0` to
-`3.12.0`) under its distinct sampler Pack ID. Published `1.0.0`/`1.1.0` and `2.0.0`/`2.1.0` definitions,
+Their derived Pack advances the supplied Pack major version under its distinct sampler
+Pack ID. Read the actual supplied manifest and compiled binding; the ordinary Creation
+recipe and generic Pack builder can select different versions. Published `1.0.0`/`1.1.0` and `2.0.0`/`2.1.0` definitions,
 original source `3.4.1`, and frozen Pack snapshots retain their original identities and
 hashes. Idempotent replay selects the persisted definition and successful receipts; it
 does not register a replacement definition or dispatch another call. Unknown definition
@@ -4288,12 +4290,13 @@ changes never reset the original logical generation recovery count. The author
 workspace exposes the immutable original failure separately from the current native
 successor status and original unknown accounting.
 
-The dispatch boundary also counts failed execution identities through native Planning
+The dispatch boundary also records failed execution identities through native Planning
 and Chapter successor journals. Cache rereads of the same execution count once; isolated
-failures remain counted if their original result arrives later. A successor inherits the
-lowest admitted retry allowance in that logical lineage, rather than obtaining a fresh
-allowance from another Provider, Attempt or process. This is a per-task fault bound,
-separate from membership accounting and the full-book chapter target.
+failures remain recorded if their original result arrives later. Planning and Chapter
+preserve the original allowance as diagnostic evidence, without using the cumulative
+count to stop pure generation. Cancellation, active writers, actual capacity and paid
+authorization retain their separate checks. The optional read-only prose-review sidecar
+still checks its own frozen root-successor allowance.
 
 Capacity continuation preflights retained inputs within the actual model context ceiling.
 A Pack successor may change its deployment version only after both persisted manifest hashes
@@ -4312,9 +4315,9 @@ paid budget, authentication and availability failures cannot borrow this path.
 
 An isolated successor whose Context preflight reuses a persisted document retains its exact
 provider projection hash, just as a newly assembled preflight does. Recovery does not rebuild
-or reinterpret the old request. A Chapter fault allowance exhausted across successors records
-the native Book pause with `GENERATION_RECOVERY_EXHAUSTED` and returns the saved checkpoint.
-Repeated continuation preserves that stop and cannot issue another model call. Historical
+or reinterpret the old request. A historical Chapter fault-exhaustion pause remains
+visible in the saved checkpoint. Ordinary continuation may resume its verified runnable
+pure-generation successor; an explicit author pause still requires its own resume action. Historical
 pre-prose timeout recovery ignores isolated execution/accounting rows while retaining live
 lease, scope and cancellation checks.
 
