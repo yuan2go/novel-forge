@@ -275,7 +275,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
 
 def continue_creation(*, composition: Any, content: Any, chapter: Any, formation_run_id: str,
                       formation_worker: Any, book_worker: Any, maximum_ticks: int,
-                      deadline: float, creation_policy: dict[str, Any] | None = None, execution_probe: Callable[[], object] = lambda: None) -> dict[str, Any]:
+                      deadline: float, creation_policy: dict[str, Any] | None = None, execution_probe: Callable[[], object] = lambda: None,
+                      creation_job_id: str = "") -> dict[str, Any]:
     from novel_forge.workers.book_authority import execute_story_formation_claim, execute_book_opening_claim
     from .creation_inputs import prepare_creation_inputs
     from .opening import OpenBookProductionRequest, _OPENING_INPUT_ROLES
@@ -295,7 +296,8 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
     if profiles is None:
         raise KernelError("CREATION_PROFILES_REQUIRED", "Historical Formation requires its original creation policy")
     if run["lifecycle"] == "FAILED":
-        reason = _formation_resume_blocker(composition, run, policy)
+        capacity_registered = _recover_formation_capacity(composition, run, policy, execution_probe=execution_probe)
+        reason = _formation_resume_blocker(composition, run, policy, capacity_registered=capacity_registered, creation_job_id=creation_job_id)
         if reason:
             return {"formation_run_id": formation_run_id, "stop_reason": reason, "checkpoint": run}
         formation.resume(formation_run_id, expected_version=run["version"], principal=composition.principal)
@@ -327,7 +329,12 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             checkpoint = formation.require(formation_run_id)
             if checkpoint["lifecycle"] != "FAILED":
                 raise
-            blocked = _formation_resume_blocker(composition, checkpoint, policy)
+            capacity_registered = _recover_formation_capacity(composition, checkpoint, policy, execution_probe=execution_probe)
+            blocked = _formation_resume_blocker(composition, checkpoint, policy, capacity_registered=capacity_registered, creation_job_id=creation_job_id)
+            if capacity_registered and not blocked:
+                formation.resume(formation_run_id, expected_version=checkpoint["version"], principal=composition.principal)
+                return {"formation_run_id": formation_run_id, "stop_reason": "YIELDED_CHECKPOINT",
+                        "recovery_action": "CONTINUE_REGISTERED_NATIVE_CAPACITY_SUCCESSOR"}
             failure_code = str(getattr(error, "code", type(error).__name__))
             return {"formation_run_id": formation_run_id,
                     "stop_reason": blocked or ("FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION" if failure_code.startswith("MODEL_EFFECT_FINAL_") else "FORMATION_FAILED"),
@@ -500,7 +507,58 @@ def reconcile_creation_cancellation(composition: Any, formation_run_id: str) -> 
     return True
 
 
-def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dict[str, Any]) -> str:
+def _recover_formation_capacity(composition: Any, run: dict[str, Any], policy: dict[str, Any], *, execution_probe: Callable[[], object]) -> bool:
+    from novel_forge.modules.authority_security import PrincipalType
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+
+    authorization = policy.get("auto_authorization") or {}
+    stage = run["current_stage"]
+    generator = next((name for name, role in FOUNDATION_GENERATORS.items() if role.value == stage), None)
+    if (run["lifecycle"] != "FAILED" or generator is None or stage == "CREATIVE_FOUNDATION"
+            or run.get("failure", {}).get("code") not in {
+                "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PLANNING_RUNTIME_CONTINUATION_OWNER_REQUIRED"}
+            or composition.principal.principal_type is not PrincipalType.LOCAL_OPERATOR
+            or policy.get("approval_mode") != "AUTO"
+            or any(authorization.get(key) != value for key, value in {
+                "formation_run_id": run["formation_run_id"], "project_id": run["project_id"],
+                "book_id": run["book_id"], "authorized_by_principal_id": composition.principal.principal_id}.items())
+            or run.get("recovery_instruction", {}).get("action") != "RESUME_WITH_SAME_FROZEN_INPUTS"):
+        return False
+    with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+        uow.cursor.execute("""SELECT operation.operation_id,operation.version
+            FROM authority_story_planning_generation generation JOIN authority_operation operation USING(operation_id)
+            JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
+                ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+            WHERE generation.project_id=%s AND generation.book_id=%s AND generation.generator_operation_name=%s
+              AND generation.logical_key=%s AND generation.candidate_asset_version_id IS NULL
+              AND operation.operation_id=(SELECT latest.operation_id FROM authority_story_planning_generation latest
+                JOIN authority_operation latest_owner ON latest_owner.operation_id=latest.operation_id
+                WHERE latest.project_id=generation.project_id AND latest.book_id=generation.book_id
+                  AND latest.generator_operation_name=generation.generator_operation_name AND latest.logical_key=generation.logical_key
+                ORDER BY latest_owner.created_at DESC,latest_owner.operation_id DESC LIMIT 1)
+              AND operation.status IN ('FAILED_FINAL','DEAD_LETTER')
+              AND attempt.result->>'error_code'='PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt owner USING(attempt_id)
+                WHERE owner.operation_id=operation.operation_id AND lease.status='HELD' AND lease.expires_at>NOW())
+            ORDER BY operation.created_at DESC LIMIT 1""",
+            [run["project_id"], run["book_id"], generator, f"{run['formation_run_id']}:{stage}:0"])
+        source = uow.cursor.fetchone()
+    if source is None:
+        return False
+    execution_probe()
+    if creation_cancellation(composition.authority.database_url, run["formation_run_id"]):
+        return False
+    composition.planning.register_runtime_continuation(source[0], project_id=run["project_id"],
+        principal=composition.principal, expected_source_version=source[1],
+        decision_evidence={"authorization_ref": authorization["authorization_ref"],
+            "reason": "Creator authorizes capacity correction of the exact unsent current Foundation stage; preserve frozen inputs"},
+        trace_id="trace:formation-capacity:" + source[0], correlation_id=run["formation_run_id"])
+    return True
+
+
+def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dict[str, Any], *, capacity_registered: bool = False,
+                              creation_job_id: str = "") -> str:
     from novel_forge.modules.production_execution.execution_template import selected_book_template
 
     authorization = policy.get("auto_authorization") or {}
@@ -511,7 +569,7 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
             or run.get("recovery_instruction", {}).get("action") != "RESUME_WITH_SAME_FROZEN_INPUTS"):
         return "FORMATION_OWNER_RECOVERY_REQUIRED"
     failure_code = str(run.get("failure", {}).get("code") or "")
-    if not failure_code.startswith(("MODEL_EFFECT_RETRYABLE_", "MODEL_EFFECT_FINAL_")) and failure_code not in {
+    if not capacity_registered and not failure_code.startswith(("MODEL_EFFECT_RETRYABLE_", "MODEL_EFFECT_FINAL_")) and failure_code not in {
         "RuntimeError", "EFFECT_REQUEST_TIMEOUT_BEFORE_SEND", "EFFECT_REQUEST_FAILED_RETRYABLE",
         "EFFECT_BUDGET_EXECUTION_ASSERTION_FAILED", "RESOURCE_ROUTE_RESELECT_REQUIRED"}:
         return "FORMATION_OWNER_RECOVERY_REQUIRED"
@@ -530,8 +588,9 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
             OR EXISTS(SELECT 1 FROM authority_runtime_job_lease lease
                 JOIN authority_runtime_job job USING(runtime_job_id)
                 WHERE job.subject_kind='STORY_FORMATION_RUN' AND job.subject_id=%s
+                  AND job.runtime_job_id<>%s
                   AND lease.status='HELD' AND lease.lease_expires_at>NOW())""",
-            [run["project_id"], run["book_id"], run["formation_run_id"]])
+            [run["project_id"], run["book_id"], run["formation_run_id"], creation_job_id])
         if uow.cursor.fetchone()[0]:
             return "FORMATION_RECONCILIATION_OR_LEASE_REQUIRED"
     return ""
@@ -723,7 +782,8 @@ def execute_creation_claim(jobs: RuntimeJobAuthority, claim: Any, *, composition
             try:
                 result = continue_creation(composition=composition, content=content, chapter=chapter,
                     formation_run_id=claim.subject_id, formation_worker=formation_worker, book_worker=book_worker,
-                    maximum_ticks=maximum_ticks, deadline=monotonic() + work_window_seconds, execution_probe=lambda: jobs.assert_live(claim))
+                    maximum_ticks=maximum_ticks, deadline=monotonic() + work_window_seconds, execution_probe=lambda: jobs.assert_live(claim),
+                    creation_job_id=claim.runtime_job_id)
             except KernelError as error:
                 if error.code not in {"PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "PLANNING_REPAIR_BOUND_EXCEEDED"}:
                     raise

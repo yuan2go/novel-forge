@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, memo_timeout_prefix_recovery=False, scene_core_recovery=False, scene_information_recovery=False, review_knowledge_recovery=False, length_scope_recovery=False, foundation_uncertainty_recovery=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, memo_timeout_prefix_recovery=False, scene_core_recovery=False, scene_information_recovery=False, review_knowledge_recovery=False, length_scope_recovery=False, foundation_uncertainty_recovery=False, completed_release_recovery=False,
 ):
     if memo_timeout_prefix_recovery:
         memo_timeout_recovery = True
@@ -1171,6 +1171,100 @@ def test_native_formation_generates_foundation_from_author_brief(
             worker = replace(principal, principal_type=PrincipalType.WORKER,
                 principal_id="creation-book" if stage_repair_recovery else principal.principal_id,
                 permissions=principal.permissions - {"book.authority.approve_replan"})
+            if completed_release_recovery:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+                from novel_forge.modules.story_planning_runtime.gateway_result_recovery import recover, RETRYABLE_RELEASE_VERSION
+                planning = composition.planning
+                execute = planning.execution_binder.execute
+                retained = {}
+                def fail_completed_assembly(**values):
+                    candidate = execute(**values)
+                    if values["command"].generator_operation_name == "book_plan.generate" and not retained:
+                        retained["operation_id"] = values["operation_id"]
+                        raise KernelError("CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT", "runtime contract differs from Pack execution snapshot: release_sha")
+                    return candidate
+                monkeypatch.setattr(planning.execution_binder, "execute", fail_completed_assembly)
+                continue_creation(composition=composition, content=content, chapter=chapter,
+                    formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                    book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+                assert retained
+                source_id = retained["operation_id"]
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT status,command_payload->'payload' FROM authority_operation WHERE operation_id=%s", [source_id])
+                    status, payload = uow.cursor.fetchone()
+                    assert status == "FAILED_RETRYABLE"
+                    uow.cursor.execute("SELECT to_jsonb(attempt) FROM authority_attempt attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [source_id])
+                    failed = uow.cursor.fetchone()[0]
+                command = _command_from_payload(payload)
+                before = len(transport.calls), len(transport.chapter.calls)
+                with pytest.raises(KernelError, match="PLANNING_GATEWAY_RESULT_RELEASE_DRIFT_INVALID"):
+                    recover(planning, command=command, operation_id=source_id, principal=principal)
+                planning.commit_sha = "e" * 40 if planning.commit_sha != "e" * 40 else "f" * 40
+                monkeypatch.setattr(planning.execution_binder, "execute", execute)
+                if completed_release_recovery == "cancel-race":
+                    from concurrent.futures import ThreadPoolExecutor
+                    from threading import Event
+                    from novel_forge.storage.story_formation_repositories import StoryFormationRepository
+                    cancelling, commit_cancel = Event(), Event()
+                    cancel = StoryFormationRepository.cancel_continuation
+                    def retained_cancel(repository, *args, **kwargs):
+                        result = cancel(repository, *args, **kwargs)
+                        retained["cancel_pid"] = repository.cursor.connection.info.backend_pid
+                        cancelling.set()
+                        assert commit_cancel.wait(10)
+                        return result
+                    monkeypatch.setattr(StoryFormationRepository, "cancel_continuation", retained_cancel)
+                    with ThreadPoolExecutor(max_workers=2) as pool:
+                        cancelled = pool.submit(formation.cancel_continuation, admitted.formation_run_id,
+                            principal=principal, reason="Native cancellation wins the result-recovery race", idempotency_key="cancel-release-recovery")
+                        assert cancelling.wait(10)
+                        recovered = pool.submit(recover, planning, command=command, operation_id=source_id, principal=principal)
+                        blocked = False
+                        try:
+                            for _ in range(100):
+                                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                                    uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND %s=ANY(pg_blocking_pids(pid)))", [retained["cancel_pid"]])
+                                    blocked = uow.cursor.fetchone()[0]
+                                if blocked:
+                                    break
+                                time.sleep(.02)
+                        finally:
+                            commit_cancel.set()
+                        assert blocked
+                        cancelled.result(10)
+                        with pytest.raises(KernelError, match="PLANNING_GATEWAY_RESULT_SUCCESSION_CONFLICT"):
+                            recovered.result(10)
+                    assert (len(transport.calls), len(transport.chapter.calls)) == before
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT candidate_asset_version_id FROM authority_story_planning_generation WHERE operation_id=%s", [source_id])
+                        assert uow.cursor.fetchone()[0] is None
+                    return
+                if completed_release_recovery == "scan":
+                    from novel_forge.modules.story_planning_runtime.gateway_result_recovery import recover_completed_planning_outputs
+                    assert recover_completed_planning_outputs(planning, project_id=harness.project_id, book_id=command.book_id, principal=principal)
+                    assert (len(transport.calls), len(transport.chapter.calls)) == before
+                resumed = planning.generate(command, principal=principal)
+                assert resumed.candidate_asset_version_id
+                after = len(transport.calls), len(transport.chapter.calls)
+                repeated = planning.generate(command, principal=principal)
+                assert repeated.candidate_asset_version_id == resumed.candidate_asset_version_id
+                assert (len(transport.calls), len(transport.chapter.calls)) == after
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [source_id])
+                    assert uow.cursor.fetchone()[0] == "FAILED_RETRYABLE"
+                    uow.cursor.execute("SELECT to_jsonb(attempt) FROM authority_attempt attempt WHERE attempt_id=%s", [failed["attempt_id"]])
+                    assert uow.cursor.fetchone()[0] == failed
+                    uow.cursor.execute("SELECT evidence,recovery.status FROM authority_planning_result_admission admission JOIN authority_operation recovery ON recovery.operation_id=admission.recovery_operation_id WHERE source_operation_id=%s", [source_id])
+                    proof, recovery_status = uow.cursor.fetchone()
+                    assert recovery_status == "SUCCEEDED" and proof["provider_invoked"] is False
+                    assert proof["contract_version"] == RETRYABLE_RELEASE_VERSION
+                    assert proof["retryable_release_recovery"]["source_attempt_id"] == failed["attempt_id"]
+                    uow.cursor.execute("SELECT count(*) FROM authority_attempt WHERE operation_id=%s", [source_id])
+                    assert uow.cursor.fetchone()[0] == 1
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s", [source_id])
+                    assert uow.cursor.fetchone()[0] == 1
+                return
             if route_continuation or input_order_continuation:
                 from novel_forge.modules.command_kernel.errors import KernelError
                 with pytest.raises(KernelError, match="NATIVE_PLANNING_REPAIR_SOURCE_INVALID" if input_order_continuation else "PROVIDER_ROUTING_BLOCKED"):
@@ -2273,6 +2367,12 @@ def test_native_settled_optional_world_failure_continues_without_repeating_calls
 def test_native_rejected_null_schema_result_revalidates_without_resend_then_accepts(tmp_path, monkeypatch):
     test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
         False, False, False, False, False, False, 1, creative_validation=True, world_disabled=True, gateway_null_recovery=True)
+
+
+@pytest.mark.parametrize("entry", ["generate", "scan", "cancel-race"])
+def test_native_completed_planning_release_recovery_preserves_retryable_history(tmp_path, monkeypatch, entry):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        False, False, False, False, False, False, 1, creative_validation=True, world_disabled=True, completed_release_recovery=entry)
 
 
 def test_native_world_repairs_do_not_exhaust_rejected_chapter_plan_stage(tmp_path,monkeypatch):

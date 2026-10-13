@@ -5939,6 +5939,9 @@ class PostgresPlanningExecutionPreparer:
             )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
+            **({"foundation_input_projection_version": production_profile["foundation_input_projection_version"]}
+                if command.generator_operation_name in FOUNDATION_GENERATORS
+                and production_profile.get("foundation_input_projection_version") is not None else {}),
             **({"generated_title_contract": "generated-book-title.v1"}
                 if command.generator_operation_name == "creative.candidates.generate"
                 and production_profile.get("title_generation_contract") == "generated-book-title.v1" else {}),

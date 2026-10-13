@@ -14,6 +14,7 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.authority_security import (
     Principal,
+    PrincipalType,
     require_worker_scoped_auto_decision,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -1838,6 +1839,10 @@ class StoryPlanningGenerationApplication:
             if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"
                     and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})):
+                if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
+                    raise KernelError("PLANNING_RUNTIME_CONTINUATION_OWNER_REQUIRED",
+                        "The native Creator operator must register recovery before a Formation worker follows it",
+                        details={"source_operation_id": str(row[0]), "source_failure_code": failure[0]})
                 if row[2] == 'FAILED_RETRYABLE':
                     with AuthorityUnitOfWork(self.database_url) as uow:
                         uow.cursor.execute('SELECT snapshot_payload->>\'release_sha\' FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1', [row[0]])
@@ -1856,7 +1861,7 @@ class StoryPlanningGenerationApplication:
                         raise
                 else:
                     return follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
-            if row[2] in {"FAILED_FINAL", "DEAD_LETTER"}:
+            if row[2] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"}:
                 from .gateway_result_recovery import recover
                 revalidated = recover(self, command=command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe)
                 if revalidated is not None:
@@ -1870,7 +1875,7 @@ class StoryPlanningGenerationApplication:
             stage_successor = follow_rejected(self, command=command, operation_id=str(row[0]), candidate_asset_version_id=str(row[4]), principal=principal, execution_probe=execution_probe)
             if stage_successor is not None:
                 return stage_successor
-        if row[2] in {"FAILED_FINAL", "DEAD_LETTER"} and row[4]:
+        if row[2] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and row[4]:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_planning_result_admission r JOIN authority_operation o ON o.operation_id=r.recovery_operation_id WHERE r.source_operation_id=%s AND r.candidate_asset_version_id=%s AND o.status='SUCCEEDED')", [row[0], row[4]])
                 recovered = uow.cursor.fetchone()[0]

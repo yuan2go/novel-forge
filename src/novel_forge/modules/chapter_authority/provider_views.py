@@ -2247,6 +2247,13 @@ def _build_planning_context_view(
     if capacity_policy is not None and capacity_policy != _PLANNING_TASK_CAPACITY_POLICY:
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning capacity requires a supported frozen policy version")
     task_capacity = capacity_policy == _PLANNING_TASK_CAPACITY_POLICY
+    foundation_projection = context_bundle.get("foundation_input_projection_version")
+    if foundation_projection not in (None, "foundation-stage-input.v1"):
+        raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Unsupported frozen Foundation input projection")
+    if foundation_projection is not None:
+        from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+        if stage not in FOUNDATION_GENERATORS:
+            raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Foundation projection cannot change Planning inputs")
     typed_arc_sources = context_bundle.get("planning_contract_version") == "1.21.0"
     typed_volume_sources = context_bundle.get("typed_volume_projection_version") == "typed-volume-context-projection.v1"
     planning_window = None
@@ -2325,6 +2332,7 @@ def _build_planning_context_view(
             typed_arc_sources=typed_arc_sources,
             typed_volume_sources=typed_volume_sources,
             planning_window=planning_window,
+            foundation_projection=foundation_projection == "foundation-stage-input.v1",
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -2962,6 +2970,7 @@ def _project_planning_content(
     typed_arc_sources: bool = False,
     typed_volume_sources: bool = False,
     planning_window: list[int] | None = None,
+    foundation_projection: bool = False,
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
@@ -2979,6 +2988,30 @@ def _project_planning_content(
     if stage in FOUNDATION_GENERATORS:
         if not isinstance(payload, Mapping):
             raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Foundation context must be structured")
+        if foundation_projection:
+            projected = deepcopy(dict(payload))
+            omitted = 0
+            prefix = "/candidate_payload" if "candidate_payload" in content else ""
+            def omit(parent: dict[str, Any], key: str, path: str, reason: str) -> None:
+                nonlocal omitted
+                if key not in parent:
+                    return
+                value = parent.pop(key)
+                record = _loss_record(source or {}, path=prefix + path, value=value, reason=reason)
+                omitted += record["removed_item_count"]
+                if loss_records is not None:
+                    loss_records.append(record)
+            for key in ("constraint_envelope", "foundation_parent_bindings", "execution_evidence"):
+                omit(projected, key, "/" + key, "HOST_PROTOCOL_RETAINED_IN_FROZEN_SOURCE")
+            if role == "creative_foundation":
+                search = projected.get("narrative_search_projection")
+                if isinstance(search, dict):
+                    for key in ("selection_summary", "strategy_fingerprint", "repetition_keys"):
+                        omit(search, key, "/narrative_search_projection/" + key, "COMPARISON_METADATA_NOT_STORY_INPUT")
+                style = projected.get("style_profile")
+                if isinstance(style, dict):
+                    omit(style, "original_examples", "/style_profile/original_examples", "PROSE_EXAMPLE_OUTSIDE_FOUNDATION_DESIGN")
+            return _compact(projected), omitted, 0
         return _compact({key: value for key, value in payload.items() if key not in {"constraint_envelope", "foundation_parent_bindings", "execution_evidence"}}), 0, 0
     if role == "creative_foundation" and isinstance(payload, Mapping) and "narrative_intent" in payload:
         from novel_forge.modules.story_design_authority.intent import NarrativeIntent

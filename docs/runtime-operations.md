@@ -3577,6 +3577,7 @@ The additional recovery procedures use exact native sources:
 | Optional World | The frozen v3–v6 template must explicitly permit `OPTIONAL` or `DISABLED`. Settled deferral retains the blocked action and records `DEFER` / `NOT_RUN`; strict/REQUIRED, accepted preparation commitments and independent actor experiments remain required. Malformed or causal rejection is not automatic deferral. |
 | Provider nullable enum rejection | Replay the exact failed Planning task. A successor requires native `PROVIDER_SCHEMA_REJECTED` evidence and a hash-verified `codex-nullable-shared-types.v2` to v3 projection correction. The canonical Schema, inputs and task stay fixed; completed World generation/evaluation/action assets are reused after receipt and current-source checks. Original missing usage remains unmeasured. A v3 failure has no unchanged-codec successor; persisted dispatch lineage enforces the shared retry bound. |
 | Complete Planning result after host failure | Reuse the original verified complete normalized output through native gateway result admission, with exact request/result/process hashes, original Pack and input identities, and settled reservation evidence. Measurement may remain unknown; it is not a content-validity predicate. Isolated or already superseded operations have no renewed submission or activation right. Ordinary Story Design validation and bounded repair still apply. |
+| Complete Planning result after release-only retryable assembly failure | Ordinary generation replay or native recovery scanning uses `planning-gateway-result-revalidation.v2` only for the exact latest `CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT` result naming `release_sha` alone, with a different target release, unchanged frozen Planning 1.21 inputs and one verified complete pure-model Effect. Migration 0205 and the recovery owner lock Formation, source Operation and generation before checking cancellation, versions, Attempt/result identity, lease and successor conflicts. The new recovery Operation owns candidate materialization; the original retryable Operation, Attempt, receipt and usage history remain unchanged. No new Provider call occurs. A mixed drift, cancellation, isolation, incomplete or UNKNOWN result does not qualify. |
 | Interrupted Planning World stages | Follow only the native same-task continuation ancestry. Reuse each completed generation/evaluation/actor stage from its actual owning Operation and verified result; require current World source and unchanged request/knowledge identity. Execute only missing stages. A completed action is read by its retained formal lineage, without writing a false new-operation alias. |
 | Changed Chapter planning directive with a completed World action | Explicitly freeze that current `world-production-action.v1` or `world-production-action.v2` through the existing governance-action input. Require one same-workspace, Book and actor proposal, exact current frontier and planning-source refs, both original succeeded Provider outputs with settled usage, and an identical recompiled World plan. Reuse the action in the new constraint envelope and execute only Chapter planning. A changed frontier, missing receipt, rejected action or changed Director result fails closed; selection never accepts World facts. |
 | Chapter Arc composition | Newly computed `frozen-chapter-arc-working-set-v2` projections retain exactly the required contributions and non-dormant cadence of the frozen Chapter matrix row. Portfolio debt and density ranking remain diagnostics; they cannot fill unused capacity with another Arc or override that row. An illegal, contradictory or over-capacity row fails closed for Planning/Plan Change. Provider Schema and validation then require the selected IDs and roles in Chapter scheduling and complete Scene coverage. Previously frozen `accepted-reality-arc-working-set-v1` inputs retain their original selection and validation; group-window selection without a frozen Chapter row remains v1. A changed projection creates a new input digest and native planning command; it never rewrites rejected candidates or resets their repair history. |
@@ -4266,11 +4267,11 @@ linked successor registration and native scheduling intent commit together. Plan
 retains its continuation command and registered outbox event; Chapter retains the
 admitted Operation/outbox and current Saga step reference. A failed
 registration rolls back isolation; an exhausted task records its immutable isolation
-and explicit stop checkpoint. Chapter Context dispatch and successor admission use the
-same persisted dispatch lineage as other generation nodes. The frozen retry policy is
-`CONFIGURABLE_POLICY`; retained recovery ordinal fields are diagnostics, not a second
-allowance. Restart, route changes and
-replay cannot reset that fault allowance.
+and explicit historical stop checkpoint. Current pure-generation recovery reads complete
+results first and applies actual failure, identity, cancellation and execution guards;
+cumulative recovery ordinals do not block the Book. Chapter Context dispatch and successor
+admission retain the same persisted dispatch lineage as other generation nodes. Old frozen
+retry policies remain compatibility observations and do not restore a lifetime allowance.
 
 Historical Planning Pack builds retain their published Skill text, version and source
 reference through checked artifact snapshots; mutable current Skills cannot change a
@@ -4284,16 +4285,15 @@ retained output is reused first, including output with missing measured usage.
 `PROVIDER_MODEL_CAPACITY_UNAVAILABLE` preserves the actual capacity rejection and
 places only that Provider/model in the existing routing cooldown. Authorized alternate
 routes still undergo task, context, output-contract and resource admission; model
-changes never reset the original logical generation recovery count. The author
+changes retain the original logical generation recovery observations. The author
 workspace exposes the immutable original failure separately from the current native
 successor status and original unknown accounting.
 
-The dispatch boundary also counts failed execution identities through native Planning
-and Chapter successor journals. Cache rereads of the same execution count once; isolated
-failures remain counted if their original result arrives later. A successor inherits the
-lowest admitted retry allowance in that logical lineage, rather than obtaining a fresh
-allowance from another Provider, Attempt or process. This is a per-task fault bound,
-separate from membership accounting and the full-book chapter target.
+The dispatch journal retains failed execution identities through native Planning and Chapter
+successors. Cache rereads retain one execution identity; an isolated failure stays historical
+if a result arrives later. Current pure generation does not turn this cumulative observation
+into a dispatch allowance or Book ban. Actual identical failed results and unresolved external
+outcomes still require their owning diagnosis and controlled recovery.
 
 Capacity continuation preflights retained inputs within the actual model context ceiling.
 A Pack successor may change its deployment version only after both persisted manifest hashes
@@ -4312,9 +4312,10 @@ paid budget, authentication and availability failures cannot borrow this path.
 
 An isolated successor whose Context preflight reuses a persisted document retains its exact
 provider projection hash, just as a newly assembled preflight does. Recovery does not rebuild
-or reinterpret the old request. A Chapter fault allowance exhausted across successors records
-the native Book pause with `GENERATION_RECOVERY_EXHAUSTED` and returns the saved checkpoint.
-Repeated continuation preserves that stop and cannot issue another model call. Historical
+or reinterpret the old request. Historical `GENERATION_RECOVERY_EXHAUSTED` checkpoints retain
+their failures; current pure-generation continuation does not enforce that cumulative ban.
+Cancellation, live leases, incomplete results and actual unsettled effects still govern
+the next action. Historical
 pre-prose timeout recovery ignores isolated execution/accounting rows while retaining live
 lease, scope and cancellation checks.
 
@@ -4328,6 +4329,23 @@ Provider switching never changes the logical fault allowance or paid budget.
 Pure Chapter Context/Memo nodes can contain several model effects. Native recovery isolates each uncertain effect after writer, permission and cancellation checks, retains completed sibling receipts, and registers one existing Saga successor. The successor reads a completed sibling only when stage, full model input, original command, typed input versions, actor and execution contract match. Reading a sibling does not restore the retired operation's submission rights or create a new model invocation. Concurrent repeats of the same isolation decision may differ in the CAS observation version; every semantic field still matches the durable command.
 
 New Planning Contexts freeze `planning-exact-value-reference.v1` for lossless repeated-value rendering. References are backward RFC6901 paths inside the same Context. The compiler expands and compares the full projected source before dispatch, records both hashes and the reference count, and measures the resulting actual prompt against the existing capacity. Frozen older requests remain unchanged. A terminal unsent Chapter Planning capacity failure can receive this native context continuation with unchanged inputs, bounded lineage and no old Effect or reservation.
+
+Default Creation also freezes `foundation-stage-input.v1` from its production profile into
+Foundation Contexts. Read back the complete Provider view and omission audit, including
+source AssetVersion/hash/path, before attributing a capacity or behavior change to it.
+Do not add this marker to an old frozen request. The Creator's original scoped operator
+authorization can register the existing capacity successor for the latest current Foundation
+role; workers follow the registered successor. A newer non-capacity failure requires its own
+recovery. Each context allocation must increase within the real model ceiling; cumulative
+continuation depth alone is not a stop. The coordination wake check excludes only the executing
+Creation job's own lease and retains other jobs, uncertain calls and cancellation.
+Focused regressions are `test_qualified_planning_projection.py`,
+`test_creation_coordination.py`, `test_planning_gateway_recovery.py`, the
+`capacity-foundation` / `capacity-foundation-new-cause` modes in
+`test_creation_cli_postgres.py`, and the generate/scan/cancel-race cases in
+`test_synthesis_formation_postgres.py`. Migration 0205 needs both fresh-install and
+previous-head upgrade checks plus backup/restore verification before deployment. These are
+execution and input-binding evidence; first-draft literary improvement still requires native prose.
 
 Author Editor `save` accepts `input_origin=ASSISTANT_REVISION_PROPOSAL` only with `rights_basis=AUTHORIZED_INPUT` and explicit revision provenance. It saves a candidate and Unicode differences, preserves the original draft, and records neither human author selection nor Book acceptance. Default human input keeps its existing provenance. A saved proposal remains subject to the existing semantic and adoption checks.
 

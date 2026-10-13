@@ -216,6 +216,8 @@ def replace_args(args, **changes):
         "ordinary-continue",
         "repair-exhausted",
         "capacity-recovery",
+        "capacity-foundation",
+        "capacity-foundation-new-cause",
         "capacity-repair",
         "capacity-retained-repair-cause",
         "world-result-repair",
@@ -251,10 +253,12 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
         def capacity_failure(preparer, **values):
             command = values["command"]
+            if mode == "capacity-foundation-new-cause" and command.generator_operation_name == "character.cast.generate" and command.runtime_continuation_id and not values.get("preflight_only"):
+                raise KernelError("PLANNING_CONTEXT_BINDING_FAILED", "A different current successor failure requires correction")
             if (
-                command.generator_operation_name == "chapter_group_plan.generate"
+                command.generator_operation_name == ("character.cast.generate" if mode.startswith("capacity-foundation") else "chapter_group_plan.generate")
                 and not command.runtime_continuation_id
-                and (mode == "capacity-recovery" or command.repair_of_candidate_id)
+                and (mode in {"capacity-recovery", "capacity-foundation", "capacity-foundation-new-cause"} or command.repair_of_candidate_id)
             ):
                 raise KernelError(
                     "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
@@ -776,6 +780,25 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             return {"stop_reason": "YIELDED_CHECKPOINT", "error_code": error.code}
 
     result = execute_window(claim())
+    if mode == "capacity-foundation-new-cause":
+        assert result["stop_reason"] == "YIELDED_CHECKPOINT"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE project_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status='READY'", [project])
+            uow.commit()
+        result = execute_window(claim())
+        assert result["stop_reason"] == "FORMATION_OWNER_RECOVERY_REQUIRED"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT count(*) FROM authority_story_planning_runtime_continuation WHERE project_id=%s", [project])
+            assert uow.cursor.fetchone()[0] == 1
+            uow.cursor.execute("""SELECT latest.result->>'error_code',
+                (SELECT count(*) FROM authority_external_effect WHERE operation_id=operation.operation_id)
+                FROM authority_operation operation JOIN authority_story_planning_generation generation USING(operation_id)
+                JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
+                    ORDER BY attempt_number DESC LIMIT 1) latest ON TRUE
+                WHERE generation.project_id=%s AND generation.generator_operation_name='character.cast.generate'
+                ORDER BY operation.created_at DESC LIMIT 1""", [project])
+            assert uow.cursor.fetchone() == ("PLANNING_CONTEXT_BINDING_FAILED", 0)
+        return
     if mode == "complete":
         assert result["stop_reason"] == "YIELDED_CHECKPOINT"
         assert lost

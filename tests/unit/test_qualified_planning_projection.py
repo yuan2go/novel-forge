@@ -65,6 +65,49 @@ def test_volume_retains_theme_choices_while_book_defers_them():
     assert theme["choice_tests"] == ["Illustrative local choice"]
 
 
+def test_versioned_foundation_projection_preserves_story_scope_and_audits_protocol_omissions():
+    context = _context()
+    context["planning_scope"] = "NOT_APPLICABLE"
+    creative = next(s for s in context["input_versions"] if s["role"] == "creative_foundation")
+    creative["content"]["narrative_search_projection"] = {
+        "selection_summary": "host comparison", "strategy_fingerprint": "host branch",
+        "repetition_keys": ["host classification"],
+        "assumptions": ["A person may misinterpret another person's motive"],
+        "projected_consequences": ["The choice changes a relationship"],
+    }
+    original = deepcopy(context)
+    legacy, _ = compile_planning_provider_context("character.cast.generate", context)
+    legacy_creative = next(s["content"] for s in legacy["segments"] if s["role"] == "creative_foundation")
+    assert legacy_creative["narrative_search_projection"] == creative["content"]["narrative_search_projection"]
+    assert legacy_creative["style_profile"]["original_examples"] == ["Illustrative prose"]
+    context["foundation_input_projection_version"] = "foundation-stage-input.v1"
+    view, audit = compile_planning_provider_context("character.cast.generate", context)
+    projected = next(s["content"] for s in view["segments"] if s["role"] == "creative_foundation")
+    assert projected["narrative_search_projection"] == {
+        "assumptions": creative["content"]["narrative_search_projection"]["assumptions"],
+        "projected_consequences": creative["content"]["narrative_search_projection"]["projected_consequences"],
+    }
+    assert projected["constraints"] == creative["content"]["constraints"]
+    assert projected["prohibited_outcomes"] == creative["content"]["prohibited_outcomes"]
+    character = next(s["content"] for s in view["segments"] if s["role"] == "character_cast")
+    assert character["characters"][0]["private_history"] == "unknown rival motive"
+    losses = audit["loss_records"]
+    assert len(losses) == 4
+    assert all(audit["loss_sources"][loss["source_index"]]["source_content_hash"] == creative["content_hash"] for loss in losses)
+    assert context["input_versions"] == original["input_versions"]
+    assert view["selection_explanation"]["loss_receipt"]["audit_hash"] == _projection_hash(audit)
+
+
+def test_foundation_projection_requires_its_frozen_supported_stage_contract():
+    context = _context()
+    context["foundation_input_projection_version"] = "unknown"
+    with pytest.raises(KernelError, match="Unsupported frozen Foundation"):
+        compile_planning_provider_context("character.cast.generate", context)
+    context["foundation_input_projection_version"] = "foundation-stage-input.v1"
+    with pytest.raises(KernelError, match="cannot change Planning"):
+        compile_planning_provider_context("book_plan.generate", context)
+
+
 def _selection():
     policy = resolve_book_knowledge_access_policy(production_profile={"knowledge_access_policy": {"mode": "DENY_ALL"}}, project_id="project-1", book_id="book-1")
     need = {"query": "Duplicated search query that is not story evidence", "required_card_asset_version_ids": []}

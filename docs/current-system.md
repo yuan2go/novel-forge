@@ -402,7 +402,15 @@ continuous membership creation with no external intent or reservation may
 append a capacity successor; a retained Arc Context additionally requires its native typed-volume
 projection evidence. Both use the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
-reserves the configured model output and framing margin, and permits at most two successors.
+reserves the configured model output and framing margin, and requires each capacity allocation
+to increase within the actual model ceiling. Historical continuation depth is retained as
+an observation; it does not impose a lifetime recovery limit.
+For Foundation capacity recovery, the Creator's original operator authorization registers
+the existing Planning continuation for the latest failed generation of the current role.
+The scoped worker can follow that registration but cannot register it on its own. A different
+successor failure cannot borrow an older capacity cause. Coordination excludes only its exact
+own RuntimeJob lease from the wake check; cancellation, other live jobs and uncertain effects
+retain their guards.
 The final rendered-request admission remains authoritative. Located ReReview resolution with preserved unrelated prose may support working selection even when the model score changes by less than a historical threshold. Scores and correction-generation counts remain diagnostics; they do not veto a supported current repair or prove literary quality. Remaining issues and propagation guards still apply. Context compilation counts the same lossless structured representation used by current Provider transport for working manuscripts; per-passage hashes and repeated values remain reconstructible source evidence rather than inflated duplicate input. It still preserves author requirements and exact current prose, uses governed compression for necessary older history, and enforces final rendered request capacity with output reserved. A pre-send Planning capacity successor may retain completed World preparation: every Effect must match the selected action’s verified pure-generation receipt, the main Planning call must remain unsent, and active leases or cancellation still block succession. The v3 continuation binds the current failed source and original receipt owner, revalidates current World sources and reuses those outputs across successive recoveries without repeating calls or requiring usage settlement. Temporary model availability recorded alongside capacity is diagnostic, not a permanent failure ban. Ordinary continue follows this registered successor after a corrected runtime deployment; old Attempts and Pack snapshots remain immutable. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains recorded; it does not consume a new generation entitlement or impose a lifetime fault ceiling. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact semantic gate and verifying the original Director receipt. Pure-generation usage retains its original state without a reuse veto; repair cannot add accepted support or relax the semantic gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
@@ -440,6 +448,17 @@ it does not replace the separate pre-send capacity path. A complete Codex comple
 rejected only by literal-null interpretation may be revalidated against the original
 frozen schema and process/result hashes without another send. These paths append
 evidence and preserve the original terminal Operation, Effect and costs.
+Complete Planning output after a retryable release-only assembly failure has a separate
+`planning-gateway-result-revalidation.v2` contract. It binds the exact latest failed Attempt,
+source Operation and generation versions, original pure-model request, verified complete
+receipt and result, original Pack, inputs and Fence, and different source/target releases.
+The independent recovery owner revalidates the original output; it does not reopen the old
+Attempt or dispatch a model. Formation, source Operation and generation locks serialize
+admission with native cancellation. Isolation, an existing successor, live execution,
+unresolved effects or a different failure cause reject this path. Ordinary generation replay,
+recovery scanning and candidate consumption share this contract. The v1 terminal-failure
+contract remains unchanged, and materialization remains candidate evidence rather than
+Story Design approval or literary qualification.
 
 World future preparation is explicitly `REQUIRED`, `OPTIONAL` or `DISABLED` under
 the frozen template. Governed optional deferral records `DEFER` / `NOT_RUN`; it creates
@@ -2357,6 +2376,14 @@ the capacity trigger does not silently suppress the delete before that guard exe
 Qualified Foundation planning projections retain mandatory constraints once with
 auditable exact references, defer prose examples to prose stages, and replace an
 integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.
+New default Creation profiles additionally freeze `foundation-stage-input.v1` into each
+Foundation Context. Its Provider view omits host constraint/binding/execution envelopes and
+Creative Foundation search-selection bookkeeping and style examples, recording each omitted
+field's source asset, hash and exact path. Author constraints, semantic assumptions, planned
+consequences and character/world sources remain available. Historical profiles without this
+marker keep their original view. This stage projection and lossless exact-value encoding do
+not guarantee a smaller request or literary improvement; final rendered capacity admission
+still applies.
 
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots

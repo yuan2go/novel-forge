@@ -10,6 +10,7 @@
         "structured_facts": [],
         "profile_id": "creative-validation-production-profile",
         "authority_boundary": "FUTURE_INTENT",
+        "foundation_input_projection_version": "foundation-stage-input.v1",
         "working_schedule_policy": {
           "version": "working-story-schedule.v1",
           "history_basis": "SELECTED_WORKING_PROSE"

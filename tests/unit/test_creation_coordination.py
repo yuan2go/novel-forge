@@ -49,6 +49,7 @@ def test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure(monkeypat
     from novel_forge.modules.book_authority import creation_runtime
     progress = ["FOUNDATION", "RUNNING", 1, 0, 0, [], {}]
     claim = SimpleNamespace(job_kind="BOOK_CREATION_ADVANCE", runtime_group="book_creation",
+        runtime_job_id="creation-job",
         subject_kind="STORY_FORMATION_RUN", subject_id="formation", project_id="project", attempt_id="attempt",
         input_snapshot={"frozen_input_digest": "digest", "operator_id": "operator", "sequence": 50,
             "stagnant_windows": 50, "progress": progress})
