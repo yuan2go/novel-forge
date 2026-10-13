@@ -1,0 +1,66 @@
+{
+  "contract_version": "writing-craft-existing-method-audit.v1",
+  "baseline_sha": "198a3c12bed4613b470623fa2636bdfeccc516cb",
+  "evidence_boundary": "requirements, actual delivery, prose realization and reader approval are separate",
+  "reviewed_file_current_hashes": {
+    "skills/prose-generation/SKILL.md": "sha256:02ef4e0daeca1412c87936d2c970c80f134b5d5b553edf39911cff0cabe8662f",
+    "skills/long-outline/SKILL.md": "sha256:0d2a4c057ba1c7a8255fe812b6ec1a40117506f43a5cfa63e572637b1e779745",
+    "src/novel_forge/modules/source_import/analysis_profiles.py": "sha256:1a8830089f96d61c61f9ba8d4aa6828e5e3b12b67ea101cfac793153ef98fe17",
+    "src/novel_forge/modules/source_import/craft_discovery.py": "sha256:037f23b74b6ccda334a9f658d22eac108bdd933d13a00c8bac2be07c68219b8c",
+    "src/novel_forge/modules/mkaos_authority/craft_matching.py": "sha256:681690a1e4c17cf11295221274cf4ec650d5ba926d8649618467505a3b3d2db8",
+    "src/novel_forge/modules/mkaos_authority/craft_selection.py": "sha256:8bbb9c57b52b533cfb218d8ecb662954d3e1eba15f4b848c8e209591f252d6e7",
+    "src/novel_forge/modules/mkaos_authority/craft_context_projection.py": "sha256:674a5bdbfd4d251f2012b6254d61f5377a72e72ce5c760e6c7da7ac87bbe3d9f",
+    "src/novel_forge/modules/chapter_authority/creative_memo.py": "sha256:b4b542a2622960b805c394918da31dd050a5dcc38f264282803978f5b12eb202"
+  },
+  "decisions": [
+    {
+      "method": "individual_character_reaction",
+      "decision": "RETAIN_BASELINE_ADD_CONDITIONAL_SOURCE_VARIANT",
+      "basis": "prose-generation already asks reaction from perception, desire, memory and risk; no additional universal response checklist",
+      "new_card": "purpose-information-alignment",
+      "requirement_exists": true,
+      "actual_delivery": "B original creative Effect b9739b92 contains this candidate; role translation failed native guard",
+      "prose_effect": "NOT_ASSESSED",
+      "human_approval": "PENDING_HUMAN_FEEDBACK"
+    },
+    {
+      "method": "event_consequence_continuity",
+      "decision": "RETAIN_BASELINE_ADD_CONDITIONAL_SOURCE_VARIANT",
+      "basis": "long-outline already organizes complete events and results before chapter allocation; Writer already carries settled progress forward",
+      "new_card": "decision-consequence-continuity-audit",
+      "requirement_exists": true,
+      "macro_application": "existing Book/Volume planning adoption, not every Scene",
+      "prose_effect": "NOT_ASSESSED",
+      "human_approval": "PENDING_HUMAN_FEEDBACK"
+    },
+    {
+      "method": "dialogue_current_purpose_and_voice",
+      "decision": "RETAIN_BASELINE_ADD_CONDITIONAL_SOURCE_VARIANT",
+      "basis": "baseline Writer realizes plan through character speech/action; supplied Dialogue excerpts add scoped purpose/voice source lineage without requiring universal subtext",
+      "new_card": "contextual-dialogue-plausibility-check",
+      "requirement_exists": true,
+      "prose_effect": "NOT_ASSESSED",
+      "human_approval": "PENDING_HUMAN_FEEDBACK"
+    },
+    {
+      "method": "candidate_recall_and_adoption",
+      "decision": "CORRECT_OPT_IN_RECALL_AND_CURRENT_APPROVAL_PROJECTION",
+      "basis": "existing term scores returned zero candidates for the new Chinese brief despite three exact allowed eligible cards. B bounded pool receives real planning ADOPT/ADAPT/REJECT opportunity; score zero retained. Original MECHANISM relabel to REVIEW_CHECK rejected. No unconditional adoption or separate scoring-model call."
+    },
+    {
+      "method": "source_book_metadata_and_examples",
+      "decision": "PRESERVE_OLD_LINEAGE_APPEND_COVERAGE",
+      "basis": "do not rewrite old cards or author metadata; exact original file/member/range hashes in coverage artifact. Teaching examples are original, explicitly noncanonical and excluded from all three arms."
+    },
+    {
+      "method": "same_project_book_design_activation",
+      "decision": "CORRECT_SHARED_INFRASTRUCTURE",
+      "basis": "real C activation superseded A current Story Design projection; existing Hierarchical Planning bindings still selected exact A versions. Migration0206 adds Book/design-layer namespace; native reconciliation retains original asset/approval/failure."
+    }
+  ],
+  "generic_skill_changed": false,
+  "new_writing_gate_added": false,
+  "optional_cards_can_be_disabled": "Book ALLOW_ONLY field may be omitted; A/C frozen DENY_ALL exclude all new cards",
+  "historical_cards_rewritten": false,
+  "attribution": "enhanced package only, not single-book causal contribution"
+}

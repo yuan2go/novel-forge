@@ -1,0 +1,33 @@
+{
+  "contract_version": "writing-craft-original-teaching-examples.v1",
+  "origin": "Original examples authored for this work package, not reference-book quotations",
+  "classification": "TEACHING_ONLY_NON_CANONICAL",
+  "experiment_draft_input_allowed": false,
+  "literary_effect_verified": false,
+  "examples": [
+    {
+      "method": "purpose-information-alignment",
+      "positive": "店长问是谁忘了锁后门。小陈看见新来的同事低下头，先问：‘昨晚谁最后收了退货？’他没有急着指认，因为上周正是这个同事替他补完了盘点。他仍想保住工作，也得弄清丢货发生在什么时候。",
+      "negative": "店长问是谁忘了锁后门。小陈突然勃然大怒，众人也都很愤怒。过了一会儿，大家恢复了平静。",
+      "misuse": "每次反应前都用长段回忆解释全部童年和所有关系，反而切断眼前事件；或用动机合理化伤害、替人物作道德免责。",
+      "application_hypothesis": "选择人物当下知道和在意的一两项依据，让这些依据影响注意、话语或选择。依据可以暂时不说透；意外反应也可以成立。",
+      "revision": "核对反应前已经可知的信息和人物所求；补具体触发或调整反应，不替人物凭空增加已发生经历。"
+    },
+    {
+      "method": "decision-consequence-continuity-audit",
+      "positive": "她把漏水的总阀关了，水终于停住。楼上老人却敲门说晚饭还没做。她拿出剩下的半桶水，请老人先分走一锅，转头去找能在今晚到场的维修工。关阀解决了眼前问题，也改变了下一步必须处理的条件。",
+      "negative": "她把漏水的总阀关了。下一场她又决定去关同一个阀，大家再次讨论要不要关水；漏水、用水和维修的条件全未改变。",
+      "misuse": "把连续性写成每次行动必须失败、受罚或反转；忽略已经有效的办法，反复让人物确认同一件事。",
+      "application_hypothesis": "从已实现的结果开始下一段，保留有效进展；后果可以是便利、责任、关系变化，也可以是有意维持的稳定。",
+      "revision": "找出重复起点，检查下一事件需要哪些实际条件；在规划层修正事件组织，Writer不能擅自改掉冻结结果。"
+    },
+    {
+      "method": "contextual-dialogue-plausibility-check",
+      "positive": "‘车能等两分钟吗？’她把快散开的纸袋抱在胸前。司机看了一眼站牌：‘上车放这儿，等人就不行了。’她把袋子放在驾驶座旁的台阶上，又朝街角望了一眼。",
+      "negative": "‘正如你所知道的，我们的公交系统有固定班次，因此在城市生活中守时十分重要。’司机向每天乘车的人介绍了完整制度。",
+      "misuse": "要求所有台词隐晦、每句都有机锋；为了显示声音差异，给每个角色强加同一口癖，或禁用清楚直接的请求。",
+      "application_hypothesis": "核对谁对谁说、此刻想得到什么回应、对方愿不愿给；直接说明、沉默和动作都可能合适。",
+      "revision": "删去只为读者讲解而双方都知道的内容，改用当下请求、拒绝或信息交换；确需说明时保留有情境依据的说明。"
+    }
+  ]
+}

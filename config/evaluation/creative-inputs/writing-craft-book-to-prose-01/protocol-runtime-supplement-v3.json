@@ -1,0 +1,34 @@
+{
+  "contract_version": "writing-craft-book-to-prose-runtime-supplement.v3",
+  "work_package": "WP-WRITING-CRAFT-BOOK-TO-PROSE-01",
+  "previous_frozen_protocols_preserved": true,
+  "code_sha_before_prose": "2cdafb3881a25c06b8840354bd0aec59ea88d50e",
+  "baseline_main_sha": "198a3c12bed4613b470623fa2636bdfeccc516cb",
+  "infra_shared_by_all_arms": [
+    "Story Design active projection isolated by proven Book and design layer; exact original recovery appends scope receipts",
+    "Native source/Pack ownership and settled-result repair corrections"
+  ],
+  "B_only_enhancement_runtime": [
+    "exact three-card experimental allowlist and bounded candidate review",
+    "current-approved-method-activation-view.v1 separates original Candidate phase from current experimental approval without new human acceptance",
+    "typed native knowledge-role result repair retains invalid original result, may use native unsent capacity continuation"
+  ],
+  "declared_native_pack_release_sha": {
+    "A": "142b046cf9971991c41b298cfbe577c8618f2671",
+    "B": "b6e92eb5071f3c467c23e3edc18722be1dad9b93",
+    "C_native_boundary_setup": "669bfeddc98417a76d4f100504025eb1b6e3521a"
+  },
+  "actual_worktree_code_differs_from_declared_pack_release": true,
+  "prose_generation_skill_changed": false,
+  "planning_skill_changed": false,
+  "original_failures_and_requests_preserved": true,
+  "comparison_limitations": [
+    "A/B first native drafts will share current infrastructure but historical planning dispatches used different declared releases. Exact inputs, template/Skill hashes and repairs must be reported individually.",
+    "B receives an enhancement package; do not attribute outcomes to a single book or card.",
+    "Actual repair calls and context capacity allocation may differ; freeze equal policy, preserve observed denominators and identify mismatch rather than claim identical calls."
+  ],
+  "C_reference_workflow": "Existing controlled Agent Harness Provider and durable final-response storage; concise author guidance from common brief. Native setup establishes genuine accepted-through-0 boundary only; its detailed plans must not enter reference input. Agent governance/Tool catalog is disclosed.",
+  "prose_saved_at_supplement": 0,
+  "literary_effect": "NOT_ASSESSED",
+  "human_feedback": "PENDING_HUMAN_FEEDBACK"
+}

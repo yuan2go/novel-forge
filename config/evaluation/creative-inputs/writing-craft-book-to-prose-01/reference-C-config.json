@@ -1,0 +1,17 @@
+{
+  "contract_version": "writing-craft-controlled-reference-config.v1",
+  "common_author_input_sha256": "fb66d32e15cba181c3c9b5797f49a34ef901b0052107e709b100d3b2af391f7a",
+  "instruction": "这是独立小说开篇参考实验。仅根据下面共同作者简报，自行构建设定、人物、事件，直接写出连续第一至第三章原始正文。不要展示设定表、大纲、写作方法、摘要或自评。不调用工具，不激活Skill，也不读取当前Book的规划；accepted-through-0只用于隔离与追踪，不提供故事事实。每章标题另计，正文4000—5000汉字，通过完整事件推进写够篇幅。三章属于同一条独立世界线。\n共同作者简报：\n{\n  \"creative_brief_contract_version\": \"creative-brief-v2\",\n  \"idea\": \"传统修仙长篇的独立开篇实验。一名在山下药坊做工、尚未正式入道的年轻人，因一次与山门有关的差事获得改变人生的机会，却必须处理差事留下的实际影响与身边人的不同诉求。主角有切身想要保住或争取的东西，配角有各自打算；具体人物、山门、差事、世界规则与事件由各组独立创作。前三章应形成可跟随的事件进展与修行方向，既有眼前生活，也让读者看到更广阔的修仙世界。\",\n  \"genre\": \"传统修仙，第三人称限知为主，简体中文连载小说\",\n  \"audience\": \"喜欢凡人入道、门派生活、修炼成长和人物关系的成年中文读者\",\n  \"constraints\": [\n    \"独立新作品的三章开篇；实验规划方向三十章，首轮交付连续前三章，不要求第三章完结。\",\n    \"每章正文4000—5000汉字，章节标题另计；通过完整事件推进写够篇幅，避免重复解释或空转填充。\",\n    \"修炼、资源与山门生活有具体可理解的条件；人物在当下情境里作选择，行动与对话承担情节。\",\n    \"允许日常、善意、安静发展与直接交流；根据具体事件决定节奏。\"\n  ],\n  \"source_boundaries\": [\n    \"仅本次共同作者简报和本组原生生成并绑定的资产形成小说事实。\",\n    \"另两组、旧书正文与计划、写作教学示例、参考书人物情节表达不得进入本组小说。\"\n  ]\n}\n返回action=\"FINAL\"，tool_call=null；final_response.payload_json是一个JSON字符串，内层结构为{\"contract_version\":\"writing-craft-reference-originals.v1\",\"chapters\":[{\"chapter_number\":1,\"title\":\"...\",\"body\":\"完整正文\"},{\"chapter_number\":2,\"title\":\"...\",\"body\":\"完整正文\"},{\"chapter_number\":3,\"title\":\"...\",\"body\":\"完整正文\"}]}。body只含本章正文，保留段落。",
+  "provider": "codex-cli",
+  "model": "gpt-6.1-sol",
+  "reasoning": "high",
+  "output_limit": 32000,
+  "input_capacity": 16000,
+  "dispatch_layout": "ONE_FINAL_RESPONSE_THREE_CONTINUOUS_ORIGINAL_CHAPTERS",
+  "accepted_boundary_required": "REAL_BOOK_RUN_ACCEPTED_THROUGH_0",
+  "policy": "DENY_ALL_WRITING_KNOWLEDGE_CARDS",
+  "tool_use_requested": false,
+  "skill_activation_requested": false,
+  "workflow_difference": "Agent Harness uses native governance Prompt, agent-loop-governance catalog and Tool policy; its final response is a controlled reference result, not Chapter Authority acceptance or full native production. Do not use native setup detailed plans. Preserve actual deviations.",
+  "no_drafts_selected_or_revised_at_freeze": true
+}

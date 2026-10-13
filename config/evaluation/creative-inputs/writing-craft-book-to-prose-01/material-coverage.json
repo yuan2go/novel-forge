@@ -1,0 +1,188 @@
+{
+  "materials": [
+    {
+      "book": "card-characters-viewpoint",
+      "edition": "sha256:494a5f566c96d60cc40b5a66953b6117a2d1c181f2af17fc62b4199e5282717f",
+      "work_title": "人物与视角：小说创作的要素",
+      "author": "奥森·斯科特·卡德",
+      "chapter": "第一章/动机",
+      "order": 1,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/人物与视角：小说创作的要素（创意写作书系）.mobi",
+        "sha256": "sha256:494a5f566c96d60cc40b5a66953b6117a2d1c181f2af17fc62b4199e5282717f",
+        "member": "mobi7/book.html",
+        "extracted_unicode_start": 4188,
+        "extracted_unicode_end": 4948,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:4ccaa6f4526e0ba9b79dbc3426a797e274cd04dcb27beceea2e23cc22c6005f0",
+        "scope": "EXCERPT_ONLY"
+      },
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    },
+    {
+      "book": "card-characters-viewpoint",
+      "edition": "sha256:494a5f566c96d60cc40b5a66953b6117a2d1c181f2af17fc62b4199e5282717f",
+      "work_title": "人物与视角：小说创作的要素",
+      "author": "奥森·斯科特·卡德",
+      "chapter": "第一章/过去",
+      "order": 2,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/人物与视角：小说创作的要素（创意写作书系）.mobi",
+        "sha256": "sha256:494a5f566c96d60cc40b5a66953b6117a2d1c181f2af17fc62b4199e5282717f",
+        "member": "mobi7/book.html",
+        "extracted_unicode_start": 4948,
+        "extracted_unicode_end": 5412,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:13a1279f1f7b75fe7356d4249b3b9399b3d1c694dd4cb1bb8afd888f05ac42a7",
+        "scope": "EXCERPT_ONLY"
+      },
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    },
+    {
+      "book": "card-characters-viewpoint",
+      "edition": "sha256:494a5f566c96d60cc40b5a66953b6117a2d1c181f2af17fc62b4199e5282717f",
+      "work_title": "人物与视角：小说创作的要素",
+      "author": "奥森·斯科特·卡德",
+      "chapter": "第一章/关系网",
+      "order": 3,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/人物与视角：小说创作的要素（创意写作书系）.mobi",
+        "sha256": "sha256:494a5f566c96d60cc40b5a66953b6117a2d1c181f2af17fc62b4199e5282717f",
+        "member": "mobi7/book.html",
+        "extracted_unicode_start": 8868,
+        "extracted_unicode_end": 9617,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:46b24abc8e34075e873f37c8be7e00288c64891ee4b08d33860d862060771871",
+        "scope": "EXCERPT_ONLY"
+      },
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    },
+    {
+      "book": "mckee-dialogue",
+      "edition": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+      "work_title": "对白：文字、舞台、银幕的言语行为艺术",
+      "author": "罗伯特·麦基",
+      "chapter": "对白/63",
+      "order": 1,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/罗伯特·麦基虚构艺术三部曲（《故事》《对白》《人物》）(套装共3册) 2020-10.epub",
+        "sha256": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+        "member": "OEBPS/Text/part0063.xhtml",
+        "extracted_unicode_start": 0,
+        "extracted_unicode_end": 326,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:3aaa7e1086a677009692ffa76b11374617478a1217e8957926238b75fbd275bd",
+        "scope": "EXCERPT_ONLY"
+      },
+      "reading_range_label": "《对白》开篇对白、目的与声音说明（节选326字符；章号未核实）",
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    },
+    {
+      "book": "mckee-dialogue",
+      "edition": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+      "work_title": "对白：文字、舞台、银幕的言语行为艺术",
+      "author": "罗伯特·麦基",
+      "chapter": "对白/65",
+      "order": 2,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/罗伯特·麦基虚构艺术三部曲（《故事》《对白》《人物》）(套装共3册) 2020-10.epub",
+        "sha256": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+        "member": "OEBPS/Text/part0065.xhtml",
+        "extracted_unicode_start": 9761,
+        "extracted_unicode_end": 10341,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:2ac657ab4339a2a9216d5f258daee83007b98316151c568732285989c6eecae1",
+        "scope": "EXCERPT_ONLY"
+      },
+      "reading_range_label": "《对白》◎ 动作（仅该小节节选；章号未核实）",
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    },
+    {
+      "book": "mckee-dialogue",
+      "edition": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+      "work_title": "对白：文字、舞台、银幕的言语行为艺术",
+      "author": "罗伯特·麦基",
+      "chapter": "对白/84",
+      "order": 3,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/罗伯特·麦基虚构艺术三部曲（《故事》《对白》《人物》）(套装共3册) 2020-10.epub",
+        "sha256": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+        "member": "OEBPS/Text/part0084.xhtml",
+        "extracted_unicode_start": 4214,
+        "extracted_unicode_end": 4425,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:b1b886f2eb80d85d45a1994e1d6429c8ebb8affb5c75b0ed6ca3adbf09b17d10",
+        "scope": "EXCERPT_ONLY"
+      },
+      "reading_range_label": "《对白》角色专属对白的原理（仅该小节节选；章号未核实）",
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    },
+    {
+      "book": "mckee-story",
+      "edition": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+      "work_title": "故事：材质、结构、风格和银幕剧作的原理",
+      "author": "罗伯特·麦基",
+      "chapter": "第七章/◎ 鸿沟",
+      "order": 1,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/罗伯特·麦基虚构艺术三部曲（《故事》《对白》《人物》）(套装共3册) 2020-10.epub",
+        "sha256": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+        "member": "OEBPS/Text/part0024.xhtml",
+        "extracted_unicode_start": 8154,
+        "extracted_unicode_end": 9335,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:892194d2fdcbe0a305c05ad0c24ad72c9deadf8a83d9d7706204e85f45985a45",
+        "scope": "EXCERPT_ONLY"
+      },
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    },
+    {
+      "book": "mckee-story",
+      "edition": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+      "work_title": "故事：材质、结构、风格和银幕剧作的原理",
+      "author": "罗伯特·麦基",
+      "chapter": "第七章/◎ 进展过程中的鸿沟",
+      "order": 2,
+      "origin": {
+        "path": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/docs/罗伯特·麦基虚构艺术三部曲（《故事》《对白》《人物》）(套装共3册) 2020-10.epub",
+        "sha256": "sha256:4c74b862ae491915ca6f0124cb52f1e5ddd5a4c7742d0e84f88d9ac8a033974a",
+        "member": "OEBPS/Text/part0024.xhtml",
+        "extracted_unicode_start": 10580,
+        "extracted_unicode_end": 11396,
+        "original_byte_offset": null,
+        "text_sha256": "sha256:1c7422d1591dc69cc44fab588af2ea063eb74906763c6b2a085612044069c12f",
+        "scope": "EXCERPT_ONLY"
+      },
+      "source_observation_version": "multidisciplinary-knowledge@1.2.1/writing-methods.v2",
+      "claim_class": "SOURCE_ABSTRACTION/HYPOTHESIS",
+      "page_numbers": "NOT_AVAILABLE_FROM_EPUB_MOBI"
+    }
+  ],
+  "uncovered": [
+    "人物与视角：第一章之外未提供",
+    "对白：未选其他章节及案例",
+    "故事：未选其他章节及案例",
+    "麦基人物册：不纳入本轮"
+  ],
+  "normalization": "BeautifulSoup 4.15.0 exact get_text LF strip; MOBI extraction mobi 0.4.1; original byte offsets unknown",
+  "full_text_export_allowed": false,
+  "coverage_contract": "writing-craft-material-coverage.v2",
+  "original_coverage_file": "material-coverage-v1.json",
+  "normalization_locations_unchanged": true,
+  "full_book_claim_allowed": false,
+  "bibliographic_note": "套装文件名含2020-10，未据此断言出版月份。Card提炼仅现有MOBI第一章相关节选；后续视角章节未覆盖。Observation旧版缺失作者字段保留，覆盖表书目识别不追改旧资产。"
+}
