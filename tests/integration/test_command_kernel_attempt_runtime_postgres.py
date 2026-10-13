@@ -10,6 +10,7 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerResultCommand,
     acquire_attempt_lease,
     checkpoint_attempt,
+    checkpoint_attempt_for_external_reconciliation,
     cancel_attempt,
     create_attempt,
     expire_attempt_lease,
@@ -35,6 +36,32 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         ensure_migrated()
+
+    def test_source_resumes_only_its_fenced_unsent_lineage_checkpoint(self) -> None:
+        from dataclasses import replace
+        from novel_forge.modules.source_import.application import SourceImportApplication
+        application = SourceImportApplication(DATABASE_URL, application_build_id="fixture", commit_sha="1" * 40)
+        for fault in (None, "unrelated_checkpoint", "stale_fence"):
+            project, operation = self._operation("READY")
+            attempt = self._create_and_queue(project, operation)
+            lease = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt, project_id=project,
+                worker_id="source-worker", lease_seconds=30, trace_id=identifier("trace"), correlation_id=identifier("correlation"))
+            worker = replace(self._worker(attempt, project, "source-worker", lease["fencing_token"]), causation_id=operation)
+            start_attempt(DATABASE_URL, worker)
+            checkpoint = {"reason": "external_state_unknown", "error_code":
+                "UNRELATED_UNKNOWN" if fault == "unrelated_checkpoint" else "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"}
+            checkpoint_attempt_for_external_reconciliation(DATABASE_URL, worker, checkpoint)
+            takeover = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt, project_id=project,
+                worker_id="source-worker", lease_seconds=30, trace_id=worker.trace_id, correlation_id=worker.correlation_id)
+            resumed = replace(worker, fencing_token=takeover["fencing_token"])
+            if fault:
+                with self.assertRaisesRegex(KernelError, "SOURCE_RECONCILIATION_EFFECT_MISSING" if fault == "unrelated_checkpoint" else "ATTEMPT_FENCING_TOKEN_STALE"):
+                    application.reconcile_external_state(worker if fault == "stale_fence" else resumed)
+            else:
+                self.assertEqual(application.reconcile_external_state(resumed), "unsent_lineage_checkpoint_resume")
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute("SELECT o.status,a.checkpoint,(SELECT count(*) FROM authority_external_effect WHERE operation_id=o.operation_id) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE a.attempt_id=%s", [attempt])
+                self.assertEqual(cursor.fetchone(), ("WAITING_EXTERNAL_RESULT" if fault else "EXECUTING", checkpoint, 0))
 
     def test_attempt_runs_through_fenced_checkpoint_and_success(self) -> None:
         project_id, operation_id = self._operation("READY")

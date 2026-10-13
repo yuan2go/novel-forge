@@ -308,6 +308,36 @@ def checkpoint_attempt_for_external_reconciliation(
         raise stale_error
 
 
+def resume_unsent_lineage_checkpoint(uow: AuthorityUnitOfWork, command: WorkerLeaseCommand) -> bool:
+    attempt = uow.repositories.attempt_runtime.get_for_update(command.attempt_id, command.project_id)
+    valid, _ = uow.repositories.attempt_runtime.current_fence(
+        command.attempt_id, command.worker_id, command.fencing_token
+    )
+    if not valid:
+        raise KernelError("ATTEMPT_FENCING_TOKEN_STALE", "Lineage recovery requires the current Attempt fence")
+    uow.cursor.execute("SELECT checkpoint FROM authority_attempt WHERE attempt_id=%s", [command.attempt_id])
+    checkpoint = uow.cursor.fetchone()[0] or {}
+    if (attempt["status"] != "CHECKPOINTED"
+            or attempt["operation_status"] != "WAITING_EXTERNAL_RESULT"
+            or checkpoint.get("reason") != "external_state_unknown"
+            or checkpoint.get("error_code") != "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
+        return False
+    uow.cursor.execute("""SELECT 1 WHERE EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND role='primary')""",
+        [attempt["operation_id"], attempt["operation_id"]])
+    if uow.cursor.fetchone():
+        return False
+    from .budget_runtime import require_known_cli_lineage
+
+    require_known_cli_lineage(uow.cursor, project_id=command.project_id, operation_id=attempt["operation_id"])
+    _cas_operation(uow, operation_id=attempt["operation_id"], project_id=command.project_id,
+        expected_status=attempt["operation_status"], expected_version=attempt["operation_version"],
+        target_status="EXECUTING", actor_id=command.worker_id,
+        reason="Original pre-send lineage wait is resolved; resume the same unsent Attempt",
+        trace_id=command.trace_id, correlation_id=command.correlation_id, causation_id=command.causation_id)
+    return True
+
+
 def submit_attempt_result(
     database_url: str,
     command: WorkerResultCommand,

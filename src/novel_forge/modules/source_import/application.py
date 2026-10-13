@@ -662,6 +662,14 @@ class SourceImportApplication:
             effect_ids = tuple(identity for identity, status in effects if status in {
                 "DISPATCHING", "DISPATCHED", "UNKNOWN", "RECONCILIATION_REQUIRED"
             })
+            if not effects:
+                from .corpus_ingestion.curated_analysis import require_known_cli_outcomes
+                from novel_forge.modules.command_kernel.attempt_runtime import resume_unsent_lineage_checkpoint
+
+                require_known_cli_outcomes(uow.cursor, worker.project_id, operation_id=worker.causation_id)
+                if resume_unsent_lineage_checkpoint(uow, worker):
+                    uow.commit()
+                    return "unsent_lineage_checkpoint_resume"
         if not effect_ids and effects and all(status == "SUCCEEDED" for _, status in effects):
             for identity, _ in effects:
                 resume_operation_from_completed_effect(self.database_url, self._effect_context(worker), effect_id=identity)

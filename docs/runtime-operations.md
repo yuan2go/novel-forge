@@ -854,6 +854,11 @@ stay UNKNOWN, while old commit rights are revoked. Source's send gate permits on
 bound successor for these v1/v2 analysis routes and that revision; renaming the original
 contract does not permit dispatch. An explicitly admitted different method contract or
 curated revision retains its ordinary Source governance and dispatch checks.
+If another Source stage was checkpointed by that lineage guard before creating any
+ExternalEffect, the Source scheduler can resume its same fenced Attempt after lineage
+reconciliation. Kernel verifies the original checkpoint reason, no owned Effect or primary
+output and no remaining unresolved lineage; it appends the Operation transition without
+inventing an external receipt or changing the original checkpoint.
 This does not approve extracted knowledge or qualify its literary effect.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
