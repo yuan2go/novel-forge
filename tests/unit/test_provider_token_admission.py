@@ -144,16 +144,16 @@ def test_context_can_fit_while_complete_provider_request_is_rejected() -> None:
     assert receipt.reason == "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
 
 
-def test_execution_policy_limit_is_part_of_provider_admission() -> None:
+def test_historical_execution_quota_does_not_replace_actual_model_capacity() -> None:
     receipt = prepare_provider_admission(
         _envelope("x" * 100),
         replace(_contract(limit=512), execution_token_limit=180),
         complete_request_coverage=COMPLETE_COVERAGE,
     )
 
-    assert receipt.status == "REJECTED"
-    assert receipt.reason == "EXECUTION_TOKEN_LIMIT_EXCEEDED"
-    assert receipt.applicable_limit == 180
+    assert receipt.status == "ADMITTED"
+    assert receipt.applicable_limit == 512
+    assert receipt.accounting_contract["execution_token_limit"] == 180
 
 
 def test_v2_admission_rejects_incomplete_request_coverage() -> None:

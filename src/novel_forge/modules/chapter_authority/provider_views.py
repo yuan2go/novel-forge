@@ -949,7 +949,7 @@ def build_provider_task_view(
     if stage == "rereview":
         from novel_forge.modules.review.craft import craft_provider_task
         from novel_forge.modules.review.diagnostics import open_diagnoses
-        from novel_forge.modules.review.prose_comparison import prose_comparison
+        from novel_forge.modules.review.prose_comparison import prose_comparison, prose_comparison_view
 
         revision = inputs.get("revision") or inputs.get("draft")
         issues = [
@@ -994,7 +994,7 @@ def build_provider_task_view(
             ),
             **(
                 {
-                    "prose_comparison": prose_comparison(
+                    "prose_comparison": (prose_comparison_view if compact_contract else prose_comparison)(
                         inputs["original_draft"],
                         revision or {},
                         original_id=str(

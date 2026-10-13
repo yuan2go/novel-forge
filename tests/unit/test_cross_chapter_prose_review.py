@@ -569,6 +569,31 @@ def test_rereview_materialized_task_retains_exact_before_and_changed_target():
         assert before == after and prose_hash(before) == span["text_hash"]
 
 
+def test_compact_rereview_comparison_preserves_complete_bodies_and_derivable_changes():
+    from novel_forge.modules.review.prose_comparison import prose_comparison
+    original = " \n沈舟😀走到门边。\r\n他没有回头。 "
+    revised = original.replace("走到", "退到").replace("他没有回头。", "他没有回头。他先把门推开。")
+    task = build_provider_task_view("rereview", {
+        "original_draft": {"text": original}, "original_draft_asset_version_id": "before:v1",
+        "revision": {"text": revised}, "target_candidate_asset_version_id": "after:v1",
+        "review": {"issues": []},
+    }, compact_contract=True)
+    comparison = task["prose_comparison"]
+    canonical = prose_comparison({"text": original}, {"text": revised}, original_id="before:v1", revised_id="after:v1")
+    assert comparison["contract_version"] == "exact-prose-comparison-view.v1"
+    assert comparison["original"] == canonical["original"]
+    assert comparison["revised"] == canonical["revised"]
+    assert task["revised_chapter"]["text"] == revised
+    assert comparison["coverage"] == "COMPLETE_BEFORE_AND_AFTER"
+    assert comparison["semantic_preservation"] == "REQUIRES_REVIEW"
+    for span, full in zip(comparison["edits"], canonical["edits"], strict=True):
+        assert original[span["before_start"]:span["before_end"]] == full["before"]
+        assert revised[span["after_start"]:span["after_end"]] == full["after"]
+        assert set(span) == {"before_start", "before_end", "after_start", "after_end"}
+    for span in comparison["unchanged_ranges"]:
+        assert original[span["before_start"]:span["before_end"]] == revised[span["after_start"]:span["after_end"]]
+
+
 def test_unresolved_issue_moves_to_exact_new_span_without_losing_origin():
     review = initial()
     text = "雨落了下来。" + TARGET

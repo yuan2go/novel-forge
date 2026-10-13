@@ -1884,6 +1884,11 @@ a deleted span's zero-width target point affects evidence only inside that passa
 Both overall and per-issue preservation uncertainty may remain only outside the actual
 changed ranges. Uncertainty within a changed passage prevents automatic propagation,
 while the complete candidate and its unresolved findings remain readable.
+Compact ReReview transport carries complete original and revised prose once. Its derived
+comparison view references their Unicode coordinates instead of copying every changed
+substring and unchanged-span hash. The full comparison remains persisted; whole-text
+hashes bind the view, and the host verifies all ranges against both exact bodies before
+projection. Final rendered-request admission still includes the schema and output reserve.
 This does not authorize plan-owned investigations or changes to frozen commitments.
 
 Chapter 3.8.0 and Pack 2.12.0/template v9 retain their frozen `work-requirements.v1` inputs
