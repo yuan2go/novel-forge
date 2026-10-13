@@ -5333,10 +5333,17 @@ class ProductionExecutionGatewayExternalEffectAdapter:
 
     def saved_result_evidence(self, request: ExecutionRequest, handle: ExecutionHandle, result: Any) -> dict[str, Any]:
         session = self._session(request.project_id)
+        record = session.evidence_store.find_record(request.execution_id)
+        if record is None or record.request.contract_hash != request.contract_hash:
+            raise KernelError(
+                "SAVED_RESULT_REQUEST_IDENTITY_DRIFT",
+                "saved result recovery requires the persisted execution request",
+            )
         route = session.gateway.admission.resolve_route(request)
         manifest = session.gateway.admission.contracts.input_manifest(request.input_manifest_ref)
         return self._evidence(binding=ChapterExecutionBinding(request, route, manifest),
-            session=session, handle=handle, result=result)
+            session=session, handle=handle, result=result,
+            normalize_chapter_output=record.request.task_kind != "story_planning.generate")
 
     def session_for_project(self, project_id: str) -> ChapterExecutionGatewaySession:
 
@@ -5611,6 +5618,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         session: ChapterExecutionGatewaySession,
         handle: ExecutionHandle,
         result: Any,
+        normalize_chapter_output: bool = True,
     ) -> dict[str, Any]:
         execution_record = session.evidence_store.get_record(
             binding.request.execution_id
@@ -5707,7 +5715,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                     or execution_record.raw_evidence.get("output_schema_version")
                     or binding.route_snapshot.output_schema_ref
                 ),
-            )
+            ) if normalize_chapter_output else dict(raw)
         if result.output_manifest_ref:
             evidence["production_execution"]["output_manifest"] = (
                 session.evidence_store.read_evidence(result.output_manifest_ref)

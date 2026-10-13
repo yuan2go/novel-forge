@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from novel_forge.modules.command_kernel.errors import KernelError
 
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
@@ -365,6 +366,35 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
 
 
 class ProductionExecutionGatewayTests(unittest.TestCase):
+    def test_saved_planning_result_keeps_owner_shape_without_revision_decoding(self):
+        from novel_forge.modules.chapter_authority.execution_gateway import (
+            ChapterExecutionGatewaySession, ProductionExecutionGatewayExternalEffectAdapter,
+        )
+        contract_set = list(contracts(backend_id="scripted-fixture", runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE))
+        request = replace(contract_set[5], task_kind="story_planning.generate", stage="book_plan.generate")
+        contract_set[5] = request
+        raw = {"chapter_range": [1, 6], "objective": "人物选择产生后续变化", "events": [{"event_id": "event-1"}]}
+        store = InMemoryExecutionRecordStore()
+        source = StaticExecutionContractSource(route_snapshots=(contract_set[3],), model_profiles=(contract_set[1],),
+            route_policies=(contract_set[2],), input_manifests=(contract_set[4],))
+        backend = ScriptedFixtureExecutionBackend(
+            admission=AdmissionController(source, StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7})),
+            payload_resolver=StaticExecutionPayloadResolver({request.execution_id: ResolvedExecutionPayload(
+                request_payload={"result": raw}, input_text="frozen planning input", working_directory=".",
+                timeout_seconds=600, output_schema_version="fixture-planning-output.v1")}), record_store=store)
+        gateway, _ = self._gateway(backend, contract_set)
+        handle = gateway.submit(request)
+        result = gateway.reconcile(handle)
+        self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
+        adapter = object.__new__(ProductionExecutionGatewayExternalEffectAdapter)
+        adapter._session = lambda _: ChapterExecutionGatewaySession(gateway, store)
+        recovered = adapter.saved_result_evidence(request, handle, result)
+        self.assertEqual(recovered["result"], raw)
+        self.assertEqual(recovered["production_execution"]["execution_request"]["task_kind"], "story_planning.generate")
+        with self.assertRaises(KernelError) as changed:
+            adapter.saved_result_evidence(replace(request, task_kind="chapter.draft.generate", stage="draft"), handle, result)
+        self.assertEqual(changed.exception.code, "SAVED_RESULT_REQUEST_IDENTITY_DRIFT")
+
     def _model_call_evidence(self, contract_set, gateway, store, handle, result,
                              *, eligible=True, frozen_model=None):
         from novel_forge.modules.chapter_authority.execution_gateway import (
