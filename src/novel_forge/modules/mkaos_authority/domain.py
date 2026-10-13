@@ -727,6 +727,42 @@ def assert_narrative_method_activation_safe(candidate: Mapping[str, Any]) -> Non
         check(candidate.get(field), field)
 
 
+def project_narrative_method_lineage(candidate: Mapping[str, Any]) -> tuple[dict, dict]:
+    from copy import deepcopy
+
+    original = deepcopy(dict(candidate))
+    if (original.get("knowledge_kind") != "NARRATIVE_INTELLIGENCE"
+            or original.get("semantic_family") != "NARRATIVE_MECHANISM"
+            or original.get("craft_mechanism", {}).get("provenance", {}).get("origin") != "SOURCE_ABSTRACTION"):
+        raise KernelError("MKAOS_METHOD_PROJECTION_SCOPE_INVALID", "Project only Source-derived narrative method metadata")
+    projected = deepcopy(original)
+    removed = []
+    kept = []
+    for index, value in enumerate(original.get("constraints") or ()):
+        try:
+            assert_narrative_method_activation_safe({"knowledge_kind": "NARRATIVE_INTELLIGENCE", "constraints": [value]})
+        except KernelError as error:
+            if error.code != "MKAOS_NARRATIVE_METHOD_OPERATIONAL_LEAK":
+                raise
+            identifier = r"[A-Za-z0-9:_-]+"
+            administrative = (r"Project binding: (?:(?:project_id|book_id|scope_kind|scope_id)=" + identifier + r";?\s*)+\.?",
+                r"This object is an unapproved Knowledge Candidate for project_id[ =]" + identifier
+                + r", book_id[ =]" + identifier + r" and observation scope " + identifier
+                + r"\. It grants no downstream adoption or active plan change\.")
+            if not any(re.fullmatch(pattern, value) for pattern in administrative):
+                raise
+            removed.append({"field": "constraints", "index": index, "value": value})
+        else:
+            kept.append(value)
+    projected["constraints"] = kept
+    validate_knowledge_candidate(projected)
+    assert_narrative_method_activation_safe(projected)
+    return projected, {"contract_version": "narrative-method-lineage-projection.v1",
+        "candidate_payload_hash": _canonical_hash(original), "abstract_content_hash": _canonical_hash(projected),
+        "research_only_statements": removed, "non_constraints_fields_unchanged": True,
+        "original_candidate_preserved": True, "evidence_ceiling": "METADATA_PROJECTION_NOT_EFFECT_VALIDATION"}
+
+
 def _validate_structured_narrative_intelligence(candidate: Mapping[str, Any]) -> None:
     if str(candidate.get("knowledge_kind") or "").strip().upper() not in (
         NARRATIVE_INTELLIGENCE_KINDS

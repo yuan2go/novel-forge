@@ -881,6 +881,14 @@ Real-Provider evidence refers to the original call; the candidate is a determini
 projection. Production approval still requires equality with the Provider result and
 rejects this derived output. Separately scoped experimental approval establishes neither
 literary effect nor human acceptance.
+The existing experimental MKAOS policy can explicitly select
+`narrative-method-lineage-projection.v1`. For Source-derived Craft only, it moves
+recognized administrative constraint statements into the immutable approval and Card
+lineage receipt. Both original Candidate and projected abstract-content hashes remain;
+other method fields and Source bindings are unchanged. Mixed or unrecognized operational
+text, default policy and production approval retain the existing rejection. Admission and
+fenced commit must recompute the same projection. This optional experimental policy does
+not create human approval, change older Cards or qualify a method's effect.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool

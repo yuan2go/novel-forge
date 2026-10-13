@@ -123,6 +123,7 @@ class ExperimentalKnowledgeApprovalPolicy:
     workspace_id: str
     policy_version: str
     reviewer_id: str
+    method_lineage_projection_version: str = ""
 
     def __post_init__(self) -> None:
         _require_strings(
@@ -131,6 +132,8 @@ class ExperimentalKnowledgeApprovalPolicy:
             self.policy_version,
             self.reviewer_id,
         )
+        if self.method_lineage_projection_version not in {"", "narrative-method-lineage-projection.v1"}:
+            raise ValueError("Experimental method lineage projection is unsupported")
 
 
 @dataclass(frozen=True, slots=True)
@@ -1227,6 +1230,12 @@ class MkaosAuthorityApplication:
             card_id = f"knowledge-card:{worker.project_id}:{digest}"
             card_asset_version_id = f"{card_id}:v1"
             candidate_payload = dict(candidate["content"]["candidate"])
+            if approval_contract.get("method_lineage_projection"):
+                from .domain import project_narrative_method_lineage
+
+                candidate_payload, projection = project_narrative_method_lineage(candidate_payload)
+                if projection != approval_contract["method_lineage_projection"]:
+                    raise KernelError("MKAOS_APPROVAL_POLICY_DRIFT", "Retain the exact admitted method projection")
             card_content = {
                 "schema_version": "mkaos-knowledge-card.v1",
                 "knowledge_card_id": card_id,
@@ -1270,6 +1279,8 @@ class MkaosAuthorityApplication:
                     ),
                     "governance_decision_asset_version_id": decision_asset_version_id,
                     "created_by_operation_id": worker.causation_id,
+                    **({"method_lineage_projection": approval_contract["method_lineage_projection"]}
+                        if approval_contract.get("method_lineage_projection") else {}),
                 },
             }
             assert_abstract_content_safe(card_content)
@@ -1771,7 +1782,20 @@ class MkaosAuthorityApplication:
             )
         from .craft_authoring import original_craft_approval
         from .domain import assert_narrative_method_activation_safe
-        assert_narrative_method_activation_safe(candidate["content"].get("candidate") or {})
+        method_payload = candidate["content"].get("candidate") or {}
+        projection = None
+        experimental = self.experimental_approval_policy
+        if (approval_class == "EXPERIMENTAL_VALIDATION" and experimental
+                and experimental.method_lineage_projection_version == "narrative-method-lineage-projection.v1"
+                and method_payload.get("knowledge_kind") == "NARRATIVE_INTELLIGENCE"
+                and method_payload.get("semantic_family") == "NARRATIVE_MECHANISM"
+                and method_payload.get("craft_mechanism", {}).get("provenance", {}).get("origin") == "SOURCE_ABSTRACTION"
+                and (project_id, workspace_id, policy_version, reviewer_id)
+                == (experimental.project_id, experimental.workspace_id, experimental.policy_version, experimental.reviewer_id)):
+            from .domain import project_narrative_method_lineage
+
+            method_payload, projection = project_narrative_method_lineage(method_payload)
+        assert_narrative_method_activation_safe(method_payload)
         original_approval = original_craft_approval(candidate, project_id=project_id,
             workspace_id=workspace_id, policy_version=policy_version,
             reviewer_id=reviewer_id, approval_class=approval_class)
@@ -1875,6 +1899,7 @@ class MkaosAuthorityApplication:
             "reviewer_id": reviewer_id,
             "production_context_eligible": False,
             "experimental_context_eligible": True,
+            **({"method_lineage_projection": projection} if projection is not None else {}),
         }
 
     @staticmethod
