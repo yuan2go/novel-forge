@@ -147,6 +147,92 @@ def test_selected_chapter_method_conflicts_with_book_prohibition():
         build_creative_baseline(plan, context)
 
 
+@pytest.mark.parametrize("book_status", ["APPLICABLE", "NOT_APPLICABLE", "PROHIBITED", "UNDETERMINED"])
+@pytest.mark.parametrize("chapter_function", [None, "Quiet closure with a consequence for the next chapter"])
+def test_scoped_book_assessment_does_not_select_or_forbid_each_chapter_method(book_status, chapter_function):
+    style = compile_foundation_style(replace(compilation(book_status), definition_version="2.1.6"))
+    plan, context, _ = work_input("克制观察")
+    plan.update(book_id="book-1", chapter_contract_schema_version="chapter-mission-scene.v3",
+        serialization_function=chapter_function, prohibited_outcomes=["The child cannot learn the mother's undisclosed decision"])
+    context["book_id"] = "book-1"
+    context["context_segments"][-1]["structured_facts"] = style["structured_facts"]
+    baseline = build_creative_baseline(plan, context)
+    assert baseline["contract_version"] == "creative-baseline.v2"
+    assert baseline["method_requirements"]["serialization_function"]["status"] == ("APPLICABLE" if chapter_function else "NOT_APPLICABLE")
+    assert "work_requirement" not in baseline["method_requirements"]["serialization_function"]
+    assert baseline["book_applicability"][0]["declarations"][0]["status"] == book_status
+    assert baseline["prohibited_outcomes"] == plan["prohibited_outcomes"]
+    assert style["contract_version"] == "foundation-style-projection.v5"
+
+
+@pytest.mark.parametrize("mutation", ["unselected", "book", "source"])
+def test_scoped_baseline_retains_exact_book_assessment_provenance(mutation):
+    style = compile_foundation_style(replace(compilation("NOT_APPLICABLE"), definition_version="2.1.6"))
+    plan, context, _ = work_input("克制观察")
+    plan["book_id"] = context["book_id"] = "book-1"
+    segment = context["context_segments"][-1]
+    segment["structured_facts"] = style["structured_facts"]
+    binding = next(fact["value"] for fact in style["structured_facts"] if fact.get("key") == "work_applicability")
+    if mutation == "unselected":
+        segment["asset_version_id"] = "other-style:v1"
+    elif mutation == "book":
+        binding["book_id"] = "foreign-book"
+    else:
+        binding["source_content_hash"] = "other-source"
+    with pytest.raises(KernelError, match="WORK_APPLICABILITY_SOURCE_INVALID"):
+        build_creative_baseline(plan, context)
+
+
+def test_frozen_method_conflict_stops_before_writer_dispatch():
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority.handlers import _DraftHandler
+
+    plan, context, _ = work_input("克制观察")
+    plan.update(book_id="book-1",chapter_contract_schema_version="chapter-mission-scene.v3",serialization_function="next chapter continuity")
+    context["book_id"] = "book-1"
+    context["context_segments"][-1]["structured_facts"] = compile_foundation_style(compilation("NOT_APPLICABLE"))["structured_facts"]
+    inputs = tuple(ChapterInputAsset(kind+":v1",kind,"sha256:"+"a"*64,content) for kind,content in (
+        ("chapter_plan",plan),("context_bundle",context),("chapter_execution_intent",{}),("chapter_memo",{})))
+    request = ChapterHandlerRequest("draft","project-1","workspace","trace","correlation",{},inputs,definition_version="3.10.0")
+    calls = []
+    class Writer:
+        def invoke(self,*args,**kwargs):
+            calls.append(kwargs)
+            raise AssertionError("Conflicting frozen inputs cannot spend another Writer call")
+    with pytest.raises(KernelError,match="QUALITY_APPLICABILITY_CONFLICT"):
+        _DraftHandler(Writer()).execute(request)
+    assert calls == []
+
+
+def test_non_style_assessment_marker_cannot_change_a_frozen_baseline_contract():
+    plan, context, _ = work_input("克制观察")
+    plan.update(book_id="book-1", chapter_contract_schema_version="chapter-mission-scene.v3", serialization_function="next chapter continuity")
+    context["book_id"] = "book-1"
+    context["context_segments"][-1]["structured_facts"] = compile_foundation_style(compilation("NOT_APPLICABLE"))["structured_facts"]
+    context["context_segments"].append({"asset_type": "story_state_snapshot", "structured_facts": [
+        {"key": "work_applicability", "value": {"contract_version": "book-applicability-assessment.v1"}}]})
+    with pytest.raises(KernelError, match="QUALITY_APPLICABILITY_CONFLICT"):
+        build_creative_baseline(plan, context)
+
+
+def test_quality_recompiles_the_exact_scoped_candidate_without_reapplying_book_choices():
+    from novel_forge.modules.chapter_quality_authority.context_views import build_quality_context_view
+    style = compile_foundation_style(compilation("NOT_APPLICABLE"))
+    plan, context, candidate = work_input("克制观察")
+    plan.update(book_id="book-1", chapter_contract_schema_version="chapter-mission-scene.v3", serialization_function="next chapter continuity")
+    context["book_id"] = "book-1"
+    context["context_segments"][-1]["structured_facts"] = style["structured_facts"]
+    candidate["creative_baseline"] = build_creative_baseline(plan, context, contract_version="creative-baseline.v2")
+    quality = build_quality_context_view(group="commercial", revision=candidate, revision_asset_version_id="draft:v1",
+        chapter_plan=plan, chapter_plan_asset_version_id="plan:v1", context_bundle=context,
+        context_bundle_asset_version_id="context:v1", canon={}, canon_asset_version_id="canon:v1", work_requirements=True)
+    assert quality["creative_baseline"] == candidate["creative_baseline"]
+    with pytest.raises(KernelError, match="QUALITY_CREATIVE_BASELINE_DRIFT"):
+        build_quality_context_view(group="commercial", revision=candidate, revision_asset_version_id="draft:v1",
+            chapter_plan={**plan, "serialization_function": None}, chapter_plan_asset_version_id="plan:v1", context_bundle=context,
+            context_bundle_asset_version_id="context:v1", canon={}, canon_asset_version_id="canon:v1", work_requirements=True)
+
+
 def test_frozen_style_definition_retains_v3_instead_of_silent_upgrade():
     request = compilation("PROHIBITED")
     old = compile_foundation_style(replace(request, definition_version="2.1.1"))

@@ -81,7 +81,7 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
             "quality.human_evaluation.record", "quality.adjudication.record"})
         self.assertTrue(all(item["definition_version"] == "2.2.0" and
                             item["policy"]["reference_sample_annotation_input_allowed"] for item in references))
-        self.assertTrue(all(item["definition_version"] == ("2.1.2" if item["name"] == "story_design.review.author" else "2.1.5" if item["name"] == "creative.brief.create" else "2.1.4" if item["name"] == "chapter.style_policy.compile" else "2.1.1") and
+        self.assertTrue(all(item["definition_version"] == ("2.1.2" if item["name"] == "story_design.review.author" else "2.1.5" if item["name"] == "creative.brief.create" else "2.1.6" if item["name"] == "chapter.style_policy.compile" else "2.1.1") and
                             "reference_sample_annotation_input_allowed" not in item["policy"] for item in ordinary))
         model = content_operation_definitions(application_build_id="test", commit_sha="a" * 40,
             model_reference_annotations=True)

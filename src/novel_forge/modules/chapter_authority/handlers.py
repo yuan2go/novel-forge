@@ -372,7 +372,7 @@ class _ExecutionIntentHandler:
             ]
             if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
                 if len(policies) != 1 or (
-                    policies[0].content.get("contract_version") != "foundation-style-projection.v4"
+                    policies[0].content.get("contract_version") not in {"foundation-style-projection.v4", "foundation-style-projection.v5"}
                     or not any(fact.get("key") == "work_applicability"
                                for fact in policies[0].content.get("structured_facts", []))
                 ):
@@ -1533,6 +1533,11 @@ class _DraftHandler:
         intent = request.require_input("chapter_execution_intent")
         memo = request.require_input("chapter_memo")
         context = request.require_input("context_bundle")
+        baseline = None
+        if request.work_requirements_enabled:
+            from .chapter_plan_views import build_creative_baseline
+
+            baseline = build_creative_baseline(plan.content, context.content, contract_version="creative-baseline.v2" if request.effective_definition_version == "3.10.3" else None)
         from .realization_composition import compile_realization_contract
         from .craft_execution import require_craft_delivery
 
@@ -1546,7 +1551,7 @@ class _DraftHandler:
         core_policy = "scene-core-slots.v1" if request.effective_definition_version in {"3.9.1", "3.9.2", "3.10.0"} else "EXPLICIT_SKELETON_V1"
         information_policy = "scene-information-flow.v1" if request.effective_definition_version in {"3.9.2", "3.10.0"} else "ENTRY_ONLY_V1"
         source_arguments = {}
-        if request.effective_definition_version in {"3.10.0", "3.10.1"}:
+        if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.3"}:
             from .realization_composition import resolve_accepted_realization_sources
             core_policy, information_policy = "continuous-scene.v1", "actor-source-scope.v1"
             source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
@@ -1576,7 +1581,7 @@ class _DraftHandler:
             work_requirements=request.work_requirements_enabled,
             core_policy=core_policy,
             information_policy=information_policy,
-            realization_contract=realization_contract if request.effective_definition_version in {"3.10.0", "3.10.1"} else None,
+            realization_contract=realization_contract if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.3"} else None,
             enforce_voice_contract=not bool((request.command.get("preparation_report") or {}).get("author_workflow")),
         )
         if (request.command.get("preparation_report") or {}).get("author_workflow"):
@@ -1593,12 +1598,8 @@ class _DraftHandler:
             "authority": "CREATIVE_SUGGESTION_ONLY",
         }
         content["craft_delivery_evidence"] = craft_delivery
-        if request.work_requirements_enabled:
-            from .chapter_plan_views import build_creative_baseline
-
-            content["creative_baseline"] = build_creative_baseline(
-                plan.content, context.content
-            )
+        if baseline is not None:
+            content["creative_baseline"] = baseline
         author_guidance = build_draft_plan_view(plan.content).get("author_design_guidance")
         if author_guidance:
             content["author_design_guidance"] = author_guidance
@@ -3204,7 +3205,7 @@ def _model_output(
 ) -> ChapterHandlerOutput:
     from dataclasses import replace
     known = None
-    if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2"} and request.database_url and node in {ChapterNode.MEMO, ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CANON_EXTRACTION}:
+    if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2", "3.10.3"} and request.database_url and node in {ChapterNode.MEMO, ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CANON_EXTRACTION}:
         from .receipt_recovery import known_receipt_proof
         known = known_receipt_proof(request)
     if known is not None:
@@ -3344,10 +3345,10 @@ def _canon_recovery_feedback(request):
 
 def _invoke_with_known_receipt(provider, request, *, stage, payload):
     retained = None
-    if request.effective_definition_version in {"3.10.0", "3.10.1"} and request.database_url:
+    if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.3"} and request.database_url:
         from .receipt_recovery import consume_known_draft_receipt
         retained = consume_known_draft_receipt(request)
-    if stage == "draft" and request.effective_definition_version == "3.10.1" and retained is None:
+    if stage == "draft" and request.effective_definition_version in {"3.10.1", "3.10.3"} and retained is None:
         raise KernelError("DRAFT_RECOVERY_JOURNAL_REQUIRED", "A receipt successor cannot dispatch another model call")
     return retained if retained is not None else provider.invoke(request, stage=stage, payload=payload)
 

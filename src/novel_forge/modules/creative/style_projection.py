@@ -75,15 +75,16 @@ def compile_foundation_style(request: AuthorityHandlerRequest) -> dict:
     )
 
     work_requirements = uses_work_requirements(design.content)
-    from novel_forge.modules.content_authority.definitions import CONTENT_WORK_STYLE_VERSION
+    from novel_forge.modules.content_authority.definitions import CONTENT_WORK_STYLE_VERSION, CONTENT_SCOPED_STYLE_VERSION
 
-    current_semantics = request.definition_version == CONTENT_WORK_STYLE_VERSION
-    if request.definition_version not in {"2.1.1", CONTENT_WORK_STYLE_VERSION}:
+    scoped_semantics = request.definition_version == CONTENT_SCOPED_STYLE_VERSION
+    current_semantics = request.definition_version in {CONTENT_WORK_STYLE_VERSION, CONTENT_SCOPED_STYLE_VERSION}
+    if request.definition_version not in {"2.1.1", CONTENT_WORK_STYLE_VERSION, CONTENT_SCOPED_STYLE_VERSION}:
         raise KernelError("FOUNDATION_STYLE_VERSION_UNSUPPORTED", "Frozen style compilation contract is unknown")
     return {
         "type": "style_policy",
         "profile_id": f"foundation-style:{design.asset_version_id}",
-        "contract_version": ("foundation-style-projection.v4" if current_semantics else "foundation-style-projection.v3")
+        "contract_version": ("foundation-style-projection.v5" if scoped_semantics else "foundation-style-projection.v4" if current_semantics else "foundation-style-projection.v3")
         if work_requirements
         else "foundation-style-projection.v2",
         "project_id": request.project_id,
@@ -93,6 +94,7 @@ def compile_foundation_style(request: AuthorityHandlerRequest) -> dict:
         "structured_facts": [
             *voices,
             *([{"key": "work_applicability", "value": {
+                **({"contract_version": "book-applicability-assessment.v1", "authority": "FOUNDATION_ASSESSMENT"} if scoped_semantics else {}),
                 "scope": "BOOK", "book_id": sources["CREATIVE_FOUNDATION"].content["book_id"],
                 "source_asset_version_id": sources["CREATIVE_FOUNDATION"].asset_version_id,
                 "source_content_hash": sources["CREATIVE_FOUNDATION"].content_hash,

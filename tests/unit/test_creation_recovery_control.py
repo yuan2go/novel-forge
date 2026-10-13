@@ -32,8 +32,19 @@ def drive(monkeypatch):
         monkeypatch.setattr(module, name, Mock(return_value=False))
     from novel_forge.modules.command_kernel import generation_isolation
     from novel_forge.modules.chapter_authority import context_transport_recovery
+    from novel_forge.modules.chapter_authority import memo_recovery, scene_receipt_recovery
+    from novel_forge.modules.story_planning_runtime import runtime_continuation
+    from novel_forge.modules.book_authority import creation_inputs
+    composition.planning = object()
+    monkeypatch.setattr(creation_inputs, "refresh_creation_style_scope", Mock(return_value=False))
+    monkeypatch.setattr(runtime_continuation, "recover_world_result_frontier", Mock(return_value=False))
+    for name in ("recover_memo_references", "recover_memo_completion", "recover_intent_references"):
+        monkeypatch.setattr(memo_recovery, name, Mock(return_value=False))
+    monkeypatch.setattr(scene_receipt_recovery, "recover_scene_source_union", Mock(return_value=False))
     monkeypatch.setattr(generation_isolation, "recover_chapter_generations", Mock(return_value=False))
     monkeypatch.setattr(context_transport_recovery, "recover_unsent_context_transport", Mock(return_value=False))
+    monkeypatch.setattr(context_transport_recovery, "recover_optional_memory_transport", Mock(return_value=False))
+    monkeypatch.setattr(context_transport_recovery, "recover_schema_transport", Mock(return_value=False))
     arguments = dict(composition=composition, chapter=object(), book_run_id="b", worker=Mock(), maximum_ticks=3, deadline=float("inf"))
     return arguments, candidate_repair, derived_recovery
 

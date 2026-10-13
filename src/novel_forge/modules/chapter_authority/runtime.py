@@ -93,7 +93,7 @@ def _handler_definition_version(
             else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.10.0", "3.9.0", "3.9.1", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15", "3.9.16"}
         )
         if node in {ChapterNode.MEMO, ChapterNode.DRAFT}:
-            recoverable = recoverable | ({"3.10.1", "3.10.2"} if node is ChapterNode.MEMO else {"3.10.1"})
+            recoverable = recoverable | ({"3.10.1", "3.10.2"} if node is ChapterNode.MEMO else {"3.10.1", "3.10.3"})
         if node is ChapterNode.EXECUTION_INTENT:
             recoverable = recoverable | {"3.10.1"}
         if row is not None and str(row[0]) in recoverable:
@@ -262,10 +262,12 @@ def execute_chapter_handler(
             sample_version = uow.cursor.fetchone()[0]
         if not chapter_sample_definition_supported(chapter_sample_definition_name(stage), sample_version):
             raise KernelError("AUTHORITY_HANDLER_CONTRACT_STALE", "sample definition version is not supported by the runtime codec")
+    from .receipt_recovery import guard_scope_draft_materialization
     return execute_authority_handler(
         database_url,
         command=command,
         execution_probe=execution_probe,
+        materialization_guard=guard_scope_draft_materialization,
         registration=AuthorityHandlerRegistration(
             definition_name=chapter_sample_definition_name(stage) if sampling else node.definition_name,
             definition_version=sample_version if sampling else _handler_definition_version(

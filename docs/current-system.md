@@ -1945,11 +1945,28 @@ ExecutionIntent and every candidate/review/Quality baseline; statuses alone are 
 a sufficient Writer contract. Fresh 3.8 admission rejects legacy polluted projections
 with CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED. New sampler definitions 2.2/2.3
 bind the exact source Operation semantics separately from their own execution version;
-2.0/2.1 remain readable with frozen published source policies. Selected Book requirements and Chapter choices
-must agree: neither a generic threshold nor a Chapter NOT_APPLICABLE can override an
-effective requirement. Foundation style compile 2.1.4/v4 binds applicability to the
-selected Book Foundation and its approved source versions; frozen 2.1.1 emits v3.
-New 3.8 ExecutionIntent admission requires that v4 source-bound applicability projection,
+2.0/2.1 remain readable with frozen published source policies. Explicit author constraints
+remain in the bound author guidance, style constraints and prohibited outcomes.
+Foundation style compile 2.1.6/v5 records `book-applicability-assessment.v1` with its
+exact approved Book Foundation provenance. `creative-baseline.v2` keeps that Book
+assessment separately from the Chapter's selected methods. Book serial potential
+does not require a hook or serial function in every chapter, and a finite work's
+next-chapter continuity does not contradict its lack of long-serial potential.
+Quality recompiles the candidate's declared baseline version from the same exact inputs.
+Normal Creation v2 uses Chapter Pack 3.0.4 and the scoped Style compiler; v1 retains
+its Pack 3.0.3 binding. At a native Creation checkpoint without an active Chapter
+request or unresolved unisolated generation, the original Creator may derive v5
+from the same Foundation inputs through Content Authority. Normal preparation then
+freezes that eligible Style for future Chapter work. Existing Chapter inputs remain frozen.
+Style 2.1.4/v4 and baseline v1 retain the former strict Book-to-Chapter mapping as
+`HISTORICAL_COMPATIBILITY`; Style 2.1.1 still emits v3. Deterministic baseline checks
+precede Writer dispatch. A terminal v1 `QUALITY_APPLICABILITY_CONFLICT` with one
+verified complete Writer result may use the existing Kernel receipt successor to
+Draft 3.10.3. Registration, consumption and completion rederive the source-bound v2
+baseline and unchanged prose under the current unaccepted frontier. Cancellation,
+input or receipt drift rejects recovery; the successor cannot dispatch a Writer call.
+This wiring does not establish literary improvement or long-form qualification.
+Current ExecutionIntent admission accepts source-bound v4/v5 projections,
 including when preparation explicitly selects an older asset. Legacy v2/v3 styles fail
 with STYLE_PROJECTION_MIGRATION_REQUIRED. A migration must use a new explicit owning
 command; it cannot replace an old task's frozen style or baseline during recovery.

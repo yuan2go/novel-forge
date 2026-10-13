@@ -35,6 +35,7 @@ def execute_authority_handler(
     command: WorkerLeaseCommand,
     registration: AuthorityHandlerRegistration,
     execution_probe: Callable[[], object] | None = None,
+    materialization_guard: Callable[[Any, AuthorityHandlerRequest], None] | None = None,
 ) -> AuthorityExecutionResult:
     request = _load_request(database_url, command, registration)
     replayed = _load_materialized_result(
@@ -65,6 +66,8 @@ def execute_authority_handler(
                 "AUTHORITY_HANDLER_OPERATION_CONFLICT",
                 "Attempt operation changed during handler execution",
             )
+        if materialization_guard is not None:
+            materialization_guard(uow, request)
         created_any = False
         input_types = {
             item.asset_version_id: item.asset_type for item in request.inputs

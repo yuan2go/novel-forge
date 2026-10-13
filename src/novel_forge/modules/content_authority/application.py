@@ -92,7 +92,7 @@ class ContentAuthorityApplication:
                     definition_name=request.definition_name, payload=request.payload,
                     actor_id=principal.principal_id, input_assets=list(request.input_assets))
         replay_definition_version = None
-        if request.definition_name == "creative.brief.create":
+        if request.definition_name in {"creative.brief.create", "chapter.style_policy.compile"}:
             with AuthorityUnitOfWork(self.database_url) as selection_uow:
                 selection_uow.cursor.execute("""SELECT definition_version, command_payload, workspace_id, actor_id
                     FROM authority_operation WHERE project_id=%s AND definition_name=%s
@@ -103,7 +103,7 @@ class ContentAuthorityApplication:
                     "input_asset_version_ids": [item["asset_version_id"] for item in request.input_assets], "payload": request.payload}
                     and previous[2] == request.workspace_id and previous[3] == request.actor_id):
                 replay_definition_version = str(previous[0])
-            else:
+            elif request.definition_name == "creative.brief.create":
                 from novel_forge.modules.creative.input_selection import validate_input_selection
                 selected = validate_input_selection(request.payload.get("input_selection"))
                 if selected["source_kind"] != "TASK_GENERATED" and (principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR):

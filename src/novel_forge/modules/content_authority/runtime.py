@@ -19,11 +19,14 @@ def execute_content_handler(
     registry: AuthorityHandlerRegistry,
     execution_probe: Callable[[], object] | None = None,
 ) -> AuthorityExecutionResult:
+    from novel_forge.modules.book_authority.creation_inputs import require_style_scope_frontier
+
     return execute_authority_handler(
         database_url,
         command=command,
         registration=registry.registration(definition_name, definition_version),
         execution_probe=execution_probe,
+        materialization_guard=require_style_scope_frontier if definition_name == "chapter.style_policy.compile" and definition_version == "2.1.6" else None,
     )
 
 

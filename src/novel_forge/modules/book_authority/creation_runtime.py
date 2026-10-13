@@ -139,6 +139,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from .creation_inputs import refresh_creation_style_scope
+        recover(lambda: refresh_creation_style_scope(composition=composition, book_run_id=book_run_id))
         from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
         from novel_forge.modules.chapter_authority.context_transport_recovery import recover_unsent_context_transport, recover_optional_memory_transport
         recover_unsent_context_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal)
@@ -157,11 +159,13 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         recover(lambda: recover_memo_completion(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         from novel_forge.modules.chapter_authority.scene_receipt_recovery import recover_scene_source_union
         recover(lambda: recover_scene_source_union(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
+        if author_first(book):
+            recover(lambda: recover_known_draft_receipt(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         if not author_first(book):
             from novel_forge.modules.chapter_authority.canon_contract_recovery import recover_canon_contract, recover_completed_canon_window
             recover(lambda: recover_canon_contract(composition.authority, book_run_id=book_run_id, principal=composition.principal))
             recover(lambda: recover_completed_canon_window(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-            from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
             recover(lambda: recover_known_draft_receipt(composition.authority, book_run_id=book_run_id, principal=composition.principal))
             from novel_forge.modules.chapter_authority.current_semantic_recovery import retire_semantic_frontier
             try:
@@ -630,9 +634,9 @@ def creation_narrative_execution(policy: dict[str, Any]) -> dict[str, dict[str, 
     version = policy.get("narrative_execution_contract")
     if version is None:
         return {"chapter": {}, "planning": {}}
-    if version != "native-narrative-execution.v1":
+    if version not in {"native-narrative-execution.v1", "native-narrative-execution.v2"}:
         raise KernelError("CREATION_NARRATIVE_EXECUTION_INVALID", "Unknown frozen narrative execution contract")
-    return {"chapter": {"pack_version_override": "3.0.3", "prose_skill_version": "prose-generation-v5",
+    return {"chapter": {"pack_version_override": "3.0.4" if version == "native-narrative-execution.v2" else "3.0.3", "prose_skill_version": "prose-generation-v5",
                         "prompt_template_version": "v15"},
             "planning": {"event_first_planning": True}}
 

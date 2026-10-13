@@ -50,7 +50,7 @@ def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effect
         return completed
     definition = operation.get("definition_snapshot") or {}
     policy = definition.get("policy") or {}
-    if (definition.get("definition_version") not in {"3.10.0", "3.10.1", "3.10.2"}
+    if (definition.get("definition_version") not in {"3.10.0", "3.10.1", "3.10.2", "3.10.3"}
         or operation.get("definition_name") not in NODES or own_effects
         or (policy.get("known_receipt_recovery") != KNOWN_RECEIPT
             and policy.get("retained_result_derivation") != GRAPH)):
@@ -124,10 +124,14 @@ def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effect
         AND output.content_hash=v.content_hash AND v.lifecycle='ACTIVE'
         AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'""",
         [current["operation_id"], current["project_id"]])
-    proofs = [row[0].get(output_key) for row in cursor.fetchall() if row[0].get(output_key) is not None]
+    outputs = [row[0] for row in cursor.fetchall() if row[0].get(output_key) is not None]
+    proofs = [output.get(output_key) for output in outputs]
     if len(proofs) != 1:
         raise _invalid()
     _validate_proof(proof, proofs[0], source, current)
+    if current["definition_version"] == "3.10.3":
+        from novel_forge.modules.chapter_authority.receipt_recovery import lock_scope_recovery_creation
+        lock_scope_recovery_creation(cursor, root_id=current["root_operation_id"], project_id=current["project_id"])
     require_live_chapter_frontier(cursor, root_id=current["root_operation_id"], project_id=current["project_id"])
     _require_settled_lineage(cursor, current, source)
     context = EffectCommandContext(operation_id=source_id, project_id=source["project_id"],
@@ -136,6 +140,19 @@ def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effect
     if (not verified or verified["budget_reservation_status"] != "SETTLED"
         or snapshot_hash(verified["provider_evidence"].get("result")) != proof["source_output_hash"]):
         raise _invalid()
+    if current["definition_version"] == "3.10.3":
+        from novel_forge.modules.chapter_authority.receipt_recovery import revalidate_applicability_scope
+        from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
+        from novel_forge.modules.chapter_authority.chapter_plan_views import validate_creative_baseline
+        if policy.get("creative_baseline_scope_revalidation") != "book-chapter-applicability.v1":
+            raise _invalid()
+        correction = revalidate_applicability_scope(source, ModelProviderResult.from_evidence(verified["provider_evidence"]),
+            asset_reader=uow.repositories.asset_documents)
+        baseline = validate_creative_baseline(outputs[0].get("creative_baseline"))
+        if (correction != proof.get("creative_baseline_scope_revalidation")
+            or baseline["contract_version"] != "creative-baseline.v2"
+            or baseline["baseline_digest"] != correction["baseline_digest"]):
+            raise _invalid()
     cursor.execute("""SELECT e.operation_id,e.request_hash,e.effect_type,d.dispatch_id,
         b.evidence->>'cost_authorization_ref',e.capability FROM authority_external_effect e
         JOIN authority_external_effect_dispatch d USING(external_effect_id)

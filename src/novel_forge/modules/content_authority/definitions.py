@@ -9,6 +9,7 @@ CONTENT_DEFINITION_VERSION = "2.1.1"
 CONTENT_AUTHOR_REVIEW_VERSION = "2.1.2"
 CONTENT_EDITORIAL_BRIEF_VERSION = "2.1.3"
 CONTENT_WORK_STYLE_VERSION = "2.1.4"
+CONTENT_SCOPED_STYLE_VERSION = "2.1.6"
 CONTENT_INPUT_SELECTION_VERSION = "2.1.5"
 CONTENT_INTEGRATION_PROVEN = frozenset(CONTENT_CODECS)
 
@@ -89,7 +90,7 @@ def content_operation_definitions(
                     REFERENCE_ANNOTATION_VERSION if reference_annotations else
                     CONTENT_AUTHOR_REVIEW_VERSION if name == "story_design.review.author" else
                     CONTENT_INPUT_SELECTION_VERSION if name == "creative.brief.create" else
-                    CONTENT_WORK_STYLE_VERSION if name == "chapter.style_policy.compile" else CONTENT_DEFINITION_VERSION,
+                    CONTENT_SCOPED_STYLE_VERSION if name == "chapter.style_policy.compile" else CONTENT_DEFINITION_VERSION,
                 "family": name.split(".")[0],
                 "command_schema_version": f"{name}.command.v2",
                 "result_schema_version": f"{name}.result.v2",

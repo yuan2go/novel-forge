@@ -384,7 +384,7 @@ def build_draft_style_view(
     }
 
 
-def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -> dict[str, Any]:
+def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any], *, separate_book_scope: bool = False) -> dict[str, Any]:
     fields = {
         "golden_opening": ("golden_opening",),
         "reader_promise": ("promise_action", "reader_promise_actions"),
@@ -425,7 +425,33 @@ def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -
             **({"selected_values": {name: source[name] for name in present}}
                if source.get("runtime_projection_version") in {"2.0.0", "3.0.0"} else {}),
         }
+    if separate_book_scope:
+        return result
     aliases = {"$.serialization_potential": "serialization_function"}
+    for binding in _book_applicability(plan, context_bundle, validate_all=False):
+        for declaration in binding.get("declarations", []):
+            dimension = aliases.get(declaration.get("field_path"))
+            if not dimension:
+                continue
+            status = declaration["status"]
+            local = result[dimension]
+            prior = local.get("work_requirement")
+            if prior and prior["status"] != status:
+                raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Frozen work decisions contradict each other")
+            local["work_requirement"] = {**declaration, **{key: binding[key] for key in ("scope", "source_asset_version_id", "source_content_hash")}}
+            if status in {"PROHIBITED", "NOT_APPLICABLE", "UNDETERMINED"}:
+                if local["status"] == "APPLICABLE":
+                    raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter selection contradicts the frozen work method decision")
+                local["status"] = status
+            elif status == "APPLICABLE":
+                if local["status"] == "NOT_APPLICABLE":
+                    raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter omission contradicts the frozen work requirement")
+                local["status"] = status
+    return result
+
+
+def _book_applicability(plan: dict[str, Any], context_bundle: dict[str, Any], *, validate_all: bool = True) -> list[dict[str, Any]]:
+    result = []
     selected_style = context_bundle.get("production_input_manifest", {}).get("style_policy_version_id")
     book_id = context_bundle.get("book_id") or plan.get("book_id")
     bound_styles = [segment for segment in context_bundle.get("context_segments", [])
@@ -447,45 +473,46 @@ def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -
                         "content_hash": binding.get("source_content_hash")} not in binding.get("source_bindings", [])):
                 raise KernelError("WORK_APPLICABILITY_SOURCE_INVALID", "Work choices need exact approved Foundation provenance")
             for declaration in binding.get("declarations", []):
-                dimension = aliases.get(declaration.get("field_path"))
-                if not dimension:
+                if not validate_all and declaration.get("field_path") != "$.serialization_potential":
                     continue
                 status = declaration.get("status")
                 if status not in {"APPLICABLE", "NOT_APPLICABLE", "PROHIBITED", "UNDETERMINED"}:
                     raise KernelError("WORK_APPLICABILITY_INVALID", "Unknown work method choice")
-                local = result[dimension]
-                prior = local.get("work_requirement")
-                if prior and prior["status"] != status:
-                    raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Frozen work decisions contradict each other")
-                local["work_requirement"] = {**declaration, **{key: binding[key] for key in ("scope", "source_asset_version_id", "source_content_hash")}}
-                if status in {"PROHIBITED", "NOT_APPLICABLE", "UNDETERMINED"}:
-                    if local["status"] == "APPLICABLE":
-                        raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter selection contradicts the frozen work method decision")
-                    local["status"] = status
-                elif status == "APPLICABLE":
-                    if local["status"] == "NOT_APPLICABLE":
-                        raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter omission contradicts the frozen work requirement")
-                    local["status"] = status
+            result.append(dict(binding))
     return result
 
 
 def build_creative_baseline(
-    plan: dict[str, Any], context_bundle: dict[str, Any]
+    plan: dict[str, Any], context_bundle: dict[str, Any], *, contract_version: str | None = None
 ) -> dict[str, Any]:
     from novel_forge.modules.story_design_authority.author_input import (
         compile_provider_author_projection,
     )
 
     view = build_draft_plan_view(plan, work_requirements=True)
+    if contract_version is None:
+        bindings = _book_applicability(plan, context_bundle, validate_all=False)
+        if any(binding.get("contract_version") not in {None, "book-applicability-assessment.v1"}
+               or binding.get("contract_version") == "book-applicability-assessment.v1" and binding.get("authority") != "FOUNDATION_ASSESSMENT"
+               for binding in bindings):
+            raise KernelError("WORK_APPLICABILITY_VERSION_INVALID", "Unknown source-bound Book assessment contract")
+        contract_version = "creative-baseline.v2" if any(
+            binding.get("contract_version") == "book-applicability-assessment.v1"
+            for binding in bindings
+        ) else "creative-baseline.v1"
+    if contract_version not in {"creative-baseline.v1", "creative-baseline.v2"}:
+        raise KernelError("CREATIVE_BASELINE_VERSION_INVALID", "Unknown frozen creative baseline contract")
+    separate = contract_version == "creative-baseline.v2"
     baseline = {
-        "contract_version": "creative-baseline.v1",
+        "contract_version": contract_version,
         "chapter": view["chapter"],
         "source_plan": {
             "asset_version_id": view["source_chapter_plan_asset_version_id"],
             "content_hash": view["source_chapter_plan_content_hash"],
         },
         "style_constraints": view["style_constraints"],
-        "method_requirements": _method_requirements(plan, context_bundle),
+        "method_requirements": _method_requirements(plan, context_bundle, separate_book_scope=separate),
+        **({"book_applicability": _book_applicability(plan, context_bundle)} if separate else {}),
         "point_of_view": view.get("point_of_view"),
         "target_word_count": view.get("target_word_count"),
         "prohibited_outcomes": view.get("prohibited_outcomes"),
@@ -521,8 +548,8 @@ def validate_creative_baseline(baseline: Any) -> dict[str, Any]:
     }
     if (
         not isinstance(baseline, dict)
-        or set(baseline) != keys
-        or baseline.get("contract_version") != "creative-baseline.v1"
+        or set(baseline) != (keys | {"book_applicability"} if baseline.get("contract_version") == "creative-baseline.v2" else keys)
+        or baseline.get("contract_version") not in {"creative-baseline.v1", "creative-baseline.v2"}
     ):
         raise KernelError(
             "CREATIVE_BASELINE_REQUIRED",

@@ -13,7 +13,7 @@ from .domain_handlers import normalize_draft_result
 from .craft_execution import require_craft_delivery
 
 
-def revalidate_scene_receipt(source, result, *, asset_reader):
+def draft_receipt_inputs(source, *, asset_reader):
     _require_current_receipt_family(source)
     assets = []
     for binding in source["input_asset_snapshot"]:
@@ -24,7 +24,11 @@ def revalidate_scene_receipt(source, result, *, asset_reader):
                 or asset.eligibility != "ELIGIBLE" or asset.governance != "CLEAR"):
             raise KernelError("DRAFT_RECOVERY_INPUT_DRIFT", "Retain exact governed inputs")
         assets.append(ChapterInputAsset(asset.asset_version_id, asset.asset_type, asset.content_hash, asset.content))
-    request = ChapterHandlerRequest(source["operation_id"], source["project_id"], source["workspace_id"], source["trace_id"], source["correlation_id"], source["command_payload"], tuple(assets), definition_version="3.10.0")
+    return ChapterHandlerRequest(source["operation_id"], source["project_id"], source["workspace_id"], source["trace_id"], source["correlation_id"], source["command_payload"], tuple(assets), definition_version="3.10.0")
+
+
+def revalidate_scene_receipt(source, result, *, asset_reader):
+    request = draft_receipt_inputs(source, asset_reader=asset_reader)
     plan, context = request.require_input("chapter_plan"), request.require_input("context_bundle")
     require_craft_delivery(plan=plan.content, intent=request.require_input("chapter_execution_intent").content,
         memo=request.require_input("chapter_memo").content, context=context.content)

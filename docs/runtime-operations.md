@@ -337,6 +337,14 @@ Per-Chapter opt-in requires the local author/operator and freezes policy plus ex
 in the native request; omitted policy keeps the profile/default path. A literary comparison requires its own scoped input and existing runtime authorization.
 Do not resume paused original work or unresolved UNKNOWN effects as a comparison shortcut.
 
+For Book/Chapter applicability scope changes, run the focused
+`test_work_applicability_binding.py`, `test_work_intent_consistency.py`,
+`test_retained_completion_guards.py` and `test_creation_recovery_control.py` checks.
+Native PostgreSQL evidence must bind the selected Style, Draft baseline and downstream
+Quality baseline; retained scope recovery must complete with zero new Writer effects,
+unchanged terminal source and exact original inputs/receipt. Include cancellation
+serialization, input/receipt drift and forged scope-proof rejection. A fixture or
+captured-case replay proves only its stated engineering boundary, not reading quality.
 For working memory, also run `test_working_memory.py`, `test_prose_repair_scope.py` and the
 `working-memory-interruption` native PostgreSQL variant. It checks eight chapter deliveries,
 interruption reconciliation, exact annotation replay, checkpoint rejection, historical
