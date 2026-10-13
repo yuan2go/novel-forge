@@ -20,6 +20,7 @@ LEGACY_METHODOLOGIES = {
     "multidisciplinary-knowledge": {
         "1.0.0": "legacy-v1.md",
         "1.2.0": "writing-theory-methods-v1.md",
+        "1.2.1": "writing-theory-methods-v2.md",
     },
     "hot-novel-deconstruction": {"2.0.0": "legacy-v2.0.0.md"},
     "hot-novel-business-deconstruction": {"1.0.0": "legacy-v1.0.0.md"},

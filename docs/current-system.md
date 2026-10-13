@@ -1030,6 +1030,13 @@ The existing Observation, MKAOS discovery, approval and Book selection owners re
 unchanged. Selecting this analysis method neither changes a Writer Skill nor proves
 that a Book adopted it or that its prose improved.
 
+The explicit `source-analysis-routing.writing-methods.v2` binds method 1.2.1
+and ordinary document Observation Prompt 2.1. Bounded reading keeps its own frozen
+Prompt contract. Only structured Source evidence permits the shortest necessary exact
+quotation in `supports[].support_text` with UTF-8 locations; statements, KnowledgeCards
+and fiction must remain independent of source expression. Prior methods and prompts
+retain their exact digest and cannot be reinterpreted by the new version.
+
 New Craft selections freeze `craft-need-driven-selection.v2`, separately from the
 unchanged density/frequency budget versions. Problem, scene demand and reader-effect
 matches use explicit semantic dimensions. Genre, POV, scene-type labels, identifiers

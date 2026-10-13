@@ -533,6 +533,12 @@ def _install_validation_manifest(
             "release_channel": "VALIDATION",
         },
     )
+    if not automatic and str(compilation["compilation_id"]) != compilation_id:
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        raise KernelError("CAPABILITY_PACK_SHARED_APPROVAL_SCOPE_REQUIRED",
+            "Use the approval Authority for shared strict scopes before another Book deployment")
+    compilation_id = str(compilation["compilation_id"])
     compiled = dict(compilation["compiled"])
     _register_agents(
         database_url,

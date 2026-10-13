@@ -8,7 +8,7 @@ from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
 
 from .methodologies import SourceMethodologyRegistry
 from .profiling import LogicalDocumentScope, SourceContentType, canonical_hash
-from .craft_discovery import WRITING_METHODS_ROUTING, craft_discovery_strategy
+from .craft_discovery import WRITING_METHOD_ROUTES, WRITING_METHODS_EVIDENCE_ROUTING, craft_discovery_strategy
 
 
 SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES = 32_000
@@ -390,18 +390,18 @@ def resolve_analysis_strategy(
         raise ValueError(
             f"Source content type is not routable: {content_type}"
         ) from exc
-    if routing_policy_version == WRITING_METHODS_ROUTING:
+    if routing_policy_version in WRITING_METHOD_ROUTES:
         if content_type != SourceContentType.WRITING_THEORY:
             raise ValueError("Writing methods require a governed writing-theory profile")
         profile = SourceAnalysisProfile(
-            "writing_theory_methods", "1.0", content_type,
+            "writing_theory_methods", "1.1" if routing_policy_version == WRITING_METHODS_EVIDENCE_ROUTING else "1.0", content_type,
             _specs("multidisciplinary-knowledge", "craft_principle"),
             profile.window_chunks, profile.max_analyzer_calls,
             "mkaos.knowledge.extract", profile.abstraction_policy_version,
         )
         registry = SourceMethodologyRegistry(
             registry.skill_root,
-            versions={**registry.versions, "multidisciplinary-knowledge": "1.2.0"},
+            versions={**registry.versions, "multidisciplinary-knowledge": "1.2.1" if routing_policy_version == WRITING_METHODS_EVIDENCE_ROUTING else "1.2.0"},
         )
     capabilities = default_capability_registry()
     capabilities.resolve("deconstruction.observe")
@@ -416,7 +416,7 @@ def resolve_analysis_strategy(
                 dimension=spec.dimension,
                 schema_version="source-mechanism-observation.v2",
                 prompt_id=f"source.{profile.profile_id}.{spec.dimension}",
-                prompt_version="2.0",
+                prompt_version="2.1" if routing_policy_version == WRITING_METHODS_EVIDENCE_ROUTING else "2.0",
                 skill_id=methodology.skill_id,
                 skill_version=methodology.skill_version,
                 capability_id="deconstruction.observe",
@@ -530,7 +530,7 @@ def resolve_corpus_analysis_strategy(
     routing_policy_version: str,
     sample_byte_limit: int,
 ) -> ResolvedAnalysisStrategy:
-    if routing_policy_version == WRITING_METHODS_ROUTING:
+    if routing_policy_version in WRITING_METHOD_ROUTES:
         raise ValueError("Writing methods require a writing-theory document profile")
     try:
         profile_id, skill_id, dimensions, mkaos_capability = (

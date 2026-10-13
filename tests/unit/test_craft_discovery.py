@@ -9,7 +9,7 @@ from novel_forge.modules.source_import.analysis_profiles import (
     analysis_strategy_from_dict, resolve_analysis_strategy, resolve_corpus_analysis_strategy,
 )
 from novel_forge.modules.source_import.craft_discovery import (
-    CRAFT_DISCOVERY_POLICY, CRAFT_DISCOVERY_ROUTING, WRITING_METHODS_ROUTING, craft_discovery_schema,
+    CRAFT_DISCOVERY_POLICY, CRAFT_DISCOVERY_ROUTING, WRITING_METHODS_ROUTING, WRITING_METHODS_EVIDENCE_ROUTING, craft_discovery_schema,
 )
 from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
 from novel_forge.modules.source_import.execution_contracts import MKAOS_STAGE, validate_content_intelligence_output
@@ -46,12 +46,15 @@ def test_writing_methods_are_explicit_and_preserve_original_methodology_replay()
     registry = SourceMethodologyRegistry(Path("skills"))
     original = resolve_analysis_strategy(SourceContentType.WRITING_THEORY, registry=registry, routing_policy_version=CRAFT_DISCOVERY_ROUTING)
     selected = resolve_analysis_strategy(SourceContentType.WRITING_THEORY, registry=registry, routing_policy_version=WRITING_METHODS_ROUTING)
+    evidence = resolve_analysis_strategy(SourceContentType.WRITING_THEORY, registry=registry, routing_policy_version=WRITING_METHODS_EVIDENCE_ROUTING)
     assert {item.skill_version for item in original.analyzers} == {"1.1.0"}
     assert {item.skill_version for item in selected.analyzers} == {"1.2.0"}
+    assert {item.skill_version for item in evidence.analyzers} == {"1.2.1"}
+    assert {item.prompt_version for item in evidence.analyzers} == {"2.1"}
     assert selected.mkaos_capability == "mkaos.knowledge.extract"
     assert selected.abstraction_policy_version == CRAFT_DISCOVERY_POLICY
     assert registry.require("multidisciplinary-knowledge").skill_version == "1.1.0"
-    for strategy in (original, selected):
+    for strategy in (original, selected, evidence):
         assert analysis_strategy_from_dict(strategy.to_dict(), expected_fingerprint=strategy.fingerprint) == strategy
         for analyzer in strategy.analyzers:
             assert registry.require(analyzer.skill_id, expected_digest=analyzer.methodology_content_hash).skill_version == analyzer.skill_version

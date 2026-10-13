@@ -15,8 +15,21 @@ from novel_forge.modules.source_import.execution_contracts import (
     content_intelligence_fixture_response,
     content_intelligence_output_schema,
     validate_content_intelligence_output,
+    source_analysis_output_instruction,
 )
 from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
+
+
+def test_writing_evidence_prompt_allows_located_support_only_and_preserves_old_instruction():
+    payload = {"observation_contract": {"version": "source-mechanism-observation.v2"},
+        "source_segments": [{"content": "restricted source"}], "analyzer": {"prompt_version": "2.1"}}
+    instruction = source_analysis_output_instruction(DECONSTRUCTION_STAGE, payload)
+    assert "supports[].support_text" in instruction and "not reusable knowledge or draft" in instruction
+    for changed in ({**payload, "analyzer": {"prompt_version": "2.0"}},
+                    {**payload, "source_segments": []}, {**payload, "review_target": {}},
+                    {**payload, "observation_contract": {}}):
+        assert "Do not quote" in source_analysis_output_instruction(DECONSTRUCTION_STAGE, changed)
+    assert "Do not quote" in source_analysis_output_instruction(MKAOS_STAGE, payload)
 
 
 @pytest.mark.parametrize("owner", ["classification", "deconstruction", "knowledge"])

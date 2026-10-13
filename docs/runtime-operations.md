@@ -799,6 +799,13 @@ under its original policy and method digest; a changed route requires a new anal
 version while retaining acquired bytes, old Observations and Cards. This choice is
 optional and does not alter existing Books or Writer Pack bindings.
 
+The explicit `source-analysis-routing.writing-methods.v2` binds method 1.2.1
+and ordinary document Observation Prompt 2.1. Bounded reading keeps its own frozen
+Prompt contract. Only structured Source evidence permits the shortest necessary exact
+quotation in `supports[].support_text` with UTF-8 locations; statements, KnowledgeCards
+and fiction must remain independent of source expression. Prior methods and prompts
+retain their exact digest and cannot be reinterpreted by the new version.
+
 The Planning Context records selected/rejected candidates, match and applicability reasons,
 receipt-backed recent usage and frozen Craft policy. Chapter run queries with
 `include_workspace=true` expose `craft_trace` and the existing `knowledge_trace`:

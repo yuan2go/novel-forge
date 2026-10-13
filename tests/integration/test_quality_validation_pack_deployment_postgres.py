@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import replace
+import pytest
+
 from novel_forge.modules.capability_packs.validation_deployment import (
     install_chapter_validation_pack,
     install_longform_validation_pack,
@@ -147,6 +150,57 @@ def test_quality_validation_packs_deploy_to_one_exact_book_scope() -> None:
         and release_sha == harness.release_sha
         for _pack_id, status, project_id, workspace_id, book_id, release_sha in rows
     )
+
+
+@pytest.mark.parametrize("automatic", [False, True])
+def test_shared_compilation_preserves_existing_book_authorization(automatic) -> None:
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
+    from novel_forge.modules.capability_pack_authority.runtime import CapabilityPackRuntimeResolver
+    from tests.unit.test_creative_execution_template import template
+
+    harness = CapabilityPackPostgresHarness("shared-compilation-books", book_count=2)
+    register_validation_runtime_definitions(
+        DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
+    )
+    common = dict(repository_root=ROOT, project_id=harness.project_id,
+        workspace_id=harness.workspace_id, application_build_id=harness.application_build_id,
+        commit_sha=harness.release_sha, compiler=harness.compiler,
+        approver=harness.approver, agent_admin=harness.agent_admin,
+        pack_id_override=harness.pack_id)
+    if automatic:
+        operator = replace(harness.compiler, permissions=harness.compiler.permissions | {"book.authority.execute", "agent.authority.admin"})
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+            content={"policy_version": "two-books.v1", "task_overrides": [], "reason": "isolated per-Book admission test",
+                "execution_templates": [template(book) for book in harness.book_ids]},
+            project_id=harness.project_id, workspace_id=harness.workspace_id,
+            idempotency_key=harness.project_id + ":templates", trace_id=harness.project_id,
+            correlation_id=harness.project_id, application_build_id=harness.application_build_id,
+            commit_sha=harness.release_sha, principal=operator)
+        common.update(compiler=operator, approver=operator, agent_admin=operator)
+    first = install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[0], **common)
+    resolver = CapabilityPackRuntimeResolver(DATABASE_URL)
+    request = replace(harness.resolution_request(), environment="validation", runtime_profile="validation")
+    assert resolver.resolve_active_deployment(request).deployment_id == first["deployment_id"]
+    if not automatic:
+        with pytest.raises(KernelError, match="CAPABILITY_PACK_SHARED_APPROVAL_SCOPE_REQUIRED"):
+            install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[1], **common)
+        assert resolver.resolve_active_deployment(request).deployment_id == first["deployment_id"]
+        return
+    second = install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[1], **common)
+    replay = install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[1], **common)
+    assert first["compilation_id"] == second["compilation_id"] == replay["compilation_id"]
+    assert first["deployment_id"] != second["deployment_id"] == replay["deployment_id"]
+    assert resolver.resolve_active_deployment(request).deployment_id == first["deployment_id"]
+    assert resolver.resolve_active_deployment(replace(request, book_id=harness.book_ids[1])).deployment_id == second["deployment_id"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""SELECT book_id,compilation_id FROM authority_capability_pack_deployment
+            WHERE project_id=%s AND deployment_id=ANY(%s) ORDER BY book_id""",
+            [harness.project_id, [first["deployment_id"], second["deployment_id"]]])
+        assert uow.cursor.fetchall() == sorted([
+            (harness.book_ids[0], first["compilation_id"]),
+            (harness.book_ids[1], second["compilation_id"]),
+        ])
 
 
 def test_chapter_sampling_pack_uses_separate_native_definitions_and_approval_scope() -> None:
