@@ -66,7 +66,7 @@ def test_completed_composition_projection_preserves_guidance_and_provider_origin
         project_invalid_composition(projected)
 
 
-@pytest.mark.parametrize("drift", [None, "effect", "projection"])
+@pytest.mark.parametrize("drift", [None, "effect", "projection", "rights"])
 def test_completed_composition_execution_uses_exact_receipt_without_new_model_call(monkeypatch, drift):
     from novel_forge.modules.source_import.abstraction_recovery import project_invalid_composition
     from novel_forge.modules.command_kernel.errors import KernelError
@@ -77,6 +77,13 @@ def test_completed_composition_execution_uses_exact_receipt_without_new_model_ca
     port.methodology_registry = SourceMethodologyRegistry(Path("skills"))
     from novel_forge.modules.source_import.corpus_ingestion import curated_analysis
     monkeypatch.setattr(curated_analysis, "curated_provider_gate", lambda *args: {})
+    from novel_forge.modules.source_authority import corpus_consumption
+    consumed = []
+    def consume(database_url, project_id, payload, **kwargs):
+        consumed.append((payload, kwargs))
+        if drift == "rights":
+            raise KernelError("CORPUS_USE_DENIED", "SOURCE_ANALYSIS was revoked")
+    monkeypatch.setattr(corpus_consumption, "require_corpus_consumption", consume)
     original = discovered()
     original["craft_mechanism"]["composition"]["requires"] = ["Unsupported prose as a reference"]
     projected, projection = project_invalid_composition(original)
@@ -91,7 +98,7 @@ def test_completed_composition_execution_uses_exact_receipt_without_new_model_ca
     monkeypatch.setattr(port, "_execution_log", lambda **kwargs: seen.append(kwargs) or SimpleNamespace(asset_version_id="reused-log"))
     contract = {"version": CRAFT_OUTPUT_CONTRACT, "observation_asset_version_id": "observation:1",
         "output_schema_hash": corpus_hash(craft_discovery_schema(grounded=False, observation_id="observation:1"))}
-    args = dict(worker=SimpleNamespace(project_id="project"), capability="mkaos.knowledge.extract",
+    args = dict(worker=SimpleNamespace(project_id="project", causation_id="recovery"), capability="mkaos.knowledge.extract",
         abstraction_policy_version=CRAFT_DISCOVERY_POLICY, observation_asset_version_id="observation:1",
         observation={"findings": [{"finding_code": "F", "statement": "source assessment"}]}, evidence_spans=(),
         output_contract=contract, completed_result_repair=repair)
@@ -105,6 +112,8 @@ def test_completed_composition_execution_uses_exact_receipt_without_new_model_ca
         assert result["provider_execution_reused"] is True
         assert seen[0]["domain_binding"]["source_output_projection"] == projection
         assert original["craft_mechanism"]["composition"]["requires"] == ["Unsupported prose as a reference"]
+    assert consumed[0][0]["asset_version_ids"] == ["observation:1"]
+    assert consumed[0][1] == {"source_analysis": True, "operation_id": "recovery"}
 
 
 def test_new_routing_freezes_discovery_without_changing_legacy_strategy():

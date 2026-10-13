@@ -1215,10 +1215,14 @@ class PostgresContentIntelligenceExecutionPort:
         if completed_result_repair:
             from .abstraction_recovery import project_invalid_composition
             from .corpus_ingestion.curated_analysis import curated_provider_gate
+            from novel_forge.modules.source_authority.corpus_consumption import require_corpus_consumption
 
             if completed_result_repair.get("contract_version") != "source-abstraction-composition-recovery.v1":
                 raise KernelError("SOURCE_COMPOSITION_PROJECTION_INVALID", "Require the admitted completed-result recovery")
             curated_provider_gate(self.database_url, worker)
+            require_corpus_consumption(self.database_url, worker.project_id,
+                {"input": spec.input_payload, "asset_version_ids": list(spec.artifact_version_ids)},
+                source_analysis=True, operation_id=worker.causation_id)
             execution = self._replay_succeeded_effect(worker=worker, cache_key=completed_result_repair["original_cache_key"])
             if not execution or execution.get("reused_external_effect_id") != completed_result_repair["original_external_effect_id"]:
                 raise KernelError("SOURCE_COMPOSITION_RESULT_CHANGED", "Reuse only the exact original successful Effect")
