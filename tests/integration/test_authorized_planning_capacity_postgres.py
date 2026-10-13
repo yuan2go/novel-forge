@@ -2,12 +2,13 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
-from novel_forge.storage.migrations.versions.v20261012_0203_capacity_availability_observation import UPGRADE_STATEMENTS
+from novel_forge.storage.migrations.versions.v20261014_0207_world_revalidation_capacity import UPGRADE_STATEMENTS
 from tests.integration.authority_postgres_support import DATABASE_URL
 
 
 @pytest.mark.parametrize("group_change", [False, True])
-def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(group_change):
+@pytest.mark.parametrize("world_revalidation", [False, True])
+def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(group_change,world_revalidation):
     with psycopg.connect(DATABASE_URL) as connection:
         try:
             for ddl in [
@@ -71,6 +72,27 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
             legal = [['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED'], ['CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT', 'PROVIDER_UNAVAILABLE:PROVIDER_MODEL_CAPACITY_UNAVAILABLE:receipt:until:2026-10-12T14:05:15+00:00']]
             route(legal)
             assert accepted()
+            if world_revalidation:
+                proof = {"contract_version":"world-host-revalidation.v2","source_operation_id":"original-world","generation":{"content_hash":"retained"}}
+                source.update(runtime_continuation_id="world-parent",book_id="book")
+                child = {**source,"runtime_continuation_id":"runtime","idempotency_key":"child"}
+                runtime["world_host_revalidation"] = proof
+                connection.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id='source'",[Jsonb({"payload":source})])
+                connection.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id='child'",[Jsonb({"payload":child})])
+                connection.execute("UPDATE authority_story_planning_runtime_continuation SET source_command=%s,successor_command=%s,target_runtime=%s",[Jsonb(source),Jsonb(child),Jsonb(runtime)])
+                connection.execute("INSERT INTO authority_story_planning_runtime_continuation VALUES('world-parent','original-world','registered','source',1,'project','workspace','book','{}',%s,%s,'{}')",[Jsonb(source),Jsonb({"world_host_revalidation":proof})])
+                assert accepted()
+                for mutation in [
+                    "UPDATE authority_story_planning_runtime_continuation SET target_runtime=target_runtime-'world_host_revalidation' WHERE continuation_id='runtime'",
+                    "UPDATE authority_story_planning_runtime_continuation SET target_runtime=jsonb_set(target_runtime,'{world_host_revalidation,source_operation_id}','\"foreign\"') WHERE continuation_id='runtime'",
+                    "UPDATE authority_story_planning_runtime_continuation SET workspace_id='foreign' WHERE continuation_id='world-parent'",
+                    "UPDATE authority_story_planning_runtime_continuation SET successor_command='{}' WHERE continuation_id='world-parent'",
+                ]:
+                    connection.execute('SAVEPOINT inherited_world')
+                    connection.execute(mutation)
+                    assert not accepted()
+                    connection.execute('ROLLBACK TO SAVEPOINT inherited_world')
+                    connection.execute('RELEASE SAVEPOINT inherited_world')
             for denied in [[['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED']], [['BUDGET_HARD_LIMIT']], [['AUTHORIZATION_MISSING', 'CONTEXT_CAPACITY_EXCEEDED']], [['CONTEXT_CAPACITY_EXCEEDED', 'PROVIDER_UNAVAILABLE:AUTHORIZATION_MISSING:receipt:until:2026-10-12T14:05:15+00:00']]]:
                 route(denied)
                 assert not accepted()

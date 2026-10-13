@@ -862,8 +862,20 @@ def _pre_send_capacity_source(
                 "Capacity source lost its prior continuation",
             )
         depth = int(prior[0])
-    inherited = None
+    inherited, world_revalidation = None, None
     if frozen.get("runtime_continuation_id"):
+        uow.cursor.execute("""SELECT target_runtime->'world_host_revalidation' FROM authority_story_planning_runtime_continuation
+            WHERE continuation_id=%s AND successor_operation_id=%s AND successor_command=%s
+              AND project_id=%s AND workspace_id=%s AND book_id=%s""",
+            [frozen["runtime_continuation_id"],source_operation_id,Jsonb(frozen),frozen["project_id"],frozen["workspace_id"],frozen["book_id"]])
+        bound_world = uow.cursor.fetchone()
+        if bound_world and bound_world[0]:
+            from .application import _command_from_payload
+            from .world_preparation import require_world_host_revalidation
+
+            world_revalidation = require_world_host_revalidation(uow.database_url,command=_command_from_payload(frozen),operation_id=bound_world[0]["source_operation_id"])
+            if world_revalidation != bound_world[0]:
+                raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Capacity recovery must retain the prior exact completed World proof")
         uow.cursor.execute("""SELECT isolation.proof, capacity.target_runtime->'planning_capacity'
             FROM authority_story_planning_runtime_continuation link
             JOIN authority_generation_isolation isolation ON isolation.operation_id=link.source_operation_id
@@ -886,6 +898,7 @@ def _pre_send_capacity_source(
         "snapshot_hash": snapshot[3],
         "inputs": inputs,
         **({"capacity_inheritance": inherited} if inherited else {}),
+        **({"inherited_world_host_revalidation":world_revalidation} if world_revalidation else {}),
         **({'retained_world_action': {'source_operation_id': world_owner, 'world_action': retained_world}} if retained_world else {}),
         "failure": dict(attempt[2] or attempt[1] or {}),
         "depth": depth + 1,
@@ -929,6 +942,8 @@ def _capacity_authorization(
         StoryFormationRepository,
     )
 
+    if source.get("inherited_world_host_revalidation") and target.get("world_host_revalidation") != source["inherited_world_host_revalidation"]:
+        raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Capacity authorization retains the exact already-verified World proof")
     uow.cursor.execute(
         "SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND frozen_stage_inputs #>> '{generation_policy,contract_version}' IN ('formation-generation.v5','formation-generation.v7')",
         [successor.project_id, successor.book_id],
@@ -999,6 +1014,7 @@ def _capacity_authorization(
         "capacity_only": True,
         **({"pack_version_successor": version_successor} if version_successor else {}),
         **({"capacity_inheritance": "generation-capacity-inheritance.v1"} if source.get("capacity_inheritance") else {}),
+        **({"world_revalidation_inheritance":"world-revalidation-inheritance.v1"} if source.get("inherited_world_host_revalidation") else {}),
     }
 
 
@@ -1096,6 +1112,8 @@ def _capacity_target(
     if source.get("capacity_inheritance"):
         target = {**target, "generation_isolation": source["capacity_inheritance"]["generation_isolation"]}
         authorization = {**authorization, "capacity_inheritance": "generation-capacity-inheritance.v1"}
+    if source.get("inherited_world_host_revalidation"):
+        target = {**target,"world_host_revalidation":source["inherited_world_host_revalidation"]}
     return {**target, "planning_capacity": allocation}, authorization
 
 
@@ -1456,6 +1474,8 @@ def register(
     if contract_change:
         _ensure_world_agency_pack(application, source, original, successor, principal)
     target = resolve_target(application, successor)
+    if source.get("inherited_world_host_revalidation"):
+        target = {**target,"world_host_revalidation":source["inherited_world_host_revalidation"]}
     if schema_correction:
         target = {**target, "provider_schema_correction": source["provider_schema_correction"]}
         if original.runtime_continuation_id:

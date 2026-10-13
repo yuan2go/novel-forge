@@ -224,6 +224,7 @@ def replace_args(args, **changes):
         "world-result-repair",
         "world-primary-result-repair",
         "world-disclosure-revalidation",
+        "world-disclosure-capacity-inheritance",
         "world-input-v3",
         "world-causal-result-repair",
         "world-causal-legacy-replay",
@@ -306,7 +307,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
     historical_classifier_restored = False
     disclosure_failures = []
-    if mode == "world-disclosure-revalidation":
+    if mode.startswith("world-disclosure-"):
         from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
 
         current_source = WorldPreparationRepository.require_source
@@ -315,6 +316,20 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             return current_source(repository, **{**values,"contract_version":"world-preparation-source.v2"})
 
         monkeypatch.setattr(WorldPreparationRepository,"require_source",legacy_disclosure_source)
+        if mode == "world-disclosure-capacity-inheritance":
+            from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+            original_context = PostgresPlanningExecutionPreparer._context_bundle
+            capacity_faults = []
+
+            def unsent_revalidation_capacity(preparer, **values):
+                command = values["command"]
+                if (command.repair_reason == "WORLD_HOST_REVALIDATION_SUCCESSOR" and command.runtime_continuation_id
+                        and not values.get("preflight_only") and not capacity_faults):
+                    capacity_faults.append(values["operation_id"])
+                    raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED","Controlled real capacity boundary before retained World proof materialization")
+                return original_context(preparer,**values)
+
+            monkeypatch.setattr(PostgresPlanningExecutionPreparer,"_context_bundle",unsent_revalidation_capacity)
     if mode in {"world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
         from novel_forge.modules.story_planning_runtime.world_preparation import (
             PlanningWorldPreparation,
@@ -374,7 +389,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         result = planning(stage, inputs)
         if stage == "world_candidates.generate":
             world_calls.append(inputs)
-            if mode == "world-disclosure-revalidation":
+            if mode.startswith("world-disclosure-"):
                 candidate = result["candidates"][0]
                 transition = json.loads(candidate["transition"]["payload_json"])
                 field = next(key for key,value in transition["changes"].items() if isinstance(value,(str,int,bool)))
@@ -774,7 +789,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         try:
             return execute_creation_worker_claim(settings, current)
         except KernelError as error:
-            if mode == "world-disclosure-revalidation" and error.code == "WORLD_DISCLOSURE_FIELDS_INVALID":
+            if mode.startswith("world-disclosure-") and error.code == "WORLD_DISCLOSURE_FIELDS_INVALID":
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT operation_id,to_jsonb(op) FROM authority_operation op WHERE project_id=%s AND status='FAILED_FINAL' AND definition_name='story_planning.generate' ORDER BY created_at DESC LIMIT 1",[project])
                     source_id,source = uow.cursor.fetchone()
@@ -994,7 +1009,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("SELECT content#>>'{contract,contract_version}',content#>>'{contract,reality,disclosure_fields_contract}' FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='world_preparation_source'",[project])
             assert uow.cursor.fetchall() == [("world-preparation-source.v3","world-disclosure-fields.v2")]
-    if mode == "world-disclosure-revalidation":
+    if mode.startswith("world-disclosure-"):
         from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
         assert len(disclosure_failures) == len(world_calls) == len(primary_calls) == 1
         source_id,source,attempts,receipts = disclosure_failures[0]
@@ -1011,6 +1026,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             assert runtime["world_host_revalidation"]["retained_effect_ids"] == sorted(effect["external_effect_id"] for effect,_ in receipts)
             uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage' LIKE 'world_candidates.%%'",[successor])
             assert uow.cursor.fetchone() == (0,)
+            if mode == "world-disclosure-capacity-inheritance":
+                assert capacity_faults == [successor]
+                uow.cursor.execute("SELECT successor_operation_id,target_runtime,decision_evidence FROM authority_story_planning_runtime_continuation WHERE source_operation_id=%s",[successor])
+                successor,capacity_runtime,capacity_decision = uow.cursor.fetchone()
+                assert capacity_runtime["world_host_revalidation"] == runtime["world_host_revalidation"]
+                assert capacity_decision["world_revalidation_inheritance"] == "world-revalidation-inheritance.v1"
+                uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage' LIKE 'world_candidates.%%'",[successor])
+                assert uow.cursor.fetchone() == (0,)
         action = AuthorityAssetQuery(DATABASE_URL).require(project_id=project,logical_ref=f"world_preparation/{successor}/action")
         assert action.content["contract"]["host_revalidation"] == runtime["world_host_revalidation"]
         assert action.content["contract"]["world_plan"]["disclosure_projection"][0]["field_resolution"]["bindings"]

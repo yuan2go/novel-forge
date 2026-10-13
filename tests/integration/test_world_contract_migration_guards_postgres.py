@@ -150,7 +150,7 @@ def test_disclosure_revalidation_upgrade_and_restore_preserve_history_constraint
         with restored_generation_backup(url,backup_root=tmp_path/"world-disclosure-restore") as restored:
             assert run_migrations(restored)["ok"]
             with psycopg.connect(restored) as connection:
-                assert connection.execute("SELECT max(migration_id) FROM nf_schema_migrations").fetchone()==("20261014_0206_world_disclosure_revalidation",)
+                assert connection.execute("SELECT max(migration_id) FROM nf_schema_migrations").fetchone()==(MIGRATIONS[-1].migration_id,)
 
 
 @pytest.mark.parametrize("head", HEADS)

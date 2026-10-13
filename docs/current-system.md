@@ -2374,6 +2374,13 @@ frontier, input hashes and receipt identity are checked again; original failure 
 unknown usage remain historical evidence. Focused PostgreSQL Creation evidence covers
 the recovery and downstream action consumer; installed real-Provider and literary
 qualification remain separate.
+Pre-send capacity continuation also carries the exact registered World revalidation
+proof before a World action has been materialized. It revalidates complete original
+receipts and current source, and checks the proof again at registration commit. Migration
+0207 binds that unchanged proof to the registered parent, Creator and Book scope;
+dropping or changing it is rejected. Previously admitted records without inheritance
+remain historical evidence. The focused native capacity-failure fixture verifies
+zero additional World calls; actual installed recovery is a separate evidence boundary.
 Planning result recovery links a new bounded Operation to the failed Operation and
 retained result, preserving the old terminal state and fully revalidating the repair.
 Model profile identities retain exact legacy contracts and distinguish different frozen
