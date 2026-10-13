@@ -6431,7 +6431,7 @@ class PostgresPlanningExecutionPreparer:
                 provenance={
                     "authority_asset_version_id": source_ref["asset_version_id"],
                     "source_content_hash": source_ref["content_hash"],
-                    "projection_contract": "world-provider-task.v1",
+                    "projection_contract": provider_stage.task["contract_version"],
                 },
                 section="WORLD_TASK",
                 bucket=provider_stage.task["role"],

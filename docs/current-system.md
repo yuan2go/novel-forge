@@ -2359,6 +2359,21 @@ World generation uses one strict type contract for the nested world schema and p
 instructions. A Foundation task freezes one `BOOK` scope; `BOOK`, `VOLUME` and `ARC`
 are alternatives, not an output array. JSON-string transport is decoded and internally
 validated before Candidate materialization. Invalid Provider output remains evidence.
+Narrative World preparation is a separate consumer. Fresh 1.21 preparation freezes
+`world-preparation-source.v3` and `world-provider-task.v3`, with the v2 transition schema
+and distinct routine, perception and information-dependent action requirements.
+Earlier source/task v2 inputs preserve their original inconsistent nested schema and
+blanket knowledge instruction for frozen replay; their existence does not qualify that
+input contract. New disclosure addresses resolve a `changes.<field>` selector only
+to one existing public scalar member. Ambiguous, nested, private or absent fields fail
+closed; presentation alone cannot grant a character knowledge. Direct-key legacy
+disclosure remains unchanged. `world-host-revalidation.v2` reuses both exact complete
+World receipts after a terminal legacy field-address failure, through the existing
+continuation Owner and migration 0206. Formation cancellation, current unexecuted
+frontier, input hashes and receipt identity are checked again; original failure and
+unknown usage remain historical evidence. Focused PostgreSQL Creation evidence covers
+the recovery and downstream action consumer; installed real-Provider and literary
+qualification remain separate.
 Planning result recovery links a new bounded Operation to the failed Operation and
 retained result, preserving the old terminal state and fully revalidating the repair.
 Model profile identities retain exact legacy contracts and distinguish different frozen

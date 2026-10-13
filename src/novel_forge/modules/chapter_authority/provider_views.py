@@ -453,7 +453,7 @@ def build_provider_task_view(
         return _task(stage, world_preparation=deepcopy(dict(task)))
     if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
         task = inputs.get("world_preparation")
-        if not isinstance(task, Mapping) or task.get("contract_version") not in {"world-provider-task.v1", "world-provider-task.v2"} or task.get("fact_mutation_allowed") is not False:
+        if not isinstance(task, Mapping) or task.get("contract_version") not in {"world-provider-task.v1", "world-provider-task.v2", "world-provider-task.v3"} or task.get("fact_mutation_allowed") is not False:
             raise KernelError("WORLD_PROVIDER_TASK_INVALID", "world stages require their exact frozen role projection")
         expected_role = "WORLD_REASONER" if stage == "world_candidates.generate" else "DIRECTOR"
         if task.get("role") != expected_role:
@@ -472,7 +472,7 @@ def build_provider_task_view(
                 "audit_hash": _projection_hash(audit),
                 "loss_record_count": len(audit["loss_records"]),
             }
-        if projected_task["contract_version"] == "world-provider-task.v2":
+        if projected_task["contract_version"] in {"world-provider-task.v2", "world-provider-task.v3"}:
             projection = projected_task["context_projection"]
             audit = {key: projection.pop(key) for key in ("policy", "rejections", "estimated_tokens", "token_accounting", "provider_admission", "task_workset") if key in projection}
             state_provenance = {}

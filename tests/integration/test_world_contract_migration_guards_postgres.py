@@ -65,6 +65,94 @@ def _admitted(connection, generation):
     return connection.execute("SELECT public.authority_world_contract_continuation_permitted('runtime','child',%s)", [Jsonb(generation)]).fetchone()[0]
 
 
+def test_disclosure_revalidation_guard_binds_complete_outputs_frontier_and_unknown_usage():
+    with disposable_database_at_migration(DATABASE_URL,prefix="world_disclosure_guard",target_migration_id="20261014_0206_world_disclosure_revalidation") as url:
+        with psycopg.connect(url) as connection:
+            constraint = connection.execute("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='public.authority_story_planning_runtime_continuation'::regclass AND conname='authority_story_planning_runtime_continuation_chain_depth_check'").fetchone()[0]
+            assert constraint == "CHECK ((chain_depth > 0))"
+            _schema(connection)
+            generation = _seed(connection)
+            assert _admitted(connection,generation)
+            connection.execute("ALTER TABLE authority_asset_version ADD COLUMN content_hash text DEFAULT 'sha256:asset'")
+            connection.execute("ALTER TABLE authority_external_effect ADD COLUMN effect_type text DEFAULT 'model.invoke'")
+            connection.execute("ALTER TABLE authority_book_production ADD COLUMN current_chapter int DEFAULT 0")
+            connection.execute("ALTER TABLE authority_book_production ADD COLUMN accepted_through_chapter int DEFAULT 0")
+            connection.execute("ALTER TABLE authority_book_production ADD COLUMN input_snapshot_id text DEFAULT 'snapshot'")
+            source = connection.execute("SELECT command_payload->'payload' FROM authority_operation WHERE operation_id='source'").fetchone()[0]
+            source = {**source,"execution_contract_version":"1.21.0"}
+            child = {**source,"runtime_continuation_id":"runtime","repair_reason":"WORLD_HOST_REVALIDATION_SUCCESSOR"}
+            connection.execute("UPDATE authority_operation SET definition_version='1.21.0',command_payload=%s WHERE operation_id='source'",[Jsonb({"payload":source})])
+            connection.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id='child'",[Jsonb({"payload":child})])
+            connection.execute("UPDATE authority_attempt SET result=%s",[Jsonb({"error_code":"WORLD_DISCLOSURE_FIELDS_INVALID"})])
+            references = {key:{"asset_version_id":key,"content_hash":"sha256:asset"} for key in ("source-document","generated","evaluated")}
+            proof = {"contract_version":"world-host-revalidation.v2","revalidation_kind":"DISCLOSURE_FIELD_ADDRESS",
+                "source_operation_id":"source","source":references["source-document"],"generation":references["generated"],"evaluation":references["evaluated"],
+                "disclosure_fields_contract":"world-disclosure-fields.v2","plan_digest":"sha256:"+"a"*64,
+                "field_resolution_hash":"sha256:"+"b"*64,"field_resolutions":[{"bindings":{"changes.visible":"visible"}}]}
+            connection.execute("UPDATE authority_story_planning_runtime_continuation SET source_command=%s,successor_command=%s,target_runtime=%s,decision_evidence=%s",
+                [Jsonb(source),Jsonb(child),Jsonb({"world_host_revalidation":proof}),Jsonb({"host_revalidation":"world-host-revalidation.v2"})])
+            source_document = {"contract":{"contract_version":"world-preparation-source.v2","reality":{"epistemic_contract":"world-agency.v2"},"request":source["world_preparation_request"]}}
+            generated = {"contract":{"source":references["source-document"],"evidence":{"external_receipt_ref":"generated-effect"}}}
+            evaluated = {"contract":{"source":references["source-document"],"generation":references["generated"],"evidence":{"external_receipt_ref":"evaluated-effect"}}}
+            for key,content in [("source-document",source_document),("generated",generated),("evaluated",evaluated)]:
+                connection.execute("INSERT INTO authority_asset_version(asset_version_id,content) VALUES(%s,%s)",[key,Jsonb(content)])
+                connection.execute("INSERT INTO authority_operation_output_asset VALUES('source',%s)",[key])
+            connection.execute("ALTER TABLE authority_story_planning_runtime_continuation ADD COLUMN source_evidence_asset_version_id text DEFAULT 'generated'")
+            connection.execute("UPDATE authority_external_effect SET external_effect_id='generated-effect'")
+            connection.execute("INSERT INTO authority_external_effect(operation_id,status,external_effect_id,request_payload) VALUES('source','SUCCEEDED','evaluated-effect','{\"stage\":\"world_candidates.evaluate\"}')")
+            connection.execute("UPDATE authority_budget_reservation SET external_effect_id='generated-effect'")
+            connection.execute("INSERT INTO authority_budget_reservation(operation_id,status,external_effect_id) VALUES('source','HELD_UNKNOWN','evaluated-effect')")
+            connection.execute("INSERT INTO authority_book_production(project_id,book_id,state,stable_idempotency_key,book_run_id) VALUES('project','book','CHAPTER_PLAN_REQUIRED','formation:production','run')")
+            generation = {**generation,"repair_reason":"WORLD_HOST_REVALIDATION_SUCCESSOR"}
+            assert _admitted(connection,generation)
+            for mutation in [
+                "UPDATE authority_asset_version SET content_hash='sha256:drift' WHERE asset_version_id='generated'",
+                "UPDATE authority_operation SET actor_id='other' WHERE operation_id='registration'",
+                "UPDATE authority_external_effect SET status='UNKNOWN' WHERE external_effect_id='evaluated-effect'",
+                "UPDATE authority_external_effect SET request_payload='{}' WHERE external_effect_id='generated-effect'",
+                "UPDATE authority_book_production SET current_chapter=1",
+                "UPDATE authority_book_production SET input_snapshot_id='other'",
+                "INSERT INTO authority_story_creation_cancellation VALUES('project','formation')",
+                "INSERT INTO authority_lease_acquisition VALUES('attempt','HELD')",
+                "INSERT INTO authority_budget_reservation(operation_id,status,external_effect_id) VALUES('source','HELD_UNKNOWN','unverified-effect')",
+                "INSERT INTO authority_budget_reservation(operation_id,status,external_effect_id) VALUES('source','HELD_UNKNOWN',NULL)",
+            ]:
+                connection.execute("SAVEPOINT address_guard")
+                connection.execute(mutation)
+                assert not _admitted(connection,generation),mutation
+                if mutation.endswith("NULL)"):
+                    from types import SimpleNamespace
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    from novel_forge.modules.story_planning_runtime.runtime_continuation import _require_world_lineage_settled
+                    with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE"):
+                        _require_world_lineage_settled(SimpleNamespace(cursor=connection.cursor()),source_operation_id="source",project_id="project",book_id="book",verified_complete_effect_ids=["generated-effect","evaluated-effect"])
+                connection.execute("ROLLBACK TO SAVEPOINT address_guard")
+                connection.execute("RELEASE SAVEPOINT address_guard")
+            assert connection.execute("SELECT status FROM authority_operation WHERE operation_id='source'").fetchone()==("FAILED_FINAL",)
+            assert connection.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id='evaluated-effect'").fetchone()==("HELD_UNKNOWN",)
+
+
+def test_disclosure_revalidation_upgrade_and_restore_preserve_history_constraint(tmp_path):
+    from novel_forge.storage.migrations import run_migrations
+    from tests.integration.migration_window_postgres_support import restored_generation_backup
+
+    with disposable_database_at_migration(DATABASE_URL,prefix="world_disclosure_upgrade",target_migration_id="20261013_0205_completed_release_recovery") as url:
+        with psycopg.connect(url) as connection:
+            old_guard = connection.execute("SELECT pg_get_functiondef('authority_world_contract_continuation_permitted(text,text,jsonb)'::regprocedure)").fetchone()[0]
+            old_constraint = connection.execute("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='authority_story_planning_runtime_continuation'::regclass AND conname='authority_story_planning_runtime_continuation_chain_depth_check'").fetchone()[0]
+        assert old_constraint == "CHECK ((chain_depth > 0))"
+        assert run_migrations(url)["ok"]
+        with psycopg.connect(url) as connection:
+            constraint = connection.execute("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='authority_story_planning_runtime_continuation'::regclass AND conname='authority_story_planning_runtime_continuation_chain_depth_check'").fetchone()[0]
+            legacy = connection.execute("SELECT pg_get_functiondef('authority_world_contract_continuation_permitted_legacy_0206(text,text,jsonb)'::regprocedure)").fetchone()[0]
+            assert constraint == old_constraint
+            assert legacy == old_guard.replace("authority_world_contract_continuation_permitted(","authority_world_contract_continuation_permitted_legacy_0206(")
+        with restored_generation_backup(url,backup_root=tmp_path/"world-disclosure-restore") as restored:
+            assert run_migrations(restored)["ok"]
+            with psycopg.connect(restored) as connection:
+                assert connection.execute("SELECT max(migration_id) FROM nf_schema_migrations").fetchone()==("20261014_0206_world_disclosure_revalidation",)
+
+
 @pytest.mark.parametrize("head", HEADS)
 def test_world_contract_successor_preserves_scope_counters_and_lineage_guards(head):
     with disposable_database_at_migration(DATABASE_URL, prefix="world_contract_guard", target_migration_id=head) as url:

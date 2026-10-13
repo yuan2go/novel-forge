@@ -148,6 +148,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
+        from novel_forge.modules.story_planning_runtime.runtime_continuation import recover_world_disclosure_frontier
+        recover(lambda: recover_world_disclosure_frontier(composition.planning,composition.authority.require(book_run_id),principal=composition.principal))
         resume_generation_pause(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.memo_recovery import recover_memo_references, recover_memo_completion, recover_intent_references
         recover(lambda: recover_intent_references(composition.authority, book_run_id=book_run_id, principal=composition.principal))

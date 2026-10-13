@@ -379,7 +379,7 @@ class AutonomousWorldTransport:
                     "reader_exposure": "REVEAL",
                     "reveal_event_ids": [hidden["source_event_id"]],
                 }
-            if task.get("disclosure_contract") == "world-information-scope.v2":
+            if task.get("disclosure_contract") in {"world-information-scope.v2", "world-information-scope.v3"}:
                 for candidate in result["candidates"]:
                     information = candidate["information_scope"]
                     audience = (

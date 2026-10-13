@@ -9,8 +9,8 @@ from .dynamics import WorldTransition
 from .production_planning import WorldProductionPolicy
 
 
-def world_transition_payload_schema() -> dict[str, Any]:
-    return world_transition_schema()
+def world_transition_payload_schema(*, agency: bool = False) -> dict[str, Any]:
+    return world_transition_schema(agency=agency)
 
 
 def _object(properties: dict[str, Any]) -> dict[str, Any]:

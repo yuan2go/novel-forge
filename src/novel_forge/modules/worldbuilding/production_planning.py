@@ -425,7 +425,8 @@ def compile_world_plan(
             "Director cannot invent or omit generated candidates",
         )
     base = {
-        "contract_version": "world-production-plan.v1",
+        "contract_version": "world-production-plan.v2" if reality.get("disclosure_fields_contract") == "world-disclosure-fields.v2" else "world-production-plan.v1",
+        **({"disclosure_fields_contract": reality["disclosure_fields_contract"]} if reality.get("disclosure_fields_contract") else {}),
         "authority": "PLANNING_PROPOSAL",
         "baseline_id": reality["revision_id"],
         "accepted_through_chapter": reality["chapter_number"],

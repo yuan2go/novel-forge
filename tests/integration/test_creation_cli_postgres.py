@@ -223,6 +223,8 @@ def replace_args(args, **changes):
         "capacity-retained-repair-cause",
         "world-result-repair",
         "world-primary-result-repair",
+        "world-disclosure-revalidation",
+        "world-input-v3",
         "world-causal-result-repair",
         "world-causal-legacy-replay",
         "world-causal-dead-letter-replay",
@@ -303,6 +305,16 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         monkeypatch.setattr(planning_application, "admit_command", retain_repair_cause)
 
     historical_classifier_restored = False
+    disclosure_failures = []
+    if mode == "world-disclosure-revalidation":
+        from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
+
+        current_source = WorldPreparationRepository.require_source
+
+        def legacy_disclosure_source(repository, **values):
+            return current_source(repository, **{**values,"contract_version":"world-preparation-source.v2"})
+
+        monkeypatch.setattr(WorldPreparationRepository,"require_source",legacy_disclosure_source)
     if mode in {"world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
         from novel_forge.modules.story_planning_runtime.world_preparation import (
             PlanningWorldPreparation,
@@ -362,6 +374,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         result = planning(stage, inputs)
         if stage == "world_candidates.generate":
             world_calls.append(inputs)
+            if mode == "world-disclosure-revalidation":
+                candidate = result["candidates"][0]
+                transition = json.loads(candidate["transition"]["payload_json"])
+                field = next(key for key,value in transition["changes"].items() if isinstance(value,(str,int,bool)))
+                candidate["information_scope"] = {"disclosures":[{
+                    "disclosure_id":"visible-pressure","event_id":"local:"+transition["transition_id"],
+                    "audience":"READER","mode":"CONFIRM","fields":["changes."+field],
+                    "presentation_channel":"Observed change","claim_kind":"HISTORICAL_OCCURRENCE"}]}
             if mode == "world-result-repair" and len(world_calls) <= 2:
                 result = {
                     **result,
@@ -754,6 +774,19 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         try:
             return execute_creation_worker_claim(settings, current)
         except KernelError as error:
+            if mode == "world-disclosure-revalidation" and error.code == "WORLD_DISCLOSURE_FIELDS_INVALID":
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT operation_id,to_jsonb(op) FROM authority_operation op WHERE project_id=%s AND status='FAILED_FINAL' AND definition_name='story_planning.generate' ORDER BY created_at DESC LIMIT 1",[project])
+                    source_id,source = uow.cursor.fetchone()
+                    uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s ORDER BY attempt_number",[source_id])
+                    attempts = [row[0] for row in uow.cursor.fetchall()]
+                    uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(b) FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY external_effect_id",[source_id])
+                    receipts = uow.cursor.fetchall()
+                    assert len(receipts) == 2 and all(effect["status"] == "SUCCEEDED" for effect,_ in receipts)
+                    assert attempts[-1]["result"]["error_code"] == error.code
+                disclosure_failures.append((source_id,source,attempts,receipts))
+                assert jobs.get(current.runtime_job_id)["status"] == "RETRY_WAIT"
+                return {"stop_reason":"YIELDED_CHECKPOINT","error_code":error.code}
             if mode not in {
                 "world-result-repair",
                 "world-causal-result-repair",
@@ -954,6 +987,33 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert next_claim is not None, result
         result = execute_window(next_claim)
     assert result["stop_reason"] == "COMPLETED", result
+    if mode == "world-input-v3":
+        assert len(world_calls) == len(primary_calls) == 1
+        assert world_calls[0]["world_preparation"]["contract_version"] == "world-provider-task.v3"
+        assert world_calls[0]["world_preparation"]["transition_contract"]["version"] == "world-transition-payload.v2"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT content#>>'{contract,contract_version}',content#>>'{contract,reality,disclosure_fields_contract}' FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='world_preparation_source'",[project])
+            assert uow.cursor.fetchall() == [("world-preparation-source.v3","world-disclosure-fields.v2")]
+    if mode == "world-disclosure-revalidation":
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        assert len(disclosure_failures) == len(world_calls) == len(primary_calls) == 1
+        source_id,source,attempts,receipts = disclosure_failures[0]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT to_jsonb(op) FROM authority_operation op WHERE operation_id=%s",[source_id])
+            assert uow.cursor.fetchone()[0] == source
+            uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s ORDER BY attempt_number",[source_id])
+            assert [row[0] for row in uow.cursor.fetchall()] == attempts
+            uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(b) FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY external_effect_id",[source_id])
+            assert uow.cursor.fetchall() == receipts
+            uow.cursor.execute("SELECT successor_operation_id,target_runtime,decision_evidence FROM authority_story_planning_runtime_continuation WHERE source_operation_id=%s",[source_id])
+            successor,runtime,decision = uow.cursor.fetchone()
+            assert decision["host_revalidation"] == "world-host-revalidation.v2"
+            assert runtime["world_host_revalidation"]["retained_effect_ids"] == sorted(effect["external_effect_id"] for effect,_ in receipts)
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage' LIKE 'world_candidates.%%'",[successor])
+            assert uow.cursor.fetchone() == (0,)
+        action = AuthorityAssetQuery(DATABASE_URL).require(project_id=project,logical_ref=f"world_preparation/{successor}/action")
+        assert action.content["contract"]["host_revalidation"] == runtime["world_host_revalidation"]
+        assert action.content["contract"]["world_plan"]["disclosure_projection"][0]["field_resolution"]["bindings"]
     if mode in {
         "world-result-repair",
         "world-primary-result-repair",
