@@ -842,6 +842,19 @@ disposition; paid reservations
 remain conservative exposure. Planning and Chapter retain historical continuation and
 failure counts as diagnostics; those counts do not stop a new owned pure generation.
 The optional read-only prose-review sidecar has its separate frozen recovery policy.
+Stopped ordinary writing-theory Source Observations can use the same authenticated
+manual Effect resolution entry with `source_analysis_successor_import_job_id` naming
+an already admitted analysis job. `source-generation-isolation.v1` requires the original
+Source job's operator, the same project/workspace and curated revision, the exact
+writing-methods v1 Analyzer and materialization, and a frozen writing-methods v2 successor.
+It supports only `LOCAL_CLI_REMOTE_INFERENCE`; bounded reading Review/Synthesis and API
+calls retain their existing reconciliation paths. The original receipt, Provider admission,
+input hashes and default-deny Tool boundary remain evidence. UNKNOWN Effect and usage
+stay UNKNOWN, while old commit rights are revoked. Source's send gate permits only the
+bound successor for these v1/v2 analysis routes and that revision; renaming the original
+contract does not permit dispatch. An explicitly admitted different method contract or
+curated revision retains its ordinary Source governance and dispatch checks.
+This does not approve extracted knowledge or qualify its literary effect.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool

@@ -327,6 +327,12 @@ def append_isolation(uow, effect, command):
         [effect["operation_id"]],
     )
     operation = cursor.fetchone()[0]
+    source_generation = operation["definition_name"] == "source.import.deconstruction.execute"
+    source_binding = None
+    if source_generation:
+        from novel_forge.modules.source_import.generation_recovery import source_observation_isolation_binding
+
+        source_binding = source_observation_isolation_binding(cursor, operation, command)
     from .cli_effect_reconciliation import historical_cli_dispatch
     historical = historical_cli_dispatch(cursor, effect)
     stopped_legacy = bool(historical and historical["evidence"]["production_execution"]["execution_result"]["outcome"] in {"UNKNOWN", "TIMED_OUT", "CANCELLED", "ORPHANED"})
@@ -354,11 +360,12 @@ def append_isolation(uow, effect, command):
             "RECONCILIATION_REQUIRED",
             *({"FAILED_RETRYABLE"} if stopped_legacy else set()),
         }
-        or operation["actor_id"] != command.actor_id
+        or (not source_generation and operation["actor_id"] != command.actor_id)
         or not (
             operation["definition_name"] == "story_planning.generate"
             or chapter_generation
             or followup_generation
+            or source_generation
         )
         or effect["effect_type"] != "model.invoke"
         or effect["status"] not in {"UNKNOWN", "RECONCILIATION_REQUIRED", *({"FAILED_RETRYABLE"} if stopped_legacy else set())}
@@ -428,6 +435,8 @@ def append_isolation(uow, effect, command):
                 command.actor_id,
             ],
         )
+    elif source_generation:
+        generation = ("source-corpus:" + command.project_id, operation["workspace_id"])
     elif followup_generation:
         cursor.execute("""SELECT book.book_id,book.workspace_id FROM authority_book_prose_review_event event
             JOIN authority_book_prose_review_run run USING(run_id)
@@ -442,7 +451,8 @@ def append_isolation(uow, effect, command):
             "SELECT book_id, workspace_id FROM authority_story_planning_generation WHERE operation_id=%s",
             [operation["operation_id"]],
         )
-    generation = cursor.fetchone()
+    if not source_generation:
+        generation = cursor.fetchone()
     frozen = (
         operation["command_payload"]
         if chapter_generation
@@ -454,7 +464,7 @@ def append_isolation(uow, effect, command):
         or (generation[0], generation[1])
         != (runtime.get("book_id"), operation["workspace_id"])
         or (
-            not chapter_generation and not followup_generation
+            not chapter_generation and not followup_generation and not source_generation
             and (
                 frozen.get("project_id"),
                 frozen.get("workspace_id"),
@@ -474,6 +484,16 @@ def append_isolation(uow, effect, command):
         project_id=command.project_id, asset_version_id=materialization_id
     )
     tools = materialization.content.get("contract", {}).get("tool_permissions") or {}
+    if source_generation:
+        from novel_forge.modules.source_import.generation_recovery import require_source_observation_materialization
+
+        admission = uow.repositories.asset_documents.require(
+            project_id=command.project_id, asset_version_id=capability.get("provider_admission_asset_version_id")
+        )
+        if admission.content_hash != capability.get("provider_admission_content_hash"):
+            raise KernelError("SOURCE_ISOLATION_MATERIALIZATION_INVALID", "Retain the original Provider admission")
+        require_source_observation_materialization(materialization.content["contract"], capability,
+            frozen["analysis_task"]["analyzer"], admission.content["contract"])
     if (
         materialization.content_hash != capability.get("materialization_content_hash")
         or tools.get("default") != "DENY"
@@ -500,6 +520,10 @@ def append_isolation(uow, effect, command):
         [effect["operation_id"]],
     )
     pack = cursor.fetchone()
+    if source_generation:
+        pack = ({"source_materialization_asset_version_id": materialization_id,
+            "source_materialization_content_hash": materialization.content_hash,
+            "source_recovery": source_binding},)
     if not pack:
         raise KernelError(
             "GENERATION_ISOLATION_CONTRACT_MISSING",
@@ -510,6 +534,8 @@ def append_isolation(uow, effect, command):
     result = execution.get("execution_result") or {}
     from types import SimpleNamespace
     transport = (execution.get("execution_handle") or {}).get("transport")
+    if source_generation and transport != "LOCAL_CLI_REMOTE_INFERENCE":
+        raise KernelError("SOURCE_ISOLATION_SCOPE_INVALID", "Source isolation requires the stopped original local CLI")
     if transport == "REMOTE_PROVIDER_API":
         cursor.execute("""SELECT version.asset_version_id,version.content FROM authority_asset_version version
             JOIN authority_asset asset USING(asset_id)
@@ -594,7 +620,7 @@ def append_isolation(uow, effect, command):
         evidence_asset_version_id = receipt.asset_version_id
     proof = {
         "observed_failure": observed,
-        "contract_version": CONTRACT,
+        "contract_version": "source-generation-isolation.v1" if source_generation else CONTRACT,
         "external_effect_id": effect["external_effect_id"],
         "operation_id": effect["operation_id"],
         "project_id": command.project_id,
@@ -624,6 +650,7 @@ def append_isolation(uow, effect, command):
         "continuation_id": (
             "chapter-generation-successor:"
             if chapter_generation
+            else "source-analysis-version:" if source_generation
             else "followup-generation-successor:" if followup_generation else "planning-runtime-continuation:"
         )
         + effect["operation_id"],
@@ -639,6 +666,9 @@ def append_isolation(uow, effect, command):
             "Bind actual generation recovery authorization and original Book",
         )
     proof["stopped_legacy_cli"] = stopped_legacy
+    if source_generation:
+        proof["source_recovery"] = source_binding
+        proof["recovery_state"] = "ISOLATED_AWAITING_VERSIONED_ANALYSIS"
     proof["execution_transport"] = transport
     proof["evidence_asset_version_id"] = evidence_asset_version_id
     if operation["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}:
