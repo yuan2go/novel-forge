@@ -46,7 +46,7 @@ class PlanningResultValidationError(KernelError):
 
 
 def validate_raw_result(
-    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False, narrative_search: bool = False
+    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False, narrative_search: bool = False, generated_title: bool = False
 ) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise KernelError(
@@ -75,6 +75,8 @@ def validate_raw_result(
         envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
         if narrative_search:
             envelope["contract_version"] = "foundation-generation.v5"
+        if generated_title:
+            envelope["generated_title_contract"] = "generated-book-title.v1"
         if compiled_scope and generator == "world.design.generate":
             envelope["world_compilation"] = {"compiled_scope": compiled_scope}
         structural.update(constraint_envelope=envelope, foundation_parent_bindings={})
@@ -310,6 +312,7 @@ def require_result_repair_source(
             validate_raw_result(
                 command.generator_operation_name,
                 validated_result,
+                generated_title=context_content.get("generated_title_contract") == "generated-book-title.v1",
                 work_requirements=command.execution_contract_version
                 in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},

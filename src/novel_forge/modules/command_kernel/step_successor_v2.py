@@ -451,9 +451,11 @@ def _corrected_contract_window(cursor, root, source, target, deadline, policy, *
     corrected = (policy.get("contract_version") == "kernel-corrected-contract-window.v1"
         and key and value and target["policy"].get(key) == value
         and source["definition_snapshot"]["policy"].get(key) != value)
-    if (not (transport or corrected)
-        or not deadline or not 0 < duration <= 3600
-        or any(k in root["command_payload"] for k in ("business_deadline_at", "author_deadline_at"))):
+    from .generation_policy import generation_graph
+    generation = bool(root.get("project_id") and generation_graph(cursor, root["operation_id"], root["project_id"]))
+    if (not (transport or corrected) or not generation and (
+        not deadline or not 0 < duration <= 3600
+        or any(k in root["command_payload"] for k in ("business_deadline_at", "author_deadline_at")))):
         raise KernelError("STEP_SUCCESSOR_WINDOW_INVALID", "Only a changed execution contract may continue a derived bounded window")
     cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
         LEFT JOIN authority_budget_reservation b USING(external_effect_id) WHERE o.root_operation_id=%s
@@ -469,8 +471,10 @@ def _corrected_contract_window(cursor, root, source, target, deadline, policy, *
         AND l.released_at IS NULL AND l.expires_at>NOW())""", [root["operation_id"]]*2)
     if any(cursor.fetchone()):
         raise KernelError("STEP_SUCCESSOR_WINDOW_UNSETTLED", "Reconcile every effect and release every lease before continuing")
-    return {**policy, "original_deadline": deadline.isoformat(),
-        "new_deadline": max(deadline, datetime.now(timezone.utc)+timedelta(seconds=duration)).isoformat(),
+    observed_deadline = deadline.isoformat() if deadline else None
+    return {**policy, "original_deadline": observed_deadline,
+        "new_deadline": observed_deadline if generation else max(deadline, datetime.now(timezone.utc)+timedelta(seconds=duration)).isoformat(),
+        "generation_deadline_enforced": False if generation else True,
         "duration_seconds": duration, "terminal_history": "PRESERVED", "resource_authorization": "UNCHANGED"}
 
 

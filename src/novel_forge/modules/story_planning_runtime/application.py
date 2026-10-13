@@ -234,6 +234,7 @@ class _PlanningGenerationHandler:
         knowledge_refs: tuple[str, ...] = ()
         author_projection: dict[str, Any] = {}
         craft_strategy = None
+        title_contract = None
         if self.database_url and candidate.evidence.context_bundle_asset_version_id:
             from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
@@ -243,6 +244,12 @@ class _PlanningGenerationHandler:
                 project_id=command.project_id,
                 asset_version_id=candidate.evidence.context_bundle_asset_version_id,
             )
+            title_contract = context.content.get("generated_title_contract")
+            if title_contract is not None and (
+                title_contract != "generated-book-title.v1" or context.content_hash != candidate.evidence.context_bundle_hash
+                or command.generator_operation_name != "creative.candidates.generate"
+            ):
+                raise KernelError("FOUNDATION_TITLE_CONTRACT_INVALID", "Title generation must bind its exact native Context")
             selection = context.content.get("narrative_intelligence") or {}
             if any(item.get("selected_content", {}).get("craft_mechanism") for item in selection.get("selected") or ()) and (
                 context.content_hash != candidate.evidence.context_bundle_hash
@@ -302,6 +309,8 @@ class _PlanningGenerationHandler:
         if command.generator_operation_name in FOUNDATION_GENERATORS and command.narrative_search_id and command.execution_contract_version == "1.21.0":
             envelope["contract_version"] = "foundation-generation.v5"
             envelope["narrative_search"] = command.narrative_search_snapshot
+        if title_contract is not None:
+            envelope["generated_title_contract"] = title_contract
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
             envelope["author_design_projection"] = author_projection
@@ -358,10 +367,8 @@ class _PlanningGenerationHandler:
                 raise KernelError("EDITION_SCENE_MAPPING_DRIFT", "Edition planning must preserve the mapped source Scene identities and order")
             target_slots = command.edition_execution.get("target_slot_ids") or []
             if target_slots:
-                from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
-                slots = compile_realization_contract(candidate.candidate_payload, {})["slots"]
-                if [slot["slot_id"] for slot in slots] != list(target_slots):
-                    raise KernelError("EDITION_SLOT_MAPPING_DRIFT", "The new plan must realize every submitted Scene slot in frozen order")
+                from novel_forge.modules.book_authority.edition_planning import require_edition_slot_mapping
+                require_edition_slot_mapping(candidate.candidate_payload, list(target_slots))
             envelope["edition_execution"] = deepcopy(dict(command.edition_execution))
             envelope["envelope_digest"] = canonical_hash({key: value for key, value in envelope.items() if key != "envelope_digest"})
         content = candidate.authority_content(

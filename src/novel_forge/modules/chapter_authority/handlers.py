@@ -3,7 +3,7 @@ from __future__ import annotations
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from dataclasses import asdict, dataclass, replace
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 from typing import Any
@@ -696,6 +696,11 @@ class _RetrievalHandler:
         rounds = load_retrieval_rounds(
             request.database_url, campaign_id=str(campaign["campaign_id"])
         )
+        if campaign.get("final_result") is not None:
+            from novel_forge.modules.context_builder.retrieval_campaign_store import verify_campaign_result
+            result = campaign["final_result"]
+            verify_campaign_result(result, campaign["final_result_fingerprint"])
+            return result
         if not rounds:
             round_zero_result = build_retrieval_result(
                 project_id=request.project_id,
@@ -746,6 +751,7 @@ class _RetrievalHandler:
             )
 
         termination_reason = str(campaign.get("termination_reason") or "")
+        stopped_expansion = None
         while not termination_reason:
             coverage = dict(rounds[-1]["coverage_after"])
             usage = _campaign_usage(rounds)
@@ -761,6 +767,7 @@ class _RetrievalHandler:
                 cost_amount=usage["cost_amount"],
                 last_round_new_evidence=int(rounds[-1]["new_evidence_count"]),
                 expansion_available=self.expansion_provider_bound,
+                coverage_before=rounds[-1]["coverage_before"],
             )
             if not bool(decision["continue"]):
                 termination_reason = str(decision["termination_reason"])
@@ -780,21 +787,9 @@ class _RetrievalHandler:
                 command={
                     **request.command,
                     "_effect_instance": f"retrieval-expansion-round-{round_number}",
-                    "context_token_budget": min(
-                        resolve_stage_context_token_budget(
-                            request.command,
-                            "retrieval_query_expansion",
-                        ),
-                        policy.model_token_limit - usage["model_tokens"],
-                    ),
+                    "context_token_budget": resolve_stage_context_token_budget(
+                        request.command, "retrieval_query_expansion"),
                 },
-            )
-            remaining_cost = max(
-                Decimal("0"),
-                Decimal(policy.cost_limit) - Decimal(usage["cost_amount"]),
-            )
-            provider_cost_ceiling = Decimal(
-                str(getattr(self.provider, "max_cost_per_call", "0") or "0")
             )
             provider_result = self.provider.invoke(
                 expansion_request,
@@ -832,22 +827,28 @@ class _RetrievalHandler:
                         }
                         for item in rounds
                     ],
-                    "policy": policy.to_dict(),
+                    "policy": policy.execution_policy(),
                 },
-                reservation_amount=format(
-                    min(remaining_cost, provider_cost_ceiling), "f"
-                ),
-                reservation_tokens=(policy.model_token_limit - usage["model_tokens"]),
             )
-            expansion_plan = validate_retrieval_expansion_plan(
-                raw=provider_result.output,
-                contract=coverage_contract,
-                coverage=coverage,
-                policy=policy,
-                round_number=round_number,
-                prior_query_fingerprints=prior_fingerprints,
-                existing_query_count=existing_query_count,
-            )
+            try:
+                expansion_plan = validate_retrieval_expansion_plan(
+                    raw=provider_result.output,
+                    contract=coverage_contract,
+                    coverage=coverage,
+                    policy=policy,
+                    round_number=round_number,
+                    prior_query_fingerprints=prior_fingerprints,
+                    prior_queries=[query for item in rounds for query in item["expansion_plan"].get("queries", [])],
+                    existing_query_count=existing_query_count,
+                )
+            except KernelError as error:
+                if error.code != "RETRIEVAL_EXPANSION_NO_NOVEL_QUERY":
+                    raise
+                termination_reason = "NO_NOVEL_QUERY"
+                stopped_expansion = {"provider_evidence": provider_result.to_evidence(),
+                    "external_effect_id": _external_effect_id(provider_result.to_evidence()),
+                    "usage": _provider_usage(provider_result.to_evidence()), "documents": []}
+                break
             expanded_query_plan = build_expanded_retrieval_query_plan(
                 base_query_plan=query_plan,
                 expansion_plan=expansion_plan,
@@ -926,11 +927,7 @@ class _RetrievalHandler:
                 expansion_reason="DETERMINISTIC_COVERAGE_GAP",
                 provider_evidence=evidence,
                 external_effect_id=_external_effect_id(evidence),
-                input_tokens=provider_result.input_tokens,
-                output_tokens=provider_result.output_tokens,
-                cost_amount=provider_result.cost_amount,
-                currency=provider_result.currency,
-                latency_ms=_provider_latency_ms(evidence),
+                **_provider_usage(evidence),
             )
             rounds = load_retrieval_rounds(
                 request.database_url, campaign_id=str(campaign["campaign_id"])
@@ -972,18 +969,28 @@ class _RetrievalHandler:
         )
         result.pop("result_fingerprint", None)
         result["retrieval_campaign"] = {
-            "contract_version": "retrieval-campaign-result-v1",
+            "contract_version": "retrieval-campaign-result-v2",
             "campaign_id": str(campaign["campaign_id"]),
-            "policy_version": policy.policy_version,
+            "policy_version": policy.execution_policy()["policy_version"],
+            "frozen_policy_version": policy.policy_version,
             "accepted_boundary": dict(coverage_contract.get("accepted_boundary") or {}),
             "round_count": len(rounds),
             "round_snapshot_hashes": [item["snapshot_hash"] for item in rounds],
             "coverage": dict(rounds[-1]["coverage_after"]),
             "termination_reason": termination_reason,
             "final_evidence_identity": final_evidence_identity,
-            "usage": _campaign_usage(rounds),
+            "usage": _campaign_usage((*rounds, *([stopped_expansion] if stopped_expansion else []))),
+            "stopped_expansion": stopped_expansion,
             "authority": "DETERMINISTIC_CONTEXT_POLICY",
         }
+        if campaign["status"] != "RUNNING":
+            if not all(item["contract_version"] == "retrieval-round-snapshot-v1" for item in rounds):
+                raise KernelError("RETRIEVAL_CAMPAIGN_RESULT_MISSING", "A terminal current campaign requires its retained final result")
+            # COMPATIBILITY: Legacy completion fingerprints bind the original v1 observation projection.
+            result["retrieval_campaign"] = {key: value for key, value in result["retrieval_campaign"].items()
+                if key not in {"stopped_expansion", "frozen_policy_version"}}
+            result["retrieval_campaign"].update(contract_version="retrieval-campaign-result-v1",
+                policy_version=policy.policy_version, usage=_legacy_campaign_usage(rounds))
         result["result_fingerprint"] = _content_hash(result)
         terminal_status = (
             "FALLBACK"
@@ -1002,6 +1009,7 @@ class _RetrievalHandler:
             termination_reason=termination_reason,
             final_result_fingerprint=str(result["result_fingerprint"]),
             final_evidence_identity=final_evidence_identity,
+            final_result=result,
         )
         if str(completed["final_result_fingerprint"]) != str(
             result["result_fingerprint"]
@@ -1892,6 +1900,8 @@ class _BestCandidateHandler:
                 quality_resolution_checks=tuple(rereview.content.get("quality_resolution_checks") or []),
                 resolved_issue_codes=tuple(rereview.content.get("resolved_issue_codes") or []),
                 remaining_issue_codes=tuple(rereview.content.get("remaining_issue_codes") or []),
+                review_target_text_hash=str(rereview.content.get("target_text_hash") or ""),
+                review_report_type=str(rereview.content.get("report_type") or ""),
             ),
             minimum_net_improvement=threshold,
             length_repair_scope=revision.content.get("chapter_length_repair_scope"),
@@ -3012,44 +3022,83 @@ def _provider_latency_ms(evidence: dict[str, Any]) -> int:
     return 0
 
 
+def _observed_integer(value):
+    return value if type(value) is int and value >= 0 else None
+
+
+def _observed_amount(value):
+    try:
+        amount = Decimal(str(value))
+    except (ValueError, InvalidOperation):
+        return None
+    return format(amount, "f") if amount.is_finite() and amount >= 0 else None
+
+
 def _provider_usage(evidence: dict[str, Any]) -> dict[str, Any]:
+    if not evidence:
+        return {"input_tokens": 0, "output_tokens": 0, "cost_amount": "0",
+                "currency": "NOT_APPLICABLE", "latency_ms": 0}
     usage = dict(evidence.get("usage") or {})
     cost = dict(evidence.get("cost") or {})
-    return {
-        "input_tokens": int(usage.get("input_tokens") or 0),
-        "output_tokens": int(usage.get("output_tokens") or 0),
-        "cost_amount": str(cost.get("amount") or "0"),
-        "currency": str(cost.get("currency") or "USD"),
-        "latency_ms": _provider_latency_ms(evidence),
-    }
+    if usage.get("measurement") in {"UNKNOWN", "INVALID"} or usage.get("availability") == "UNAVAILABLE":
+        usage = {}
+    if (cost.get("measurement") in {"UNKNOWN", "INVALID"} or cost.get("availability") == "UNAVAILABLE"
+            or cost.get("currency") == "UNKNOWN"):
+        cost = {"currency": cost.get("currency", "UNKNOWN")}
+    latency, pending = None, [evidence]
+    while pending and latency is None:
+        current = pending.pop()
+        if isinstance(current, dict):
+            for key in ("latency_ms", "duration_ms", "elapsed_ms"):
+                latency = _observed_integer(current.get(key))
+                if latency is not None:
+                    break
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return {"input_tokens": _observed_integer(usage.get("input_tokens")),
+        "output_tokens": _observed_integer(usage.get("output_tokens")),
+        "cost_amount": _observed_amount(cost.get("amount")),
+        "currency": str(cost.get("currency") or "UNKNOWN"), "latency_ms": latency}
 
 
 def _campaign_usage(rounds: tuple[dict[str, Any], ...]) -> dict[str, Any]:
-    currencies = {str(item["usage"].get("currency") or "USD") for item in rounds}
-    if len(currencies) > 1:
-        raise KernelError(
-            "RETRIEVAL_CAMPAIGN_CURRENCY_MISMATCH",
-            "retrieval campaign usage cannot combine different currencies",
-        )
+    def total(field):
+        values = [_observed_integer(item["usage"].get(field)) for item in rounds]
+        return sum(values) if all(value is not None for value in values) else None
+    by_currency = {}
+    for item in rounds:
+        usage = item["usage"]
+        currency = str(usage.get("currency") or "UNKNOWN")
+        if currency == "NOT_APPLICABLE":
+            continue
+        entry = by_currency.setdefault(currency, {"known_amount": None, "unknown_measurements": 0})
+        amount = _observed_amount(usage.get("cost_amount"))
+        if amount is None:
+            entry["unknown_measurements"] += 1
+        else:
+            entry["known_amount"] = format(Decimal(entry["known_amount"] or "0") + Decimal(amount), "f")
+    complete = len(by_currency) == 1 and all(not value["unknown_measurements"] for value in by_currency.values())
+    input_tokens, output_tokens = total("input_tokens"), total("output_tokens")
+    return {"provider_calls": sum(bool(item.get("external_effect_id") or item.get("provider_evidence")) for item in rounds),
+        "input_tokens": input_tokens, "output_tokens": output_tokens,
+        "model_tokens": input_tokens + output_tokens if input_tokens is not None and output_tokens is not None else None,
+        "cost_amount": next(iter(by_currency.values()))["known_amount"] if complete else "0" if not by_currency else None,
+        "currency": next(iter(by_currency)) if len(by_currency) == 1 else "MIXED" if by_currency else "NOT_APPLICABLE",
+        "cost_by_currency": by_currency, "latency_ms": total("latency_ms"),
+        "candidate_count": sum(len(item["documents"]) for item in rounds)}
+
+
+def _legacy_campaign_usage(rounds):
+    # COMPATIBILITY: This projection is used only to verify a pre-v2 immutable terminal fingerprint.
     input_tokens = sum(int(item["usage"].get("input_tokens") or 0) for item in rounds)
     output_tokens = sum(int(item["usage"].get("output_tokens") or 0) for item in rounds)
-    amount = sum(
-        (Decimal(str(item["usage"].get("cost_amount") or "0")) for item in rounds),
-        Decimal("0"),
-    )
-    return {
-        "provider_calls": sum(
-            bool(item.get("external_effect_id") or item.get("provider_evidence"))
-            for item in rounds
-        ),
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "model_tokens": input_tokens + output_tokens,
-        "cost_amount": format(amount, "f"),
-        "currency": next(iter(currencies), "USD"),
+    return {"provider_calls": sum(bool(item.get("external_effect_id") or item.get("provider_evidence")) for item in rounds),
+        "input_tokens": input_tokens, "output_tokens": output_tokens, "model_tokens": input_tokens + output_tokens,
+        "cost_amount": format(sum((Decimal(str(item["usage"].get("cost_amount") or "0")) for item in rounds), Decimal("0")), "f"),
+        "currency": next(iter({str(item["usage"].get("currency") or "USD") for item in rounds}), "USD"),
         "latency_ms": sum(int(item["usage"].get("latency_ms") or 0) for item in rounds),
-        "candidate_count": sum(len(item["documents"]) for item in rounds),
-    }
+        "candidate_count": sum(len(item["documents"]) for item in rounds)}
 
 
 def _campaign_semantic_status(

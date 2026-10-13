@@ -157,9 +157,11 @@ def validate_foundation_applicability(
 
 
 def foundation_output_schema(
-    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True, rfc6901_paths: bool = False, narrative_search: bool = False
+    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True, rfc6901_paths: bool = False, narrative_search: bool = False, generated_title: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
+    if generated_title and role is not FoundationRole.CREATIVE_FOUNDATION:
+        raise ValueError("Generated titles belong to Creative Foundation")
     if narrative_search and role is not FoundationRole.CREATIVE_FOUNDATION:
         raise ValueError("Foundation search is limited to direction selection")
     properties: dict[str, Any] = {
@@ -168,6 +170,9 @@ def foundation_output_schema(
         "prohibited_outcomes": _texts(),
     }
     if role is FoundationRole.CREATIVE_FOUNDATION:
+        if generated_title:
+            properties["generated_title"] = {"type": "string", "minLength": 1, "maxLength": 80,
+                "description": "Original reader-facing book title suited to this generated direction and the author language. The pending Book display name is only a host placeholder, never an author-selected title."}
         properties.update(
             {
                 field: _text()
@@ -278,7 +283,7 @@ def foundation_output_schema_ref(generator: str, *, execution_contract_version: 
 
 
 def foundation_task(
-    generator: str, *, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False, narrative_search: bool = False
+    generator: str, *, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False, narrative_search: bool = False, generated_title: bool = False
 ) -> dict[str, Any]:
     if narrative_search and (generator != "creative.candidates.generate" or not rfc6901_paths):
         raise ValueError("Foundation search requires the current creative contract")
@@ -305,6 +310,7 @@ def foundation_task(
         if work_requirements
         else "foundation-generation.v1",
         "role": role.value,
+        **({"generated_title_contract": "generated-book-title.v1"} if generated_title else {}),
         "task": tasks[role],
         **({"narrative_search_contract": "Return the frozen strategy's distinct future direction and the required narrative_search_projection. Comparison estimates remain model support, not literary qualification or accepted story state."} if narrative_search else {}),
         "parent_roles": [parent.value for parent in role.required_parents],
@@ -389,7 +395,10 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
             world, ensure_ascii=False, separators=(",", ":")
         )
     work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4", "foundation-generation.v5"}
-    schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False, narrative_search=envelope.get("contract_version") == "foundation-generation.v5")
+    title_contract = envelope.get("generated_title_contract")
+    if title_contract not in {None, "generated-book-title.v1"}:
+        raise KernelError("FOUNDATION_TITLE_CONTRACT_INVALID", "Unknown frozen title contract")
+    schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False, narrative_search=envelope.get("contract_version") == "foundation-generation.v5", generated_title=title_contract is not None)
     if envelope.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions
         projection = frozen_author_projection({"constraint_envelope": envelope}, generator=generator, logical_key=str(content.get("logical_key") or ""))

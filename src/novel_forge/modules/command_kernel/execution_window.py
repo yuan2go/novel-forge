@@ -29,6 +29,9 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         require_live_chapter_frontier(cursor, root_id=root_id, project_id=root['project_id'], book_run_id=book_run_id)
         cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s', [root_id])
         deadline = cursor.fetchone()[0]
+        from .generation_policy import generation_graph
+        if generation_graph(cursor, root_id, root['project_id']):
+            return {'continued': False, 'deadline': deadline, 'generation_deadline_enforced': False}
         now = clock()
         if not deadline or (deadline > now and not start_repair_phase):
             return {'continued':False,'deadline':deadline}
@@ -351,8 +354,12 @@ def continue_saved_result_finalization(database_url, *, project_id, book_id, pri
                 AND attempt.status='FAILED_RETRYABLE' AND attempt.result->>'error_code'='OPERATION_BUSINESS_TIMEOUT')
             FOR UPDATE OF operation""", [project_id, book_id, principal.principal_id])
         operations = [row[0] for row in cursor.fetchall()]
+        continued = 0
         for operation in operations:
             operation_id = operation['operation_id']
+            from .generation_policy import pure_generation_operation
+            if pure_generation_operation(cursor, operation_id, project_id):
+                continue
             cursor.execute("""SELECT effect.external_effect_id,effect.request_hash FROM authority_external_effect effect
                 WHERE effect.operation_id=%s AND effect.effect_type='model.invoke' AND effect.status='SUCCEEDED'
                   AND NOT authority_generation_isolated(effect.external_effect_id)
@@ -384,6 +391,7 @@ def continue_saved_result_finalization(database_url, *, project_id, book_id, pri
                 raise KernelError('EXECUTION_WINDOW_BOUND_INVALID', operation_id)
             deadline = datetime.now(timezone.utc) + timedelta(seconds=duration)
             cursor.execute("UPDATE authority_operation SET business_deadline_at=%s,version=version+1,updated_at=clock_timestamp() WHERE operation_id=%s AND version=%s", [deadline, operation_id, operation['version']])
+            continued += 1
             _record(uow.repositories.operation_graph,
                 GraphCommandContext(project_id, principal.principal_id, operation['trace_id'], operation['correlation_id']),
                 operation_id, EVENT, {'contract_version':'local-result-finalization-window.v1',
@@ -391,4 +399,4 @@ def continue_saved_result_finalization(database_url, *, project_id, book_id, pri
                     'source_operation_version':operation['version'], 'known_effects':effects,
                     'provider_dispatch_authorized':False,'authorization':{'actor_id':principal.principal_id,'permission':'external_effect.resolve','mode':'OWNED_NATIVE_SAVED_RESULT_FINALIZATION'}})
         uow.commit()
-    return bool(operations)
+    return bool(continued)

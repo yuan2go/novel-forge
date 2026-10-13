@@ -16,6 +16,42 @@ def source():
     return root, child, ('FAILED_RETRYABLE', 'CHAPTER_LENGTH_REPAIR_INCOMPLETE', 'author', 'chapter.revision.apply')
 
 
+@pytest.mark.parametrize('cancelled', [False, True])
+def test_generation_window_preserves_frozen_deadline_and_checks_cancellation(monkeypatch, cancelled):
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel import execution_window, generation_policy
+    deadline = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    root = {'actor_id': 'author', 'project_id': 'p', 'status': 'WAITING_CHILDREN', 'definition_name': 'chapter.slice.run'}
+    answers = iter([(root,), (deadline,)])
+    statements = []
+    cursor = SimpleNamespace(execute=lambda sql, params: statements.append(sql), fetchone=lambda: next(answers))
+    class Unit:
+        def __enter__(self):
+            return SimpleNamespace(cursor=cursor)
+        def __exit__(self, *_):
+            return False
+    monkeypatch.setattr(execution_window, 'AuthorityUnitOfWork', lambda _: Unit())
+    monkeypatch.setattr(generation_policy, 'generation_graph', lambda *_: True)
+    def frontier(*args, **scope):
+        assert scope == {'root_id': 'root', 'project_id': 'p', 'book_run_id': 'book'}
+        if cancelled:
+            raise KernelError('CHAPTER_RECOVERY_FRONTIER_CANCELLED', 'Cancelled Book')
+    monkeypatch.setattr(execution_window, 'require_live_chapter_frontier', frontier)
+    principal = SimpleNamespace(principal_id='author', require=lambda permission, project: None)
+    def no_timer():
+        raise AssertionError('Generation must not revive its historical timer')
+    if cancelled:
+        with pytest.raises(KernelError, match='CHAPTER_RECOVERY_FRONTIER_CANCELLED'):
+            execution_window.continue_candidate_execution_window('fixture', root_id='root', predecessor_id='old',
+                target_version='3.10.0', book_run_id='book', principal=principal, clock=no_timer, start_repair_phase=True)
+    else:
+        assert execution_window.continue_candidate_execution_window('fixture', root_id='root', predecessor_id='old',
+            target_version='3.10.0', book_run_id='book', principal=principal, clock=no_timer, start_repair_phase=True) == {
+                'continued': False, 'deadline': deadline, 'generation_deadline_enforced': False}
+    assert all(sql.startswith('SELECT') for sql in statements)
+
+
 def test_current_length_phase_is_distinct_and_requires_bounded_repair_phase():
     root, child, failure = source()
     assert _current_length_source(root, child, failure, True)

@@ -320,6 +320,25 @@ def test_usage_overrun_is_recorded_but_cannot_expand_dispatch_budget():
         assert provider_project_usage(q, context.project_id)['conservative_tokens'] == 2000
         with pytest.raises(KernelError, match='BUDGET_CORRECTION_BREACH'):
             require_known_cli_lineage(q, project_id=context.project_id, operation_id=context.operation_id)
+        pure = identifier("new-pure-operation")
+        q.execute("""INSERT INTO authority_operation(operation_id,definition_name,definition_version,project_id,status,
+            root_operation_id,idempotency_scope,idempotency_key,request_digest,command_payload,definition_snapshot,
+            completion_contract_snapshot,policy_snapshot)
+            SELECT %s,definition_name,definition_version,project_id,'READY',%s,%s,%s,%s,'{}',
+                '{"external_capabilities":["model.draft"]}'::jsonb,'{}','{}'
+            FROM authority_operation WHERE operation_id=%s""", [pure,pure,pure,pure,pure,context.operation_id])
+        require_known_cli_lineage(q, project_id=context.project_id, operation_id=pure)
+        root = identifier("new-pure-root")
+        child = identifier("new-pure-child")
+        for target, target_root, capabilities in [(root, root, []), (child, root, ["model.draft"])]:
+            q.execute("""INSERT INTO authority_operation(operation_id,definition_name,definition_version,project_id,status,
+                root_operation_id,idempotency_scope,idempotency_key,request_digest,command_payload,definition_snapshot,
+                completion_contract_snapshot,policy_snapshot)
+                SELECT %s,definition_name,definition_version,project_id,'READY',%s,%s,%s,%s,'{}',%s,'{}','{}'
+                FROM authority_operation WHERE operation_id=%s""", [target,target_root,target,target,target,
+                    Jsonb({"external_capabilities": capabilities}),context.operation_id])
+        require_known_cli_lineage(q, project_id=context.project_id, operation_id=root)
+        assert provider_project_usage(q, context.project_id)['conservative_tokens'] == 2000
 
 
 @pytest.mark.parametrize('baseline', ['20260625_0001_initial_industrial_schema', '20261008_0181_author_manuscript_delivery', '20261008_0183_source_observation_span_identity'])

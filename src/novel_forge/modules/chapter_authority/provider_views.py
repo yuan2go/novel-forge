@@ -525,7 +525,7 @@ def build_provider_task_view(
         command = inputs.get("planning_command")
         frozen = inputs.get("frozen_inputs")
         task = inputs.get("foundation_task")
-        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2", rfc6901_paths=command.get("execution_contract_version") in {"1.19.0", "1.21.0"}, narrative_search=command.get("execution_contract_version") == "1.21.0" and bool(command.get("narrative_search_id"))):
+        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2", rfc6901_paths=command.get("execution_contract_version") in {"1.19.0", "1.21.0"}, narrative_search=command.get("execution_contract_version") == "1.21.0" and bool(command.get("narrative_search_id")), generated_title=command.get("generated_title_contract") == "generated-book-title.v1"):
             raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
         return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
     if stage in _PLANNING_STAGES:
@@ -887,6 +887,18 @@ def build_provider_task_view(
                     else "Return ordered non-overlapping edits inside diagnosed target spans, their exact old quote, replacement and issue_codes. Return text equal to applying those edits only. Historical support is read-only. Keep other prose byte-for-byte. Do not mechanically paraphrase intentional repetition."
                 ),
             }
+            requested = review.get("working_revision_request") or {}
+            if (work_requirements and requested.get("contract_version") == "chapter-working-revision.v1"
+                    and isinstance(requested.get("reason"), str) and bool(requested["reason"].strip())
+                    and requested.get("source_asset_version_id") == review.get("target_asset_version_id")):
+                payload["targeted_repair"]["scope_policy"] = "ANCHORED_SCOPE_PROPOSAL_V1"
+                payload["targeted_repair"]["instructions"] = (
+                    "Return ordered non-overlapping edits with exact old quotes, replacements and issue_codes. "
+                    "Each edit must intersect every named prose diagnosis anchor. A wider local edit is a scope proposal, "
+                    "not validated permission: preserve unrelated paragraphs and frozen commitments. The host derives "
+                    "the complete text and requires exact-source ReReview preservation before downstream use. "
+                    "Plan-owned investigations do not authorize prose edits. Keep all other text byte-for-byte."
+                )
             if not compact_contract:
                 payload["chapter"]["text"] = str(source.get("text") or "")
         if review.get("craft_targets") and inputs.get("required_actions") is None:
@@ -937,7 +949,7 @@ def build_provider_task_view(
     if stage == "rereview":
         from novel_forge.modules.review.craft import craft_provider_task
         from novel_forge.modules.review.diagnostics import open_diagnoses
-        from novel_forge.modules.review.prose_comparison import prose_comparison
+        from novel_forge.modules.review.prose_comparison import prose_comparison, prose_comparison_view
 
         revision = inputs.get("revision") or inputs.get("draft")
         issues = [
@@ -949,6 +961,12 @@ def build_provider_task_view(
             **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
+            **({"prose_scope_reassessment": {"proposal": deepcopy(revision["prose_scope_proposal"]),
+                "instructions": "Assess each proposed expanded finding against the complete before/after prose. "
+                    "Verify unrelated paragraphs, frozen commitments and character/knowledge/voice boundaries. "
+                    "Preservation is not the same as complete resolution: keep partial or uncertain issues explicit. "
+                    "Uncertainty in unchanged prose remains unresolved; it is not by itself a new preservation regression."}}
+               if (revision or {}).get("prose_scope_proposal") else {}),
             **_realization_source_review(revision or {}),
             **(
                 {
@@ -976,7 +994,7 @@ def build_provider_task_view(
             ),
             **(
                 {
-                    "prose_comparison": prose_comparison(
+                    "prose_comparison": (prose_comparison_view if compact_contract else prose_comparison)(
                         inputs["original_draft"],
                         revision or {},
                         original_id=str(

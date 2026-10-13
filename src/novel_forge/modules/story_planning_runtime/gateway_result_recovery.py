@@ -300,6 +300,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
     validate_raw_result(
         command.generator_operation_name,
         candidate_result,
+        generated_title=context.content.get("generated_title_contract") == "generated-book-title.v1",
         work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
         aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
         rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},

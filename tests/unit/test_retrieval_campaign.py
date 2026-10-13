@@ -314,16 +314,9 @@ def test_duplicate_query_and_campaign_hard_bounds_stop_fail_closed() -> None:
         round_number=1,
         prior_query_fingerprints=(),
     )
-    with pytest.raises(KernelError, match="total campaign query budget"):
-        validate_retrieval_expansion_plan(
-            raw=raw,
-            contract=contract,
-            coverage=coverage,
-            policy=policy,
-            round_number=1,
-            prior_query_fingerprints=(),
-            existing_query_count=policy.total_query_limit,
-        )
+    later = validate_retrieval_expansion_plan(raw=raw, contract=contract, coverage=coverage,
+        policy=policy, round_number=4, prior_query_fingerprints=(), existing_query_count=100)
+    assert later["round_number"] == 4
     with pytest.raises(KernelError, match="novel query"):
         validate_retrieval_expansion_plan(
             raw=raw,
@@ -344,7 +337,7 @@ def test_duplicate_query_and_campaign_hard_bounds_stop_fail_closed() -> None:
         cost_amount="0.01",
         last_round_new_evidence=1,
         expansion_available=True,
-    ) == {"continue": False, "termination_reason": "MAX_ROUNDS_REACHED"}
+    ) == {"continue": True, "termination_reason": "CONTINUE"}
 
     assert decide_retrieval_campaign_transition(
         coverage=coverage,
@@ -374,3 +367,46 @@ def test_round_union_is_order_independent_and_rejects_mutable_identity() -> None
     mutated["projection_hash"] = "sha256:" + "9" * 64
     with pytest.raises(KernelError, match="immutable"):
         merge_retrieval_round_documents(((older,), (mutated,)))
+
+
+def test_generation_consumption_and_unknown_cost_do_not_stop_retrieval_progress():
+    policy = RetrievalCampaignPolicy()
+    result = decide_retrieval_campaign_transition(coverage={"sufficient": False}, policy=policy,
+        completed_rounds=100, total_queries=1000, provider_calls=100, model_tokens=900000,
+        cost_amount="UNKNOWN", last_round_new_evidence=1, expansion_available=True)
+    assert result == {"continue": True, "termination_reason": "CONTINUE"}
+    assert "model_token_limit" not in policy.execution_policy()
+    old = RetrievalCampaignPolicy(policy_version="minimum-sufficient-retrieval-campaign-v1")
+    assert old.to_dict()["model_token_limit"] == 4096
+    assert "model_token_limit" not in old.execution_policy()
+
+
+def test_unknown_usage_and_mixed_currency_remain_diagnostic():
+    from novel_forge.modules.chapter_authority.handlers import _provider_usage, _campaign_usage
+    unknown = _provider_usage({"usage": {"measurement": "UNKNOWN"}, "cost": {"currency": "UNKNOWN"}})
+    assert unknown["input_tokens"] is None and unknown["cost_amount"] is None and unknown["latency_ms"] is None
+    rounds = tuple({"usage": _provider_usage(e), "provider_evidence": e, "documents": []} for e in [
+        {"usage": {"input_tokens": 5, "output_tokens": 2}, "cost": {"amount": "10", "currency": "USD"}},
+        {"usage": {"input_tokens": 7, "output_tokens": 3}, "cost": {"amount": "20", "currency": "CNY"}},
+        {"usage": {"measurement": "UNKNOWN"}, "cost": {"currency": "USD"}}])
+    total = _campaign_usage(rounds)
+    assert total["model_tokens"] is None and total["cost_amount"] is None and total["currency"] == "MIXED"
+    assert total["cost_by_currency"]["USD"] == {"known_amount": "10", "unknown_measurements": 1}
+    assert total["cost_by_currency"]["CNY"]["known_amount"] == "20"
+
+
+def test_query_novelty_cannot_be_faked_by_changing_id_or_reason():
+    policy = RetrievalCampaignPolicy()
+    contract = build_retrieval_coverage_contract(intent=_intent(), memo=_memo())
+    coverage = evaluate_retrieval_coverage(contract=contract, documents=[])
+    query = {"query_id": "first", "text": "bridge oath", "reason": "missing", "targets": ["fact:fact:oath-origin"],
+        "selectors": {}, "temporal_range": {"from_chapter": 0, "to_chapter": 400}}
+    first = validate_retrieval_expansion_plan(raw={"contract_version": "retrieval-expansion-plan-v1", "queries": [query]},
+        contract=contract, coverage=coverage, policy=policy, round_number=1, prior_query_fingerprints=())
+    with pytest.raises(KernelError, match="novel query"):
+        validate_retrieval_expansion_plan(raw={"contract_version": "retrieval-expansion-plan-v1", "queries": [{**query,
+            "query_id": "second", "reason": "different prose reason"}]}, contract=contract, coverage=coverage,
+            policy=policy, round_number=4, prior_query_fingerprints=(), prior_queries=first["queries"])
+    assert decide_retrieval_campaign_transition(coverage=coverage, coverage_before=coverage, policy=policy,
+        completed_rounds=2, total_queries=2, provider_calls=1, model_tokens=50, cost_amount="0.01",
+        last_round_new_evidence=10, expansion_available=True)["termination_reason"] == "NO_NEW_EVIDENCE"

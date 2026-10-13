@@ -9,7 +9,27 @@
         "safe_summary": "Initial production_profile; no accepted narrative history.",
         "structured_facts": [],
         "profile_id": "creative-validation-production-profile",
-        "authority_boundary": "FUTURE_INTENT"
+        "authority_boundary": "FUTURE_INTENT",
+        "working_schedule_policy": {
+          "version": "working-story-schedule.v1",
+          "history_basis": "SELECTED_WORKING_PROSE"
+        },
+        "working_craft_history_policy": {
+          "version": "working-craft-delivery.v1",
+          "use": "SOFT_SELECTION_CAUTION"
+        },
+        "future_planning_feedback_policy": {
+          "version": "native-prose-plan-feedback.v1",
+          "scope": "PLANNED_FUTURE_ONLY"
+        },
+        "working_prose_policy": {
+          "version": "working-prose-projection.v3",
+          "history_chapters": 128,
+          "recent_complete_chapters": 2,
+          "max_characters": 24000,
+          "queries": [],
+          "guidance_mode": "COMBINED"
+        }
       }
     },
     "previous_volume_outcome": {
@@ -234,5 +254,6 @@
         ]
       }
     }
-  }
+  },
+  "narrative_execution_contract": "native-narrative-execution.v1"
 }

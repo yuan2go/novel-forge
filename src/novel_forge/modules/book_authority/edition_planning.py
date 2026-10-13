@@ -11,6 +11,16 @@ from novel_forge.storage.book_edition_repositories import BookEditionRepository
 EDITION_PLANNING = "book-edition-planning.v1"
 
 
+def require_edition_slot_mapping(plan: dict[str, Any], target_slots: list[str]) -> None:
+    from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
+
+    for policy in ("continuous-scene.v1", "scene-core-slots.v1", "EXPLICIT_SKELETON_V1"):
+        slots = compile_realization_contract(plan, {}, core_policy=policy)["slots"]
+        if [slot["slot_id"] for slot in slots] == target_slots:
+            return
+    raise KernelError("EDITION_SLOT_MAPPING_DRIFT", "The new plan must realize every submitted Scene slot in frozen order")
+
+
 def edition_plan_scope(database_url: str, *, book: dict[str, Any], chapter: int, generator: str, frozen_revision_id: str = "") -> dict[str, Any] | None:
     with AuthorityUnitOfWork(database_url) as uow:
         repo = BookEditionRepository(uow.cursor)

@@ -138,6 +138,19 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         and item.get("evidence") and item.get("effect_status") in {"ACHIEVED", "FAILED", "UNCERTAIN"}
     }
     observations = [accepted_history[key] for key in sorted(accepted_history) if current_chapter - policy["recent_chapter_window"] <= int(accepted_history[key].get("chapter") or 0)]
+    working_allocations = {(item.get("chapter"),item.get("use_id")):dict(item) for item in recent_usage
+        if item.get("usage_basis") == "SELECTED_WORKING_DELIVERY" and item.get("effect_status") == "NOT_ASSESSED"
+        and item.get("selected_source_asset_version_id") and item.get("selected_source_content_hash")
+        and item.get("working_snapshot_hash") and item.get("target_text_hash") and item.get("external_receipt_ids")
+        and current_chapter - policy["recent_chapter_window"] <= int(item.get("chapter") or 0) < current_chapter
+        and int(item.get("chapter") or 0) > 0 and item.get("use_id") and (item.get("chapter"),item.get("use_id")) not in accepted_history}
+    working_matching = [value for value in working_allocations.values() if value.get("mechanism_id") == identity]
+    working_caution = len(working_matching) * policy["repetition_penalty"]
+    working_coverage_gaps = [dict(item) for item in recent_usage if item.get("usage_basis") == "WORKING_CRAFT_COVERAGE"
+        and item.get("status") == "UNKNOWN" and item.get("selected_source_asset_version_id") and item.get("working_snapshot_hash")
+        and current_chapter - policy["recent_chapter_window"] <= int(item.get("chapter") or 0) < current_chapter]
+    if working_matching:
+        reasons.append(f"CRAFT_WORKING_ALLOCATION_CAUTION:{len(working_matching)}")
     realized = [item for item in observations if item["effect_status"] == "ACHIEVED"]
     matching = [item for item in realized if item.get("mechanism_id") == identity]
     feedback = [item for item in observations if item.get("mechanism_id") == identity
@@ -171,7 +184,7 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
     salience_penalty = sum(item.get("role") == "PRIMARY" for item in matching) * policy["salience_penalty"]
     if matching:
         reasons.append(f"CRAFT_RECENT_ACCEPTED_FREQUENCY:{frequency}")
-    elif score and not feedback:
+    elif score and not feedback and not working_matching and not working_coverage_gaps:
         score += policy["variation_bonus"]
         reasons.append("CRAFT_VARIATION_BONUS")
     in_cooldown = any(0 < current_chapter - int(item["chapter"]) <= policy["cooldown_chapters"] for item in matching)
@@ -194,12 +207,17 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         temporal_budget_applied = not continuable
     rejection = "CRAFT_COOLDOWN" if temporal_budget_applied and in_cooldown else "CRAFT_FREQUENCY_BUDGET" if temporal_budget_applied and frequency >= policy["max_frequency_in_window"] else "" if score else "CRAFT_NO_CONTEXT_MATCH"
     budget_assessment = {"frequency": frequency, "repetition_penalty": repetition_penalty, "pattern_similarity_penalty": pattern_penalty, "salience_penalty": salience_penalty, "feedback_penalty": feedback_penalty, "realization_cautions": feedback, "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION", "in_cooldown": in_cooldown, "pattern_signature": sorted(signature), "pattern_comparisons": similarities, "recent_usage": observations, "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"}
+    if working_allocations:
+        budget_assessment.update(working_allocation_history=list(working_allocations.values()), working_allocation_caution=working_caution,
+            working_evidence_ceiling="DELIVERED_PLANNED_ALLOCATION_NOT_REALIZED_EFFECT")
+    if working_coverage_gaps:
+        budget_assessment["working_coverage_gaps"] = working_coverage_gaps
     if matching_assessment is not None:
         budget_assessment.update(pattern_signature_version=signature_version,
             noncomparable_pattern_use_ids=[item["use_id"] for item in realized if item.get("mechanism_id") != identity and not item.get("semantic_pattern_signature") and item.get("pattern_signature_version") != SEMANTIC_SIGNATURE])
-        matching_assessment.update(final_score=max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty) if score else 0,
+        matching_assessment.update(final_score=max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty - working_caution) if score else 0,
             variation_adjustment=policy["variation_bonus"] if "CRAFT_VARIATION_BONUS" in reasons else 0,
-            total_penalty=repetition_penalty + pattern_penalty + salience_penalty + feedback_penalty)
+            total_penalty=repetition_penalty + pattern_penalty + salience_penalty + feedback_penalty + working_caution)
     if policy["schema_version"] == "narrative-craft-budget.v2":
         budget_assessment.update(cadence_class=cadence_class, policy_version=policy["schema_version"], temporal_budget_applied=temporal_budget_applied, classification="CONFIGURABLE_POLICY", creative_benefit="NOT_PROVEN")
     if usage_spec:
@@ -208,7 +226,7 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
             temporal_budget_applied=temporal_budget_applied, policy_version=policy["schema_version"])
     return {
         "rejection_reason": rejection,
-        "score": max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty) if score else 0,
+        "score": max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty - working_caution) if score else 0,
         "match_reasons": reasons,
         "budget_assessment": budget_assessment,
         "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED",

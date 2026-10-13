@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 from typing import Any, Iterable, Mapping
@@ -9,7 +8,7 @@ from typing import Any, Iterable, Mapping
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-RETRIEVAL_CAMPAIGN_POLICY_VERSION = "minimum-sufficient-retrieval-campaign-v1"
+RETRIEVAL_CAMPAIGN_POLICY_VERSION = "coverage-progress-retrieval-campaign-v2"
 RETRIEVAL_COVERAGE_CONTRACT_VERSION = "retrieval-coverage-contract-v1"
 RETRIEVAL_EXPANSION_CONTRACT_VERSION = "retrieval-expansion-plan-v1"
 
@@ -32,6 +31,7 @@ _SELECTOR_DIMENSIONS = (
 @dataclass(frozen=True, slots=True)
 class RetrievalCampaignPolicy:
     policy_version: str = RETRIEVAL_CAMPAIGN_POLICY_VERSION
+    # COMPATIBILITY: Retired cumulative fields exist only to reproduce frozen v1 fingerprints.
     total_round_limit: int = 3
     additional_round_limit: int = 2
     queries_per_round_limit: int = 4
@@ -45,29 +45,18 @@ class RetrievalCampaignPolicy:
     fallback_mode: str = "DETERMINISTIC_FALLBACK"
 
     def __post_init__(self) -> None:
-        try:
-            cost = Decimal(self.cost_limit)
-        except InvalidOperation as exc:
-            raise ValueError("retrieval campaign cost limit must be decimal") from exc
-        if (
-            not self.policy_version
-            or not 1 <= self.total_round_limit <= 3
-            or self.additional_round_limit != self.total_round_limit - 1
-            or not 1 <= self.queries_per_round_limit <= 4
-            or not 1 <= self.total_query_limit <= 12
-            or not 1 <= self.candidates_per_round_limit <= 256
-            or self.total_candidate_limit
-            > self.total_round_limit * self.candidates_per_round_limit
-            or not 1 <= self.provider_call_limit <= 6
-            or not 1 <= self.model_token_limit <= 16_384
-            or cost < 0
-            or self.result_limit != 24
-            or self.fallback_mode not in {"DETERMINISTIC_FALLBACK", "FAIL_CLOSED"}
-        ):
-            raise ValueError("retrieval campaign policy exceeds its hard safety bounds")
+        if (not self.policy_version or not 1 <= self.queries_per_round_limit <= 4
+                or not 1 <= self.candidates_per_round_limit <= 256 or self.result_limit != 24
+                or self.fallback_mode not in {"DETERMINISTIC_FALLBACK", "FAIL_CLOSED"}):
+            raise ValueError("retrieval campaign policy exceeds its per-round scope bounds")
+
+    def execution_policy(self) -> dict[str, Any]:
+        return {"policy_version": RETRIEVAL_CAMPAIGN_POLICY_VERSION,
+            **{key: getattr(self, key) for key in ("queries_per_round_limit", "candidates_per_round_limit",
+                "result_limit", "fallback_mode")}}
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return asdict(self) if self.policy_version == "minimum-sufficient-retrieval-campaign-v1" else self.execution_policy()
 
 
 def build_retrieval_coverage_contract(
@@ -300,6 +289,7 @@ def validate_retrieval_expansion_plan(
     round_number: int,
     prior_query_fingerprints: Iterable[str],
     existing_query_count: int = 0,
+    prior_queries: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     if raw.get("contract_version") != RETRIEVAL_EXPANSION_CONTRACT_VERSION:
         raise KernelError(
@@ -311,10 +301,10 @@ def validate_retrieval_expansion_plan(
             "RETRIEVAL_EXPANSION_NOT_REQUIRED",
             "query expansion cannot run after deterministic sufficiency",
         )
-    if not 1 <= round_number <= policy.additional_round_limit:
+    if type(round_number) is not int or round_number < 1:
         raise KernelError(
             "RETRIEVAL_EXPANSION_ROUND_INVALID",
-            "query expansion round exceeds the campaign policy",
+            "query expansion requires a positive round number",
         )
     queries = raw.get("queries")
     if (
@@ -326,13 +316,8 @@ def validate_retrieval_expansion_plan(
             "RETRIEVAL_EXPANSION_QUERY_BUDGET_EXHAUSTED",
             "query expansion must contain a bounded non-empty query set",
         )
-    if existing_query_count < 0 or existing_query_count + len(queries) > (
-        policy.total_query_limit
-    ):
-        raise KernelError(
-            "RETRIEVAL_EXPANSION_QUERY_BUDGET_EXHAUSTED",
-            "query expansion exceeds the total campaign query budget",
-        )
+    if existing_query_count < 0:
+        raise KernelError("RETRIEVAL_EXPANSION_QUERY_COUNT_INVALID", "Query observations cannot be negative")
     accepted_through = int(
         dict(contract.get("accepted_boundary") or {}).get("accepted_through_chapter")
         or 0
@@ -347,6 +332,7 @@ def validate_retrieval_expansion_plan(
         for dimension in _SELECTOR_DIMENSIONS
     }
     prior = {str(item) for item in prior_query_fingerprints if str(item)}
+    prior_novelty = {_query_novelty(query) for query in prior_queries}
     normalized: list[dict[str, Any]] = []
     current_fingerprints: set[str] = set()
     for raw_query in queries:
@@ -418,12 +404,14 @@ def validate_retrieval_expansion_plan(
             "temporal_range": {"from_chapter": start, "to_chapter": end},
         }
         fingerprint = _hash(body)
-        if fingerprint in prior or fingerprint in current_fingerprints:
+        novelty = _query_novelty(body)
+        if fingerprint in prior or fingerprint in current_fingerprints or novelty in prior_novelty:
             raise KernelError(
                 "RETRIEVAL_EXPANSION_NO_NOVEL_QUERY",
                 "query expansion did not produce a novel query",
             )
         current_fingerprints.add(fingerprint)
+        prior_novelty.add(novelty)
         normalized.append({**body, "query_fingerprint": fingerprint})
     body = {
         "contract_version": RETRIEVAL_EXPANSION_CONTRACT_VERSION,
@@ -439,6 +427,13 @@ def validate_retrieval_expansion_plan(
     return {**body, "expansion_plan_fingerprint": _hash(body)}
 
 
+def _query_novelty(query: Mapping[str, Any]) -> str:
+    return _hash({"text": " ".join(str(query.get("text") or "").split()),
+        "targets": sorted(query.get("targets") or []),
+        "selectors": {key: sorted(values) for key, values in dict(query.get("selectors") or {}).items()},
+        "temporal_range": dict(query.get("temporal_range") or {})})
+
+
 def decide_retrieval_campaign_transition(
     *,
     coverage: Mapping[str, Any],
@@ -450,27 +445,13 @@ def decide_retrieval_campaign_transition(
     cost_amount: str,
     last_round_new_evidence: int,
     expansion_available: bool,
+    coverage_before: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if bool(coverage.get("sufficient")):
         return {"continue": False, "termination_reason": "REQUIRED_EVIDENCE_SATISFIED"}
-    if completed_rounds >= policy.total_round_limit:
-        return {"continue": False, "termination_reason": "MAX_ROUNDS_REACHED"}
-    if total_queries >= policy.total_query_limit:
-        return {"continue": False, "termination_reason": "QUERY_BUDGET_EXHAUSTED"}
-    try:
-        cost = Decimal(cost_amount)
-    except InvalidOperation as exc:
-        raise KernelError(
-            "RETRIEVAL_CAMPAIGN_COST_INVALID",
-            "retrieval campaign cost evidence must be decimal",
-        ) from exc
-    if (
-        provider_calls >= policy.provider_call_limit
-        or model_tokens >= policy.model_token_limit
-        or cost >= Decimal(policy.cost_limit)
-    ):
-        return {"continue": False, "termination_reason": "MODEL_BUDGET_EXHAUSTED"}
     if completed_rounds > 1 and last_round_new_evidence <= 0:
+        return {"continue": False, "termination_reason": "NO_NEW_EVIDENCE"}
+    if completed_rounds > 1 and coverage_before is not None and coverage_before.get("missing") == coverage.get("missing"):
         return {"continue": False, "termination_reason": "NO_NEW_EVIDENCE"}
     if not expansion_available:
         return {"continue": False, "termination_reason": policy.fallback_mode}

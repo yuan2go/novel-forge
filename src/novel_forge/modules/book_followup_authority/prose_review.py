@@ -147,7 +147,7 @@ def freeze_manifest(
         "context_token_budget",
         "maximum_windows",
     }
-    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode"}
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode", "source_current_policy"}
     if (
         not required <= set(policy)
         or set(policy) - required - optional
@@ -196,6 +196,8 @@ def freeze_manifest(
         raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")
     if policy.get("diagnosis_contract") not in {None, "prose-root-cause.v1"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown root-cause diagnosis contract")
+    if policy.get("source_current_policy") not in {None, "FROZEN_SELECTED_RANGE"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown source-currentness policy")
     if policy.get("reading_mode", "DESIGN_AWARE") not in {"DESIGN_AWARE", "BODY_FIRST"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown reading mode")
     if policy.get("reading_mode") == "BODY_FIRST":
@@ -358,6 +360,13 @@ def validate_window_report(
                     "a relation judgment must locate evidence in both retrieved passages",
                 )
     return report
+
+
+def review_sources_current(frozen, current, policy) -> bool:
+    if policy.get("source_current_policy") != "FROZEN_SELECTED_RANGE":
+        return frozen == current
+    by_version = {source["asset_version_id"]:source for source in current}
+    return len(by_version) == len(current) and all(by_version.get(source["asset_version_id"]) == source for source in frozen)
 
 
 def aggregate_reports(

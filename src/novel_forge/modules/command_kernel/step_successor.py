@@ -176,7 +176,8 @@ def replace_failed_step(
             [root["operation_id"]],
         )
         deadline = cursor.fetchone()[0]
-        if deadline and deadline <= datetime.now(timezone.utc):
+        from .generation_policy import generation_graph
+        if deadline and deadline <= datetime.now(timezone.utc) and not generation_graph(cursor, root["operation_id"], project):
             raise KernelError(
                 "OPERATION_BUSINESS_TIMEOUT",
                 "The frozen Root deadline remains authoritative",

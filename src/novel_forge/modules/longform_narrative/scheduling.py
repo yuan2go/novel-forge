@@ -92,6 +92,8 @@ def _target_window_status(plan: Mapping[str, Any], chapter_number: int) -> str:
 
 def _selected_action(candidate: Mapping[str, Any]) -> str:
     preferred = str(candidate.get("cadence_preference") or "")
+    if candidate.get("working_progress", {}).get("status") == "UNASSESSED":
+        return preferred if preferred in {"REACTIVATE", "SETUP", "ADVANCE", "TOUCH"} else "ADVANCE"
     debt = candidate.get("obligation_debt") or {}
     if int(debt.get("overdue_count") or 0) or (
         candidate.get("target_window_status") == "OVERDUE"
@@ -177,6 +179,15 @@ def build_arc_working_set(
             "ARC_WORKING_SET_BOUNDARY_STALE",
             "Arc working set must be computed from the immediately preceding accepted boundary",
         )
+    working_schedule = bool(working_bound and accepted_through < chapter_number - 1
+        and working_manuscript.get("scheduling_policy"))
+    if working_schedule:
+        from novel_forge.modules.book_authority.working_prose import WORKING_SCHEDULE_POLICY, WORKING_SCHEDULE_INSTRUCTION, validate_working_projection
+        if (working_manuscript["scheduling_policy"] != WORKING_SCHEDULE_POLICY
+                or working_manuscript.get("projection_policy", {}).get("version") != "working-prose-projection.v3"):
+            raise KernelError("ARC_WORKING_SCHEDULE_POLICY_INVALID", "Require the frozen working-story schedule contract")
+        validate_working_projection(working_manuscript, project_id=project_id, book_id=book_id,
+            target_chapter=chapter_number, accepted_through_chapter=accepted_through)
     state_content = accepted_narrative_state.get("content")
     if not isinstance(state_content, Mapping):
         raise KernelError(
@@ -245,11 +256,14 @@ def build_arc_working_set(
             dependency_id: lifecycle_by_arc.get(dependency_id, "UNKNOWN")
             for dependency_id in plan.get("dependency_arc_ids") or ()
         }
-        dependency_blockers = sorted(
+        accepted_dependency_blockers = sorted(
             dependency_id
             for dependency_id, status in dependency_states.items()
             if status != "COMPLETED"
         )
+        dependency_assessments = accepted_dependency_blockers if working_schedule else []
+        dependency_blockers = [identity for identity in accepted_dependency_blockers
+            if dependency_states[identity] == "ABANDONED"] if working_schedule else accepted_dependency_blockers
         linked_obligations = [
             item for item in obligations if arc_id in _linked_arc_ids(item)
         ]
@@ -307,7 +321,7 @@ def build_arc_working_set(
             eligible = False
             reasons.append("DEPENDENCY_NOT_COMPLETED")
         if decision in _REPLAN_DECISIONS and (
-            checkpoint.get("dependency_blockers")
+            (checkpoint.get("dependency_blockers") and not working_schedule)
             or checkpoint.get("violated_obligation_ids")
         ):
             eligible = False
@@ -348,14 +362,14 @@ def build_arc_working_set(
         if decision == "CORRECT":
             score += 20
             reasons.append("CHECKPOINT_CORRECTION_DUE")
-        if payoff_readiness == "READY":
+        if payoff_readiness == "READY" and not working_schedule:
             score += 12
             reasons.append("ACCEPTED_PHASE_PAYOFF_READY")
-        if dormant_chapters > 0 and lifecycle not in _TERMINAL_LIFECYCLES:
+        if not working_schedule and dormant_chapters > 0 and lifecycle not in _TERMINAL_LIFECYCLES:
             score += min(25, dormant_chapters)
             reasons.append("STARVATION_PRESSURE")
         if (
-            max_dormant_age > 0
+            not working_schedule and max_dormant_age > 0
             and dormant_chapters >= max_dormant_age
             and lifecycle not in _TERMINAL_LIFECYCLES
         ):
@@ -375,18 +389,24 @@ def build_arc_working_set(
                 "arc_plan_version_id": arc_id,
                 "eligible": eligible,
                 "score": score,
-                "lifecycle_status": lifecycle,
+                "lifecycle_status": "UNASSESSED" if working_schedule and lifecycle not in _TERMINAL_LIFECYCLES else lifecycle,
                 "observation_status": str(
                     state.get("observation_status") or "NOT_MATERIALIZED"
                 ),
-                "current_phase": current_phase,
-                "cumulative_progress_units": cumulative_progress,
+                "current_phase": "UNASSESSED" if working_schedule else current_phase,
+                "cumulative_progress_units": None if working_schedule else cumulative_progress,
                 "target_progress_units": target_progress,
-                "payoff_readiness": payoff_readiness,
-                "last_material_progress_chapter": last_material,
-                "dormant_chapters": dormant_chapters,
-                "dependency_states": dependency_states,
+                "payoff_readiness": "UNASSESSED" if working_schedule else payoff_readiness,
+                "last_material_progress_chapter": None if working_schedule else last_material,
+                "dormant_chapters": None if working_schedule else dormant_chapters,
+                "dependency_states": {key: "UNASSESSED" if key in dependency_assessments else value
+                    for key,value in dependency_states.items()} if working_schedule else dependency_states,
                 "dependency_blockers": dependency_blockers,
+                **({"working_progress": {"status": "UNASSESSED", "basis": "SELECTED_WORKING_PROSE",
+                    "snapshot_hash": working_manuscript["snapshot_hash"],
+                    "through_chapter": chapter_number - 1, "accepted_dependency_states": dependency_states,
+                    "dependency_assessment_required": dependency_assessments,
+                    "instruction": WORKING_SCHEDULE_INSTRUCTION}} if working_schedule else {}),
                 "target_window_status": window_status,
                 "checkpoint_decision": decision,
                 "cadence_preference": preferred,
@@ -448,7 +468,7 @@ def build_arc_working_set(
     body = {
         "type": "ArcWorkingSet",
         "contract_version": "arc-working-set-v1",
-        "policy_version": _CHAPTER_SCHEDULE_POLICY_VERSION if required_ids is not None else ARC_WORKING_SET_POLICY_VERSION,
+        "policy_version": "working-story-schedule.v1" if working_schedule else _CHAPTER_SCHEDULE_POLICY_VERSION if required_ids is not None else ARC_WORKING_SET_POLICY_VERSION,
         "project_id": project_id,
         "book_id": book_id,
         "target_chapter": chapter_number,

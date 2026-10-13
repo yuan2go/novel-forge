@@ -336,6 +336,114 @@ def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
     return source
 
 
+
+def _working_dependency_binding(book, selection, source, root):
+    from novel_forge.modules.chapter_authority.working_revision import CONTRACT, ROOT_VERSION
+    binding = (root.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
+    chapter = source_draft_content(source)["chapter"]
+    refs = {row["asset_version_id"]: row["content_hash"] for row in root.get("input_asset_snapshot", [])}
+    inputs = binding.get("source_inputs") or {}
+    previous = binding.get("previous_sources", [])
+    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") != ROOT_VERSION
+            or root.get("definition_snapshot", {}).get("policy", {}).get("working_revision_contract") != CONTRACT
+            or root.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}
+            or any(root.get(key) != book[key] for key in ("project_id", "workspace_id"))
+            or root.get("command_payload", {}).get("book_id") != book["book_id"]
+            or root.get("command_payload", {}).get("chapter") != chapter
+            or binding.get("contract_version") != CONTRACT or binding.get("book_run_id") != book["book_run_id"]
+            or selection.get("selected_asset_version_id") != source.asset_version_id
+            or selection.get("selected_content_hash") != source.content_hash or selection.get("chapter") != chapter
+            or any(selection.get(key) != book[key] for key in ("project_id", "workspace_id", "book_id", "book_run_id"))
+            or binding.get("source_asset_version_id") != selection.get("source_asset_version_id")
+            or binding.get("source_content_hash") != selection.get("source_content_hash")
+            or set(inputs) != {"draft", "context", "plan"}
+            or inputs["draft"] != {"asset_version_id": binding.get("source_asset_version_id"), "content_hash": binding.get("source_content_hash")}
+            or any(refs.get(row.get("asset_version_id")) != row.get("content_hash") for row in inputs.values())
+            or [row.get("chapter") for row in previous] != list(range(1, chapter))
+            or any(refs.get(row.get("asset_version_id")) != row.get("content_hash") for row in previous)):
+        raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Selected revision dependencies require exact native source, Book and frozen inputs")
+    return {"sources": previous}
+
+
+def _selected_working_dependencies(uow, book, source):
+    from novel_forge.modules.chapter_authority.author_editor import require_source
+    seen, editors, bases = set(), {}, {}
+    while source.asset_type == "author_edit_candidate":
+        if source.asset_version_id in seen:
+            raise KernelError("MANUSCRIPT_REVISION_LINEAGE_INVALID", "Editor dependency lineage contains a cycle")
+        seen.add(source.asset_version_id)
+        if not source.content.get("base_asset_version_id"):
+            return None
+        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
+        scope["chapter"] = source_draft_content(source)["chapter"]
+        parent = require_source(uow, scope, source.content["base_asset_version_id"])
+        if source.content.get("base_asset_hash") != parent.content_hash:
+            raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Editor dependencies require the exact base hash")
+        editors[source.asset_version_id], bases[source.asset_version_id] = source, parent
+        source = parent
+    chapter = source_draft_content(source)["chapter"]
+    selection = _optional_document(uow, book["project_id"], _working_selection_ref(book, chapter))
+    if not selection:
+        return None
+    selection_content = selection.content
+    if selection_content.get("selected_asset_version_id") != source.asset_version_id:
+        selected_id = selection.content.get("selected_asset_version_id")
+        if selected_id not in editors:
+            return None
+        editor, base = editors[selected_id], bases[selected_id]
+        if (selection.content.get("selected_content_hash") != editor.content_hash
+                or selection.content.get("source_asset_version_id") != base.asset_version_id
+                or selection.content.get("source_content_hash") != base.content_hash
+                or selection.content.get("chapter") != chapter
+                or any(selection.content.get(key) != book[key] for key in ("project_id", "workspace_id", "book_id", "book_run_id"))):
+            raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Editor working selection must retain its exact source")
+        uow.cursor.execute("""SELECT content FROM authority_asset_version WHERE asset_id=%s
+            AND content->>'selected_asset_version_id'=%s ORDER BY created_at DESC LIMIT 2""",
+            [selection.asset_id, source.asset_version_id])
+        versions = uow.cursor.fetchall()
+        if len(versions) != 1:
+            return None
+        selection_content = versions[0][0]
+    uow.cursor.execute("""SELECT to_jsonb(root), child.definition_name FROM authority_operation_output_asset output
+        JOIN authority_operation child USING(operation_id)
+        JOIN authority_operation root ON root.operation_id=child.root_operation_id
+        WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
+          AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best')""",
+        [source.asset_version_id, book["project_id"]])
+    origins = uow.cursor.fetchall()
+    if len(origins) != 1:
+        raise KernelError("MANUSCRIPT_WORK_DEPENDENCY_INVALID", "Selected work requires one native revision origin")
+    root, stage = origins[0]
+    if root.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}:
+        return None
+    dependencies = _working_dependency_binding(book, selection_content, source, root)
+    if stage == "chapter.candidate.select_best":
+        content = source_draft_content(source)
+        chosen = content.get("selected_source_asset_version_id")
+        review_id = (content.get("selected_review") or {}).get("selection_review_source_asset_version_id")
+        uow.cursor.execute("""SELECT child.definition_name FROM authority_operation_output_asset output
+            JOIN authority_operation child USING(operation_id)
+            WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
+              AND child.root_operation_id=%s AND child.project_id=%s""",
+            [chosen, root["operation_id"], book["project_id"]])
+        revised = uow.cursor.fetchall()
+        if revised != [("chapter.revision.apply",)]:
+            binding = root["command_payload"]["preparation_report"]["working_revision"]
+            if chosen != binding["source_asset_version_id"]:
+                return None
+            uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset output
+                JOIN authority_operation child USING(operation_id) JOIN authority_asset_version v USING(asset_version_id)
+                WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
+                  AND child.root_operation_id=%s AND child.project_id=%s AND child.definition_name='chapter.review.evaluate'""",
+                [review_id, root["operation_id"], book["project_id"]])
+            rows = uow.cursor.fetchall()
+            from novel_forge.modules.review.diagnostics import prose_hash
+            if (len(rows) != 1 or rows[0][0].get("target_asset_version_id") != chosen
+                    or rows[0][0].get("target_text_hash") != prose_hash(content["text"])):
+                return None
+    return dependencies
+
+
 def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any], dict[int, list[dict[str, Any]]]]:
     uow.cursor.execute("""SELECT DISTINCT ON (r.chapter_number) r.chapter_number, output.asset_version_id,
             COALESCE(d.context_snapshot,r.command_payload #> '{preparation_report,working_manuscript}','{\"sources\":[]}'::jsonb)
@@ -347,9 +455,11 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
               AND output.output_key='chapter.draft' AND output.role='primary'
             ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
     deliveries = uow.cursor.fetchall()
-    selected = {number: selected_source(uow, book, number).asset_version_id for number, _, _ in deliveries}
+    sources = {number: selected_source(uow, book, number) for number, _, _ in deliveries}
+    selected = {number: source.asset_version_id for number, source in sources.items()}
     changes = {}
     for number, _, dependencies in deliveries:
+        dependencies = _selected_working_dependencies(uow, book, sources[number]) or dependencies
         affected = {}
         for row in dependencies.get("sources", []):
             predecessor = row["chapter"]
@@ -363,14 +473,19 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
 
 
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
-                           projection_policy: Any = "FROM_PROFILE") -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, project_working_sources, working_instruction, working_prose_policy
+                           projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None) -> dict[str, Any]:
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, WORKING_SCHEDULE_POLICY, project_working_sources, working_instruction, working_prose_policy
 
+    schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
         profile_id = book.get("production_profile_version")
         profile = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=profile_id) if profile_id else None
         projection_policy = working_prose_policy(profile.content) if profile else None
+        schedule_policy = profile.content.get("working_schedule_policy") if profile else None
     projection_policy = working_prose_policy({"working_prose_policy": projection_policy})
+    if schedule_policy is not None and (schedule_policy != WORKING_SCHEDULE_POLICY or not projection_policy
+            or projection_policy["version"] != "working-prose-projection.v3"):
+        raise KernelError("WORKING_SCHEDULE_POLICY_INVALID", "Working scheduling requires the exact versioned source projection policy")
     _, changes = working_dependency_changes(uow, book)
     rows = []
     memory_enabled = bool(projection_policy and projection_policy["version"] == "working-prose-projection.v3")
@@ -403,42 +518,149 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         "accepted_through_chapter": int(book["accepted_through_chapter"]), "sources": rows,
         "authority": "AUTHOR_WORKING_PROSE_ONLY", "structured_facts": [],
         **({"projection_policy": projection_policy} if projection_policy else {}),
+        **({"scheduling_policy": dict(schedule_policy)} if schedule_policy else {}),
         **({"working_memory": memory_packet} if memory_packet is not None else {}),
         "instruction": working_instruction(projection_policy) if projection_policy else LEGACY_GUIDANCE["instruction"]}
     return {**result, "snapshot_hash": canonical_hash(result)}
 
 
-def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
-    from novel_forge.modules.review.diagnostics import major_contradiction_codes
-    content = source_draft_content(source)
-    source_id = content.get("selected_source_asset_version_id") or source.asset_version_id
-    embedded = content.get("selected_review")
-    reviews = [(embedded.get("selection_review_source_asset_version_id"), embedded)] if isinstance(embedded, dict) else []
-    uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
-        JOIN authority_operation operation USING(operation_id)
-        JOIN authority_asset_version v USING(asset_version_id)
-        JOIN authority_asset asset ON asset.asset_id=v.asset_id
-        WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
-          AND asset.asset_type IN ('review_report','re_review_report')
-          AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
-        ORDER BY operation.created_at""", [book["project_id"], source_id])
-    reviews.extend(uow.cursor.fetchall())
-    pending = {}
-    from novel_forge.modules.review.diagnostics import prose_hash
-    for review_id, review in reviews:
-        if (review.get("revision_version_id") or review.get("target_asset_version_id")) != source_id or review.get("target_text_hash") != prose_hash(content["text"]):
+def _prose_source_lineage(uow, book, source):
+    from novel_forge.modules.chapter_authority.author_editor import require_source
+    lineage, seen = [], set()
+    while source is not None:
+        if source.asset_version_id in seen:
+            raise KernelError("MANUSCRIPT_REVISION_LINEAGE_INVALID", "Prose source lineage contains a cycle")
+        seen.add(source.asset_version_id)
+        lineage.append(source)
+        content = source_draft_content(source)
+        parent_id = (source.content.get("base_asset_version_id") if source.asset_type == "author_edit_candidate"
+                     else content.get("source_draft_version_id"))
+        if not parent_id:
+            break
+        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
+        scope["chapter"] = content["chapter"]
+        parent = require_source(uow, scope, parent_id)
+        if source.asset_type == "author_edit_candidate" and source.content.get("base_asset_hash") != parent.content_hash:
+            raise KernelError("MANUSCRIPT_REVISION_LINEAGE_INVALID", "Editor source hash differs from its exact base")
+        source = parent
+    return reversed(lineage)
+
+
+def _verified_prose_resolutions(review, text):
+    from novel_forge.modules.review.diagnostics import open_diagnoses, validate_location
+    if any(item.get("status") != "PRESERVED" for item in review.get("preservation_checks", [])):
+        return set()
+    remaining = set(review.get("remaining_issue_codes", [])) | {
+        item["code"] for item in open_diagnoses(review) if item.get("status", "OPEN") == "OPEN"}
+    checks = set()
+    for check in review.get("resolution_checks", []):
+        if (check.get("status") != "SATISFIED" or check.get("preservation") != "PRESERVED"
+                or check.get("code") in remaining or check.get("code") not in review.get("resolved_issue_codes", [])):
             continue
-        if review.get("report_type") == "ReReviewReport":
-            prior_id = (review.get("prior_review_evidence") or {}).get("asset_version_id")
-            verified = {check["code"] for check in review.get("resolution_checks", [])
-                if check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED"}
-            for disposition in review.get("issue_lineage", []):
-                if (disposition.get("verified_by_rereview") is True and disposition.get("to_status") == "RESOLVED"
-                        and disposition.get("code") in verified):
-                    pending.pop((prior_id, disposition["code"]), None)
-        for code in major_contradiction_codes(review, text=content["text"], source_id=source_id):
-            pending[(review_id, code)] = code
-    problems = sorted(set(pending.values()))
+        try:
+            validate_location(check.get("evidence") or {}, text)
+        except KernelError:
+            continue
+        checks.add(check["code"])
+    return {item["code"] for item in review.get("issue_lineage", [])
+        if item.get("verified_by_rereview") is True and item.get("to_status") == "RESOLVED"
+        and item.get("code") in checks}
+
+
+def _prose_diagnosis_identity(review, code, version, text):
+    from novel_forge.modules.review.diagnostics import open_diagnoses, validate_location
+    issue = next((item for item in open_diagnoses(review) if item["code"] == code), None)
+    if not issue or any(not issue.get(key) for key in ("category", "judgment_kind", "violated_constraint", "revision_goal")) or not issue.get("acceptance_criteria"):
+        return None
+    try:
+        location = validate_location(issue.get("evidence_locator") or {}, text)
+    except KernelError:
+        return None
+    return canonical_hash({"source_version": version, "code": code,
+        **{key: issue[key] for key in ("category", "judgment_kind", "violated_constraint", "revision_goal", "acceptance_criteria")},
+        "preserve": issue.get("preserve"), "repair": issue.get("repair"),
+        "support": {key: issue.get(key) for key in ("supporting_evidence", "candidate_supporting_evidence",
+            "paired_evidence", "related_fact_ids", "related_character_ids", "related_obligation_ids")},
+        "evidence": {key: location[key] for key in ("start", "end", "quote", "excerpt_digest", "offset_unit")}})
+
+
+def _require_scope_proposal_review(uow, book, source):
+    from novel_forge.modules.review.diagnostics import prose_hash, scope_proposal_preserved
+    content = source_draft_content(source)
+    proposal = content.get("prose_scope_proposal")
+    if not proposal or source.asset_type not in {"draft_version", "best_draft_candidate"}:
+        return
+    if (proposal.get("contract_version") != "working-prose-scope-proposal.v1"
+            or proposal.get("target_text_hash") != prose_hash(content["text"]) or not proposal.get("issue_codes")
+            or not proposal.get("changed_target_ranges")
+            or any(type(span.get("start")) is not int or type(span.get("end")) is not int
+                or not 0 <= span["start"] <= span["end"] <= len(content["text"])
+                for span in proposal.get("changed_target_ranges") or [])):
+        raise KernelError("MANUSCRIPT_SCOPE_PROPOSAL_INVALID", "Scope proposal must bind the exact complete prose")
+    aliases = [source.asset_version_id, content.get("selected_source_asset_version_id") or source.asset_version_id]
+    uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset produced
+        JOIN authority_operation producer ON producer.operation_id=produced.operation_id
+        JOIN authority_operation reviewer ON reviewer.root_operation_id=producer.root_operation_id
+        JOIN authority_operation_output_asset reviewed ON reviewed.operation_id=reviewer.operation_id
+        JOIN authority_asset_version v ON v.asset_version_id=reviewed.asset_version_id
+        WHERE produced.asset_version_id=%s AND produced.role='primary'
+          AND producer.project_id=%s AND producer.workspace_id=%s
+          AND reviewer.project_id=producer.project_id AND reviewer.workspace_id=producer.workspace_id
+          AND reviewer.definition_name='chapter.revision.review' AND reviewer.status='SUCCEEDED'
+          AND reviewed.output_key='chapter.rereview' AND reviewed.role='primary'
+          AND v.content->>'revision_version_id'=ANY(%s)""",
+        [source.asset_version_id, book["project_id"], book["workspace_id"], aliases])
+    for (review,) in uow.cursor.fetchall():
+        if scope_proposal_preserved(proposal, content["text"], target_text_hash=review.get("target_text_hash"),
+                report_type=review.get("report_type"), resolution_checks=review.get("resolution_checks") or [],
+                preservation_checks=review.get("preservation_checks") or []):
+            return
+    raise KernelError("MANUSCRIPT_SCOPE_PROPOSAL_PENDING_REVIEW",
+        "Keep the complete expanded-scope candidate readable; exact-source preservation is required before downstream use")
+
+
+def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
+    from novel_forge.modules.review.diagnostics import major_contradiction_codes, prose_hash
+    _require_scope_proposal_review(uow, book, source)
+    pending, seen_reviews = {}, {}
+    for version in _prose_source_lineage(uow, book, source):
+        content = source_draft_content(version)
+        aliases = list(dict.fromkeys([version.asset_version_id, content.get("selected_source_asset_version_id") or version.asset_version_id]))
+        reviews = {}
+        for source_id in aliases:
+            uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
+                JOIN authority_operation operation USING(operation_id)
+                JOIN authority_asset_version v USING(asset_version_id)
+                JOIN authority_asset asset ON asset.asset_id=v.asset_id
+                WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
+                  AND asset.asset_type IN ('review_report','re_review_report')
+                  AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
+                ORDER BY operation.created_at""", [book["project_id"], source_id])
+            reviews.update(uow.cursor.fetchall())
+        embedded = content.get("selected_review")
+        if isinstance(embedded, dict):
+            reviews[embedded.get("selection_review_source_asset_version_id")] = embedded
+        for review_id, review in reviews.items():
+            target_id = review.get("revision_version_id") or review.get("target_asset_version_id")
+            if target_id not in aliases or review.get("target_text_hash") != prose_hash(content["text"]):
+                continue
+            codes = major_contradiction_codes(review, text=content["text"], source_id=target_id)
+            identities = {code: _prose_diagnosis_identity(review, code, version.asset_version_id, content["text"]) for code in codes}
+            if review.get("report_type") == "ReReviewReport":
+                prior_id = review.get("initial_review_version_id") or (review.get("prior_review_evidence") or {}).get("asset_version_id")
+                for code in _verified_prose_resolutions(review, content["text"]):
+                    pending.pop((prior_id, code), None)
+                    identity = seen_reviews.get(prior_id, {}).get(code)
+                    # WHY: Independently repeated diagnoses can close together only with identical source, repair goal, criteria and supporting evidence.
+                    if identity is not None:
+                        pending = {key: value for key, value in pending.items() if value["identity"] != identity}
+            for code in codes:
+                if review.get("report_type") == "ReReviewReport":
+                    # WHY: Carrying an open issue advances its review lineage without leaving an ancestral duplicate ban.
+                    pending.pop((prior_id, code), None)
+                pending[(review_id, code)] = {"code": code, "identity": identities[code]}
+            seen_reviews[review_id] = identities
+    problems = sorted({value["code"] for value in pending.values()})
     if problems:
         raise KernelError("MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED",
             "Retain this complete candidate for targeted revision; it cannot become affected later prose's automatic source",
@@ -462,7 +684,8 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
                           and changes.get(row["chapter"], []) == row.get("dependency_changes", []) for row in snapshot["sources"])
         else:
             current = snapshot == freeze_working_context(uow, book, snapshot["target_chapter"],
-                projection_policy=snapshot.get("projection_policy") if enhanced else None)
+                projection_policy=snapshot.get("projection_policy") if enhanced else None,
+                scheduling_policy=snapshot.get("scheduling_policy"))
         if not current:
             raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     for item in snapshot["sources"]:
@@ -744,13 +967,20 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
     with AuthorityUnitOfWork(database_url) as uow:
         source = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=asset_version_id)
         payload = source.content.get("payload") or {}
+        typed = source.asset_type in {"draft_chapter", "draft_version", "best_draft_candidate"}
+        definition, output_key = {"draft_chapter": ("chapter.draft.generate", "chapter.draft"),
+            "draft_version": ("chapter.revision.apply", "chapter.revision"),
+            "best_draft_candidate": ("chapter.candidate.select_best", "chapter.best_candidate")}.get(source.asset_type, (None, None))
         uow.cursor.execute("""SELECT book.book_id,book.workspace_id,request.chapter_number
             FROM authority_book_production book JOIN authority_book_chapter_request request USING(book_run_id)
             JOIN authority_operation op ON op.root_operation_id=request.chapter_root_operation_id
             JOIN authority_operation_output_asset output USING(operation_id)
             WHERE book.book_run_id=%s AND book.project_id=%s AND op.project_id=book.project_id
               AND op.workspace_id=book.workspace_id AND output.asset_version_id=%s
-              AND op.operation_id=%s""", [book_run_id, project_id, asset_version_id, payload.get("operation_id")])
+              AND (%s IS TRUE OR op.operation_id=%s)
+              AND (%s IS FALSE OR (op.status='SUCCEEDED' AND output.role='primary'
+                AND op.definition_name=%s AND output.output_key=%s))""",
+            [book_run_id, project_id, asset_version_id, typed, payload.get("operation_id"), typed, definition, output_key])
         row = uow.cursor.fetchone()
         if row is None:
             from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT
@@ -764,9 +994,25 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
                   AND root.definition_name='chapter.slice.run' AND root.definition_version=%s
                   AND root.command_payload#>>'{preparation_report,working_revision,contract_version}'=%s
                   AND op.project_id=book.project_id AND op.workspace_id=book.workspace_id
-                  AND output.asset_version_id=%s AND op.operation_id=%s""",
-                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id, payload.get("operation_id")])
+                  AND output.asset_version_id=%s AND (%s IS TRUE OR op.operation_id=%s)
+                  AND (%s IS FALSE OR (op.status='SUCCEEDED' AND output.role='primary'
+                    AND op.definition_name=%s AND output.output_key=%s))""",
+                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id,
+                 typed, payload.get("operation_id"), typed, definition, output_key])
             row = uow.cursor.fetchone()
+        if typed:
+            if (row is None or source.content.get("project_id") != project_id
+                    or source.content.get("chapter") != row[2]):
+                raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
+            validate_complete_prose(source.content)
+            return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_TYPED_CANDIDATE",
+                "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,
+                "chapter": row[2], "asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
+                "text": source.content["text"], "raw_text": None, "completeness": "COMPLETE",
+                "structural_status": "VALIDATED_DOMAIN_RESULT", "review_status": "NOT_PROJECTED",
+                "repair_scope_status": (source.content.get("prose_scope_proposal") or {}).get("qualification_status", "NOT_PROJECTED"),
+                "selection_status": "NOT_PROJECTED", "acceptance_status": "NOT_PROJECTED",
+                "accounting_status": "NOT_PROJECTED", "publication": "NOT_AUTHORIZED"}
         if (row is None or source.asset_type != "execution_evidence"
                 or source.content.get("kind") not in {"model-result", "prose-candidate"}
                 or payload.get("project_id") != project_id or payload.get("book_id") != row[0]):

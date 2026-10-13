@@ -151,6 +151,103 @@ def test_unmapped_prose_local_edits_retain_complete_body_without_inventing_slots
                 review_asset_version_id='review', context_bundle_version_id='ctx', result=result, provider_evidence={})
 
 
+def _working_scope_proposal_case():
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from tests.unit.test_work_intent_consistency import work_input
+    _, _, source = work_input("保留人物声音")
+    source.update(text="老师让他放松肩膀。\n\n他又问了一遍如何练习。\n\n母亲忙着收好摊子的账。",
+        realization_mapping_status="NOT_MAPPED", scene_artifacts=[])
+    quote = "老师让他放松肩膀。"
+    review = {"issues": [{"code": "repeat", "severity": "minor", "judgment_kind": "AESTHETIC_SUGGESTION",
+        "evidence_locator": {"start": 0, "end": len(quote), "quote": quote}}],
+        "creative_baseline_digest": source["creative_baseline"]["baseline_digest"],
+        "diagnostic_contract_version": "actionable-diagnostics.v1", "target_asset_version_id": "draft",
+        "target_text_hash": prose_hash(source["text"]), "context_bundle_version_id": "ctx",
+        "cross_chapter_window": {"source_window_hash": "window", "preservation_requirements": {}},
+        "working_revision_request": {"contract_version": CONTRACT, "source_asset_version_id": "draft",
+            "aesthetic_revision_requested": True, "reason": "合并重复教学，保护家庭段。"}}
+    result = {"edits": [{"quote": source["text"].split("\n\n母亲")[0], "replacement": "他放松肩膀，向老师问清下一回的练习。",
+        "issue_codes": ["repeat"]}], "resolved_issue_codes": ["repeat"]}
+    return source, review, result
+
+
+def test_scope_proposal_keeps_unrepairable_open_ledger_out_of_the_temporary_edit_view():
+    from novel_forge.modules.revision.domain import apply_revision_result
+    source, review, result = _working_scope_proposal_case()
+    review["unresolved_issues"] = [{"code": "timeline", "severity": "minor", "judgment_kind": "UNCERTAIN"}]
+    review["remaining_issue_codes"] = ["timeline"]
+    value = apply_revision_result(project_id="p", draft=source, review=review, draft_asset_version_id="draft",
+        review_asset_version_id="review", context_bundle_version_id="ctx", result=result, provider_evidence={})
+    assert next(item for item in value["issue_resolutions"] if item["code"] == "timeline")["to_status"] == "OPEN"
+    assert review["remaining_issue_codes"] == ["timeline"]
+
+
+def test_working_scope_expansion_materializes_complete_proposal_and_preserves_other_paragraphs():
+    from novel_forge.modules.revision.domain import apply_revision_result
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    source, review, result = _working_scope_proposal_case()
+    value = apply_revision_result(project_id="p", draft=source, review=review, draft_asset_version_id="draft",
+        review_asset_version_id="review", context_bundle_version_id="ctx", result=result, provider_evidence={})
+    assert value["text"] == result["edits"][0]["replacement"] + "\n\n母亲忙着收好摊子的账。"
+    assert value["repair_scope"] == "PROPOSED_EXPANSION"
+    assert value["prose_scope_proposal"]["qualification_status"] == "PROPOSAL_ONLY"
+    assert value["prose_scope_proposal"]["issue_codes"] == ["repeat"]
+    assert value["prose_scope_proposal"]["source_asset_version_id"] == "draft"
+    task = build_provider_task_view("revision", {"draft": source, "review": review}, work_requirements=True)
+    assert task["targeted_repair"]["scope_policy"] == "ANCHORED_SCOPE_PROPOSAL_V1"
+
+
+@pytest.mark.parametrize("invalid", ["stale-request", "no-request", "wrong-anchor", "plan-investigation"])
+def test_scope_proposal_never_grants_unrelated_or_plan_owned_edit_permission(invalid):
+    from novel_forge.modules.revision.domain import apply_revision_result
+    source, review, result = _working_scope_proposal_case()
+    if invalid == "stale-request":
+        review["working_revision_request"]["source_asset_version_id"] = "old"
+    elif invalid == "no-request":
+        review.pop("working_revision_request")
+    elif invalid == "wrong-anchor":
+        result["edits"][0]["quote"] = "母亲忙着收好摊子的账。"
+    else:
+        review["issues"][0]["repair"] = {"root_cause": "UNCERTAIN", "problem_owner": "PLAN", "repair_scope": "INVESTIGATE"}
+    with pytest.raises(KernelError):
+        apply_revision_result(project_id="p", draft=source, review=review, draft_asset_version_id="draft",
+            review_asset_version_id="review", context_bundle_version_id="ctx", result=result, provider_evidence={})
+
+
+@pytest.mark.parametrize("evidence", ["missing", "wrong-text", "uncertain", "regression", "partial-preserved"])
+def test_scope_proposal_stays_readable_but_needs_exact_rereview_before_downstream_use(evidence):
+    from novel_forge.modules.book_authority.manuscript import _require_scope_proposal_review
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+    text = "他问清了下一次怎么练。"
+    source = SimpleNamespace(asset_type="draft_version", asset_version_id="revision", content={"text": text,
+        "prose_scope_proposal": {"contract_version": "working-prose-scope-proposal.v1", "target_text_hash": prose_hash(text),
+            "issue_codes": ["repeat"], "changed_target_ranges": [{"start": 0, "end": len(text)}]}})
+    review = {"report_type": "ReReviewReport", "revision_version_id": "revision", "target_text_hash": prose_hash(text),
+        "preservation_checks": [{"dimension": dimension, "status": "PRESERVED", "evidence": {"quote": text},
+            "reason": "比对前后正文。"} for dimension in PRESERVATION_DIMENSIONS],
+        "decision": "NEEDS_REVISION", "resolution_checks": [{"code": "repeat", "status": "PARTIALLY_RESOLVED",
+            "preservation": "PRESERVED", "reason": "局部进展有效，其他问题仍保留。", "evidence": {"quote": text}}]}
+    if evidence == "wrong-text":
+        review["target_text_hash"] = "old"
+    elif evidence == "uncertain":
+        review["resolution_checks"][0]["preservation"] = "UNCERTAIN"
+    elif evidence == "regression":
+        review["preservation_checks"][0]["status"] = "REGRESSED"
+    class Cursor:
+        def execute(self, sql, params):
+            assert "reviewer.root_operation_id=producer.root_operation_id" in sql
+            assert "reviewed.output_key='chapter.rereview'" in sql and params[0] == "revision"
+        def fetchall(self):
+            return [] if evidence == "missing" else [(review,)]
+    if evidence == "partial-preserved":
+        _require_scope_proposal_review(SimpleNamespace(cursor=Cursor()), {"project_id": "p", "workspace_id": "w"}, source)
+    else:
+        with pytest.raises(KernelError, match="MANUSCRIPT_SCOPE_PROPOSAL_PENDING_REVIEW"):
+            _require_scope_proposal_review(SimpleNamespace(cursor=Cursor()), {"project_id": "p", "workspace_id": "w"}, source)
+    assert source.content["text"] == text
+
+
 def test_quality_edit_crossing_slot_retains_body_and_previous_mapping_only():
     from novel_forge.modules.revision.domain import apply_quality_revision_result
     from novel_forge.modules.review.diagnostics import prose_hash
@@ -254,7 +351,9 @@ def test_later_review_omission_cannot_remove_an_earlier_major_contradiction(reso
     initial = {**base, "issues": [{"code": "major", "judgment_kind": "SEMANTIC_CONTRADICTION", "severity": "major"}]}
     later = {**base, "report_type": "ReReviewReport", "prior_review_evidence": {"asset_version_id": "initial"},
         "issue_lineage": [{"code": "major", "to_status": "RESOLVED", "verified_by_rereview": True}] if resolved else [],
-        "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED"}] if resolved else []}
+        "resolved_issue_codes": ["major"] if resolved else [],
+        "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED",
+            "evidence": {"quote": "正文"}}] if resolved else []}
     class Cursor:
         def execute(self, *args):
             pass
@@ -353,6 +452,42 @@ def test_retained_working_revision_body_is_readable_without_new_call_qualificati
                 asset_version_id="raw", principal=principal)
 
 
+@pytest.mark.parametrize("owned", [True, False])
+def test_unselected_materialized_revision_is_readable_without_projecting_review_or_selection(monkeypatch, owned):
+    from novel_forge.modules.book_authority import manuscript
+
+    source = SimpleNamespace(asset_type="draft_version", asset_version_id="typed", content_hash="hash",
+        content={"project_id": "project", "chapter": 3, "text": "完整物化修订正文。"})
+    class Uow:
+        def __init__(self, *args):
+            self.cursor = self
+            self.rows = iter([None, ("book", "workspace", 3) if owned else None])
+            self.repositories = SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **kwargs: source))
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def execute(self, sql, params):
+            assert "authority_operation_output_asset" in sql and "output.role='primary'" in sql
+            assert "op.definition_name=%s" in sql and "chapter.revision.apply" in params
+            assert "UPDATE" not in sql and "INSERT" not in sql
+        def fetchone(self):
+            return next(self.rows)
+    monkeypatch.setattr(manuscript, "AuthorityUnitOfWork", Uow)
+    principal = SimpleNamespace(require=lambda permission, project: None)
+    if owned:
+        actual = manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+            asset_version_id="typed", principal=principal)
+        assert actual["text"] == source.content["text"] and actual["raw_text"] is None
+        assert actual["completeness"] == "COMPLETE"
+        assert {actual[key] for key in ("review_status", "selection_status", "acceptance_status")} == {"NOT_PROJECTED"}
+        assert actual["publication"] == "NOT_AUTHORIZED"
+    else:
+        with pytest.raises(KernelError, match="another source or Book"):
+            manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+                asset_version_id="typed", principal=principal)
+
+
 def test_unsupported_regex_wire_projection_keeps_full_host_validation():
     from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
     from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
@@ -441,3 +576,258 @@ def test_working_review_window_keeps_actual_unaccepted_cursor_and_exact_text_sup
     assert validate_support([support], window)[0]["quote"] == SOURCE
     with pytest.raises(KernelError):
         validate_support([{**support, "quote": "forged earlier prose"}], window)
+
+
+@pytest.mark.parametrize("fault", [None, "absent-review", "wrong-prior", "wrong-target", "partial", "unlocated", "regression", "still-open"])
+@pytest.mark.parametrize("best", [False, True])
+def test_partial_revision_inherits_major_problem_until_exact_rereview(monkeypatch, fault, best):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    old = SimpleNamespace(asset_type="draft_chapter", asset_version_id="old", content={"chapter": 1, "text": "旧矛盾"})
+    revised = SimpleNamespace(asset_type="best_draft_candidate" if best else "draft_version",
+        asset_version_id="best" if best else "new", content={"chapter": 1, "text": "已修订正文", "source_draft_version_id": "old",
+        "review_version_id": "initial", "issue_resolutions": [{"code": "major", "to_status": "RESOLUTION_CLAIMED"}],
+        **({"selected_source_asset_version_id": "new"} if best else {})})
+    initial = {"target_asset_version_id": "old", "target_text_hash": prose_hash("旧矛盾"), "issues": [
+        {"code": "major", "severity": "major", "judgment_kind": "SEMANTIC_CONTRADICTION"}]}
+    review = {"report_type": "ReReviewReport", "revision_version_id": "other" if fault == "wrong-target" else "new",
+        "target_text_hash": prose_hash("已修订正文"), "initial_review_version_id": "other" if fault == "wrong-prior" else "initial",
+        "issues": [{"code": "major", "severity": "major"}] if fault == "still-open" else [],
+        "remaining_issue_codes": [], "resolved_issue_codes": ["major"],
+        "preservation_checks": [{"status": "REGRESSED" if fault == "regression" else "PRESERVED"}],
+        "issue_lineage": [{"code": "major", "to_status": "PARTIALLY_RESOLVED" if fault == "partial" else "RESOLVED", "verified_by_rereview": True}],
+        "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED",
+            "evidence": {"quote": "无此句" if fault == "unlocated" else "已修订正文"}}]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return [("initial", initial)] if self.source == "old" else [] if fault == "absent-review" else [("rereview", review)]
+    def exact_source(uow, scope, version_id):
+        assert scope == {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "chapter": 1} and version_id == "old"
+        return old
+    monkeypatch.setattr(author_editor, "require_source", exact_source)
+    uow = SimpleNamespace(cursor=Cursor())
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
+    if fault is None:
+        require_prose_propagation(uow, book, revised)
+    else:
+        with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+            require_prose_propagation(uow, book, revised)
+    assert revised.content["issue_resolutions"][0]["to_status"] == "RESOLUTION_CLAIMED"
+
+
+def test_verified_later_repair_clears_carried_major_without_erasing_history(monkeypatch):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    issue = {"code": "major", "severity": "major", "judgment_kind": "SEMANTIC_CONTRADICTION"}
+    old = SimpleNamespace(asset_type="draft_chapter", asset_version_id="old", content={"chapter": 1, "text": "矛盾"})
+    partial = SimpleNamespace(asset_type="draft_version", asset_version_id="partial",
+        content={"chapter": 1, "text": "部分修订", "source_draft_version_id": "old"})
+    fixed = SimpleNamespace(asset_type="draft_version", asset_version_id="fixed",
+        content={"chapter": 1, "text": "最终修复", "source_draft_version_id": "partial"})
+    reports = {"old": [("initial", {"target_asset_version_id": "old", "target_text_hash": prose_hash("矛盾"), "issues": [issue]})],
+        "partial": [("carried", {"report_type": "ReReviewReport", "initial_review_version_id": "initial",
+            "revision_version_id": "partial", "target_text_hash": prose_hash("部分修订"), "issues": [issue]})],
+        "fixed": [("closed", {"report_type": "ReReviewReport", "initial_review_version_id": "carried",
+            "revision_version_id": "fixed", "target_text_hash": prose_hash("最终修复"), "issues": [],
+            "resolved_issue_codes": ["major"], "remaining_issue_codes": [],
+            "issue_lineage": [{"code": "major", "to_status": "RESOLVED", "verified_by_rereview": True}],
+            "resolution_checks": [{"code": "major", "status": "SATISFIED", "preservation": "PRESERVED", "evidence": {"quote": "最终修复"}}]})]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return reports[self.source]
+    monkeypatch.setattr(author_editor, "require_source", lambda uow, scope, version: {"old": old, "partial": partial}[version])
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
+    with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+        require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, partial)
+    require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, fixed)
+    assert reports["old"][0][1]["issues"][0] == issue
+
+
+@pytest.mark.parametrize("different_problem", [False, "quote", "goal", "support"])
+def test_independent_reviews_close_only_the_same_located_source_problem(monkeypatch, different_problem):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    old = SimpleNamespace(asset_type="draft_chapter", asset_version_id="old", content={"chapter": 1, "text": "原矛盾。另一矛盾。"})
+    new = SimpleNamespace(asset_type="draft_version", asset_version_id="new",
+        content={"chapter": 1, "text": "修复后正文", "source_draft_version_id": "old"})
+    issue = {"code": "D", "severity": "major", "category": "CHARACTER_KNOWLEDGE", "judgment_kind": "SEMANTIC_CONTRADICTION",
+        "violated_constraint": "knowledge_before_action", "revision_goal": "解释原知识来源",
+        "acceptance_criteria": ["亲历先于对应知识"], "evidence_locator": {"quote": "原矛盾"}}
+    first = {"target_asset_version_id": "old", "target_text_hash": prose_hash(old.content["text"]),
+        "issues": [{**issue, "evidence_locator": {"quote": "另一矛盾"}} if different_problem == "quote" else
+            {**issue, "revision_goal": "解释另一种知识来源"} if different_problem == "goal" else
+            {**issue, "supporting_evidence": [{"asset_version_id": "different-prior-source", "quote": "另一种知识"}]} if different_problem == "support" else issue]}
+    second = {**first, "issues": [issue]}
+    closed = {"report_type": "ReReviewReport", "revision_version_id": "new", "target_text_hash": prose_hash(new.content["text"]),
+        "initial_review_version_id": "R2", "issues": [], "remaining_issue_codes": [], "resolved_issue_codes": ["D"],
+        "issue_lineage": [{"code": "D", "to_status": "RESOLVED", "verified_by_rereview": True}],
+        "resolution_checks": [{"code": "D", "status": "SATISFIED", "preservation": "PRESERVED", "evidence": {"quote": "修复后正文"}}]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return [("R1", first), ("R2", second)] if self.source == "old" else [("R3", closed)]
+    monkeypatch.setattr(author_editor, "require_source", lambda *args: old)
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
+    if different_problem:
+        with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+            require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, new)
+    else:
+        require_prose_propagation(SimpleNamespace(cursor=Cursor()), book, new)
+
+
+def test_physical_working_candidate_review_is_not_hidden_by_prose_alias(monkeypatch):
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation
+    from novel_forge.modules.chapter_authority import author_editor
+    from novel_forge.modules.review.diagnostics import prose_hash
+    work = SimpleNamespace(asset_type="best_draft_candidate", asset_version_id="workspace",
+        content={"chapter": 1, "text": "工作稿矛盾", "selected_source_asset_version_id": "underlying"})
+    partial = SimpleNamespace(asset_type="draft_version", asset_version_id="partial",
+        content={"chapter": 1, "text": "只修次要问题", "source_draft_version_id": "workspace"})
+    report = {"target_asset_version_id": "workspace", "target_text_hash": prose_hash(work.content["text"]),
+        "issues": [{"code": "major", "severity": "major", "judgment_kind": "SEMANTIC_CONTRADICTION"}]}
+    class Cursor:
+        def execute(self, sql, params):
+            self.source = params[1]
+        def fetchall(self):
+            return [("new-working-review", report)] if self.source == "workspace" else []
+    monkeypatch.setattr(author_editor, "require_source", lambda *args: work)
+    with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+        require_prose_propagation(SimpleNamespace(cursor=Cursor()),
+            {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}, partial)
+
+
+def _working_dependency_case():
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "book_run_id": "run"}
+    source = SimpleNamespace(asset_version_id="best:2", content_hash="best-hash", asset_type="best_draft_candidate",
+        content={"chapter": 2, "text": "正文", "selected_source_asset_version_id": "revision:2"})
+    selection = {**book, "chapter": 2, "selected_asset_version_id": source.asset_version_id,
+        "selected_content_hash": source.content_hash, "source_asset_version_id": "old:2", "source_content_hash": "old-hash"}
+    inputs = {key: {"asset_version_id": value, "content_hash": value + "-hash"}
+        for key, value in (("draft", "old:2"), ("context", "context"), ("plan", "plan"))}
+    inputs["draft"]["content_hash"] = "old-hash"
+    previous = [{"chapter": 1, "asset_version_id": "new:1", "content_hash": "new:1-hash"}]
+    root = {"operation_id": "root", "definition_name": "chapter.slice.run", "definition_version": ROOT_VERSION,
+        "project_id": "project", "workspace_id": "workspace", "status": "SUCCEEDED",
+        "definition_snapshot": {"policy": {"working_revision_contract": CONTRACT}},
+        "command_payload": {"book_id": "book", "chapter": 2, "preparation_report": {"working_revision": {
+            "contract_version": CONTRACT, "book_run_id": "run", "source_asset_version_id": "old:2",
+            "source_content_hash": "old-hash", "source_inputs": inputs, "previous_sources": previous}}},
+        "input_asset_snapshot": [*inputs.values(), {key: previous[0][key] for key in ("asset_version_id", "content_hash")}]}
+    return book, source, selection, root
+
+
+def test_selected_revision_dependency_binding_uses_its_frozen_source_after_selection():
+    from novel_forge.modules.book_authority.manuscript import _working_dependency_binding
+    book, source, selection, root = _working_dependency_case()
+    assert _working_dependency_binding(book, selection, source, root) == {"sources": [
+        {"chapter": 1, "asset_version_id": "new:1", "content_hash": "new:1-hash"}]}
+    assert selection["source_asset_version_id"] != source.asset_version_id
+
+
+@pytest.mark.parametrize("drift", ["book", "workspace", "chapter", "cancelled", "source_hash", "selection_hash", "missing_input", "missing_predecessor"])
+def test_selected_revision_dependency_binding_rejects_scope_and_frozen_drift(drift):
+    from novel_forge.modules.book_authority.manuscript import _working_dependency_binding
+    book, source, selection, root = _working_dependency_case()
+    binding = root["command_payload"]["preparation_report"]["working_revision"]
+    if drift == "book": binding["book_run_id"] = "another"
+    elif drift == "workspace": root["workspace_id"] = "another"
+    elif drift == "chapter": root["command_payload"]["chapter"] = 3
+    elif drift == "cancelled": root["status"] = "CANCELLED"
+    elif drift == "source_hash": binding["source_content_hash"] = "another"
+    elif drift == "selection_hash": selection["selected_content_hash"] = "another"
+    elif drift == "missing_input": root["input_asset_snapshot"].pop()
+    elif drift == "missing_predecessor": binding["previous_sources"] = []
+    with pytest.raises(KernelError, match="MANUSCRIPT_WORK_DEPENDENCY_INVALID"):
+        _working_dependency_binding(book, selection, source, root)
+
+
+@pytest.mark.parametrize("first", ["new:1", "newer:1"])
+def test_rebound_selected_dependencies_clear_only_the_repaired_chapter(monkeypatch, first):
+    from novel_forge.modules.book_authority import manuscript
+    original = [(1, "old:1", {"sources": []}),
+        (2, "old:2", {"sources": [{"chapter": 1, "asset_version_id": "old:1"}]}),
+        (3, "old:3", {"sources": [{"chapter": 2, "asset_version_id": "old:2"}]})]
+    class Cursor:
+        def execute(self, *_): pass
+        def fetchall(self): return original
+    sources = {number: SimpleNamespace(asset_version_id=version) for number, version in ((1, first), (2, "new:2"), (3, "old:3"))}
+    monkeypatch.setattr(manuscript, "selected_source", lambda uow, book, number: sources[number])
+    monkeypatch.setattr(manuscript, "_selected_working_dependencies", lambda uow, book, source:
+        {"sources": [{"chapter": 1, "asset_version_id": "new:1"}]} if source.asset_version_id == "new:2" else None)
+    deliveries, changes = manuscript.working_dependency_changes(SimpleNamespace(cursor=Cursor()), {"book_run_id": "run"})
+    assert deliveries == [(number, dependencies) for number, _, dependencies in original]
+    assert (changes[2] == []) is (first == "new:1")
+    assert changes[3][0]["chapter"] == 2
+    if first == "newer:1": assert changes[3][1]["chapter"] == 1
+
+
+@pytest.mark.parametrize("revised,fresh", [(True, False), (False, True), (False, False)])
+def test_best_dependency_rebinding_requires_this_root_revision_or_fresh_incumbent_review(monkeypatch, revised, fresh):
+    from novel_forge.modules.book_authority import manuscript
+    from novel_forge.modules.review.diagnostics import prose_hash
+    book, source, selection, root = _working_dependency_case()
+    source.content["selected_review"] = {"selection_review_source_asset_version_id": "review"}
+    if not revised: source.content["selected_source_asset_version_id"] = "old:2"
+    class Cursor:
+        def __init__(self): self.query = 0
+        def execute(self, *_): self.query += 1
+        def fetchall(self):
+            if self.query == 1: return [(root, "chapter.candidate.select_best")]
+            if self.query == 2: return [("chapter.revision.apply",)] if revised else []
+            return [({"target_asset_version_id": "old:2", "target_text_hash": prose_hash("正文")},)] if fresh else []
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(content=selection))
+    result = manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, source)
+    assert (result is not None) is (revised or fresh)
+
+
+@pytest.mark.parametrize("drift", [None, "base_hash", "workspace", "selection_hash", "ambiguous_history"])
+def test_working_editor_selection_inherits_rebound_native_base(monkeypatch, drift):
+    from novel_forge.modules.book_authority import manuscript
+    from novel_forge.modules.chapter_authority import author_editor
+    book, source, original_selection, root = _working_dependency_case()
+    editor = SimpleNamespace(asset_version_id="editor:2", content_hash="editor-hash", asset_type="author_edit_candidate",
+        content={"base_asset_version_id": source.asset_version_id, "base_asset_hash": source.content_hash,
+            "text": "润色正文", "draft_content": {"chapter": 2, "text": "润色正文"}})
+    selected = {**book, "chapter": 2, "selected_asset_version_id": editor.asset_version_id,
+        "selected_content_hash": editor.content_hash, "source_asset_version_id": source.asset_version_id,
+        "source_content_hash": source.content_hash}
+    if drift == "base_hash": editor.content["base_asset_hash"] = "wrong"
+    elif drift == "workspace": selected["workspace_id"] = "another"
+    elif drift == "selection_hash": selected["selected_content_hash"] = "wrong"
+    class Cursor:
+        def __init__(self): self.query = 0
+        def execute(self, *_): self.query += 1
+        def fetchall(self):
+            if self.query == 1: return [(original_selection,)] * (2 if drift == "ambiguous_history" else 1)
+            if self.query == 2: return [(root, "chapter.candidate.select_best")]
+            return [("chapter.revision.apply",)]
+    monkeypatch.setattr(author_editor, "require_source", lambda *_: source)
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(asset_id="work-selection", content=selected))
+    if drift in {"base_hash", "workspace", "selection_hash"}:
+        with pytest.raises(KernelError, match="MANUSCRIPT_WORK_DEPENDENCY_INVALID"):
+            manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, editor)
+    else:
+        result = manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, editor)
+        assert (result is None) is (drift == "ambiguous_history")
+        if result: assert result["sources"][0]["asset_version_id"] == "new:1"
+
+
+
+def test_cancelled_revision_does_not_rebind_or_withhold_already_selected_prose(monkeypatch):
+    from novel_forge.modules.book_authority import manuscript
+    book, source, selection, root = _working_dependency_case()
+    root["status"] = "CANCELLED"
+    class Cursor:
+        def execute(self, *_): pass
+        def fetchall(self): return [(root, "chapter.candidate.select_best")]
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(content=selection))
+    assert manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, source) is None
+    assert source.content["text"] == "正文"

@@ -425,6 +425,7 @@ def _load_request(
             reference_sample_asset_version_id=reference_sample_id,
         )
     return AuthorityHandlerRequest(
+        database_url=database_url,
         operation_id=operation["operation_id"],
         project_id=operation["project_id"],
         workspace_id=operation["workspace_id"],

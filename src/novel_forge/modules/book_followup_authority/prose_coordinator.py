@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWrit
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from .application import BookFollowupAdmission, BookFollowupCommand
-from .prose_review import PROSE_REVIEW_DEFINITION, aggregate_reports, freeze_manifest
+from .prose_review import PROSE_REVIEW_DEFINITION, aggregate_reports, freeze_manifest, review_sources_current
 
 
 def load_accepted_sources(
@@ -215,7 +215,7 @@ def review_progress(uow: AuthorityUnitOfWork, run: dict[str, Any]) -> dict[str, 
     )
     result.update(
         run_id=run["run_id"],
-        source_current=current["sources"] == run["manifest"]["sources"],
+        source_current=review_sources_current(run["manifest"]["sources"], current["sources"], run["manifest"]["policy"]),
         paused=paused,
         operations=operations,
         expected_version=len(events),

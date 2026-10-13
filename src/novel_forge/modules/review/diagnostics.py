@@ -80,7 +80,10 @@ def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = 
     return [item for item in diagnoses if (item.get("judgment_kind") in {
         "SEMANTIC_CONFLICT", "HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION", "LIKELY_CONTINUITY_PROBLEM"
     } or aesthetic_requested and item.get("judgment_kind") == "AESTHETIC_SUGGESTION")
-        and item.get("status", "OPEN") == "OPEN"]
+        and item.get("status", "OPEN") == "OPEN"
+        and (item.get("repair") or {}).get("problem_owner", "PROSE") == "PROSE"
+        and (item.get("repair") or {}).get("repair_scope") not in {"INVESTIGATE", "FUTURE_REPLAN"}
+        and (item.get("repair") or {}).get("root_cause") != "UNCERTAIN"]
 
 
 def _aesthetic_revision_requested(review):
@@ -90,7 +93,7 @@ def _aesthetic_revision_requested(review):
         and requested.get("source_asset_version_id") == review.get("target_asset_version_id"))
 
 
-def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None, review: dict[str, Any] | None = None) -> None:
+def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None, review: dict[str, Any] | None = None, proposed_edits: list[dict[str, Any]] | None = None) -> None:
     from difflib import SequenceMatcher
     original = str(source.get("text") or "")
     if structural_repair_scope(diagnoses, review=review) == "CHAPTER_REVISION":
@@ -117,6 +120,22 @@ def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str
         else:
             scopes.append((original.rfind("\n\n", 0, location["start"]) + 2 if "\n\n" in original[:location["start"]] else 0,
                 original.find("\n\n", location["end"]) if "\n\n" in original[location["end"]:] else len(original)))
+    if proposed_edits:
+        allowed = {item["code"]: item for item in prose_repair_diagnoses(review or {}, work_requirements=True)}
+        requested = (review or {}).get("working_revision_request") or {}
+        if (requested.get("contract_version") != "chapter-working-revision.v1"
+                or not isinstance(requested.get("reason"), str) or not requested["reason"].strip()
+                or requested.get("source_asset_version_id") != (review or {}).get("target_asset_version_id")):
+            raise KernelError("REVISION_UNAUTHORIZED_DIAGNOSIS", "Scope proposals require the exact working revision request")
+        for edit in proposed_edits:
+            location = validate_location(edit, original)
+            codes = edit.get("issue_codes") or []
+            if not codes or set(codes) - set(allowed) or any(
+                max(location["start"], allowed[code]["evidence_locator"]["start"])
+                >= min(location["end"], allowed[code]["evidence_locator"]["end"]) for code in codes
+            ):
+                raise KernelError("REVISION_UNAUTHORIZED_DIAGNOSIS", "Only located prose diagnoses can propose a wider scope")
+            scopes.append((location["start"], location["end"]))
     if length_scope is not None:
         from novel_forge.modules.revision.domain import validate_chapter_length_scope
         validate_chapter_length_scope(length_scope, source, text, source_asset_version_id=length_scope["source_asset_version_id"],
@@ -125,6 +144,51 @@ def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str
     for tag, start, end, _, _ in SequenceMatcher(None, original, text, autojunk=False).get_opcodes():
         if tag != "equal" and not any(low <= start <= end <= high for low, high in scopes):
             raise KernelError("REVISION_OUTSIDE_DIAGNOSIS_SCOPE", "Revision changed an unaffected Scene or paragraph; evidence uncertainty and aesthetic advice do not authorize prose changes")
+
+
+def scope_proposal_preserved(proposal, text, *, target_text_hash, report_type, resolution_checks, preservation_checks):
+    from .prose_window import PRESERVATION_DIMENSIONS
+    ranges = proposal.get("changed_target_ranges") or []
+    if (proposal.get("contract_version") != "working-prose-scope-proposal.v1" or not proposal.get("issue_codes")
+            or not ranges or report_type != "ReReviewReport" or target_text_hash != prose_hash(text)
+            or proposal.get("target_text_hash") != target_text_hash
+            or any(not isinstance(span, dict) or type(span.get("start")) is not int or type(span.get("end")) is not int
+                or not 0 <= span["start"] <= span["end"] <= len(text) for span in ranges)
+            or len(preservation_checks) != len(PRESERVATION_DIMENSIONS)
+            or {check.get("dimension") for check in preservation_checks} != set(PRESERVATION_DIMENSIONS)):
+        return False
+    def overlaps_changed(location):
+        return any(location["start"] < span["start"] < location["end"] if span["start"] == span["end"]
+            else max(location["start"], span["start"]) < min(location["end"], span["end"]) for span in ranges)
+
+    for check in preservation_checks:
+        try:
+            location = validate_location(check.get("evidence") or {}, text)
+        except KernelError:
+            return False
+        if (not str(check.get("reason") or "").strip() or check.get("status") not in {"PRESERVED", "UNCERTAIN"}
+                or check.get("status") == "UNCERTAIN" and overlaps_changed(location)):
+            return False
+    preserved = set()
+    for check in resolution_checks:
+        if check.get("preservation") == "REGRESSED":
+            return False
+        if check.get("preservation") == "UNCERTAIN":
+            try:
+                location = validate_location(check.get("evidence") or {}, text)
+            except KernelError:
+                return False
+            if not str(check.get("reason") or "").strip() or overlaps_changed(location):
+                return False
+        if (check.get("preservation") != "PRESERVED" or not str(check.get("reason") or "").strip()
+                or check.get("status") not in {"SATISFIED", "PARTIALLY_RESOLVED", "UNRESOLVED"}):
+            continue
+        try:
+            validate_location(check.get("evidence") or {}, text)
+        except KernelError:
+            continue
+        preserved.add(check.get("code"))
+    return set(proposal["issue_codes"]) <= preserved
 
 
 def blocking_diagnosis_codes(review: dict[str, Any]) -> tuple[str, ...]:

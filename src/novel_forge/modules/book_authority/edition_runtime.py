@@ -107,7 +107,7 @@ def edition_adopted_draft(request, adoption: dict[str, Any]):
     realization_contract = None
     if request.effective_definition_version in {"3.10.0","3.10.0-author-input.v3"}:
         from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract,resolve_accepted_realization_sources
-        from novel_forge.modules.chapter_authority.provider_views import build_draft_style_view
+        from novel_forge.modules.chapter_authority.chapter_plan_views import build_draft_style_view
         realization_contract=compile_realization_contract(plan.content,
             build_draft_style_view(context.content,work_requirements=request.work_requirements_enabled),
             core_policy="continuous-scene.v1",information_policy="actor-source-scope.v1",

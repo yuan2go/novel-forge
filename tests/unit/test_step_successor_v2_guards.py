@@ -140,6 +140,24 @@ def test_unsent_transport_window_rejects_release_drift():
             {**transport, "contract_version": "kernel-unsent-transport-window.v1", "release_sha": "foreign"}, transport_policy=transport)
 
 
+@pytest.mark.parametrize("deadline", [None, datetime(2000, 1, 1, tzinfo=timezone.utc)])
+def test_generation_contract_recovery_keeps_deadlines_as_observations(monkeypatch, deadline):
+    from novel_forge.modules.command_kernel import generation_policy
+    monkeypatch.setattr(generation_policy, "generation_graph", lambda *_: True)
+    cursor = Mock()
+    cursor.fetchone.return_value = (False, False)
+    root = {"operation_id": "root", "project_id": "project", "definition_snapshot": {
+        "timeout_policy": {"operation_timeout_seconds": 86400}}, "command_payload": {"author_deadline_at": "2000-01-01"}}
+    source = {"definition_snapshot": {"policy": {"contract": "old"}}}
+    policy = {"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "contract", "policy_value": "current"}
+    window = recovery._corrected_contract_window(cursor, root, source, {"policy": {"contract": "current"}}, deadline, policy)
+    assert window["new_deadline"] == window["original_deadline"]
+    assert window["generation_deadline_enforced"] is False
+    cursor.fetchone.return_value = (False, True)
+    with pytest.raises(KernelError, match="STEP_SUCCESSOR_WINDOW_UNSETTLED"):
+        recovery._corrected_contract_window(cursor, root, source, {"policy": {"contract": "current"}}, deadline, policy)
+
+
 @pytest.mark.parametrize('version,failures,schemas,valid', [
     ('3.10.0', ['MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'], [('schema:chapter-provider-output:draft:v4:working-memory-v1', 'codex-structured-schema.v5')], True),
     ('3.10.0', ['MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'], [('other-schema', 'codex-structured-schema.v5')], False),

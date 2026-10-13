@@ -130,7 +130,7 @@ class AuthorEditorPostgresTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.app.execute(action='save', payload=self.payload, idempotency_key=identifier('denied'), principal=denied)
 
-    def test_authored_draft_flows_through_native_review_revision_canon_and_export(self):
+    def test_authored_draft_and_partial_revision_survive_unresolved_formal_review(self):
         from novel_forge.modules.chapter_authority.handlers import DeterministicFixtureChapterProvider, build_chapter_handler_registry
         from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest, run_single_chapter_slice
         from novel_forge.modules.chapter_authority.contracts import ChapterNode
@@ -144,7 +144,15 @@ class AuthorEditorPostgresTests(unittest.TestCase):
                 self.stages.append(stage)
                 if stage == 'draft':
                     raise AssertionError('Human draft must not call a model')
-                return super().invoke(request, stage=stage, payload=payload, **kwargs)
+                generated = super().invoke(request, stage=stage, payload=payload, **kwargs)
+                from dataclasses import replace
+                if stage == 'revision':
+                    return replace(generated, output={"text": payload['draft']['text'],
+                        "scene_artifacts": payload['draft']['scene_artifacts'], "resolved_issue_codes": []})
+                if stage == 'rereview':
+                    return replace(generated, output={**generated.output, "decision": payload['review']['decision'],
+                        "issues": payload['review']['issues'], "resolved_issue_codes": [], "resolution_checks": []})
+                return generated
 
         text = '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。'
         saved = self.app.execute(action='save', payload={**self.payload, 'text': text,
@@ -160,23 +168,37 @@ class AuthorEditorPostgresTests(unittest.TestCase):
         request = SingleChapterRequest(**{key: self.scope[key] for key in ('project_id','workspace_id','book_id','chapter')},
                                        actor_id=self.principal.principal_id, title='关山旧约', premise='守住同伴的退路需要付出归山的代价。',
                                        trace_id=identifier('trace'), correlation_id=identifier('correlation'),
-                                       application_build_id='author-native-fixture', commit_sha='e' * 40,
+                                       application_build_id='author-native-fixture', commit_sha='e' * 40, context_token_budget=16_000,
                                        context_candidates=PostgreSQLOnlyChapterSliceTests.release_evidence(self.scope['project_id']),
                                        preparation_report={'author_draft_adoption': frozen})
-        result = run_single_chapter_slice(DATABASE_URL, request=request, registry=build_chapter_handler_registry(provider),
-                                          object_store_adapter=FakeDeterministicProvider('success'))
-        self.assertEqual(result.root_status, 'SUCCEEDED')
+        with self.assertRaisesRegex(KernelError, 'CHAPTER_QUALITY_GATE_BLOCKED'):
+            run_single_chapter_slice(DATABASE_URL, request=request, registry=build_chapter_handler_registry(provider),
+                                     object_store_adapter=FakeDeterministicProvider('success'))
         self.assertNotIn('draft', provider.stages)
+        self.assertIn('review', provider.stages)
         self.assertTrue({'review', 'revision', 'rereview'}.issubset(provider.stages))
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute('SELECT content FROM authority_asset_version WHERE asset_version_id=%s',
-                               [result.outputs[ChapterNode.DRAFT].asset_version_id])
-            self.assertEqual(uow.cursor.fetchone()[0]['text'], text)
+            retained = {}
+            for node in (ChapterNode.DRAFT, ChapterNode.REVISION, ChapterNode.REREVIEW):
+                uow.cursor.execute('''SELECT output.operation_id,asset.content FROM authority_operation_output_asset output
+                    JOIN authority_operation operation ON operation.operation_id=output.operation_id
+                    JOIN authority_asset_version asset USING(asset_version_id)
+                    WHERE operation.project_id=%s AND operation.command_payload->>'book_id'=%s
+                      AND operation.command_payload->>'chapter_root_operation_id' IS NOT NULL
+                      AND output.output_key=%s AND output.role='primary' ''',
+                    [self.scope['project_id'], self.scope['book_id'], node.output_key])
+                retained[node] = uow.cursor.fetchone()
+                self.assertIsNotNone(retained[node])
+            self.assertEqual(retained[ChapterNode.DRAFT][1]['text'], text)
+            self.assertEqual(retained[ChapterNode.REVISION][1]['text'], text)
+            self.assertEqual(retained[ChapterNode.REVISION][1]['resolved_issue_codes'], [])
+            self.assertNotEqual(retained[ChapterNode.REREVIEW][1]['decision'], 'PASSED')
+            self.assertTrue(retained[ChapterNode.REREVIEW][1]['issues'])
             uow.cursor.execute("SELECT COUNT(*) FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='chapter.draft.author_adoption'",
-                               [result.operation_ids[ChapterNode.DRAFT]])
+                               [retained[ChapterNode.DRAFT][0]])
             self.assertEqual(uow.cursor.fetchone()[0], 1)
             uow.cursor.execute("SELECT COUNT(*) FROM authority_external_effect WHERE operation_id=%s AND capability='model.draft'",
-                               [result.operation_ids[ChapterNode.DRAFT]])
+                               [retained[ChapterNode.DRAFT][0]])
             self.assertEqual(uow.cursor.fetchone()[0], 0)
 
     def test_existing_same_project_other_book_and_superseded_base_are_rejected(self):

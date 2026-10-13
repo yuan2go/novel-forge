@@ -918,10 +918,7 @@ def resolve_book_opening_budget_scope_in_uow(
             "BOOK_OPENING_EXACT_BUDGET_BINDING_REQUIRED",
             "Opening execution binding has no owner identity",
         )
-    # INVARIANT: Match BookOpening recovery's canonical owner-first lock order.  Taking
-    # Budget locks before the referenced Opening/runtime rows would allow the
-    # binding FK to deadlock with recovery (Budget -> Opening versus
-    # Opening -> Budget).
+    # INVARIANT: Lock BookOpening before Budget to prevent binding-FK deadlocks with recovery.
     uow.cursor.execute(
         "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
         [f"book-opening:{opening_run_id}"],
@@ -2121,9 +2118,7 @@ def assess_budget_scope_in_uow(
         token_headroom: int | None = None
         cost_headroom: Decimal | None = None
     elif mode == "DURABLE_RESULT_REPLAY":
-        # INVARIANT: Re-projecting an immutable, already-paid Provider result performs no
-        # external call.  It still validates reservation/cost evidence and
-        # therefore cannot bypass ambiguous or drifted Budget Authority.
+        # INVARIANT: Durable replay makes no call but still validates reservation and cost evidence.
         outcome = (
             BudgetAssessmentOutcome.RECONCILIATION_REQUIRED
             if reasons
@@ -4213,7 +4208,9 @@ def require_known_cli_lineage(cursor: Any, *, project_id: str, operation_id: str
     if lineage is None:
         raise KernelError("CROSS_PROJECT_REFERENCE", "Provider dispatch Operation scope is missing")
     if len(lineage) > 2 and lineage[2]:
-        raise KernelError("BUDGET_CORRECTION_BREACH", "Original measured usage exceeded the retained ceiling; no further Provider allowance is admitted")
+        from .generation_policy import generation_graph
+        if not generation_graph(cursor, operation_id, project_id):
+            raise KernelError("BUDGET_CORRECTION_BREACH", "Original measured usage exceeded the retained ceiling; no further Provider allowance is admitted")
     unresolved = unresolved_cli_outcomes(cursor, project_id,
         root_operation_id="" if lineage[1] else str(lineage[0]), book_id=str(lineage[1]))
     if lineage[1] and unresolved:

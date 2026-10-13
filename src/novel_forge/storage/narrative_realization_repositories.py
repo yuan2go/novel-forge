@@ -534,6 +534,7 @@ class NarrativeRealizationRepository:
         chapter_outcome_asset_version_id: str,
         realization_evidence: list[dict[str, Any]],
         operation_id: str,
+        execution_chapter_plan_asset_version_id: str | None = None,
     ) -> dict[str, Any]:
 
         self.cursor.execute(
@@ -568,7 +569,7 @@ class NarrativeRealizationRepository:
             outcome = dict(outcome_row[0]) if outcome_row else {}
             grounding = dict(outcome.get("grounding") or {})
             if (outcome.get("book_id") != book_id or outcome.get("chapter_number") != chapter_number
-                or outcome.get("chapter_plan_version_id") != chapter_plan_asset_version_id):
+                or outcome.get("chapter_plan_version_id") != (execution_chapter_plan_asset_version_id or chapter_plan_asset_version_id)):
                 raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Comparison must bind the exact accepted Book, Chapter and plan")
             if any(item.get("candidate_asset_version_id") != outcome.get("accepted_draft_asset_version_id")
                    or item.get("candidate_text_hash") != grounding.get("text_hash") for item in comparisons):

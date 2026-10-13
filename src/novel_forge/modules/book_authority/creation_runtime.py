@@ -4,7 +4,7 @@ from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 import hashlib
 import os
-from time import monotonic
+from time import monotonic, sleep
 from typing import Any, Callable
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -87,6 +87,20 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
 
     jobs = RuntimeJobAuthority(composition.authority.database_url)
     recovery_actions = 0
+    stalled_failures = {}
+
+    def repeated_failure(error: KernelError, root_id: str) -> bool:
+        from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+        details = error.details or {}
+        signature = canonical_hash({"root": root_id, "code": error.code,
+            "cause": details.get("cause_code"), "stage": details.get("stage")})
+        stalled_failures[signature] = stalled_failures.get(signature, 0) + 1
+        if stalled_failures[signature] < 3:
+            return False
+        events({"kind": "GENERATION_NO_PROGRESS", "book_run_id": book_run_id,
+            "operation_id": root_id, "failure": details, "scope": "CURRENT_DRIVE",
+            "same_failure_observations": stalled_failures[signature]})
+        return True
 
     def recover(action: Callable[[], bool]) -> bool:
         nonlocal recovery_actions
@@ -214,7 +228,11 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                     if error.code.startswith("MODEL_EFFECT_OUTCOME_UNKNOWN") or error.code == "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED":
                         from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
                         if recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                            if repeated_failure(error, active):
+                                return "GENERATION_NO_PROGRESS"
                             continue
+                    elif repeated_failure(error, active):
+                        return "GENERATION_NO_PROGRESS"
                     if error.code == "CHAPTER_ATTEMPT_EXHAUSTED" and recover_unsent_context_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal):
                         continue
                     if author_first(book):
@@ -239,6 +257,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                         continue
                     return error.code
                 events({"kind": "CHAPTER_TICK", "result": asdict(result)})
+                if result.operation_status == "SUCCEEDED":
+                    stalled_failures.clear()
                 if result.recovery_mode.startswith(('derived_canon_','derived_quality_')) and result.operation_status=='SUCCEEDED':
                     while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
                         events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
@@ -308,7 +328,9 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             if checkpoint["lifecycle"] != "FAILED":
                 raise
             blocked = _formation_resume_blocker(composition, checkpoint, policy)
-            return {"formation_run_id": formation_run_id, "stop_reason": blocked or "FORMATION_FAILED",
+            failure_code = str(getattr(error, "code", type(error).__name__))
+            return {"formation_run_id": formation_run_id,
+                    "stop_reason": blocked or ("FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION" if failure_code.startswith("MODEL_EFFECT_FINAL_") else "FORMATION_FAILED"),
                     "reason_code": str(getattr(error, "code", type(error).__name__)), "checkpoint": checkpoint}
     if formation.require(formation_run_id)["lifecycle"] != "READY":
         return {"formation_run_id": formation_run_id, "stop_reason": "YIELDED_CHECKPOINT"}
@@ -489,7 +511,7 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
             or run.get("recovery_instruction", {}).get("action") != "RESUME_WITH_SAME_FROZEN_INPUTS"):
         return "FORMATION_OWNER_RECOVERY_REQUIRED"
     failure_code = str(run.get("failure", {}).get("code") or "")
-    if not failure_code.startswith("MODEL_EFFECT_RETRYABLE_") and failure_code not in {
+    if not failure_code.startswith(("MODEL_EFFECT_RETRYABLE_", "MODEL_EFFECT_FINAL_")) and failure_code not in {
         "RuntimeError", "EFFECT_REQUEST_TIMEOUT_BEFORE_SEND", "EFFECT_REQUEST_FAILED_RETRYABLE",
         "EFFECT_BUDGET_EXECUTION_ASSERTION_FAILED", "RESOURCE_ROUTE_RESELECT_REQUIRED"}:
         return "FORMATION_OWNER_RECOVERY_REQUIRED"
@@ -500,20 +522,11 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
             return "FORMATION_RECONCILIATION_OR_LEASE_REQUIRED"
         if selected_book_template(uow.cursor, project_id=run["project_id"], book_id=run["book_id"]) is None:
             return "FORMATION_OWNER_RECOVERY_REQUIRED"
-        uow.cursor.execute("""SELECT count(DISTINCT job.input_snapshot->>'observed_version') FROM authority_runtime_job_attempt attempt
-            JOIN authority_runtime_job job USING(runtime_job_id)
-            WHERE job.subject_kind='STORY_FORMATION_RUN' AND job.subject_id=%s
-              AND job.project_id=%s AND job.input_snapshot->>'observed_stage'=%s
-              AND attempt.status IN ('FAILED','ABANDONED')
-              AND (attempt.error->>'code' LIKE 'MODEL_EFFECT_RETRYABLE_%%' OR attempt.error->>'code' IN
-                ('RuntimeError','EFFECT_REQUEST_TIMEOUT_BEFORE_SEND','EFFECT_REQUEST_FAILED_RETRYABLE','EFFECT_BUDGET_EXECUTION_ASSERTION_FAILED','RESOURCE_ROUTE_RESELECT_REQUIRED'))""",
-            [run["formation_run_id"], run["project_id"], run["current_stage"]])
-        if int(uow.cursor.fetchone()[0]) >= 3:
-            return "FORMATION_NO_PROGRESS_LIMIT"
         uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect
             WHERE project_id=%s AND request_payload #>> '{_production_execution,book_id}'=%s
               AND NOT authority_generation_isolated(external_effect_id)
-              AND status IN ('DISPATCHING','UNKNOWN','RECONCILIATION_REQUIRED','FAILED_FINAL'))
+              AND (status IN ('DISPATCHING','UNKNOWN','RECONCILIATION_REQUIRED')
+                   OR status='FAILED_FINAL' AND effect_type<>'model.invoke'))
             OR EXISTS(SELECT 1 FROM authority_runtime_job_lease lease
                 JOIN authority_runtime_job job USING(runtime_job_id)
                 WHERE job.subject_kind='STORY_FORMATION_RUN' AND job.subject_id=%s
@@ -522,6 +535,27 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
         if uow.cursor.fetchone()[0]:
             return "FORMATION_RECONCILIATION_OR_LEASE_REQUIRED"
     return ""
+
+
+def creation_narrative_execution(policy: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    version = policy.get("narrative_execution_contract")
+    if version is None:
+        return {"chapter": {}, "planning": {}}
+    if version != "native-narrative-execution.v1":
+        raise KernelError("CREATION_NARRATIVE_EXECUTION_INVALID", "Unknown frozen narrative execution contract")
+    return {"chapter": {"pack_version_override": "3.0.3", "prose_skill_version": "prose-generation-v5",
+                        "prompt_template_version": "v15"},
+            "planning": {"event_first_planning": True}}
+
+
+def creation_title(inputs: dict[str, Any]) -> tuple[str, bool]:
+    generated = inputs.get("version") == "creation-request.v2" and "title" not in inputs
+    if generated:
+        return "Untitled — pending native Foundation", True
+    title = inputs.get("title")
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("Creation requires an author title or the generated-title request contract")
+    return title, False
 
 
 def creation_runtime_environment(project_id: str, values: dict[str, str] | None = None) -> dict[str, str]:
@@ -581,6 +615,23 @@ def creation_wait_class(reason: str) -> str:
     if reason in {"WAITING_APPROVAL", "WAIT_PLAN_APPROVAL", "WAIT_REPLAN_APPROVAL", "WAIT_CONTROL_DECISION"}:
         return "AUTHOR_DECISION"
     return "OWNER_RECOVERY_REQUIRED"
+
+
+def creation_material_progress(progress: Any) -> Any:
+    # WHY: Retiring failures and appending recovery versions are evidence, not new usable work.
+    if not isinstance(progress, (list, tuple)) or len(progress) != 7:
+        return progress
+    result = list(progress)
+    result[2] = None
+    if isinstance(result[5], (list, tuple)):
+        result[5] = list(result[5])[:2]
+    state = dict(result[6]) if isinstance(result[6], dict) else {}
+    state.pop("generation_recovery", None)
+    for key in ("chapter", "opening"):
+        if isinstance(state.get(key), (list, tuple)):
+            state[key] = list(state[key])[:1]
+    result[6] = state
+    return result
 
 
 def creation_recovery_record(database_url: str, formation_run_id: str, reason: str, key: str) -> dict[str, Any] | None:
@@ -680,12 +731,9 @@ def execute_creation_claim(jobs: RuntimeJobAuthority, claim: Any, *, composition
                     "failure": {"code": error.code, "message": str(error)},
                     "recovery_instruction": "Inspect retained failed proposals and exact diagnostics. A new author decision or approved future input change must resolve the cause; repeating recovery cannot expand the repair allowance."}
         progress = list(creation_progress(jobs.database_url, project_id=claim.project_id, formation_run_id=claim.subject_id))
-        stagnant = int(claim.input_snapshot.get("stagnant_windows", 0)) + 1 if progress == claim.input_snapshot.get("progress") else 0
+        stagnant = int(claim.input_snapshot.get("stagnant_windows", 0)) + 1 if creation_material_progress(progress) == creation_material_progress(claim.input_snapshot.get("progress")) else 0
         reason = result["stop_reason"]
         waiting = creation_wait_class(reason)
-        if stagnant >= 12 and waiting in {"TECHNICAL_WAIT", "RECONCILIATION_REQUIRED"}:
-            waiting = "OWNER_RECOVERY_REQUIRED"
-            reason = "CREATION_NO_PROGRESS"
         receipt = {key: value for key, value in result.items() if key != "checkpoint"}
         receipt.update(stop_reason=reason, wait_class=waiting, progress=progress,
                        executor="book-authority-worker", next_action="INSPECT_OWNER_EVIDENCE",
@@ -847,9 +895,10 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         if (request_input is None and not args.input_file) or not all((args.workspace_id, args.book_id, args.idempotency_key)):
             raise ValueError("Start requires current work input, exact Book scope and stable idempotency key")
         inputs = deepcopy(request_input) if request_input is not None else json.loads(args.input_file.read_text())
-        required = {"version", "brief", "title", "target_chapters", "language_contract"}
-        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy", "input_selection", "execution_window"} or inputs["version"] != "creation-request.v1":
-            raise ValueError("Creation input must declare current brief, title, scope and language")
+        required = {"version", "brief", "target_chapters", "language_contract"}
+        if not required <= set(inputs) or set(inputs) - required - {"title", "chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy", "input_selection", "execution_window"} or inputs["version"] not in {"creation-request.v1", "creation-request.v2"}:
+            raise ValueError("Creation input must declare current brief, scope and language")
+        inputs["title"], generated_title = creation_title(inputs)
         if (not isinstance(inputs["target_chapters"], int) or isinstance(inputs["target_chapters"], bool)
                 or not 1 <= inputs["target_chapters"] <= 10000 or not isinstance(inputs["brief"], dict)
                 or not isinstance(inputs["title"], str) or not inputs["title"].strip()
@@ -925,6 +974,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         if not windows or max(windows) <= 0:
             raise ValueError("CREATION_CONTEXT_WINDOW_REQUIRED")
         profile_content = profiles["profiles"]["production_profile"]["content"]
+        if generated_title:
+            profile_content["title_generation_contract"] = "generated-book-title.v1"
         if execution_window is not None:
             profile_content["execution_window"] = execution_window
         template_config = json.loads(args.execution_template_file.read_text())
@@ -961,7 +1012,6 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             if uow.cursor.fetchone():
                 raise ValueError("CREATION_ALREADY_ADMITTED_USE_ORIGINAL_FORMATION")
         ensure_creation_scope(settings, args, principal=principal, title=inputs["title"], build_id=build_id, sha=sha)
-        from novel_forge.modules.command_kernel.errors import KernelError
         from novel_forge.modules.book_design_authority.application import BookDesignAuthorityApplication, BookDesignAuthorityCommand
         query = BookDesignAuthorityQuery(settings.database_url)
         try:
@@ -1023,12 +1073,14 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         repository_root = args.repository_root.resolve()
         hashes = register_validation_runtime_definitions(settings.database_url, application_build_id=build_id, commit_sha=sha)
         if existing_formation is None:
+            narrative = creation_narrative_execution(profiles)
             install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
             project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
-            pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"], runtime_environment=settings.environment)
+            pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"], runtime_environment=settings.environment,
+            **narrative["chapter"])
             profile = build_story_planning_pack_profile(repository_root, operation_definition_hash=hashes["planning"],
-            pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"])
+            pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"], **narrative["planning"])
             install_longform_validation_pack(settings.database_url, profile=profile, pack_version=str(profile.manifest["identity"]["version"]), agent_generation=1,
             expected_activation_version=0, project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
@@ -1105,8 +1157,11 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 candidate_asset_version_id=args.candidate_version, candidate_content_hash=args.candidate_hash,
                 decision="APPROVE", reason=args.reason, idempotency_key=args.idempotency_key, principal=principal)
         if (composition.formation.frozen_input(formation_id).generation_policy or {}).get("contract_version") in {"formation-generation.v5", "formation-generation.v7"}:
+            from uuid import uuid4
+            continuation_reason = args.reason if args.action == "recover" else "Authorized ordinary continue rechecks the current frozen inputs" if args.action == "continue" else ""
+            continuation_key = args.idempotency_key if args.action == "recover" else "continue:" + (args.idempotency_key or str(uuid4())) if args.action == "continue" else ""
             scheduled = schedule_creation_jobs(settings.database_url, limit=1, formation_run_id=formation_id,
-                recovery_reason=args.reason if args.action == "recover" else "", recovery_key=args.idempotency_key if args.action == "recover" else "")
+                recovery_reason=continuation_reason, recovery_key=continuation_key)
             if not args.foreground:
                 return {"formation_run_id": formation_id, "stop_reason": "WORKER_OWNS_CONTINUATION",
                         "scheduled": list(scheduled), **creation_status(settings.database_url,
@@ -1120,11 +1175,10 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 creation_policy=json.loads(args.creation_policy_file.read_text()) if args.action == "continue" and explicit_creation_policy else None)
             if result["stop_reason"] != "YIELDED_CHECKPOINT" or args.yield_after_window:
                 return {"formation_run_id": formation_id, **result}
-            current = creation_progress(settings.database_url, project_id=args.project_id, formation_run_id=formation_id)
+            current = creation_material_progress(creation_progress(settings.database_url, project_id=args.project_id, formation_run_id=formation_id))
             stagnant = stagnant + 1 if current == progress else 0
             progress = current
-            if stagnant >= 3:
-                return {"formation_run_id": formation_id, **result, "stop_reason": "CREATION_NO_PROGRESS"}
+            sleep(min(5, stagnant + 1))
     finally:
         execution.close()
 

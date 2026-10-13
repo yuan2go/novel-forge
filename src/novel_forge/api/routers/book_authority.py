@@ -1076,7 +1076,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     yield_after_window=False, foreground=False, creative_selection=creative_selection, candidate_number=None,
                     candidate_version="", candidate_hash="", reason="")
                 return execute_creation_command(ctx.app_settings, arguments,
-                    request_input={"version": "creation-request.v1", "brief": brief.content, **intent},
+                    request_input={"version": "creation-request.v1" if "title" in intent else "creation-request.v2", "brief": brief.content, **intent},
                     brief_source=(brief.asset_version_id, brief.content_hash))
             frozen = StoryFormationInput(
                 layers=tuple(

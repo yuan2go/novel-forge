@@ -16,6 +16,32 @@ from tests.integration.creative_validation_production_support import controlled_
 from tests.integration.synthesis_production_support import SynthesisTransport
 
 
+
+def advance_runtime_fixture_time(project_id):
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""UPDATE authority_runtime_job_lease lease
+            SET lease_expires_at=NOW()-INTERVAL '1 second' FROM authority_runtime_job job
+            WHERE job.runtime_job_id=lease.runtime_job_id AND job.project_id=%s AND lease.status='HELD'""", [project_id])
+        uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE project_id=%s AND status IN ('READY','RETRY_WAIT')", [project_id])
+        uow.commit()
+
+
+
+@pytest.fixture
+def runtime_clock(monkeypatch):
+    from datetime import timedelta
+    from novel_forge.modules.production_execution.routing_runtime import PostgresRoutingRegistry
+    clock = [timedelta()]
+    available = PostgresRoutingRegistry.available_candidates
+    def candidates(registry, *, project_id, candidates, now):
+        return available(registry, project_id=project_id, candidates=candidates, now=now + clock[0])
+    monkeypatch.setattr(PostgresRoutingRegistry, "available_candidates", candidates)
+    def advance(project_id):
+        clock[0] += timedelta(seconds=310)
+        advance_runtime_fixture_time(project_id)
+    return advance
+
+
 def prepare_context_model_stages(transport, monkeypatch):
     from novel_forge.modules.chapter_authority import handlers
     from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
@@ -50,7 +76,7 @@ def prepare_context_model_stages(transport, monkeypatch):
 
 
 @pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption"])
-def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result, enhanced_working):
+def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
@@ -95,9 +121,11 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
     resolve = PostgresProductionExecutionPayloadResolver.resolve
     stream_failures = []
+    current_project = []
     compression_calls = []
     def interrupt_first_memo(resolver, request, admission):
         payload = resolve(resolver, request, admission)
+        current_project[:] = [request.project_id]
         if request.stage in {"context_compress", "context_fidelity"}:
             compression_calls.append((request.operation_id, request.stage))
         failure_stage = "context_fidelity" if completed_sibling else "memo"
@@ -107,6 +135,8 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             stream_failures.append(request.operation_id)
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+    from novel_forge.modules.command_kernel import generation_isolation
+    monkeypatch.setattr(generation_isolation, "sleep", lambda _: runtime_clock(current_project[0]))
     if completed_sibling:
         prepare_context_model_stages(transport, monkeypatch)
     if recoverable_result:
@@ -176,12 +206,19 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
         "--repository-root", str(root), "--maximum-ticks", "100",
         "--foreground"])
+    template = json.loads((root / args.execution_template_file).read_text())
+    template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+    args.execution_template_file = tmp_path / "memo-enhanced-template.json"
+    args.execution_template_file.write_text(json.dumps(template))
     if enhanced_working:
         creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
         creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
             "version": "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2", "history_chapters": 8,
             "recent_complete_chapters": 2, "max_characters": 32000,
             "queries": ["flood"], "guidance_mode": "COMBINED"}
+        if enhanced_working != "memory":
+            for key in ("working_schedule_policy", "working_craft_history_policy", "future_planning_feedback_policy"):
+                creation_policy["profiles"]["production_profile"]["content"].pop(key, None)
         args.creation_policy_file = tmp_path / "working-creation-policy.json"
         args.creation_policy_file.write_text(json.dumps(creation_policy))
     settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
@@ -245,8 +282,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             assert uow.cursor.fetchone()[0] == 1
     assert len(retained["units"]) == 1
     assert stopped["current_chapter"] == 0
-    import time
-    time.sleep(31)
+    runtime_clock(project)
     args.action, args.formation_run_id = "continue", formation
     result = run_creation_command(settings, args)
     assert result["stop_reason"] == "MANUSCRIPT_READY", result
@@ -392,7 +428,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     if enhanced_working == "memory":
         from novel_forge.modules.book_authority.manuscript_memory import save_manuscript_memory
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
-        from novel_forge.modules.book_authority.manuscript import freeze_working_context, verify_working_context
+        from novel_forge.modules.book_authority.manuscript import verify_working_context
         authority = PostgresBookAuthority(DATABASE_URL, chapter_port=None, followup_application=None,
             application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
         current = authority.require(book["book_run_id"])
@@ -513,7 +549,7 @@ def test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint():
 
 
 @pytest.mark.parametrize("failure_stage", ["memo", "context_compress", "context_fidelity"])
-def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch, failure_stage):
+def test_native_generation_fault_history_does_not_lock_corrected_continuation(tmp_path, monkeypatch, runtime_clock, failure_stage):
     harness = CapabilityPackPostgresHarness('bounded-generation-faults')
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
@@ -544,14 +580,21 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
     from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
     resolve = PostgresProductionExecutionPayloadResolver.resolve
     executions = set()
+    faults_enabled = True
+    current_project = []
     def interrupt_every_memo(resolver, request, admission):
         payload = resolve(resolver, request, admission)
-        if request.stage == failure_stage:
+        current_project[:] = [request.project_id]
+        if request.stage == failure_stage and faults_enabled:
             layout = PersistentExecutionDirectory(env['NOVEL_FORGE_CODEX_EXECUTION_ROOT']).prepare(request.execution_id)
             layout.result_path('interrupt-stream').write_text('controlled persistent stream failure')
             executions.add(request.execution_id)
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, 'resolve', interrupt_every_memo)
+    from novel_forge.modules.command_kernel import generation_isolation
+    def advance_stopped_fixture_time(_seconds):
+        runtime_clock(current_project[0])
+    monkeypatch.setattr(generation_isolation, "sleep", advance_stopped_fixture_time)
     if failure_stage.startswith('context_'):
         prepare_context_model_stages(transport, monkeypatch)
     source = tmp_path / 'request.json'
@@ -562,27 +605,45 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
             'source_boundaries':['Original work']}}))
     args = _authority_parser().parse_args(['authority-creation','start','--input-file',str(source),
         '--repository-root',str(root),'--maximum-ticks','100','--work-window-seconds','180','--foreground','--yield-after-window'])
+    template = json.loads((root / args.execution_template_file).read_text())
+    template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+    args.execution_template_file = tmp_path / "memo-enhanced-template.json"
+    args.execution_template_file.write_text(json.dumps(template))
     settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment='production')
     result = run_creation_command(settings, args)
-    assert result['stop_reason'] == 'GENERATION_RECOVERY_EXHAUSTED', result
-    assert result['checkpoint']['state'] == 'PAUSED'
-    assert result['checkpoint']['paused_reason'] == 'GENERATION_RECOVERY_EXHAUSTED'
-    from novel_forge.modules.command_kernel.generation_isolation import generation_retry_usage, require_generation_retry_budget, book_recovery_projection
-    from novel_forge.modules.command_kernel.errors import KernelError
+    if failure_stage == "memo":
+        assert result["stop_reason"] == "MANUSCRIPT_READY", result
+        assert len(executions) == 1
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("""SELECT v.content->>'enhancement_status' FROM authority_operation_output_asset output
+                JOIN authority_operation operation USING(operation_id) JOIN authority_asset_version v USING(asset_version_id)
+                WHERE operation.project_id=%s AND output.output_key='chapter.memo' AND output.role='primary'""", [result["project_id"]])
+            assert uow.cursor.fetchone() == ("FAILED",)
+    else:
+        args.action = "continue"
+        args.project_id, args.workspace_id, args.book_id = result["project_id"], result["checkpoint"]["workspace_id"], result["book_id"]
+        args.formation_run_id = result["formation_run_id"]
+        for _ in range(2):
+            advance_stopped_fixture_time(30)
+            result = run_creation_command(settings, args)
+        assert len(executions) >= 3
+        assert result["stop_reason"] != "GENERATION_RECOVERY_EXHAUSTED", result
+        faults_enabled = False
+        advance_stopped_fixture_time(30)
+        result = run_creation_command(settings, args)
+        assert result["stop_reason"] == "MANUSCRIPT_READY", result
+    assert result["checkpoint"]["current_chapter"] == 1
+    from novel_forge.modules.command_kernel.generation_isolation import require_generation_retry_budget
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute("SELECT effect.operation_id FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id) WHERE effect.project_id=%s AND effect.effect_type='model.invoke' AND operation.definition_name=%s AND effect.request_payload->>'stage'=%s ORDER BY effect.created_at", [result['project_id'], 'chapter.context.build' if failure_stage.startswith('context_') else 'chapter.memo.generate', failure_stage])
-        operations = [row[0] for row in uow.cursor.fetchall()]
-        assert len(operations) == len(executions) == 2
-        usage = generation_retry_usage(uow.cursor, operation_id=operations[-1])
-        assert usage['failure_attempts'] == usage['maximum_failure_attempts'] == 2
-        with pytest.raises(KernelError, match='GENERATION_RECOVERY_EXHAUSTED'):
-            require_generation_retry_budget(uow.cursor, operation_id=operations[-1])
-        projections = book_recovery_projection(uow.cursor, project_id=result['project_id'], book_id=result['book_id'])
-        assert any(row['successor_failure'] and row['successor_failure'].get('error_code') for row in projections)
-    restarted = args
-    restarted.action = 'continue'
-    restarted.project_id, restarted.workspace_id, restarted.book_id = result['project_id'], result['checkpoint']['workspace_id'], result['book_id']
-    restarted.formation_run_id = result['formation_run_id']
-    repeated = run_creation_command(settings, restarted)
-    assert repeated['stop_reason'] == 'GENERATION_RECOVERY_EXHAUSTED', repeated
-    assert len(executions) == 2
+        uow.cursor.execute("""SELECT effect.operation_id,effect.status,budget.status FROM authority_external_effect effect
+            JOIN authority_budget_reservation budget USING(external_effect_id)
+            JOIN authority_operation operation ON operation.operation_id=effect.operation_id
+            WHERE effect.project_id=%s AND effect.effect_type='model.invoke' AND operation.definition_name=%s
+              AND effect.request_payload->>'stage'=%s ORDER BY effect.created_at""",
+            [result["project_id"], 'chapter.context.build' if failure_stage.startswith('context_') else 'chapter.memo.generate', failure_stage])
+        rows = uow.cursor.fetchall()
+        assert sum(row[1] == "UNKNOWN" and row[2] == "HELD_UNKNOWN" for row in rows) == len(executions)
+        observations = require_generation_retry_budget(uow.cursor, operation_id=rows[-1][0])
+        assert observations["failure_attempts"] == len(executions)
+        if failure_stage != "memo":
+            assert observations["failure_attempts"] > observations["maximum_failure_attempts"]

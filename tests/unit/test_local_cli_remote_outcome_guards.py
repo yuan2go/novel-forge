@@ -197,3 +197,18 @@ def test_retained_stage_reader_rejects_late_isolated_results_and_non_world_effec
     with pytest.raises(KernelError, match='EFFECT_RETAINED_STAGE_INVALID'):
         external_effect_runtime._read_verified_success(SimpleNamespace(cursor=cursor), repository, context,
             'effect', retained_generation_stage=True)
+
+
+@pytest.mark.parametrize("pure,unknown", [(True, False), (True, True), (False, False)])
+def test_historical_token_correction_does_not_lock_authorized_pure_generation(monkeypatch, pure, unknown):
+    from novel_forge.modules.command_kernel import generation_policy
+    cursor = SimpleNamespace(execute=Mock(), fetchone=Mock(return_value=("old-root", "", True)))
+    monkeypatch.setattr(generation_policy, "generation_graph", lambda *args: pure)
+    read = Mock(return_value=[{"usage": "UNKNOWN"}] if unknown else [])
+    monkeypatch.setattr(budget_runtime, "unresolved_cli_outcomes", read)
+    if not pure or unknown:
+        with pytest.raises(KernelError, match="BUDGET_CORRECTION_BREACH" if not pure else "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
+            budget_runtime.require_known_cli_lineage(cursor, project_id="project", operation_id="op")
+    else:
+        budget_runtime.require_known_cli_lineage(cursor, project_id="project", operation_id="op")
+        read.assert_called_once()

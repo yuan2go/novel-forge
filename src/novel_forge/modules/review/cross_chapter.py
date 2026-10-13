@@ -149,6 +149,7 @@ def paired_diagnosis(
     }
     code = "CC-" + str(category) + "-" + digest(identity).split(":")[1][:20].upper()
     lineage = issue.get("lineage_code")
+    reassessment = {}
     if lineage:
         original = next(
             (
@@ -158,17 +159,20 @@ def paired_diagnosis(
             ),
             None,
         )
-        if (
-            original is None
-            or original.get("category") != category
-            or _source_locations(original.get("supporting_evidence", []))
-            != _source_locations(support)
-        ):
-            raise KernelError(
-                "REVIEW_ISSUE_LINEAGE_INVALID",
-                "repair lineage must retain the original problem and source locations",
-            )
-        code = str(lineage)
+        frozen_support = original.get("supporting_evidence", []) if original else []
+        anchors = _source_locations(frozen_support)
+        if (original is not None and original.get("category") == category and _source_locations(support) == anchors
+                and all(original.get(key) == issue.get(key) for key in ("judgment_kind", "severity", "confidence", "interpretation",
+                    "violated_constraint", "revision_goal", "preserve", "acceptance_criteria"))
+                and original.get("repair") == issue.get("repair")):
+            code = str(lineage)
+            reassessment = {"reassessment_supporting_evidence": support}
+            support = deepcopy(frozen_support)
+        else:
+            code = "CC-" + str(category) + "-" + digest({"identity": identity, "unverified_lineage": lineage,
+                "problem": {key: issue.get(key) for key in ("judgment_kind", "severity", "interpretation", "repair",
+                    "violated_constraint", "revision_goal", "preserve", "acceptance_criteria")}}).split(":")[1][:20].upper()
+            reassessment = {"unverified_lineage_code": str(lineage), "lineage_status": "UNVERIFIED"}
     return {
         **base,
         "code": code,
@@ -177,6 +181,7 @@ def paired_diagnosis(
         "confidence": issue["confidence"],
         "interpretation": intentional,
         "supporting_evidence": support,
+        **reassessment,
         **({"candidate_supporting_evidence": candidate_support} if candidate_support else {}),
         "source_window_hash": window["source_window_hash"],
     }
@@ -215,13 +220,11 @@ def resolution_checks(
             support = validate_support(
                 check.get("supporting_evidence"), initial["cross_chapter_window"]
             )
-            if _source_locations(support) != _source_locations(
-                prior["supporting_evidence"]
-            ):
-                raise KernelError(
-                    "REVIEW_RESOLUTION_INVALID",
-                    "rereview must check the original accepted evidence",
-                )
+            if _source_locations(support) != _source_locations(prior["supporting_evidence"]):
+                check = {**check, "reassessment_supporting_evidence": support,
+                    "supporting_evidence": deepcopy(prior["supporting_evidence"]),
+                    "claimed_resolution_status": check["status"], "resolution_evidence_status": "INCOMPLETE_ORIGINAL_SUPPORT",
+                    "status": "UNRESOLVED" if check["status"] == "RESOLVED" else check["status"]}
         normalized.append(
             {
                 **check,
@@ -298,6 +301,11 @@ def apply_targeted_edits(
                     merged.append([low,high])
             if not any(low <= location['start'] < location['end'] <= high for low,high in merged):
                 raise KernelError('REVISION_TARGETED_EDIT_INVALID','Every changed code point must remain in the connected named frozen scope')
+        elif range_policy == 'ANCHORED_SCOPE_PROPOSAL_V1':
+            for code in codes:
+                target = diagnoses[code]["evidence_locator"]
+                if max(target["start"], location["start"]) >= min(target["end"], location["end"]):
+                    raise KernelError("REVISION_TARGETED_EDIT_INVALID", "Each proposed edit must intersect every named prose diagnosis")
         elif range_policy == 'INTERSECTION_V1':
             for code in codes:
                 target = diagnoses[code]["evidence_locator"]

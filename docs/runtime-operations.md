@@ -186,10 +186,10 @@ Recovery checks the immutable window, current matching manuscript prefix, actor,
 Tool denial, cancellation, all original receipts and released writers. Isolation, one native
 root successor and its scheduling intent commit atomically. The original window event resolves
 through the durable successor journal; its source Operation and remote/usage facts remain
-unchanged. Persistent retry exhaustion stops this review without blocking baseline prose.
-Current author manuscript windows reserve one bounded process window inside the frozen Effect
-deadline as a historical observation; the supervised model process has no total elapsed
-generation deadline. CLI stream/request retries remain disabled.
+unchanged. Known failures stop the current review for reconciliation or cause-bound
+recovery without blocking saved prose. Historical Effect deadlines and attempt limits
+remain receipt observations; they do not reserve or terminate a model process window.
+CLI stream/request retries remain disabled.
 
 For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning
@@ -352,6 +352,17 @@ budget the entire rendered Provider input. A readback packet does not prove disp
 Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy to enable
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
+
+New Creation profiles enable `working-story-schedule.v1`, `working-craft-delivery.v1`
+and `native-prose-plan-feedback.v1`. Verify the selected working sources through Book,
+then the separate Arc assessment and Craft delivery histories in frozen Planning Context.
+Only current nonconflicting native plan findings enter future `PLANNED` replacement;
+their exact reports, request identity and lineage remain bound. A new review can use
+`source_current_policy: FROZEN_SELECTED_RANGE` to retain its original range after append.
+Changed selected versions invalidate it. Existing policies retain historical currentness.
+Focused checks additionally cover `test_longform_narrative_contracts.py`,
+`test_craft_selection.py`, `test_prose_planning_evidence_working.py` and the native
+working-memory PostgreSQL variant. These checks prove consumption, not literary effects.
 
 An activated upstream PlanChange can make an unfinished Chapter's frozen Context stale.
 `authority-manuscript recover-upstream-plan --proposal-id ... --corrected-plan-version ...`
@@ -981,9 +992,13 @@ and its hash, and updates working continuation dependencies. Planning must consu
 that exact working prefix for continuity while retaining the actual accepted boundary.
 A witnessed action in the selected prose does not need to be repeated merely because
 it has no formal acceptance; unsupported claims, POV restrictions and changed dependencies
-remain uncertain. A structural repetition finding returns to scoped Plan Change before
-continuation. It creates no author
-choice, review pass or formal acceptance; human input and an existing author choice
+remain uncertain. Once a native working revision is selected, current dependency reads use
+that Root’s exact frozen earlier sources, while retaining the original delivery snapshot.
+BestCandidate reuse of an incumbent requires this Root’s fresh exact-text Review to rebind
+dependencies. A local editor candidate inherits its exact base. Replacing an earlier source
+again marks affected continuation stale. Changes to active story commitments require the
+existing Plan Change owner; local prose merging does not itself require Plan Change.
+Working selection creates no author choice, review pass or formal acceptance; human input and an existing author choice
 retain their separate decision path. Repeating the exact command is idempotent.
 For native revision, `authority-manuscript revise` takes the same Book, `--chapter`,
 `--expected-version`, `--idempotency-key` and an explicit `--reason`. It freezes the current
@@ -1218,8 +1233,19 @@ intent, motive, cause, conflict, differentiation, scope and later writability, i
 uncertainty. Failed directions remain diagnostics. Selecting the sole admitted alternative
 requires a specific decision and retained bounded failure evidence; the result cannot be
 called a best-of-two comparison. `TECHNICAL_WAIT` uses bounded exponential delay (5–300
-seconds). Twelve unchanged coordination windows stop at `CREATION_NO_PROGRESS`; native
-retryable Formation recovery is limited to three distinct failed source versions.
+seconds). Unchanged scheduling windows remain wait observations; they never establish
+`CREATION_NO_PROGRESS` or executor death. Failure/resume versions and isolation counts
+are not usable story progress. Native
+Formation failure counts remain diagnostics and do not deny a later authorized continue.
+Three identical failure classes without a successful logical stage stop the current
+Book drive at `GENERATION_NO_PROGRESS`; a later continue starts a fresh progress check.
+Unknown outcomes still complete required reconciliation or durable isolation first.
+Pure generation does not request an execution-window extension for a retained deadline;
+the same owned live Chapter frontier is still checked, and a no-op window cannot be
+reported as recovery progress. Unmet prose length remains a visible diagnosis.
+The worker carries wait counters across scheduling yields for backoff and display;
+an explicitly restarted continuation begins a new observation segment. Known final Formation model
+failures stop automatic scheduling with `FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION`.
 `RECONCILIATION_REQUIRED` retains the original external identity; no fresh ID is dispatched.
 `OWNER_RECOVERY_REQUIRED` explains an unresolved configuration, terminal effect or
 unrecoverable stage failure. Inspect the native failure/effect before using recovery:
@@ -3562,8 +3588,9 @@ The additional recovery procedures use exact native sources:
 
 Window continuation requires the explicit v5/v6
 `chapter_contract_recovery=KNOWN_SETTLED_CONTRACT_REPAIR` policy. It retains actual
-before/after evidence, child timeout, no-progress controls and the original author
-deadline. Cancellation and worker lease checks run before recovery hooks; a replacement
+before/after evidence, result-based no-progress diagnostics and historical deadline
+observations. Pure generation does not enforce an elapsed author or child deadline.
+Cancellation and worker lease checks run before recovery hooks; a replacement
 never renews authority to send by itself. Canon schema successors preserve nullable
 semantics and strict canonical JSON decoding; the host schema still validates the
 decoded value before success. Stage schemas, approved Pack deployment and historical
@@ -3863,7 +3890,10 @@ review can establish prose improvement; offline assembly and scripted integratio
 prove engineering execution only.
 
 
-For event-first planning, explicitly compile the current Story Planning profile with
+The default native Creation policy selects event-first Planning, prose Skill v5,
+Template v15 and working-prose memory v3. Inspect the frozen recipe and deployed Pack
+for each new Book; old Formations continue from their stored original policy.
+For other prospective event-first planning, explicitly compile the current Story Planning profile with
 `event_first_planning=True`, install that exact Pack through Capability Pack Authority,
 and inspect its `long-outline-v5` hash and active-stage rendered method. Default v4
 and frozen old requests retain their original bytes. Record structural diagnoses and
@@ -4056,9 +4086,9 @@ the same Formation-derived Opening and Book identity before creating any genesis
 inputs. Bounded worker ticks save an existing checkpoint; the CLI renews its execution window
 and continues by default until completion or a dependency/failure. Technical waits
 also return to the caller; this is not durable end-to-end execution ownership. Use
-`--yield-after-window` for an external scheduler that owns subsequent invocation. Three
-windows without durable Formation/Provider/accepted-cursor progress return
-`CREATION_NO_PROGRESS`. Windows are execution controls, never Book resource budgets.
+`--yield-after-window` for an external scheduler that owns subsequent invocation.
+Unchanged healthy checkpoints back off and remain queryable; their count cannot stop
+generation or pause the Book. Windows are scheduling controls, never generation limits or Book resource budgets.
 They never reduce the Book target or declare completion at a pilot cursor. Frozen profiles remain unchanged on
 resume. Historical v1-v3 Formation runs without a frozen creation-input profile require
 `--creation-policy-file "$ORIGINAL_CREATION_POLICY"` on continuation. The current shipped
@@ -4084,11 +4114,13 @@ existing failure handling.
 
 Creation continuation may invoke the existing native Formation resume command for an
 AUTO-authorized creative run with the same operator and frozen inputs. It performs at
-most one recovery per invocation and counts durable failures for the same stage across
-all RuntimeJobs; three failures without stage progress require intervention. Unknown,
-in-flight, terminally failed Effects and live leases block automatic retry. Worker errors
-return the stored checkpoint with the original error code. Exact approval waits and
-semantic/contract failures retain their owning Authority recovery requirements.
+most one recovery per invocation. Historical failed source versions do not deny recovery
+after the cause is corrected. Model authentication, configuration and structured-output
+failures return their exact diagnostics; ordinary authorized continue can reuse the same
+frozen inputs after correction. Unknown, in-flight and unreconciled Effects, terminal
+non-generation Effects and live leases still block retry. Worker errors return the stored
+checkpoint with the original error code. Exact approval waits and active story decisions
+retain their owning Authority requirements.
 
 An unstarted failed historical Opening can receive a resource-policy successor through
 its existing `continue_unstarted_with_budget` Authority command. Version 2 binds the
@@ -4197,7 +4229,31 @@ reported environment; they cannot establish live access, text rights or prose be
 
 Original saved local outputs are reread through the configured Codex backend, checked against the frozen manifests, and ingested by the existing Kernel receipt path. The stopped Operation may append execution evidence for its existing session; this does not grant primary output rights. A replay preserves the original reservation and does not dispatch a new request.
 
-A recovered complete result whose original generation window expired may receive one native local-result finalization window. The Kernel journals its old and new deadlines, retains the frozen request and failed Attempt, rejects active writers and cancellation, and denies every new Provider dispatch from this window. Exhaustion is explicit.
+A recovered complete pure-generation result is reconciled and revalidated through its
+native owner without a new generation or finalization deadline. Old deadlines and
+failed Attempts remain evidence; live writers and cancellation still fence submission.
+Native Book/ChapterGroup coordinators and their exact delegated generation graphs are
+included before and after child admission. Deadline scans skip these graphs without
+starving later infrastructure operations. Canon re-extraction v2 admits versioned
+generations without a cumulative generation cap or new execution deadline; old v1
+deadlines and limits stay historical observations. Same-result no-progress diagnosis and
+human Canon approval remain separate. Focused PostgreSQL regression covers expired
+parent/root and Canon records, ordinary infrastructure cancellation and manual group cancel.
+The historical bounded local-result window applies only outside the current pure
+generation policy.
+
+Retrieval campaign execution uses coverage and semantic query novelty rather than
+cumulative round, query, call, token or campaign-cost ceilings. Frozen old policy and
+round hashes remain unchanged. Migration 0204 removes the historical third-round
+database ceiling and permits unknown usage in new versioned snapshots without
+backfilling old measurements. It also retains the final result with its exact fingerprint
+inside the existing campaign, including a no-novel-query stopping call. Restart reads
+that same terminal result without a new Provider call; pre-v2 terminal results retain
+their original observation projection. Back up and verify restoration before applying it.
+Per-round selector/accepted-scope validation, actual context capacity, no-progress
+termination, cancellation and shared monetary authorization remain enforced.
+Historical token corrections do not veto an authorized pure-generation dispatch;
+unisolated external UNKNOWN still requires reconciliation.
 
 
 For authorized baseline delivery, a trusted operator can configure the existing Book

@@ -8,6 +8,12 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 POLICY_VERSION = "working-prose-projection.v2"
 MEMORY_POLICY_VERSION = "working-prose-projection.v3"
+WORKING_SCHEDULE_POLICY = {"version": "working-story-schedule.v1", "history_basis": "SELECTED_WORKING_PROSE"}
+WORKING_SCHEDULE_INSTRUCTION = (
+    "Assess Arc progress and prerequisites from the exact selected working prose before choosing future contributions. "
+    "Formal acceptance lag does not establish absent experience. Missing passages remain unknown; "
+    "do not infer completed obligations or grant character knowledge."
+)
 CONTEXT_VERSION = "working-manuscript-context.v1"
 LEGACY_GUIDANCE = {
     "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty."

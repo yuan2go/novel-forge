@@ -3753,6 +3753,10 @@ class _PlanningPepPort:
     post_provider_fault_injector: Callable[[str], None]
     realization_selector_catalog: dict[str, Any] | None = None
 
+    @property
+    def generated_title_contract(self) -> str | None:
+        return "generated-book-title.v1" if "generated-title-v1" in self.binding.route_snapshot.output_schema_ref.split(":") else None
+
     external_effect_backed = True
     production_execution_gateway_backed = True
 
@@ -4352,6 +4356,7 @@ class PostgresPlanningExecutionPreparer:
         output_schema = (
             foundation_output_schema(
                 command.generator_operation_name,
+                generated_title=context_document.content.get("generated_title_contract") == "generated-book-title.v1",
                 rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
                 narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
@@ -4419,6 +4424,8 @@ class PostgresPlanningExecutionPreparer:
         )
         if command.generator_operation_name in FOUNDATION_GENERATORS:
             output_schema_ref = foundation_output_schema_ref(command.generator_operation_name, execution_contract_version=command.execution_contract_version, narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0")
+            if context_document.content.get("generated_title_contract") == "generated-book-title.v1":
+                output_schema_ref += ":generated-title-v1"
         if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
             output_schema_ref += ":work-v4" if command.execution_contract_version in {"1.19.0", "1.21.0"} else ":work-v3" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else ":work-v2"
         if command.planning_scope.value == PlanContractType.BOOK.value and command.execution_contract_version == "1.21.0":
@@ -4609,6 +4616,7 @@ class PostgresPlanningExecutionPreparer:
                     {
                         "foundation_task": foundation_task(
                             command.generator_operation_name,
+                            generated_title=context_document.content.get("generated_title_contract") == "generated-book-title.v1",
                             work_requirements=command.execution_contract_version
                             in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                             aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
@@ -4620,6 +4628,8 @@ class PostgresPlanningExecutionPreparer:
                     else {}
                 ),
                 "planning_command": {
+                    **({"generated_title_contract": context_document.content["generated_title_contract"]}
+                        if context_document.content.get("generated_title_contract") else {}),
                     **({"execution_contract_version": command.execution_contract_version} if command.execution_contract_version in {"1.19.0", "1.21.0"} else {}),
                     **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"} else {}),
                     "project_id": command.project_id,
@@ -5826,6 +5836,11 @@ class PostgresPlanningExecutionPreparer:
                 **history_options,
                 **({"book_run_id": str(command.world_preparation_request["book_run_id"])} if command.world_preparation_request else {}),
             )
+        working_history = (command.arc_working_set or {}).get("working_manuscript")
+        if working_history and production_profile.get("working_craft_history_policy"):
+            from novel_forge.modules.book_authority.manuscript_memory import selected_working_craft_history
+            recent_craft_usage.extend(selected_working_craft_history(self.database_url, snapshot=working_history,
+                mkaos=self.mkaos, policy=production_profile["working_craft_history_policy"]))
         need = _planning_narrative_intelligence_need(
             command=command,
             selected_inputs=selected,
@@ -5924,6 +5939,9 @@ class PostgresPlanningExecutionPreparer:
             )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
+            **({"generated_title_contract": "generated-book-title.v1"}
+                if command.generator_operation_name == "creative.candidates.generate"
+                and production_profile.get("title_generation_contract") == "generated-book-title.v1" else {}),
             **({"planning_contract_version": "1.21.0"} if command.execution_contract_version == "1.21.0" else {}),
             "project_id": command.project_id,
             "workspace_id": command.workspace_id,
@@ -5973,6 +5991,8 @@ class PostgresPlanningExecutionPreparer:
                 {
                     "foundation_task": foundation_task(
                         command.generator_operation_name,
+                        generated_title=command.generator_operation_name == "creative.candidates.generate"
+                            and production_profile.get("title_generation_contract") == "generated-book-title.v1",
                         work_requirements=command.execution_contract_version
                         in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                         aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},

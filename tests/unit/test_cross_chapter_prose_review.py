@@ -338,8 +338,66 @@ def test_same_category_locations_are_distinct_and_lineage_survives_candidate_cha
         == review["issues"][0]["code"]
     )
     relocated["supporting_evidence"][0].update(start=1, quote=SOURCE[1:7])
-    with pytest.raises(KernelError):
-        paired_diagnosis(relocated, text=TARGET, window=window(), prior=review)
+    unmatched = paired_diagnosis(relocated, text=TARGET, window=window(), prior=review)
+    assert unmatched["code"] != review["issues"][0]["code"]
+    assert unmatched["lineage_status"] == "UNVERIFIED"
+
+
+def test_changed_valid_support_preserves_old_issue_and_records_unverified_lineage():
+    review = initial([issue()])
+    changed = issue(start=8, end=12)
+    changed["lineage_code"] = review["issues"][0]["code"]
+    changed["supporting_evidence"][0].update(start=1, end=7, quote=SOURCE[1:7])
+    current = paired_diagnosis(changed, text=TARGET, window=window(), prior=review)
+    assert current["code"] != review["issues"][0]["code"]
+    assert current["unverified_lineage_code"] == review["issues"][0]["code"]
+    assert current["lineage_status"] == "UNVERIFIED"
+    assert review["issues"][0]["supporting_evidence"][0]["quote"] == SOURCE[:7]
+
+
+def test_reassessment_cannot_replace_prior_contradiction_with_uncertainty_at_the_same_spans():
+    review = initial([issue()])
+    changed = issue()
+    changed.update(lineage_code=review["issues"][0]["code"], judgment_kind="UNCERTAIN",
+        severity="major", confidence="MEDIUM", interpretation="UNCERTAIN")
+    current = paired_diagnosis(changed, text=TARGET, window=window(), prior=review)
+    assert current["code"] != review["issues"][0]["code"]
+    assert current["lineage_status"] == "UNVERIFIED"
+    assert review["issues"][0]["judgment_kind"] == "SEMANTIC_CONTRADICTION"
+
+
+@pytest.mark.parametrize("field", ["violated_constraint", "revision_goal", "preserve", "acceptance_criteria", "repair"])
+def test_same_support_cannot_rebind_an_existing_problem_to_a_different_repair_goal(field):
+    review = initial([issue()])
+    changed = issue()
+    changed["lineage_code"] = review["issues"][0]["code"]
+    changed[field] = {"repair_scope": "CHAPTER_REVISION"} if field == "repair" else ["另一目标"] if field in {"preserve", "acceptance_criteria"} else "另一目标"
+    if field == "repair":
+        changed[field] = {"root_cause": "CHAPTER_STRUCTURE", "problem_owner": "PROSE", "repair_scope": "CHAPTER_REVISION",
+            "revision_goal": "另一目标", "preserve": ["原事实"], "resolution_criteria": ["另一标准"]}
+    current = paired_diagnosis(changed, text=TARGET, window=window(), prior=review)
+    assert current["code"] != review["issues"][0]["code"]
+    assert current["unverified_lineage_code"] == review["issues"][0]["code"]
+    assert current["lineage_status"] == "UNVERIFIED"
+
+
+@pytest.mark.parametrize("status", ["UNRESOLVED", "PARTIALLY_RESOLVED", "RESOLVED"])
+def test_incomplete_original_support_keeps_resolution_unverified_and_preserves_evidence(status):
+    from novel_forge.modules.review.cross_chapter import resolution_checks
+
+    review = initial([issue()])
+    result = deepcopy(rereview_result(review))
+    check = result["resolution_checks"][0]
+    check["status"] = status
+    check["supporting_evidence"][0].update(start=1, end=7, quote=SOURCE[1:7])
+    normalized = resolution_checks(result, review, TARGET)[0]
+    assert normalized["status"] == ("UNRESOLVED" if status == "RESOLVED" else status)
+    assert normalized["claimed_resolution_status"] == status
+    assert normalized["supporting_evidence"] == review["issues"][0]["supporting_evidence"]
+    assert normalized["reassessment_supporting_evidence"][0]["quote"] == SOURCE[1:7]
+    actual = rereview(review, result)
+    assert not actual["resolved_issue_codes"]
+    assert review["issues"][0]["code"] in actual["remaining_issue_codes"]
 
 
 @pytest.mark.parametrize(
@@ -509,6 +567,31 @@ def test_rereview_materialized_task_retains_exact_before_and_changed_target():
         before = original[span["before_start"]:span["before_end"]]
         after = revised[span["after_start"]:span["after_end"]]
         assert before == after and prose_hash(before) == span["text_hash"]
+
+
+def test_compact_rereview_comparison_preserves_complete_bodies_and_derivable_changes():
+    from novel_forge.modules.review.prose_comparison import prose_comparison
+    original = " \n沈舟😀走到门边。\r\n他没有回头。 "
+    revised = original.replace("走到", "退到").replace("他没有回头。", "他没有回头。他先把门推开。")
+    task = build_provider_task_view("rereview", {
+        "original_draft": {"text": original}, "original_draft_asset_version_id": "before:v1",
+        "revision": {"text": revised}, "target_candidate_asset_version_id": "after:v1",
+        "review": {"issues": []},
+    }, compact_contract=True)
+    comparison = task["prose_comparison"]
+    canonical = prose_comparison({"text": original}, {"text": revised}, original_id="before:v1", revised_id="after:v1")
+    assert comparison["contract_version"] == "exact-prose-comparison-view.v1"
+    assert comparison["original"] == canonical["original"]
+    assert comparison["revised"] == canonical["revised"]
+    assert task["revised_chapter"]["text"] == revised
+    assert comparison["coverage"] == "COMPLETE_BEFORE_AND_AFTER"
+    assert comparison["semantic_preservation"] == "REQUIRES_REVIEW"
+    for span, full in zip(comparison["edits"], canonical["edits"], strict=True):
+        assert original[span["before_start"]:span["before_end"]] == full["before"]
+        assert revised[span["after_start"]:span["after_end"]] == full["after"]
+        assert set(span) == {"before_start", "before_end", "after_start", "after_end"}
+    for span in comparison["unchanged_ranges"]:
+        assert original[span["before_start"]:span["before_end"]] == revised[span["after_start"]:span["after_end"]]
 
 
 def test_unresolved_issue_moves_to_exact_new_span_without_losing_origin():

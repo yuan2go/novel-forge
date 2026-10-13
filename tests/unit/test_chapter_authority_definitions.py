@@ -39,6 +39,15 @@ class _Handler:
 
 
 class ChapterAuthorityDefinitionTests(unittest.TestCase):
+    def test_scripted_author_adoption_keeps_the_fixture_graph_semantics(self) -> None:
+        from novel_forge.modules.chapter_authority.definitions import CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION
+        from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+        definitions = chapter_operation_definitions(application_build_id="fixture", commit_sha="a" * 40, author_input=True)
+        adopted = next(item for item in definitions if item["definition_version"] == CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION)
+        self.assertEqual(adopted["external_capabilities"], [])
+        self.assertFalse(ChapterHandlerRequest(operation_id="o", project_id="p", workspace_id="w", trace_id="t",
+            correlation_id="c", command={}, inputs=(), definition_version=CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION).work_requirements_enabled)
+
     def test_sample_definition_requires_ineligible_output_without_weakening_formal_contract(self) -> None:
         from novel_forge.modules.chapter_authority.definitions import chapter_provider_sample_definitions
 

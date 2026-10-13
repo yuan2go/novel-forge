@@ -12,13 +12,16 @@ from tests.integration.capability_pack_postgres_support import CapabilityPackPos
 from tests.integration.creative_validation_production_support import controlled_member_environment
 
 
-@pytest.mark.parametrize("full_creation", [False, True], ids=["admission-boundaries", "controlled-process-main-chain"])
-def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_path, monkeypatch, full_creation):
+@pytest.mark.parametrize("full_creation,generated_title", [(False, False), (True, False), (True, True)],
+    ids=["admission-boundaries", "controlled-process-main-chain", "native-generated-title"])
+def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_path, monkeypatch, full_creation, generated_title):
     harness = CapabilityPackPostgresHarness("creation-cli-full" if full_creation else "creation-cli-admission")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     from tests.integration.synthesis_production_support import SynthesisTransport
     transport = SynthesisTransport() if full_creation else None
+    if transport:
+        transport.chapter.controlled_prose = (Path(__file__).resolve().parents[1] / "fixtures/creation/short-arc/controlled-prose.txt").read_text()
     if full_creation:
         from novel_forge.api import authority_dependencies
         build_book = authority_dependencies.build_book_production_composition
@@ -50,7 +53,7 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
             if stage == "creative.candidates.generate":
                 result["serialization_potential"] = None
                 for declaration in result.get("applicability", []):
-                    if declaration["field_path"] == "$.serialization_potential":
+                    if declaration["field_path"] in {"$.serialization_potential", "/serialization_potential"}:
                         declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
             def visit(value):
                 if isinstance(value, dict):
@@ -90,6 +93,9 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist confronts contradictory accounts of a flood.",
             "genre": "social mystery", "audience": "adult readers", "constraints": ["Preserve the author's intended scope."],
             "source_boundaries": ["Original work; do not copy protected expression."]}}
+    if generated_title:
+        inputs["version"] = "creation-request.v2"
+        inputs.pop("title")
     input_file = tmp_path / "request.json"
     input_file.write_text(json.dumps(inputs))
     book = project + "-new-book"
@@ -107,7 +113,9 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         transport.database_url = settings.database_url
     first = run_creation_command(settings, args)
     if full_creation:
-        assert first["stop_reason"] == "FORMATION_FAILED", first
+        if first["stop_reason"] != "FORMATION_FAILED":
+            pytest.fail(json.dumps({"stop_reason": first.get("stop_reason"),
+                "reason_code": first.get("reason_code"), "checkpoint": first.get("checkpoint")}, ensure_ascii=False))
         before_recovery = len(transport.calls)
         recovery_args = parser.parse_args(["authority-creation", "continue", "--project-id", project,
             "--formation-run-id", first["formation_run_id"], "--repository-root", str(root), "--maximum-ticks", "2"])
@@ -126,11 +134,30 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         assert frozen["target_chapters"] == inputs["target_chapters"]
         assert frozen["creation_input_policy"]["profiles"]["production_profile"]["content"]["language_contract"] == inputs["language_contract"]
         assert frozen["creation_input_policy"]["profiles"]["production_profile"]["content"]["chapter_length"] == inputs["chapter_length"]
+        if generated_title:
+            from novel_forge.modules.book_design_authority.query import BookDesignAuthorityQuery
+            current_book = BookDesignAuthorityQuery(DATABASE_URL).require_book(project_id=project, book_id=book)
+            assert current_book["title"] == "潮痕录"
+            assert current_book["title_source_asset_version_id"] == current_book["active_book_design_version_id"]
+            uow.cursor.execute("SELECT content->>'title' FROM authority_asset_version WHERE asset_version_id=%s", [current_book["book_asset_version_id"]])
+            assert uow.cursor.fetchone()[0] == "Untitled — pending native Foundation"
+            assert frozen["creation_input_policy"]["profiles"]["production_profile"]["content"]["title_generation_contract"] == "generated-book-title.v1"
         uow.cursor.execute("SELECT count(*) FROM authority_book WHERE project_id=%s AND book_id=%s", [project, book])
         assert uow.cursor.fetchone()[0] == 1
         uow.cursor.execute("SELECT count(*) FROM authority_capability_pack_approval approval JOIN authority_operation op ON op.operation_id=approval.decided_by_operation_id WHERE op.project_id=%s", [project])
         assert uow.cursor.fetchone()[0] == 0
         if full_creation:
+            uow.cursor.execute("""SELECT consumption.chapter_plan_asset_version_id,
+                outcome.content->>'chapter_plan_version_id', plan.asset_type
+                FROM authority_narrative_realization_consumption consumption
+                JOIN authority_asset_version outcome ON outcome.asset_version_id=consumption.chapter_outcome_asset_version_id
+                JOIN authority_asset outcome_asset ON outcome_asset.asset_id=outcome.asset_id
+                JOIN authority_asset_version execution_plan ON execution_plan.asset_version_id=outcome.content->>'chapter_plan_version_id'
+                JOIN authority_asset plan ON plan.asset_id=execution_plan.asset_id
+                WHERE outcome_asset.project_id=%s""", [project])
+            accepted_plan_bindings = uow.cursor.fetchall()
+            assert accepted_plan_bindings
+            assert all(source != execution and kind == "chapter_plan" for source, execution, kind in accepted_plan_bindings)
             uow.cursor.execute("SELECT count(*) FROM state_event WHERE project_id=%s AND event_type='external_effect.storage_admitted'", [project])
             assert uow.cursor.fetchone()[0] > 0
             uow.cursor.execute("SELECT external_effect_id,operation_id FROM authority_external_effect WHERE project_id=%s AND effect_type='blob.upload' LIMIT 1", [project])
@@ -186,6 +213,7 @@ def replace_args(args, **changes):
         "partial-alternative",
         "cancel",
         "no-progress",
+        "ordinary-continue",
         "repair-exhausted",
         "capacity-recovery",
         "capacity-repair",
@@ -212,6 +240,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
+    transport.chapter.controlled_prose = (Path(__file__).resolve().parents[1] / "fixtures/creation/short-arc/controlled-prose.txt").read_text()
     if mode.startswith("capacity-"):
         from novel_forge.modules.story_planning_runtime.execution import (
             PostgresPlanningExecutionPreparer,
@@ -290,6 +319,17 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
         monkeypatch.setattr(WorkerFailureClassifier, "classify", staticmethod(historical_failure_class))
 
+        if mode == "world-causal-dead-letter-replay":
+            from novel_forge.modules.command_kernel import generation_policy
+            current_generation_operation = generation_policy.pure_generation_operation
+
+            def historical_attempt_policy(cursor, operation_id, project_id):
+                if legacy_block and operation_id == legacy_block[0] and not historical_classifier_restored:
+                    return False
+                return current_generation_operation(cursor, operation_id, project_id)
+
+            monkeypatch.setattr(generation_policy, "pure_generation_operation", historical_attempt_policy)
+
         def historical_gate_checkpoint(preparation, **values):
             try:
                 return native_world_prepare(preparation, **values)
@@ -358,7 +398,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                         "precision": "EXACT",
                         "label": "controlled",
                     },
-                    "action": "Controlled proposal with unavailable causal support.",
+                    "action": "act on the approved faction pressure",
+                    "action_mode": "ROUTINE",
                     "state_kind": "world_state",
                     "entity_key": identity,
                     "changes": {"status": "controlled"},
@@ -407,7 +448,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             creative_calls.append(stage)
             result["serialization_potential"] = None
             for declaration in result.get("applicability", []):
-                if declaration["field_path"] == "$.serialization_potential":
+                if declaration["field_path"] in {"$.serialization_potential", "/serialization_potential"}:
                     declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
         def visit(value):
             if isinstance(value, dict):
@@ -445,7 +486,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     parser = _authority_parser()
     args = parser.parse_args(["authority-creation", "start", "--project-id", project,
         "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
-        "--idempotency-key", "durable", "--repository-root", str(root)])
+        "--idempotency-key", "durable", "--creative-selection", "AUTHOR_COMPARISON", "--repository-root", str(root),
+        "--execution-template-file", str(root / "config/execution_templates/creative_validation.json")])
     if mode.startswith("world-"):
         execution_template = json.loads((root / "config/execution_templates/creative_validation.json").read_text())
         execution_template["world_future_preparation"] = "REQUIRED"
@@ -483,21 +525,45 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert len(transport.calls) == 0
         return
 
-    if mode == "no-progress":
+    if mode in {"no-progress", "ordinary-continue"}:
         monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
             lambda **values:{"formation_run_id":identity,"stop_reason":"YIELDED_CHECKPOINT"})
         for _ in range(12):
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status IN ('READY','RETRY_WAIT')", [identity])
+                uow.cursor.execute("UPDATE authority_story_formation_run SET version=version+1 WHERE formation_run_id=%s", [identity])
                 uow.commit()
             current = claim()
             assert current is not None
             result = execute_creation_worker_claim(settings, current)
+        assert result["wait_class"] == "TECHNICAL_WAIT"
+        assert result["stop_reason"] == "YIELDED_CHECKPOINT"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status='READY'", [identity])
+            uow.commit()
+        monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
+            lambda **values: {"formation_run_id": identity, "stop_reason": "GENERATION_NO_PROGRESS",
+                "failure": {"code": "UNCHANGED_FAILED_RESULT", "operation_id": "retained-operation"}})
+        current = claim()
+        assert current is not None
+        result = execute_creation_worker_claim(settings, current)
         assert result["wait_class"] == "OWNER_RECOVERY_REQUIRED"
-        assert result["stop_reason"] == "CREATION_NO_PROGRESS"
+        assert result["stop_reason"] == "GENERATION_NO_PROGRESS"
         assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
         assert claim() is None
         assert len(transport.calls) == 0
+        if mode == "ordinary-continue":
+            continuation = parser.parse_args(["authority-creation", "continue", "--project-id", project,
+                "--formation-run-id", identity, "--idempotency-key", "fresh-continuation", "--repository-root", str(root)])
+            resumed = run_creation_command(settings, continuation)
+            assert len(resumed["scheduled"]) == 1
+            repeated = run_creation_command(settings, continuation)
+            assert repeated["scheduled"][0]["runtime_job_id"] == resumed["scheduled"][0]["runtime_job_id"]
+            assert repeated["scheduled"][0]["deduplicated"]
+            restarted = claim()
+            assert restarted.input_snapshot["stagnant_windows"] == 0
+            assert len(transport.calls) == 0
+            return
         recover = parser.parse_args(["authority-creation","recover","--project-id",project,"--formation-run-id",identity,
             "--reason","Operator resolved the isolated scheduling configuration","--idempotency-key","recovery-window","--repository-root",str(root)])
         restored = run_creation_command(settings,recover)
@@ -703,7 +769,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             if status == "DEAD_LETTER" and mode == "world-causal-dead-letter-replay":
                 recover = parser.parse_args(["authority-creation", "recover", "--project-id", project,
                     "--formation-run-id", identity, "--reason", "Controlled owner resolved historical World retry classification; retain original inputs and receipts.",
-                    "--idempotency-key", "legacy-dead-letter-window", "--repository-root", str(root)])
+                    "--idempotency-key", "legacy-dead-letter-window:" + current.runtime_job_id, "--repository-root", str(root)])
                 run_creation_command(settings, recover)
             else:
                 assert status == "RETRY_WAIT"
@@ -879,7 +945,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     final = creation_status(DATABASE_URL, project_id=project, formation_run_id=identity, principal=author)
     assert final["author_state"] == "INTERNAL_ACCEPTANCE_COMPLETE"
     assert final["production"]["accepted_chapters"] == inputs["target_chapters"]
-    assert final["delivery"]["required_action"] == "SELECT_EXACT_EDITION_AND_EXPORT"
+    assert final["delivery"]["required_action"] == "READ_EDIT_OR_EXPORT_CURRENT_MANUSCRIPT"
     cancelled = parser.parse_args(["authority-creation", "cancel", "--project-id", project,
         "--formation-run-id", identity, "--reason", "Cannot cancel terminal production", "--idempotency-key", "late-cancel", "--repository-root", str(root)])
     from novel_forge.modules.command_kernel.errors import KernelError

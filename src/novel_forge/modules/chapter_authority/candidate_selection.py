@@ -38,6 +38,8 @@ class CandidateEvidence:
     quality_resolution_checks: tuple[dict[str, Any], ...] = ()
     resolved_issue_codes: tuple[str, ...] = ()
     remaining_issue_codes: tuple[str, ...] = ()
+    review_target_text_hash: str = ""
+    review_report_type: str = ""
 
 
 def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
@@ -146,17 +148,34 @@ def compare_candidates(
             and check.get("source_quality_asset_version_id")
             for check in challenger.quality_resolution_checks))
     supported_improvement = supported_improvement or quality_supported or length_measurement is not None
+    from novel_forge.modules.review.diagnostics import scope_proposal_preserved
+    proposal = challenger.content.get("prose_scope_proposal") or {}
+    scope_preserved = bool(proposal) and scope_proposal_preserved(proposal, str(challenger.content.get("text") or ""),
+        target_text_hash=challenger.review_target_text_hash, report_type=challenger.review_report_type,
+        resolution_checks=challenger.resolution_checks, preservation_checks=challenger.preservation_checks)
+    if scope_preserved:
+        supported_improvement = supported_improvement or any(check.get("code") in proposal["issue_codes"]
+            and check.get("status") in {"SATISFIED", "PARTIALLY_RESOLVED"}
+            and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
     preservation_regressed = any(check.get("preservation") != "PRESERVED"
         for check in (*challenger.resolution_checks, *challenger.quality_resolution_checks))
+    if scope_preserved:
+        preservation_regressed = any(check.get("preservation") == "REGRESSED"
+            for check in challenger.resolution_checks) or any(check.get("preservation") != "PRESERVED"
+                for check in challenger.quality_resolution_checks)
     from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
 
     if previous.content.get("text") == challenger.content.get("text"):
         selected = previous
         reason = CandidateStopReason.MARGINAL_IMPROVEMENT
         improved = False
+    elif proposal and not scope_preserved:
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED
+        improved = False
     elif challenger.cross_chapter_review and (
         set(previous.blocker_codes) & set(challenger.blocker_codes)
-        or any(check.get("status") != "PRESERVED" for check in challenger.preservation_checks)
+        or not scope_preserved and any(check.get("status") != "PRESERVED" for check in challenger.preservation_checks)
         or len(challenger.preservation_checks) != len(PRESERVATION_DIMENSIONS)
     ):
         selected = previous

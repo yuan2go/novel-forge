@@ -55,7 +55,7 @@ def _sha(value: str) -> str:
     return "sha256:" + hashlib.sha256(value.encode()).hexdigest()
 
 
-def _seed_campaign() -> dict[str, object]:
+def _seed_campaign(required_facts=("fact:origin",)) -> dict[str, object]:
     ensure_migrated()
     project_id = identifier("retrieval-campaign-project")
     book_id = f"book:{project_id}"
@@ -75,7 +75,7 @@ def _seed_campaign() -> dict[str, object]:
         "accepted_boundary": {"accepted_through_chapter": 40},
         "required_arc_contributions": [],
         "active_obligations": [],
-        "required_long_distance_fact_ids": ["fact:origin"],
+        "required_long_distance_fact_ids": list(required_facts),
         "retrieval_graph": {
             "entity_ids": ["entity:key"],
             "character_ids": [],
@@ -170,7 +170,8 @@ def _seed_campaign() -> dict[str, object]:
 class _ExpansionPort:
     external_effect_backed = True
 
-    def __init__(self) -> None:
+    def __init__(self, target="fact:origin") -> None:
+        self.target = target
         self.adapter = SimpleNamespace(routes={"retrieval_query_expansion": object()})
         self.calls = 0
 
@@ -183,10 +184,10 @@ class _ExpansionPort:
                 "contract_version": "retrieval-expansion-plan-v1",
                 "queries": [
                     {
-                        "query_id": "query:origin",
+                        "query_id": f"query:origin:{self.calls}",
                         "text": "bridge oath origin",
                         "reason": "recover the missing accepted provenance",
-                        "targets": ["fact:fact:origin"],
+                        "targets": ["fact:" + self.target],
                         "selectors": {},
                         "temporal_range": {
                             "from_chapter": 1,
@@ -408,8 +409,9 @@ def test_campaign_rounds_are_fenced_immutable_and_replay_exactly() -> None:
             )
 
 
-def test_retrieval_handler_expands_one_round_and_replays_the_frozen_union() -> None:
-    fixture = _seed_campaign()
+@pytest.mark.parametrize("stop_duplicate", [False, True])
+def test_retrieval_handler_expands_one_round_and_replays_the_frozen_union(stop_duplicate) -> None:
+    fixture = _seed_campaign(("fact:origin", "fact:missing") if stop_duplicate else ("fact:origin",))
     worker = fixture["worker"]
     assert isinstance(worker, WorkerLeaseCommand)
     project_id = str(fixture["project_id"])
@@ -475,6 +477,10 @@ def test_retrieval_handler_expands_one_round_and_replays_the_frozen_union() -> N
             ],
         )
 
+    from novel_forge.modules.context_builder.retrieval_rebuild import plan_writer_index_rebuild, apply_writer_index_rebuild
+    rebuild = plan_writer_index_rebuild(DATABASE_URL, project_id=project_id, book_id=book_id, from_chapter=10, to_chapter=10)
+    apply_writer_index_rebuild(DATABASE_URL, rebuild)
+
     intent = dict(fixture["intent"])
     memo = dict(fixture["memo"])
     query_plan = build_retrieval_query_plan(
@@ -489,7 +495,7 @@ def test_retrieval_handler_expands_one_round_and_replays_the_frozen_union() -> N
         query_plan=query_plan,
     )
     assert discovery.documents == ()
-    port = _ExpansionPort()
+    port = _ExpansionPort("fact:missing" if stop_duplicate else "fact:origin")
     handler = build_chapter_handler_registry(port).require(ChapterNode.RETRIEVAL)
     request = ChapterHandlerRequest(
         operation_id=str(fixture["operation_id"]),
@@ -533,18 +539,26 @@ def test_retrieval_handler_expands_one_round_and_replays_the_frozen_union() -> N
     )
 
     first = handler.execute(request)
-    replay = handler.execute(request)
+    replay_port = _ExpansionPort()
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Terminal replay must not start another Provider call")
+    replay_port.invoke = forbidden
+    replay = build_chapter_handler_registry(replay_port).require(ChapterNode.RETRIEVAL).execute(request)
 
     assert first.content == replay.content
     assert first.content["retrieval_campaign"]["round_count"] == 2
     assert first.content["retrieval_campaign"]["termination_reason"] == (
-        "REQUIRED_EVIDENCE_SATISFIED"
+        "NO_NOVEL_QUERY" if stop_duplicate else "REQUIRED_EVIDENCE_SATISFIED"
     )
-    assert first.content["retrieval_campaign"]["coverage"]["sufficient"] is True
+    assert first.content["retrieval_campaign"]["coverage"]["sufficient"] is (not stop_duplicate)
     assert [
         item["source_asset_version_id"] for item in first.content["selected_documents"]
     ] == [source_version_id]
-    assert port.calls == 1
+    assert port.calls == (2 if stop_duplicate else 1)
+    assert replay_port.calls == 0
+    if stop_duplicate:
+        assert first.content["retrieval_campaign"]["stopped_expansion"]["provider_evidence"]
+        assert first.content["retrieval_campaign"]["usage"]["provider_calls"] == 2
     assert (
         len(
             load_retrieval_rounds(
@@ -554,3 +568,36 @@ def test_retrieval_handler_expands_one_round_and_replays_the_frozen_union() -> N
         )
         == 2
     )
+
+
+def test_fourth_expansion_round_preserves_unknown_usage_and_scope():
+    fixture = _seed_campaign()
+    worker = fixture["worker"]
+    policy = RetrievalCampaignPolicy()
+    contract = build_retrieval_coverage_contract(intent=fixture["intent"], memo=fixture["memo"])
+    common = dict(project_id=fixture["project_id"], book_id=fixture["book_id"], operation_id=fixture["operation_id"],
+        attempt_id=worker.attempt_id, fencing_token=worker.fencing_token, worker_id=worker.worker_id)
+    campaign = start_retrieval_campaign(DATABASE_URL, **common, chapter=41,
+        intent_asset_version_id=fixture["intent_asset_version_id"], memo_asset_version_id=fixture["memo_asset_version_id"],
+        intent_fingerprint=fixture["intent"]["intent_fingerprint"], memo_fingerprint=fixture["memo"]["memo_fingerprint"],
+        accepted_boundary={"accepted_through_chapter": 40}, policy=policy, coverage_contract=contract)
+    coverage = evaluate_retrieval_coverage(contract=contract, documents=[])
+    for number in range(5):
+        query = {"query_plan_fingerprint": _sha(f"round-{number}"), "candidate_projection_cutoff": "2026-09-03T00:00:00+00:00",
+            "accepted_boundary": {"accepted_through_chapter": 40}}
+        round_data = freeze_retrieval_round(DATABASE_URL, **common, campaign_id=campaign["campaign_id"],
+            round_number=number, query_plan=query, documents=[], rejected_documents=[], semantic_status={},
+            coverage_before=coverage, coverage_after=coverage, new_evidence_count=0,
+            expansion_plan={"expansion_plan_fingerprint": _sha(f"expansion-{number}")} if number else None,
+            expansion_reason="DETERMINISTIC_COVERAGE_GAP" if number else "",
+            cost_amount="10" if number == 3 else None, currency="USD" if number == 3 else "UNKNOWN")
+        assert round_data["contract_version"] == "retrieval-round-snapshot-v2"
+        assert round_data["usage"]["cost_amount"] == ("10" if number == 3 else None)
+        assert round_data["usage"]["input_tokens"] is None
+    replay = load_retrieval_rounds(DATABASE_URL, campaign_id=campaign["campaign_id"])
+    assert len(replay) == 5 and replay[4]["round_number"] == 4
+    with pytest.raises((psycopg.errors.CheckViolation, KernelError)):
+        freeze_retrieval_round(DATABASE_URL, **{**common, "book_id": "foreign"}, campaign_id=campaign["campaign_id"],
+            round_number=5, query_plan={**query, "query_plan_fingerprint": _sha("foreign")}, documents=[],
+            rejected_documents=[], semantic_status={}, coverage_before=coverage, coverage_after=coverage,
+            new_evidence_count=0, expansion_plan={"expansion_plan_fingerprint": _sha("foreign-expansion")}, expansion_reason="gap")

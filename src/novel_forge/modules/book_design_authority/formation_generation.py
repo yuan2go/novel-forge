@@ -382,7 +382,7 @@ class FormationGeneration:
             "schema_version": (WORK_BOOK_DESIGN_SCHEMA_VERSION if all(value.get("constraint_envelope", {}).get("contract_version") in {"foundation-generation.v3", "foundation-generation.v4", "foundation-generation.v5"} for value in content.values()) else LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION)
             if work_requirements
             else FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
-            "title": policy["title"],
+            "title": creative["generated_title"] if policy.get("creation_input_policy", {}).get("profiles", {}).get("production_profile", {}).get("content", {}).get("title_generation_contract") == "generated-book-title.v1" else policy["title"],
             "target_chapters": policy["target_chapters"],
             "foundation_set": foundation.to_dict(),
             "book_invariants": invariants,

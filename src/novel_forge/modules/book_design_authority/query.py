@@ -21,8 +21,11 @@ class BookDesignAuthorityQuery:
                        book.production_profile, book.runtime_policy,
                        book.release_identity, book.status, book.version,
                        book.current_book_asset_version_id,
-                       COALESCE(book.current_book_design_asset_version_id, '')
+                       COALESCE(book.current_book_design_asset_version_id, ''),
+                       COALESCE(design.content->>'title', record.content->>'title')
                 FROM authority_book AS book
+                JOIN authority_asset_version record ON record.asset_version_id=book.current_book_asset_version_id
+                LEFT JOIN authority_asset_version design ON design.asset_version_id=book.current_book_design_asset_version_id
                 WHERE book.project_id = %s AND book.book_id = %s
                 """,
                 [project_id, book_id],
@@ -37,6 +40,7 @@ class BookDesignAuthorityQuery:
             "production_profile": row[6], "runtime_policy": row[7],
             "release_identity": row[8], "status": row[9], "version": int(row[10]),
             "book_asset_version_id": row[11], "active_book_design_version_id": row[12],
+            "title": row[13], "title_source_asset_version_id": row[12] or row[11],
         }
 
     def list_design_versions(self, *, project_id: str, book_id: str) -> list[dict[str, Any]]:

@@ -21,13 +21,15 @@ description: Use when designing, reviewing, or debugging model provider routing,
 
 - 新调用保留 Provider/模型能力、实际上下文容量、账号及真实付费授权检查；已保存结果的读取不得重新要求新调用资格。
 - 用量、耗时、失败、取消与 UNKNOWN 如实留证。纯生成不因自设累计 Token/调用/期限/恢复次数锁死；暂时故障退避，认证、配置和重复无进展明确报错。
+- 纯生成及其协调父级以显式完成、人工取消或真实执行器/连接故障推进状态。耗时、输出静默和旧 timeout/deadline 只作观测；核查安装的 worker、进程监督及 CLI/SDK，注明不能控制的上游限制。
+- 执行器心跳与模型输出分别核对。正常等待可查询、可取消并续租；失活恢复保留 Fence、原结果及 UNKNOWN，不凭累计等待重发。
 - fallback 不能 silent；必须记录原 provider、失败原因、批准主体、替代 provider、成本影响和质量 gate。
 - mock / deterministic provider 只能标记为 fixture、compat 或 test，不得伪装为 production model coverage。
 
 ## 操作流程
 
 1. 识别目标 flow 的 provider 需求、预算边界、上下文大小和质量门槛。
-2. 检查 runtime profile 是否声明 provider、model、timeout、retry、fallback 和 cost policy。
+2. 检查 Provider/模型、取消与恢复、fallback 和实际授权；区分历史 timeout 观测字段、基础设施保护及上游响应限制。
 3. 检查 model call 是否写入 trace、model_call_log、cost_ledger、input/output token 和 stop reason。
 4. 判断失败是否应 retry、fallback、human_review、block 或 dead_letter。
 5. 将 provider 风险转成 GateResult、ReviewIssue 或 AgentRun recovery instruction。

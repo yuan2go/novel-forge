@@ -158,6 +158,7 @@
         "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
         "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
         "src/novel_forge/modules/review/craft.py",
+        "src/novel_forge/modules/review/prose_comparison.py",
         "src/novel_forge/modules/revision/domain.py",
         "src/novel_forge/modules/worldbuilding/actor_isolation.py",
         "src/novel_forge/modules/story_planning_runtime/knowledge_translation.py",
