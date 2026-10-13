@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Any
+from copy import deepcopy
+import re
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority.corpus import corpus_hash
@@ -30,7 +32,8 @@ def freeze_craft_output(cursor: Any, project_id: str, observation_id: str,
 
 
 def recover_abstraction_schema(app: Any, *, project_id: str, operation_id: str,
-    expected_version: int, authorization_ref: str, reason: str, principal: Any) -> dict:
+    expected_version: int, authorization_ref: str, reason: str, principal: Any,
+    reuse_completed_composition: bool = False) -> dict:
     principal.require("source.authority.execute", project_id)
     if not authorization_ref.strip() or not reason.strip() or len(reason) > 4000:
         raise ValueError("Schema recovery requires actual authorization and a bounded correction reason")
@@ -51,7 +54,8 @@ def recover_abstraction_schema(app: Any, *, project_id: str, operation_id: str,
                 or payload.get("narrative_reading") or payload.get("source_sampling")
                 or work["work_kind"] != "MKAOS_EXTRACTION" or original["status"] != "FAILED_FINAL"
                 or original["version"] != expected_version
-                or work["failure"].get("code") != "SOURCE_PROVIDER_SCHEMA_REJECTED"
+                or work["failure"].get("code") != ("MKAOS_CRAFT_INVALID" if reuse_completed_composition else "SOURCE_PROVIDER_SCHEMA_REJECTED")
+                or reuse_completed_composition and "Composition must reference distinct stable mechanism IDs" not in work["failure"].get("message", "")
                 or payload.get("abstraction_policy_version") != CRAFT_DISCOVERY_POLICY):
             raise KernelError("SOURCE_ABSTRACTION_RECOVERY_SCOPE_INVALID", "Require the owned known Schema rejection and unchanged source version")
         repository = SourceImportRepository(uow.cursor)
@@ -86,7 +90,8 @@ def recover_abstraction_schema(app: Any, *, project_id: str, operation_id: str,
             JOIN LATERAL(SELECT evidence,payload_hash,status FROM authority_external_effect_dispatch WHERE external_effect_id=e.external_effect_id ORDER BY generation DESC LIMIT 1) dispatch ON TRUE
             WHERE e.operation_id=%s AND e.project_id=%s AND e.effect_type='model.invoke' AND e.capability='mkaos.knowledge.extract'""", [operation_id, project_id])
         effects = uow.cursor.fetchall()
-        if len(effects) != 1 or effects[0][1] != "FAILED_FINAL":
+        terminal_status = "SUCCEEDED" if reuse_completed_composition else "FAILED_FINAL"
+        if len(effects) != 1 or effects[0][1] != terminal_status:
             raise KernelError("SOURCE_ABSTRACTION_RECOVERY_OUTCOME_UNRESOLVED", "Require the original known terminal Provider rejection")
         effect_id, _, materialization, materialization_hash, dispatch, request, request_hash, dispatch_hash, dispatch_status, last_error = effects[0]
         capability = request.get("_production_execution", {}).get("capability_runtime") or {}
@@ -94,7 +99,7 @@ def recover_abstraction_schema(app: Any, *, project_id: str, operation_id: str,
         output = contract.get("output_schema") or {}
         skill = contract.get("skill") or {}
         if (not request_hash or request_hash != dispatch_hash or corpus_hash(request) != request_hash
-                or dispatch_status != "FAILED_FINAL" or last_error != dispatch
+                or dispatch_status != terminal_status or not reuse_completed_composition and last_error != dispatch
                 or contract.get("schema_version") != "source-capability-materialization.v1"
                 or not contract.get("materialization_hash")
                 or contract["materialization_hash"] != corpus_hash({k: v for k, v in contract.items() if k != "materialization_hash"})
@@ -107,16 +112,19 @@ def recover_abstraction_schema(app: Any, *, project_id: str, operation_id: str,
             raise KernelError("SOURCE_ABSTRACTION_RECOVERY_CONTRACT_INVALID", "Retain the original identity-bound Source materialization")
         result = dispatch.get("production_execution", {}).get("execution_result") or {}
         error = result.get("error") or {}
-        if (result.get("operation_id") != operation_id or result.get("outcome") != "FINAL_FAILURE"
-                or error.get("cause_code") != "PROVIDER_SCHEMA_REJECTED"
-                or error.get("stage") != "OUTPUT_CONTRACT_ADMISSION"):
+        if (result.get("operation_id") != operation_id
+                or result.get("outcome") != ("SUCCEEDED" if reuse_completed_composition else "FINAL_FAILURE")
+                or not reuse_completed_composition and (error.get("cause_code") != "PROVIDER_SCHEMA_REJECTED"
+                    or error.get("stage") != "OUTPUT_CONTRACT_ADMISSION")):
             raise KernelError("SOURCE_ABSTRACTION_RECOVERY_OUTCOME_UNRESOLVED", "Retain the original typed Provider Schema rejection")
         old_schema = output["content"]
         if not validate_discovery_schema(old_schema):
             raise KernelError("SOURCE_ABSTRACTION_RECOVERY_SCOPE_INVALID", "Retain a governed Craft output contract")
-        old = freeze_craft_output(uow.cursor, project_id, observation_id, LEGACY_CRAFT_OUTPUT_CONTRACT)
+        old = freeze_craft_output(uow.cursor, project_id, observation_id,
+            CRAFT_OUTPUT_CONTRACT if reuse_completed_composition else LEGACY_CRAFT_OUTPUT_CONTRACT)
         corrected = freeze_craft_output(uow.cursor, project_id, observation_id)
-        if corpus_hash(old_schema) != old["output_schema_hash"] or old["output_schema_hash"] == corrected["output_schema_hash"]:
+        if (corpus_hash(old_schema) != old["output_schema_hash"]
+                or not reuse_completed_composition and old["output_schema_hash"] == corrected["output_schema_hash"]):
             raise KernelError("SOURCE_ABSTRACTION_RECOVERY_CONTRACT_UNCHANGED", "Require the exact rejected legacy Schema and a changed output contract")
         uow.cursor.execute("""SELECT 1 WHERE EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND role='primary')
             OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
@@ -130,6 +138,13 @@ def recover_abstraction_schema(app: Any, *, project_id: str, operation_id: str,
             "original_materialization_hash": materialization_hash, "original_output_schema_hash": old["output_schema_hash"],
             "corrected_output_contract": corrected, "authorization_ref": authorization_ref,
             "operator_actor_id": principal.principal_id, "reason": reason, "original_failure_preserved": True}
+        if reuse_completed_composition:
+            _, projection = project_invalid_composition(dispatch.get("result"))
+            cache_key = request.get("_source_intelligence", {}).get("cache_key")
+            if not cache_key:
+                raise KernelError("SOURCE_ABSTRACTION_RECOVERY_CONTRACT_INVALID", "Require the original completed Source cache identity")
+            recovery.update(contract_version="source-abstraction-composition-recovery.v1",
+                original_cache_key=cache_key, composition_projection=projection)
         child = app._admit_mkaos_from_scope(project_id=project_id, parent_operation_id=operation_id,
             trace_id="trace:source-abstraction-schema:" + operation_id, correlation_id=job["import_job_id"], job=job,
             observation={"observation_asset_version_id": observation_id},
@@ -138,3 +153,33 @@ def recover_abstraction_schema(app: Any, *, project_id: str, operation_id: str,
     return {"operation_id": child, "original_operation_id": operation_id, "import_job_id": job["import_job_id"],
         "observation_asset_version_id": observation_id, "output_contract": corrected,
         "original_failure_preserved": True, "new_observation_required": False, "knowledge_approved": False}
+
+
+def project_invalid_composition(candidate: Any) -> tuple[dict, dict]:
+    from .execution_contracts import MKAOS_STAGE, validate_content_intelligence_output
+    from novel_forge.modules.mkaos_authority.domain import validate_knowledge_candidate
+
+    if not isinstance(candidate, dict) or not isinstance(candidate.get("craft_mechanism"), dict):
+        raise KernelError("SOURCE_COMPOSITION_PROJECTION_INVALID", "Require a complete original Craft result")
+    original = deepcopy(candidate)
+    craft = original["craft_mechanism"]
+    schema = craft_discovery_schema(grounded="source_finding_codes" in original,
+        observation_id=craft["provenance"]["source_observation_asset_version_ids"][0])
+    validate_content_intelligence_output(MKAOS_STAGE, schema, original)
+    projected = deepcopy(original)
+    removed = []
+    for field, values in craft["composition"].items():
+        kept = []
+        for index, value in enumerate(values):
+            if not re.fullmatch(r"[a-z][a-z0-9-]{2,79}", value) or value == craft["mechanism_id"]:
+                removed.append({"field": field, "index": index, "value": value})
+            else:
+                kept.append(value)
+        projected["craft_mechanism"]["composition"][field] = kept
+    if not removed:
+        raise KernelError("SOURCE_COMPOSITION_PROJECTION_UNCHANGED", "Require invalid relationship references")
+    validate_knowledge_candidate(projected)
+    return projected, {"contract_version": "craft-invalid-composition-projection.v1",
+        "original_result_hash": corpus_hash(original), "projected_result_hash": corpus_hash(projected),
+        "removed_relationship_claims": removed, "guidance_fields_unchanged": True,
+        "original_provider_result_preserved": True, "new_model_calls": 0}

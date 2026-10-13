@@ -149,6 +149,7 @@ class ContentIntelligenceExecutionPort(Protocol):
         observation: dict[str, Any],
         evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
         output_contract: Mapping[str, Any] | None = None,
+        completed_result_repair: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
 
@@ -4449,6 +4450,8 @@ class SourceImportApplication:
             observation=dict(observation_content["observation"]),
             evidence_spans=evidence_spans,
             **({"output_contract": output_contract} if output_contract else {}),
+            **({"completed_result_repair": payload["abstraction_schema_recovery"]}
+                if payload.get("abstraction_schema_recovery", {}).get("contract_version") == "source-abstraction-composition-recovery.v1" else {}),
         )
         if payload.get("source_sampling"):
             return finish_sample(self, worker, executed)

@@ -871,6 +871,16 @@ ordinary Observation, operator, materialization, method version/digest and termi
 before admitting an idempotent v2 child in the same job. It reuses the Observation and
 retains the original failed work; bounded reading, unresolved outcomes and method drift
 require their existing recovery owners. Run the returned child through the Source scheduler.
+For an ordinary v2 Craft result whose known successful Effect was followed only by
+`MKAOS_CRAFT_INVALID` for invalid composition references, `corpus
+recover-abstraction-composition` accepts the same identity and authorization arguments.
+It records and removes non-ID/self relationships, preserves every other guidance field and
+the original Provider result, and revalidates through MKAOS without a new model call.
+Its execution log binds both result hashes, the removed entries and original Effect.
+Real-Provider evidence refers to the original call; the candidate is a deterministic
+projection. Production approval still requires equality with the Provider result and
+rejects this derived output. Separately scoped experimental approval establishes neither
+literary effect nor human acceptance.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool

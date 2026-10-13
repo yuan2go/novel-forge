@@ -46,6 +46,67 @@ def discovered():
     return craft_candidate(craft)
 
 
+def test_completed_composition_projection_preserves_guidance_and_provider_original():
+    from novel_forge.modules.source_import.abstraction_recovery import project_invalid_composition
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    original = discovered()
+    original["craft_mechanism"]["composition"]["requires"] = ["An explanation rather than a mechanism ID", "valid-other-method"]
+    frozen = deepcopy(original)
+    projected, receipt = project_invalid_composition(original)
+    assert original == frozen
+    assert projected["craft_mechanism"]["composition"]["requires"] == ["valid-other-method"]
+    restored = deepcopy(projected)
+    restored["craft_mechanism"]["composition"] = original["craft_mechanism"]["composition"]
+    assert restored == original
+    assert receipt["new_model_calls"] == 0
+    assert receipt["removed_relationship_claims"] == [{"field": "requires", "index": 0, "value": "An explanation rather than a mechanism ID"}]
+    projected["craft_mechanism"]["composition"] = {key: [] for key in projected["craft_mechanism"]["composition"]}
+    with pytest.raises(KernelError, match="Require invalid relationship references"):
+        project_invalid_composition(projected)
+
+
+@pytest.mark.parametrize("drift", [None, "effect", "projection"])
+def test_completed_composition_execution_uses_exact_receipt_without_new_model_call(monkeypatch, drift):
+    from novel_forge.modules.source_import.abstraction_recovery import project_invalid_composition
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.source_authority.corpus import corpus_hash
+
+    port = object.__new__(PostgresContentIntelligenceExecutionPort)
+    port.database_url = "fixture"
+    port.methodology_registry = SourceMethodologyRegistry(Path("skills"))
+    from novel_forge.modules.source_import.corpus_ingestion import curated_analysis
+    monkeypatch.setattr(curated_analysis, "curated_provider_gate", lambda *args: {})
+    original = discovered()
+    original["craft_mechanism"]["composition"]["requires"] = ["Unsupported prose as a reference"]
+    projected, projection = project_invalid_composition(original)
+    repair = {"contract_version": "source-abstraction-composition-recovery.v1", "original_external_effect_id": "original-effect",
+        "original_cache_key": "original-cache", "composition_projection": projection}
+    if drift == "projection":
+        repair["composition_projection"] = {**projection, "projected_result_hash": "changed"}
+    seen = []
+    monkeypatch.setattr(port, "_replay_succeeded_effect", lambda **kwargs: {"result": original, "provider_execution_reused": True,
+        "reused_external_effect_id": "changed" if drift == "effect" else "original-effect"})
+    monkeypatch.setattr(port, "_execute", lambda **kwargs: pytest.fail("Completed-result recovery cannot invoke a Provider"))
+    monkeypatch.setattr(port, "_execution_log", lambda **kwargs: seen.append(kwargs) or SimpleNamespace(asset_version_id="reused-log"))
+    contract = {"version": CRAFT_OUTPUT_CONTRACT, "observation_asset_version_id": "observation:1",
+        "output_schema_hash": corpus_hash(craft_discovery_schema(grounded=False, observation_id="observation:1"))}
+    args = dict(worker=SimpleNamespace(project_id="project"), capability="mkaos.knowledge.extract",
+        abstraction_policy_version=CRAFT_DISCOVERY_POLICY, observation_asset_version_id="observation:1",
+        observation={"findings": [{"finding_code": "F", "statement": "source assessment"}]}, evidence_spans=(),
+        output_contract=contract, completed_result_repair=repair)
+    if drift:
+        with pytest.raises(KernelError):
+            port.execute_mkaos_extraction(**args)
+        assert not seen
+    else:
+        result = port.execute_mkaos_extraction(**args)
+        assert result["candidate"] == projected
+        assert result["provider_execution_reused"] is True
+        assert seen[0]["domain_binding"]["source_output_projection"] == projection
+        assert original["craft_mechanism"]["composition"]["requires"] == ["Unsupported prose as a reference"]
+
+
 def test_new_routing_freezes_discovery_without_changing_legacy_strategy():
     registry = SourceMethodologyRegistry(Path("skills"))
     legacy = resolve_analysis_strategy(SourceContentType.WEB_NOVEL, registry=registry, routing_policy_version="source-analysis-routing.v2")

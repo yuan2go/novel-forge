@@ -1153,6 +1153,7 @@ class PostgresContentIntelligenceExecutionPort:
         observation: dict[str, Any],
         evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
         output_contract: Mapping[str, Any] | None = None,
+        completed_result_repair: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not observation or not observation.get("findings"):
             raise ValueError("MKAOS execution requires a supported nonempty Observation")
@@ -1211,7 +1212,23 @@ class PostgresContentIntelligenceExecutionPort:
             },
             output_schema=schema,
         )
-        execution = self._execute(worker=worker, spec=spec)
+        if completed_result_repair:
+            from .abstraction_recovery import project_invalid_composition
+            from .corpus_ingestion.curated_analysis import curated_provider_gate
+
+            if completed_result_repair.get("contract_version") != "source-abstraction-composition-recovery.v1":
+                raise KernelError("SOURCE_COMPOSITION_PROJECTION_INVALID", "Require the admitted completed-result recovery")
+            curated_provider_gate(self.database_url, worker)
+            execution = self._replay_succeeded_effect(worker=worker, cache_key=completed_result_repair["original_cache_key"])
+            if not execution or execution.get("reused_external_effect_id") != completed_result_repair["original_external_effect_id"]:
+                raise KernelError("SOURCE_COMPOSITION_RESULT_CHANGED", "Reuse only the exact original successful Effect")
+            projected, projection = project_invalid_composition(execution["result"])
+            if projection != completed_result_repair["composition_projection"]:
+                raise KernelError("SOURCE_COMPOSITION_RESULT_CHANGED", "Retain the admitted original result and exact reference projection")
+            execution = {**execution, "result": projected}
+        else:
+            projection = None
+            execution = self._execute(worker=worker, spec=spec)
         candidate = validate_content_intelligence_output(
             spec.stage, spec.output_schema, execution["result"]
         )
@@ -1230,7 +1247,9 @@ class PostgresContentIntelligenceExecutionPort:
             worker=worker,
             spec=spec,
             execution=execution,
-            domain_binding={"mkaos_candidate_binding": binding},
+            domain_binding={"mkaos_candidate_binding": binding,
+                **({"source_output_projection": projection,
+                    "reused_external_effect_id": execution["reused_external_effect_id"]} if projection else {})},
         )
         return {
             "candidate": candidate,
