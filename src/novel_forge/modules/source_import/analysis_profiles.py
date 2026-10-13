@@ -8,7 +8,7 @@ from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
 
 from .methodologies import SourceMethodologyRegistry
 from .profiling import LogicalDocumentScope, SourceContentType, canonical_hash
-from .craft_discovery import craft_discovery_strategy
+from .craft_discovery import WRITING_METHODS_ROUTING, craft_discovery_strategy
 
 
 SOURCE_PROMPT_OVERHEAD_RESERVE_BYTES = 32_000
@@ -390,6 +390,19 @@ def resolve_analysis_strategy(
         raise ValueError(
             f"Source content type is not routable: {content_type}"
         ) from exc
+    if routing_policy_version == WRITING_METHODS_ROUTING:
+        if content_type != SourceContentType.WRITING_THEORY:
+            raise ValueError("Writing methods require a governed writing-theory profile")
+        profile = SourceAnalysisProfile(
+            "writing_theory_methods", "1.0", content_type,
+            _specs("multidisciplinary-knowledge", "craft_principle"),
+            profile.window_chunks, profile.max_analyzer_calls,
+            "mkaos.knowledge.extract", profile.abstraction_policy_version,
+        )
+        registry = SourceMethodologyRegistry(
+            registry.skill_root,
+            versions={**registry.versions, "multidisciplinary-knowledge": "1.2.0"},
+        )
     capabilities = default_capability_registry()
     capabilities.resolve("deconstruction.observe")
     capabilities.resolve(profile.mkaos_capability)
@@ -517,6 +530,8 @@ def resolve_corpus_analysis_strategy(
     routing_policy_version: str,
     sample_byte_limit: int,
 ) -> ResolvedAnalysisStrategy:
+    if routing_policy_version == WRITING_METHODS_ROUTING:
+        raise ValueError("Writing methods require a writing-theory document profile")
     try:
         profile_id, skill_id, dimensions, mkaos_capability = (
             _CORPUS_ANALYSIS_CONTRACTS[collection_kind]

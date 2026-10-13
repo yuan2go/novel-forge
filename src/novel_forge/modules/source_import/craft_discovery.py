@@ -7,11 +7,14 @@ from novel_forge.modules.mkaos_authority.craft import craft_mechanism_schema
 
 CRAFT_DISCOVERY_POLICY = "narrative-craft-abstraction.v1"
 CRAFT_DISCOVERY_ROUTING = "source-analysis-routing.craft.v1"
+WRITING_METHODS_ROUTING = "source-analysis-routing.writing-methods.v1"
 
 
 def craft_discovery_strategy(strategy: Any) -> Any:
-    if strategy.routing_policy_version != CRAFT_DISCOVERY_ROUTING:
+    if strategy.routing_policy_version not in {CRAFT_DISCOVERY_ROUTING, WRITING_METHODS_ROUTING}:
         return strategy
+    if strategy.routing_policy_version == WRITING_METHODS_ROUTING and strategy.content_type.value != "WRITING_THEORY":
+        raise ValueError("Writing methods require a governed writing-theory profile")
     if strategy.content_type.value not in {"WEB_NOVEL", "PUBLISHED_FICTION", "CLASSIC_LITERATURE", "WRITING_THEORY"}:
         raise ValueError("Craft discovery requires a governed fiction or writing-theory profile")
     return replace(strategy, profile_id="craft." + strategy.profile_id, profile_version="1.0", abstraction_policy_version=CRAFT_DISCOVERY_POLICY)

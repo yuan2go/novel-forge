@@ -790,6 +790,15 @@ Provider authorization, budget and review gates unchanged. New candidates remain
 `NEEDS_REVIEW`; review the Observation, abstraction/isolation, applicability and duplicate
 mechanisms before approving. Do not treat a source hypothesis as reader-effect evidence.
 
+For an explicitly scoped writing-theory excerpt, select
+`source-analysis-routing.writing-methods.v1` in that same frozen intelligence policy.
+It requires a resolved `WRITING_THEORY` profile and binds method version 1.2.0;
+other content types require their own analysis route. Inspect actual reading ranges,
+Observation evidence and source permission before approval. Recover an existing job
+under its original policy and method digest; a changed route requires a new analysis
+version while retaining acquired bytes, old Observations and Cards. This choice is
+optional and does not alter existing Books or Writer Pack bindings.
+
 The Planning Context records selected/rejected candidates, match and applicability reasons,
 receipt-backed recent usage and frozen Craft policy. Chapter run queries with
 `include_workspace=true` expose `craft_trace` and the existing `knowledge_trace`:

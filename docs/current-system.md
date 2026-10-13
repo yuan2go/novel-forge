@@ -1020,6 +1020,16 @@ Source prose remains restricted to analysis; only abstract approved Card project
 reach generation. Discovery does not approve a candidate. Legacy routing/frozen strategies
 retain their prior contracts.
 
+Writing-theory analysis can explicitly select
+`source-analysis-routing.writing-methods.v1`. It uses the existing
+`multidisciplinary-knowledge` method version 1.2.0 for one located method assessment
+covering operation, premises, exceptions, misuse and revision. The ordinary method
+remains 1.1.0. Source claims, analyst interpretation and application hypotheses stay
+distinct; optional craft advice does not establish a universal plot constraint.
+The existing Observation, MKAOS discovery, approval and Book selection owners remain
+unchanged. Selecting this analysis method neither changes a Writer Skill nor proves
+that a Book adopted it or that its prose improved.
+
 New Craft selections freeze `craft-need-driven-selection.v2`, separately from the
 unchanged density/frequency budget versions. Problem, scene demand and reader-effect
 matches use explicit semantic dimensions. Genre, POV, scene-type labels, identifiers

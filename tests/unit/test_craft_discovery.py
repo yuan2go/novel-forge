@@ -9,7 +9,7 @@ from novel_forge.modules.source_import.analysis_profiles import (
     analysis_strategy_from_dict, resolve_analysis_strategy, resolve_corpus_analysis_strategy,
 )
 from novel_forge.modules.source_import.craft_discovery import (
-    CRAFT_DISCOVERY_POLICY, CRAFT_DISCOVERY_ROUTING, craft_discovery_schema,
+    CRAFT_DISCOVERY_POLICY, CRAFT_DISCOVERY_ROUTING, WRITING_METHODS_ROUTING, craft_discovery_schema,
 )
 from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
 from novel_forge.modules.source_import.execution_contracts import MKAOS_STAGE, validate_content_intelligence_output
@@ -40,6 +40,25 @@ def test_new_routing_freezes_discovery_without_changing_legacy_strategy():
     assert corpus.abstraction_policy_version == CRAFT_DISCOVERY_POLICY
     with pytest.raises(ValueError, match="governed fiction"):
         resolve_analysis_strategy(SourceContentType.PLATFORM_RULES, registry=registry, routing_policy_version=CRAFT_DISCOVERY_ROUTING)
+
+
+def test_writing_methods_are_explicit_and_preserve_original_methodology_replay():
+    registry = SourceMethodologyRegistry(Path("skills"))
+    original = resolve_analysis_strategy(SourceContentType.WRITING_THEORY, registry=registry, routing_policy_version=CRAFT_DISCOVERY_ROUTING)
+    selected = resolve_analysis_strategy(SourceContentType.WRITING_THEORY, registry=registry, routing_policy_version=WRITING_METHODS_ROUTING)
+    assert {item.skill_version for item in original.analyzers} == {"1.1.0"}
+    assert {item.skill_version for item in selected.analyzers} == {"1.2.0"}
+    assert selected.mkaos_capability == "mkaos.knowledge.extract"
+    assert selected.abstraction_policy_version == CRAFT_DISCOVERY_POLICY
+    assert registry.require("multidisciplinary-knowledge").skill_version == "1.1.0"
+    for strategy in (original, selected):
+        assert analysis_strategy_from_dict(strategy.to_dict(), expected_fingerprint=strategy.fingerprint) == strategy
+        for analyzer in strategy.analyzers:
+            assert registry.require(analyzer.skill_id, expected_digest=analyzer.methodology_content_hash).skill_version == analyzer.skill_version
+    with pytest.raises(ValueError, match="writing-theory"):
+        resolve_analysis_strategy(SourceContentType.WEB_NOVEL, registry=registry, routing_policy_version=WRITING_METHODS_ROUTING)
+    with pytest.raises(ValueError, match="document profile"):
+        resolve_corpus_analysis_strategy(SourceContentType.WRITING_THEORY, collection_kind="APHORISM_COLLECTION", registry=registry, routing_policy_version=WRITING_METHODS_ROUTING, sample_byte_limit=16000)
 
 
 @pytest.mark.parametrize("tamper", ["origin", "confidence", "observation", "evidence", "version"])
