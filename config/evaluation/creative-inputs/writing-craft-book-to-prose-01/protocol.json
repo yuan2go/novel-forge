@@ -1,0 +1,83 @@
+{
+  "contract_version": "writing-craft-book-to-prose-experiment.v1",
+  "work_package": "WP-WRITING-CRAFT-BOOK-TO-PROSE-01",
+  "baseline_sha": "198a3c12bed4613b470623fa2636bdfeccc516cb",
+  "author_input_sha256": "fb66d32e15cba181c3c9b5797f49a34ef901b0052107e709b100d3b2af391f7a",
+  "model": {
+    "provider": "codex-cli",
+    "model": "gpt-6.1-sol",
+    "reasoning": "high",
+    "context_limit": 258400,
+    "output_limit": 32000
+  },
+  "scope": {
+    "independent_new_experiment": true,
+    "chapters_per_arm": 3,
+    "han_characters_per_chapter": [
+      4000,
+      5000
+    ],
+    "full_direction_chapters": 30,
+    "original_production_goal_changed": false
+  },
+  "arms": {
+    "A": {
+      "book_id": "book:writing-craft-A",
+      "workspace_id": "workspace:writing-craft-A",
+      "flow": "native Creation/Story Design/Opening/Planning/Intent/Memo/Writer",
+      "knowledge_policy": "DENY_ALL"
+    },
+    "B": {
+      "book_id": "book:writing-craft-B",
+      "workspace_id": "workspace:writing-craft-B",
+      "flow": "native Creation/Story Design/Opening/Planning/Intent/Memo/Writer",
+      "knowledge_policy": "ALLOW_ONLY exact approved versions; freeze before admission"
+    },
+    "C": {
+      "book_id": "book:writing-craft-C",
+      "workspace_id": "workspace:writing-craft-C",
+      "flow": "existing controlled Agent Harness reference generation; concise author instruction; upstream native plans withheld",
+      "knowledge_policy": "DENY_ALL",
+      "limitation": "Reference setup is separate from production Writer; no claim of full native production ability"
+    }
+  },
+  "common_native_configuration": {
+    "creation_template": "config/execution_templates/author_first.json",
+    "creative_selection": "AUTO_COMPARISON",
+    "creative_candidates": 2,
+    "revision_policy": "AUTHOR_FIRST; preserve all original drafts before any diagnostic revision",
+    "chapter_pack": "Creation default 3.0.3 profile",
+    "planning_pack": "Creation default 2.15.0 profile",
+    "context_policy": "existing native creation derived capacity plus working-prose-projection.v3"
+  },
+  "enhancement_variable": "Only exact B KnowledgeCards extracted by explicit Source method 1.2.0; existing Writer/Planning skills unchanged. Evaluate package, not individual book causality.",
+  "isolation": [
+    "independent Book/workspace/formation/planning/worldline/working prose/session caches",
+    "no shared generated detailed plans",
+    "A/C DENY_ALL; B ALLOW_ONLY; no global skill change",
+    "raw sources and teaching examples never book facts"
+  ],
+  "failure_policy": "Retain original operation/effect/call and failures; reconcile unknowns; resume durable checkpoint, never rename failures away",
+  "blind_evaluation": {
+    "show": [
+      "all nine unedited initial chapters grouped as three anonymous continuous series"
+    ],
+    "hide": [
+      "arm identity",
+      "method names",
+      "developer expectations"
+    ],
+    "dimensions": [
+      "character credibility",
+      "consequences and continuing conditions",
+      "dialogue and distinct voice",
+      "repetition and skip locations",
+      "desire to continue",
+      "revision burden"
+    ],
+    "model_review": "auxiliary only; separate provenance and no human status",
+    "human_feedback_status": "PENDING_HUMAN_FEEDBACK",
+    "acceptance_and_feedback_optional": true
+  },
+  "evidence_ceiling": "Exploratory three-chapter evidence only; independent held-out brief excluded from tuning and no stable longform/Qidian claim"
+}
