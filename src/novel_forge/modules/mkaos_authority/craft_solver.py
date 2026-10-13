@@ -174,7 +174,9 @@ def solve_candidates(
         if not item.get("craft_assessment", {}).get("matching_assessment"):
             continue
         item["craft_assessment"]["selection_reason"] = (
-            "AUTHOR_OR_PARENT_REQUIRED" if index in required else "REQUIRED_DEPENDENCY" if index in dependency_only else "NEED_MATCH_IN_FEASIBLE_COMBINATION")
+            "AUTHOR_OR_PARENT_REQUIRED" if index in required else "REQUIRED_DEPENDENCY" if index in dependency_only
+            else "BOUNDED_CANDIDATE_REVIEW" if item["craft_assessment"].get("candidate_review_policy_version")
+            else "NEED_MATCH_IN_FEASIBLE_COMBINATION")
     selected_names = {names[index] for index in solution if names[index]}
     rejected = []
     for index, item in enumerate(ranked):

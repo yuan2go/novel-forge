@@ -147,6 +147,54 @@ def _asset(
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_optional_candidate_unavailability_does_not_bypass_adopted_or_explicit_bindings(self) -> None:
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        for unavailable in ("PREPARATION_OVERRIDE_NOT_FOUND", "PREPARATION_OVERRIDE_NOT_ELIGIBLE"):
+            with self.subTest(unavailable=unavailable):
+                assets = {kind: [_asset(kind)] for kind in ("chapter_plan", "style_policy", "quality_rubric", "platform_profile")}
+                class UnavailableResolver(_MultiResolver):
+                    def resolve_override(self, *, project_id, asset_version_id):
+                        if asset_version_id == "optional:v1":
+                            raise KernelError(unavailable, "Optional Card is unavailable")
+                        return super().resolve_override(project_id=project_id, asset_version_id=asset_version_id)
+                profile = {"knowledge_access_policy": {"mode": "ALLOW_ONLY",
+                    "allowed_knowledge_card_asset_version_ids": ["optional:v1"],
+                    "usage_scope": "EXPERIMENTAL_VALIDATION", "experimental_policy_version": "experiment.v1",
+                    "craft_candidate_review_version": "explicit-allowlist-craft-review.v1"}}
+                access = resolve_book_knowledge_access_policy(production_profile=profile, project_id="project-1", book_id="book-1")
+                plan = assets["chapter_plan"][0]
+                assets["chapter_plan"] = [replace(plan, content={**plan.content, "knowledge_translations": []})]
+                request = ProductionPreparationRequest(project_id="project-1", workspace_id="workspace-1", book_id="book-1",
+                    chapter=1, idempotency_key="optional-review", knowledge_access_policy=access)
+                service = ProductionPreparationService(UnavailableResolver(assets))
+                ready = service.prepare(request)
+                self.assertEqual(ready.report.decision, "READY")
+                self.assertTrue(any(item["code"] == unavailable for item in ready.report.production_input_manifest["rejected_asset_versions"]))
+                available = replace(_asset("knowledge_card"), asset_version_id="optional:v1", content={
+                    "abstract_content": {"mechanism": "A reaction follows the person's available information."},
+                    "source_policy": {"approval_class": "EXPERIMENTAL_VALIDATION", "experimental_context_eligible": True,
+                        "approval_policy_version": "experiment.v1"}})
+                assets["knowledge_card"] = [available]
+                assets["chapter_plan"] = [plan]
+                without_translation = ProductionPreparationService(_MultiResolver(assets)).prepare(request)
+                self.assertEqual(without_translation.report.decision, "READY")
+                self.assertFalse(any(item["asset_type"] == "knowledge_card" for item in without_translation.command.context_candidates))
+                self.assertTrue(any(item["code"] == "KNOWLEDGE_NOT_ADOPTED_BY_CHAPTER_PLAN" for item in without_translation.report.production_input_manifest["rejected_asset_versions"]))
+                assets.pop("knowledge_card")
+                assets["chapter_plan"] = [replace(plan, content={**plan.content, "knowledge_translations": [{
+                    "knowledge_card_asset_version_id": "optional:v1", "content_hash": "sha256:original",
+                    "decision": "ADAPT", "usage_role": "MECHANISM"}]})]
+                blocked = service.prepare(request)
+                self.assertEqual(blocked.report.decision, "BLOCKED")
+                self.assertEqual(blocked.report.blocked_assets[0]["code"], unavailable)
+                with self.assertRaisesRegex(KernelError, unavailable):
+                    service.prepare(replace(request, explicit_asset_version_overrides={"knowledge_card": "optional:v1"}))
+                profile["knowledge_access_policy"].pop("craft_candidate_review_version")
+                legacy = resolve_book_knowledge_access_policy(production_profile=profile, project_id="project-1", book_id="book-1")
+                with self.assertRaisesRegex(KernelError, unavailable):
+                    service.prepare(replace(request, knowledge_access_policy=legacy))
+
     def test_operational_text_in_knowledge_constraints_never_becomes_context(self) -> None:
         from novel_forge.modules.command_kernel.errors import KernelError
         card = replace(_asset("knowledge_card"), content={"abstract_content": {

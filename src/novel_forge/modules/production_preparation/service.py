@@ -92,6 +92,7 @@ class ProductionPreparationService:
                 request,
                 requirement.asset_type,
                 knowledge_access=knowledge_access,
+                rejections=rejections,
             )
             accepted: list[ResolvedProductionAsset] = []
             fit_issues: list[str] = []
@@ -184,7 +185,8 @@ class ProductionPreparationService:
         knowledge_projection: dict[str, dict[str, Any]] = {}
         plans = selected_by_type.get("chapter_plan") or []
         if plans and (
-            "knowledge_translations" in plans[0].content
+            knowledge_access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"
+            or "knowledge_translations" in plans[0].content
             or "craft_strategy" in plans[0].content
             or plans[0].content.get("knowledge_translation_policy_version") == "knowledge-grounded-selection-v2"
         ):
@@ -472,6 +474,7 @@ class ProductionPreparationService:
         asset_type: str,
         *,
         knowledge_access: dict[str, Any],
+        rejections: list[ProductionInputRejection],
     ) -> tuple[ResolvedProductionAsset, ...]:
         override = request.explicit_asset_version_overrides.get(asset_type)
         if (
@@ -484,15 +487,19 @@ class ProductionPreparationService:
             and knowledge_access["mode"] == "ALLOW_ONLY"
             and not override
         ):
-            assets = tuple(
-                self.resolver.resolve_override(
-                    project_id=request.project_id,
-                    asset_version_id=asset_version_id,
-                )
-                for asset_version_id in knowledge_access[
-                    "allowed_knowledge_card_asset_version_ids"
-                ]
-            )
+            resolved = []
+            for asset_version_id in knowledge_access["allowed_knowledge_card_asset_version_ids"]:
+                try:
+                    resolved.append(self.resolver.resolve_override(
+                        project_id=request.project_id, asset_version_id=asset_version_id,
+                    ))
+                except KernelError as error:
+                    if (knowledge_access.get("craft_candidate_review_version") != "explicit-allowlist-craft-review.v1"
+                            or error.code not in {"PREPARATION_OVERRIDE_NOT_FOUND", "PREPARATION_OVERRIDE_NOT_ELIGIBLE"}):
+                        raise
+                    rejections.append(ProductionInputRejection(asset_version_id, asset_type, error.code,
+                        "optional candidate unavailable; any active adopted translation still requires its exact Card"))
+            assets = tuple(resolved)
         elif (
             asset_type == "knowledge_pack"
             and knowledge_access["mode"] == "ALLOW_ONLY"

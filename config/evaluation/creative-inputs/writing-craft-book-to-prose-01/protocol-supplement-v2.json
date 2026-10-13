@@ -1,0 +1,55 @@
+{
+  "contract_version": "writing-craft-book-to-prose-experiment-supplement.v2",
+  "work_package": "WP-WRITING-CRAFT-BOOK-TO-PROSE-01",
+  "supersedes_only": [
+    "enhancement_variable exact method version and frozen B allowlist"
+  ],
+  "original_protocol_sha256": "9a7f8424790efb31d3d67f2a845a5076cc6216c333b1c95e20a5e234041159a9",
+  "author_input_sha256": "fb66d32e15cba181c3c9b5797f49a34ef901b0052107e709b100d3b2af391f7a",
+  "policy_B_sha256": "d730bd75dd5ca000e5131634594b43d5319285d13cf0f2747ae2a44f1ca59e15",
+  "enhancement_package": {
+    "source_method": "multidisciplinary-knowledge@1.2.1",
+    "source_route": "writing-methods.v2",
+    "observation_prompt": "2.1.0",
+    "craft_output_contract": "narrative-craft-output.v2",
+    "experimental_approval_policy": "writing-craft-experimental-governance.v1",
+    "method_lineage_projection": "narrative-method-lineage-projection.v1",
+    "candidate_review": "explicit-allowlist-craft-review.v1",
+    "exact_cards": [
+      {
+        "method": "characterization",
+        "asset_version_id": "knowledge-card:project:writing-craft-book-to-prose-01:0f99b94bf9086f2a900c11640f866ae7381696504aa799a58d56efd3c5634133:v1",
+        "content_hash": "sha256:745eeeff795a9e8af62650e36f1cfaeb09bf0152b6afac2a3d55c046fec880bc",
+        "mechanism_id": "purpose-information-alignment"
+      },
+      {
+        "method": "action",
+        "asset_version_id": "knowledge-card:project:writing-craft-book-to-prose-01:cc429fdf8d250e44ccd6836b7530944ae8cb46ed50c22f6380ca98d015f79170:v1",
+        "content_hash": "sha256:c706f566d62d6a8a73a08fd7f7e721ef65231d52b3e380d3837f919bcf3d411e",
+        "mechanism_id": "decision-consequence-continuity-audit"
+      },
+      {
+        "method": "dialogue",
+        "asset_version_id": "knowledge-card:project:writing-craft-book-to-prose-01:486c5814f1d202925f54da7bf318fd3f7ac217e358bd5fd50b2982619b0c1300:v1",
+        "content_hash": "sha256:c7bbfd4b3c9932ade4e64e30a38613a833631b19c5ac5cb526b09f7d2be0b8be",
+        "mechanism_id": "contextual-dialogue-plausibility-check"
+      }
+    ],
+    "dialogue_candidate_projection": "Deterministic Source composition-reference correction from original successful Effect abe01e51-f2b0-4cd0-8f79-cc996b2a487c; not unmodified Provider output",
+    "writer_skill_changed": false,
+    "planning_skill_changed": false,
+    "attribution": "Evaluate enhanced package only; no book or single-technique causal claim",
+    "source_analysis_profile": "writing_theory_methods@1.1"
+  },
+  "common_infrastructure": "Source/approval/Pack ownership corrections and optional candidate availability are shared code. A/C do not enable experimental allowlist or candidate review. No new global writing instruction.",
+  "frozen_comparison": "A/B independent setting/planning/worldline from identical author input; same native task/Provider/model/high reasoning/context/candidate opportunities/revision policy. C controlled reference has disclosed workflow difference. No detailed plans, source quotes or teaching examples shared.",
+  "continuous_basics": "Character basis and causal continuity remain author and native plan/context duties at every chapter; optional Craft availability or temporal budget never authorizes ignoring these duties.",
+  "status_at_freeze": {
+    "A_prose": 0,
+    "B_book_admitted": false,
+    "C_prose": 0,
+    "human_feedback": "PENDING_HUMAN_FEEDBACK",
+    "literary_improvement": "NOT_ASSESSED"
+  },
+  "original_protocol_preserved": true
+}

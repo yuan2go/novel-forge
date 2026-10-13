@@ -889,6 +889,17 @@ other method fields and Source bindings are unchanged. Mixed or unrecognized ope
 text, default policy and production approval retain the existing rejection. Admission and
 fenced commit must recompute the same projection. This optional experimental policy does
 not create human approval, change older Cards or qualify a method's effect.
+An exact experimental Book allowlist can opt into `explicit-allowlist-craft-review.v1`
+(six versions maximum, need-driven selection v2 only). Check the candidate-review receipt,
+selected Card bodies and the existing planning translations in the actual rendered
+Provider input. A zero need score is retained as unresolved applicability, with a separate
+recall adjustment; it is never a reason to require a technique. Pool IDs excluded by the
+stage limit, hard conflict or composition are diagnostics, not delivered translation
+targets. Query and Chapter preparation tolerate unavailable optional candidates only
+under this opt-in. Exact adopted translations, inherited requirements and explicit
+overrides still fail closed on absence, revocation or drift. Relevant checks are the
+need-driven selection, MKAOS domain and Authority production-preparation unit suites;
+real planning and Writer consumption remain separate evidence.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool

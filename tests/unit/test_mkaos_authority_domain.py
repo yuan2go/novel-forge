@@ -643,3 +643,21 @@ def test_experimental_method_lineage_projection_keeps_old_candidate_and_requires
     general_contract = application._require_approvable(general, **args)
     assert "method_lineage_projection" not in general_contract
     assert general_contract["experimental_context_eligible"] is True
+
+
+def test_candidate_review_policy_is_explicit_bounded_experimental_and_missing_methods_are_optional():
+    value = {"policy_id": "review", "policy_version": 1, "mode": "ALLOW_ONLY",
+        "allowed_knowledge_card_asset_version_ids": ["card:1"], "usage_scope": "EXPERIMENTAL_VALIDATION",
+        "experimental_policy_version": "experiment.v1", "craft_candidate_review_version": "explicit-allowlist-craft-review.v1"}
+    access = resolve_book_knowledge_access_policy(production_profile={"knowledge_access_policy": value}, project_id="project", book_id="book")
+    assert validate_book_knowledge_access_policy(access, project_id="project", book_id="book") == access
+    for changed in ({**value, "mode": "PROJECT_DEFAULT"}, {**value, "usage_scope": "PRODUCTION"},
+            {**value, "allowed_knowledge_card_asset_version_ids": [f"card:{index}" for index in range(7)]}):
+        with unittest.TestCase().assertRaises(KernelError):
+            resolve_book_knowledge_access_policy(production_profile={"knowledge_access_policy": changed}, project_id="project", book_id="book")
+    query = MkaosAuthorityQuery("unused")
+    with patch.object(query, "_planning_cards", return_value=[]):
+        missing = query.resolve_narrative_intelligence(project_id="project", book_id="book",
+            need=NarrativeIntelligenceNeed(scope="STORY", target_stage="creative.candidates.generate"), knowledge_access_policy=access)
+    assert missing["selected"] == []
+    assert missing["missing_optional_card_asset_version_ids"] == ["card:1"]

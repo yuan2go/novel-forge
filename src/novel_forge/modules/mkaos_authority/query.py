@@ -76,14 +76,19 @@ class MkaosAuthorityQuery:
             and card["operation_status"] == "SUCCEEDED"
             and _context_eligible_card(card, access)
         )
-        if mode == "ALLOW_ONLY" and {
+        candidate_review = access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"
+        if mode == "ALLOW_ONLY" and not candidate_review and {
             str(card["asset_version_id"]) for card in eligible
         } != set(allowed_ids):
             raise KernelError(
                 "PLANNING_KNOWLEDGE_ALLOWLIST_INELIGIBLE",
                 "one or more exact KnowledgeCard versions are missing or ineligible",
             )
-        selection = select_narrative_intelligence(need, eligible, limit=limit)
+        review_ids = tuple(str(card["asset_version_id"]) for card in eligible if card.get("content", {}).get("abstract_content", {}).get("craft_mechanism")) if candidate_review else ()
+        selection = select_narrative_intelligence(need, eligible, limit=limit,
+            **({"candidate_review_card_asset_version_ids": review_ids} if review_ids else {}))
+        if candidate_review:
+            selection["missing_optional_card_asset_version_ids"] = sorted(set(allowed_ids) - {str(card["asset_version_id"]) for card in eligible})
         selection["project_id"] = project_id
         selection["eligible_card_count"] = len(eligible)
         selection["examined_card_count"] = len(cards)

@@ -22,6 +22,36 @@ def need(context, **kwargs):
     return NarrativeIntelligenceNeed(scope='SCENE', target_stage='chapter_plan.generate', craft_context=context, **kwargs)
 
 
+def test_bounded_candidate_review_delivers_zero_lexical_matches_without_claiming_adoption():
+    cards = tuple(_card(item) for item in core_catalog()[:3])
+    cold = need({'writing_problem': ['这是全新的中文创作简报'], 'chapter_function': ['WORK_PRODUCTION']})
+    assert select_narrative_intelligence(cold, cards)['selected'] == []
+    ids = tuple(card['asset_version_id'] for card in cards)
+    result = select_narrative_intelligence(cold, cards, candidate_review_card_asset_version_ids=ids)
+    assert len(result['selected']) == 3
+    assert result['need']['required_card_asset_version_ids'] == []
+    assert all(card['craft_assessment']['matching_assessment']['need_score'] == 0 for card in result['selected'])
+    assert all(card['craft_assessment']['selection_reason'] == 'BOUNDED_CANDIDATE_REVIEW' for card in result['selected'])
+    assert 'PLANNING_MUST_ADOPT_ADAPT_OR_REJECT' in result['candidate_review']['authority_boundary']
+    assert 'craft_strategy' not in result
+    bounded = select_narrative_intelligence(cold, cards, limit=1, candidate_review_card_asset_version_ids=ids)
+    assert len(bounded['selected']) == 1
+    assert bounded['candidate_review']['bounded_pool_card_asset_version_ids'] == sorted(ids)
+    assert bounded['candidate_review']['exact_candidate_card_asset_version_ids'] == [bounded['selected'][0]['knowledge_card_asset_version_id']]
+    blocked = deepcopy(cards[0])
+    blocked['content']['abstract_content']['applicability_contract'] = {'schema_version': 'knowledge-applicability.v1',
+        'usage_role': 'MECHANISM', 'prerequisites': [], 'exceptions': [], 'hard_conflicts': [
+            {'condition_id': 'author-forbids', 'path': '/hard_constraints', 'operator': 'CONTAINS', 'value': '禁止此方法'}]}
+    refused = select_narrative_intelligence(need({}, hard_constraints=('禁止此方法',)), (blocked,),
+        candidate_review_card_asset_version_ids=(blocked['asset_version_id'],))
+    assert refused['selected'] == []
+    assert refused['rejected'][0]['reason'] == 'KNOWLEDGE_APPLICABILITY_REJECTED'
+    assert refused['candidate_review']['exact_candidate_card_asset_version_ids'] == []
+    with pytest.raises(KernelError, match='CRAFT_CANDIDATE_REVIEW_SCOPE_INVALID'):
+        select_narrative_intelligence(need({}, craft_selection_policy_version=LEGACY_SELECTION), cards,
+            candidate_review_card_asset_version_ids=ids)
+
+
 def test_exact_baseline_selections_replay_under_legacy_contract():
     cards = tuple(_card(m) for m in LEGACY['mechanisms'])
     for frozen in LEGACY['selections']:

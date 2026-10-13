@@ -885,6 +885,15 @@ selection, `ALLOW_ONLY` admits only the exact listed KnowledgeCard AssetVersions
 explicit empty `DENY_ALL` never falls back to project-wide cards. The same policy identity
 is carried through Planning, Context selection, Draft, Review and Revision, preventing
 comparison groups from sharing cards through cache, summary or an upstream plan.
+An experimental `ALLOW_ONLY` policy may explicitly enable
+`explicit-allowlist-craft-review.v1` for at most six exact versions. With need-driven
+selection v2, zero lexical matches may be delivered as unresolved candidates to the
+existing planning call. The receipt separates the eligible pool from Cards actually
+selected; Planning still records concrete `ADOPT`, `ADAPT` or `REJECT` decisions.
+Missing or revoked optional candidates remain rejection diagnostics. An adopted exact
+translation, inherited requirement or explicit override retains its existing validation.
+The opt-in changes neither historical policies nor the default selection contract and
+does not establish adoption, a Book fact or literary effect.
 
 ## Production mechanism choices
 
