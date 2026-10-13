@@ -22,6 +22,23 @@ def need(context, **kwargs):
     return NarrativeIntelligenceNeed(scope='SCENE', target_stage='chapter_plan.generate', craft_context=context, **kwargs)
 
 
+def test_current_activation_evidence_keeps_historical_candidate_and_method_conditions_unchanged():
+    from novel_forge.modules.mkaos_authority.craft_context_projection import approved_method_activation_view
+    content = {'source_policy': {'approval_class': 'EXPERIMENTAL_VALIDATION', 'approval_policy_version': 'experiment.v1',
+        'review_class': 'EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN', 'production_context_eligible': False, 'experimental_context_eligible': True},
+        'lineage': {'governance_decision_asset_version_id': 'decision:v1'},
+        'abstract_content': {'constraints': ['This earlier discovery candidate is unapproved.', 'Keep an intentionally uncertain motive unresolved.'],
+            'epistemic_status': 'HYPOTHESIS'}}
+    original = deepcopy(content)
+    view = approved_method_activation_view(content, asset_version_id='card:v1', content_hash='sha256:card')
+    assert content == original
+    assert view['approval_class'] == 'EXPERIMENTAL_VALIDATION'
+    assert view['production_context_eligible'] is False
+    assert view['governance_decision_asset_version_id'] == 'decision:v1'
+    assert 'Historical discovery-stage statements' in view['instruction']
+    assert 'prerequisites, source restrictions and hypothesis status remain unchanged' in view['instruction']
+
+
 def test_bounded_candidate_review_delivers_zero_lexical_matches_without_claiming_adoption():
     cards = tuple(_card(item) for item in core_catalog()[:3])
     cold = need({'writing_problem': ['这是全新的中文创作简报'], 'chapter_function': ['WORK_PRODUCTION']})

@@ -89,6 +89,12 @@ class MkaosAuthorityQuery:
             **({"candidate_review_card_asset_version_ids": review_ids} if review_ids else {}))
         if candidate_review:
             selection["missing_optional_card_asset_version_ids"] = sorted(set(allowed_ids) - {str(card["asset_version_id"]) for card in eligible})
+            from .craft_context_projection import approved_method_activation_view
+            by_id = {str(card["asset_version_id"]): card for card in eligible}
+            for selected in selection["selected"]:
+                card = by_id[selected["knowledge_card_asset_version_id"]]
+                selected["activation_evidence"] = approved_method_activation_view(card["content"],
+                    asset_version_id=card["asset_version_id"], content_hash=card["content_hash"])
         selection["project_id"] = project_id
         selection["eligible_card_count"] = len(eligible)
         selection["examined_card_count"] = len(cards)

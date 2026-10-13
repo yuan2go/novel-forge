@@ -12,6 +12,21 @@ _HISTORY_FIELDS = ("recent_usage", "accepted_usage_history", "realization_cautio
 _HISTORY_POINTER = "/narrative_intelligence/need/recent_craft_usage"
 
 
+def approved_method_activation_view(content: dict[str, Any], *, asset_version_id: str, content_hash: str) -> dict[str, Any]:
+    policy = content.get("source_policy") or {}
+    lineage = content.get("lineage") or {}
+    return {"contract_version": "approved-method-activation-view.v1",
+        "classification": "CURRENT_RUNTIME_FACT",
+        "knowledge_card_asset_version_id": asset_version_id, "content_hash": content_hash,
+        "governance_decision_asset_version_id": lineage.get("governance_decision_asset_version_id", ""),
+        "approval_class": policy.get("approval_class", ""),
+        "approval_policy_version": policy.get("approval_policy_version", ""),
+        "review_class": policy.get("review_class", ""),
+        "production_context_eligible": policy.get("production_context_eligible", False),
+        "experimental_context_eligible": policy.get("experimental_context_eligible", False),
+        "instruction": "This current Card approval is the activation evidence for the frozen usage scope. Historical discovery-stage statements about an unapproved candidate, pending gates or absent commits describe the earlier Candidate; they do not override this Card's current scoped approval or require human approval to write an experimental manuscript. Method prerequisites, source restrictions and hypothesis status remain unchanged. Approval permits consideration only: Planning still ADOPT/ADAPT/REJECT at concrete sites; no author acceptance, production eligibility or literary effect is created. Operational provenance is never a duty for fictional people."}
+
+
 def project_planning_craft_histories(selection: dict[str, Any]) -> dict[str, Any]:
     from .craft_selection import _hash
 

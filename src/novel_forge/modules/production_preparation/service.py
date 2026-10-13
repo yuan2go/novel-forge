@@ -462,11 +462,19 @@ class ProductionPreparationService:
                 "translation": translation,
                 "chapter_plan_asset_version_id": plan.asset_version_id,
                 "chapter_plan_content_hash": plan.content_hash,
+                **({"activation_evidence": self._method_activation_view(item)}
+                    if knowledge_access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1" else {}),
                 **({"craft_uses": bound_uses, "craft_strategy_digest": strategy["strategy_digest"]} if bound_uses else {}),
                 **({"craft_metadata_boundary": "Affinity, family and selection labels describe a method; they do not impose author requirements or change its frozen intended effects."}
                     if bound_uses and any(scene["judgment_basis"].startswith("NEED_DRIVEN_") for scene in strategy["composition"]) else {}),
             }
         return result
+
+    @staticmethod
+    def _method_activation_view(item):
+        from novel_forge.modules.mkaos_authority.craft_context_projection import approved_method_activation_view
+        return approved_method_activation_view(item.content, asset_version_id=item.asset_version_id,
+            content_hash=item.content_hash)
 
     def _candidates(
         self,

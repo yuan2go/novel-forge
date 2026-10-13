@@ -900,6 +900,12 @@ under this opt-in. Exact adopted translations, inherited requirements and explic
 overrides still fail closed on absence, revocation or drift. Relevant checks are the
 need-driven selection, MKAOS domain and Authority production-preparation unit suites;
 real planning and Writer consumption remain separate evidence.
+The same opt-in records current scoped Card approval in Planning and adopted Writer
+views, preserving older Candidate-stage declarations and method content as historical
+evidence. A complete Provider result rejected by the knowledge translation contract is
+retained and repaired through existing Planning result recovery. Older successful model
+logs under this opt-in are checked against their exact frozen Context/selection before
+repair; this does not rewrite a role, remove a prerequisite or accept an invalid result.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool

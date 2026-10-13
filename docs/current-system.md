@@ -894,6 +894,11 @@ Missing or revoked optional candidates remain rejection diagnostics. An adopted 
 translation, inherited requirement or explicit override retains its existing validation.
 The opt-in changes neither historical policies nor the default selection contract and
 does not establish adoption, a Book fact or literary effect.
+Its Planning and adopted Writer views carry the exact Card/approval decision and current
+approval class separately from historical Candidate-stage self-descriptions. Those older
+statements do not impose a pending human gate on an experimental manuscript; source
+restrictions, method conditions and hypothesis status remain unchanged. Original Card
+content, hashes and earlier frozen requests are preserved.
 
 ## Production mechanism choices
 

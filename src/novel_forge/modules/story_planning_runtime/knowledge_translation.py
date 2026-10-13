@@ -66,6 +66,8 @@ def add_translation_contract(
         }
 
     instructions = "Account for every selected exact KnowledgeCard. ADOPT, ADAPT or REJECT it. A non-rejection must locate actual text in this candidate and preserve prerequisites/exception checks; uncertain mechanisms require ADAPT with explicit prerequisite resolution. Card IDs alone are insufficient. This is a planning claim, not prose or Canon proof."
+    if selection.get("candidate_review", {}).get("contract_version") == "explicit-allowlist-craft-review.v1":
+        instructions += " Preserve each selected applicability_assessment.usage_role on non-rejection: CONSTRAINT stays CONSTRAINT; MECHANISM stays MECHANISM or CONSTRAINT. Calling a diagnostic method REVIEW_CHECK or INSPIRATION cannot bypass its prerequisites. REJECT remains available. Current scoped Card approval is separate from historical Candidate-stage self-descriptions; hypothesis status does not establish literary effect."
     contract = {
         "type": "array",
         "minItems": len(selected),

@@ -273,10 +273,11 @@ class _PlanningGenerationHandler:
                         validate_concrete_selection(candidate.candidate_payload, selection)
                         craft_strategy = build_craft_strategy(candidate.candidate_payload, selection)
                 except KernelError as error:
-                    if selection.get("craft_policy", {}).get("schema_version") != "narrative-craft-budget.v4":
+                    if (selection.get("craft_policy", {}).get("schema_version") != "narrative-craft-budget.v4"
+                            and selection.get("candidate_review", {}).get("contract_version") != "explicit-allowlist-craft-review.v1"):
                         raise
                     from .result_recovery import PlanningResultValidationError
-                    raise PlanningResultValidationError(error, raw_result=candidate.candidate_payload, execution_evidence=evidence) from error
+                    raise PlanningResultValidationError(error, raw_result=candidate.raw_provider_result or candidate.candidate_payload, execution_evidence=evidence) from error
             knowledge_refs = tuple(
                 item["knowledge_card_asset_version_id"] for item in selection.get("selected") or ()
             )
