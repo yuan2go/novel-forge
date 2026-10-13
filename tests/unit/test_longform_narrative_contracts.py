@@ -727,3 +727,53 @@ def test_unfrozen_group_selection_keeps_v1_capacity_ranking():
     working = _frozen_chapter_working_set(row={"narrative_density": "MEDIUM"})
     assert working["policy_version"] == "accepted-reality-arc-working-set-v1"
     assert len(working["selected_contributions"]) == 2
+
+
+def test_working_schedule_does_not_turn_acceptance_lag_into_absent_progress():
+    from novel_forge.modules.book_authority.working_prose import WORKING_SCHEDULE_POLICY, project_working_sources, working_instruction
+    from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
+    from novel_forge.modules.chapter_authority.author_editor import text_hash
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    policy = {"version": "working-prose-projection.v3", "history_chapters": 8,
+        "recent_complete_chapters": 1, "max_characters": 1000, "queries": [], "guidance_mode": "COMBINED"}
+    sources = [{"chapter": 1, "asset_version_id": "draft:1", "content_hash": "sha256:" + "b" * 64,
+        "text_hash": text_hash("She paid. He could now leave."), "text": "She paid. He could now leave."}]
+    memory = compile_working_memory(sources, queries=[], max_characters=1000)
+    sources = project_working_sources(sources, target_chapter=2, policy=policy, memory=memory)
+    working = {"version": "working-manuscript-context.v1", "project_id": "project:1", "book_id": "book:1",
+        "book_run_id": "run:1", "target_chapter": 2, "accepted_through_chapter": 0,
+        "authority": "AUTHOR_WORKING_PROSE_ONLY", "structured_facts": [], "projection_policy": policy,
+        "instruction": working_instruction(policy), "sources": sources,
+        "working_memory": bind_packet_coverage(memory, sources), "scheduling_policy": WORKING_SCHEDULE_POLICY}
+    working["snapshot_hash"] = canonical_hash(working)
+    arguments = dict(project_id="project:1", book_id="book:1", chapter_number=2,
+        arc_plan_snapshots={"arc:a": {"objective": "earn wages", "closure_conditions": ["paid"]},
+            "arc:b": {"objective": "leave after payment", "closure_conditions": ["departed"], "dependencies": ["arc:a"]}},
+        accepted_projection={"accepted_boundary": {"chapter_number": 0}},
+        accepted_narrative_state={"asset_version_id": "state:0", "content_hash": "sha256:" + "a" * 64,
+            "content": {"accepted_through_chapter": 0, "current_state": {}}},
+        narrative_load_policy={"limits": {"max_active_arcs": 1}}, working_manuscript=working,
+        schedule_row={"chapter_number": 2, "narrative_density": "LOW",
+            "required_arc_contributions": [{"arc_plan_version_id": "arc:b", "contribution": "depart"}],
+            "arc_cadence": [{"arc_plan_version_id": "arc:b", "action": "ADVANCE"}]})
+    result = build_arc_working_set(**arguments)
+    candidate = next(row for row in result["candidates"] if row["arc_plan_version_id"] == "arc:b")
+    assert candidate["eligible"] and candidate["dependency_blockers"] == []
+    assert candidate["dependency_states"] == {"arc:a": "UNASSESSED"}
+    assert candidate["working_progress"]["dependency_assessment_required"] == ["arc:a"]
+    assert candidate["current_phase"] == candidate["payoff_readiness"] == "UNASSESSED"
+    assert candidate["cumulative_progress_units"] is None
+    assert result["accepted_reality"]["accepted_through_chapter"] == 0
+    assert result["authority_boundary"]["actual_progress_requires_accepted_chapter_outcome"]
+    assert result["selected_contributions"][0]["action"] == "ADVANCE"
+    overdue = dict(arguments["arc_plan_snapshots"])
+    overdue["arc:b"] = {**overdue["arc:b"], "target_window": {"from_chapter": 1, "to_chapter": 1}}
+    provisional = build_arc_working_set(**{**arguments, "schedule_row": None, "arc_plan_snapshots": overdue})
+    assert provisional["selected_contributions"][0]["action"] == "ADVANCE"
+    legacy = dict(working)
+    legacy.pop("scheduling_policy")
+    legacy["snapshot_hash"] = canonical_hash({k:v for k,v in legacy.items() if k != "snapshot_hash"})
+    with pytest.raises(KernelError, match="ARC_WORKING_SET_CHAPTER_ARC_ILLEGAL"):
+        build_arc_working_set(**{**arguments, "working_manuscript": legacy})
+    with pytest.raises(KernelError, match="WORKING_PROSE_PROJECTION_INVALID"):
+        build_arc_working_set(**{**arguments, "working_manuscript": {**working, "sources": []}})

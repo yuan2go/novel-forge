@@ -62,6 +62,25 @@ class _DelayedCancellationStore(PersistentExecutionDirectory):
 
 
 class ProcessSupervisorTests(unittest.TestCase):
+    def test_silent_generation_survives_270_600_and_parent_deadline_observations(self):
+        from itertools import count
+        with tempfile.TemporaryDirectory() as tmp:
+            store = PersistentExecutionDirectory(Path(tmp))
+            layout = store.prepare("execution:silent-generation")
+            ticks = count(0, 86401)
+            command = (sys.executable, "-c",
+                "import time,json,sys; time.sleep(.1); json.dump({'complete':True},open(sys.argv[1],'w'))",
+                str(layout.result_path("result.json")))
+            with patch("novel_forge.modules.production_execution.process_supervisor.time.monotonic", side_effect=lambda: next(ticks)):
+                result = CodexProcessSupervisor(store).run(ProcessLaunchRequest(
+                    execution_id="execution:silent-generation", operation_id="operation:silent", attempt_id="attempt:silent",
+                    fencing_token=1, command=command, cwd=tmp, input_text="fixture", result_filename="result.json",
+                    result_format="json", timeout=ProcessTimeout(None, poll_interval_seconds=.01)))
+            self.assertEqual(result.receipt.status, ProcessReceiptStatus.SUCCEEDED)
+            self.assertGreater(result.receipt.elapsed_ms, 86400 * 1000)
+            self.assertIsNone(result.receipt.termination_reason)
+            self.assertEqual(result.receipt.result_integrity, ResultIntegrity.VALID)
+
     def test_codex_environment_allowlist_drops_unlisted_secrets(self) -> None:
         source = {
             "PATH": "/bin",

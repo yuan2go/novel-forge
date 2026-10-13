@@ -41,6 +41,8 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
             "Do not resolve conflict by inventing new powers"
         ]
         if role is FoundationRole.CREATIVE_FOUNDATION:
+            if (inputs.get("foundation_task") or {}).get("generated_title_contract") == "generated-book-title.v1":
+                result["generated_title"] = "潮痕录"
             result["style_profile"] = {
                 "narrator": "Concrete observations before interpretation",
                 "pov": "Limited to the witness whose uncertainty drives the scene",

@@ -29,6 +29,44 @@ def source_memory(uow, book, source):
         "asset_version_id": source.asset_version_id, "status": value.get("status", "MISSING")}
 
 
+def selected_working_craft_history(database_url: str, *, snapshot, mkaos, policy) -> list[dict[str, Any]]:
+    from .manuscript import AUTHOR_WORKFLOW, effective_workflow, verify_working_context
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    expected = {"version": "working-craft-delivery.v1", "use": "SOFT_SELECTION_CAUTION"}
+    if policy != expected:
+        raise KernelError("WORKING_CRAFT_HISTORY_POLICY_INVALID", "Working Craft delivery is a scoped selection caution")
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s AND project_id=%s AND book_id=%s",
+            [snapshot["book_run_id"],snapshot["project_id"],snapshot["book_id"]])
+        row = uow.cursor.fetchone()
+        if not row or effective_workflow(uow.cursor, row[0]) != AUTHOR_WORKFLOW:
+            raise KernelError("WORKING_CRAFT_HISTORY_SCOPE_INVALID", "Require the owning author-first Book")
+        verify_working_context(uow, row[0], snapshot)
+    all_selected = {source["asset_version_id"]:source for source in snapshot["sources"]}
+    selected = {identity:source for identity,source in all_selected.items() if not source.get("dependency_changes")}
+    rows = mkaos.list_runtime_usage(project_id=snapshot["project_id"],book_id=snapshot["book_id"],limit=500)
+    history = {}
+    for row in rows:
+        source = selected.get(row.get("result_asset_version_id"))
+        if source is None:
+            continue
+        for use in row.get("craft_usage", []):
+            if use.get("chapter") != source["chapter"] or not use.get("external_receipt_ids"):
+                continue
+            key = (source["chapter"],use["use_id"])
+            history[key] = {**use, "usage_basis": "SELECTED_WORKING_DELIVERY", "effect_status": "NOT_ASSESSED",
+                "selected_source_asset_version_id": source["asset_version_id"], "selected_source_content_hash": source["content_hash"],
+                "target_text_hash": source["text_hash"], "working_snapshot_hash": snapshot["snapshot_hash"],
+                "evidence_ceiling": "DELIVERED_PLANNED_ALLOCATION_NOT_REALIZED_EFFECT"}
+    covered = {value["selected_source_asset_version_id"] for value in history.values()}
+    missing = [{"usage_basis": "WORKING_CRAFT_COVERAGE", "status": "UNKNOWN",
+        "chapter": source["chapter"], "selected_source_asset_version_id": source["asset_version_id"],
+        "selected_source_content_hash": source["content_hash"], "working_snapshot_hash": snapshot["snapshot_hash"],
+        "reason": "DEPENDENCY_CHANGED" if source.get("dependency_changes") else "NO_MATCHED_DELIVERY_CRAFT_RECEIPT"}
+        for identity,source in all_selected.items() if identity not in covered]
+    return [history[key] for key in sorted(history)] + missing
+
+
 def save_manuscript_memory(authority, book_run_id: str, *, chapter: int, source_asset_version_id: str,
                            expected_version: int, observations: list[dict[str, Any]], idempotency_key: str,
                            source_kind: str, principal) -> dict[str, Any]:

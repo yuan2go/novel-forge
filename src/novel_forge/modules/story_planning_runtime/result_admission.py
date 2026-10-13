@@ -114,6 +114,10 @@ def recover(application, *, source_operation_id, project_id, source_asset_versio
     if command.execution_contract_version == "1.21.0" and command.narrative_search_id:
         envelope["contract_version"] = "foundation-generation.v5"
         envelope["narrative_search"] = command.narrative_search_snapshot
+    if context.get("generated_title_contract") is not None:
+        if context["generated_title_contract"] != "generated-book-title.v1" or command.generator_operation_name != "creative.candidates.generate":
+            raise KernelError("FOUNDATION_TITLE_CONTRACT_INVALID", "Retained title requires its original native Context")
+        envelope["generated_title_contract"] = context["generated_title_contract"]
     if envelope.get("author_design"):
         envelope["author_design_projection"] = context["author_design_projection"]
     content = candidate.authority_content(project_id=project_id, book_id=command.book_id, constraint_envelope=envelope)

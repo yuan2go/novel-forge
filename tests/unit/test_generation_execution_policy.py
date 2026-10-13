@@ -109,10 +109,11 @@ def test_generation_graph_keeps_non_generation_root_constraints():
         def execute(self, statement, parameters):
             self.statement = statement
         def fetchone(self):
-            return (["external.publish"],)
+            if "SELECT op.root_operation_id" in self.statement:
+                return ("root",)
+            return ({"external_capabilities": ["external.publish"]}, "workspace", "root")
         def fetchall(self):
-            assert "child.operation_id=%s" in self.statement
-            return [(["external.publish"],), (["model.draft"],)]
+            return [(["external.publish"], False), (["model.draft"], False)]
     assert not generation_graph(Cursor(), "root", "project")
 
 

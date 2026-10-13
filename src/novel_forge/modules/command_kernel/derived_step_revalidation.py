@@ -387,7 +387,9 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
         duration = int(
             root["definition_snapshot"]["timeout_policy"]["operation_timeout_seconds"]
         )
-        if (
+        from .generation_policy import generation_graph
+        generation = generation_graph(c, root_id, project)
+        if not generation and (
             not deadline
             or not 0 < duration <= 3600
             or any(
@@ -399,7 +401,7 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
                 "DERIVED_STEP_WINDOW_INVALID",
                 "Explicit author deadlines cannot be extended",
             )
-        renewed = max(
+        renewed = deadline if generation else max(
             deadline, datetime.now(timezone.utc) + timedelta(seconds=duration)
         )
         graph = GraphCommandContext(
@@ -546,8 +548,9 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
                 "source_step": step,
                 "policy_evidence": policy_evidence,
                 "source_root": root,
-                "original_deadline": deadline.isoformat(),
-                "new_deadline": renewed.isoformat(),
+                "original_deadline": deadline.isoformat() if deadline else None,
+                "new_deadline": renewed.isoformat() if renewed else None,
+                "generation_deadline_enforced": not generation,
                 "provider_invoked": False,
                 "history_rewritten": False,
             },

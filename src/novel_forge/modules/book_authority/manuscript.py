@@ -473,14 +473,19 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
 
 
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
-                           projection_policy: Any = "FROM_PROFILE") -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, project_working_sources, working_instruction, working_prose_policy
+                           projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None) -> dict[str, Any]:
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, WORKING_SCHEDULE_POLICY, project_working_sources, working_instruction, working_prose_policy
 
+    schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
         profile_id = book.get("production_profile_version")
         profile = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=profile_id) if profile_id else None
         projection_policy = working_prose_policy(profile.content) if profile else None
+        schedule_policy = profile.content.get("working_schedule_policy") if profile else None
     projection_policy = working_prose_policy({"working_prose_policy": projection_policy})
+    if schedule_policy is not None and (schedule_policy != WORKING_SCHEDULE_POLICY or not projection_policy
+            or projection_policy["version"] != "working-prose-projection.v3"):
+        raise KernelError("WORKING_SCHEDULE_POLICY_INVALID", "Working scheduling requires the exact versioned source projection policy")
     _, changes = working_dependency_changes(uow, book)
     rows = []
     memory_enabled = bool(projection_policy and projection_policy["version"] == "working-prose-projection.v3")
@@ -513,6 +518,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         "accepted_through_chapter": int(book["accepted_through_chapter"]), "sources": rows,
         "authority": "AUTHOR_WORKING_PROSE_ONLY", "structured_facts": [],
         **({"projection_policy": projection_policy} if projection_policy else {}),
+        **({"scheduling_policy": dict(schedule_policy)} if schedule_policy else {}),
         **({"working_memory": memory_packet} if memory_packet is not None else {}),
         "instruction": working_instruction(projection_policy) if projection_policy else LEGACY_GUIDANCE["instruction"]}
     return {**result, "snapshot_hash": canonical_hash(result)}
@@ -678,7 +684,8 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
                           and changes.get(row["chapter"], []) == row.get("dependency_changes", []) for row in snapshot["sources"])
         else:
             current = snapshot == freeze_working_context(uow, book, snapshot["target_chapter"],
-                projection_policy=snapshot.get("projection_policy") if enhanced else None)
+                projection_policy=snapshot.get("projection_policy") if enhanced else None,
+                scheduling_policy=snapshot.get("scheduling_policy"))
         if not current:
             raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     for item in snapshot["sources"]:

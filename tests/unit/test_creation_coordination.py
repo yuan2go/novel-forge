@@ -42,6 +42,31 @@ def test_recovery_versions_and_isolation_counts_are_not_material_progress():
     assert creation_material_progress(original) != creation_material_progress(recovered)
 
 
+@pytest.mark.parametrize("reason", ["YIELDED_CHECKPOINT", "WAITING_LEASE_OR_DEPENDENCY",
+    "WAITING_OPENING_DEPENDENCY", "WAITING_CHAPTER_DEPENDENCY", "FORMATION_RECONCILIATION_OR_LEASE_REQUIRED"])
+def test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure(monkeypatch, reason):
+    from types import SimpleNamespace
+    from novel_forge.modules.book_authority import creation_runtime
+    progress = ["FOUNDATION", "RUNNING", 1, 0, 0, [], {}]
+    claim = SimpleNamespace(job_kind="BOOK_CREATION_ADVANCE", runtime_group="book_creation",
+        subject_kind="STORY_FORMATION_RUN", subject_id="formation", project_id="project", attempt_id="attempt",
+        input_snapshot={"frozen_input_digest": "digest", "operator_id": "operator", "sequence": 50,
+            "stagnant_windows": 50, "progress": progress})
+    run = {"project_id": "project", "frozen_input_digest": "digest"}
+    composition = SimpleNamespace(formation=SimpleNamespace(require=lambda _: run),
+        principal=SimpleNamespace(principal_id="operator", require=lambda *_: None))
+    jobs = SimpleNamespace(database_url="unused", start=lambda _: None, heartbeat=lambda *_, **__: None,
+        assert_live=lambda _: None, complete=lambda *_: None,
+        complete_and_schedule_continuation=lambda *_: {"scheduled": True})
+    monkeypatch.setattr(creation_runtime, "creation_progress", lambda *_, **__: progress)
+    monkeypatch.setattr(creation_runtime, "continue_creation", lambda **_: {"stop_reason": reason})
+    result = creation_runtime.execute_creation_claim(jobs, claim, composition=composition,
+        content=None, chapter=None, formation_worker=None, book_worker=None)
+    assert result["stop_reason"] == reason
+    assert result["wait_class"] == creation_runtime.creation_wait_class(reason)
+    assert result["scheduled"] is True
+
+
 def test_formation_v5_freezes_author_comparison_and_creation_profiles():
     original = _input()
     policy = {**original.generation_policy, "contract_version": "formation-generation.v5",
@@ -54,6 +79,36 @@ def test_formation_v5_freezes_author_comparison_and_creation_profiles():
         with pytest.raises(ValueError, match="comparison"):
             replace(frozen, generation_policy={**policy, "creative_selection": changed})
     assert original.generation_policy["contract_version"] == "formation-generation.v2"
+
+
+def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay():
+    from novel_forge.modules.book_authority.creation_runtime import creation_narrative_execution
+    from novel_forge.modules.book_authority.working_prose import working_prose_policy
+    from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+    root = Path(__file__).resolve().parents[2]
+    policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
+    path = creation_narrative_execution(policy)
+    planning = build_story_planning_pack_profile(root, operation_definition_hash="sha256:" + "a" * 64,
+        **path["planning"])
+    skill = next(item for item in planning.manifest["skill_binding"]["skills"] if item["skill_ref"] == "long-outline")
+    assert skill["version"] == "long-outline-v5"
+    assert planning.manifest["identity"]["version"] == "2.15.0"
+    assert path["chapter"] == {"pack_version_override": "3.0.3", "prose_skill_version": "prose-generation-v5",
+        "prompt_template_version": "v15"}
+    assert working_prose_policy(policy["profiles"]["production_profile"]["content"])["version"] == "working-prose-projection.v3"
+    assert creation_narrative_execution({"contract_version": "creation-input-policy.v1"}) == {"chapter": {}, "planning": {}}
+    with pytest.raises(Exception, match="Unknown frozen narrative execution contract"):
+        creation_narrative_execution({"narrative_execution_contract": "unknown"})
+
+
+def test_generated_title_request_is_explicit_and_preserves_author_title():
+    from novel_forge.modules.book_authority.creation_runtime import creation_title
+    assert creation_title({"version": "creation-request.v2"}) == ("Untitled — pending native Foundation", True)
+    assert creation_title({"version": "creation-request.v1", "title": "作者选名"}) == ("作者选名", False)
+    with pytest.raises(ValueError, match="author title"):
+        creation_title({"version": "creation-request.v1"})
+    with pytest.raises(ValueError, match="author title"):
+        creation_title({"version": "creation-request.v2", "title": ""})
 
 
 def test_creation_job_is_an_operational_envelope_with_stable_takeover_identity():

@@ -4,7 +4,7 @@ from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 import hashlib
 import os
-from time import monotonic
+from time import monotonic, sleep
 from typing import Any, Callable
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -537,6 +537,27 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
     return ""
 
 
+def creation_narrative_execution(policy: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    version = policy.get("narrative_execution_contract")
+    if version is None:
+        return {"chapter": {}, "planning": {}}
+    if version != "native-narrative-execution.v1":
+        raise KernelError("CREATION_NARRATIVE_EXECUTION_INVALID", "Unknown frozen narrative execution contract")
+    return {"chapter": {"pack_version_override": "3.0.3", "prose_skill_version": "prose-generation-v5",
+                        "prompt_template_version": "v15"},
+            "planning": {"event_first_planning": True}}
+
+
+def creation_title(inputs: dict[str, Any]) -> tuple[str, bool]:
+    generated = inputs.get("version") == "creation-request.v2" and "title" not in inputs
+    if generated:
+        return "Untitled — pending native Foundation", True
+    title = inputs.get("title")
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("Creation requires an author title or the generated-title request contract")
+    return title, False
+
+
 def creation_runtime_environment(project_id: str, values: dict[str, str] | None = None) -> dict[str, str]:
     result = dict(os.environ if values is None else values)
     scope = hashlib.sha256(project_id.encode()).hexdigest()[:24]
@@ -713,9 +734,6 @@ def execute_creation_claim(jobs: RuntimeJobAuthority, claim: Any, *, composition
         stagnant = int(claim.input_snapshot.get("stagnant_windows", 0)) + 1 if creation_material_progress(progress) == creation_material_progress(claim.input_snapshot.get("progress")) else 0
         reason = result["stop_reason"]
         waiting = creation_wait_class(reason)
-        if stagnant >= 12 and waiting in {"TECHNICAL_WAIT", "RECONCILIATION_REQUIRED"}:
-            waiting = "OWNER_RECOVERY_REQUIRED"
-            reason = "CREATION_NO_PROGRESS"
         receipt = {key: value for key, value in result.items() if key != "checkpoint"}
         receipt.update(stop_reason=reason, wait_class=waiting, progress=progress,
                        executor="book-authority-worker", next_action="INSPECT_OWNER_EVIDENCE",
@@ -877,9 +895,10 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         if (request_input is None and not args.input_file) or not all((args.workspace_id, args.book_id, args.idempotency_key)):
             raise ValueError("Start requires current work input, exact Book scope and stable idempotency key")
         inputs = deepcopy(request_input) if request_input is not None else json.loads(args.input_file.read_text())
-        required = {"version", "brief", "title", "target_chapters", "language_contract"}
-        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy", "input_selection", "execution_window"} or inputs["version"] != "creation-request.v1":
-            raise ValueError("Creation input must declare current brief, title, scope and language")
+        required = {"version", "brief", "target_chapters", "language_contract"}
+        if not required <= set(inputs) or set(inputs) - required - {"title", "chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy", "input_selection", "execution_window"} or inputs["version"] not in {"creation-request.v1", "creation-request.v2"}:
+            raise ValueError("Creation input must declare current brief, scope and language")
+        inputs["title"], generated_title = creation_title(inputs)
         if (not isinstance(inputs["target_chapters"], int) or isinstance(inputs["target_chapters"], bool)
                 or not 1 <= inputs["target_chapters"] <= 10000 or not isinstance(inputs["brief"], dict)
                 or not isinstance(inputs["title"], str) or not inputs["title"].strip()
@@ -955,6 +974,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         if not windows or max(windows) <= 0:
             raise ValueError("CREATION_CONTEXT_WINDOW_REQUIRED")
         profile_content = profiles["profiles"]["production_profile"]["content"]
+        if generated_title:
+            profile_content["title_generation_contract"] = "generated-book-title.v1"
         if execution_window is not None:
             profile_content["execution_window"] = execution_window
         template_config = json.loads(args.execution_template_file.read_text())
@@ -991,7 +1012,6 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             if uow.cursor.fetchone():
                 raise ValueError("CREATION_ALREADY_ADMITTED_USE_ORIGINAL_FORMATION")
         ensure_creation_scope(settings, args, principal=principal, title=inputs["title"], build_id=build_id, sha=sha)
-        from novel_forge.modules.command_kernel.errors import KernelError
         from novel_forge.modules.book_design_authority.application import BookDesignAuthorityApplication, BookDesignAuthorityCommand
         query = BookDesignAuthorityQuery(settings.database_url)
         try:
@@ -1053,12 +1073,14 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         repository_root = args.repository_root.resolve()
         hashes = register_validation_runtime_definitions(settings.database_url, application_build_id=build_id, commit_sha=sha)
         if existing_formation is None:
+            narrative = creation_narrative_execution(profiles)
             install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
             project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
-            pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"], runtime_environment=settings.environment)
+            pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"], runtime_environment=settings.environment,
+            **narrative["chapter"])
             profile = build_story_planning_pack_profile(repository_root, operation_definition_hash=hashes["planning"],
-            pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"])
+            pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"], **narrative["planning"])
             install_longform_validation_pack(settings.database_url, profile=profile, pack_version=str(profile.manifest["identity"]["version"]), agent_generation=1,
             expected_activation_version=0, project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
@@ -1156,8 +1178,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             current = creation_material_progress(creation_progress(settings.database_url, project_id=args.project_id, formation_run_id=formation_id))
             stagnant = stagnant + 1 if current == progress else 0
             progress = current
-            if stagnant >= 3:
-                return {"formation_run_id": formation_id, **result, "stop_reason": "CREATION_NO_PROGRESS"}
+            sleep(min(5, stagnant + 1))
     finally:
         execution.close()
 

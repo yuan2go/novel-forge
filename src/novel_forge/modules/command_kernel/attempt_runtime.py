@@ -63,8 +63,8 @@ def create_attempt(
             )
         attempt_number = uow.repositories.attempt_runtime.next_attempt_number(operation_id)
         from .execution_window import continued_attempt_limit
-        from .generation_policy import pure_generation_operation
-        generation = pure_generation_operation(uow.cursor, operation_id, project_id)
+        from .generation_policy import generation_graph
+        generation = generation_graph(uow.cursor, operation_id, project_id)
         max_attempts = continued_attempt_limit(uow.cursor,operation_id=operation_id,project_id=project_id,original_limit=max_attempts)
         if not generation and attempt_number > max_attempts:
             _cas_operation(

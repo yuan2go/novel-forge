@@ -22,6 +22,15 @@ identity changes without a corresponding projection update.
 ## Ordinary author writing
 
 New Creation requests select `config/execution_templates/author_first.json` (v12).
+The default creation-input policy freezes `native-narrative-execution.v1`: Chapter Pack
+3.0.3 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
+working-prose memory v3. The original Formation policy remains the replay source;
+configurations without this selection retain their original Pack and prose projection.
+These native bindings do not establish literary effectiveness.
+`creation-request.v2` can omit the title: the selected Creative Foundation supplies
+the title under `generated-book-title.v1`, and active Book Design owns its display
+projection. The initial Book record retains its technical pending title. V1 author
+titles and earlier Foundation schemas retain their frozen contracts.
 The ordinary CLI starts from an input file without Project/Workspace/Book or operation keys.
 Its native scope binding hashes the authenticated author, optional Project/work key and
 canonicalized JSON input. Moving an unchanged input file preserves that identity. Changed
@@ -139,13 +148,15 @@ character reaction, action consequences or their combination without prescribing
 emotional endpoints or mandatory costs. These inputs cannot advance Canon or the accepted
 cursor. Absent policy retains v1 tails; frozen v1 requests reconstruct exactly, independently
 of later policy choices. Overflow of required recent prose closes admission rather than
-silently truncating it. The enhancement remains opt-in. Independent human feedback has not established
+silently truncating it. The versioned default Creation policy selects v3; an omitted policy in a historical
+profile retains its original projection. Independent human feedback has not established
 literary effectiveness; that evidence ceiling is not an additional manuscript delivery gate. Profile selection affects future work; it does not upgrade an
 existing frozen run. These coverage limits do not require characters to repeat earlier
 actions or forget experiences in the selected working version.
 The root prose Skill is not the runtime binding. Historical Chapter Packs retain
 `prose-generation-v4`; a current-contract compilation can explicitly bind
-`prose-generation-v5` and Template v15. Neither availability nor compilation establishes
+`prose-generation-v5` and Template v15. The current default Creation recipe selects these versions.
+Neither availability nor compilation establishes
 which version generated a Book. Inspect the actual deployed Pack, activation and each
 Attempt manifest before claiming that v5 generated prose.
 Generated plan constraints also remain distinct from author intent. A planning clause about
@@ -338,7 +349,11 @@ uncalibrated model judgments never become qualified literary or external-release
 Resource policy follows authenticated billing identity. Codex membership execution
 has no project/book cumulative money, token or call budget and requires no budget
 contract. Usage, latency and outcome evidence remain recorded, together with per-call
-capacity, timeout, concurrency, rate-limit, cancellation and no-progress controls.
+capacity, concurrency, rate-limit, explicit cancellation and result-based no-progress controls.
+Pure generation has no host elapsed or output-silence termination rule. Historical
+timeout values remain frozen observations; connection and database protections retain
+their infrastructure scope. The installed CLI's own stream-idle policy is a separate
+upstream constraint and must be inspected before claiming end-to-end removal.
 A verified membership identity never authorizes an API-key paid replacement.
 DeepSeek dispatch requires an authorized account/currency spending template. Its hard
 ceiling covers the same work across planning, generation, review, repair and retry;
@@ -378,7 +393,9 @@ Formation-owned intent forwarded to the active native phase; it prevents later s
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
 same project Pack scope and original admitted author identity when taking over continuous creation;
 the worker identity owns only its execution lease. Coordination coalesces live ticks, backs off
-failures and retains a dead-letter stop for unchanged Book and dependency snapshots. A native
+failures and retains a dead-letter stop for repeated actual execution failures. Healthy
+lease/dependency waits and unknown-outcome reconciliation use backoff and remain queryable;
+unchanged wait observations cannot become a no-progress failure. A native
 dependency change or explicit owner recovery can wake the same work. A deterministic Planning
 capacity failure terminates its frozen attempt rather than consuming identical retries. Only
 continuous membership creation with no external intent or reservation may
@@ -389,7 +406,7 @@ reserves the configured model output and framing margin, and permits at most two
 The final rendered-request admission remains authoritative. Located ReReview resolution with preserved unrelated prose may support working selection even when the model score changes by less than a historical threshold. Scores and correction-generation counts remain diagnostics; they do not veto a supported current repair or prove literary quality. Remaining issues and propagation guards still apply. Context compilation counts the same lossless structured representation used by current Provider transport for working manuscripts; per-passage hashes and repeated values remain reconstructible source evidence rather than inflated duplicate input. It still preserves author requirements and exact current prose, uses governed compression for necessary older history, and enforces final rendered request capacity with output reserved. A pre-send Planning capacity successor may retain completed World preparation: every Effect must match the selected action’s verified pure-generation receipt, the main Planning call must remain unsent, and active leases or cancellation still block succession. The v3 continuation binds the current failed source and original receipt owner, revalidates current World sources and reuses those outputs across successive recoveries without repeating calls or requiring usage settlement. Temporary model availability recorded alongside capacity is diagnostic, not a permanent failure ban. Ordinary continue follows this registered successor after a corrected runtime deployment; old Attempts and Pack snapshots remain immutable. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains recorded; it does not consume a new generation entitlement or impose a lifetime fault ceiling. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact semantic gate and verifying the original Director receipt. Pure-generation usage retains its original state without a reuse veto; repair cannot add accepted support or relax the semantic gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
-no-progress windows become an explicit owner recovery state. The controlled process/PostgreSQL regression
+repeated failed-result diagnoses become an explicit owner recovery state. The controlled process/PostgreSQL regression
 exercises internal acceptance and component reconstruction without repeated calls or
 accepted chapters. Its ceiling is `EXECUTABLE`; real Provider operation, long-form
 literary quality and strict production certification remain unproven. See the executable
@@ -2032,7 +2049,7 @@ path. Source isolation, actor knowledge, accepted boundaries, final Context admi
 and the complete rendered Prompt/Skill/Schema/output reserve remain enforced. This
 optimization does not replace Context composition or prove narrative coherence.
 
-Working manuscript memory is an opt-in `working-prose-projection.v3` extension to the
+Working manuscript memory is a versioned `working-prose-projection.v3` extension to the
 existing author-first chain. Book owns source selection and authenticated annotations;
 Narrative State supplies pure observation validation and projection, without accepted
 state mutation. The selected immutable Draft may carry optional `working_memory_json`;
@@ -2054,6 +2071,17 @@ configurable policy, not literary invariants; complete-request admission still a
 The annotation allowance is at most one third of the declared passage-character budget,
 in addition to passages and provenance; it is not a total Provider-input limit.
 
+New Creation profiles also bind `working-story-schedule.v1`. When the accepted cursor
+lags selected working prose, Arc scheduling keeps accepted reality separately and marks
+working phase, progress, payoff readiness and unresolved prerequisites as `UNASSESSED`.
+Planning consumes the exact selected passages before choosing future contributions;
+absence of formal acceptance cannot establish absence of experience. Formal abandonment,
+violated obligations, frozen Chapter contributions and capacity remain enforced.
+`working-craft-delivery.v1` reads exact selected-source delivery receipts as a soft Craft
+selection caution. Missing coverage stays unknown; these allocations prove neither realized
+Craft effect nor accepted phase transitions. The optional v3/v4 accepted Craft phase
+contracts remain separate.
+
 Optional long-form review `diagnosis_contract: prose-root-cause.v1` requests exact-source
 findings with language, scene organization, chapter structure, character trajectory or
 upper-plot root causes, repair goals, protected facts and resolution criteria. Prose-owned
@@ -2063,6 +2091,14 @@ repair proposal; saving or selecting prose does not assert that a plan defect is
 annotations do not overwrite chosen manuscripts or accepted history. Rereview records its
 original issue denominator, verified resolved issues, remaining issues and new regressions;
 MODEL_REREVIEW remains distinct from human preference and does not establish improvement.
+
+`native-prose-plan-feedback.v1` additionally sends complete, current, nonconflicting
+native plan-owned findings into the existing future `PLANNED` generation/replacement
+path. Exact reports are frozen change evidence, included in request identity and retained
+lineage; consuming a report does not close its issues. Frozen/executed plans require their
+existing Plan Change authority. New review policies may bind `FROZEN_SELECTED_RANGE`:
+appending prose outside the reviewed range preserves evidence, while replacing any reviewed
+selected version makes it stale. Historical policies retain whole-manifest currentness.
 
 ## Context governance and Provider admission
 

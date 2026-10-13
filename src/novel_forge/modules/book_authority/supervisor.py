@@ -944,6 +944,11 @@ class PostgresBookProductionSupervisor:
                 else None
             ),
         )
+        from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+        feedback = self._future_plan_evidence(book, replacement_plan, target_chapter=chapter_number, fallback_plan_version_id=parent)
+        if feedback:
+            generation = replace(generation, change_evidence_version_ids=feedback,
+                idempotency_key=generation.idempotency_key + ":prose-feedback:" + canonical_hash(feedback)[7:])
         if generator == "chapter_group_plan.generate":
             accepted_through = int(book["accepted_through_chapter"])
             volume_range = tuple(
@@ -1083,7 +1088,25 @@ class PostgresBookProductionSupervisor:
         declared = (
             envelope.get("arc_working_set") if isinstance(envelope, dict) else None
         )
-        return declared != expected
+        return declared != expected or bool(self._future_plan_evidence(book, plan, target_chapter=chapter_number))
+
+    def _future_plan_evidence(self, book, plan, *, target_chapter, fallback_plan_version_id=""):
+        if target_chapter != writing_frontier(book) + 1:
+            return ()
+        if plan is not None and plan["execution_scope"] != PlanExecutionScope.PLANNED.value:
+            return ()
+        if plan is not None:
+            content = plan["content"]
+            start = content.get("chapter_number") or (content.get("chapter_range") or [0])[0]
+            if type(start) is not int or start < target_chapter:
+                return ()
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.book_followup_authority.prose_change_evidence import pending_future_plan_evidence
+        profile = AuthorityAssetQuery(self.authority.database_url).require(project_id=book["project_id"],
+            asset_version_id=book["production_profile_version"])
+        return pending_future_plan_evidence(self.authority.database_url, book=book,
+            plan_version_id=plan["asset_version_id"] if plan else fallback_plan_version_id,
+            policy=profile.content.get("future_planning_feedback_policy"), commit_sha=self.authority.commit_sha)
 
     def _replace_planned_working_set(
         self,

@@ -490,6 +490,7 @@ class CapabilityPackBackedPlanningExecutionBinder:
             validate_raw_result(
                 command.generator_operation_name,
                 candidate_payload,
+                generated_title=getattr(bundle.execution_port, "generated_title_contract", None) == "generated-book-title.v1",
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
                 rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},

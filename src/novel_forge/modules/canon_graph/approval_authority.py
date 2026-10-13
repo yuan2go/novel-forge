@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import hashlib
 import json
 from typing import Any
@@ -271,7 +271,7 @@ def decide_canon_approval(database_url: str, context: CanonApprovalContext, *, a
                 [
                     str(uuid4()), project_id, root_id, saga_id, next_generation,
                     proposal_id, reason, asset_version_id, json.dumps(policy.snapshot()),
-                    datetime.now(timezone.utc) + timedelta(seconds=policy.generation_timeout_seconds),
+                    None,
                 ],
             )
         _event(uow, context, str(operation["operation_id"]), "canon.approval.decided", {"approval_request_id": approval_request_id, "change_id": change_id, "decision": decision, "asset_version_id": asset_version_id, "root_operation_id": root_id})
@@ -662,9 +662,6 @@ def advance_canon_reextraction(
             raise KernelError("CANON_REEXTRACTION_NOT_FOUND", "re-extraction generation is missing")
         root_operation_id = str(generation_row[0])
         policy_snapshot = dict(generation_row[1] or {})
-        deadline_at = generation_row[2]
-        if deadline_at is not None and deadline_at <= datetime.now(timezone.utc):
-            target_status = "WAITING_OPERATOR"
         extraction_digest = ""
         proposal_digest = ""
         change_set_digest = ""
@@ -701,8 +698,6 @@ def advance_canon_reextraction(
                 if no_progress_count >= limit:
                     target_status = "WAITING_OPERATOR"
                     escalation_reason = "CANON_REEXTRACTION_NO_PROGRESS"
-        if target_status == "WAITING_OPERATOR" and not escalation_reason:
-            escalation_reason = "CANON_REEXTRACTION_DEADLINE_EXCEEDED"
         uow.cursor.execute(
             "UPDATE authority_canon_reextraction_generation SET status=%s, extraction_operation_id=COALESCE(NULLIF(%s,''), extraction_operation_id), extraction_asset_version_id=COALESCE(NULLIF(%s,''), extraction_asset_version_id), proposal_operation_id=COALESCE(NULLIF(%s,''), proposal_operation_id), proposal_asset_version_id=COALESCE(NULLIF(%s,''), proposal_asset_version_id), extraction_digest=COALESCE(NULLIF(%s,''), extraction_digest), proposal_digest=COALESCE(NULLIF(%s,''), proposal_digest), change_set_digest=COALESCE(NULLIF(%s,''), change_set_digest), conflict_set_digest=COALESCE(NULLIF(%s,''), conflict_set_digest), no_progress_count=GREATEST(no_progress_count,%s), escalation_reason=COALESCE(NULLIF(%s,''), escalation_reason), updated_at=NOW() WHERE reextraction_generation_id=%s AND project_id=%s AND status=%s",
             [target_status, extraction_operation_id, extraction_asset_version_id, proposal_operation_id, proposal_asset_version_id, extraction_digest, proposal_digest, change_set_digest, conflict_set_digest, no_progress_count, escalation_reason, generation_id, context.project_id, expected_status],

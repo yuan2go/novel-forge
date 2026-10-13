@@ -307,3 +307,30 @@ def test_final_accepted_negative_craft_feedback_changes_soft_ranking_not_hard_co
     assert result["budget_assessment"]["frequency"] == int(status == "ACHIEVED")
     assert result["budget_assessment"]["realization_cautions"] == [row]
     assert result["budget_assessment"]["feedback_penalty"] == policy["repetition_penalty"]
+
+
+def test_selected_working_allocation_changes_ranking_without_claiming_realization():
+    mechanism = core_catalog()[0]
+    context = {"scene_goal": [mechanism["narrative_problem"]], "chapter_number": 7}
+    policy = validate_craft_policy()
+    baseline = craft_candidate_assessment(mechanism, context=context, recent_usage=[], policy=policy)
+    row = {"chapter": 6, "use_id": "use:working", "mechanism_id": mechanism["mechanism_id"],
+        "usage_basis": "SELECTED_WORKING_DELIVERY", "effect_status": "NOT_ASSESSED",
+        "selected_source_asset_version_id": "selected:6", "selected_source_content_hash": "hash:6",
+        "target_text_hash": "text:6", "working_snapshot_hash": "snapshot", "external_receipt_ids": ["receipt:6"]}
+    current = craft_candidate_assessment(mechanism, context=context, recent_usage=[row,row], policy=policy)
+    budget = current["budget_assessment"]
+    assert current["score"] < baseline["score"]
+    assert current["rejection_reason"] == "" and not budget["in_cooldown"]
+    assert budget["frequency"] == 0 and budget["recent_usage"] == []
+    assert budget["working_allocation_caution"] == policy["repetition_penalty"]
+    assert len(budget["working_allocation_history"]) == 1
+    assert budget["working_evidence_ceiling"] == "DELIVERED_PLANNED_ALLOCATION_NOT_REALIZED_EFFECT"
+    missing = {"usage_basis": "WORKING_CRAFT_COVERAGE", "status": "UNKNOWN", "chapter": 6,
+        "selected_source_asset_version_id": "selected:6", "working_snapshot_hash": "snapshot"}
+    unknown = craft_candidate_assessment(mechanism, context=context, recent_usage=[missing], policy=policy)
+    assert "CRAFT_VARIATION_BONUS" not in unknown["match_reasons"]
+    assert unknown["budget_assessment"]["working_coverage_gaps"] == [missing]
+    unbound = craft_candidate_assessment(mechanism, context=context,
+        recent_usage=[{**row, "selected_source_asset_version_id": ""}], policy=policy)
+    assert unbound == baseline

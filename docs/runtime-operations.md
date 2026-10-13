@@ -353,6 +353,17 @@ Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy t
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
+New Creation profiles enable `working-story-schedule.v1`, `working-craft-delivery.v1`
+and `native-prose-plan-feedback.v1`. Verify the selected working sources through Book,
+then the separate Arc assessment and Craft delivery histories in frozen Planning Context.
+Only current nonconflicting native plan findings enter future `PLANNED` replacement;
+their exact reports, request identity and lineage remain bound. A new review can use
+`source_current_policy: FROZEN_SELECTED_RANGE` to retain its original range after append.
+Changed selected versions invalidate it. Existing policies retain historical currentness.
+Focused checks additionally cover `test_longform_narrative_contracts.py`,
+`test_craft_selection.py`, `test_prose_planning_evidence_working.py` and the native
+working-memory PostgreSQL variant. These checks prove consumption, not literary effects.
+
 An activated upstream PlanChange can make an unfinished Chapter's frozen Context stale.
 `authority-manuscript recover-upstream-plan --proposal-id ... --corrected-plan-version ...`
 uses Book's preprose replacement boundary: require the same live frontier and actor,
@@ -1222,8 +1233,9 @@ intent, motive, cause, conflict, differentiation, scope and later writability, i
 uncertainty. Failed directions remain diagnostics. Selecting the sole admitted alternative
 requires a specific decision and retained bounded failure evidence; the result cannot be
 called a best-of-two comparison. `TECHNICAL_WAIT` uses bounded exponential delay (5–300
-seconds). Twelve windows without usable stage output or stage/cursor advancement stop at
-`CREATION_NO_PROGRESS`; failure/resume versions and isolation counts are not progress. Native
+seconds). Unchanged scheduling windows remain wait observations; they never establish
+`CREATION_NO_PROGRESS` or executor death. Failure/resume versions and isolation counts
+are not usable story progress. Native
 Formation failure counts remain diagnostics and do not deny a later authorized continue.
 Three identical failure classes without a successful logical stage stop the current
 Book drive at `GENERATION_NO_PROGRESS`; a later continue starts a fresh progress check.
@@ -1231,8 +1243,8 @@ Unknown outcomes still complete required reconciliation or durable isolation fir
 Pure generation does not request an execution-window extension for a retained deadline;
 the same owned live Chapter frontier is still checked, and a no-op window cannot be
 reported as recovery progress. Unmet prose length remains a visible diagnosis.
-The worker carries its current continuation's stagnant windows across scheduling yields;
-an explicitly restarted continuation begins a new check. Known final Formation model
+The worker carries wait counters across scheduling yields for backoff and display;
+an explicitly restarted continuation begins a new observation segment. Known final Formation model
 failures stop automatic scheduling with `FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION`.
 `RECONCILIATION_REQUIRED` retains the original external identity; no fresh ID is dispatched.
 `OWNER_RECOVERY_REQUIRED` explains an unresolved configuration, terminal effect or
@@ -3576,8 +3588,9 @@ The additional recovery procedures use exact native sources:
 
 Window continuation requires the explicit v5/v6
 `chapter_contract_recovery=KNOWN_SETTLED_CONTRACT_REPAIR` policy. It retains actual
-before/after evidence, child timeout, no-progress controls and the original author
-deadline. Cancellation and worker lease checks run before recovery hooks; a replacement
+before/after evidence, result-based no-progress diagnostics and historical deadline
+observations. Pure generation does not enforce an elapsed author or child deadline.
+Cancellation and worker lease checks run before recovery hooks; a replacement
 never renews authority to send by itself. Canon schema successors preserve nullable
 semantics and strict canonical JSON decoding; the host schema still validates the
 decoded value before success. Stage schemas, approved Pack deployment and historical
@@ -3877,7 +3890,10 @@ review can establish prose improvement; offline assembly and scripted integratio
 prove engineering execution only.
 
 
-For event-first planning, explicitly compile the current Story Planning profile with
+The default native Creation policy selects event-first Planning, prose Skill v5,
+Template v15 and working-prose memory v3. Inspect the frozen recipe and deployed Pack
+for each new Book; old Formations continue from their stored original policy.
+For other prospective event-first planning, explicitly compile the current Story Planning profile with
 `event_first_planning=True`, install that exact Pack through Capability Pack Authority,
 and inspect its `long-outline-v5` hash and active-stage rendered method. Default v4
 and frozen old requests retain their original bytes. Record structural diagnoses and
@@ -4070,9 +4086,9 @@ the same Formation-derived Opening and Book identity before creating any genesis
 inputs. Bounded worker ticks save an existing checkpoint; the CLI renews its execution window
 and continues by default until completion or a dependency/failure. Technical waits
 also return to the caller; this is not durable end-to-end execution ownership. Use
-`--yield-after-window` for an external scheduler that owns subsequent invocation. Three
-windows without durable Formation/Provider/accepted-cursor progress return
-`CREATION_NO_PROGRESS`. Windows are execution controls, never Book resource budgets.
+`--yield-after-window` for an external scheduler that owns subsequent invocation.
+Unchanged healthy checkpoints back off and remain queryable; their count cannot stop
+generation or pause the Book. Windows are scheduling controls, never generation limits or Book resource budgets.
 They never reduce the Book target or declare completion at a pilot cursor. Frozen profiles remain unchanged on
 resume. Historical v1-v3 Formation runs without a frozen creation-input profile require
 `--creation-policy-file "$ORIGINAL_CREATION_POLICY"` on continuation. The current shipped
@@ -4216,6 +4232,13 @@ Original saved local outputs are reread through the configured Codex backend, ch
 A recovered complete pure-generation result is reconciled and revalidated through its
 native owner without a new generation or finalization deadline. Old deadlines and
 failed Attempts remain evidence; live writers and cancellation still fence submission.
+Native Book/ChapterGroup coordinators and their exact delegated generation graphs are
+included before and after child admission. Deadline scans skip these graphs without
+starving later infrastructure operations. Canon re-extraction v2 admits versioned
+generations without a cumulative generation cap or new execution deadline; old v1
+deadlines and limits stay historical observations. Same-result no-progress diagnosis and
+human Canon approval remain separate. Focused PostgreSQL regression covers expired
+parent/root and Canon records, ordinary infrastructure cancellation and manual group cancel.
 The historical bounded local-result window applies only outside the current pure
 generation policy.
 

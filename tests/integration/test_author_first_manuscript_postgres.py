@@ -216,6 +216,9 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             "version": "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2", "history_chapters": 8,
             "recent_complete_chapters": 2, "max_characters": 32000,
             "queries": ["flood"], "guidance_mode": "COMBINED"}
+        if enhanced_working != "memory":
+            for key in ("working_schedule_policy", "working_craft_history_policy", "future_planning_feedback_policy"):
+                creation_policy["profiles"]["production_profile"]["content"].pop(key, None)
         args.creation_policy_file = tmp_path / "working-creation-policy.json"
         args.creation_policy_file.write_text(json.dumps(creation_policy))
     settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
@@ -425,7 +428,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     if enhanced_working == "memory":
         from novel_forge.modules.book_authority.manuscript_memory import save_manuscript_memory
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
-        from novel_forge.modules.book_authority.manuscript import freeze_working_context, verify_working_context
+        from novel_forge.modules.book_authority.manuscript import verify_working_context
         authority = PostgresBookAuthority(DATABASE_URL, chapter_port=None, followup_application=None,
             application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
         current = authority.require(book["book_run_id"])

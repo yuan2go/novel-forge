@@ -696,6 +696,54 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(str(child[0]), "CANCELLATION_REQUESTED")
         self.assertEqual(str(child[1]), "CANCELLATION_REQUESTED")
 
+    def test_generation_coordinators_ignore_elapsed_time_with_independent_children(self) -> None:
+        from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+        from novel_forge.modules.command_kernel.generation_policy import generation_graph
+        fixture = self._fixture()
+        group = fixture["group_authority"].start(
+            StartChapterGroupCommand(
+                project_id=fixture["project_id"], workspace_id=f"workspace:{fixture['project_id']}",
+                actor_id=fixture["principal"].principal_id, trace_id=identifier("long-generation"),
+                correlation_id=fixture["book"].root_operation_id,
+                stable_idempotency_key=f"{fixture['project_id']}:group:long-generation",
+                book_run_id=fixture["book"].book_run_id,
+                group_plan_version_id=fixture["group_plan"]["asset_version_id"],
+                group_plan_content_hash=fixture["group_plan"]["content_hash"],
+            ), principal=fixture["principal"],
+        )
+        roots = [fixture["book"].root_operation_id, group["root_operation_id"]]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("UPDATE authority_operation SET business_deadline_at='2000-01-01' WHERE operation_id=ANY(%s)", [roots])
+            for root in roots:
+                self.assertTrue(generation_graph(uow.cursor, root, fixture["project_id"]))
+            uow.commit()
+        for root in roots:
+            observed = probe_operation_execution(DATABASE_URL, operation_id=root, project_id=fixture["project_id"])
+            self.assertEqual(observed["business_deadline_at"].year, 2000)
+        fixture["group_authority"].dispatch(group["group_run_id"], self._chapter_command(fixture, 1), principal=fixture["principal"])
+        for root in roots:
+            observed = probe_operation_execution(DATABASE_URL, operation_id=root, project_id=fixture["project_id"])
+            self.assertEqual(observed["business_deadline_at"].year, 2000)
+        from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
+        report = scan_expired_operation_deadlines(DATABASE_URL, actor_id="native-coordinator-clock", limit=1000)
+        self.assertFalse(set(roots) & set(report["cancellation_issued"]))
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT child_root_operation_id FROM authority_chapter_group_chapter WHERE group_run_id=%s", [group["group_run_id"]])
+            child = uow.cursor.fetchone()[0]
+            for root in roots:
+                self.assertTrue(generation_graph(uow.cursor, root, fixture["project_id"]))
+            uow.cursor.execute("SELECT root_operation_id FROM authority_operation WHERE operation_id=%s", [child])
+            self.assertEqual(uow.cursor.fetchone()[0], child)
+            uow.cursor.execute("UPDATE authority_operation SET definition_snapshot=jsonb_set(definition_snapshot,'{irreversible_effect_policy,allowed}','true') WHERE operation_id=%s", [child])
+            for root in roots:
+                self.assertFalse(generation_graph(uow.cursor, root, fixture["project_id"]))
+            uow.cursor.execute("UPDATE authority_operation SET definition_snapshot=jsonb_set(definition_snapshot,'{irreversible_effect_policy,allowed}','false') WHERE operation_id=%s", [child])
+            uow.cursor.execute("SAVEPOINT mismatched_delegation")
+            uow.cursor.execute("UPDATE authority_child_delegation SET chapter_number=chapter_number+1 WHERE child_root_operation_id=%s", [child])
+            with self.assertRaisesRegex(KernelError, "GENERATION_COORDINATOR_REFERENCE_INVALID"):
+                generation_graph(uow.cursor, group["root_operation_id"], fixture["project_id"])
+            uow.cursor.execute("ROLLBACK TO SAVEPOINT mismatched_delegation")
+
     def _fixture(self, *, group_chapters: int = 3, chapter_fixture_factory=None) -> dict:
         project_id = identifier("chapter-group")
         root = tempfile.TemporaryDirectory()

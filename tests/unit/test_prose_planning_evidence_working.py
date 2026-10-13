@@ -58,3 +58,47 @@ def test_unbound_accepted_manifest_does_not_gain_working_scope_exception(evidenc
     manifest["schema_version"] = "longform-prose-manifest.v2"
     with pytest.raises(KernelError, match="PLANNING_PROSE_EDITION_SCOPE_INVALID"):
         check(command)
+
+
+def test_versioned_review_scope_survives_append_but_rejects_changed_source(evidence):
+    command, manifest, loader, validator = evidence
+    manifest["policy"]["source_current_policy"] = "FROZEN_SELECTED_RANGE"
+    loader.return_value.append({"asset_version_id": "work-5", "text_hash": "next"})
+    check(command)
+    validator.assert_called_once()
+    loader.return_value[0] = {"asset_version_id": "work-4", "text_hash": "changed"}
+    with pytest.raises(KernelError, match="PLANNING_PROSE_EVIDENCE_STALE"):
+        check(command)
+
+
+def test_legacy_review_scope_retains_its_original_full_manifest_boundary(evidence):
+    command, _, loader, _ = evidence
+    loader.return_value.append({"asset_version_id": "work-5", "text_hash": "next"})
+    with pytest.raises(KernelError, match="PLANNING_PROSE_EVIDENCE_STALE"):
+        check(command)
+
+
+@pytest.mark.parametrize("complete,current,paused,conflict,consumed,expected", [
+    (True,True,False,False,False,("report",)), (False,True,False,False,False,()),
+    (True,False,False,False,False,()), (True,True,True,False,False,()),
+    (True,True,False,True,False,()), (True,True,False,False,True,()),
+])
+def test_future_feedback_uses_current_nonconflicting_native_findings_once(monkeypatch, complete,current,paused,conflict,consumed,expected):
+    from contextlib import nullcontext
+    from novel_forge.modules.book_followup_authority import prose_coordinator
+    from novel_forge.modules.book_authority import completion
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW
+    cursor = MagicMock()
+    cursor.fetchall.return_value = [("report",)] if consumed else []
+    monkeypatch.setattr(subject,"AuthorityUnitOfWork",lambda _:nullcontext(SimpleNamespace(cursor=cursor)))
+    monkeypatch.setattr(completion,"_rows",lambda _: [{"run_id":"native-review"}])
+    monkeypatch.setattr(prose_coordinator,"review_progress",lambda *_: {
+        "review_complete":complete,"source_current":current,"paused":paused,
+        "findings":[{"status":"CONFLICT_REQUIRES_REVIEW" if conflict else "OPEN",
+            "repair_route":{"repair_scope":"FUTURE_REPLAN"}, "members":[{
+                "window_id":"window","judgment":"ISSUE","repair":{"problem_owner":"PLAN"}}]}],
+        "operations":[{"status":"SUCCEEDED","window_id":"window","report_asset_version_id":"report"}]})
+    result = subject.pending_future_plan_evidence("database",book={"book_run_id":"run","project_id":"p",
+        "workspace_id":"w","book_id":"b","author_workflow":AUTHOR_WORKFLOW},plan_version_id="future-plan",
+        policy={"version":"native-prose-plan-feedback.v1","scope":"PLANNED_FUTURE_ONLY"},commit_sha="release")
+    assert result == expected
