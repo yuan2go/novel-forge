@@ -8,7 +8,7 @@ from novel_forge.modules.story_planning_runtime.foundation_generation import (
     normalize_foundation_payload,
     world_generation_contract,
 )
-from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+from novel_forge.modules.worldbuilding.foundation import WorldFoundation, project_foundation_rule_background
 
 
 def world():
@@ -28,6 +28,71 @@ def world():
             },
         }],
     }
+
+
+@pytest.mark.parametrize("actual", [True, False, "absent"])
+def test_world_rule_background_uses_declared_values_without_inventing_predicates_or_history(actual):
+    from novel_forge.modules.worldbuilding.dynamics import state_index, validate_world_state_rules
+    foundation = world()
+    predicate = foundation["rules"][0]["predicate"]
+    predicate.update(state_kind="world_rule", field="requires_training", operator="EQUALS", value=True)
+    foundation["rules"][0]["applicability"] = ["character_state"]
+    if actual != "absent":
+        foundation["entities"][0]["requires_training"] = actual
+    binding = {"asset_version_id": "world:v1", "content_hash": "sha256:" + "a" * 64}
+    reality = {"current_state": {}, "events": [], "world_rule_constraints": [{**binding, "rule": foundation["rules"][0]}]}
+    before = deepcopy(reality)
+    projected = project_foundation_rule_background(reality=reality, foundation=foundation, source_binding=binding)
+    assert reality == before and projected["current_state"] == before["current_state"] and projected["events"] == []
+    assert projected["foundation_rule_background"]["character_knowledge_granted"] is False
+    assert not any(kind in {"character_knowledge", "character_state"} for kind, _ in state_index(projected))
+    if actual is True:
+        validate_world_state_rules(reality=projected, state=state_index(projected), affected_kinds={"character_state"})
+    else:
+        with pytest.raises(KernelError, match="WORLD_COMPILED_RULE_VIOLATION"):
+            validate_world_state_rules(reality=projected, state=state_index(projected), affected_kinds={"character_state"})
+    with pytest.raises(KernelError, match="WORLD_COMPILED_RULE_VIOLATION"):
+        validate_world_state_rules(reality=reality, state=state_index(reality), affected_kinds={"character_state"})
+
+
+def test_foundation_background_cannot_overwrite_a_recorded_world_value():
+    from novel_forge.modules.worldbuilding.dynamics import state_index
+    foundation = world()
+    foundation["rules"][0]["predicate"].update(state_kind="world_rule", field="requires_training", operator="EQUALS", value=True)
+    foundation["entities"][0]["requires_training"] = True
+    reality = {"current_state": {"world_rule": [{"entity_key": "school", "state": {"requires_training": False}, "source_event_id": "accepted:event"}]}}
+    projected = project_foundation_rule_background(reality=reality, foundation=foundation,
+        source_binding={"asset_version_id": "world:v1", "content_hash": "sha256:" + "a" * 64})
+    assert state_index(projected)[("world_rule", "school")]["state"]["requires_training"] is False
+    assert projected["current_state"] == reality["current_state"]
+
+
+@pytest.mark.parametrize("drift", [None, "binding", "hash", "knowledge"])
+def test_background_revalidation_consumers_rederive_the_same_frozen_view(drift):
+    from novel_forge.modules.worldbuilding.foundation import foundation_revalidation_reality
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    foundation = world()
+    foundation["rules"][0]["predicate"].update(state_kind="world_rule", field="requires_training", operator="EQUALS", value=True)
+    foundation["entities"][0]["requires_training"] = True
+    binding = {"asset_version_id": "world:v1", "content_hash": "sha256:" + "a" * 64}
+    source = {"contract_version": "world-preparation-source.v3", "world_foundation": foundation,
+        "reality": {"current_state": {}, "events": [], "world_rule_constraints": [{**binding, "rule": foundation["rules"][0]}]}}
+    projected = project_foundation_rule_background(reality=source["reality"], foundation=foundation, source_binding=binding)
+    proof = {"contract_version": "world-host-revalidation.v3", "foundation_binding": dict(binding),
+        "background_projection_hash": narrative_hash(projected["foundation_rule_background"]),
+        "character_knowledge_granted": False, "accepted_history_mutation_allowed": False}
+    if drift == "binding":
+        proof["foundation_binding"]["asset_version_id"] = "other-world"
+    elif drift == "hash":
+        proof["background_projection_hash"] = "sha256:" + "b" * 64
+    elif drift == "knowledge":
+        proof["character_knowledge_granted"] = True
+    if drift:
+        with pytest.raises(KernelError):
+            foundation_revalidation_reality(source, proof)
+    else:
+        assert foundation_revalidation_reality(source, proof) == projected
+    assert "foundation_rule_background" not in source["reality"]
 
 
 @pytest.mark.parametrize("value", [[], {}, 2, None, "", "CHAPTER"])

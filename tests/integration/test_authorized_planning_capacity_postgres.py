@@ -2,12 +2,12 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
-from novel_forge.storage.migrations.versions.v20261014_0208_world_isolated_source_correction import UPGRADE_STATEMENTS
+from novel_forge.storage.migrations.versions.v20261014_0209_world_foundation_background import UPGRADE_STATEMENTS
 from tests.integration.authority_postgres_support import DATABASE_URL
 
 
 @pytest.mark.parametrize("group_change", [False, True])
-@pytest.mark.parametrize("world_revalidation", [False, True, "source-correction"])
+@pytest.mark.parametrize("world_revalidation", [False, True, "source-correction", "foundation-background"])
 def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(group_change,world_revalidation):
     with psycopg.connect(DATABASE_URL) as connection:
         try:
@@ -29,7 +29,7 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
                 'authority_attempt(operation_id text,attempt_id text,attempt_number int,status text,error jsonb,result jsonb)',
             ]:
                 connection.execute('CREATE TEMP TABLE ' + ddl)
-            connection.execute(UPGRADE_STATEMENTS[1])
+            connection.execute(UPGRADE_STATEMENTS[2])
             source = {'generator_operation_name': 'chapter_plan.generate', 'logical_key': 'chapter:5'}
             child = {**source, 'runtime_continuation_id': 'runtime', 'idempotency_key': 'child'}
             runtime = {'planning_capacity': {'external_intents_at_source': 0, 'context_revalidation': {
@@ -75,7 +75,7 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
             if world_revalidation:
                 correction = world_revalidation == "source-correction"
                 key = "world_source_correction" if correction else "world_host_revalidation"
-                proof = {"contract_version":"world-isolated-source-correction.v1" if correction else "world-host-revalidation.v2","source_operation_id":"original-world","generation":{"content_hash":"retained"}}
+                proof = {"contract_version":"world-isolated-source-correction.v1" if correction else "world-host-revalidation.v3" if world_revalidation == "foundation-background" else "world-host-revalidation.v2","source_operation_id":"original-world","generation":{"content_hash":"retained"}}
                 if correction:
                     proof["isolation"] = {"external_effect_id":"original-unknown"}
                     runtime["generation_isolation"] = proof["isolation"]

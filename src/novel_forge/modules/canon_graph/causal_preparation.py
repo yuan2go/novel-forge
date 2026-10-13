@@ -11,13 +11,14 @@ from novel_forge.modules.worldbuilding.dynamics import (
     evaluate_requirement,
     state_index,
 )
+from novel_forge.modules.worldbuilding.foundation import foundation_revalidation_reality
 
 
 def preparation_observations(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
     if not binding:
         return []
     plan = binding["action"]["world_plan"]
-    reality = binding["frozen_source"]["reality"]
+    reality = foundation_revalidation_reality(binding["frozen_source"], binding["action"].get("host_revalidation"))
     prior = {
         entry["state"]["obligation_id"]: entry["state"]
         for entry in reality["current_state"].get("narrative_obligation", [])

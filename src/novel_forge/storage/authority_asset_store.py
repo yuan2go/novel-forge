@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -382,8 +382,10 @@ class AuthorityAssetWriter:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
-    def materialize_output(self, command: AuthorityAssetWriteCommand) -> AuthorityAssetDocument:
+    def materialize_output(self, command: AuthorityAssetWriteCommand, *, materialization_guard: Callable[[AuthorityUnitOfWork, AuthorityAssetWriteCommand], None] | None = None) -> AuthorityAssetDocument:
         with AuthorityUnitOfWork(self.database_url) as uow:
+            if materialization_guard is not None:
+                materialization_guard(uow, command)
             document = uow.repositories.asset_documents.materialize_output(command)
             uow.repositories.operation_graph.record_event(
                 {

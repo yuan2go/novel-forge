@@ -123,6 +123,21 @@ def state_index(reality: Mapping[str, Any]) -> dict[tuple[str, str], dict[str, A
                     "World Dynamics requires unique canonical state identities",
                 )
             result[(kind, key)] = dict(entry)
+    background = reality.get("foundation_rule_background") or {}
+    if background:
+        if (background.get("contract_version") != "foundation-rule-background.v1"
+            or background.get("character_knowledge_granted") is not False
+            or background.get("accepted_history_mutation_allowed") is not False
+            or not (background.get("source_binding") or {}).get("asset_version_id")):
+            raise KernelError("WORLD_FOUNDATION_BACKGROUND_SOURCE_INVALID", "Require the explicit source-bound background projection")
+        for field in background.get("field_bindings", []):
+            if field.get("state_kind") != "world_rule":
+                raise KernelError("WORLD_FOUNDATION_BACKGROUND_KIND_INVALID", "World-rule declarations cannot grant character state or knowledge")
+            key = ("world_rule", field["entity_key"])
+            prior = result.get(key) or {"entity_key": field["entity_key"], "source_event_id": "foundation:" + background["source_binding"]["asset_version_id"]}
+            state = dict(prior.get("state") or {})
+            state.setdefault(field["field"], field["value"])
+            result[key] = {**prior, "state": state}
     return result
 
 

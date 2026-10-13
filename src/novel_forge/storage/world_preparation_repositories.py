@@ -3,7 +3,7 @@ from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.reality import narrative_hash
-from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+from novel_forge.modules.worldbuilding.foundation import WorldFoundation, foundation_revalidation_reality
 from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
 from novel_forge.storage.foundation_repositories import require_current_foundation_set
 from novel_forge.storage.narrative_reality_repositories import (
@@ -52,6 +52,7 @@ class WorldPreparationRepository:
                 "WORLD_BINDING_SOURCE_DRIFT",
                 "private working source differs from its immutable source artifact",
             )
+        foundation_revalidation_reality(source, action.get("host_revalidation"))
         if action.get('optional_preparation'):
             from novel_forge.modules.story_planning_runtime.world_optional import validate_optional_action
             validate_optional_action(self.cursor, action=action, source=source)
@@ -529,7 +530,7 @@ class WorldPreparationRepository:
             reality["epistemic_contract"] = epistemic_contract
         elif epistemic_contract != "world-agency.v1":
             raise KernelError("WORLD_AGENCY_CONTRACT_INVALID", "World source must retain a supported agency contract")
-        if contract_version == "world-preparation-source.v3":
+        if contract_version in {"world-preparation-source.v3", "world-preparation-source.v4"}:
             if epistemic_contract != "world-agency.v2":
                 raise KernelError("WORLD_AGENCY_CONTRACT_INVALID", "Aligned World source requires its explicit agency contract")
             from novel_forge.modules.narrative_state.information import DISCLOSURE_FIELDS_V2
@@ -548,6 +549,9 @@ class WorldPreparationRepository:
             }
             for rule in world["world_foundation"]["rules"]
         ]
+        if contract_version == "world-preparation-source.v4":
+            from novel_forge.modules.worldbuilding.foundation import project_foundation_rule_background
+            reality = project_foundation_rule_background(reality=reality, foundation=world["world_foundation"], source_binding={key: world_binding[key] for key in ("asset_version_id", "content_hash")})
         intent_binding = next(
             binding for binding in bindings if binding["role"] == "CREATIVE_FOUNDATION"
         )
@@ -615,7 +619,7 @@ class WorldPreparationRepository:
             planning_inputs, chapter=chapter + 1, window=policy.planning_window_chapters,
             context_policy_version=policy.version,
         )
-        if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3"} and chapter:
+        if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"} and chapter:
             history = repository.recent_world_events(
                 book_run_id=request["book_run_id"],
                 through_chapter=chapter,
@@ -638,7 +642,7 @@ class WorldPreparationRepository:
                 reality["events"] = [combined[key] for key in sorted(combined)]
         continuations = (
             self.preparation_sources(reality=reality, limit=policy.max_candidates)
-            if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3"} and chapter
+            if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"} and chapter
             else []
         )
         return {
@@ -647,7 +651,7 @@ class WorldPreparationRepository:
                 if provider_projection_version in {"world-role-delivery.v2", "world-role-delivery.v3"} else {}),
             **(
                 {"preparation_sources": continuations}
-                if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3"}
+                if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}
                 else {}
             ),
             "request": dict(request),

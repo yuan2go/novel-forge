@@ -182,6 +182,16 @@ def require_source(
             mode = _world_projection_source
         elif row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "WORLD_PREPARATION_RESULT_INVALID":
             if frozen.get("execution_contract_version") == "1.21.0":
+                try:
+                    source = _world_foundation_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
+                except KernelError as error:
+                    if error.code != "WORLD_FOUNDATION_REVALIDATION_NOT_APPLICABLE":
+                        raise
+                else:
+                    _require_world_lineage_settled(uow, source_operation_id=source_operation_id, project_id=project_id,
+                        book_id=str(row[4]), active_successor_operation_id=active_successor_operation_id,
+                        verified_complete_effect_ids=source["world_host_revalidation"]["retained_effect_ids"])
+                    return source
                 mode = _world_host_source
             elif frozen.get("execution_contract_version") in {"1.18.0", "1.19.0"}:
                 mode = _world_agency_source
@@ -475,6 +485,23 @@ def _world_disclosure_source(uow, *, source_operation_id, row, frozen):
         "mode":"WORLD_DISCLOSURE_REVALIDATION","world_host_revalidation":proof}
 
 
+def _world_foundation_source(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from .world_preparation import require_world_foundation_revalidation
+
+    proof = require_world_foundation_revalidation(uow.database_url, command=_command_from_payload(frozen), operation_id=source_operation_id)
+    uow.cursor.execute("SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1", [source_operation_id])
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING", "Background correction retains its original failed Pack snapshot")
+    uow.cursor.execute("SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s", [source_operation_id])
+    prior = uow.cursor.fetchone()
+    return {"source_operation_id": source_operation_id, "command": frozen, "version": int(row[1]),
+        "evidence_asset_version_id": proof["generation"]["asset_version_id"], "evidence_hash": proof["generation"]["content_hash"],
+        "snapshot": dict(snapshot[0]), "depth": (int(prior[0]) if prior else 0) + 1,
+        "mode": "WORLD_FOUNDATION_REVALIDATION", "world_host_revalidation": proof}
+
+
 def _isolated_world_source_correction(uow, *, source_operation_id, row, frozen):
     from .application import _command_from_payload
     from .world_preparation import require_isolated_world_source_correction
@@ -514,7 +541,16 @@ def recover_world_result_frontier(application, book, *, principal):
               AND op.status='FAILED_FINAL' AND last.status='FAILED_FINAL'
               AND op.command_payload#>>'{payload,world_preparation_request,book_run_id}'=%s
               AND ((last.result->>'error_code'='WORLD_DISCLOSURE_FIELDS_INVALID' AND source.content#>>'{contract,contract_version}'='world-preparation-source.v2')
-                OR last.result->>'error_code'='WORLD_ISOLATED_RECEIPT_INVALID')
+                OR last.result->>'error_code'='WORLD_ISOLATED_RECEIPT_INVALID'
+                OR (last.result->>'error_code'='WORLD_PREPARATION_RESULT_INVALID' AND op.definition_version='1.21.0'
+                    AND EXISTS(SELECT 1 FROM authority_asset_locator action_locator
+                        JOIN authority_asset_version action ON action.asset_version_id=action_locator.current_asset_version_id
+                        JOIN authority_asset_version frozen ON frozen.asset_version_id=action.content#>>'{contract,source,asset_version_id}'
+                        WHERE action_locator.project_id=g.project_id AND action_locator.logical_ref='world_preparation/'||op.operation_id||'/action'
+                          AND frozen.content#>>'{contract,contract_version}'='world-preparation-source.v3'
+                          AND frozen.content#>>'{contract,reality,baseline_kind}'='APPROVED_FOUNDATION'
+                          AND EXISTS(SELECT 1 FROM jsonb_array_elements(action.content#>'{contract,world_plan,rejected_paths}') path
+                              WHERE path#>>'{rejection,code}'='WORLD_COMPILED_RULE_VIOLATION'))))
             ORDER BY g.created_at DESC LIMIT 1""", [book["project_id"],book["book_id"],f"chapter:{book['current_chapter']+1}",book["book_run_id"]])
         row = uow.cursor.fetchone()
     if not row or row[2]:
@@ -522,7 +558,7 @@ def recover_world_result_frontier(application, book, *, principal):
     application.register_runtime_continuation(row[0],project_id=book["project_id"],expected_source_version=int(row[1]),
         decision_evidence={"reason":"Revalidate exact complete World results under the corrected field/source binding contract; preserve source history",
             "authorization_ref":auth["authorization_ref"],"source_book_run_id":book["book_run_id"]},principal=principal,
-        trace_id=row[0]+":world-disclosure-revalidation:v2",correlation_id=book["root_operation_id"])
+        trace_id=row[0]+":world-result-revalidation",correlation_id=book["root_operation_id"])
     return True
 
 
@@ -1499,6 +1535,7 @@ def register(
         "WORLD_HOST_REVALIDATION",
         "WORLD_HOST_PROJECTION",
         "WORLD_DISCLOSURE_REVALIDATION",
+        "WORLD_FOUNDATION_REVALIDATION",
     }
     successor = replace(
         original,
@@ -1698,7 +1735,7 @@ def register(
     }
 
     def materialize(uow, registration_operation_id, checkpoint):
-        if source.get("mode") in {"WORLD_DISCLOSURE_REVALIDATION","ISOLATED_WORLD_SOURCE_CORRECTION"}:
+        if source.get("mode") in {"WORLD_DISCLOSURE_REVALIDATION","WORLD_FOUNDATION_REVALIDATION","ISOLATED_WORLD_SOURCE_CORRECTION"}:
             uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s ORDER BY formation_run_id FOR UPDATE",
                 [project_id,original.book_id])
             uow.cursor.fetchall()
@@ -2028,17 +2065,18 @@ def _require_world_lineage_settled(uow, *, source_operation_id, project_id, book
         JOIN lineage l ON (o.causation_operation_id=l.operation_id OR o.operation_id=(SELECT causation_operation_id FROM authority_operation WHERE operation_id=l.operation_id))
         WHERE o.definition_name='story_planning.generate' AND o.project_id=%s AND o.command_payload #>> '{payload,book_id}'=%s)
         SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN lineage l USING(operation_id)
-            WHERE e.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED'))
+            WHERE e.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED') AND NOT authority_generation_isolated(e.external_effect_id))
         OR EXISTS(SELECT 1 FROM authority_budget_reservation b JOIN lineage l USING(operation_id)
             LEFT JOIN authority_external_effect complete ON complete.external_effect_id=b.external_effect_id
-            WHERE b.status NOT IN ('SETTLED','RELEASED') AND NOT COALESCE((b.status='HELD_UNKNOWN' AND complete.status='SUCCEEDED'
+            WHERE b.status NOT IN ('SETTLED','RELEASED') AND NOT COALESCE(authority_generation_isolated(b.external_effect_id),FALSE)
+                AND NOT COALESCE((b.status='HELD_UNKNOWN' AND complete.status='SUCCEEDED'
                 AND complete.external_effect_id=ANY(%s)),FALSE))
         OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt a USING(attempt_id) JOIN lineage l USING(operation_id) WHERE lease.status='HELD' AND NOT (a.operation_id=%s AND a.status='RUNNING'
             AND a.attempt_number=(SELECT max(active.attempt_number) FROM authority_attempt active WHERE active.operation_id=a.operation_id) AND EXISTS (
             SELECT 1 FROM authority_operation child
             JOIN authority_story_planning_runtime_continuation r ON r.successor_operation_id=child.operation_id
             JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id
-            WHERE child.operation_id=a.operation_id AND child.status='RUNNING' AND child.causation_operation_id=%s
+            WHERE child.operation_id=a.operation_id AND child.status='EXECUTING' AND child.causation_operation_id=%s
               AND child.project_id=%s AND r.project_id=child.project_id AND r.book_id=%s
               AND child.workspace_id=r.workspace_id AND child.actor_id=registration.actor_id
               AND registration.status='SUCCEEDED' AND registration.definition_name='story_planning.runtime_continuation.register'

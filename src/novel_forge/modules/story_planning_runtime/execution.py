@@ -6883,6 +6883,10 @@ class PostgresPlanningExecutionPreparer:
                 )
             return existing
         token = _token(f"{project_id}:{logical_ref}")
+        guard = None
+        if asset_type == "narrative_governance_action" and (contract.get("host_revalidation") or {}).get("contract_version") == "world-host-revalidation.v3":
+            from .world_preparation import require_world_foundation_frontier
+            guard = require_world_foundation_frontier
         try:
             return self.writer.materialize_output(
                 AuthorityAssetWriteCommand(
@@ -6899,7 +6903,8 @@ class PostgresPlanningExecutionPreparer:
                     qualification_policy="production-execution-contract-v1",
                     trace_id=trace_id,
                     correlation_id=correlation_id,
-                )
+                ),
+                **({"materialization_guard": guard} if guard is not None else {}),
             )
         except KernelError as error:
             if error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":

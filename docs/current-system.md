@@ -22,8 +22,8 @@ identity changes without a corresponding projection update.
 ## Ordinary author writing
 
 New Creation requests select `config/execution_templates/author_first.json` (v12).
-The default creation-input policy freezes `native-narrative-execution.v1`: Chapter Pack
-3.0.3 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
+The default creation-input policy freezes `native-narrative-execution.v2`: Chapter Pack
+3.0.4 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
 working-prose memory v3. The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 These native bindings do not establish literary effectiveness.
@@ -2377,8 +2377,23 @@ instructions. A Foundation task freezes one `BOOK` scope; `BOOK`, `VOLUME` and `
 are alternatives, not an output array. JSON-string transport is decoded and internally
 validated before Candidate materialization. Invalid Provider output remains evidence.
 Narrative World preparation is a separate consumer. Fresh 1.21 preparation freezes
-`world-preparation-source.v3` and `world-provider-task.v3`, with the v2 transition schema
+`world-preparation-source.v4` and `world-provider-task.v3`, with the v2 transition schema
 and distinct routine, perception and information-dependent action requirements.
+The v4 source separately projects scalar `world_rule` fields explicitly declared in the
+exact approved Foundation entities and addressed by compiled predicates. Predicate
+expected values never supply missing facts; recorded state takes precedence. This
+background view changes neither accepted history nor character knowledge. Frozen v3
+sources retain their original empty-genesis behavior for exact replay.
+`world-host-revalidation.v3` reuses both complete, verified World results for the exact
+first unexecuted Chapter after the legacy missing-background rejection. Generation and
+Director may retain different original owners only with the same source, Creator,
+Book request and trusted receipts. Migration 0209 binds full source/successor commands,
+compiled Foundation, isolated unknowns, reservations and leases. Registration, Action
+and primary materialization lock the Formation cancellation boundary and current Book
+frontier; downstream causal preparation and Canon validation consume the same derived
+view. The original Source, rejected Action and failed Attempts remain immutable.
+Focused SQL/backup-restore evidence and source-owner validation are separate from
+installed native recovery, real-Provider execution and literary qualification.
 Earlier source/task v2 inputs preserve their original inconsistent nested schema and
 blanket knowledge instruction for frozen replay; their existence does not qualify that
 input contract. New disclosure addresses resolve a `changes.<field>` selector only

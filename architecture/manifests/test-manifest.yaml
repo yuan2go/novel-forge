@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "world-foundation-background-recovery",
+      "patterns": [
+        "tests/integration/test_world_foundation_background_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "generation-execution-observations",
       "patterns": [
         "tests/unit/test_generation_execution_policy.py",

@@ -456,7 +456,7 @@ def follow_optional_failure(application, *, command, operation_id, principal, ex
         apply_preparation_decisions,
     )
 
-    if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3"}:
+    if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}:
         plan = apply_preparation_decisions(fresh_plan=plan, decisions=[])
     if (
         canonical_hash(plan) != canonical_hash(old_content["contract"]["world_plan"])

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Mapping
+from copy import deepcopy
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from .dynamics import CausalRequirement
@@ -12,6 +13,7 @@ from .foundation_schema import (
     validate_world_rule_shape,
     world_value_type,
 )
+from novel_forge.modules.narrative_state.reality import narrative_hash
 
 
 CORE_WORLD_ONTOLOGY = frozenset(
@@ -29,6 +31,45 @@ CORE_WORLD_ONTOLOGY = frozenset(
         "information_communication",
     }
 )
+
+
+def project_foundation_rule_background(*, reality: Mapping[str, Any], foundation: Mapping[str, Any], source_binding: Mapping[str, str]) -> dict[str, Any]:
+    WorldFoundation.from_mapping(foundation)
+    if set(source_binding) != {"asset_version_id", "content_hash"} or any(not isinstance(value, str) or not value for value in source_binding.values()):
+        raise KernelError("WORLD_FOUNDATION_BACKGROUND_SOURCE_INVALID", "Background fields require an exact approved Foundation binding")
+    result = deepcopy(dict(reality))
+    entities = {entity["entity_id"]: (index, entity) for index, entity in enumerate(foundation["entities"])}
+    fields = []
+    for raw in foundation["rules"]:
+        rule = WorldRule.from_mapping(raw)
+        predicate = rule.predicate
+        if predicate is None or predicate.state_kind.value != "world_rule" or predicate.entity_key not in entities:
+            continue
+        index, entity = entities[predicate.entity_key]
+        if predicate.field not in entity or not isinstance(entity[predicate.field], (str, int, float, bool, type(None))):
+            continue
+        fields.append({"state_kind": "world_rule", "entity_key": predicate.entity_key, "field": predicate.field,
+            "source_field_path": f"$.world_foundation.entities[{index}].{predicate.field}", "value": entity[predicate.field]})
+    result["foundation_rule_background"] = {"contract_version": "foundation-rule-background.v1",
+        "source_binding": dict(source_binding), "field_bindings": fields,
+        "character_knowledge_granted": False, "accepted_history_mutation_allowed": False}
+    return result
+
+
+def foundation_revalidation_reality(source: Mapping[str, Any], proof: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    if not proof or proof.get("contract_version") != "world-host-revalidation.v3":
+        return source["reality"]
+    binding = proof["foundation_binding"]
+    if (source["contract_version"] != "world-preparation-source.v3"
+        or proof.get("character_knowledge_granted") is not False
+        or proof.get("accepted_history_mutation_allowed") is not False
+        or not any(all(rule.get(key) == binding[key] for key in ("asset_version_id", "content_hash"))
+            for rule in source["reality"].get("world_rule_constraints", []))):
+        raise KernelError("WORLD_FOUNDATION_BACKGROUND_SOURCE_INVALID", "The background view must retain its frozen Foundation and semantic boundaries")
+    result = project_foundation_rule_background(reality=source["reality"], foundation=source["world_foundation"], source_binding=binding)
+    if narrative_hash(result["foundation_rule_background"]) != proof.get("background_projection_hash"):
+        raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "The derived background view differs from its registered proof")
+    return result
 
 
 @dataclass(frozen=True, slots=True)
