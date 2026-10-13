@@ -72,6 +72,7 @@ def deployment_target(uow, *, project_id, original, target):
         "planning_capacity",
         "generation_isolation",
         "world_host_revalidation",
+        "world_source_correction",
         "planning_reference_contract",
         "provider_schema_correction",
     }

@@ -30,6 +30,7 @@ def runtime():
             "projection_hash": "frozen-view",
         },
         "generation_isolation": {"original_remote_outcome": "UNKNOWN"},
+        "world_source_correction": {"source_operation_id": "original-unsent-source", "generation": {"asset_version_id": "complete-sibling"}},
     }
 
 
@@ -39,7 +40,7 @@ def test_deployment_cannot_change_creative_route_or_account(field):
     new = {
         key: deepcopy(value)
         for key, value in old.items()
-        if key not in {"planning_capacity", "generation_isolation"}
+        if key not in {"planning_capacity", "generation_isolation", "world_source_correction"}
     }
     new[field] = "changed"
     with pytest.raises(
@@ -69,7 +70,7 @@ def test_deployment_cannot_replace_story_contracts(field):
     new = {
         key: deepcopy(value)
         for key, value in old.items()
-        if key not in {"planning_capacity", "generation_isolation"}
+        if key not in {"planning_capacity", "generation_isolation", "world_source_correction"}
     }
     new["pack_snapshot"][field] = "changed"
     with pytest.raises(
@@ -92,7 +93,7 @@ def test_version_only_deployment_preserves_capacity_projection_and_unknown_histo
     new = {
         key: deepcopy(value)
         for key, value in old.items()
-        if key not in {"planning_capacity", "generation_isolation"}
+        if key not in {"planning_capacity", "generation_isolation", "world_source_correction"}
     }
     new["pack_snapshot"].update(
         pack_version="2", manifest_hash="new", release_sha="actual-new-release"
@@ -102,6 +103,7 @@ def test_version_only_deployment_preserves_capacity_projection_and_unknown_histo
     )
     assert result["planning_capacity"] == old["planning_capacity"]
     assert result["generation_isolation"] == old["generation_isolation"]
+    assert result["world_source_correction"] == old["world_source_correction"]
     assert result["pack_snapshot"] == new["pack_snapshot"]
     assert old == runtime() and proof["verified"]
 

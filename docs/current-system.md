@@ -2381,6 +2381,18 @@ receipts and current source, and checks the proof again at registration commit. 
 dropping or changing it is rejected. Previously admitted records without inheritance
 remain historical evidence. The focused native capacity-failure fixture verifies
 zero additional World calls; actual installed recovery is a separate evidence boundary.
+Isolated World stage reuse filters by the selected exact frozen source. An older
+Director output is skipped only when it binds its own retained source and the same
+World request; a matching result still requires its complete trusted receipt. The
+former ancestor scan could reject a complete generation sibling after reading a
+Director bound to another source. Migration 0208 permits a native correction of that
+exact unsent terminal failure, with original Creator, isolated parent, complete
+generation, current unexecuted frontier and cancellation checks. It preserves the
+original UNKNOWN and terminal history. Version-only pending deployment and another
+unsent capacity successor retain and revalidate the same correction and isolation
+proofs. Focused PostgreSQL guards and captured-case Owner registration/admission are
+execution evidence; complete installed Provider recovery and literary qualification
+require separate evidence.
 Planning result recovery links a new bounded Operation to the failed Operation and
 retained result, preserving the old terminal state and fully revalidating the repair.
 Model profile identities retain exact legacy contracts and distinguish different frozen

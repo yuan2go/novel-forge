@@ -1036,9 +1036,39 @@ def test_isolated_world_sibling_requires_original_success_and_source(monkeypatch
     preparer = PlanningWorldPreparation(SimpleNamespace(database_url='controlled-test'))
     monkeypatch.setattr(preparer, '_read', lambda *args: None if fault == 'missing_document' else document)
     monkeypatch.setattr(preparer, '_source_operation', lambda *args: 'original-operation')
-    command = SimpleNamespace(project_id='project:1', actor_id='author:1', trace_id='trace', correlation_id='book:1')
+    command = SimpleNamespace(project_id='project:1', actor_id='author:1', trace_id='trace', correlation_id='book:1',world_preparation_request={})
     if fault in {'missing_receipt', 'different_output', 'different_source'}:
         with pytest.raises(KernelError, match='WORLD_ISOLATED_RECEIPT_INVALID'):
             preparer._read_known_isolated_stage(command, ['world_preparation/original-operation'], 'generation', source)
     else:
         assert preparer._read_known_isolated_stage(command, ['world_preparation/original-operation'], 'generation', source) is (None if fault == 'missing_document' else document)
+
+
+def test_isolated_world_recovery_skips_only_exact_owned_older_source_version(monkeypatch):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation
+    from novel_forge.modules.command_kernel import external_effect_runtime
+
+    current = {"asset_version_id":"source:v3","content_hash":"sha256:current"}
+    earlier = {"asset_version_id":"source:v2","content_hash":"sha256:earlier"}
+    request = {"book_run_id":"book:1","accepted_through_chapter":0}
+    source = SimpleNamespace(asset_version_id=earlier["asset_version_id"],content_hash=earlier["content_hash"],content={"contract":{"request":request}})
+    old_evaluation = SimpleNamespace(asset_version_id="evaluation:old",content={"contract":{"source":earlier,"output":{"evaluations":[]},"evidence":{"external_receipt_ref":"old"}}})
+    matching = SimpleNamespace(asset_version_id="evaluation:matching",content={"contract":{"source":current,"output":{"evaluations":[]},"evidence":{"external_receipt_ref":"matching"}}})
+    documents = {"world/old/source":source,"world/old/evaluation":old_evaluation,"world/current/evaluation":matching}
+    preparation = PlanningWorldPreparation(SimpleNamespace(database_url="controlled-test"))
+    monkeypatch.setattr(preparation,"_read",lambda project,ref:documents.get(ref))
+    monkeypatch.setattr(preparation,"_source_operation",lambda *args:"original")
+    receipts = []
+    def receipt(*args,**values):
+        receipts.append(values["effect_id"])
+        return {"provider_evidence":{"result":{"evaluations":[]}}}
+    monkeypatch.setattr(external_effect_runtime,"read_retained_generation_stage_success",receipt)
+    command = SimpleNamespace(project_id="project",actor_id="actor",trace_id="trace",correlation_id="book",world_preparation_request=request)
+    assert preparation._read_known_isolated_stage(command,["world/missing","world/old"],"evaluation",current) is None
+    assert receipts == []
+    assert preparation._read_known_isolated_stage(command,["world/old","world/current"],"evaluation",current) is matching
+    assert receipts == ["matching"]
+    source.content["contract"]["request"] = {"book_run_id":"foreign"}
+    with pytest.raises(KernelError,match="WORLD_ISOLATED_RECEIPT_INVALID"):
+        preparation._read_known_isolated_stage(command,["world/old"],"evaluation",current)

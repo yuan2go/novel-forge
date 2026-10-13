@@ -176,6 +176,8 @@ def require_source(
         return source
     if attempt and attempt[0] == "FAILED_FINAL":
         mode = None
+        if row[0] == "FAILED_FINAL" and failure_code == "WORLD_ISOLATED_RECEIPT_INVALID" and frozen.get("execution_contract_version") == "1.21.0":
+            return _isolated_world_source_correction(uow,source_operation_id=source_operation_id,row=row,frozen=frozen)
         if row[0] == "FAILED_FINAL" and failure_code == "PROGRAMMING_BUG" and dict(attempt[2] or {}).get("error_message") == "'frozen_source'" and frozen.get("repair_reason") == "WORLD_HOST_REVALIDATION_SUCCESSOR" and frozen.get("execution_contract_version") == "1.21.0":
             mode = _world_projection_source
         elif row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "WORLD_PREPARATION_RESULT_INVALID":
@@ -473,7 +475,24 @@ def _world_disclosure_source(uow, *, source_operation_id, row, frozen):
         "mode":"WORLD_DISCLOSURE_REVALIDATION","world_host_revalidation":proof}
 
 
-def recover_world_disclosure_frontier(application, book, *, principal):
+def _isolated_world_source_correction(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from .world_preparation import require_isolated_world_source_correction
+
+    proof = require_isolated_world_source_correction(uow.database_url,command=_command_from_payload(frozen),operation_id=source_operation_id)
+    uow.cursor.execute("SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",[source_operation_id])
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING", "Source correction retains the exact failed Pack")
+    uow.cursor.execute("SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s",[source_operation_id])
+    prior = uow.cursor.fetchone()
+    return {"mode":"ISOLATED_WORLD_SOURCE_CORRECTION","source_operation_id":source_operation_id,"command":frozen,
+        "version":int(row[1]),"snapshot":snapshot[0],"depth":int(prior[0])+1 if prior else 1,
+        "world_source_correction":proof,"evidence_asset_version_id":proof["generation"]["asset_version_id"],
+        "evidence_hash":proof["generation"]["content_hash"]}
+
+
+def recover_world_result_frontier(application, book, *, principal):
     if book["state"] != "CHAPTER_PLAN_REQUIRED" or book.get("active_chapter_request_id"):
         return False
     principal.require("story_planning.authority.execute",book["project_id"])
@@ -489,18 +508,19 @@ def recover_world_disclosure_frontier(application, book, *, principal):
         uow.cursor.execute("""SELECT op.operation_id,op.version,EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation r WHERE r.source_operation_id=op.operation_id)
             FROM authority_story_planning_generation g JOIN authority_operation op USING(operation_id)
             JOIN LATERAL (SELECT status,result FROM authority_attempt WHERE operation_id=op.operation_id ORDER BY attempt_number DESC LIMIT 1) last ON true
-            JOIN authority_asset_locator source_locator ON source_locator.project_id=g.project_id AND source_locator.logical_ref='world_preparation/'||op.operation_id||'/source'
-            JOIN authority_asset_version source ON source.asset_version_id=source_locator.current_asset_version_id
+            LEFT JOIN authority_asset_locator source_locator ON source_locator.project_id=g.project_id AND source_locator.logical_ref='world_preparation/'||op.operation_id||'/source'
+            LEFT JOIN authority_asset_version source ON source.asset_version_id=source_locator.current_asset_version_id
             WHERE g.project_id=%s AND g.book_id=%s AND g.logical_key=%s AND g.generator_operation_name='chapter_plan.generate'
-              AND op.status='FAILED_FINAL' AND last.status='FAILED_FINAL' AND last.result->>'error_code'='WORLD_DISCLOSURE_FIELDS_INVALID'
+              AND op.status='FAILED_FINAL' AND last.status='FAILED_FINAL'
               AND op.command_payload#>>'{payload,world_preparation_request,book_run_id}'=%s
-              AND source.content#>>'{contract,contract_version}'='world-preparation-source.v2'
+              AND ((last.result->>'error_code'='WORLD_DISCLOSURE_FIELDS_INVALID' AND source.content#>>'{contract,contract_version}'='world-preparation-source.v2')
+                OR last.result->>'error_code'='WORLD_ISOLATED_RECEIPT_INVALID')
             ORDER BY g.created_at DESC LIMIT 1""", [book["project_id"],book["book_id"],f"chapter:{book['current_chapter']+1}",book["book_run_id"]])
         row = uow.cursor.fetchone()
     if not row or row[2]:
         return False
     application.register_runtime_continuation(row[0],project_id=book["project_id"],expected_source_version=int(row[1]),
-        decision_evidence={"reason":"Revalidate exact complete World results under the corrected scalar field-address contract; preserve source history",
+        decision_evidence={"reason":"Revalidate exact complete World results under the corrected field/source binding contract; preserve source history",
             "authorization_ref":auth["authorization_ref"],"source_book_run_id":book["book_run_id"]},principal=principal,
         trace_id=row[0]+":world-disclosure-revalidation:v2",correlation_id=book["root_operation_id"])
     return True
@@ -862,12 +882,16 @@ def _pre_send_capacity_source(
                 "Capacity source lost its prior continuation",
             )
         depth = int(prior[0])
-    inherited, world_revalidation = None, None
+    inherited, world_revalidation, world_correction = None, None, None
     if frozen.get("runtime_continuation_id"):
-        uow.cursor.execute("""SELECT target_runtime->'world_host_revalidation' FROM authority_story_planning_runtime_continuation
-            WHERE continuation_id=%s AND successor_operation_id=%s AND successor_command=%s
-              AND project_id=%s AND workspace_id=%s AND book_id=%s""",
-            [frozen["runtime_continuation_id"],source_operation_id,Jsonb(frozen),frozen["project_id"],frozen["workspace_id"],frozen["book_id"]])
+        uow.cursor.execute("""SELECT link.target_runtime->'world_host_revalidation',link.target_runtime->'world_source_correction',link.target_runtime->'generation_isolation'
+            FROM authority_story_planning_runtime_continuation link
+            JOIN authority_operation registration ON registration.operation_id=link.registered_by_operation_id
+            WHERE link.continuation_id=%s AND link.successor_operation_id=%s AND link.successor_command=%s
+              AND link.project_id=%s AND link.workspace_id=%s AND link.book_id=%s
+              AND registration.status='SUCCEEDED' AND registration.definition_name='story_planning.runtime_continuation.register'
+              AND registration.actor_id=%s AND registration.project_id=link.project_id AND registration.workspace_id=link.workspace_id""",
+            [frozen["runtime_continuation_id"],source_operation_id,Jsonb(frozen),frozen["project_id"],frozen["workspace_id"],frozen["book_id"],frozen["actor_id"]])
         bound_world = uow.cursor.fetchone()
         if bound_world and bound_world[0]:
             from .application import _command_from_payload
@@ -876,6 +900,27 @@ def _pre_send_capacity_source(
             world_revalidation = require_world_host_revalidation(uow.database_url,command=_command_from_payload(frozen),operation_id=bound_world[0]["source_operation_id"])
             if world_revalidation != bound_world[0]:
                 raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Capacity recovery must retain the prior exact completed World proof")
+        if bound_world and bound_world[1]:
+            from .application import _command_from_payload
+            from .world_preparation import require_isolated_world_source_correction
+
+            retained_correction = bound_world[1]
+            uow.cursor.execute("""SELECT original.command_payload->'payload' FROM authority_operation original
+                JOIN authority_story_planning_generation origin USING(operation_id)
+                JOIN authority_story_planning_generation current ON current.operation_id=%s
+                WHERE original.operation_id=%s AND original.actor_id=%s AND original.project_id=%s AND original.workspace_id=%s
+                  AND origin.book_id=current.book_id AND origin.logical_key=current.logical_key
+                  AND origin.generator_operation_name=current.generator_operation_name AND origin.planning_scope=current.planning_scope
+                  AND origin.input_snapshot=current.input_snapshot AND origin.input_snapshot_hash=current.input_snapshot_hash""",
+                [source_operation_id,retained_correction["source_operation_id"],frozen["actor_id"],frozen["project_id"],frozen["workspace_id"]])
+            original = uow.cursor.fetchone()
+            controls = {"runtime_continuation_id","idempotency_key","opening_execution_binding"}
+            if not original or {key:value for key,value in original[0].items() if key not in controls} != {key:value for key,value in frozen.items() if key not in controls}:
+                raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_DRIFT", "Capacity recovery must bind the same frozen story inputs and creator")
+            world_correction = require_isolated_world_source_correction(uow.database_url,
+                command=_command_from_payload(original[0]),operation_id=retained_correction["source_operation_id"])
+            if world_correction != retained_correction or bound_world[2] != world_correction["isolation"]:
+                raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_DRIFT", "Capacity recovery must retain the exact complete sibling and original isolation")
         uow.cursor.execute("""SELECT isolation.proof, capacity.target_runtime->'planning_capacity'
             FROM authority_story_planning_runtime_continuation link
             JOIN authority_generation_isolation isolation ON isolation.operation_id=link.source_operation_id
@@ -899,6 +944,7 @@ def _pre_send_capacity_source(
         "inputs": inputs,
         **({"capacity_inheritance": inherited} if inherited else {}),
         **({"inherited_world_host_revalidation":world_revalidation} if world_revalidation else {}),
+        **({"inherited_world_source_correction":world_correction} if world_correction else {}),
         **({'retained_world_action': {'source_operation_id': world_owner, 'world_action': retained_world}} if retained_world else {}),
         "failure": dict(attempt[2] or attempt[1] or {}),
         "depth": depth + 1,
@@ -944,6 +990,9 @@ def _capacity_authorization(
 
     if source.get("inherited_world_host_revalidation") and target.get("world_host_revalidation") != source["inherited_world_host_revalidation"]:
         raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Capacity authorization retains the exact already-verified World proof")
+    correction = source.get("inherited_world_source_correction")
+    if correction and (target.get("world_source_correction") != correction or target.get("generation_isolation") != correction["isolation"]):
+        raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_DRIFT", "Capacity authorization must retain the exact complete sibling and isolation")
     uow.cursor.execute(
         "SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND frozen_stage_inputs #>> '{generation_policy,contract_version}' IN ('formation-generation.v5','formation-generation.v7')",
         [successor.project_id, successor.book_id],
@@ -1015,6 +1064,7 @@ def _capacity_authorization(
         **({"pack_version_successor": version_successor} if version_successor else {}),
         **({"capacity_inheritance": "generation-capacity-inheritance.v1"} if source.get("capacity_inheritance") else {}),
         **({"world_revalidation_inheritance":"world-revalidation-inheritance.v1"} if source.get("inherited_world_host_revalidation") else {}),
+        **({"world_source_inheritance":"world-source-inheritance.v1"} if correction else {}),
     }
 
 
@@ -1114,6 +1164,9 @@ def _capacity_target(
         authorization = {**authorization, "capacity_inheritance": "generation-capacity-inheritance.v1"}
     if source.get("inherited_world_host_revalidation"):
         target = {**target,"world_host_revalidation":source["inherited_world_host_revalidation"]}
+    if source.get("inherited_world_source_correction"):
+        correction = source["inherited_world_source_correction"]
+        target = {**target,"world_source_correction":correction,"generation_isolation":correction["isolation"]}
     return {**target, "planning_capacity": allocation}, authorization
 
 
@@ -1437,6 +1490,7 @@ def register(
     original = _command_from_payload(source["command"])
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
+    world_source_correction = source.get("mode") == "ISOLATED_WORLD_SOURCE_CORRECTION"
     isolated_generation = source.get("mode") == "ISOLATED_PURE_GENERATION"
     contract_change = source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}
     schema_correction = source.get("mode") == "PROVIDER_SCHEMA_CORRECTION"
@@ -1476,6 +1530,14 @@ def register(
     target = resolve_target(application, successor)
     if source.get("inherited_world_host_revalidation"):
         target = {**target,"world_host_revalidation":source["inherited_world_host_revalidation"]}
+    if source.get("inherited_world_source_correction"):
+        correction = source["inherited_world_source_correction"]
+        target = {**target,"world_source_correction":correction,"generation_isolation":correction["isolation"]}
+    if world_source_correction:
+        proof = source["world_source_correction"]
+        target = {**target,"world_source_correction":proof,"generation_isolation":proof["isolation"]}
+        if proof["planning_capacity"]:
+            target["planning_capacity"] = proof["planning_capacity"]
     if schema_correction:
         target = {**target, "provider_schema_correction": source["provider_schema_correction"]}
         if original.runtime_continuation_id:
@@ -1495,6 +1557,7 @@ def register(
         and not isolated_generation
         and not contract_change
         and not host_revalidation
+        and not world_source_correction
         and source["snapshot"]["release_sha"] == application.commit_sha
     ):
         raise KernelError(
@@ -1506,6 +1569,7 @@ def register(
         and not isolated_generation
         and not contract_change
         and not host_revalidation
+        and not world_source_correction
         and (
             (source["provider"], source["model_id"])
             != (
@@ -1545,7 +1609,7 @@ def register(
             "usage": "UNKNOWN", "preserved_repair_number": original.repair_number,
             "recovery_attempt_number": source["generation_recovery_number"],
             "failure_retry_counter":source["failure_retry_counter"]}
-    elif host_revalidation:
+    elif host_revalidation or world_source_correction:
         with AuthorityUnitOfWork(application.database_url) as uow:
             route_evidence = _capacity_authorization(
                 uow,
@@ -1557,7 +1621,7 @@ def register(
         route_evidence = {
             **route_evidence,
             "capacity_only": False,
-            "host_revalidation": "provider-schema-correction.v1" if schema_correction else source["world_host_revalidation"]["contract_version"],
+            "host_revalidation": "world-isolated-source-correction.v1" if world_source_correction else "provider-schema-correction.v1" if schema_correction else source["world_host_revalidation"]["contract_version"],
             **({"failure_retry_counter": source["provider_schema_correction"]["failure_retry_counter"]} if schema_correction else {}),
             "preserved_repair_number": original.repair_number,
             **(
@@ -1597,7 +1661,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation else '1.0.0'
+    continuation_version = '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
@@ -1634,7 +1698,7 @@ def register(
     }
 
     def materialize(uow, registration_operation_id, checkpoint):
-        if source.get("mode") == "WORLD_DISCLOSURE_REVALIDATION":
+        if source.get("mode") in {"WORLD_DISCLOSURE_REVALIDATION","ISOLATED_WORLD_SOURCE_CORRECTION"}:
             uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s ORDER BY formation_run_id FOR UPDATE",
                 [project_id,original.book_id])
             uow.cursor.fetchall()
@@ -1679,7 +1743,7 @@ def register(
                 != route_evidence
             )
             or (
-                host_revalidation
+                (host_revalidation or world_source_correction)
                 and _capacity_authorization(
                     uow,
                     source=current,
@@ -1705,6 +1769,7 @@ def register(
                 and not isolated_generation
                 and not contract_change
                 and not host_revalidation
+                and not world_source_correction
                 and require_route_evidence(
                     uow,
                     source=current,
@@ -1884,7 +1949,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation", "planning_reference_contract", "generation_isolation", "provider_schema_correction"}
+        if key not in {"planning_capacity", "world_host_revalidation", "world_source_correction", "planning_reference_contract", "generation_isolation", "provider_schema_correction"}
     }
     if (
         validate_runtime

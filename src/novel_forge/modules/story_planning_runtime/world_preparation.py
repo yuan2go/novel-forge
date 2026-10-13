@@ -95,6 +95,67 @@ def require_world_disclosure_revalidation(database_url: str, *, command: Any, op
         "knowledge_selection_digest":generation.get("knowledge_selection_digest", "")}
 
 
+def require_isolated_world_source_correction(database_url: str, *, command: Any, operation_id: str) -> dict[str, Any]:
+    from types import SimpleNamespace
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_retained_generation_stage_success
+    from .runtime_continuation import require_binding
+
+    binding = require_binding(database_url,command.runtime_continuation_id)
+    isolation = binding["target_runtime"].get("generation_isolation")
+    if not isolation or binding["successor_operation_id"] != operation_id:
+        raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "Correction requires the exact already-isolated parent and failed child")
+    query = AuthorityAssetQuery(database_url)
+    preparation = PlanningWorldPreparation(SimpleNamespace(database_url=database_url,query=query))
+    prefixes = preparation._isolated_world_prefixes(command)
+    source_document = next((document for prefix in prefixes if (document:=preparation._read(command.project_id,f"{prefix}/source")) is not None),None)
+    if source_document is None:
+        raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "Retain the selected frozen World source")
+    source = source_document.content["contract"]
+    source_ref = {"asset_version_id":source_document.asset_version_id,"content_hash":source_document.content_hash}
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT op.status,last.status,last.result,
+            EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=op.operation_id),
+            EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=op.operation_id),
+            EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=op.operation_id AND lease.status='HELD')
+            FROM authority_operation op JOIN LATERAL(SELECT status,result FROM authority_attempt WHERE operation_id=op.operation_id ORDER BY attempt_number DESC LIMIT 1) last ON true
+            WHERE op.operation_id=%s AND op.project_id=%s AND op.workspace_id=%s AND op.actor_id=%s AND op.definition_name='story_planning.generate' AND op.definition_version='1.21.0'""",
+            [operation_id,command.project_id,command.workspace_id,command.actor_id])
+        failed = uow.cursor.fetchone()
+        if (not failed or failed[:2] != ("FAILED_FINAL","FAILED_FINAL") or failed[2].get("error_code") != "WORLD_ISOLATED_RECEIPT_INVALID" or any(failed[3:])):
+            raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "Only the exact unsent host source-version failure permits correction")
+        WorldPreparationRepository(uow.cursor).assert_source_current(project_id=command.project_id,book_id=command.book_id,frozen=source)
+    if (source["request"] != dict(command.world_preparation_request or {}) or source["contract_version"] != "world-preparation-source.v3"
+            or source.get("actor_experiment") or source["reality"].get("epistemic_contract") != "world-agency.v2"):
+        raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "Keep the exact current World request")
+    generation = preparation._read_known_isolated_stage(command,prefixes,"generation",source_ref)
+    if generation is None or preparation._read_known_isolated_stage(command,prefixes,"evaluation",source_ref) is not None:
+        raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "Correction requires a complete matching generation and no matching Director result")
+    decoded = decode_world_generation({key:value for key,value in generation.content["contract"]["output"].items() if key not in {"knowledge_translations","actor_adjudications"}},agency=True)
+    candidates = validate_generated_candidates(decoded,WorldProductionPolicy(**source["policy"]))
+    PlanningWorldPreparation._validate_references(source,candidates,command)
+    skipped = []
+    for prefix in prefixes:
+        document = preparation._read(command.project_id,f"{prefix}/evaluation")
+        old_source = preparation._read(command.project_id,f"{prefix}/source")
+        if document is None or old_source is None or document.content["contract"]["source"] == source_ref:
+            continue
+        old_ref = {"asset_version_id":old_source.asset_version_id,"content_hash":old_source.content_hash}
+        if document.content["contract"]["source"] != old_ref or old_source.content["contract"]["request"] != source["request"]:
+            raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "An older skipped result must retain its own exact frozen source")
+        owner = preparation._source_operation(database_url,command.project_id,document.asset_version_id)
+        receipt = read_retained_generation_stage_success(database_url,EffectCommandContext(operation_id=owner,project_id=command.project_id,actor_id=command.actor_id,trace_id=command.trace_id,correlation_id=command.correlation_id),effect_id=document.content["contract"]["evidence"]["external_receipt_ref"])
+        if receipt is None or receipt["provider_evidence"].get("result") != document.content["contract"]["output"]:
+            raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "Keep exact historical results without adopting another source version")
+        skipped.append({"source":old_ref,"evaluation":{"asset_version_id":document.asset_version_id,"content_hash":document.content_hash}})
+    if not skipped:
+        raise KernelError("WORLD_ISOLATED_SOURCE_CORRECTION_INVALID", "The source-version mismatch must be reproduced from saved ancestors")
+    return {"contract_version":"world-isolated-source-correction.v1","source_operation_id":operation_id,
+        "parent_continuation_id":command.runtime_continuation_id,"isolation":isolation,"source":source_ref,
+        "generation":{"asset_version_id":generation.asset_version_id,"content_hash":generation.content_hash},
+        "skipped_source_versions":skipped,"planning_capacity":binding["target_runtime"].get("planning_capacity")}
+
+
 def require_world_host_revalidation(
     database_url: str, *, command: Any, operation_id: str
 ) -> dict[str, Any]:
@@ -1181,6 +1242,13 @@ class PlanningWorldPreparation:
             if document is None:
                 continue
             stored = document.content["contract"]
+            if stored["source"] != source_ref:
+                prefix_source = self._read(command.project_id,f"{prefix}/source")
+                if (prefix_source is not None and stored["source"] == {
+                        "asset_version_id":prefix_source.asset_version_id,"content_hash":getattr(prefix_source,"content_hash","")}
+                        and prefix_source.content["contract"].get("request") == dict(command.world_preparation_request or {})):
+                    continue
+                raise KernelError("WORLD_ISOLATED_RECEIPT_INVALID", "A sibling must retain its own exact source before another source version can be skipped")
             owner = self._source_operation(self.preparer.database_url, command.project_id, document.asset_version_id)
             receipt = read_retained_generation_stage_success(self.preparer.database_url, EffectCommandContext(
                 operation_id=owner, project_id=command.project_id, actor_id=command.actor_id,
