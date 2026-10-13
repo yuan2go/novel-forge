@@ -2,6 +2,15 @@
   "schema_version": "architecture-manifest.v1",
   "entries": [
     {
+      "name": "story_design.scope.reconcile",
+      "source": "src/novel_forge/cli/authority.py",
+      "application_source": "src/novel_forge/modules/story_design_authority/scope_recovery.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "authority.reconcile_scope",
+      "definition_factory": "novel_forge.modules.story_design_authority.scope_recovery:scope_reconciliation_definition"
+    },
+    {
       "name": "book.opening.continue_unstarted",
       "source": "src/novel_forge/api/routers/book_authority.py",
       "application_source": "src/novel_forge/modules/book_authority/opening.py",

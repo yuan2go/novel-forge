@@ -1812,6 +1812,18 @@ accepted-fact projection.
 | Canon | approved projection | extraction is merely a proposal |
 | Narrative State | projection | deterministic as-of view over accepted evidence |
 | Narrative Reality revision | immutable accepted-source binding | exact Outcome, state, Canon, acceptance and parent revision; no independent fact writer |
+
+Story Design current-version projections use Project, proven Book, design layer and
+logical key. A Book identity is resolved only from immutable candidate/generation,
+typed binding or owned Book lineage; ambiguous identities are rejected. Legacy assets
+without proven Book lineage retain the explicit `LEGACY_UNBOUND` namespace. Migration
+changes namespace projections without restoring superseded versions or granting approval.
+For a proven cross-namespace collision, the native scope reconciliation command may
+restore an unchanged approved BOOK/VOLUME version still selected by that Book's current
+Hierarchical Planning binding. It requires the exact original activation, approval,
+Opening binding and failed checkpoint, and appends a receipt; substantive plan changes
+continue through Plan Change. This administrative recovery provides no literary or
+author acceptance evidence.
 | World transition / Candidate Future | causal proposal | deterministic rules constrain candidate evolution; only Book-accepted observed or governed background effects advance reality |
 | Causal requirement / debt | predicate / preparation commitment | eligibility requires accepted support; actual payoff evidence discharges accepted debt |
 | Scene realization slot | prose candidate component | dynamically selected capability and actor knowledge scope; deterministic ordered integration |

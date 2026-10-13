@@ -176,6 +176,10 @@ class _Registry:
 
 
 class PostgresStoryDesignAssetAuthority:
+    def reconcile_scope(self, command, *, principal):
+        from .scope_recovery import reconcile
+        return reconcile(self, command, principal=principal)
+
     def __init__(
         self,
         database_url: str,

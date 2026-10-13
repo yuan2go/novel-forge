@@ -1346,6 +1346,22 @@ replay returns the original recovery job, while a changed reason is rejected. A 
 independent recovery decision needs its own key. The UI retains this frozen request
 through reload, using the existing Formation resume endpoint.
 
+For a proven cross-Book or cross-design-layer Story Design index collision, use
+`novel-forge authority-story-design-scope-reconcile --input-file "$EXACT_SCOPE_RECOVERY"`.
+The input is `ReconcileStoryDesignScopeCommand`: exact Project/Workspace/Book,
+asset/hash/state version, original and superseding ACTIVATE Operations, original
+approval decision/hash, current Hierarchical Planning binding, original Opening
+binding hash and current failed Opening checkpoint/hash, trusted actor and reason,
+idempotency key, trace and correlation. It supports unchanged approved BOOK/VOLUME
+plans with current parent closure. Related live leases and unisolated nonterminal
+external effects block reconciliation; another current version in the same namespace
+requires Plan Change. The transaction appends `RECONCILE_SCOPE` and its receipt,
+without dispatch or new approval. Read back the exact receipt and then recover the
+original Creation/Opening identity through the command above. Preserve unsuccessful
+attempts and the original failed checkpoint. Verify Book/layer isolation, ordinary
+same-namespace replacement, legacy compatibility, invalid exact identities, replay
+and unchanged historical artifacts before claiming engineering recovery.
+
 Cancellation binds the frozen digest, appends intent before forwarding to the active
 Formation/Opening/Book owner and prevents automatic revival. It does not rewrite completed
 history. `COMPLETED` means native internal Book acceptance completion. The author status
