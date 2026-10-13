@@ -631,6 +631,8 @@ class SourceImportApplication:
             attempt = uow.repositories.attempt_runtime.get_for_update(
                 worker.attempt_id, worker.project_id
             )
+            if attempt["operation_id"] != worker.causation_id:
+                raise KernelError("SOURCE_RECONCILIATION_OPERATION_CONFLICT", "Source recovery must bind its original Attempt and Operation")
             valid, _current_token = uow.repositories.attempt_runtime.current_fence(
                 worker.attempt_id,
                 worker.worker_id,

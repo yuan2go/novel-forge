@@ -41,7 +41,7 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
         from dataclasses import replace
         from novel_forge.modules.source_import.application import SourceImportApplication
         application = SourceImportApplication(DATABASE_URL, application_build_id="fixture", commit_sha="1" * 40)
-        for fault in (None, "unrelated_checkpoint", "stale_fence"):
+        for fault in (None, "unrelated_checkpoint", "stale_fence", "wrong_operation"):
             project, operation = self._operation("READY")
             attempt = self._create_and_queue(project, operation)
             lease = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt, project_id=project,
@@ -54,8 +54,12 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             takeover = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt, project_id=project,
                 worker_id="source-worker", lease_seconds=30, trace_id=worker.trace_id, correlation_id=worker.correlation_id)
             resumed = replace(worker, fencing_token=takeover["fencing_token"])
+            if fault == "wrong_operation":
+                resumed = replace(resumed, causation_id="unrelated-operation")
             if fault:
-                with self.assertRaisesRegex(KernelError, "SOURCE_RECONCILIATION_EFFECT_MISSING" if fault == "unrelated_checkpoint" else "ATTEMPT_FENCING_TOKEN_STALE"):
+                error = {"unrelated_checkpoint": "SOURCE_RECONCILIATION_EFFECT_MISSING", "stale_fence": "ATTEMPT_FENCING_TOKEN_STALE",
+                    "wrong_operation": "SOURCE_RECONCILIATION_OPERATION_CONFLICT"}[fault]
+                with self.assertRaisesRegex(KernelError, error):
                     application.reconcile_external_state(worker if fault == "stale_fence" else resumed)
             else:
                 self.assertEqual(application.reconcile_external_state(resumed), "unsent_lineage_checkpoint_resume")
