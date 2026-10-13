@@ -520,6 +520,7 @@ def has_domain_outputs(cursor, operation_id):
             "normalized-output",
             "output-manifest",
             "process-receipt",
+            "prose-candidate",
             "raw-output",
             "rejected-output",
             "usage-receipt",
