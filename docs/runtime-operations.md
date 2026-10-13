@@ -186,10 +186,10 @@ Recovery checks the immutable window, current matching manuscript prefix, actor,
 Tool denial, cancellation, all original receipts and released writers. Isolation, one native
 root successor and its scheduling intent commit atomically. The original window event resolves
 through the durable successor journal; its source Operation and remote/usage facts remain
-unchanged. Persistent retry exhaustion stops this review without blocking baseline prose.
-Current author manuscript windows reserve one bounded process window inside the frozen Effect
-deadline as a historical observation; the supervised model process has no total elapsed
-generation deadline. CLI stream/request retries remain disabled.
+unchanged. Known failures stop the current review for reconciliation or cause-bound
+recovery without blocking saved prose. Historical Effect deadlines and attempt limits
+remain receipt observations; they do not reserve or terminate a model process window.
+CLI stream/request retries remain disabled.
 
 For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning
