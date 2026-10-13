@@ -527,7 +527,18 @@ def build_provider_task_view(
         task = inputs.get("foundation_task")
         if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2", rfc6901_paths=command.get("execution_contract_version") in {"1.19.0", "1.21.0"}, narrative_search=command.get("execution_contract_version") == "1.21.0" and bool(command.get("narrative_search_id")), generated_title=command.get("generated_title_contract") == "generated-book-title.v1"):
             raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
-        return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
+        selection = inputs.get("narrative_intelligence")
+        recall_version = inputs.get("planning_recall_query_projection_version")
+        if recall_version not in (None, "foundation-method-recall-projection.v1"):
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Unknown Foundation recall projection")
+        if recall_version:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+
+            selection = project_foundation_method_recall(selection)
+        result = _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(selection))
+        if recall_version:
+            result["planning_recall_query_projection_version"] = recall_version
+        return result
     if stage in _PLANNING_STAGES:
         command = inputs.get("planning_command")
         if not isinstance(command, Mapping):
@@ -1539,6 +1550,14 @@ def build_provider_context_view(
         if task_view.get("working_continuity") != continuity:
             raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Planning task and Context must bind the same selected working prefix")
         projected_selection = task_view.get("narrative_intelligence", {})
+        recall_version = context_bundle.get("planning_recall_query_projection_version")
+        if recall_version or task_view.get("planning_recall_query_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+
+            if (stage not in FOUNDATION_GENERATORS or recall_version != "foundation-method-recall-projection.v1"
+                    or task_view.get("planning_recall_query_projection_version") != recall_version
+                    or projected_selection != _compact(project_foundation_method_recall(context_bundle["narrative_intelligence"]))):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Foundation task must preserve its exact frozen methods and recall receipt")
         projection_version = context_bundle.get("craft_history_projection_version")
         if projection_version or task_view.get("craft_history_projection_version") or "planning_history_projection" in projected_selection:
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories

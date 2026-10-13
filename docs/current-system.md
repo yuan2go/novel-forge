@@ -1996,6 +1996,11 @@ remain eligible. Conflicting identities and explicit foreign overrides fail clos
 Creative Briefs retain their native input-selection provenance. Frozen Chapter requests
 replay their existing manifest; a new preparation cannot treat an explicit legacy Brief as
 authorization for a new Book. Supervisor binds the Book's frozen platform version.
+An exact experimental Character Cast capacity successor can project method retrieval
+queries and matching diagnostics into an immutable omission receipt. It preserves
+selected method bodies, applicability conditions, hard constraints and actual usage
+history, and grants no method adoption or literary evidence. Old frozen Contexts replay
+their existing projection; model capacity and native unsent/lease guards remain binding.
 Current Draft Plan v3 (projection2), Draft Style v2 and ExecutionIntent v4
 carry Chapter style, POV, target length, author guidance and selected methods. The
 public `creative-baseline.v1` binds the exact source plan and these stage projections;

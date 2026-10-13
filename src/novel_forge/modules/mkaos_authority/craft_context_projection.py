@@ -10,6 +10,43 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 _HISTORY_FIELDS = ("recent_usage", "accepted_usage_history", "realization_cautions")
 _HISTORY_POINTER = "/narrative_intelligence/need/recent_craft_usage"
+_BUDGET_HISTORY_FIELDS = (*_HISTORY_FIELDS, "working_allocation_history", "working_coverage_gaps")
+
+
+def project_foundation_method_recall(selection: dict[str, Any]) -> dict[str, Any]:
+    from .craft_selection import _hash
+
+    if (selection.get("knowledge_access_policy", {}).get("craft_candidate_review_version")
+            != "explicit-allowlist-craft-review.v1"
+            or selection.get("schema_version") != "mkaos-narrative-intelligence-selection.v1"
+            or not selection.get("selected")):
+        raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Foundation recall projection requires its explicit selected method policy")
+    need = selection.get("need")
+    if (not isinstance(need, dict) or need.get("need_digest") != _hash({key: value for key, value in need.items() if key != "need_digest"})
+            or selection.get("selection_digest") != _hash({key: value for key, value in selection.items() if key != "selection_digest"})):
+        raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Recall query must bind the complete immutable selection")
+    result = deepcopy(selection)
+    fields = ("semantic_families", "theme_tags", "genre_tags", "reader_effect_tags", "conflict_tags",
+        "current_state_terms", "desired_transformation_terms", "craft_context", "condition_sources")
+    removed = {"/need/"+key: result["need"].pop(key) for key in fields if key in result["need"]}
+    for index, card in enumerate(result["selected"]):
+        assessment = card.get("craft_assessment", {})
+        metrics = {key: assessment.pop(key) for key in ("matching_assessment", "score", "match_reasons",
+            "rejection_reason", "selection_reason", "candidate_review_policy_version") if key in assessment}
+        budget = assessment.get("budget_assessment")
+        if isinstance(budget, dict) and not any(budget.get(key) for key in _BUDGET_HISTORY_FIELDS):
+            metrics["budget_assessment"] = assessment.pop("budget_assessment")
+        if metrics:
+            removed[f"/selected/{index}/craft_assessment"] = metrics
+    result["recall_query_receipt"] = {
+        "contract_version": "foundation-method-recall-projection.v1",
+        "source_selection_digest": selection["selection_digest"], "source_need_digest": need["need_digest"],
+        "frozen_context_pointer": "/narrative_intelligence/need",
+        "omitted_fields": sorted(removed), "omitted_value_hash": _hash(removed),
+        "boundary": "RETRIEVAL_QUERY_ONLY_NOT_AUTHOR_REQUIREMENTS_OR_STORY_FACTS",
+        "preserved": "All selected method bodies, applicability checks, prerequisites, exceptions, hard constraints, required versions and histories; narrative inputs remain in their frozen role segments.",
+    }
+    return result
 
 
 def approved_method_activation_view(content: dict[str, Any], *, asset_version_id: str, content_hash: str) -> dict[str, Any]:

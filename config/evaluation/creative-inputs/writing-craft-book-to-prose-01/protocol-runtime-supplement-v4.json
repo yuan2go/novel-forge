@@ -1,0 +1,42 @@
+{
+  "contract_version": "writing-craft-book-to-prose-runtime-supplement.v4",
+  "work_package": "WP-WRITING-CRAFT-BOOK-TO-PROSE-01",
+  "frozen_at": "2026-10-13T23:15:26.582417+00:00",
+  "previous_protocols_and_requests_preserved": true,
+  "infrastructure_before_first_prose": {
+    "code_sha": "157f03f559737634fcd972b1e4ce9cb903a303cb",
+    "shared": "Production Preparation filters Book ownership before its collection limit, verifies native Brief selection and binds exact frozen platform versions. Explicit foreign inputs remain rejected."
+  },
+  "B_method_projection_capacity_successor": {
+    "source_operation_id": "f48bf078-13b4-4731-a63e-e82d3dcb77d2",
+    "source_context_asset_version_id": "98bd5fa4-5982-49da-b169-3ab880a18eb6",
+    "native_contract": "foundation-method-recall-projection.v1",
+    "scope": "ALLOW_ONLY / EXPERIMENTAL_VALIDATION / explicit-allowlist-craft-review.v1 / character.cast.generate",
+    "preserved": [
+      "exact selected method versions and bodies",
+      "method conditions and UNKNOWN applicability",
+      "hard constraints and required versions",
+      "accepted and working usage histories",
+      "all author and generated narrative input versions"
+    ],
+    "query_data": "Recall terms, matching diagnostics and empty history budgets retain a hash-bound pointer to the original immutable Context. They do not become additional fiction requirements.",
+    "model_context_limit": 258400,
+    "model_output_limit": 32000,
+    "provider_preflight": "Existing conservative UTF8 byte admission still applies. Read-only rendering reconstruction is diagnostic; only the subsequent native actual request/receipt establishes dispatch and consumption."
+  },
+  "comparison_boundary": {
+    "attribution": "B enhancement package only; no single-book or single-method causal attribution",
+    "A_C_new_method_access": "DENY_ALL retained",
+    "same_model_and_reasoning": true,
+    "new_global_skill": false,
+    "observed_repairs_and_capacity_deviations": "Retain exact per-arm calls, failures, declared Pack release, actual worktree SHA, source Context and rendered request hashes. Earlier configuration drift is not erased by this supplement."
+  },
+  "prose_at_freeze": {
+    "A_original_1_han": 4126,
+    "A_original_1_asset_version_id": "authority-output:d9491752-c1cf-4665-9374-00ce9d37b702:chapter.draft:v1",
+    "B": 0,
+    "C": 0
+  },
+  "literary_effect": "NOT_ASSESSED",
+  "human_feedback": "PENDING_HUMAN_FEEDBACK"
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261014_0205_source_observation_generation_isolation",
+  "head": "20261014_0207_foundation_method_context",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -209,6 +209,7 @@
     "20261012_0203_capacity_availability_observation",
     "20261013_0204_retrieval_generation_progress",
     "20261014_0205_source_observation_generation_isolation",
-    "20261014_0206_story_design_book_namespace"
+    "20261014_0206_story_design_book_namespace",
+    "20261014_0207_foundation_method_context"
   ]
 }

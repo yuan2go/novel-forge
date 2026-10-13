@@ -908,6 +908,15 @@ under this opt-in. Exact adopted translations, inherited requirements and explic
 overrides still fail closed on absence, revocation or drift. Relevant checks are the
 need-driven selection, MKAOS domain and Authority production-preparation unit suites;
 real planning and Writer consumption remain separate evidence.
+An unsent experimental `character.cast.generate` route-capacity failure can retain its
+exact methods through `foundation-method-recall-projection.v1`. Native continuation
+records omitted retrieval query/score data in a hash-bound receipt; method bodies,
+conditions, hard constraints and actual usage histories stay intact. Migration 0207
+adds only this exact frozen-Context scope to the existing unsent guard. Default and
+historical Contexts keep their prior task view. Check the craft need-driven and Provider
+task-view suites plus `test_authorized_planning_capacity_postgres.py`, then verify the
+actual rendered request and Provider result separately. Do not raise the model context
+capacity or call a rejected request under a new work identity.
 The same opt-in records current scoped Card approval in Planning and adopted Writer
 views, preserving older Candidate-stage declarations and method content as historical
 evidence. A complete Provider result rejected by the knowledge translation contract is

@@ -188,7 +188,7 @@ def require_source(
     if (
         (row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED")
         or (row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PROVIDER_ROUTING_BLOCKED"
-            and frozen.get("generator_operation_name") in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})
+            and frozen.get("generator_operation_name") in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate", "character.cast.generate"})
     ):
         return _pre_send_capacity_source(
             uow,
@@ -728,14 +728,23 @@ def _pre_send_capacity_source(
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing decision is absent")
         require_capacity_route_candidates(decision[0], frozen=frozen, source_operation_id=source_operation_id)
         group = frozen.get("generator_operation_name") == "chapter_group_plan.generate"
-        projection_revalidation = {"contract_version": "planning-exact-value-reference.v1" if frozen.get("generator_operation_name") == "chapter_plan.generate" else "typed-planning-window-projection.v1" if group else "typed-volume-context-projection.v1",
+        projection_revalidation = {"contract_version": "foundation-method-recall-projection.v1" if frozen.get("generator_operation_name") == "character.cast.generate" else "planning-exact-value-reference.v1" if frozen.get("generator_operation_name") == "chapter_plan.generate" else "typed-planning-window-projection.v1" if group else "typed-volume-context-projection.v1",
             "blocked_decision_id": decision[0]["decision_id"], "source_operation_status": str(row[0]),
-            "reason": "Retain typed planning fields and audit material outside the exact frozen narrative horizon" if group else "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions"}
+            "reason": "Retain selected methods, conditions and narrative inputs while recording retrieval query and matching diagnostics outside the Provider task" if frozen.get("generator_operation_name") == "character.cast.generate" else "Retain typed planning fields and audit material outside the exact frozen narrative horizon" if group else "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions"}
         uow.cursor.execute("""SELECT output.asset_version_id,output.content_hash FROM authority_operation_output_asset output
             WHERE output.operation_id=%s AND output.output_key='planning.context_bundle'""", [source_operation_id])
         context = uow.cursor.fetchone()
         if not context:
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_MISSING", "Routing capacity failure must retain its frozen Context")
+        if frozen.get("generator_operation_name") == "character.cast.generate":
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+
+            original = AuthorityAssetQuery(uow.database_url).require(project_id=frozen["project_id"], asset_version_id=context[0])
+            policy = original.content.get("knowledge_access_policy", {})
+            if (original.content_hash != context[1] or original.content.get("book_id") != frozen["book_id"]
+                    or policy.get("mode") != "ALLOW_ONLY" or policy.get("usage_scope") != "EXPERIMENTAL_VALIDATION"):
+                raise KernelError("PLANNING_METHOD_CONTEXT_SCOPE_REQUIRED", "Character Cast recall projection requires its exact experimental Book Context")
+            project_foundation_method_recall(original.content.get("narrative_intelligence", {}))
         projection_revalidation.update(context_asset_version_id=context[0],context_content_hash=context[1])
     uow.cursor.execute(
         "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle')",

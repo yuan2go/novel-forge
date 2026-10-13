@@ -22,6 +22,59 @@ def need(context, **kwargs):
     return NarrativeIntelligenceNeed(scope='SCENE', target_stage='chapter_plan.generate', craft_context=context, **kwargs)
 
 
+def test_foundation_recall_projection_retains_methods_conditions_and_real_history_and_rejects_drift():
+    from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+    from novel_forge.modules.mkaos_authority.craft_selection import _hash
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_INPUT_ROLES, foundation_task
+
+    selected_need = {'target_stage': 'character.cast.generate', 'hard_constraints': ['Retain the author input'],
+        'required_card_asset_version_ids': ['method:v1'], 'craft_context': {'scene_goal': 'RETRIEVAL_QUERY'},
+        'condition_sources': {'world_bible': {'asset_version_id': 'world:v1', 'content_hash': 'sha256:world'}},
+        'recent_craft_usage': [{'source': 'real-prior-observation'}]}
+    selected_need['need_digest'] = _hash(selected_need)
+    selection = {'schema_version': 'mkaos-narrative-intelligence-selection.v1', 'need': selected_need,
+        'knowledge_access_policy': {'craft_candidate_review_version': 'explicit-allowlist-craft-review.v1'},
+        'selected': [{'knowledge_card_asset_version_id': 'method:v1',
+            'selected_content': {'mechanism': 'A choice follows available information', 'epistemic_status': 'HYPOTHESIS'},
+            'applicability_assessment': {'status': 'UNKNOWN', 'checks': [{'result': 'UNKNOWN', 'statement': 'Keep intentional ambiguity'}]},
+            'craft_assessment': {'applicability_judgment': 'HYPOTHESIS', 'matching_assessment': {'terms': ['RETRIEVAL_QUERY']},
+                'budget_assessment': {'recent_usage': [{'source': 'real-prior-observation'}]}}}]}
+    selection['selection_digest'] = _hash(selection)
+    original = deepcopy(selection)
+    projected = project_foundation_method_recall(selection)
+    assert selection == original
+    assert projected['selected'][0]['selected_content'] == selection['selected'][0]['selected_content']
+    assert projected['selected'][0]['applicability_assessment'] == selection['selected'][0]['applicability_assessment']
+    assert projected['selected'][0]['craft_assessment']['budget_assessment'] == selection['selected'][0]['craft_assessment']['budget_assessment']
+    assert projected['need']['hard_constraints'] == selected_need['hard_constraints']
+    assert projected['need']['recent_craft_usage'] == selected_need['recent_craft_usage']
+    assert 'craft_context' not in projected['need']
+    working = deepcopy(selection)
+    budget = working['selected'][0]['craft_assessment']['budget_assessment']
+    budget['recent_usage'] = []
+    budget['working_allocation_history'] = [{'draft_version': 'working:v1'}]
+    budget['working_coverage_gaps'] = [{'use_id': 'unrealized:v1'}]
+    working['selection_digest'] = _hash({key: value for key, value in working.items() if key != 'selection_digest'})
+    assert project_foundation_method_recall(working)['selected'][0]['craft_assessment']['budget_assessment'] == budget
+    inputs = {'planning_command': {'planning_scope': 'NOT_APPLICABLE'},
+        'frozen_inputs': [{'role': role} for role in FOUNDATION_INPUT_ROLES['character.cast.generate']],
+        'foundation_task': foundation_task('character.cast.generate'), 'narrative_intelligence': selection}
+    legacy = build_provider_task_view('character.cast.generate', inputs)
+    assert legacy['narrative_intelligence'] == original
+    newer = build_provider_task_view('character.cast.generate', {**inputs,
+        'planning_recall_query_projection_version': 'foundation-method-recall-projection.v1'})
+    assert newer['narrative_intelligence'] == projected
+    for changed in ('method', 'need'):
+        mutated = deepcopy(selection)
+        if changed == 'method':
+            mutated['selected'][0]['selected_content']['mechanism'] = 'Changed method'
+        else:
+            mutated['need']['hard_constraints'].append('Changed author requirement')
+        with pytest.raises(KernelError, match='CRAFT_CONTEXT_PROJECTION_DRIFT'):
+            project_foundation_method_recall(mutated)
+
+
 def test_current_activation_evidence_keeps_historical_candidate_and_method_conditions_unchanged():
     from novel_forge.modules.mkaos_authority.craft_context_projection import approved_method_activation_view
     content = {'source_policy': {'approval_class': 'EXPERIMENTAL_VALIDATION', 'approval_policy_version': 'experiment.v1',

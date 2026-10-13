@@ -4717,6 +4717,7 @@ class PostgresPlanningExecutionPreparer:
                 **({"working_continuity_projection_version": context_document.content["working_continuity_projection_version"]}
                     if context_document.content.get("working_continuity_projection_version") else {}),
                 **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
+                **({"planning_recall_query_projection_version": context_document.content["planning_recall_query_projection_version"]} if context_document.content.get("planning_recall_query_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5785,7 +5786,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") == "typed-volume-context-projection.v1"):
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1"}):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
@@ -6093,6 +6094,11 @@ class PostgresPlanningExecutionPreparer:
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if (command.generator_operation_name == "character.cast.generate"
+                and content.get("knowledge_access_policy", {}).get("craft_candidate_review_version")
+                == "explicit-allowlist-craft-review.v1"
+                and content.get("narrative_intelligence", {}).get("selected")):
+            content["planning_recall_query_projection_version"] = "foundation-method-recall-projection.v1"
         if command.generator_operation_name == "arc_plan.generate":
             content["typed_volume_projection_version"] = "typed-volume-context-projection.v1"
         if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id:

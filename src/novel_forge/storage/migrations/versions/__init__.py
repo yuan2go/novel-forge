@@ -208,6 +208,7 @@ from . import (
     v20261013_0204_retrieval_generation_progress,
     v20261014_0205_source_observation_generation_isolation,
     v20261014_0206_story_design_book_namespace,
+    v20261014_0207_foundation_method_context,
 )
 
 VERSION_MODULES = [
@@ -418,6 +419,7 @@ VERSION_MODULES = [
     v20261013_0204_retrieval_generation_progress,
     v20261014_0205_source_observation_generation_isolation,
     v20261014_0206_story_design_book_namespace,
+    v20261014_0207_foundation_method_context,
 ]
 
 __all__ = ["VERSION_MODULES"]

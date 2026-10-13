@@ -2,12 +2,13 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
-from novel_forge.storage.migrations.versions.v20261012_0203_capacity_availability_observation import UPGRADE_STATEMENTS
+from novel_forge.storage.migrations.versions.v20261014_0207_foundation_method_context import UPGRADE_STATEMENTS
 from tests.integration.authority_postgres_support import DATABASE_URL
 
 
-@pytest.mark.parametrize("group_change", [False, True])
-def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(group_change):
+@pytest.mark.parametrize("scenario", ["chapter", "group", "cast"])
+def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(scenario):
+    group_change = scenario == "group"
     with psycopg.connect(DATABASE_URL) as connection:
         try:
             for ddl in [
@@ -63,6 +64,19 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
                 connection.execute("INSERT INTO authority_asset VALUES('change','replan_request','project')")
                 connection.execute("INSERT INTO authority_asset_version VALUES('change','change','change-hash',%s)", [Jsonb({'book_id': 'book', 'affected_scope': 'CHAPTER_GROUP'})])
                 generation.update(generator_operation_name='chapter_group_plan.generate', planning_scope='CHAPTER_GROUP', input_snapshot=snapshot)
+            if scenario == "cast":
+                source.update(generator_operation_name='character.cast.generate', logical_key='formation:CHARACTER_CAST')
+                child = {**source, 'runtime_continuation_id': 'runtime', 'idempotency_key': 'child'}
+                runtime['planning_capacity']['context_revalidation']['contract_version'] = 'foundation-method-recall-projection.v1'
+                connection.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id='source'", [Jsonb({'payload': source})])
+                connection.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id='child'", [Jsonb({'payload': child})])
+                connection.execute("UPDATE authority_story_planning_runtime_continuation SET source_command=%s,successor_command=%s,target_runtime=%s", [Jsonb(source), Jsonb(child), Jsonb(runtime)])
+                connection.execute("UPDATE authority_story_planning_generation SET generator_operation_name='character.cast.generate',logical_key='formation:CHARACTER_CAST',planning_scope='NOT_APPLICABLE'")
+                context = {'book_id': 'book', 'project_id': 'project', 'knowledge_access_policy': {
+                    'mode': 'ALLOW_ONLY', 'usage_scope': 'EXPERIMENTAL_VALIDATION', 'craft_candidate_review_version': 'explicit-allowlist-craft-review.v1'},
+                    'narrative_intelligence': {'selected': [{'knowledge_card_asset_version_id': 'method:v1'}]}}
+                connection.execute("UPDATE authority_asset_version SET content=%s WHERE asset_version_id='context'", [Jsonb(context)])
+                generation.update(generator_operation_name='character.cast.generate', logical_key='formation:CHARACTER_CAST', planning_scope='NOT_APPLICABLE')
             def accepted(value=generation):
                 return connection.execute("SELECT authority_unsent_context_continuation_permitted('runtime','child',%s)", [Jsonb(value)]).fetchone()[0]
             def route(reasons):
@@ -71,6 +85,12 @@ def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(g
             legal = [['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED'], ['CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT', 'PROVIDER_UNAVAILABLE:PROVIDER_MODEL_CAPACITY_UNAVAILABLE:receipt:until:2026-10-12T14:05:15+00:00']]
             route(legal)
             assert accepted()
+            if scenario == "cast":
+                for key, value in [('book_id', 'foreign'), ('project_id', 'foreign'), ('knowledge_access_policy', {}),
+                        ('narrative_intelligence', {'selected': []})]:
+                    connection.execute("UPDATE authority_asset_version SET content=%s WHERE asset_version_id='context'", [Jsonb({**context, key: value})])
+                    assert not accepted()
+                connection.execute("UPDATE authority_asset_version SET content=%s WHERE asset_version_id='context'", [Jsonb(context)])
             for denied in [[['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED']], [['BUDGET_HARD_LIMIT']], [['AUTHORIZATION_MISSING', 'CONTEXT_CAPACITY_EXCEEDED']], [['CONTEXT_CAPACITY_EXCEEDED', 'PROVIDER_UNAVAILABLE:AUTHORIZATION_MISSING:receipt:until:2026-10-12T14:05:15+00:00']]]:
                 route(denied)
                 assert not accepted()
