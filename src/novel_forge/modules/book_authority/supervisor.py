@@ -945,6 +945,14 @@ class PostgresBookProductionSupervisor:
             ),
         )
         from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+        if replacement_plan is not None and generator == "chapter_plan.generate":
+            from novel_forge.modules.worldbuilding.production_planning import world_working_source_matches
+            old_world = ((replacement_plan["content"].get("constraint_envelope") or {}).get("world_preparation") or {}).get("frozen_source")
+            working = arc_working_set.get("working_manuscript")
+            if not world_working_source_matches(old_world, working):
+                generation = replace(generation, idempotency_key=generation.idempotency_key + ":world-working:" + canonical_hash({
+                    "replaced_asset_version_id": replacement_plan["asset_version_id"],
+                    "working_snapshot_hash": working["snapshot_hash"]})[7:])
         feedback = self._future_plan_evidence(book, replacement_plan, target_chapter=chapter_number, fallback_plan_version_id=parent)
         if feedback:
             generation = replace(generation, change_evidence_version_ids=feedback,
@@ -1088,7 +1096,10 @@ class PostgresBookProductionSupervisor:
         declared = (
             envelope.get("arc_working_set") if isinstance(envelope, dict) else None
         )
-        return declared != expected or bool(self._future_plan_evidence(book, plan, target_chapter=chapter_number))
+        from novel_forge.modules.worldbuilding.production_planning import world_working_source_matches
+        world = ((envelope or {}).get("world_preparation") or {}).get("frozen_source")
+        return (declared != expected or not world_working_source_matches(world, expected.get("working_manuscript"))
+            or bool(self._future_plan_evidence(book, plan, target_chapter=chapter_number)))
 
     def _future_plan_evidence(self, book, plan, *, target_chapter, fallback_plan_version_id=""):
         if target_chapter != writing_frontier(book) + 1:
@@ -1137,7 +1148,7 @@ class PostgresBookProductionSupervisor:
     ) -> dict[str, Any]:
         return {
             "authority": "BOOK_PRODUCTION_SUPERVISOR",
-            "reason": "accepted-reality Arc Working Set changed before freeze",
+            "reason": "selected working sources or accepted-reality Arc Working Set require future replacement before freeze",
             "book_run_id": str(book["book_run_id"]),
             "accepted_through_chapter": int(book["accepted_through_chapter"]),
             "replaced_asset_version_id": str(

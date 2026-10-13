@@ -117,7 +117,7 @@ def project_role_context(
     candidates = []
     rejected = []
     scoped_entries = [
-        (kind, key, entry, "CURRENT_STATE")
+        (kind, key, entry, entry.get("evidence_role", "CURRENT_STATE"))
         for (kind, key), entry in sorted(state_index(reality).items())
     ]
     workset = None

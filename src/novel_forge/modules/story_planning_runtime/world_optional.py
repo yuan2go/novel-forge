@@ -24,7 +24,7 @@ from novel_forge.modules.production_execution.execution_template import (
     decision_template,
     verify_template_provenance,
 )
-from novel_forge.modules.worldbuilding.production_planning import _seal
+from novel_forge.modules.worldbuilding.production_planning import _seal, world_target_chapter
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.world_preparation_repositories import (
@@ -89,7 +89,7 @@ def deferred_action(*, source, source_ref, command, admission, rejected=None):
             "authority": "PLANNING_PROPOSAL",
             "baseline_id": source["reality"]["revision_id"],
             "accepted_through_chapter": source["reality"]["chapter_number"],
-            "chapter_number": int(source["request"]["accepted_through_chapter"]) + 1,
+            "chapter_number": world_target_chapter(source),
             "intent_version_id": source["intent_version_id"],
             "policy": source["policy"],
             "selected_candidate_id": "",
@@ -449,14 +449,14 @@ def follow_optional_failure(application, *, command, operation_id, principal, ex
         ),
         evaluation=stage_documents[1]["output"],
         policy=WorldProductionPolicy(**source["policy"]),
-        chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+        chapter_number=world_target_chapter(source),
         intent_version_id=source["intent_version_id"],
     )
     from novel_forge.modules.worldbuilding.continuation import (
         apply_preparation_decisions,
     )
 
-    if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}:
+    if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}:
         plan = apply_preparation_decisions(fresh_plan=plan, decisions=[])
     if (
         canonical_hash(plan) != canonical_hash(old_content["contract"]["world_plan"])

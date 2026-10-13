@@ -108,6 +108,19 @@ class PostgresBookProductionQuery:
                  UNION ALL SELECT request.book_run_id,0,ARRAY[request.book_run_id]
                  FROM authority_book_chapter_request request WHERE request.project_id=%s AND request.chapter_root_operation_id=%s)
                 UNION ALL
+                SELECT revision.command_payload #>> '{preparation_report,working_revision,book_run_id}',0,
+                       ARRAY[revision.command_payload #>> '{preparation_report,working_revision,book_run_id}']
+                FROM authority_operation revision
+                JOIN authority_book_production production
+                  ON production.book_run_id=revision.command_payload #>> '{preparation_report,working_revision,book_run_id}'
+                  AND production.project_id=revision.project_id AND production.workspace_id=revision.workspace_id
+                  AND production.book_id=revision.command_payload->>'book_id'
+                WHERE revision.project_id=%s AND revision.operation_id=%s
+                  AND revision.definition_name='chapter.slice.run'
+                  AND revision.definition_version='3.10.0-working-revision.v1'
+                  AND revision.definition_snapshot #>> '{policy,working_revision_contract}'='chapter-working-revision.v1'
+                  AND revision.command_payload #>> '{preparation_report,working_revision,contract_version}'='chapter-working-revision.v1'
+                UNION ALL
                 SELECT edition.source_book_run_id,subjects.depth+1,subjects.path || edition.source_book_run_id
                 FROM subjects JOIN authority_book_edition_run binding ON binding.book_run_id=subjects.subject_id AND binding.role='VALIDATION'
                 JOIN authority_book_edition_revision revision USING(revision_id)
@@ -126,6 +139,8 @@ class PostgresBookProductionQuery:
                           AND production.stable_idempotency_key=run.formation_run_id || ':production'))""",
                 [
                     subject_id,
+                    subject_id,
+                    project_id,
                     subject_id,
                     project_id,
                     subject_id,

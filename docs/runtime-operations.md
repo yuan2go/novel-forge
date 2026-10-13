@@ -333,6 +333,17 @@ Skill/Pack materialization, Planning working continuity and the enhanced-working
 of `test_author_first_manuscript_postgres.py`. Record source coverage separately from
 Writer semantic attribution. An offline located-case PASS, a scripted PostgreSQL execution
 or model evaluation cannot establish literary improvement or independent human validation.
+For World working continuity, run `test_world_working_continuity.py`,
+`test_world_initial_agency.py`, `test_world_causal_preparation.py`,
+`test_world_causal_batch.py`, `test_book_production_supervisor.py` and
+`test_world_working_continuity_postgres.py`. Verify the target and accepted cursor
+separately, exact selected-source binding, own belief/knowledge versus another character
+and reader-only disclosure, unchanged Canon, and legacy Source replay. Check World,
+Director, optional preparation and reference sampling consumers. Native manuscript
+revision/continue must reuse Creation's actual Pack scope; the Chapter worker resolves
+the exact typed working-revision Root to its owning Book. Confirm installed launchers
+and recover the original Root after a pre-dispatch failure. Missing Writer memory and
+unverified observation semantics remain explicit; these checks do not establish prose quality.
 Per-Chapter opt-in requires the local author/operator and freezes policy plus exact sources
 in the native request; omitted policy keeps the profile/default path. A literary comparison requires its own scoped input and existing runtime authorization.
 Do not resume paused original work or unresolved UNKNOWN effects as a comparison shortcut.

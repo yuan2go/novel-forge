@@ -172,5 +172,7 @@ def test_current_v7_creation_binding_retains_original_actor_digest_and_scope(
         "project",
         "chapter-root",
         "project",
+        "chapter-root",
+        "project",
         "project",
     ]

@@ -10131,7 +10131,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:30df21f272063cbf4305f2cd3aab639d5a2c2b2d01a6c20de88fd7012f9e3a16"
+    "implementation_tree_sha": "sha256:4670f2307579e41427d16418769c724a87a1382e409ffee98877b7fb0e5fffe7"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -10650,7 +10650,7 @@
     {
       "id": "bounded-author-working-source-window",
       "classification": "CONFIGURABLE_POLICY",
-      "statement": "Historical default continuation retains four selected chapters as bounded tails. Opt-in v2 supplies located passages through 32 chapters; v3 permits a bounded configured long-history window with immutable unreviewed observations, exact sources and explicit missing/stale or omitted evidence. It grants no accepted facts and proves no literary quality.",
+      "statement": "Historical default continuation retains four selected chapters as bounded tails. Opt-in v2 supplies located passages through 32 chapters; v3 permits a bounded configured long-history window with immutable unreviewed observations, exact sources and explicit missing/stale or omitted evidence. It grants no accepted facts and proves no literary quality. Fresh World source v5 separately binds the working target and exact selected packet; located attributed observations support only private candidate epistemic predicates, retain unverified semantics and do not advance accepted Reality. Missing memory remains unknown.",
       "design_review_required": false,
       "evidence": [
         {
@@ -10664,6 +10664,10 @@
         {
           "path": "src/novel_forge/modules/narrative_state/working_memory.py",
           "symbol": "compile_working_memory"
+        },
+        {
+          "path": "src/novel_forge/modules/worldbuilding/working_state.py",
+          "symbol": "project_working_observation_context"
         }
       ]
     }
@@ -11920,6 +11924,14 @@
         {
           "path": "src/novel_forge/modules/book_authority/supervisor.py",
           "symbol": "PostgresBookProductionSupervisor._generate_plan"
+        },
+        {
+          "path": "src/novel_forge/storage/world_preparation_repositories.py",
+          "symbol": "WorldPreparationRepository.require_source"
+        },
+        {
+          "path": "src/novel_forge/modules/worldbuilding/working_state.py",
+          "symbol": "project_working_observation_context"
         }
       ],
       "downstream": [

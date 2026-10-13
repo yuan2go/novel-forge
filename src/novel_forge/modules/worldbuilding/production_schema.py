@@ -9,8 +9,8 @@ from .dynamics import WorldTransition
 from .production_planning import WorldProductionPolicy
 
 
-def world_transition_payload_schema(*, agency: bool = False) -> dict[str, Any]:
-    return world_transition_schema(agency=agency)
+def world_transition_payload_schema(*, agency: bool = False, working_observations: bool = False) -> dict[str, Any]:
+    return world_transition_schema(agency=agency, working_observations=working_observations)
 
 
 def _object(properties: dict[str, Any]) -> dict[str, Any]:
@@ -136,7 +136,7 @@ def _frozen_world_transition_schema() -> dict[str, Any]:
     return result
 
 
-def world_transition_schema(*, agency: bool = False) -> dict[str, Any]:
+def world_transition_schema(*, agency: bool = False, working_observations: bool = False) -> dict[str, Any]:
     from novel_forge.modules.narrative_state.contracts import NarrativeStateKind
     from .dynamics import RequirementOperator
 
@@ -164,6 +164,8 @@ def world_transition_schema(*, agency: bool = False) -> dict[str, Any]:
     predicate["description"] = (
         "Copy exact causal state identity and field. EXISTS may use null value; numeric comparison requires a numeric value. Epistemic bases must use character_knowledge or character_belief."
     )
+    if working_observations and not agency:
+        raise KernelError("WORLD_WORKING_AGENCY_REQUIRED", "Working observation references require the scoped agency contract")
     if not agency:
         return _frozen_world_transition_schema()
     result = _object(
@@ -258,6 +260,15 @@ def world_transition_schema(*, agency: bool = False) -> dict[str, Any]:
     result["description"] = (
         "Serialized WorldTransition, not prose. Copy approved actor/entity identities and exact frozen foundation or accepted causal references. story_time is an ordered object, never a chapter label string; end_ordinal must be at least start_ordinal. No invented prerequisites or inferred accepted facts."
     )
+    if working_observations:
+        result["description"] = "Serialized WorldTransition proposal with exact supplied Foundation, accepted or selected-working causal references. Working evidence remains unreviewed and cannot establish objective facts or accepted knowledge. story_time is an ordered object; preserve actor, source identity and attributed information."
+        result["properties"]["transition_id"]["description"] = (
+            "Use a bare batch-local name matching [A-Za-z][A-Za-z0-9_-]{0,63}. In cause_refs use local:<name> for preparation events; other references must be exact supplied Foundation, accepted event or selected-working observation source_event_id identities. Working observations are unreviewed candidate experience, not accepted history or objective World facts."
+        )
+        result["properties"]["epistemic_basis"]["description"] += (
+            " Own selected-working observation entries may supply their exact state_kind, entity_key and proposition predicate. Preserve attribution and perspective; a represented belief or hearsay may be wrong. Do not replace missing observation entries with invented knowledge or use reader-only disclosure."
+        )
+        result["properties"]["action_mode"]["description"] = "ROUTINE: ordinary non-epistemic agency supported by supplied Foundation, accepted or working experience; never a hidden-information decision. PERCEPTION: observe an available objective source. INFORMATION_DEPENDENT: act on this character's own supplied knowledge or represented belief. Director checks classification and the located working passages."
     return result
 
 
@@ -400,7 +411,10 @@ def world_generation_schema(
     policy: WorldProductionPolicy, *, audience_scoped: bool = False,
     arc_refs: tuple[str, ...] | None = None, obligation_refs: tuple[str, ...] | None = None,
     agency: bool = False,
+    working_observations: bool = False,
 ) -> dict[str, Any]:
+    if working_observations and not agency:
+        raise KernelError("WORLD_WORKING_AGENCY_REQUIRED", "Working observation references require the scoped agency contract")
     if not agency:
         return _frozen_world_generation_schema(policy, audience_scoped=audience_scoped, arc_refs=arc_refs, obligation_refs=obligation_refs)
     transition = _object(
@@ -411,7 +425,7 @@ def world_generation_schema(
                 "maxLength": 16384,
                 "description": "JSON serialization of this typed contract: "
                 + json.dumps(
-                    world_transition_schema(agency=agency),
+                    world_transition_schema(agency=agency, working_observations=working_observations),
                     ensure_ascii=False,
                     sort_keys=True,
                 ),

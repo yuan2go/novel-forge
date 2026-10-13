@@ -8,10 +8,12 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def setup_runtime(
-    monkeypatch, *, state="READY", chapter=4, outcome="YIELDED_CHECKPOINT"
+    monkeypatch, *, state="READY", chapter=4, outcome="YIELDED_CHECKPOINT", runtime_values=None
 ):
     from novel_forge.api import authority_dependencies as deps
     from novel_forge.modules.book_authority import creation_runtime, manuscript
+    from novel_forge.cli import manuscript as manuscript_cli
+    monkeypatch.setattr(manuscript_cli, "_manuscript_runtime_values", lambda *args, **kwargs: runtime_values)
 
     book = {
         "project_id": "p",
@@ -45,7 +47,7 @@ def setup_runtime(
     )
     execution = SimpleNamespace(close=lambda: calls.append(("close",)))
     monkeypatch.setattr(
-        deps, "build_production_execution_composition", lambda settings: execution
+        deps, "build_production_execution_composition", lambda settings, **kwargs: execution
     )
     monkeypatch.setattr(
         deps,
@@ -60,7 +62,7 @@ def setup_runtime(
     monkeypatch.setattr(
         deps,
         "build_trusted_principal_resolver",
-        lambda: SimpleNamespace(resolve_worker_principal=lambda name: principal),
+        lambda **kwargs: SimpleNamespace(resolve_worker_principal=lambda name: principal),
     )
 
     def drive(**kwargs):

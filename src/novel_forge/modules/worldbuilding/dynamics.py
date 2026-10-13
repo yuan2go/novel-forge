@@ -138,6 +138,28 @@ def state_index(reality: Mapping[str, Any]) -> dict[tuple[str, str], dict[str, A
             state = dict(prior.get("state") or {})
             state.setdefault(field["field"], field["value"])
             result[key] = {**prior, "state": state}
+    working = reality.get("working_observation_context")
+    if working:
+        if (working.get("contract_version") != "world-working-observations.v1"
+            or working.get("authority") != "SELECTED_WORKING_EXPERIENCE_FOR_CANDIDATES"
+            or working.get("semantic_support") != "NOT_VERIFIED"
+            or working.get("accepted_history_mutation_allowed") is not False
+            or working.get("character_knowledge_granted") is not False
+            or working.get("accepted_through_chapter") != reality["chapter_number"]
+            or working.get("projection_hash") != narrative_hash({key: value for key, value in working.items() if key != "projection_hash"})):
+            raise KernelError("WORLD_WORKING_OBSERVATION_INVALID", "Candidate experience must retain its source-bound non-Canon projection")
+        causes = {row["source_event_id"] for row in working["causes"]}
+        for entry in working["entries"]:
+            key = (entry["state_kind"], entry["entity_key"])
+            if (entry["state_kind"] not in {"character_knowledge", "character_belief"}
+                or key in result or entry["source_event_id"] not in causes
+                or entry["entity_key"] != entry["source_event_id"]
+                or not reality["chapter_number"] < entry["source_chapter"] < working["target_chapter"]
+                or entry["state"]["character_id"] not in reality["approved_character_ids"]
+                or entry["state"].get("epistemic_status") != "UNREVIEWED_WORKING_OBSERVATION"
+                or entry["state"].get("perspective") not in {"OBSERVED", "BELIEF", "HEARSAY"}):
+                raise KernelError("WORLD_WORKING_OBSERVATION_INVALID", "Working experience cannot grant objective state or another character's knowledge")
+            result[key] = dict(entry)
     return result
 
 
@@ -731,6 +753,7 @@ def candidate_transition(
     known_causes.update(
         str(event.get("event_id") or "") for event in reality.get("events", [])
     )
+    known_causes.update(row["source_event_id"] for row in (reality.get("working_observation_context") or {}).get("causes", []))
     known_causes.discard("")
     if reality.get("world_dynamics_contract") == "world-dynamics.v2":
         known_causes.update(reality.get("foundation_cause_refs", []))

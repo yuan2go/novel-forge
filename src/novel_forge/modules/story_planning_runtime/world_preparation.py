@@ -14,6 +14,7 @@ from novel_forge.modules.worldbuilding.production_planning import (
     WorldProductionPolicy,
     compile_world_plan,
     validate_generated_candidates,
+    world_target_chapter,
 )
 from novel_forge.modules.worldbuilding.production_schema import (
     decode_world_generation,
@@ -117,10 +118,10 @@ def require_world_foundation_revalidation(database_url: str, *, command: Any, op
     policy = WorldProductionPolicy(**source["policy"])
     PlanningWorldPreparation._validate_references(source, validate_generated_candidates(decoded,policy), command)
     plan = compile_world_plan(reality=reality, generated=decoded, evaluation=evaluation["output"], policy=policy,
-        chapter_number=int(source["request"]["accepted_through_chapter"])+1, intent_version_id=source["intent_version_id"])
+        chapter_number=world_target_chapter(source), intent_version_id=source["intent_version_id"])
     from novel_forge.modules.worldbuilding.continuation import decide_preparation, apply_preparation_decisions
     plan = apply_preparation_decisions(fresh_plan=plan, decisions=[decide_preparation(reality=reality, origin=item["origin"],
-        accepted_steps=item["accepted_steps"], chapter_number=int(source["request"]["accepted_through_chapter"])+1,
+        accepted_steps=item["accepted_steps"], chapter_number=world_target_chapter(source),
         intent_version_id=source["intent_version_id"]) for item in source.get("preparation_sources", [])])
     if plan["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED"}:
         raise KernelError("WORLD_HOST_REVALIDATION_UNRESOLVED", "Background correction must retain a legal modeled path")
@@ -238,10 +239,10 @@ def require_world_disclosure_revalidation(database_url: str, *, command: Any, op
     PlanningWorldPreparation._validate_references(source, validate_generated_candidates(decoded,policy), command)
     reality = {**source["reality"], "disclosure_fields_contract": DISCLOSURE_FIELDS_V2}
     plan = compile_world_plan(reality=reality,generated=decoded,evaluation=evaluation["output"],policy=policy,
-        chapter_number=int(source["request"]["accepted_through_chapter"])+1,intent_version_id=source["intent_version_id"])
+        chapter_number=world_target_chapter(source),intent_version_id=source["intent_version_id"])
     from novel_forge.modules.worldbuilding.continuation import decide_preparation, apply_preparation_decisions
     plan = apply_preparation_decisions(fresh_plan=plan, decisions=[decide_preparation(reality=reality,origin=item["origin"],
-        accepted_steps=item["accepted_steps"],chapter_number=int(source["request"]["accepted_through_chapter"])+1,
+        accepted_steps=item["accepted_steps"],chapter_number=world_target_chapter(source),
         intent_version_id=source["intent_version_id"]) for item in source.get("preparation_sources",[])])
     resolutions = [row["field_resolution"] for row in plan.get("disclosure_projection",[]) if row.get("field_resolution")]
     if plan["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED"} or not resolutions:
@@ -420,7 +421,7 @@ def require_world_host_revalidation(
         generated=decoded,
         evaluation=evaluation["output"],
         policy=policy,
-        chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+        chapter_number=world_target_chapter(source),
         intent_version_id=source["intent_version_id"],
     )
     from novel_forge.modules.worldbuilding.continuation import (
@@ -433,7 +434,7 @@ def require_world_host_revalidation(
             reality=source["reality"],
             origin=item["origin"],
             accepted_steps=item["accepted_steps"],
-            chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+            chapter_number=world_target_chapter(source),
             intent_version_id=source["intent_version_id"],
         )
         for item in source.get("preparation_sources", [])
@@ -465,8 +466,10 @@ class PlanningProviderStage:
         version = {"world-actor-task.v2": "v2", "world-actor-task.v3": "v3"}.get(self.task.get("contract_version"), "v1")
         if self.task.get("epistemic_contract") == "world-agency.v2":
             version = "v2"
-        if self.task.get("contract_version") == "world-provider-task.v3":
+        if self.task.get("contract_version") in {"world-provider-task.v3", "world-provider-task.v4"}:
             version = "v3"
+        if self.task.get("contract_version") == "world-provider-task.v4":
+            version = "v4"
         suffix = ":actor-isolation-v1" if self.task.get("actor_proposals") else ""
         return f"schema:{self.name}:{version}{suffix}"
 
@@ -553,10 +556,10 @@ def require_selected_world_action(query: Any, *, command: Any) -> Any:
     PlanningWorldPreparation.validate_retained_generation(query.database_url, command=command, generation=documents["generation"], host_revalidation=revalidation)
     decoded = decode_world_generation({key: value for key, value in generation["output"].items() if key not in {"knowledge_translations", "actor_adjudications"}}, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
     reality = revalidation_reality(source,revalidation)
-    plan = compile_world_plan(reality=reality, generated=decoded, evaluation=evaluation["output"], policy=WorldProductionPolicy(**source["policy"]), chapter_number=int(source["request"]["accepted_through_chapter"]) + 1, intent_version_id=source["intent_version_id"])
-    if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}:
+    plan = compile_world_plan(reality=reality, generated=decoded, evaluation=evaluation["output"], policy=WorldProductionPolicy(**source["policy"]), chapter_number=world_target_chapter(source), intent_version_id=source["intent_version_id"])
+    if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}:
         from novel_forge.modules.worldbuilding.continuation import decide_preparation, apply_preparation_decisions
-        decisions = [decide_preparation(reality=reality, origin=item["origin"], accepted_steps=item["accepted_steps"], chapter_number=int(source["request"]["accepted_through_chapter"]) + 1, intent_version_id=source["intent_version_id"]) for item in source.get("preparation_sources", [])]
+        decisions = [decide_preparation(reality=reality, origin=item["origin"], accepted_steps=item["accepted_steps"], chapter_number=world_target_chapter(source), intent_version_id=source["intent_version_id"]) for item in source.get("preparation_sources", [])]
         plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
     if json.loads(json.dumps(plan, ensure_ascii=False)) != bound["world_plan"]:
         raise KernelError("WORLD_SELECTED_ACTION_DRIFT", "Retained Director result no longer compiles to the selected proposal")
@@ -666,13 +669,11 @@ class PlanningWorldPreparation:
         from novel_forge.storage.book_control_repositories import BookControlRepository
 
         with AuthorityUnitOfWork(self.preparer.database_url) as uow:
+            working = (command.arc_working_set or {}).get("working_manuscript") or {}
             BookControlRepository(uow.cursor).freeze(
                 project_id=command.project_id,
                 book_run_id=command.world_preparation_request["book_run_id"],
-                chapter_number=int(
-                    command.world_preparation_request["accepted_through_chapter"]
-                )
-                + 1,
+                chapter_number=working["target_chapter"] if command.execution_contract_version == "1.21.0" and working.get("projection_policy") else int(command.world_preparation_request["accepted_through_chapter"]) + 1,
                 actor_id=command.actor_id,
             )
             uow.commit()
@@ -743,9 +744,11 @@ class PlanningWorldPreparation:
                     request=command.world_preparation_request,
                     contract_version="world-preparation-source.v1"
                     if command.execution_contract_version == "1.12.0"
+                    else "world-preparation-source.v5" if command.execution_contract_version == "1.21.0" and ((command.arc_working_set or {}).get("working_manuscript") or {}).get("projection_policy")
                     else "world-preparation-source.v4" if command.execution_contract_version == "1.21.0"
                     else "world-preparation-source.v2",
                     epistemic_contract="world-agency.v2" if command.execution_contract_version == "1.21.0" else "world-agency.v1",
+                    working_manuscript=(command.arc_working_set or {}).get("working_manuscript"),
                 )
             source_document = self._store(
                 command,
@@ -755,6 +758,12 @@ class PlanningWorldPreparation:
                 source,
             )
         source = source_document.content["contract"]
+        if source["contract_version"] == "world-preparation-source.v5":
+            expected_key = f"chapter:{world_target_chapter(source)}"
+            if command.edition_execution:
+                expected_key = f"edition:{source['request']['book_run_id']}:{command.edition_execution['revision_id']}:{expected_key}"
+            if command.logical_key != expected_key:
+                raise KernelError("WORLD_WORKING_FRONTIER_INVALID", "World source must bind its Chapter Planning target and Edition")
         with AuthorityUnitOfWork(self.preparer.database_url) as uow:
             WorldPreparationRepository(uow.cursor).assert_source_current(
                 project_id=command.project_id, book_id=command.book_id, frozen=source
@@ -814,7 +823,7 @@ class PlanningWorldPreparation:
                 reality=source["reality"],
                 origin=item["origin"],
                 accepted_steps=item["accepted_steps"],
-                chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+                chapter_number=world_target_chapter(source),
                 intent_version_id=source["intent_version_id"],
             )
             for item in source.get("preparation_sources", [])
@@ -932,14 +941,14 @@ class PlanningWorldPreparation:
             generated=decoded,
             evaluation=evaluation["output"],
             policy=policy,
-            chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+            chapter_number=world_target_chapter(source),
             intent_version_id=source["intent_version_id"],
         )
         with AuthorityUnitOfWork(self.preparer.database_url) as uow:
             WorldPreparationRepository(uow.cursor).assert_source_current(
                 project_id=command.project_id, book_id=command.book_id, frozen=source
             )
-        if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}:
+        if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}:
             plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
         if revalidation and plan["plan_digest"] != revalidation["plan_digest"]:
             raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Derived action differs from registered known-result proof")
@@ -1002,8 +1011,9 @@ class PlanningWorldPreparation:
                 "instruction": "References must belong to these exact selected Arc and accepted obligation lists. Other visible arcs are background, not authority for this task."}
         schema = add_translation_contract(world_generation_schema(
             WorldProductionPolicy(**source["policy"]),
-            audience_scoped=source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"},
+            audience_scoped=source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"},
             agency=source["reality"].get("epistemic_contract") == "world-agency.v2",
+            working_observations=source["contract_version"] == "world-preparation-source.v5",
             **({key: tuple(value) for key, value in allowed_references.items()} if allowed_references is not None else {}),
         ), knowledge_selection)
         if actor_proposals:
@@ -1046,8 +1056,9 @@ class PlanningWorldPreparation:
     ) -> dict[str, Any]:
         from novel_forge.modules.context_builder.task_context import world_task_scope
 
-        aligned = source["contract_version"] in {"world-preparation-source.v3", "world-preparation-source.v4"}
+        aligned = source["contract_version"] in {"world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}
         agency = aligned and source["reality"].get("epistemic_contract") == "world-agency.v2"
+        working = source["contract_version"] == "world-preparation-source.v5"
         if aligned and not agency:
             raise KernelError("WORLD_AGENCY_CONTRACT_INVALID", "Aligned source cannot project a different agency contract")
 
@@ -1055,17 +1066,21 @@ class PlanningWorldPreparation:
             reality=source["reality"],
             role=role,
             token_budget=source["policy"]["context_token_budget"],
-            task=world_task_scope(chapter=int(source["reality"]["chapter_number"]) + 1, intent=source["intent"], planning_window=source["planning_window"], world_foundation=source["world_foundation"]) if source.get("provider_projection_version") == "world-role-delivery.v3" else None,
+            task=world_task_scope(chapter=world_target_chapter(source) if source["contract_version"] == "world-preparation-source.v5" else int(source["reality"]["chapter_number"]) + 1, intent=source["intent"], planning_window=source["planning_window"], world_foundation=source["world_foundation"]) if source.get("provider_projection_version") == "world-role-delivery.v3" else None,
             required_event_ids=tuple(sorted({entry["source_event_id"] for kind, entries in source["reality"]["current_state"].items() if kind in ROLE_STATE_KINDS.get(role, ()) for entry in entries})) if source.get("provider_projection_version") == "world-role-delivery.v2" else (),
         )
         return {
-            "contract_version": "world-provider-task.v3" if aligned else "world-provider-task.v2" if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"} else "world-provider-task.v1",
+            "contract_version": "world-provider-task.v4" if source["contract_version"] == "world-preparation-source.v5" else "world-provider-task.v3" if aligned else "world-provider-task.v2" if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"} else "world-provider-task.v1",
             **({"epistemic_contract": "world-agency.v2"} if source["reality"].get("epistemic_contract") == "world-agency.v2" else {}),
             "role": role,
             "source_ref": dict(source_ref),
             "baseline_id": source["reality"]["revision_id"],
             "baseline_kind": source["reality"]["baseline_kind"],
             "accepted_through_chapter": source["reality"]["chapter_number"],
+            **({"target_chapter": world_target_chapter(source),
+                "working_manuscript": source["working_manuscript"],
+                "working_observation_context": source["reality"].get("working_observation_context")}
+                if source["contract_version"] == "world-preparation-source.v5" else {}),
             "context_projection": projection,
             "projection_identity": projection["context_digest"],
             **(
@@ -1098,7 +1113,7 @@ class PlanningWorldPreparation:
                         .get("world_transition")
                     ]
                 }
-                if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}
+                if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}
                 else {}
             ),
             "intent": source["intent"],
@@ -1111,14 +1126,14 @@ class PlanningWorldPreparation:
             "foundation_cause_refs": source["reality"]["foundation_cause_refs"],
             **(
                 {"disclosure_contract": "world-information-scope.v3" if aligned else "world-information-scope.v2"}
-                if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}
+                if source["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}
                 else {}
             ),
             "transition_contract": {
-                "version": "world-transition-payload.v2" if agency else "world-transition-payload.v1",
-                "payload_schema": world_transition_payload_schema(agency=agency),
+                "version": "world-transition-payload.v3" if working else "world-transition-payload.v2" if agency else "world-transition-payload.v1",
+                "payload_schema": world_transition_payload_schema(agency=agency, working_observations=working),
                 "fields": list(world_transition_payload_schema(agency=True)["properties"]) if aligned else list(WorldTransition.__dataclass_fields__),
-                "schema": world_transition_schema(agency=agency),
+                "schema": world_transition_schema(agency=agency, working_observations=working),
                 "state_kinds": [kind.value for kind in NarrativeStateKind],
                 "requirement_operators": [
                     operator.value for operator in RequirementOperator
@@ -1127,7 +1142,8 @@ class PlanningWorldPreparation:
                 "explanation_status": "UNVERIFIED_CAUSAL_HYPOTHESIS",
                 "required_conditions": "All compiled hard predicates and actor epistemic bases remain mandatory regardless of score.",
                 "known_character_basis": (
-                    "Information-dependent actions bind that character's own knowledge or belief. Ordinary non-epistemic actions use supplied Foundation or accepted causes; perception binds an available objective source and precedes a later decision based on that acquired information. Knowledge evidence does not prescribe rational, polite or cautious behavior."
+                    "Information-dependent actions bind the named character's own supplied knowledge or represented belief, including exact selected-working observation predicates when available. Located working representations are unreviewed: compare the actual passages, retain hearsay and mistaken belief, and do not establish objective truth from them. Ordinary non-epistemic agency may use supplied Foundation, accepted or working experience. Perception requires an available objective source. Knowledge evidence does not prescribe rational, polite or cautious behavior."
+                    if working else "Information-dependent actions bind that character's own knowledge or belief. Ordinary non-epistemic actions use supplied Foundation or accepted causes; perception binds an available objective source and precedes a later decision based on that acquired information. Knowledge evidence does not prescribe rational, polite or cautious behavior."
                     if agency else "Every approved character action needs a nonempty predicate referencing that character's own accepted knowledge or belief. Missing support requires NO_OP/DEFER; Foundation descriptions are not invented knowledge facts."
                 ),
                 **({"disclosure_fields": {"contract_version": source["reality"]["disclosure_fields_contract"],
@@ -1338,7 +1354,7 @@ class PlanningWorldPreparation:
             )
         frozen = source.content["contract"]
         reality = revalidation_reality(frozen,host_revalidation)
-        chapter = int(frozen["request"]["accepted_through_chapter"]) + 1
+        chapter = world_target_chapter(frozen)
         plan = compile_world_plan(
             reality=reality,
             generated=decoded,
@@ -1347,7 +1363,7 @@ class PlanningWorldPreparation:
             chapter_number=chapter,
             intent_version_id=frozen["intent_version_id"],
         )
-        if frozen["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4"}:
+        if frozen["contract_version"] in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}:
             decisions = [
                 decide_preparation(
                     reality=reality,

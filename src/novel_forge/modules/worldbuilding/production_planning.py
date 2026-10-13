@@ -21,6 +21,37 @@ from .dynamics import (
 )
 
 
+def world_target_chapter(source: Mapping[str, Any]) -> int:
+    if source["contract_version"] != "world-preparation-source.v5":
+        return int(source["request"]["accepted_through_chapter"]) + 1
+    target = source.get("target_chapter")
+    accepted = int(source["request"]["accepted_through_chapter"])
+    working = source.get("working_manuscript")
+    if type(target) is not int or target <= accepted:
+        raise KernelError("WORLD_WORKING_FRONTIER_INVALID", "World target must follow accepted history")
+    if working is None:
+        if target != accepted + 1:
+            raise KernelError("WORLD_WORKING_SOURCE_REQUIRED", "Unaccepted continuation requires selected working sources")
+    else:
+        from novel_forge.modules.book_authority.working_prose import validate_working_projection
+        validate_working_projection(working, project_id=source["reality"]["project_id"],
+            book_id=source["reality"]["book_id"], target_chapter=target,
+            accepted_through_chapter=accepted)
+        if working["book_run_id"] != source["request"]["book_run_id"]:
+            raise KernelError("WORLD_WORKING_SOURCE_INVALID", "World working sources require the exact owning Book")
+    return target
+
+
+def world_working_source_matches(source: Mapping[str, Any] | None, working: Mapping[str, Any] | None) -> bool:
+    if not source or not working or not working.get("projection_policy"):
+        return True
+    if source["contract_version"] == "world-preparation-source.v5":
+        return (world_target_chapter(source) == working["target_chapter"]
+            and (source.get("working_manuscript") or {}).get("snapshot_hash") == working["snapshot_hash"])
+    return (world_target_chapter(source) == working["target_chapter"]
+        and not any(row["chapter"] > working["accepted_through_chapter"] for row in working["sources"]))
+
+
 @dataclass(frozen=True, slots=True)
 class WorldProductionPolicy:
     version: str = "world-production-policy.v1"
@@ -242,6 +273,7 @@ def _simulate_preparation(
     }
     known.update(event.get("event_id", "") for event in reality.get("events", []))
     known.update(reality.get("foundation_cause_refs", []))
+    known.update(row["source_event_id"] for row in (reality.get("working_observation_context") or {}).get("causes", []))
     known.discard("")
     nodes = []
     by_name = {step["transition"]["transition_id"]: step for step in steps}

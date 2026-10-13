@@ -2376,14 +2376,33 @@ World generation uses one strict type contract for the nested world schema and p
 instructions. A Foundation task freezes one `BOOK` scope; `BOOK`, `VOLUME` and `ARC`
 are alternatives, not an output array. JSON-string transport is decoded and internally
 validated before Candidate materialization. Invalid Provider output remains evidence.
-Narrative World preparation is a separate consumer. Fresh 1.21 preparation freezes
-`world-preparation-source.v4` and `world-provider-task.v3`, with the v2 transition schema
-and distinct routine, perception and information-dependent action requirements.
+Narrative World preparation is a separate consumer. Fresh 1.21 preparation with a
+projected working manuscript freezes `world-preparation-source.v5` and
+`world-provider-task.v4` with transition schema v3 and output schema v4; accepted-only
+preparation retains source v4/task v3 and transition schema v2. The new schema admits
+only supplied working observation references alongside Foundation and accepted references.
+Routine, perception and information-dependent actions retain distinct requirements.
 The v4 source separately projects scalar `world_rule` fields explicitly declared in the
 exact approved Foundation entities and addressed by compiled predicates. Predicate
 expected values never supply missing facts; recorded state takes precedence. This
 background view changes neither accepted history nor character knowledge. Frozen v3
 sources retain their original empty-genesis behavior for exact replay.
+The v5 consumer binds the target chapter and exact selected working packet separately
+from the accepted Reality. Book verifies selected versions, hashes and dependency
+changes in the owning UoW. World, Director, optional deferral and sample/reference
+consumers use the same target; Edition retains its exact scoped logical key.
+`world-working-observations.v1` projects located, attributed working observations as
+temporary candidate evidence. Own represented knowledge, belief and hearsay can support
+the character's later action; reader-only information cannot. These predicates retain
+unreviewed provenance and never establish objective World facts or accepted knowledge.
+Director must read their located source passages; semantic support remains unverified.
+Missing or invalid memory supplies no predicates and does not discard complete prose.
+An unexecuted PLANNED Chapter with an accepted-only World source that missed working
+history is replaced through the existing Supervisor and Planning activation boundary,
+with a new request identity. Frozen plans retain the existing PlanChange requirement.
+Frozen v4 Sources remain replayable with their accepted-cursor window and original
+missing working input. Installed native continuation and literary effects require
+separate evidence; a successful Source or model call does not establish them.
 `world-host-revalidation.v3` reuses both complete, verified World results for the exact
 first unexecuted Chapter after the legacy missing-background rejection. Generation and
 Director may retain different original owners only with the same source, Creator,

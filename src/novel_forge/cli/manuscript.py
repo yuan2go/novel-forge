@@ -5,6 +5,14 @@ from pathlib import Path
 from typing import Any
 
 
+def _manuscript_runtime_values(settings, *, project_id, book_run_id):
+    from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+    from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
+    if PostgresBookProductionQuery(settings.database_url).uses_creation_scope(project_id=project_id, subject_id=book_run_id):
+        return creation_runtime_environment(project_id)
+    return None
+
+
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
     parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
@@ -52,10 +60,11 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             raise ValueError("Require the active Chapter PlanChange --proposal-id")
         from novel_forge.api.authority_dependencies import build_book_production_composition, build_production_execution_composition, build_chapter_authority_application
         from novel_forge.modules.book_authority.plan_recovery import retire_reference_failed_chapter, retire_upstream_stale_chapter
-        execution = build_production_execution_composition(settings)
+        values = _manuscript_runtime_values(settings, project_id=args.project_id, book_run_id=args.book_run_id)
+        execution = build_production_execution_composition(settings, env=values)
         try:
-            chapter = build_chapter_authority_application(settings,execution=execution)
-            composition = build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter)
+            chapter = build_chapter_authority_application(settings,execution=execution, env=values)
+            composition = build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter, env=values)
             if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
                 raise PermissionError("Work is outside this Project")
             if args.action == "resume":
@@ -223,11 +232,12 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
         return report("MANUSCRIPT_READY", book)
     if book["state"] in {"ABORTED", "CANCELLED", "COMPLETED"}:
         return report(book["state"], book)
-    execution = build_production_execution_composition(settings)
+    values = _manuscript_runtime_values(settings, project_id=book["project_id"], book_run_id=run)
+    execution = build_production_execution_composition(settings, env=values)
     try:
-        chapter = build_chapter_authority_application(settings, execution=execution)
-        composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
-        worker = build_trusted_principal_resolver().resolve_worker_principal("manuscript-continuation-worker")
+        chapter = build_chapter_authority_application(settings, execution=execution, env=values)
+        composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter, env=values)
+        worker = build_trusted_principal_resolver(env=values).resolve_worker_principal("manuscript-continuation-worker")
         if book["state"] == "PAUSED":
             composition.authority.resume(run, reason="Requested native manuscript continuation", principal=principal)
         for _ in range((target - writing_frontier(book) + 1) * 20):
@@ -268,13 +278,14 @@ def _run_working_revision_command(settings, args, *, principal):
             return result
     if args.work_window_seconds <= 0:
         raise ValueError("A positive scheduling work window is required")
-    execution = build_production_execution_composition(settings)
+    values = _manuscript_runtime_values(settings, project_id=args.project_id, book_run_id=args.book_run_id)
+    execution = build_production_execution_composition(settings, env=values)
     try:
-        chapter = build_chapter_authority_application(settings, execution=execution)
+        chapter = build_chapter_authority_application(settings, execution=execution, env=values)
         if args.action == "revise":
             if args.expected_version is None or not args.chapter or not args.idempotency_key or not args.reason:
                 raise ValueError("Revision requires chapter, expected Book version, original idempotency key and purpose")
-            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter, env=values)
             if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
                 raise PermissionError("Revision is outside this Project")
             admitted = chapter.admit_manuscript_revision(authority=composition.authority, book_run_id=args.book_run_id,
@@ -285,14 +296,14 @@ def _run_working_revision_command(settings, args, *, principal):
                 return {**asdict(admitted), "book_run_id": args.book_run_id, "chapter": args.chapter}
         else:
             root_id = args.revision_root
-            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter, env=values)
         from novel_forge.modules.chapter_authority.context_transport_recovery import recover_schema_transport, recover_unsent_context_transport
         recover_unsent_context_transport(composition.authority, book_run_id=args.book_run_id, principal=principal, root_operation_id=root_id)
         recover_schema_transport(composition.authority, book_run_id=args.book_run_id, principal=principal, root_operation_id=root_id)
         from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
         recover_chapter_generations(composition.authority, book_run_id=args.book_run_id,
             principal=principal, working_revision_root_id=root_id)
-        worker = build_trusted_principal_resolver().resolve_worker_principal("manuscript-revision-worker")
+        worker = build_trusted_principal_resolver(env=values).resolve_worker_principal("manuscript-revision-worker")
         scheduler = chapter.scheduler(principal=worker)
         deadline = monotonic() + args.work_window_seconds
         while monotonic() < deadline:
