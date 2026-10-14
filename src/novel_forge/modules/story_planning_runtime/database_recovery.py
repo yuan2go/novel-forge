@@ -73,6 +73,12 @@ def authorization(uow, *, source, successor, principal, target):
         ORDER BY reference.created_at LIMIT 1""", [source['source_operation_id'], successor.project_id,
             successor.workspace_id, successor.book_id, successor.generator_operation_name, successor.logical_key])
     reference = uow.cursor.fetchone()
+    book_scope = None
+    if (not reference and source.get('command', {}).get('world_preparation_request')
+            and not source['command'].get('opening_execution_binding')):
+        from .book_database_recovery import first_chapter_reference
+        reference, book_scope = first_chapter_reference(uow, source=source, command=successor,
+            formation_run_id=checked['formation_run_id'])
     if not reference:
         raise KernelError('PLANNING_UNSENT_DATABASE_ROUTE_MISSING', 'Require the original same-Opening and stage runtime with a succeeded native receipt')
     prior = reference[2]
@@ -83,7 +89,8 @@ def authorization(uow, *, source, successor, principal, target):
     keys = ('model_provider','model_id','reasoning_effort','runtime_class','model_backend_id','cost_accounting_basis')
     if any(prior.get(k) != target.get(k) for k in keys) or stable_account(prior) != stable_account(target):
         raise KernelError('PLANNING_UNSENT_DATABASE_ROUTE_DRIFT', 'Retain the original same-Opening model, reasoning, backend and account')
-    actual = completed_reference_route(uow, reference_operation_id=reference[1], command=successor, prior=prior)
+    actual = completed_reference_route(uow, reference_operation_id=reference[1], command=successor, prior=prior,
+        **({'reference_stage':'chapter_group_plan.generate'} if book_scope else {}))
     return {**checked, 'capacity_only': False, 'recovery_kind': CONTRACT,
             'database_failure': source['database_failure'],
             'original_stage_runtime': {'continuation_id':reference[0], 'operation_id':reference[1],
@@ -91,15 +98,19 @@ def authorization(uow, *, source, successor, principal, target):
                 'account_runtime_hash':canonical_hash(stable_account(prior)),
                 'completed_effect': actual,
                 'authorization_reference_change':'NATIVE_BUDGET_SUCCESSOR_ALLOWED',
-                'evidence_boundary':'SAME_OPENING_STAGE_REFERENCE_NOT_SOURCE_PROVIDER_INPUT'},
+                'evidence_boundary':'SAME_BOOK_ACTIVE_PARENT_GROUP_REFERENCE_NOT_SOURCE_PROVIDER_INPUT' if book_scope else 'SAME_OPENING_STAGE_REFERENCE_NOT_SOURCE_PROVIDER_INPUT',
+                **({'reference_kind':'BOOK_SUPERVISOR_FIRST_CHAPTER_PLAN', 'book_scope':book_scope} if book_scope else {})},
             'first_provider_context': 'MATERIALIZE_BY_NATIVE_SUCCESSOR_NOT_REPLAY_OF_PRIOR_INPUT'}
 
 
-def completed_reference_route(uow, *, reference_operation_id, command, prior):
+def completed_reference_route(uow, *, reference_operation_id, command, prior, reference_stage=None):
     from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_completed_operation_success
+    stage = reference_stage or command.generator_operation_name
+    if reference_stage and (command.generator_operation_name != 'chapter_plan.generate' or stage != 'chapter_group_plan.generate'):
+        raise KernelError('PLANNING_UNSENT_DATABASE_ROUTE_DRIFT', 'Only the exact parent Group may precede first Book Chapter planning')
     uow.cursor.execute("""SELECT external_effect_id,request_hash FROM authority_external_effect
         WHERE operation_id=%s AND project_id=%s AND status='SUCCEEDED' AND request_payload->>'stage'=%s""",
-        [reference_operation_id, command.project_id, command.generator_operation_name])
+        [reference_operation_id, command.project_id, stage])
     effects = uow.cursor.fetchall()
     if len(effects) != 1:
         raise KernelError('PLANNING_UNSENT_DATABASE_ROUTE_MISSING', 'Require one exact succeeded main-stage Effect')
@@ -123,7 +134,7 @@ def completed_reference_route(uow, *, reference_operation_id, command, prior):
             or any(route.get(k) != v for k,v in expected.items())
             or route.get('operation_id') != reference_operation_id
             or request.get('operation_id') != reference_operation_id or request.get('external_effect_id') != effect_id
-            or request.get('stage') != command.generator_operation_name):
+            or request.get('stage') != stage):
         raise KernelError('PLANNING_UNSENT_DATABASE_ROUTE_DRIFT', 'The verified actual reference receipt and selected route must match its registered runtime')
     return dict(external_effect_id=effect_id, request_hash=request_hash, provider_evidence_hash=canonical_hash(provider),
         route_snapshot_hash=canonical_hash(route), route_snapshot_id=route['route_snapshot_id'],

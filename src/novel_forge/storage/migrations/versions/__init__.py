@@ -215,6 +215,7 @@ from . import (
     v20261014_0211_unsent_context_query_recovery,
     v20261014_0212_group_method_scope_context,
     v20261014_0213_group_scope_identity,
+    v20261014_0214_book_query_recovery,
 )
 
 VERSION_MODULES = [
@@ -432,6 +433,7 @@ VERSION_MODULES = [
     v20261014_0211_unsent_context_query_recovery,
     v20261014_0212_group_method_scope_context,
     v20261014_0213_group_scope_identity,
+    v20261014_0214_book_query_recovery,
 ]
 
 __all__ = ["VERSION_MODULES"]

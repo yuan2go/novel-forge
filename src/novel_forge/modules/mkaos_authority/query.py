@@ -454,8 +454,12 @@ class MkaosAuthorityQuery:
                       ON context_version.asset_version_id=context_output.asset_version_id
                     JOIN authority_asset AS context_asset
                       ON context_asset.asset_id=context_version.asset_id
+                    LEFT JOIN authority_story_planning_generation AS scope_generation
+                      ON scope_generation.operation_id=context_output.operation_id
                     WHERE context_asset.project_id=%s
                       AND context_output.output_key='planning.context_bundle'
+                      AND (%s='' OR scope_generation.book_id=%s
+                           OR scope_generation.operation_id IS NULL)
                 )
                 SELECT context_version.operation_id,
                        context_version.asset_version_id,
@@ -507,7 +511,7 @@ class MkaosAuthorityQuery:
                          context_version.asset_version_id
                 LIMIT %s
                 """,
-                [project_id, book_id, book_id, knowledge_card_asset_version_id,
+                [project_id, book_id, book_id, book_id, book_id, knowledge_card_asset_version_id,
                  knowledge_card_asset_version_id, limit],
             )
             rows = uow.cursor.fetchall()

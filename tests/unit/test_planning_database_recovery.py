@@ -108,3 +108,49 @@ def test_actual_receipt_must_match_registered_reference_not_just_exist(monkeypat
         assert result['external_effect_id']=='effect'
         assert result['request_hash']=='request-hash'
         assert result['identity_basis']=='VERIFIED_COMPLETED_NATIVE_RECEIPT_AND_FROZEN_ROUTE'
+
+
+def first_chapter_source():
+    return {'command':dict(generator_operation_name='chapter_plan.generate',execution_contract_version='1.21.0',
+        logical_key='chapter:1',repair_number=0,input_versions={'chapter_group_plan':'parent'},
+        world_preparation_request=dict(book_run_id='run',input_snapshot_id='snapshot',accepted_through_chapter=0)),
+        'snapshot':{'route_policy_hash':'route'}}
+
+
+@pytest.mark.parametrize('change', ['', 'stage', 'version', 'chapter', 'repair', 'opening', 'cursor', 'missing_snapshot', 'book_drift', 'route_drift'])
+def test_first_book_chapter_reference_requires_exact_current_parent_and_boundary(change):
+    from novel_forge.modules.story_planning_runtime.book_database_recovery import first_chapter_reference
+    source=first_chapter_source()
+    before=deepcopy(source)
+    frozen=source['command']
+    changes={'stage':('generator_operation_name','arc_plan.generate'),'version':('execution_contract_version','1.20.0'),
+        'chapter':('logical_key','chapter:2'),'repair':('repair_number',1),'opening':('opening_execution_binding',{'opening_run_id':'opening'})}
+    if change in changes:
+        key,value=changes[change]
+        frozen[key]=value
+    if change=='cursor':
+        frozen['world_preparation_request']['accepted_through_chapter']=1
+    if change=='missing_snapshot':
+        frozen['world_preparation_request']['input_snapshot_id']=''
+    prior={'pack_snapshot':{'route_policy_hash':'other' if change=='route_drift' else 'route'}}
+    row=(7,'input-binding',2,'snapshot','snapshot-hash','parent-binding',3,'parent','parent-hash','continuation','reference',prior)
+    captured={}
+    def execute(sql,params):captured.update(params=params)
+    uow=SimpleNamespace(cursor=SimpleNamespace(execute=execute,fetchall=lambda:[] if change=='book_drift' else [row]))
+    command=SimpleNamespace(actor_id='actor',project_id='project',workspace_id='workspace',book_id='book')
+    if change:
+        with pytest.raises(KernelError,match='ROUTE_MISSING|BOUNDARY_DRIFT|ROUTE_DRIFT'):
+            first_chapter_reference(uow,source=source,command=command,formation_run_id='formation')
+    else:
+        reference,scope=first_chapter_reference(uow,source=source,command=command,formation_run_id='formation')
+        assert reference==('continuation','reference',prior)
+        assert scope['book_version_at_recovery']==7 and scope['parent_asset_version_id']=='parent'
+        assert source==before
+        assert captured['params']==['formation','actor','run','project','workspace','book','','','snapshot','parent']
+
+
+@pytest.mark.parametrize('stage', ['arc_plan.generate','book_plan.generate'])
+def test_first_chapter_receipt_reader_does_not_allow_arbitrary_cross_stage_reference(stage):
+    command=SimpleNamespace(generator_operation_name='chapter_plan.generate')
+    with pytest.raises(KernelError,match='ROUTE_DRIFT'):
+        recovery.completed_reference_route(None,reference_operation_id='reference',command=command,prior={},reference_stage=stage)
