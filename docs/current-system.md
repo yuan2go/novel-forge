@@ -882,6 +882,10 @@ DeepSeek and/or Codex CLI; a configured `openai` adapter is not thereby a Router
 Membership Codex invocations force ChatGPT login and ignore user configuration/rules.
 Initial and explicitly authorized recovered submission share the same command builder.
 New commands retain local session evidence; historical ephemeral requests are unchanged.
+The opt-in `codex-input-only.v2` route policy binds structured generation instructions
+at the model control layer and checks its own complete durable transcript for tool calls
+that stdout may omit. It uses the existing Tool authorization boundary and preserves
+legacy route hashes when absent. Local configuration is not remote execution evidence.
 Reconciliation reads original process/receipt evidence
 and may recover a complete validated turn without another model request. Verified original
 remote receipts can append a Kernel reconciliation while preserving terminal history.

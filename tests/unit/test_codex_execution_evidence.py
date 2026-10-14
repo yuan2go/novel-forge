@@ -246,7 +246,8 @@ def test_codex_jsonl_requires_completed_terminal_turn() -> None:
 
 
 @pytest.mark.parametrize("retry_policy", ["", "codex-no-transport-retry.v1"])
-def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retry_policy) -> None:
+@pytest.mark.parametrize("input_only_policy", ["", "codex-input-only.v2"])
+def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retry_policy, input_only_policy) -> None:
     from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
     from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -299,6 +300,7 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retr
             pricing=None if retry_policy else _pricing(),
             account_entitlement=_entitlement() if retry_policy else None,
             retry_policy=retry_policy,
+            input_only_policy=input_only_policy,
             structured_result_validator=lambda _stage, _schema, value: value,
         )
         frozen = admission.admit(request, backend.capability_profile)
@@ -321,6 +323,7 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retr
     assert "--ignore-rules" in prepared.command
     assert "--ephemeral" not in prepared.command
     assert evidence["local_session_persistence"] == "DURABLE"
+    assert evidence.get("input_only_policy", "") == input_only_policy
     assert "features.memories=false" in prepared.command
     assert "features.shell_tool=false" in prepared.command
     assert prepared.environment_overrides["CODEX_HOME"] == str(Path(tmp).resolve())
@@ -329,6 +332,7 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retr
     )
 
     assert set(CODEX_INPUT_ONLY_OVERRIDES) <= set(prepared.command)
+    assert any(value.startswith("instructions=") for value in prepared.command) == bool(input_only_policy)
     assert 'web_search="disabled"' in prepared.command
     assert "features.view_image=false" in prepared.command
     assert "features.shell_tool=false" in prepared.command
@@ -375,6 +379,9 @@ def test_codex_retry_policy_keeps_legacy_binding_and_separates_new_account_evide
     backend.account_entitlement = _entitlement()
     backend.retry_policy = CODEX_NO_RETRY_POLICY
     assert codex_account_binding_evidence(backend) == {**arguments, "retry_policy": CODEX_NO_RETRY_POLICY}
+    backend.input_only_policy = "codex-input-only.v2"
+    assert codex_account_binding_evidence(backend) == {**arguments,
+        "retry_policy": CODEX_NO_RETRY_POLICY, "input_only_policy": backend.input_only_policy}
 
 
 def test_declared_timeout_is_not_divided_across_generation_attempts() -> (

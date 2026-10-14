@@ -1159,6 +1159,7 @@ def build_production_execution_composition(
             codex_home=codex_home, executable=codex_executable,
             entitlement=codex_entitlement.to_dict() if codex_entitlement else None,
             retry_policy=str(values.get("NOVEL_FORGE_CODEX_RETRY_POLICY") or ""),
+            input_only_policy=str(values.get("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY") or ""),
         )
         routes = {
             stage: replace(
@@ -1253,6 +1254,7 @@ def build_production_execution_composition(
                     pricing=codex_pricing,
                     account_entitlement=codex_entitlement,
                     retry_policy=str(values.get("NOVEL_FORGE_CODEX_RETRY_POLICY") or ""),
+                    input_only_policy=str(values.get("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY") or ""),
                     structured_result_validator=validate_production_structured_result,
                     qualification_ref="capability-probe:codex-cli:real-runtime-v1",
                 )

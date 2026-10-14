@@ -3420,6 +3420,13 @@ memories, hooks and autonomous agents. Account entitlement also requires ChatGPT
 mode. Local configuration and tool policy are part of route identity; changed bindings
 require a new governed request. Returned tool-use evidence remains checked independently.
 Local checks do not establish remote availability or bound unobserved CLI overhead.
+Set `NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY=codex-input-only.v2` before freezing a new
+structured generation route to bind generation-specific model instructions. This policy
+also checks the invocation's own durable transcript, identified by its exact thread ID
+and working directory, for tool calls omitted from CLI stdout. Missing or mismatched
+transcripts fail closed; observed calls still pass through the existing frozen Tool policy.
+Legacy routes retain their instructions, bindings and reconciliation behavior. Configuration
+flags alone do not prove that a particular CLI suppressed every host instruction or tool.
 For an authorized diagnostic that must stop at its first failed or unknown call, set
 `NOVEL_FORGE_CODEX_RETRY_POLICY=codex-no-transport-retry.v1` before freezing the route.
 This opt-in policy uses the existing ChatGPT account and Codex backend with zero HTTP
