@@ -293,8 +293,16 @@ def test_frozen_legacy_reconstruction_does_not_load_new_profile(monkeypatch):
     uow.repositories.asset_documents.require.assert_not_called()
 
 
-@pytest.mark.parametrize("stage,progression", [("memo", False), ("draft", False), ("draft", True)])
-def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill(stage="memo", progression=False):
+def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill():
+    _assert_enhanced_prompt("memo", False)
+
+
+@pytest.mark.parametrize("progression", [False, True])
+def test_writer_system_progression_overlay_is_versioned_and_legacy_unchanged(progression):
+    _assert_enhanced_prompt("draft", progression)
+
+
+def _assert_enhanced_prompt(stage, progression):
     from pathlib import Path
     from novel_forge.modules.capability_packs.artifacts import (
         ArtifactKind,
