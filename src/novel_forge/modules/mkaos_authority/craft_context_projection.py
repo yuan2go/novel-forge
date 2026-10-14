@@ -13,6 +13,18 @@ _HISTORY_POINTER = "/narrative_intelligence/need/recent_craft_usage"
 _BUDGET_HISTORY_FIELDS = (*_HISTORY_FIELDS, "working_allocation_history", "working_coverage_gaps")
 
 
+def experimental_chapter_method_scope(*, generator, contract_version, selection, policy):
+    if (generator != "chapter_plan.generate" or contract_version != "1.21.0"
+            or not selection.get("selected") or policy.get("mode") != "ALLOW_ONLY"
+            or policy.get("usage_scope") != "EXPERIMENTAL_VALIDATION"
+            or policy.get("craft_candidate_review_version") != "explicit-allowlist-craft-review.v1"):
+        return {}
+    project_chapter_method_scope(selection)
+    return {"planning_chapter_method_scope_projection_version": "chapter-method-scope-projection.v1",
+            "world_method_scope_projection_version": "world-method-scope-projection.v1",
+            "planning_method_scope_activation": "fresh-experimental-method-scope.v1"}
+
+
 def project_book_method_scope(selection: dict[str, Any]) -> dict[str, Any]:
     policy = selection.get("knowledge_access_policy") or {}
     if policy.get("mode") != "ALLOW_ONLY" or policy.get("usage_scope") != "EXPERIMENTAL_VALIDATION":

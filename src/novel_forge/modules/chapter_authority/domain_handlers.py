@@ -419,6 +419,10 @@ def build_context_bundle(
             "memo_fingerprint": str((chapter_memo or {}).get("memo_fingerprint") or ""),
             "preserve_quotes": list(plan.get("preserve_quotes") or ()),
         }
+        if (clean_history and access.get("mode") == "ALLOW_ONLY"
+                and access.get("usage_scope") == "EXPERIMENTAL_VALIDATION"
+                and access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"):
+            task["protected_context_accounting_version"] = "protected-context-exact-accounting.v1"
         admitted_source_ids = validate_task_context_sources(
             project_id=project_id, book_id=book_id, candidates=candidates,
             token_budget=token_budget, required_asset_types=tuple(required_asset_types),

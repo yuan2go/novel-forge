@@ -219,3 +219,28 @@ def test_chapter_scope_is_explicit_and_rejects_another_stage():
     with pytest.raises(KernelError, match="CRAFT_CONTEXT_PROJECTION_DRIFT"):
         PostgresPlanningExecutionPreparer._reproject_frozen_context(port, source, command=command,
             task_tokens=1000, projection_contract="chapter-method-scope-projection.v1")
+
+
+@pytest.mark.parametrize("mutation", [None, "baseline", "production", "old_contract", "another_stage", "empty"])
+def test_fresh_chapter_scope_requires_its_exact_experimental_policy(mutation):
+    from novel_forge.modules.mkaos_authority.craft_context_projection import experimental_chapter_method_scope
+    source = group_selection()
+    policy = deepcopy(source["knowledge_access_policy"])
+    generator, version = "chapter_plan.generate", "1.21.0"
+    if mutation == "baseline":
+        policy["mode"] = "DENY_ALL"
+    if mutation == "production":
+        policy["usage_scope"] = "PRODUCTION"
+    if mutation == "old_contract":
+        version = "1.20.0"
+    if mutation == "another_stage":
+        generator = "book_plan.generate"
+    if mutation == "empty":
+        source["selected"] = []
+    frozen = deepcopy(source)
+    result = experimental_chapter_method_scope(generator=generator, contract_version=version, selection=source, policy=policy)
+    assert source == frozen
+    assert bool(result) is (mutation is None)
+    if result:
+        assert result["planning_chapter_method_scope_projection_version"] == "chapter-method-scope-projection.v1"
+        assert result["world_method_scope_projection_version"] == "world-method-scope-projection.v1"

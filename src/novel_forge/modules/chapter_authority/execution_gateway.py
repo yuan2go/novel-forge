@@ -4656,6 +4656,11 @@ def _materialize_production_codex_prompt(
         from .provider_views import project_planning_narrative_intent
         task_view, context_view, intent_projection = project_planning_narrative_intent(task_view, context_view)
     exact_reference_proof = None
+    protected_exact_accounting = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version") == "protected-context-exact-accounting.v1"
+    if protected_exact_accounting and (stage not in {"draft", "revision"}
+            or template.get("ref") != "prompt-template:chapter-generation-pack"
+            or template.get("version") not in {"v13", "v15"}):
+        raise KernelError("TASK_CONTEXT_ACCOUNTING_INVALID", "Protected exact accounting requires its supported Writer envelope transport")
     reference_version = context_content.get("planning_exact_reference_projection_version")
     if reference_version not in (None, "planning-exact-value-reference.v1"):
         raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact reference compilation requires its frozen Planning contract")
@@ -4668,10 +4673,11 @@ def _materialize_production_codex_prompt(
         from .provider_views import compile_exact_context_references
         structured_transport = (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
             stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
-            and template.get("version") in {"v13", "v15"} and (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"})
+            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"}))
         short_literals = (context_content.get("planning_method_scope_projection_version") == "book-method-scope-projection.v1"
             or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
-            or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1")
+            or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1"
+            or protected_exact_accounting)
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=structured_transport, short_literals=short_literals)
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
         exact_reference_proof["source_scope"] = "provider_data_envelope"

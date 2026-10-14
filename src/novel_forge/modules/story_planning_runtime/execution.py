@@ -5975,6 +5975,10 @@ class PostgresPlanningExecutionPreparer:
             planning_task_token_budget = runtime.get("planning_capacity", {}).get(
                 "allocated_task_tokens", planning_task_token_budget
             )
+        from novel_forge.modules.mkaos_authority.craft_context_projection import experimental_chapter_method_scope
+        fresh_method_scope = experimental_chapter_method_scope(
+            generator=command.generator_operation_name, contract_version=command.execution_contract_version,
+            selection=narrative_intelligence, policy=knowledge_access_policy)
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             **({"generated_title_contract": "generated-book-title.v1"}
@@ -6008,6 +6012,7 @@ class PostgresPlanningExecutionPreparer:
                 else {}
             ),
             "narrative_intelligence": narrative_intelligence,
+            **fresh_method_scope,
             **({"planning_method_scope_projection_version": "book-method-scope-projection.v1"}
                 if command.generator_operation_name == "book_plan.generate" and narrative_intelligence.get("selected")
                 and knowledge_access_policy.get("mode") == "ALLOW_ONLY"

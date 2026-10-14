@@ -3808,6 +3808,21 @@ candidate rule; published migration bodies remain unchanged.
 Historical template v1 keeps
 its original rendering. Chapter transitions describe one entry-to-exit change per
 (state_kind, entity_key); Scene contracts retain intermediate changes.
+New Chapter Planning Contexts using the explicit experimental method allowlist freeze
+Chapter and World method-scope projection versions. The fresh World path verifies that
+both its Source and base Context belong to the current Operation and that the complete
+selection matches; registered recovery still binds its original Source ID and hash.
+Changing the Book knowledge policy disables these projections for future Contexts;
+previously frozen Contexts retain their original rendering.
+For clean Writer Contexts under that same experimental policy,
+`protected-context-exact-accounting.v1` counts the protected sources together with the
+lossless structured codec. Its receipt binds ordered members, source and payload hashes,
+individual encoded allocations and reconstruction equality. Selection must retain every
+reference source with the same allocation. Optional content cannot supply a shared
+reference anchor. Writer rendering consumes the frozen receipt and the same codec mode;
+the complete final request still passes the ordinary model-capacity admission. This
+changes transport accounting without changing story or method content, and applies only
+to newly built Contexts.
 A retained `WORLD_AGENCY_CLASSIFICATION_REJECTED` is a terminal proposal-contract
 failure, not a transport retry. Its bounded native result repair reproduces the
 classification against the exact generation and settled Director receipt even when

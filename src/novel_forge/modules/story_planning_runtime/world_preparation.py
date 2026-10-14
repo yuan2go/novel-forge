@@ -452,10 +452,21 @@ class PlanningWorldPreparation:
             )
         source = source_document.content["contract"]
         if method_scope_projection:
-            if (scope_proof.get("contract_version") != method_scope_projection
-                    or source_document.asset_version_id != scope_proof.get("world_source_asset_version_id")
-                    or source_document.content_hash != scope_proof.get("world_source_content_hash")):
-                raise KernelError("WORLD_METHOD_SOURCE_DRIFT", "World projection must reuse its exact unsent source")
+            if scope_proof.get("contract_version") == method_scope_projection:
+                if (source_document.asset_version_id != scope_proof.get("world_source_asset_version_id")
+                        or source_document.content_hash != scope_proof.get("world_source_content_hash")):
+                    raise KernelError("WORLD_METHOD_SOURCE_DRIFT", "World projection must reuse its exact unsent source")
+            else:
+                context = self.preparer.query.require(project_id=command.project_id,
+                    logical_ref=f"planning/context_bundles/{operation_id}.json")
+                if (scope_proof or method_scope_projection != "world-method-scope-projection.v1"
+                        or context.content.get("planning_method_scope_activation") != "fresh-experimental-method-scope.v1"
+                        or context.content.get("world_method_scope_projection_version") != method_scope_projection
+                        or context.content.get("book_id") != command.book_id
+                        or context.content.get("narrative_intelligence") != knowledge_selection
+                        or self._source_operation(self.preparer.database_url, command.project_id, context.asset_version_id) != operation_id
+                        or self._source_operation(self.preparer.database_url, command.project_id, source_document.asset_version_id) != operation_id):
+                    raise KernelError("WORLD_METHOD_SOURCE_DRIFT", "Fresh World projection requires its exact current operation source and frozen Context")
         with AuthorityUnitOfWork(self.preparer.database_url) as uow:
             WorldPreparationRepository(uow.cursor).assert_source_current(
                 project_id=command.project_id, book_id=command.book_id, frozen=source
