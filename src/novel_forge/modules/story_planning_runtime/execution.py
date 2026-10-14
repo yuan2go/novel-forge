@@ -4718,6 +4718,7 @@ class PostgresPlanningExecutionPreparer:
                     if context_document.content.get("working_continuity_projection_version") else {}),
                 **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
                 **({"planning_recall_query_projection_version": context_document.content["planning_recall_query_projection_version"]} if context_document.content.get("planning_recall_query_projection_version") else {}),
+                **({"planning_method_scope_projection_version": context_document.content["planning_method_scope_projection_version"]} if context_document.content.get("planning_method_scope_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5786,7 +5787,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1"}):
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1"}):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
@@ -6094,6 +6095,13 @@ class PostgresPlanningExecutionPreparer:
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if (command.generator_operation_name == "book_plan.generate" and content.get("narrative_intelligence", {}).get("selected")
+                and content.get("knowledge_access_policy", {}).get("mode") == "ALLOW_ONLY"
+                and content.get("knowledge_access_policy", {}).get("usage_scope") == "EXPERIMENTAL_VALIDATION"
+                and content.get("knowledge_access_policy", {}).get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+            project_book_method_scope(content["narrative_intelligence"])
+            content["planning_method_scope_projection_version"] = "book-method-scope-projection.v1"
         if (command.generator_operation_name == "character.cast.generate"
                 and content.get("knowledge_access_policy", {}).get("craft_candidate_review_version")
                 == "explicit-allowlist-craft-review.v1"

@@ -605,6 +605,13 @@ def build_provider_task_view(
         projected_selection = _compact(_project_denied_planning_selection(
             narrative_intelligence, empty_query=empty_query_version is not None,
         ))
+        method_scope = inputs.get("planning_method_scope_projection_version")
+        if method_scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+
+            if stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope requires its supported frozen stage")
+            projected_selection = _compact(project_book_method_scope(narrative_intelligence))
         if projection_version:
             projected_selection = project_planning_craft_histories(projected_selection)
         task = _task(
@@ -619,6 +626,8 @@ def build_provider_task_view(
         if projection_version:
             task["contract_version"] = "provider-task-view-v2"
             task["craft_history_projection_version"] = projection_version
+        if method_scope:
+            task["planning_method_scope_projection_version"] = method_scope
         continuity = _planning_working_continuity(inputs, command)
         if continuity is not None:
             task["working_continuity"] = continuity
@@ -1550,6 +1559,18 @@ def build_provider_context_view(
         if task_view.get("working_continuity") != continuity:
             raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Planning task and Context must bind the same selected working prefix")
         projected_selection = task_view.get("narrative_intelligence", {})
+        method_scope = context_bundle.get("planning_method_scope_projection_version")
+        if method_scope or task_view.get("planning_method_scope_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+
+            expected_scope = _compact(project_book_method_scope(context_bundle.get("narrative_intelligence", {})))
+            if context_bundle.get("craft_history_projection_version"):
+                from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+                expected_scope = project_planning_craft_histories(expected_scope)
+            if (stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1"
+                    or task_view.get("planning_method_scope_projection_version") != method_scope
+                    or projected_selection != expected_scope):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope differs from its complete frozen selection")
         recall_version = context_bundle.get("planning_recall_query_projection_version")
         if recall_version or task_view.get("planning_recall_query_projection_version"):
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
@@ -1562,6 +1583,8 @@ def build_provider_context_view(
         if projection_version or task_view.get("craft_history_projection_version") or "planning_history_projection" in projected_selection:
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
             expected = project_planning_craft_histories(_compact(_project_denied_planning_selection(context_bundle.get("narrative_intelligence", {}))))
+            if method_scope:
+                expected = project_planning_craft_histories(_compact(project_book_method_scope(context_bundle["narrative_intelligence"])))
             if (projection_version != "planning-craft-history-projection.v1"
                 or task_view.get("craft_history_projection_version") != projection_version
                 or projected_selection != expected):
@@ -2472,7 +2495,13 @@ def _build_planning_context_view(
     if task_capacity:
         view["selection_explanation"]["task_target_tokens"] = token_budget
     character_budget = min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4) if token_budget is not None else _MAX_PROVIDER_CONTEXT_CHARACTERS
-    _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""))
+    method_scope = context_bundle.get("planning_method_scope_projection_version")
+    if method_scope:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+        if stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1":
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope requires its frozen stage")
+        project_book_method_scope(context_bundle.get("narrative_intelligence", {}))
+    _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""), method_scope=bool(method_scope))
     _compact_planning_loss_sources(view)
     source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""
     _prune_optional_planning_context(view, sources=raw_inputs, character_budget=character_budget,
@@ -2609,6 +2638,7 @@ def _compact_qualified_foundation_planning(
     sources: list[Mapping[str, Any]],
     stage: str,
     project_id: str,
+    method_scope: bool = False,
 ) -> None:
     from novel_forge.modules.book_design_authority.foundation import QualifiedFoundationSet
     from novel_forge.modules.story_design_authority.domain import matches_generated_foundation_source
@@ -2666,6 +2696,15 @@ def _compact_qualified_foundation_planning(
     for role, segment in selected.items():
         content = segment["content"]
         source = source_by_role[role]
+        if method_scope and "knowledge_translations" in content:
+            translations = content["knowledge_translations"]
+            view["prior_method_decision_boundary"] = "Prior method decisions describe already qualified Foundation application, not author requirements or additional story facts. Their target pointers bind the exact segment source asset, including fields deferred outside this Book scope. Full prior rationales, checks and preservation notes remain in that immutable source; complete current method bodies, prerequisites, exceptions and histories are delivered separately for this stage's own ADOPT/ADAPT/REJECT."
+            content["prior_method_decisions"] = [
+                {key: deepcopy(row[key]) for key in ("knowledge_card_asset_version_id", "content_hash", "decision")}
+                | {"use_sites": [{key: deepcopy(site[key]) for key in ("target_pointer", "realization_excerpt")} for site in row["use_sites"]]}
+                for row in translations
+            ]
+            remove(content, "knowledge_translations", source, "/knowledge_translations", "PRIOR_QUALIFIED_STAGE_METHOD_AUDIT_RETAINED_IN_FROZEN_FOUNDATION")
         for field in ("type", "book_id", "project_id", "logical_key", "planning_scope", "schema_version", "generator_operation_name", "foundation_parent_bindings", "knowledge_translation_policy_version"):
             if field in content:
                 remove(content, field, source, "/" + field, "CONTROL_METADATA_RETAINED_IN_FROZEN_INPUT")
@@ -3464,7 +3503,7 @@ def _expand_text_fragments(value):
     return result
 
 
-def compile_exact_context_references(view, *, structured_transport=False):
+def compile_exact_context_references(view, *, structured_transport=False, short_literals=False):
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     marker = "__exact_value_ref__"
     overrides, removed, json_string = "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
@@ -3475,10 +3514,12 @@ def compile_exact_context_references(view, *, structured_transport=False):
         if isinstance(value, Mapping) and any(key in value for key in (marker, overrides, removed, json_string, fragments)):
             raise KernelError("PROVIDER_EXACT_REFERENCE_COLLISION", "Reserved reference syntax occurs in source content")
         identity = _canonical_exact_reference_value(value)
-        large = len(identity.encode("utf-8")) >= 256
+        large = len(identity.encode("utf-8")) >= (96 if short_literals and isinstance(value,str) else 256)
         if large and identity in seen:
-            count += 1
-            return {marker: seen[identity]}
+            reference = {marker: seen[identity]}
+            if not short_literals or len(_canonical_exact_reference_value(reference).encode("utf-8")) < len(identity.encode("utf-8")):
+                count += 1
+                return reference
         if isinstance(value, Mapping):
             result = {key: encode(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in sorted(value.items())}
             if structured_transport and large:
@@ -3526,6 +3567,8 @@ def compile_exact_context_references(view, *, structured_transport=False):
     if structured_transport:
         proof.update(transport_version="provider-structured-exact-reference.v2" if fragment_count else "provider-structured-exact-reference.v1",
             delta_reference_count=delta_count, canonical_json_string_count=json_count, text_fragment_group_count=fragment_count)
+    if short_literals:
+        proof.update(transport_version="provider-structured-exact-reference.v3",literal_minimum_bytes=96)
     return encoded, proof
 
 

@@ -2465,6 +2465,13 @@ the capacity trigger does not silently suppress the delete before that guard exe
 Qualified Foundation planning projections retain mandatory constraints once with
 auditable exact references, defer prose examples to prose stages, and replace an
 integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.
+An explicitly experimental Book method-scope projection delivers complete current
+methods and conditions while keeping recall diagnostics and prior qualified Foundation
+application audits in their exact frozen assets. Prior decisions and use sites remain
+evidence of earlier application, separate from the current stage's own choices. The
+projection never changes author requirements or story fields, and its shorter repeated
+literal references reconstruct the full projected request before actual capacity admission.
+Default and historical requests retain their previous representation.
 
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots

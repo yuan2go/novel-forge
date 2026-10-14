@@ -13,6 +13,16 @@ _HISTORY_POINTER = "/narrative_intelligence/need/recent_craft_usage"
 _BUDGET_HISTORY_FIELDS = (*_HISTORY_FIELDS, "working_allocation_history", "working_coverage_gaps")
 
 
+def project_book_method_scope(selection: dict[str, Any]) -> dict[str, Any]:
+    policy = selection.get("knowledge_access_policy") or {}
+    if policy.get("mode") != "ALLOW_ONLY" or policy.get("usage_scope") != "EXPERIMENTAL_VALIDATION":
+        raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope requires its explicit experimental policy")
+    result = project_foundation_method_recall(selection)
+    result["recall_query_receipt"]["contract_version"] = "book-method-scope-projection.v1"
+    result["recall_query_receipt"]["boundary"] = "RECALL_AND_PRIOR_STAGE_AUDIT_NOT_STORY_FACTS"
+    return result
+
+
 def project_foundation_method_recall(selection: dict[str, Any]) -> dict[str, Any]:
     from .craft_selection import _hash
 

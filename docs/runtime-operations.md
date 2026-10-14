@@ -950,6 +950,18 @@ historical Contexts keep their prior task view. Check the craft need-driven and 
 task-view suites plus `test_authorized_planning_capacity_postgres.py`, then verify the
 actual rendered request and Provider result separately. Do not raise the model context
 capacity or call a rejected request under a new work identity.
+An unsent experimental `book_plan.generate` capacity failure can instead freeze
+`book-method-scope-projection.v1`. Complete current Card methods, applicability,
+prerequisites, exceptions, author constraints and real usage histories remain in the
+request. Recall diagnostics and already qualified Foundation application rationales
+remain in their original source assets and hash-bound projection audit; prior method
+IDs, decisions and use-site evidence remain visible with their prior-stage boundary.
+The Book stage still chooses its own ADOPT/ADAPT/REJECT. The scoped transport can reference
+shorter repeated literal strings only when smaller, with exact full reconstruction;
+historical codecs keep their original encoding. Migration 0208 adds only this Book
+scope to the existing zero-Effect guard. Run the Book method scope, Provider view,
+continuation and authorized Planning capacity suites. Backup before migration, rehearse
+on a native copy, check actual admission before sending and retain the original failure.
 The same opt-in records current scoped Card approval in Planning and adopted Writer
 views, preserving older Candidate-stage declarations and method content as historical
 evidence. A complete Provider result rejected by the knowledge translation contract is
