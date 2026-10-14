@@ -203,7 +203,7 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
         build_book_production_composition, build_chapter_authority_application,
         build_production_execution_composition, build_trusted_principal_resolver,
     )
-    from novel_forge.modules.book_authority.creation_runtime import drive_book, creation_cancellation
+    from novel_forge.modules.book_authority.creation_runtime import drive_book, creation_cancellation, creation_runtime_environment
     from novel_forge.modules.book_authority.manuscript import author_first, require_manuscript, writing_frontier
     principal.require("book.authority.execute", book["project_id"])
     if not author_first(book):
@@ -228,10 +228,11 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
         return report("MANUSCRIPT_READY", book)
     if book["state"] in {"ABORTED", "CANCELLED", "COMPLETED"}:
         return report(book["state"], book)
-    execution = build_production_execution_composition(settings)
+    runtime = {"env": creation_runtime_environment(book["project_id"])} if formation_run_id else {}
+    execution = build_production_execution_composition(settings, **runtime)
     try:
-        chapter = build_chapter_authority_application(settings, execution=execution)
-        composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+        chapter = build_chapter_authority_application(settings, execution=execution, **runtime)
+        composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter, **runtime)
         worker = build_trusted_principal_resolver().resolve_worker_principal("manuscript-continuation-worker")
         if book["state"] == "PAUSED":
             composition.authority.resume(run, reason="Requested native manuscript continuation", principal=principal)
