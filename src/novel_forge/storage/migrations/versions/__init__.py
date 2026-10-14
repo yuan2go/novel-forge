@@ -211,6 +211,7 @@ from . import (
     v20261014_0207_world_revalidation_capacity,
     v20261014_0208_world_isolated_source_correction,
     v20261014_0209_world_foundation_background,
+    v20261014_0210_world_working_frontier_revalidation,
 )
 
 VERSION_MODULES = [
@@ -424,6 +425,7 @@ VERSION_MODULES = [
     v20261014_0207_world_revalidation_capacity,
     v20261014_0208_world_isolated_source_correction,
     v20261014_0209_world_foundation_background,
+    v20261014_0210_world_working_frontier_revalidation,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261014_0209_world_foundation_background",
+  "migration_head": "20261014_0210_world_working_frontier_revalidation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9179,6 +9179,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261014_0209_world_foundation_background.py",
           "id": "20261014_0209_world_foundation_background",
           "locator": "20261014_0209_world_foundation_background"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261014_0210_world_working_frontier_revalidation.py",
+          "id": "20261014_0210_world_working_frontier_revalidation",
+          "locator": "20261014_0210_world_working_frontier_revalidation"
         }
       ],
       "external_effects": {
@@ -10131,7 +10136,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:147334168923a0ec72709a65e77aecad85ca11b2e180e1a4ef25fc49e57e5c91"
+    "implementation_tree_sha": "sha256:e3ca12a70c064826d32cc42578fcf58db8cb29e8318013b70afe948088c3c67d"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

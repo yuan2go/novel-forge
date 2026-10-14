@@ -195,7 +195,7 @@ def require_source(
                 mode = _world_host_source
             elif frozen.get("execution_contract_version") in {"1.18.0", "1.19.0"}:
                 mode = _world_agency_source
-        elif row[0] == "FAILED_FINAL" and failure_code == "WORLD_DISCLOSURE_FIELDS_INVALID" and frozen.get("execution_contract_version") == "1.21.0":
+        elif row[0] == "FAILED_FINAL" and failure_code in {"WORLD_DISCLOSURE_FIELDS_INVALID", "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"} and frozen.get("execution_contract_version") == "1.21.0":
             mode = _world_disclosure_source
         if mode:
             if mode is _world_disclosure_source:
@@ -520,7 +520,7 @@ def _isolated_world_source_correction(uow, *, source_operation_id, row, frozen):
 
 
 def recover_world_result_frontier(application, book, *, principal):
-    if book["state"] != "CHAPTER_PLAN_REQUIRED" or book.get("active_chapter_request_id"):
+    if book["state"] not in {"READY", "CHAPTER_PLAN_REQUIRED"} or book.get("active_chapter_request_id"):
         return False
     principal.require("story_planning.authority.execute",book["project_id"])
     with AuthorityUnitOfWork(application.database_url) as uow:
@@ -541,6 +541,14 @@ def recover_world_result_frontier(application, book, *, principal):
               AND op.status='FAILED_FINAL' AND last.status='FAILED_FINAL'
               AND op.command_payload#>>'{payload,world_preparation_request,book_run_id}'=%s
               AND ((last.result->>'error_code'='WORLD_DISCLOSURE_FIELDS_INVALID' AND source.content#>>'{contract,contract_version}'='world-preparation-source.v2')
+                OR (last.result->>'error_code'='WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID' AND op.definition_version='1.21.0'
+                    AND EXISTS(SELECT 1 FROM authority_asset_locator evaluated_locator
+                        JOIN authority_asset_version evaluated ON evaluated.asset_version_id=evaluated_locator.current_asset_version_id
+                        JOIN authority_asset_version generated ON generated.asset_version_id=evaluated.content#>>'{contract,generation,asset_version_id}'
+                        JOIN authority_asset_version frozen ON frozen.asset_version_id=generated.content#>>'{contract,source,asset_version_id}'
+                        WHERE evaluated_locator.project_id=g.project_id AND evaluated_locator.logical_ref='world_preparation/'||op.operation_id||'/evaluation'
+                          AND frozen.content#>>'{contract,contract_version}'='world-preparation-source.v5'
+                          AND frozen.content#>>'{contract,target_chapter}'=split_part(g.logical_key,':',2)))
                 OR last.result->>'error_code'='WORLD_ISOLATED_RECEIPT_INVALID'
                 OR (last.result->>'error_code'='WORLD_PREPARATION_RESULT_INVALID' AND op.definition_version='1.21.0'
                     AND EXISTS(SELECT 1 FROM authority_asset_locator action_locator
@@ -2081,7 +2089,7 @@ def _require_world_lineage_settled(uow, *, source_operation_id, project_id, book
               AND child.workspace_id=r.workspace_id AND child.actor_id=registration.actor_id
               AND registration.status='SUCCEEDED' AND registration.definition_name='story_planning.runtime_continuation.register'
               AND ((r.source_operation_id=%s AND registration.definition_version='2.0.0') OR (
-                r.target_runtime#>>'{world_host_revalidation,contract_version}'='world-host-revalidation.v3'
+                r.target_runtime#>>'{world_host_revalidation,contract_version}' IN ('world-host-revalidation.v3','world-host-revalidation.v4')
                 AND r.target_runtime#>>'{world_host_revalidation,source_operation_id}'=%s AND r.decision_evidence->>'capacity_only'='true'
                 AND registration.definition_version IN ('1.0.0','2.0.0','3.0.0')))
               AND child.command_payload->'payload'=r.successor_command

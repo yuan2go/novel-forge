@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261014_0209_world_foundation_background",
+  "head": "20261014_0210_world_working_frontier_revalidation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -212,6 +212,7 @@
     "20261014_0206_world_disclosure_revalidation",
     "20261014_0207_world_revalidation_capacity",
     "20261014_0208_world_isolated_source_correction",
-    "20261014_0209_world_foundation_background"
+    "20261014_0209_world_foundation_background",
+    "20261014_0210_world_working_frontier_revalidation"
   ]
 }

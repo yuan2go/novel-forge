@@ -6909,8 +6909,8 @@ class PostgresPlanningExecutionPreparer:
             return existing
         token = _token(f"{project_id}:{logical_ref}")
         guard = None
-        if asset_type == "narrative_governance_action" and (contract.get("host_revalidation") or {}).get("contract_version") == "world-host-revalidation.v3":
-            from .world_preparation import require_world_foundation_frontier
+        if asset_type == "narrative_governance_action" and (contract.get("host_revalidation") or {}).get("contract_version") in {"world-host-revalidation.v3", "world-host-revalidation.v4"}:
+            from .world_preparation import require_world_revalidation_frontier
             from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
             if execution_lease is None:
                 raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_REQUIRED", "Known-result action adoption requires its actual executing Attempt fence")
@@ -6918,7 +6918,7 @@ class PostgresPlanningExecutionPreparer:
                 attempt = require_current_fence(uow, execution_lease)
                 if attempt["operation_id"] != request.operation_id or execution_lease.project_id != request.project_id:
                     raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_MISMATCH", "The current fence must belong to this exact Action operation and project")
-                require_world_foundation_frontier(uow, request)
+                require_world_revalidation_frontier(uow, request)
         try:
             return self.writer.materialize_output(
                 AuthorityAssetWriteCommand(

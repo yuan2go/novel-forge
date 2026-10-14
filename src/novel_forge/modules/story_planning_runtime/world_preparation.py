@@ -133,12 +133,12 @@ def require_world_foundation_revalidation(database_url: str, *, command: Any, op
         "accepted_history_mutation_allowed": False, "character_knowledge_granted": False}
 
 
-def require_world_foundation_frontier(uow, request):
+def require_world_revalidation_frontier(uow, request):
     uow.cursor.execute("""SELECT link.continuation_id,link.target_runtime#>>'{world_host_revalidation,source,asset_version_id}',
         operation.project_id,operation.workspace_id,operation.actor_id,operation.command_payload#>>'{payload,book_id}',link.target_runtime->'world_host_revalidation'
         FROM authority_operation operation JOIN authority_story_planning_runtime_continuation link
           ON link.continuation_id=operation.command_payload#>>'{payload,runtime_continuation_id}'
-        WHERE operation.operation_id=%s AND link.target_runtime#>>'{world_host_revalidation,contract_version}'='world-host-revalidation.v3'""", [request.operation_id])
+        WHERE operation.operation_id=%s AND link.target_runtime#>>'{world_host_revalidation,contract_version}' IN ('world-host-revalidation.v3','world-host-revalidation.v4')""", [request.operation_id])
     bound = uow.cursor.fetchone()
     if not bound:
         return
@@ -150,14 +150,21 @@ def require_world_foundation_frontier(uow, request):
           AND book.project_id=formation.project_id AND book.workspace_id=formation.workspace_id AND book.book_id=formation.book_id
         FOR UPDATE OF formation""", [bound[1],bound[2],bound[3],bound[5]])
     formation = uow.cursor.fetchone()
-    uow.cursor.execute("""SELECT book.book_run_id FROM authority_book_production book
+    uow.cursor.execute("""SELECT book.book_run_id,frozen.content->'contract' FROM authority_book_production book
         JOIN authority_asset_version frozen ON frozen.asset_version_id=%s AND book.book_run_id=frozen.content#>>'{contract,request,book_run_id}'
         WHERE book.project_id=%s AND book.workspace_id=%s AND book.book_id=%s
-          AND book.current_chapter=0 AND book.accepted_through_chapter=0 AND book.active_chapter_request_id IS NULL
+          AND ((frozen.content#>>'{contract,contract_version}'='world-preparation-source.v3' AND book.current_chapter=0 AND book.accepted_through_chapter=0)
+            OR (frozen.content#>>'{contract,contract_version}'='world-preparation-source.v5'
+              AND (book.current_chapter+1)::text=frozen.content#>>'{contract,target_chapter}'
+              AND book.accepted_through_chapter::text=frozen.content#>>'{contract,request,accepted_through_chapter}'
+              AND book.state IN ('READY','CHAPTER_PLAN_REQUIRED')))
+          AND book.active_chapter_request_id IS NULL
           AND book.input_snapshot_id=frozen.content#>>'{contract,request,input_snapshot_id}'
           AND book.state NOT IN ('ABORTED','CANCELLED','COMPLETED') FOR UPDATE OF book""", [bound[1],bound[2],bound[3],bound[5]])
     book = uow.cursor.fetchone()
-    uow.cursor.execute("""SELECT CASE WHEN link.decision_evidence->>'host_revalidation'='world-host-revalidation.v3'
+    if book and bound[6]["contract_version"] == "world-host-revalidation.v4":
+        WorldPreparationRepository(uow.cursor).assert_source_current(project_id=bound[2], book_id=bound[5], frozen=book[1])
+    uow.cursor.execute("""SELECT CASE WHEN link.decision_evidence->>'host_revalidation' IN ('world-host-revalidation.v3','world-host-revalidation.v4')
         THEN authority_world_contract_continuation_permitted(link.continuation_id,generation.operation_id,to_jsonb(generation))
         ELSE EXISTS(SELECT 1 FROM authority_operation current JOIN authority_operation original ON original.operation_id=link.source_operation_id
             JOIN authority_story_planning_generation source ON source.operation_id=original.operation_id
@@ -208,36 +215,64 @@ def require_world_disclosure_revalidation(database_url: str, *, command: Any, op
     from novel_forge.modules.narrative_state.reality import narrative_hash
 
     query = AuthorityAssetQuery(database_url)
-    documents = {key: query.require(project_id=command.project_id, logical_ref=f"world_preparation/{operation_id}/{key}")
-        for key in ("source", "generation", "evaluation")}
-    refs = {key: {"asset_version_id": doc.asset_version_id, "content_hash": doc.content_hash} for key, doc in documents.items()}
-    source, generation, evaluation = (documents[key].content["contract"] for key in ("source", "generation", "evaluation"))
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("""SELECT op.status,op.actor_id,op.workspace_id,op.definition_name,op.definition_version,attempt.status,attempt.result
             FROM authority_operation op JOIN LATERAL (SELECT status,result FROM authority_attempt WHERE operation_id=op.operation_id
                 ORDER BY attempt_number DESC LIMIT 1) attempt ON true WHERE op.operation_id=%s AND op.project_id=%s""", [operation_id,command.project_id])
         failed = uow.cursor.fetchone()
         if (not failed or failed[:6] != ("FAILED_FINAL",command.actor_id,command.workspace_id,"story_planning.generate","1.21.0","FAILED_FINAL")
-                or failed[6].get("error_code") != "WORLD_DISCLOSURE_FIELDS_INVALID"):
-            raise KernelError("WORLD_HOST_REVALIDATION_SOURCE_INVALID", "Only the exact terminal field-address failure can consume this recovery")
+                or failed[6].get("error_code") not in {"WORLD_DISCLOSURE_FIELDS_INVALID", "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"}):
+            raise KernelError("WORLD_HOST_REVALIDATION_SOURCE_INVALID", "Only the exact terminal disclosure failure can consume this recovery")
+        working_frontier = failed[6]["error_code"] == "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"
+    documents = {"evaluation": query.require(project_id=command.project_id, logical_ref=f"world_preparation/{operation_id}/evaluation")}
+    evaluation = documents["evaluation"].content["contract"]
+    documents["generation"] = query.require(project_id=command.project_id,
+        **({"asset_version_id": evaluation["generation"]["asset_version_id"]} if working_frontier
+           else {"logical_ref": f"world_preparation/{operation_id}/generation"}))
+    generation = documents["generation"].content["contract"]
+    documents["source"] = query.require(project_id=command.project_id,
+            **({"asset_version_id": generation["source"]["asset_version_id"]} if working_frontier
+               else {"logical_ref": f"world_preparation/{operation_id}/source"}))
+    source = documents["source"].content["contract"]
+    refs = {key: {"asset_version_id": doc.asset_version_id, "content_hash": doc.content_hash} for key, doc in documents.items()}
+    with AuthorityUnitOfWork(database_url) as uow:
         WorldPreparationRepository(uow.cursor).assert_source_current(project_id=command.project_id, book_id=command.book_id, frozen=source)
     if (command.generator_operation_name != "chapter_plan.generate" or command.execution_contract_version != "1.21.0"
-            or source["contract_version"] != "world-preparation-source.v2" or source["reality"].get("epistemic_contract") != "world-agency.v2"
+            or source["contract_version"] != ("world-preparation-source.v5" if working_frontier else "world-preparation-source.v2") or source["reality"].get("epistemic_contract") != "world-agency.v2"
             or source.get("actor_experiment") or source["request"] != dict(command.world_preparation_request or {})
             or generation["source"] != refs["source"] or evaluation["source"] != refs["source"] or evaluation["generation"] != refs["generation"]):
         raise KernelError("WORLD_HOST_REVALIDATION_SOURCE_INVALID", "Retain the legacy source, current frontier and both complete World outputs")
+    owners = {key: PlanningWorldPreparation._source_operation(database_url, command.project_id, documents[key].asset_version_id)
+        for key in ("generation", "evaluation")}
+    if working_frontier:
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("""WITH RECURSIVE lineage(operation_id) AS (
+                SELECT %s::text UNION SELECT neighbor.operation_id FROM lineage
+                JOIN authority_operation anchor ON anchor.operation_id=lineage.operation_id
+                JOIN authority_operation neighbor ON neighbor.causation_operation_id=anchor.operation_id OR neighbor.operation_id=anchor.causation_operation_id
+                WHERE neighbor.definition_name='story_planning.generate' AND neighbor.project_id=anchor.project_id
+                  AND neighbor.command_payload#>>'{payload,book_id}'=anchor.command_payload#>>'{payload,book_id}')
+                SELECT owner.operation_id FROM lineage JOIN authority_operation owner USING(operation_id)
+                WHERE owner.operation_id=ANY(%s) AND owner.project_id=%s AND owner.workspace_id=%s AND owner.actor_id=%s
+                  AND owner.definition_name='story_planning.generate' AND owner.definition_version='1.21.0'
+                  AND owner.command_payload#>>'{payload,book_id}'=%s AND owner.command_payload#>>'{payload,logical_key}'=%s
+                  AND owner.command_payload#>'{payload,world_preparation_request}'=%s::jsonb""",
+                [operation_id, list(set(owners.values())), command.project_id, command.workspace_id, command.actor_id,
+                 command.book_id, command.logical_key, Jsonb(source["request"])])
+            if {row[0] for row in uow.cursor.fetchall()} != set(owners.values()):
+                raise KernelError("WORLD_HOST_REVALIDATION_SOURCE_INVALID", "Complete World stages must belong to this exact native Planning lineage")
     for key in ("generation", "evaluation"):
-        if PlanningWorldPreparation._source_operation(database_url, command.project_id, documents[key].asset_version_id) != operation_id:
+        if not working_frontier and owners[key] != operation_id:
             raise KernelError("WORLD_HOST_REVALIDATION_SOURCE_INVALID", "Both outputs must belong to the failed invocation owner")
         output = documents[key].content["contract"]
-        receipt = read_retained_generation_stage_success(database_url, EffectCommandContext(operation_id=operation_id, project_id=command.project_id,
+        receipt = read_retained_generation_stage_success(database_url, EffectCommandContext(operation_id=owners[key], project_id=command.project_id,
             actor_id=command.actor_id, trace_id=command.trace_id, correlation_id=command.correlation_id), effect_id=output["evidence"]["external_receipt_ref"])
         if receipt is None or receipt["provider_evidence"].get("result") != output["output"]:
             raise KernelError("WORLD_HOST_REVALIDATION_RECEIPT_UNSETTLED", "Reuse requires exact verified complete output and retained usage")
     decoded = decode_world_generation({key:value for key,value in generation["output"].items() if key not in {"knowledge_translations", "actor_adjudications"}}, agency=True)
     policy = WorldProductionPolicy(**source["policy"])
     PlanningWorldPreparation._validate_references(source, validate_generated_candidates(decoded,policy), command)
-    reality = {**source["reality"], "disclosure_fields_contract": DISCLOSURE_FIELDS_V2}
+    reality = source["reality"] if working_frontier else {**source["reality"], "disclosure_fields_contract": DISCLOSURE_FIELDS_V2}
     plan = compile_world_plan(reality=reality,generated=decoded,evaluation=evaluation["output"],policy=policy,
         chapter_number=world_target_chapter(source),intent_version_id=source["intent_version_id"])
     from novel_forge.modules.worldbuilding.continuation import decide_preparation, apply_preparation_decisions
@@ -245,13 +280,30 @@ def require_world_disclosure_revalidation(database_url: str, *, command: Any, op
         accepted_steps=item["accepted_steps"],chapter_number=world_target_chapter(source),
         intent_version_id=source["intent_version_id"]) for item in source.get("preparation_sources",[])])
     resolutions = [row["field_resolution"] for row in plan.get("disclosure_projection",[]) if row.get("field_resolution")]
-    if plan["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED"} or not resolutions:
+    if plan["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED"} or (not working_frontier and not resolutions):
         raise KernelError("WORLD_HOST_REVALIDATION_UNRESOLVED", "Recovery must resolve the actual field address and retain an executable candidate")
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("SELECT current_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s AND book_id=%s", [source["request"]["book_run_id"],command.project_id,command.book_id])
         frontier = uow.cursor.fetchone()
     if not frontier or command.logical_key != f"chapter:{frontier[0]+1}" or plan["chapter_number"] != frontier[0]+1:
         raise KernelError("WORLD_HOST_REVALIDATION_SOURCE_INVALID", "Revalidation belongs only to the unexecuted current Chapter frontier")
+    if working_frontier:
+        from novel_forge.modules.worldbuilding.dynamics import candidate_chapter
+        working = source.get("working_manuscript") or {}
+        projection = reality.get("working_observation_context") or {}
+        if (candidate_chapter(reality) != world_target_chapter(source)
+            or world_target_chapter(source) <= source["request"]["accepted_through_chapter"] + 1
+            or working.get("snapshot_hash") != projection.get("snapshot_hash")
+            or not any(row["source"]["evidence_role"] == "PLANNED_LOCAL_OCCURRENCE" for row in plan["disclosure_projection"])):
+            raise KernelError("WORLD_HOST_REVALIDATION_SOURCE_INVALID", "Working frontier recovery requires bound unaccepted history and the exact local disclosure")
+        return {"contract_version": "world-host-revalidation.v4", "revalidation_kind": "WORKING_CHAPTER_FRONTIER",
+            "source_operation_id": operation_id, **refs, "plan_digest": plan["plan_digest"],
+            "target_chapter": world_target_chapter(source), "working_snapshot_hash": working["snapshot_hash"],
+            "working_observation_projection_hash": projection["projection_hash"],
+            "retained_effect_ids": sorted(output["evidence"]["external_receipt_ref"] for output in (generation, evaluation)),
+            "result_owners": owners,
+            "knowledge_selection_digest": generation.get("knowledge_selection_digest", ""),
+            "accepted_history_mutation_allowed": False, "character_knowledge_granted": False}
     return {"contract_version":"world-host-revalidation.v2","revalidation_kind":"DISCLOSURE_FIELD_ADDRESS","source_operation_id":operation_id,
         **refs,"plan_digest":plan["plan_digest"],"disclosure_fields_contract":DISCLOSURE_FIELDS_V2,
         "field_resolution_hash":narrative_hash(resolutions),"field_resolutions":resolutions,
@@ -326,7 +378,7 @@ def require_world_host_revalidation(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [operation_id])
         latest = uow.cursor.fetchone()
-    if latest and latest[0] == "WORLD_DISCLOSURE_FIELDS_INVALID":
+    if latest and latest[0] in {"WORLD_DISCLOSURE_FIELDS_INVALID", "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"}:
         return require_world_disclosure_revalidation(database_url,command=command,operation_id=operation_id)
     if latest and latest[0] == "WORLD_PREPARATION_RESULT_INVALID":
         try:
@@ -730,7 +782,7 @@ class PlanningWorldPreparation:
                 )
             source_prefix = f"world_preparation/{self._source_operation(self.preparer.database_url, command.project_id, source_document.asset_version_id)}"
         else:
-            source_document = self.preparer.query.require(project_id=command.project_id, asset_version_id=revalidation["source"]["asset_version_id"]) if revalidation and revalidation["contract_version"] == "world-host-revalidation.v3" else self._read(command.project_id, f"{source_prefix}/source")
+            source_document = self.preparer.query.require(project_id=command.project_id, asset_version_id=revalidation["source"]["asset_version_id"]) if revalidation and revalidation["contract_version"] in {"world-host-revalidation.v3", "world-host-revalidation.v4"} else self._read(command.project_id, f"{source_prefix}/source")
             if source_document is None:
                 for retained_prefix in reuse_prefixes:
                     source_document = self._read(command.project_id, f"{retained_prefix}/source")
@@ -828,7 +880,7 @@ class PlanningWorldPreparation:
             )
             for item in source.get("preparation_sources", [])
         ]
-        generation_document = self.preparer.query.require(project_id=command.project_id, asset_version_id=revalidation["generation"]["asset_version_id"]) if revalidation and revalidation["contract_version"] == "world-host-revalidation.v3" else self._read(command.project_id, f"{source_prefix if revalidation else prefix}/generation")
+        generation_document = self.preparer.query.require(project_id=command.project_id, asset_version_id=revalidation["generation"]["asset_version_id"]) if revalidation and revalidation["contract_version"] in {"world-host-revalidation.v3", "world-host-revalidation.v4"} else self._read(command.project_id, f"{source_prefix if revalidation else prefix}/generation")
         if generation_document is None:
             generation_document = self._read_known_isolated_stage(command, reuse_prefixes, "generation", source_ref)
         knowledge_selection = dict(knowledge_selection or {})
@@ -904,7 +956,7 @@ class PlanningWorldPreparation:
         }, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
         candidates = validate_generated_candidates(decoded, policy)
         self._validate_references(source, candidates, command)
-        evaluation_document = self.preparer.query.require(project_id=command.project_id, asset_version_id=revalidation["evaluation"]["asset_version_id"]) if revalidation and revalidation["contract_version"] == "world-host-revalidation.v3" else self._read(command.project_id, f"{source_prefix if revalidation else prefix}/evaluation")
+        evaluation_document = self.preparer.query.require(project_id=command.project_id, asset_version_id=revalidation["evaluation"]["asset_version_id"]) if revalidation and revalidation["contract_version"] in {"world-host-revalidation.v3", "world-host-revalidation.v4"} else self._read(command.project_id, f"{source_prefix if revalidation else prefix}/evaluation")
         if evaluation_document is None:
             evaluation_document = self._read_known_isolated_stage(command, reuse_prefixes, "evaluation", source_ref)
         generation_ref = {
@@ -968,7 +1020,7 @@ class PlanningWorldPreparation:
                 "content_hash": evaluation_document.content_hash,
             },
             "world_plan": plan,
-            **({"host_revalidation":revalidation} if revalidation and revalidation["contract_version"] in {"world-host-revalidation.v2", "world-host-revalidation.v3"} else {}),
+            **({"host_revalidation":revalidation} if revalidation and revalidation["contract_version"] in {"world-host-revalidation.v2", "world-host-revalidation.v3", "world-host-revalidation.v4"} else {}),
             "preserve_accepted_history": True,
             "fact_mutation_allowed": False,
             **({"actor_experiment": source["actor_experiment"], "actor_proposals": actor_refs,
@@ -1295,7 +1347,7 @@ class PlanningWorldPreparation:
             evaluation = query.require(
                 project_id=command.project_id,
                 **({"asset_version_id": host_revalidation["evaluation"]["asset_version_id"]}
-                    if host_revalidation and host_revalidation["contract_version"] == "world-host-revalidation.v3"
+                    if host_revalidation and host_revalidation["contract_version"] in {"world-host-revalidation.v3", "world-host-revalidation.v4"}
                     else {"logical_ref": f"world_preparation/{owner}/evaluation"}),
             )
         except KernelError as error:
@@ -1315,6 +1367,10 @@ class PlanningWorldPreparation:
             "content_hash": evaluation.content_hash,
         }
         retained = evaluation.content["contract"]
+        if host_revalidation and host_revalidation["contract_version"] == "world-host-revalidation.v4":
+            if host_revalidation["evaluation"] != expected_evaluation:
+                raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Working-frontier revalidation must retain its exact Director output")
+            owner = host_revalidation["result_owners"]["evaluation"]
         if host_revalidation and host_revalidation["contract_version"] == "world-host-revalidation.v3":
             for key, document in (("action", action), ("evaluation", evaluation)):
                 if not document or host_revalidation[key] != {"asset_version_id": document.asset_version_id, "content_hash": document.content_hash}:
@@ -1375,6 +1431,10 @@ class PlanningWorldPreparation:
                 for item in frozen.get("preparation_sources", [])
             ]
             plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
+        if host_revalidation and host_revalidation["contract_version"] == "world-host-revalidation.v4":
+            if plan["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED"} or plan["plan_digest"] != host_revalidation["plan_digest"]:
+                raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Working-frontier plan must match its registered complete-result proof")
+            return
         if binding is None:
             return
         if host_revalidation and host_revalidation["contract_version"] == "world-host-revalidation.v3":
@@ -1571,7 +1631,7 @@ class PlanningWorldPreparation:
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
             **({"execution_lease": self.execution_lease} if asset_type == "narrative_governance_action"
-                and (contract.get("host_revalidation") or {}).get("contract_version") == "world-host-revalidation.v3" else {}),
+                and (contract.get("host_revalidation") or {}).get("contract_version") in {"world-host-revalidation.v3", "world-host-revalidation.v4"} else {}),
         )
 
 

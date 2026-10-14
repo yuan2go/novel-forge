@@ -349,6 +349,13 @@ accepted history remains at 0, rejection of chapter 1/3 and invalid projected ta
 and unchanged accepted disclosure rules. Revalidate captured complete native World
 generation/Director results before adopting an installed fix; preserve the original
 Host failure and distinguish a read-only revalidation from fenced native adoption.
+Known working-frontier recovery also runs the v4 cases in
+`test_world_contract_migration_guards_postgres.py`. Cover Creation's automatic scan
+with only the current Director locator and an ancestor generation Owner, exact
+two-result receipts, current selected snapshot, paused/cancelled/advanced frontier,
+foreign Owner and unknown-effect rejection. Exercise 0209→0210 backup/restore and
+installed native Action/primary consumers with Provider dispatch forbidden before
+continuing the same Book; retain its original failure and unknown usage.
 Author scale binding additionally runs `test_author_length_binding.py`. Verify the
 exact frozen Book source in the hierarchical Planning request and the Platform source
 in the complete Writer stdin and saved creative baseline; a saved Context alone is

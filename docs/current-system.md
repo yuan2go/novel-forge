@@ -43,6 +43,15 @@ that projection is present; accepted-only inputs retain the accepted frontier pl
 Local disclosure still requires a validated current-chapter preparation path and remains
 a planned occurrence. It neither advances the accepted cursor nor becomes accepted
 event evidence. Invalid target metadata or a different chapter cannot authorize disclosure.
+`world-host-revalidation.v4` uses the existing complete-result continuation Owner after
+a terminal legacy working-frontier disclosure rejection. Creation finds the current
+Director output, its exact generation and frozen v5 Source, including different
+causally linked stage Owners. Migration 0210 binds both verified receipts, unchanged
+selected working history and current unexecuted Chapter. Action and primary consumers
+recheck the fence, Formation cancellation and locked Book frontier; capacity successors
+retain the exact proof and cannot bypass a paused Book. Source, failed Attempts and
+unknown usage remain immutable. Focused PostgreSQL guards are execution evidence;
+installed native adoption and literary improvement require separate qualification.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author
