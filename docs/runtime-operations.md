@@ -149,9 +149,9 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
-The published chain through 0197 is immutable. The original audit boundary is
-0194; published 0196 and 0197 retain stopped CLI isolation and authorized Planning capacity.
-The current head additionally includes 0198, which adds missing foreign-key reference indexes
+Published migration bodies are immutable across the complete registered chain.
+Migrations 0196 and 0197 retain stopped CLI isolation and authorized Planning capacity.
+Migration 0198 adds missing foreign-key reference indexes
 without rewriting facts or admission rules. Migration 0199 permits an unsent ChapterGroup
 capacity successor from an exact native Plan Change request as well as Narrative Search.
 It retains the frozen context and input hashes, original executor and author entitlement,
