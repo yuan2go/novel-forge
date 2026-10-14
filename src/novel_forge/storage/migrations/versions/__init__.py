@@ -211,6 +211,7 @@ from . import (
     v20261014_0207_foundation_method_context,
     v20261014_0208_book_method_scope_context,
     v20261014_0209_planning_input_scope_point_reads,
+    v20261014_0210_operation_outbox_lookup_indexes,
 )
 
 VERSION_MODULES = [
@@ -424,6 +425,7 @@ VERSION_MODULES = [
     v20261014_0207_foundation_method_context,
     v20261014_0208_book_method_scope_context,
     v20261014_0209_planning_input_scope_point_reads,
+    v20261014_0210_operation_outbox_lookup_indexes,
 ]
 
 __all__ = ["VERSION_MODULES"]
