@@ -4768,8 +4768,25 @@ def _materialize_production_codex_prompt(
             "or activate Skills. Return the requested chapters themselves; a status, proposal or empty candidate does not fulfill the instruction. "
             "The outer response must match the strict schema."
         )
+        purpose = reference_prose.get("task_purpose", "PROSE")
+        if purpose == "MANUSCRIPT_READING":
+            stage_semantic_contract = (
+                "Execute the frozen reading instruction in agent_task against its complete anonymous manuscript input. "
+                "Return only the requested auxiliary diagnosis in FINAL.final_response.payload_json. "
+                "Read the prose before assessing the six requested dimensions and cite exact visible passages. "
+                "Do not invent or revise fiction, infer group labels, query Book plans, invoke tools or activate Skills. "
+                "This is model diagnosis, not human feedback, author acceptance or accepted Canon. "
+                "Uncertainty and adverse findings are valid. The outer response must match the strict schema."
+            )
+        elif purpose != "PROSE":
+            raise KernelError("AGENT_REFERENCE_PURPOSE_INVALID", "Unknown controlled reference purpose")
         task_view = {"contract_version":"provider-reference-author-task.v1",
                      "instruction":task_view["instruction"],"accepted_boundary":task_view["accepted_boundary"]}
+        if purpose == "MANUSCRIPT_READING":
+            from .provider_views import controlled_manuscript_reading_views
+            if knowledge_view:
+                raise KernelError("MODEL_READING_PUBLIC_SCOPE_REQUIRED", "Blind reading consumes only its frozen public manuscript capsule")
+            task_view, context_view = controlled_manuscript_reading_views(inputs["instruction"])
     if (
         stage == "agent_session"
         and not reference_prose
@@ -4820,6 +4837,10 @@ def _materialize_production_codex_prompt(
             "<output_schema>\n" + _canonical(schema["content"]) + "\n</output_schema>",
     ))
     prompt = "\n\n".join(prompt_sections)
+    if stage == "agent_session" and reference_prose.get("task_purpose") == "MANUSCRIPT_READING":
+        book_id = str((inputs.get("accepted_boundary") or {}).get("book_id") or "")
+        if book_id and book_id in prompt:
+            raise KernelError("MODEL_READING_GROUP_IDENTITY_LEAK", "The diagnostic host Book must stay outside the anonymous Provider view")
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     prompt_bytes = len(prompt.encode("utf-8"))
     prompt_estimated_tokens = max(1, (prompt_bytes + 2) // 3)

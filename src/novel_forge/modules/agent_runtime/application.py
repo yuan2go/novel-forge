@@ -238,9 +238,13 @@ class AgentHarnessAdmissionRequest:
     execution_contract_hash: str = ""
     requested_skill_ids: tuple[str, ...] = ()
     reference_prose: bool = False
+    reference_purpose: str = "PROSE"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "agent_role", AutonomousAgentRole(self.agent_role))
+        if self.reference_purpose not in {"PROSE", "MANUSCRIPT_READING"} or (
+                self.reference_purpose != "PROSE" and not self.reference_prose):
+            raise ValueError("Controlled reference purpose requires explicit reference admission")
         required = (
             self.project_id,
             self.workspace_id,
@@ -582,6 +586,8 @@ class AgentRuntimeAuthorityApplication:
                         "accepted_through_chapter": 0, "instruction_hash": canonical_execution_contract_hash({"instruction": request.instruction}),
                         "tools_allowed": False, "skills_activation_allowed": False,
                         "production_eligible": False, "publication": "NOT_AUTHORIZED"}
+                    if request.reference_purpose != "PROSE":
+                        execution_contract["reference_prose"]["task_purpose"] = request.reference_purpose
                 if not lineage:
                     uow.cursor.execute("""SELECT command_payload->'execution_contract'
                         FROM authority_operation WHERE project_id=%s
@@ -741,6 +747,7 @@ class AgentRuntimeAuthorityApplication:
             correlation_id=operation["correlation_id"], agent_id=command["agent_id"],
             requested_skill_ids=tuple(command["requested_skill_ids"]),
             reference_prose=request.reference_prose,
+            reference_purpose=(source.execution_contract.get("reference_prose") or {}).get("task_purpose", "PROSE"),
         ), principal=principal, _unsent_recovery=request)
 
     def recover_reference_harness_session(self, request: AgentReferenceRecoveryRequest, *, principal: Principal) -> dict[str, Any]:

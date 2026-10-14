@@ -38,6 +38,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     reconcile_external_effect,
     submit_effect_dispatch_result,
     resume_operation_from_completed_effect,
+    read_succeeded_external_effect,
 )
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.provider_control import ScriptedProviderAdapterV2
@@ -123,6 +124,69 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
         )
         self.assertEqual(result["outcome"], "success")
         self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+
+    def test_original_success_receipt_after_unknown_keeps_diagnostics_without_resending(self) -> None:
+        from copy import deepcopy
+        from psycopg.types.json import Jsonb
+        from novel_forge.modules.command_kernel.budget_runtime import BudgetReservationRequest, reserve_provider_budget
+        from novel_forge.modules.command_kernel.external_effect_runtime import _hash
+
+        class LostResponse(FakeDeterministicProvider):
+            calls = 0
+
+            def execute(self, **kwargs):
+                self.calls += 1
+                self.saved = super().execute(**kwargs)
+                raise RuntimeError("original call completed before its response reached the owner")
+
+        context = self._context()
+        adapter = LostResponse("success")
+        effect = plan_external_effect(DATABASE_URL, context, effect_type="model.invoke",
+            provider=adapter.provider, capability="model.test", stable_idempotency_key=identifier("original-effect"),
+            request_payload={"scenario": "success"}, max_attempts=1, reversible=False,
+            provider_capability_profile=adapter.capability_profile)["external_effect_id"]
+        reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(operation_id=context.operation_id,
+            project_id=context.project_id, external_effect_id=effect, provider=adapter.provider,
+            stable_idempotency_key=identifier("budget"), currency="UNKNOWN", estimated_amount=None,
+            estimated_tokens=1000, accounting_basis="ACCOUNT_ENTITLEMENT", cost_authorization_ref="synthetic-only"))
+        with self.assertRaises(KernelError) as unknown:
+            dispatch_external_effect(DATABASE_URL, context, effect_id=effect, worker_id="original-call",
+                lease_seconds=30, adapter=adapter)
+        self.assertEqual(unknown.exception.code, "EFFECT_EXTERNAL_STATE_UNKNOWN")
+        with transaction() as connection:
+            dispatch, generation, diagnostics = connection.execute(
+                "SELECT dispatch_id,generation,evidence FROM authority_external_effect_dispatch WHERE external_effect_id=%s",
+                [effect]).fetchone()
+        original = adapter.saved.evidence
+        accept_external_effect_receipt(DATABASE_URL, context, dispatch_id=dispatch, provider=adapter.provider,
+            receipt_id=identifier("original-receipt"), message_id=identifier("original-message"),
+            payload_hash=_hash(original), provider_correlation_id=adapter.saved.provider_correlation_id,
+            generation=generation, outcome="success", evidence=original)
+        recovered = read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+        self.assertEqual(recovered["provider_evidence"], original)
+        self.assertEqual(adapter.calls, 1)
+        with transaction() as connection:
+            preserved = connection.execute("SELECT evidence FROM authority_external_effect_dispatch WHERE dispatch_id=%s",
+                [dispatch]).fetchone()[0]
+        self.assertEqual({key: preserved[key] for key in diagnostics}, diagnostics)
+        changed_result = deepcopy(preserved)
+        changed_result["result"] = {"tampered": True}
+        for corrupted in (changed_result, {**preserved, "unverified_provider_result": "not part of receipt"}):
+            with self.subTest(corrupted_keys=list(corrupted)):
+                with transaction() as connection:
+                    connection.execute("UPDATE authority_external_effect_dispatch SET evidence=%s WHERE dispatch_id=%s",
+                        [Jsonb(corrupted), dispatch])
+                with self.assertRaises(KernelError) as rejected:
+                    read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+                self.assertEqual(rejected.exception.code, "EFFECT_SUCCESS_RECEIPT_INVALID")
+        with transaction() as connection:
+            connection.execute("UPDATE authority_external_effect_dispatch SET evidence=%s WHERE dispatch_id=%s",
+                [Jsonb(preserved), dispatch])
+            connection.execute("UPDATE authority_external_receipt SET payload_hash='sha256:tampered' WHERE dispatch_id=%s",
+                [dispatch])
+        with self.assertRaises(KernelError) as rejected_hash:
+            read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+        self.assertEqual(rejected_hash.exception.code, "EFFECT_SUCCESS_RECEIPT_INVALID")
 
     def test_completed_effect_recovery_resumes_waiting_owner_and_rejects_unknown_or_foreign_effect(self):
         context = self._context()

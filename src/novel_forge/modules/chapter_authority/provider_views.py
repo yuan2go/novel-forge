@@ -1,6 +1,8 @@
 """SECURITY: only task-specific projections may expose frozen Chapter inputs to a Provider; audit and duplicate representations stay excluded."""
 
 from __future__ import annotations
+
+
 from copy import deepcopy
 import hashlib
 import json
@@ -10,6 +12,12 @@ from novel_forge.modules.narrative_state import (
     compact_canon_facts,
     compact_current_state_facts,
 )
+
+def controlled_manuscript_reading_views(instruction: str) -> tuple[dict, dict]:
+    return ({"contract_version": "provider-public-manuscript-reading.v1", "instruction": instruction},
+        {"contract_version": "controlled-manuscript-reading-context.v1", "accepted_facts": [],
+            "source": "FROZEN_PUBLIC_MANUSCRIPT_CAPSULE_ONLY"})
+
 
 _MAX_SEGMENTS = 24
 _MAX_FACTS_PER_SEGMENT = 32

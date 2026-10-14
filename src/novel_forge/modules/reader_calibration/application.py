@@ -26,9 +26,6 @@ from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
     admit_command,
 )
-from novel_forge.modules.content_authority.scheduler import (
-    ContentAuthorityScheduler,
-)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
@@ -51,7 +48,12 @@ from .blind_export import BlindExportBundle
 
 
 VERSION = "1.0.0"
+MANUSCRIPT_VERSION = "1.0.1"
 DEFINITIONS = {
+    "reader.manuscript.mapping.record": ("manuscript_blind_private_mapping", "reader.manuscript.mapping"),
+    "reader.manuscript.pack.export": ("manuscript_blind_evaluation_pack", "reader.manuscript.pack"),
+    "reader.manuscript.feedback.record": ("human_manuscript_reading_feedback", "reader.manuscript.feedback"),
+    "reader.manuscript.diagnosis.record": ("model_manuscript_reading_diagnosis", "reader.manuscript.diagnosis"),
     "reader.preference.task.create": (
         "human_preference_task_receipt",
         "reader.preference.task",
@@ -127,8 +129,30 @@ class _Handler:
                 "READER_CALIBRATION_INPUT_INVALID",
                 "Reader calibration payload must be an object",
             )
+        if request.definition_name.startswith("reader.manuscript."):
+            from .manuscript_blind import validate_manuscript_write
+            validate_manuscript_write(request.definition_name, payload, request.inputs)
+            if request.definition_name == "reader.manuscript.mapping.record":
+                from .manuscript_application import _load_chapter
+                if not request.database_url:
+                    raise KernelError("MANUSCRIPT_PRODUCER_PROOF_REQUIRED", "Native source ownership requires its owning database")
+                for binding in payload["mapping"]:
+                    actual = _load_chapter(request, request.project_id, binding["book_id"], binding)
+                    if any(binding.get(key) != value for key, value in actual.items()):
+                        raise KernelError("MANUSCRIPT_PRODUCER_BINDING_DRIFT", "Mapping must retain exact native source ownership")
+            elif request.definition_name == "reader.manuscript.diagnosis.record":
+                from .manuscript_application import require_controlled_model_result
+                if not request.database_url:
+                    raise KernelError("MODEL_READING_PRODUCER_PROOF_REQUIRED", "Model provenance requires its owning database")
+                pack = next(item for item in request.inputs if item.asset_type == "manuscript_blind_evaluation_pack")
+                _doc, producer_id, input_proof = require_controlled_model_result(request, project_id=request.project_id,
+                    normalized_asset_version_id=payload["normalized_asset_version_id"],
+                    normalized_content_hash=payload["normalized_content_hash"],
+                    public=pack.content["public"], pack_id=pack.asset_version_id)
+                if producer_id != payload["model_producer_operation_id"] or input_proof != payload.get("input_consumption_proof"):
+                    raise KernelError("MODEL_READING_PRODUCER_DRIFT", "Diagnosis producer differs from its frozen result")
         asset_type, output_key = DEFINITIONS[request.definition_name]
-        reviewer_safe = request.definition_name == "reader.preference.pack.export"
+        reviewer_safe = request.definition_name in {"reader.preference.pack.export", "reader.manuscript.pack.export"}
         return AuthorityHandlerOutput(
             asset_type=asset_type,
             output_key=output_key,
@@ -164,9 +188,9 @@ class _Registry:
     def __init__(self) -> None:
         handler = _Handler()
         self.items = {
-            (name, VERSION): AuthorityHandlerRegistration(
+            (name, version): AuthorityHandlerRegistration(
                 definition_name=name,
-                definition_version=VERSION,
+                definition_version=version,
                 handler_key=f"{HANDLER_PREFIX}.{name}",
                 handler_contract_version="reader-calibration-handler-v1",
                 output_asset_type=asset_type,
@@ -176,6 +200,7 @@ class _Registry:
                 handler=handler,
             )
             for name, (asset_type, output_key) in DEFINITIONS.items()
+            for version in ((VERSION, MANUSCRIPT_VERSION) if name.startswith("reader.manuscript.") else (VERSION,))
         }
 
     @property
@@ -206,6 +231,30 @@ class PostgresReaderCalibrationAuthority:
         self.commit_sha = commit_sha
         self.worker_id = worker_id
         self.registry = _Registry()
+
+    def export_manuscript_pack(self, **kwargs) -> dict[str, Any]:
+        from .manuscript_application import export_manuscript_pack
+        return export_manuscript_pack(self, **kwargs)
+
+    def manuscript_pack(self, **kwargs) -> dict[str, Any]:
+        from .manuscript_application import require_manuscript_pack
+        return require_manuscript_pack(self, **kwargs)
+
+    def manuscript_reading_view(self, **kwargs) -> dict[str, Any]:
+        from .manuscript_application import manuscript_reading_view
+        return manuscript_reading_view(self, **kwargs)
+
+    def record_manuscript_feedback(self, **kwargs) -> dict[str, Any]:
+        from .manuscript_application import record_manuscript_feedback
+        return record_manuscript_feedback(self, **kwargs)
+
+    def manuscript_feedback_status(self, **kwargs) -> dict[str, Any]:
+        from .manuscript_application import manuscript_feedback_status
+        return manuscript_feedback_status(self, **kwargs)
+
+    def record_manuscript_model_diagnosis(self, **kwargs) -> dict[str, Any]:
+        from .manuscript_application import record_manuscript_model_diagnosis
+        return record_manuscript_model_diagnosis(self, **kwargs)
 
     def create_preference_task(
         self,
@@ -1624,12 +1673,23 @@ class PostgresReaderCalibrationAuthority:
         input_assets: tuple[dict[str, str], ...],
         principal: Principal,
     ) -> str:
+        from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
+
         self._register_definitions()
+        version = MANUSCRIPT_VERSION if definition.startswith("reader.manuscript.") else VERSION
+        if definition.startswith("reader.manuscript."):
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("""SELECT definition_name,definition_version FROM authority_operation
+                    WHERE project_id=%s AND idempotency_scope='project:reader-calibration' AND idempotency_key=%s""",
+                    [project_id, idempotency_key])
+                existing = uow.cursor.fetchone()
+            if existing and existing[0] == definition and existing[1] in {VERSION, MANUSCRIPT_VERSION}:
+                version = existing[1]
         admitted = admit_command(
             self.database_url,
             {
                 "definition_name": definition,
-                "definition_version": VERSION,
+                "definition_version": version,
                 "project_id": project_id,
                 "workspace_id": workspace_id,
                 "actor_id": principal.principal_id,
@@ -2135,16 +2195,27 @@ def _definition(
     commit_sha: str,
 ) -> dict[str, Any]:
     schema = {"type": "object"}
+    manuscript_required = {
+        "reader.manuscript.mapping.record": ["protocol_version", "pack_token", "pack_key", "public_content_hash", "mapping", "book_mutation_authorized"],
+        "reader.manuscript.pack.export": ["public", "public_content_hash", "human_feedback_status"],
+        "reader.manuscript.feedback.record": ["protocol_version", "pack_token", "public_content_hash", "feedback_id", "reviewer_id", "human_attestation", "was_blinded", "ratings", "reading_notes", "evidence_spans", "evaluator_origin"],
+        "reader.manuscript.diagnosis.record": ["protocol_version", "pack_token", "public_content_hash", "diagnosis_id", "normalized_asset_version_id", "normalized_content_hash", "model_producer_operation_id", "input_consumption_proof", "assessments", "evaluator_origin"],
+    }
+    if name in manuscript_required:
+        schema = {"type": "object", "required": ["project_id", "input_asset_version_ids", "payload"],
+            "properties": {"project_id": {"type": "string", "minLength": 1},
+                "input_asset_version_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+                "payload": {"type": "object", "required": manuscript_required[name]}}}
     return {
         "name": name,
-        "definition_version": VERSION,
+        "definition_version": MANUSCRIPT_VERSION if name in manuscript_required else VERSION,
         "family": "reader_calibration",
         "enabled": True,
         "definition_status": "integration_proven",
         "command_schema_version": f"{name}.command.v1",
         "result_schema_version": f"{name}.result.v1",
         "command_schema": schema,
-        "result_schema": schema,
+        "result_schema": {"type": "object"},
         "input_contract": schema,
         "output_contract": {
             "asset_type": asset_type,
@@ -2172,6 +2243,7 @@ def _definition(
             "fixture_evidence_mode": "SHADOW",
             "exposure_denominator_required": True,
             "hard_gate_precedence": True,
+            **({"execution_classification": "durable_job"} if name in manuscript_required else {}),
         },
         "completion_contract": {
             "version": "reader-calibration-completion-v1",
@@ -2191,4 +2263,10 @@ def _definition(
     }
 
 
-__all__ = ["PostgresReaderCalibrationAuthority"]
+def manuscript_reading_definitions(*, application_build_id: str, commit_sha: str) -> tuple[dict[str, Any], ...]:
+    return tuple(_definition(name, asset_type, output_key,
+        application_build_id=application_build_id, commit_sha=commit_sha)
+        for name, (asset_type, output_key) in DEFINITIONS.items() if name.startswith("reader.manuscript."))
+
+
+__all__ = ["PostgresReaderCalibrationAuthority", "manuscript_reading_definitions"]

@@ -2128,6 +2128,29 @@ separate dimensions. Scripted evidence can support contracts, not narrative qual
 AI evaluation is not human evidence, and a combined reader/longitudinal record cannot be
 duplicated into two independent proofs.
 
+Reader Calibration also owns unassigned comparisons of independently produced continuous
+manuscripts. The Quality Qualification API exports a public pack from exact saved native
+Drafts or sealed controlled reference results; its separate private mapping binds source
+versions, selectors and native Book producers. The Handler rebuilds the public view from
+that mapping and verifies original titles, full text, chapter order and independent Books.
+Its six reading dimensions cover character credibility, action consequences, dialogue and
+voice, repetition/skipping, continuation intent and editing burden. A blank response is
+not feedback. Human submissions require an actual declaration and retain
+`DECLARED_NOT_INDEPENDENTLY_VERIFIED`; an unassigned pack remains
+`PENDING_HUMAN_FEEDBACK` until submissions arrive.
+
+Auxiliary model reading reuses one sealed controlled Agent/Provider turn with the frozen
+`MANUSCRIPT_READING` purpose. Reader admission verifies the complete public-pack capsule
+in the original instruction, its Provider task-projection hash and the rendered input
+hash in the native process receipt. The reading projection excludes the host Book identity,
+accepted boundary details and host knowledge; only the public capsule supplies manuscripts.
+Output self-reported pack hashes alone are insufficient.
+Exact prose quotations are located against the frozen text; ambiguous or absent quotations
+remain unresolved. Model diagnosis and human declarations are separate assets. Neither
+comparison records, missing feedback nor optional aesthetic judgments mutate Book acceptance,
+Canon or plans, or block saved-manuscript access, export or continuation. Historical
+two-reviewer calibration and ordinary reference-prose contracts keep their original behavior.
+
 ## Bounded long-form retrieval
 
 Retrieval binds one campaign to the exact project, book, accepted-through chapter,

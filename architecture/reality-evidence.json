@@ -8547,6 +8547,10 @@
         {
           "path": "src/novel_forge/api/routers/prose_review.py",
           "symbol": "create_router"
+        },
+        {
+          "path": "src/novel_forge/api/routers/quality_qualification.py",
+          "symbol": "create_router"
         }
       ],
       "application": [
@@ -8565,6 +8569,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/screenplay_application.py",
           "symbol": "ScreenplayApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/manuscript_application.py",
+          "symbol": "export_manuscript_pack"
         }
       ],
       "domain_symbols": [
@@ -8603,6 +8611,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/screenplay_handler.py",
           "symbol": "ScreenplayHandler"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/manuscript_blind.py",
+          "symbol": "public_from_private_mapping"
         }
       ],
       "commands_operations": [
@@ -8619,7 +8631,10 @@
           "calibration observations",
           "plan adjustment proposals",
           "frozen accepted prose manifests and window coverage",
-          "append-only review progress and exact-evidence dispositions"
+          "append-only review progress and exact-evidence dispositions",
+          "unassigned continuous manuscript comparisons",
+          "declared human manuscript observations",
+          "input-bound auxiliary model manuscript diagnosis"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -8645,6 +8660,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
           "symbol": "BookProseReviewCoordinator.advance"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/application.py",
+          "symbol": "PostgresReaderCalibrationAuthority.record_manuscript_feedback"
         }
       ],
       "persistence": [
@@ -8686,6 +8705,10 @@
           {
             "path": "src/novel_forge/modules/book_followup_authority/prose_execution.py",
             "symbol": "PostgresLongformProseReviewExecutionContractBinder"
+          },
+          {
+            "path": "src/novel_forge/modules/agent_runtime/queries.py",
+            "symbol": "require_completed_reference_input"
           }
         ]
       },
@@ -8724,6 +8747,10 @@
         {
           "path": "tests/unit/test_screenplay.py",
           "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_reader_calibration.py",
+          "symbol": "test_kernel_manuscript_mapping_rebuild_prevents_replacement_of_saved_prose"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -10142,7 +10169,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:18d42515cfb306636786c97d752de5f6a18a367e023a1ff8b0f63cf6790515a4"
+    "implementation_tree_sha": "sha256:9fdf59016ad83b716d9ca224b65e62fd3f07bba4fef8081d4f5e642896927471"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

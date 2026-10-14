@@ -405,6 +405,42 @@
       "dispatch": "worker_claim",
       "api_call": "admit_market_refresh",
       "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "reader.manuscript.mapping.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.export_manuscript_pack",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.pack.export",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.export_manuscript_pack",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.feedback.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.record_manuscript_feedback",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.diagnosis.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.record_manuscript_model_diagnosis",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
     }
   ]
 }

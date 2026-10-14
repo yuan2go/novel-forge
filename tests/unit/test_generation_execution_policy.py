@@ -32,6 +32,8 @@ def test_only_model_effects_have_generation_recovery_policy():
         "session_budget",
         "pack",
         "policy",
+        "reading_purpose",
+        "foreign_purpose",
     ],
 )
 def test_reference_only_agent_never_reinstates_fixed_generation_deadline(fault):
@@ -89,6 +91,10 @@ def test_reference_only_agent_never_reinstates_fixed_generation_deadline(fault):
         contract["budget"]["max_external_effects"] = 2
     elif fault == "publication":
         reference["publication"] = "AUTHORIZED"
+    elif fault == "reading_purpose":
+        reference["task_purpose"] = "MANUSCRIPT_READING"
+    elif fault == "foreign_purpose":
+        reference["task_purpose"] = "REMOTE_PUBLISH"
     digest = _hash(contract)
     command = {
         "instruction": "frozen reference",
@@ -125,7 +131,7 @@ def test_reference_only_agent_never_reinstates_fixed_generation_deadline(fault):
     if fault == "side_effect":
         row = None
     cursor = SimpleNamespace(execute=lambda *args: None, fetchone=lambda: row)
-    assert reference_prose_generation(cursor, "operation", "project") is (fault is None)
+    assert reference_prose_generation(cursor, "operation", "project") is (fault in {None, "reading_purpose"})
 
 
 def test_generation_process_has_no_elapsed_time_limit():

@@ -410,7 +410,8 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
 
 
 @pytest.mark.parametrize("reference", [False,True])
-def test_agent_literal_template_still_delivers_exact_instruction_and_context(reference):
+@pytest.mark.parametrize("purpose", ["PROSE", "MANUSCRIPT_READING"])
+def test_agent_literal_template_still_delivers_exact_instruction_and_context(reference, purpose):
     *_, request = contracts(backend_id="codex-cli",runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
     boundary = {"book_id":"book-1","accepted_through_chapter":0}
     instruction = "冻结作者简报：独立构建故事，返回三章正文。"
@@ -420,7 +421,7 @@ def test_agent_literal_template_still_delivers_exact_instruction_and_context(ref
         inputs["execution_contract_summary"] = {"reference_prose":{
             "contract_version":"agent-reference-prose.v1","production_eligible":False,
             "tools_allowed":False,"skills_activation_allowed":False,"book_id":"book-1",
-            "instruction_hash":canonical_hash({"instruction":instruction})}}
+            "instruction_hash":canonical_hash({"instruction":instruction}), "task_purpose": purpose}}
     materialization = {"pack_artifacts":{
         key:{"ref":key,"version":"v1","content":{"text":"Literal frozen instruction without placeholders."}}
         for key in ("system_instruction","prompt_template","skill")},
@@ -432,9 +433,15 @@ def test_agent_literal_template_still_delivers_exact_instruction_and_context(ref
     assert '<agent_task>' in prompt and '<agent_context>' in prompt
     assert ('first ungrounded Agent turn' in prompt) is not reference
     if reference:
-        assert 'complete prose in FINAL.final_response.payload_json' in prompt
+        assert ('complete prose in FINAL.final_response.payload_json' in prompt) is (purpose == "PROSE")
+        assert ('This is model diagnosis, not human feedback' in prompt) is (purpose == "MANUSCRIPT_READING")
         task = json.loads(prompt.split('<agent_task>\n',1)[1].split('\n</agent_task>',1)[0])
-        assert set(task) == {'contract_version','instruction','accepted_boundary'}
+        if purpose == "MANUSCRIPT_READING":
+            assert set(task) == {'contract_version', 'instruction'}
+            assert 'book-1' not in prompt
+            assert 'FROZEN_PUBLIC_MANUSCRIPT_CAPSULE_ONLY' in prompt
+        else:
+            assert set(task) == {'contract_version','instruction','accepted_boundary'}
 
 
 def test_codex_prompt_projects_governed_context_once_without_runtime_evidence() -> None:

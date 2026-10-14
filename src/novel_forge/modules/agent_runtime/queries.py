@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 from datetime import datetime
 from dataclasses import asdict
 from typing import Any
@@ -1175,3 +1176,85 @@ def _timestamp(value: Any) -> str:
 
 
 __all__ = ["AgentRuntimeQuery"]
+
+
+def require_completed_reference_input(database_url: str, *, project_id: str, operation_id: str,
+                                     execution_id: str, normalized_result: dict) -> tuple[str, dict]:
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.command_kernel.external_effect_runtime import (
+        EffectCommandContext, _hash, read_completed_operation_success,
+    )
+    from novel_forge.modules.command_kernel.generation_policy import reference_prose_generation
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    with AuthorityUnitOfWork(database_url) as uow:
+        if not reference_prose_generation(uow.cursor, operation_id, project_id):
+            raise KernelError("REFERENCE_INPUT_PRODUCER_INVALID", "Input proof requires a sealed controlled reference producer")
+        uow.cursor.execute("""SELECT o.command_payload,o.trace_id,o.correlation_id,e.external_effect_id,
+            e.request_payload,e.request_hash FROM authority_operation o
+            JOIN authority_external_effect e USING(operation_id,project_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND o.status='SUCCEEDED'
+            AND e.effect_type='model.invoke' AND e.status='SUCCEEDED'""", [operation_id, project_id])
+        rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError("REFERENCE_INPUT_EFFECT_INVALID", "Input proof requires one completed model Effect")
+        command, trace, correlation, effect_id, request, request_hash = rows[0]
+        inputs = request.get("input") or {}
+        instruction = command.get("instruction")
+        boundary = command.get("accepted_boundary")
+        if (not isinstance(instruction, str) or request_hash != _hash(request)
+                or request.get("stage") != "agent_session" or inputs.get("instruction") != instruction
+                or inputs.get("accepted_boundary") != boundary
+                or inputs.get("agent_session_id") != command.get("agent_session_id")
+                or inputs.get("execution_contract_hash") != command.get("execution_contract_hash")):
+            raise KernelError("REFERENCE_INPUT_REQUEST_DRIFT", "Provider input differs from the frozen Agent instruction")
+        capability = request.get("_production_execution", {}).get("capability_runtime") or {}
+        admission = uow.repositories.asset_documents.require(project_id=project_id,
+            asset_version_id=capability["provider_admission_asset_version_id"])
+        if admission.content_hash != capability.get("provider_admission_content_hash"):
+            raise KernelError("REFERENCE_INPUT_ADMISSION_DRIFT", "Input proof requires the exact admission manifest")
+        materialization = admission.content.get("contract", {}).get("prompt_materialization") or {}
+        task = {"contract_version": "provider-reference-author-task.v1", "instruction": instruction,
+            "accepted_boundary": boundary}
+        purpose = command.get("execution_contract", {}).get("reference_prose", {}).get("task_purpose", "PROSE")
+        components = materialization.get("provider_view", {}).get("component_hashes", {})
+        if purpose == "MANUSCRIPT_READING":
+            from novel_forge.modules.chapter_authority.provider_views import controlled_manuscript_reading_views
+            task, public_context = controlled_manuscript_reading_views(instruction)
+            if (components.get("provider_context_view") != _hash(public_context)
+                    or components.get("provider_knowledge") != _hash([])):
+                raise KernelError("REFERENCE_INPUT_READING_SCOPE_DRIFT", "Anonymous reading must exclude host Book context and knowledge")
+        task_hash = _hash(task)
+        if components.get("provider_task_view") != task_hash:
+            raise KernelError("REFERENCE_INPUT_PROJECTION_DRIFT", "Frozen Provider projection must contain the complete reference instruction")
+    retained = read_completed_operation_success(database_url,
+        EffectCommandContext(operation_id=operation_id, project_id=project_id, actor_id="reference-input-reader",
+            trace_id=trace, correlation_id=correlation), effect_id=effect_id)
+    evidence = (retained or {}).get("provider_evidence") or {}
+    production = evidence.get("production_execution") or {}
+    result = production.get("execution_result") or {}
+    if (evidence.get("real_model_call") is not True or evidence.get("result") != normalized_result
+            or result.get("execution_id") != execution_id):
+        raise KernelError("REFERENCE_INPUT_RECEIPT_INVALID", "Input proof requires the original real model result and execution")
+    receipt_ref = str(result.get("process_receipt_ref") or "")
+    if not receipt_ref.startswith("authority-asset-version:"):
+        raise KernelError("REFERENCE_INPUT_PROCESS_RECEIPT_REQUIRED", "Actual input requires a durable native process receipt")
+    with AuthorityUnitOfWork(database_url) as uow:
+        receipt = uow.repositories.asset_documents.require(project_id=project_id,
+            asset_version_id=receipt_ref.partition(":")[2])
+    payload = receipt.content.get("payload") or {}
+    prompt_hash = materialization.get("fully_rendered_prompt_hash")
+    if (receipt.content.get("kind") != "process-receipt"
+            or receipt.content.get("payload_hash") != _hash(payload).removeprefix("sha256:")
+            or payload.get("status") != "SUCCEEDED" or payload.get("execution_id") != execution_id
+            or not prompt_hash or "sha256:" + str(payload.get("input_sha256")) != prompt_hash
+            or admission.content.get("contract", {}).get("provider_request_identity", {}).get("input_text_hash") != prompt_hash):
+        raise KernelError("REFERENCE_INPUT_PROCESS_DRIFT", "Actual process input must match the hash-bound rendered admission")
+    return instruction, {"status": "ACTUAL_PROVIDER_INPUT_VERIFIED", "operation_id": operation_id,
+        "task_purpose": command.get("execution_contract", {}).get("reference_prose", {}).get("task_purpose", "PROSE"),
+        "external_effect_id": effect_id, "execution_id": execution_id, "request_hash": request_hash,
+        "provider_task_view_hash": task_hash, "fully_rendered_prompt_hash": prompt_hash,
+        "provider_admission_asset_version_id": admission.asset_version_id,
+        "provider_admission_content_hash": admission.content_hash,
+        "process_receipt_asset_version_id": receipt.asset_version_id,
+        "process_receipt_content_hash": receipt.content_hash}

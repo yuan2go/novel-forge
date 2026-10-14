@@ -318,6 +318,50 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 ## Validation matrix
 
+Successful receipt recovery consumes the exact hash-verified receipt evidence. For
+`HISTORICAL_COMPATIBILITY`, a Dispatch row that merged an earlier transport failure may
+also retain `error_type`, `message` and `request_sent`. Every receipt field must still
+match the Dispatch projection; any other extra field, changed result, usage or receipt
+hash is rejected. Reads preserve those diagnostics and never dispatch a replacement.
+Cover UNKNOWN-to-original-success intake, one-call reuse and corrupted evidence with
+the existing ExternalEffect runtime and CLI reconciliation PostgreSQL suites.
+
+For unassigned manuscript reading, run `test_reader_calibration.py`,
+`test_quality_qualification_api.py`, existing `test_reader_calibration_postgres.py`,
+and the controlled Agent generation/rendering/recovery suites. Check exact native
+producer and selector lineage, independent Books, continuous equal ranges, replaced
+text with a recomputed declared hash, idempotency, private mapping exclusion, blank
+human refusal and unresolved model quotations. Model recording must reject a correct
+pack token/hash without the full input; verify the frozen instruction, Provider
+projection and actual process stdin hash in a disposable native copy before real reading.
+Keep fixtures, copy engineering, real Provider diagnosis and actual human submissions
+separate. No test or diagnostic result qualifies the literary comparison.
+
+The existing Quality Qualification router provides POST `/api/quality-qualification/manuscript-packs`,
+GET `/api/quality-qualification/manuscript-packs/{pack_id}`, GET
+`/api/quality-qualification/manuscript-packs/{pack_id}/feedback`, GET
+`/api/quality-qualification/manuscript-packs/{pack_id}/reading`, POST
+`/api/quality-qualification/manuscript-feedback` and POST
+`/api/quality-qualification/manuscript-model-diagnoses`. Pack export freezes an explicit project/workspace, independent
+Book sources, parent hashes, exact chapter selectors and private blind secret; reuse its
+same request for replay. Human input uses the public response template, a new submission
+identity, true human declaration and exact public hash. Never fill it on a person's behalf.
+The reading page preserves all source prose, leaves scores, preference and human declaration
+unselected, and saves through the same feedback Authority. A response with an uncertain save
+outcome freezes its payload and submission identity for retry. An offline exported page can
+download a person's filled response but cannot claim native persistence.
+For controlled model reading, admit the existing one-turn reference Agent with
+`reference_purpose=MANUSCRIPT_READING` and embed `manuscript_reading_input(public, pack_id)`
+in its frozen instruction. Store the completed normalized result through Reader admission;
+do not use a returned model hash to reconstruct missing input proof. Missing human feedback
+is a pending evaluation status, not a writing, export or acceptance veto.
+The reading purpose is a native Application parameter; Agent HTTP admission does not
+currently expose it. New manuscript definitions use 1.0.1. Saved 1.0.0 mapping/public/feedback
+requests retain exact version replay. A legacy model diagnosis lacking actual input proof
+remains a historical output claim when read; do not relabel or reconstruct it as verified
+reading. Re-recording such a diagnosis through current admission requires the new proof
+and is not an unchanged legacy-request replay.
+
 `NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY=codex-cli-context-headroom.v1` selects an
 optional per-request output reservation: the bound model context minus the complete
 rendered application input, framing and safety margin. `codex-router-models.v2` permits

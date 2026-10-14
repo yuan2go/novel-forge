@@ -97,6 +97,7 @@ def reference_prose_generation(cursor, operation_id: str, project_id: str) -> bo
         and boundary.get("book_id") == reference.get("book_id")
         and command.get("agent_session_id")
         and reference.get("contract_version") == "agent-reference-prose.v1"
+        and reference.get("task_purpose", "PROSE") in {"PROSE", "MANUSCRIPT_READING"}
         and reference.get("instruction_hash")
         == _hash({"instruction": command.get("instruction")})
         and reference.get("production_eligible") is False
