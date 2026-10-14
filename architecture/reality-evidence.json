@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261015_0217_retained_working_continuation",
+  "migration_head": "20261015_0218_world_exact_context_accounting",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9279,6 +9279,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261015_0216_chapter_method_context.py",
           "id": "20261015_0216_chapter_method_context",
           "locator": "20261015_0216_chapter_method_context"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0218_world_exact_context_accounting.py",
+          "id": "20261015_0218_world_exact_context_accounting",
+          "locator": "MIGRATION_ID"
         }
       ],
       "external_effects": {
@@ -10231,7 +10236,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:5635cda4f678127a42dac72ff4853aaa181bda9e36528165a877ce497cf3eebc"
+    "implementation_tree_sha": "sha256:25311c18c45af1554a388308f21414449cfdb6f80437d4513b0754cdcaea2670"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

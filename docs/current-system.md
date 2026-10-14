@@ -2927,3 +2927,10 @@ exact native 1.21 ChapterGroup generation. It reuses the existing deterministic 
 chapter slice and retains every frozen event; historical single-slice contracts keep their guard.
 Membership retry compatibility excludes durably isolated historical execution rows while
 retaining current leases, cancellation, identity checks and paid accounting exposure.
+
+Fresh experimental Chapter World preparation can select
+`world-protected-context-accounting.v1`: complete required candidates retain exact
+values and hashes while lossless encoding determines their internal byte allocation.
+Final Provider admission still measures the complete actual request and Schema.
+Unmarked frozen Contexts retain historical accounting. Migration 0218 permits the
+matching zero-send continuation to reuse its original World source and request.

@@ -2480,10 +2480,11 @@ def test_planning_context_rejects_duplicate_authority_representation() -> None:
         )
 
 
+@pytest.mark.parametrize("exact_accounting", [False, True], ids=["historical-accounting", "explicit-exact-accounting"])
 @pytest.mark.parametrize("planning_policy", [False, True], ids=["historical-pack", "task-pack-v2"])
 @pytest.mark.parametrize("world_policy", ["world-production-policy.v1", "world-production-policy.v4"])
 def test_world_context_accounting_remains_bound_to_its_frozen_policy(
-    planning_policy: bool, world_policy: str,
+    planning_policy: bool, world_policy: str, exact_accounting: bool,
 ) -> None:
     from novel_forge.modules.story_planning_runtime.world_preparation import PlanningProviderStage
 
@@ -2508,6 +2509,7 @@ def test_world_context_accounting_remains_bound_to_its_frozen_policy(
         "project_id": command.project_id, "workspace_id": command.workspace_id,
         "book_id": command.book_id, "planning_scope": command.planning_scope.value,
         "logical_key": command.logical_key, "token_budget": 64_000,
+        **({"world_protected_context_accounting_version": "world-protected-context-accounting.v1"} if exact_accounting else {}),
         **({"planning_context_policy_version": "context-policy:chapter-generation-pack:v2"}
            if planning_policy else {}),
     })
@@ -2531,7 +2533,14 @@ def test_world_context_accounting_remains_bound_to_its_frozen_policy(
         assert candidate["estimated_tokens"] == (len(rendered) + 3) // 4
     else:
         assert manifest["token_accounting"]["method"] == "utf8-byte-upper-bound.v1"
-        assert candidate["estimated_tokens"] == len(rendered.encode("utf-8"))
+        if exact_accounting:
+            from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
+            encoded, _ = compile_exact_context_references(stage.task, structured_transport=True, short_literals=True)
+            assert candidate["estimated_tokens"] == len(json.dumps(encoded, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()) + 256
+            assert candidate["provenance"]["exact_accounting"]["decoded_equal"] is True
+            assert candidate["provenance"]["exact_accounting"]["final_provider_capacity_check"] == "REQUIRED"
+        else:
+            assert candidate["estimated_tokens"] == len(rendered.encode("utf-8"))
 
 
 @pytest.mark.parametrize("generator", sorted(GENERATOR_INPUT_ROLES))

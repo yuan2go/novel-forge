@@ -219,6 +219,7 @@ from . import (
     v20261015_0215_world_method_context,
     v20261015_0216_chapter_method_context,
     v20261015_0217_retained_working_continuation,
+    v20261015_0218_world_exact_context_accounting,
 )
 
 VERSION_MODULES = [
@@ -440,6 +441,7 @@ VERSION_MODULES = [
     v20261015_0215_world_method_context,
     v20261015_0216_chapter_method_context,
     v20261015_0217_retained_working_continuation,
+    v20261015_0218_world_exact_context_accounting,
 ]
 
 __all__ = ["VERSION_MODULES"]

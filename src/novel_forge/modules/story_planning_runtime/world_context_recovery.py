@@ -29,9 +29,11 @@ def require_projection_source(uow, *, source_operation_id, frozen, attempt):
     source = world.content["contract"]
     failure = dict(attempt[2] or {})
     signature = re.fullmatch(r"PROTECTED_CONTEXT_BUDGET_EXCEEDED: (.+) exceeds TOTAL_CONTEXT_LIMIT; requires=(\d+), available=(\d+), used=(\d+), total=(\d+)", failure.get("error_message", ""))
+    exact_accounting = context.content.get("world_method_scope_projection_version") == CONTRACT
     if (not signature or signature[1] != world.asset_version_id or int(signature[2]) <= int(signature[3])
             or context.content_hash != contexts[0][2] or world.content_hash != worlds[0][2]
-            or context.content.get("world_method_scope_projection_version")
+            or context.content.get("world_protected_context_accounting_version")
+            or (context.content.get("world_method_scope_projection_version") not in (None, CONTRACT))
             or context.content.get("project_id") != frozen["project_id"]
             or context.content.get("workspace_id") != frozen["workspace_id"]
             or context.content.get("book_id") != frozen["book_id"]
@@ -59,7 +61,7 @@ def require_projection_source(uow, *, source_operation_id, frozen, attempt):
     prior = uow.cursor.fetchone()
     if not prior:
         raise KernelError("WORLD_CONTEXT_RECOVERY_RUNTIME_DRIFT", "World source must retain its exact registered runtime")
-    return {"contract_version": CONTRACT, "source_operation_status": "FAILED_FINAL",
+    return {"contract_version": "world-protected-context-accounting.v1" if exact_accounting else CONTRACT, "source_operation_status": "FAILED_FINAL",
         "source_operation_id": source_operation_id, "source_failure": failure,
         "context_asset_version_id": context.asset_version_id, "context_content_hash": context.content_hash,
         "world_source_asset_version_id": world.asset_version_id, "world_source_content_hash": world.content_hash,

@@ -4677,6 +4677,7 @@ def _materialize_production_codex_prompt(
         short_literals = (context_content.get("planning_method_scope_projection_version") == "book-method-scope-projection.v1"
             or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
             or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1"
+            or context_content.get("world_protected_context_accounting_version") == "world-protected-context-accounting.v1"
             or protected_exact_accounting)
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=structured_transport, short_literals=short_literals)
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]

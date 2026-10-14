@@ -3823,6 +3823,15 @@ reference anchor. Writer rendering consumes the frozen receipt and the same code
 the complete final request still passes the ordinary model-capacity admission. This
 changes transport accounting without changing story or method content, and applies only
 to newly built Contexts.
+Fresh experimental Chapter Contexts may also carry
+`world-protected-context-accounting.v1`. World preparation counts each complete
+required role candidate with the existing lossless structured codec and 256 bytes
+of framing, retaining its semantic hash and reconstruction receipt. Every candidate
+remains required; complete Provider admission still measures the actual rendered
+request and Schema. Frozen Contexts without this marker keep their prior accounting.
+Migration 0218 adds a separate zero-send recovery branch for an already projected
+World task: it reuses the exact original World source, request, policy and failure,
+and does not allocate more context or promote working prose to accepted facts.
 `authority-manuscript read|export --book-run-id <run> --candidate-version <version>`
 reads the original retained model candidate even when its Provider permission gate
 failed. The response and export retain the source Operation/Effect failure facts.

@@ -1011,7 +1011,7 @@ def _capacity_authorization(
             "Capacity allocation cannot replace the frozen Pack, prompt or model route",
         )
     world_identity = None
-    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}:
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1"}:
         from .world_context_recovery import require_runtime_identity
         world_identity = require_runtime_identity(uow, source=source, target=target)
     return {
@@ -1047,9 +1047,11 @@ def _capacity_target(
         snapshot_id=source["snapshot_id"],
         snapshot_hash=source["snapshot_hash"],
     )
-    policy = preparer.pack_runtime.materialize_attempt_artifacts(
-        snapshot
-    ).context_policy.content
+    artifacts = preparer.pack_runtime.materialize_attempt_artifacts(snapshot)
+    if (source.get("context_revalidation", {}).get("contract_version") == "world-protected-context-accounting.v1"
+            and (artifacts.prompt_template.ref, artifacts.prompt_template.version) != ("prompt-template:story-planning-pack", "v3")):
+        raise KernelError("WORLD_EXACT_ACCOUNTING_TRANSPORT_DRIFT", "Recovery must retain the frozen structured Planning transport")
+    policy = artifacts.context_policy.content
     baseline = policy["planning_task_token_budget"]
     if source["command"].get("runtime_continuation_id"):
         prior = require_binding(
@@ -1064,7 +1066,7 @@ def _capacity_target(
     from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
     ceiling = planning_input_capacity(route)
     allocated = min(baseline * 2, ceiling)
-    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}:
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1"}:
         allocated = min(baseline, ceiling)
     if source.get("capacity_inheritance"):
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
