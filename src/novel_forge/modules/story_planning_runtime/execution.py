@@ -4099,42 +4099,62 @@ class _PlanningPepPort:
     @execution_step("story_planning_runtime._PlanningPepPort._record_evidence")
     def _record_evidence(self, asset_type: str, content: dict[str, Any]) -> None:
         request = self.binding.request
+        receipt_consumption = asset_type == "model_call_log" and content.get("recovered_external_effect_success") is True
+        suffix = f":receipt-consumption:{request.fencing_token}" if receipt_consumption else ""
+        if receipt_consumption:
+            content = {
+                **content,
+                "evidence_kind": "ORIGINAL_RECEIPT_CONSUMPTION",
+                "consumer_attempt_id": request.attempt_id,
+                "consumer_fencing_token": request.fencing_token,
+                "source_external_effect_id": self.effect_id,
+            }
         logical_ref = (
             f"runs/{asset_type}s/{request.operation_id}-{request.attempt_id}-"
-            f"{request.stage}.json"
+            f"{request.stage}{suffix}.json"
         )
-        self.writer.materialize_output(
-            AuthorityAssetWriteCommand(
-                operation_id=request.operation_id,
-                project_id=request.project_id,
-                asset_id=(
-                    f"{asset_type}:{request.operation_id}:{request.attempt_id}"
-                    + (
-                        f":{request.stage}"
-                        if request.stage.startswith("world_candidates.")
-                        else ""
-                    )
-                ),
-                asset_type=asset_type,
-                schema_version=f"{asset_type}.v1",
-                logical_ref=logical_ref,
-                category="runs",
-                output_key=f"{asset_type}.{request.stage}",
-                role="model_evidence"
-                if asset_type == "model_call_log"
-                else "cost_evidence",
-                content={
-                    "type": asset_type,
-                    "operation_id": request.operation_id,
-                    "project_id": request.project_id,
-                    "stage": request.stage,
-                    **content,
-                },
-                qualification_policy=f"{asset_type}-evidence-v1",
-                trace_id=request.trace_id,
-                correlation_id=request.correlation_id,
+        command = AuthorityAssetWriteCommand(
+            operation_id=request.operation_id,
+            project_id=request.project_id,
+            asset_id=(
+                f"{asset_type}:{request.operation_id}:{request.attempt_id}"
+                + (
+                    f":{request.stage}"
+                    if request.stage.startswith("world_candidates.")
+                    else ""
+                )
+                + suffix
+            ),
+            asset_type=asset_type,
+            schema_version=f"{asset_type}.v1",
+            logical_ref=logical_ref,
+            category="runs",
+            output_key=f"{asset_type}.{request.stage}{suffix}",
+            role="model_evidence"
+            if asset_type == "model_call_log"
+            else "cost_evidence",
+            content={
+                "type": asset_type,
+                "operation_id": request.operation_id,
+                "project_id": request.project_id,
+                "stage": request.stage,
+                **content,
+            },
+            qualification_policy=f"{asset_type}-evidence-v1",
+            trace_id=request.trace_id,
+            correlation_id=request.correlation_id,
+        )
+        try:
+            self.writer.materialize_output(command)
+        except KernelError as error:
+            if not receipt_consumption or error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":
+                raise
+            existing = AuthorityAssetQuery(self.database_url).require(
+                project_id=request.project_id, logical_ref=logical_ref
             )
-        )
+            if (existing.asset_id != command.asset_id or existing.asset_type != asset_type
+                    or existing.content_hash != canonical_hash(command.content) or existing.content != command.content):
+                raise KernelError("PLANNING_RECEIPT_CONSUMPTION_CONFLICT", "Original receipt consumption changed within the same consumer fence") from error
 
 
 class PostgresPlanningExecutionPreparer:

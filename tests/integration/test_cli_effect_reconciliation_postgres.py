@@ -292,6 +292,44 @@ def test_planning_consumes_original_result_without_dispatch_or_resettlement():
         assert c.execute('SELECT actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s', [effect]).fetchone()[0] == 1000
 
 
+def test_same_attempt_receipt_consumption_preserves_first_call_log_and_cost():
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.attempt_runtime import acquire_attempt_lease
+    seeded = seed(production=True)
+    context, effect, *_ = seeded
+    command, evidence = production_confirmation(seeded)
+    resolve_external_effect_manually(DATABASE_URL, command)
+    completion = read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+    port = recovered_port(seeded, completion)
+    port._record_model_evidence(evidence=evidence, usage=evidence['usage'], cost=evidence['cost'],
+        amount=None, total_tokens=150, accepted_candidate=False, recovered_completion=False)
+    with transaction() as c:
+        original = c.execute("SELECT v.asset_version_id,v.content_hash,v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='model_call_log'", [context.project_id]).fetchone()
+        c.execute("UPDATE authority_lease_acquisition SET acquired_at=NOW()-INTERVAL '2 minutes',heartbeat_at=NOW()-INTERVAL '1 minute',expires_at=NOW()-INTERVAL '1 second' WHERE attempt_id=%s AND status='HELD'", [port.binding.request.attempt_id])
+    lease = acquire_attempt_lease(DATABASE_URL, attempt_id=port.binding.request.attempt_id,
+        project_id=context.project_id, worker_id=port.worker_id, lease_seconds=60,
+        trace_id='trace', correlation_id='correlation')
+    port.binding.request.fencing_token = lease['fencing_token']
+    assert lease['fencing_token'] == 2
+    candidate = port.execute(SimpleNamespace(capability='model.test'))
+    assert candidate.raw_output == evidence['result']
+    assert port.execute(SimpleNamespace(capability='model.test')).raw_output == evidence['result']
+    with transaction() as c:
+        assert c.execute('SELECT content_hash,content FROM authority_asset_version WHERE asset_version_id=%s', [original[0]]).fetchone() == original[1:]
+        assert c.execute("SELECT count(*) FROM authority_asset a WHERE a.project_id=%s AND a.asset_type='cost_ledger'", [context.project_id]).fetchone()[0] == 1
+        consumed = c.execute("SELECT v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='model_call_log' AND v.content->>'evidence_kind'='ORIGINAL_RECEIPT_CONSUMPTION'", [context.project_id]).fetchall()
+        assert len(consumed) == 1
+        assert consumed[0][0]['consumer_fencing_token'] == 2
+        assert consumed[0][0]['provider_invoked_this_attempt'] is False
+        assert consumed[0][0]['source_external_effect_id'] == effect
+        assert c.execute('SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s', [effect]).fetchone()[0] == 1
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with pytest.raises(KernelError, match='PLANNING_RECEIPT_CONSUMPTION_CONFLICT'):
+        port._record_evidence('model_call_log', {**consumed[0][0], 'candidate_accepted': True})
+    with pytest.raises(KernelError, match='PLANNING_RECEIPT_CONSUMPTION_CONFLICT'):
+        port._record_evidence('model_call_log', {**consumed[0][0], 'candidate_accepted': 0})
+
+
 @pytest.mark.parametrize('stale,changed_input', [(True, False), (False, True)])
 def test_planning_cannot_consume_under_stale_fence_or_changed_input(stale, changed_input):
     from types import SimpleNamespace

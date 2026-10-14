@@ -4448,6 +4448,11 @@ reported environment; they cannot establish live access, text rights or prose be
 
 Original saved local outputs are reread through the configured Codex backend, checked against the frozen manifests, and ingested by the existing Kernel receipt path. The stopped Operation may append execution evidence for its existing session; this does not grant primary output rights. A replay preserves the original reservation and does not dispatch a new request.
 
+Planning reuse of a verified original success appends a model-evidence receipt-consumption
+record bound to the consumer Attempt and fence. It preserves the original model-call
+record and cost ledger. An identical repeat at that fence reuses the consumption record;
+changed content fails closed. This audit record is not a new Provider invocation.
+
 A recovered complete pure-generation result is reconciled and revalidated through its
 native owner without a new generation or finalization deadline. Old deadlines and
 failed Attempts remain evidence; live writers and cancellation still fence submission.
