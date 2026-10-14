@@ -9185,6 +9185,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261014_0207_foundation_method_context.py",
           "id": "20261014_0207_foundation_method_context",
           "locator": "20261014_0207_foundation_method_context"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261014_0208_book_method_scope_context.py",
+          "id": "20261014_0208_book_method_scope_context",
+          "locator": "20261014_0208_book_method_scope_context"
         }
       ],
       "external_effects": {
