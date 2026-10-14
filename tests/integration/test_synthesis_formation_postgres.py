@@ -331,6 +331,20 @@ def test_native_formation_generates_foundation_from_author_brief(
             return normal_validation(generator, raw, **kwargs)
         monkeypatch.setattr(result_recovery, "validate_raw_result", reject_valid_result_once)
         monkeypatch.setattr(result_recovery, "MAXIMUM_RESULT_REPAIRS", 0)
+        original_admission_chapter = transport.chapter
+        class AdmissionChapterTransport:
+            def __call__(self, stage, inputs):
+                value = original_admission_chapter(stage, inputs)
+                if stage in {"draft", "revision"}:
+                    from copy import deepcopy
+                    from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+                    value["scene_artifacts"][0]["text"] += "她收起信件，沿着来时的路走了回去。"
+                    value["text"] = serialize_realization(value["scene_artifacts"])
+                    original_admission_chapter.calls[-1]["output"] = deepcopy(value)
+                return value
+            def __getattr__(self, name):
+                return getattr(original_admission_chapter, name)
+        transport.chapter = AdmissionChapterTransport()
     if author_result_repair:
         original_author_planning = transport.planning
         damaged_author_decision = False

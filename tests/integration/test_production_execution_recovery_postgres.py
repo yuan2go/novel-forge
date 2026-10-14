@@ -190,6 +190,21 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
         from novel_forge.modules.command_kernel.errors import KernelError
         receipt = store.put_evidence("process-receipt", request.execution_id, {"outcome": "unknown"})
         assert store.read_evidence(receipt)["outcome"] == "unknown"
+        other_project, other_operation = self._operation()
+        _, same_project_operation = self._operation(project_id=project_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE authority_operation SET status='FAILED_FINAL',version=version+1 WHERE operation_id=ANY(%s)", [[other_operation, same_project_operation]])
+        for owner_operation, owner_project, execution_id in (
+            (operation_id, project_id, "missing-execution"),
+            (other_operation, other_project, request.execution_id),
+            (same_project_operation, project_id, request.execution_id),
+        ):
+            with pytest.raises(KernelError, match="OPERATION_STATUS_CONFLICT"):
+                AuthorityAssetWriter(DATABASE_URL).materialize_output(AuthorityAssetWriteCommand(
+                    owner_operation, owner_project, identifier("asset"), "execution_evidence",
+                    "authority-execution-evidence.v1", "forbidden/retained", "production_execution_evidence",
+                    "evidence", "evidence", {"execution_id": execution_id}, "fixture",
+                    request.trace_id, request.correlation_id))
         with pytest.raises(KernelError, match="OPERATION_STATUS_CONFLICT"):
             AuthorityAssetWriter(DATABASE_URL).materialize_output(AuthorityAssetWriteCommand(
                 operation_id, project_id, identifier("asset"), "execution_evidence",
@@ -294,8 +309,8 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
             )
 
     @staticmethod
-    def _operation() -> tuple[str, str]:
-        project_id = identifier("recovery-project")
+    def _operation(*, project_id: str | None = None) -> tuple[str, str]:
+        project_id = project_id or identifier("recovery-project")
         operation_id = identifier("recovery-operation")
         definition_name = identifier("recovery-definition")
         with transaction() as connection, connection.cursor() as cursor:
