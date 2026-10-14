@@ -196,6 +196,9 @@ realized beats as premises, compresses incidental daily transitions, and asks ex
 scene goals, conflicts, beats and exit states to carry immediate friction, costly action
 and an irreversible ending that demands a next action. Missing source coverage or exceeded
 history/allocation closes input admission; literary interpretation remains a review concern.
+New v4 Planning preserves a frozen repair reason as candidate correction intent and adds
+progression descriptions to the existing hierarchical schema fields. An exact parent-bound
+ending remains binding: changing it requires the owning upstream Plan Change.
 The v2/v3 frozen instruction strings and schemas retain their original meaning. An omitted policy in a historical
 profile retains its original projection. Independent human feedback has not established
 literary effectiveness; that evidence ceiling is not an additional manuscript delivery gate. Profile selection affects future work; it does not upgrade an

@@ -550,6 +550,30 @@ def test_progression_policy_survives_planning_and_writer_frozen_views_without_re
     task = build_provider_task_view("chapter_plan.generate", raw)
     view = build_provider_context_view("chapter_plan.generate", context, task)
     assert task["working_continuity"]["instruction"] == view["working_continuity"]["instruction"] == working["instruction"]
+    from novel_forge.modules.chapter_authority.provider_views import project_planning_narrative_intent
+    task["planning_command"].update(repair_number=1, repair_reason="Replace the repeated baseline with an attempted action and its consequence.")
+    corrected, _, _ = project_planning_narrative_intent(task, view)
+    assert corrected["narrative_inputs"]["planning_correction"]["instruction"] == task["planning_command"]["repair_reason"]
+    assert corrected["narrative_inputs"]["planning_correction"]["authority"] == "NEW_CANDIDATE_CORRECTION_NOT_ACCEPTED_HISTORY"
+    historical = deepcopy(task)
+    historical["arc_working_set"]["working_manuscript"] = old
+    legacy, _, _ = project_planning_narrative_intent(historical, view)
+    assert "planning_correction" not in legacy["narrative_inputs"]
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+    frozen_schema = {"type": "object", "properties": {"ending_hook": {"type": "string", "const": "old bound ending"}, "scene_plan": {"type": "array"}}}
+    described = bind_narrative_intent_schema(frozen_schema, progression=True)
+    assert "connected opening friction" in described["properties"]["scene_plan"]["description"]
+    assert described["properties"]["ending_hook"]["const"] == "old bound ending"
+    assert "upstream Plan Change" in described["properties"]["ending_hook"]["description"]
+    assert "connected opening friction" not in bind_narrative_intent_schema(frozen_schema)["properties"]["scene_plan"]["description"]
+    import json
+    writer_context, writer_intent = _writer_context_with_working_intent()
+    writer_context["working_manuscript"] = working
+    writer_intent["working_manuscript"] = deepcopy(working)
+    writer_context["context_segments"][-1]["safe_summary"] = json.dumps(writer_intent)
+    writer = build_provider_context_view("draft", writer_context, {}, writer_projection_version="accepted-writer-history.v2")
+    assert writer["working_manuscript"] == working
+    assert json.dumps(writer).count("single bridging clause") == 1
     for phrase in ("starting premises", "single bridging clause", "three connected", "cost-gain exchange", "irreversible", "open action loop", "never a static reset"):
         assert phrase in working["instruction"]
     assert "Do not force conflict" not in working["instruction"]
