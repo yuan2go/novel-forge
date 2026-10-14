@@ -24,7 +24,7 @@ identity changes without a corresponding projection update.
 New Creation requests select `config/execution_templates/author_first.json` (v12).
 The default creation-input policy freezes `native-narrative-execution.v2`: Chapter Pack
 3.0.4 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
-working-prose memory v3. The original Formation policy remains the replay source;
+working-prose progression v4. The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 These native bindings do not establish literary effectiveness.
 Fresh work-requirements Contexts derive `chapter-generation-length.v1` from the exact
@@ -169,7 +169,7 @@ in its separate continuity input; a prose AssetVersion is not a formal State ref
 Native realization contract v3 retains this working
 snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups without
 inventing accepted history. The source window is a bounded implementation policy; it does
-not prove long-form continuity or replace formal Canon. The current default selects only
+not prove long-form continuity or replace formal Canon. An omitted historical policy selects only
 the last four chapters' tails; earlier experience and an action's preceding cause can be
 absent even when their exact selected source remains saved. The default Memo receives the compiled
 ExecutionIntent before the later Draft Context and has no independent working-prose
@@ -183,12 +183,23 @@ ranking establishes neither facts nor character knowledge. Writer Context v7 car
 enhanced Intent as structured future-intent data and the identical selected prose once,
 so existing exact-value transport can deduplicate its remaining shared values. A differing
 embedded working snapshot fails closed; stored Intent and Context assets remain intact.
-Guidance can select continuity,
+Historical v2/v3 guidance can select continuity,
 character reaction, action consequences or their combination without prescribing genre,
 emotional endpoints or mandatory costs. These inputs cannot advance Canon or the accepted
 cursor. Absent policy retains v1 tails; frozen v1 requests reconstruct exactly, independently
 of later policy choices. Overflow of required recent prose closes admission rather than
-silently truncating it. The versioned default Creation policy selects v3; an omitted policy in a historical
+silently truncating it. New Creation profiles select `working-prose-projection.v4`.
+This policy resolves the contiguous predecessor chain with committed acceptance before
+explicit work selection and effective native delivery, retaining exact source and selection
+provenance without changing their records. Its shared Planning/Writer instruction treats
+realized beats as premises, compresses incidental daily transitions, and asks existing
+scene goals, conflicts, beats and exit states to carry immediate friction, costly action
+and an irreversible ending that demands a next action. Missing source coverage or exceeded
+history/allocation closes input admission; literary interpretation remains a review concern.
+New v4 Planning preserves a frozen repair reason as candidate correction intent and adds
+progression descriptions to the existing hierarchical schema fields. An exact parent-bound
+ending remains binding: changing it requires the owning upstream Plan Change.
+The v2/v3 frozen instruction strings and schemas retain their original meaning. An omitted policy in a historical
 profile retains its original projection. Independent human feedback has not established
 literary effectiveness; that evidence ceiling is not an additional manuscript delivery gate. Profile selection affects future work; it does not upgrade an
 existing frozen run. These coverage limits do not require characters to repeat earlier

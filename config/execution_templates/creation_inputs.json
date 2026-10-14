@@ -24,7 +24,7 @@
           "scope": "PLANNED_FUTURE_ONLY"
         },
         "working_prose_policy": {
-          "version": "working-prose-projection.v3",
+          "version": "working-prose-projection.v4",
           "history_chapters": 128,
           "recent_complete_chapters": 2,
           "max_characters": 24000,

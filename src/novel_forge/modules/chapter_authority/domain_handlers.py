@@ -656,7 +656,7 @@ def normalize_draft_result(
     )
     memory = None
     working = (context_content or {}).get("working_manuscript") or {}
-    if (working.get("projection_policy") or {}).get("version") == "working-prose-projection.v3":
+    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4"}:
         from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
         memory = optional_draft_memory(result.get("working_memory_json"), text,
             available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})

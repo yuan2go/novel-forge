@@ -2566,6 +2566,13 @@ def project_planning_narrative_intent(
     command = projected_task.get("planning_command")
     narrative_command: dict[str, Any] = {}
     if isinstance(command, dict):
+        working = (projected_task.get("arc_working_set") or {}).get("working_manuscript") or {}
+        if (working.get("projection_policy") or {}).get("version") == "working-prose-projection.v4" and command.get("repair_reason"):
+            projected_task["planning_correction"] = {
+                "source_pointer": "/planning_command/repair_reason",
+                "instruction": command["repair_reason"],
+                "authority": "NEW_CANDIDATE_CORRECTION_NOT_ACCEPTED_HISTORY",
+            }
         for key in ("repair_number", "repair_reason", "narrative_search_branch_key"):
             omit(command, key, "/input_manifest/planning_command")
         for key, host_key in (("narrative_search_planning_horizon", "opening_topology_budget"),
@@ -2578,7 +2585,7 @@ def project_planning_narrative_intent(
             if key in command:
                 narrative_command[key] = command.pop(key)
     narrative_task = {key: projected_task.pop(key) for key in
-                      ("narrative_intelligence", "working_continuity", "world_preparation") if key in projected_task}
+                      ("narrative_intelligence", "working_continuity", "world_preparation", "planning_correction") if key in projected_task}
     if narrative_command:
         narrative_task["planning_direction"] = narrative_command
     reading_contract = {key: projected_context.get("selection_explanation", {}).get(key)
@@ -2597,7 +2604,7 @@ def project_planning_narrative_intent(
     return result_task, result_context, receipt
 
 
-def bind_narrative_intent_schema(schema: Mapping[str, Any], *, event_first_planning: bool = False) -> dict[str, Any]:
+def bind_narrative_intent_schema(schema: Mapping[str, Any], *, event_first_planning: bool = False, progression: bool = False) -> dict[str, Any]:
     result = deepcopy(dict(schema))
     result["description"] = (str(result.get("description") or "") +
         " Narrative intent v1: author intent, fictional rules and selected design supply story meaning. "
@@ -2616,6 +2623,12 @@ def bind_narrative_intent_schema(schema: Mapping[str, Any], *, event_first_plann
             "hard_constraints": "Fictional constraints grounded in author requirements, world rules or selected design. Preserve their actual scope and source. Candidate approval, accepted cursors, execution budgets and delivery windows remain host protocol, not duties for fictional people or reasons to postpone event results.",
             "required_events": "Required fictional actions and results of this selected complete event. Host approval, validation and receipt steps are not story events. Distribute by the event's causal turns, not by giving each procedural step a chapter.",
             "forbidden_events": "Fictional outcomes prohibited by author requirements, world rules or this selected scope. Do not turn historical candidate or activation restrictions into fictional prohibitions; active scope changes still require native Plan Change.",
+        })
+    if progression:
+        meanings.update({
+            "scene_plan": "Use the existing scene fields for connected opening friction, attempted action with resistance and adjustment, and an irreversible change that triggers the next action. Give the declared length enough concrete action and negotiation; quiet tone does not waive progression.",
+            "beats": "Carry prior realized outcomes as premises. Name attempts, practical resistance, changed choices, costs and consequences; do not restage completed inquiry or expand routine transitions to fill length.",
+            "ending_hook": "A changed capability, leverage, obligation, risk or relationship must require a next action. Preserve the exact parent binding; a conflicting frozen ending requires upstream Plan Change before adoption.",
         })
 
     def visit(node: Any) -> None:

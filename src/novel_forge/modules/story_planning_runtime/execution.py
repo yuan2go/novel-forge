@@ -4473,12 +4473,16 @@ class PostgresPlanningExecutionPreparer:
         if (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
             from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
 
+            progression = provider_stage is None and command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} and (((context_document.content.get("arc_working_set") or {}).get("working_manuscript") or {}).get("projection_policy") or {}).get("version") == "working-prose-projection.v4"
             output_schema = bind_narrative_intent_schema(
                 output_schema,
                 event_first_planning=(pack_materialization.skill.ref, pack_materialization.skill.version)
                 == ("long-outline", "long-outline-v5"),
+                progression=progression,
             )
             output_schema_ref += ":narrative-intent-v1"
+            if progression:
+                output_schema_ref += ":narrative-progression-v1"
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",

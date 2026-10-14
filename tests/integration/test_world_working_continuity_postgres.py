@@ -129,7 +129,7 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         changed = deepcopy(source)
         changed["working_manuscript"]["sources"][0]["content_hash"] = "sha256:" + "0" * 64
         rehash(changed["working_manuscript"])
-        with pytest.raises(KernelError, match="MANUSCRIPT_SOURCE_HASH_INVALID"):
+        with pytest.raises(KernelError, match="MANUSCRIPT_SOURCE_HASH_INVALID|WORKING_PROSE_SOURCE_RESOLUTION_INVALID"):
             repository.assert_source_current(project_id=book["project_id"], book_id=book["book_id"], frozen=changed)
         assert uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book["book_run_id"]]).fetchone() == (0,)
     from novel_forge.cli.manuscript import run_manuscript_command
