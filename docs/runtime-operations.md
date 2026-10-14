@@ -4452,6 +4452,11 @@ Planning reuse of a verified original success appends a model-evidence receipt-c
 record bound to the consumer Attempt and fence. It preserves the original model-call
 record and cost ledger. An identical repeat at that fence reuses the consumption record;
 changed content fails closed. This audit record is not a new Provider invocation.
+An already registered successor stopped at FAILED_RETRYABLE may consume its original
+verified single successful pure-model Effect on a later Worker release. The exact
+registered command, Book, frozen Attempt Pack, current fence and input checks still
+apply; a missing/unknown result, active lease or pending cancellation cannot use this
+compatibility path. The source release binding remains unchanged.
 
 A recovered complete pure-generation result is reconciled and revalidated through its
 native owner without a new generation or finalization deadline. Old deadlines and

@@ -647,3 +647,47 @@ def test_capacity_pack_successor_preserves_contracts_and_native_hashes(monkeypat
         assert evidence["contract_version"] == "version-only-pack-successor.v1"
         assert original["identity"]["version"] == "1.0.0"
         assert current["identity"]["version"] == "1.0.1"
+
+
+@pytest.mark.parametrize('change', ['', 'missing', 'command', 'active', 'lease_or_cancel', 'unknown', 'receipt', 'no_receipt'])
+def test_new_release_may_only_consume_completed_registered_successor(monkeypatch, change):
+    from dataclasses import replace
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as module
+    from novel_forge.modules.story_planning_runtime.application import _command_payload
+    from novel_forge.modules.command_kernel import external_effect_runtime
+    from tests.unit.test_story_planning_runtime import _command
+    command = replace(_command('chapter_group_plan.generate'), runtime_continuation_id='continuation')
+    payload = _command_payload(command)
+    binding = {'successor_command':payload, 'target_release_sha':'a'*40,
+        'successor_operation_id':'' if change == 'missing' else 'original-operation', 'target_runtime':{},
+        'project_id':command.project_id, 'workspace_id':command.workspace_id, 'book_id':command.book_id}
+    monkeypatch.setattr(module, 'require_binding', lambda *args: binding)
+    class Uow:
+        def __enter__(self):
+            self.cursor = self
+            return self
+        def __exit__(self, *_):
+            pass
+        def execute(self, sql, values):
+            self.sql = sql
+        def fetchone(self):
+            return ('EXECUTING' if change == 'active' else 'FAILED_RETRYABLE',
+                {**payload, 'book_id':'foreign'} if change == 'command' else payload,
+                command.workspace_id, command.book_id, False, change == 'lease_or_cancel')
+        def fetchall(self):
+            return [('effect', 'UNKNOWN' if change == 'unknown' else 'SUCCEEDED', command.generator_operation_name)]
+    monkeypatch.setattr(module, 'AuthorityUnitOfWork', lambda _: Uow())
+    reads = []
+    def read(*args, **kwargs):
+        reads.append(kwargs['effect_id'])
+        if change == 'receipt':
+            raise KernelError('EFFECT_SUCCESS_RECEIPT_INVALID', 'corrupted original')
+        return None if change == 'no_receipt' else {'provider_evidence': {'result': {'original': True}}}
+    monkeypatch.setattr(external_effect_runtime, 'read_retained_generation_stage_success', read)
+    app = SimpleNamespace(database_url='unused', commit_sha='b'*40)
+    if change:
+        with pytest.raises(KernelError, match='COMMAND_DRIFT|RECEIPT_INVALID'):
+            module.require_successor(app, command)
+    else:
+        assert module.require_successor(app, command) == binding
+        assert reads == ['effect']

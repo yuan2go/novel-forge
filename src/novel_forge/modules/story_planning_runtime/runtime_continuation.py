@@ -1801,7 +1801,8 @@ def require_successor(
     binding = require_binding(application.database_url, command.runtime_continuation_id)
     if (
         binding["successor_command"] != _command_payload(command)
-        or validate_runtime and binding["target_release_sha"] != application.commit_sha
+        or (validate_runtime and binding["target_release_sha"] != application.commit_sha
+            and not _completed_successor_receipt(application, command, binding))
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT",
@@ -1822,6 +1823,35 @@ def require_successor(
             "the exact registered Pack and model route changed",
         )
     return binding
+
+
+def _completed_successor_receipt(application, command, binding):
+    from .application import _command_payload
+    from novel_forge.modules.command_kernel.external_effect_runtime import (
+        EffectCommandContext, read_retained_generation_stage_success,
+    )
+    operation_id = binding.get("successor_operation_id")
+    if not operation_id or any(binding.get(key) != getattr(command, key) for key in ("project_id", "workspace_id", "book_id")):
+        return False
+    with AuthorityUnitOfWork(application.database_url) as uow:
+        uow.cursor.execute("""SELECT o.status,o.command_payload->'payload',o.workspace_id,g.book_id,
+            g.candidate_asset_version_id IS NOT NULL,
+            EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+                WHERE a.operation_id=o.operation_id AND l.status='HELD')
+              OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=o.operation_id AND acknowledged_at IS NULL)
+            FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id)
+            WHERE o.operation_id=%s AND o.project_id=%s""", [operation_id, command.project_id])
+        row = uow.cursor.fetchone()
+        if (not row or row[:4] != ("FAILED_RETRYABLE", _command_payload(command), command.workspace_id, command.book_id)
+                or row[4] or row[5]):
+            return False
+        uow.cursor.execute("SELECT external_effect_id,status,request_payload->>'stage' FROM authority_external_effect WHERE operation_id=%s", [operation_id])
+        effects = uow.cursor.fetchall()
+        if len(effects) != 1 or effects[0][1:] != ("SUCCEEDED", command.generator_operation_name):
+            return False
+    return read_retained_generation_stage_success(application.database_url,
+        EffectCommandContext(operation_id, command.project_id, command.actor_id, command.trace_id, command.correlation_id),
+        effect_id=effects[0][0]) is not None
 
 
 def require_snapshot(
