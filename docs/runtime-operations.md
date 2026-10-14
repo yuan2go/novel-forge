@@ -353,7 +353,9 @@ inputs as `RECONSTRUCTED`, and keep failed attempts with the final focused resul
 Working-prose policy changes additionally check `test_working_prose_projection.py`, exact
 Skill/Pack materialization, Planning working continuity and the enhanced-working variant
 of `test_author_first_manuscript_postgres.py`. Record source coverage separately from
-Writer semantic attribution. An offline located-case PASS, a scripted PostgreSQL execution
+Writer semantic attribution. For v4, include the working-progression-interruption variant,
+accepted/selected/native precedence and frozen correction/schema-description checks.
+An offline located-case PASS, a scripted PostgreSQL execution
 or model evaluation cannot establish literary improvement or independent human validation.
 For World working continuity, run `test_world_working_continuity.py`,
 `test_world_initial_agency.py`, `test_world_causal_preparation.py`,

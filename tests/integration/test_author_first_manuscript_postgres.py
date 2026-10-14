@@ -326,6 +326,9 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert len(manifest["units"]) == 8 and book["current_chapter"] == 8 and book["accepted_through_chapter"] == 0
     assert [unit["asset_version_id"] for unit in manifest["units"][:6]] == prefix_versions
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=6", [book["book_run_id"]])
+        sixth_context = uow.cursor.fetchone()[0]
+        sixth_has_direct_first_dependency = any(row["chapter"] == 1 for row in sixth_context["sources"])
         uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=7", [book["book_run_id"]])
         frozen_working = uow.cursor.fetchone()[0]
         sources = frozen_working["sources"]
@@ -374,14 +377,14 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
                 window = request.require_input("longform_prose_review_window").content
                 assert payload["prose_diagnosis_contract"] == "prose-root-cause.v1"
                 span = window["window"]["spans"][0]
-                return ModelProviderResult(output={"schema_version": "longform-prose-review.v2",
+                return ModelProviderResult(output={"schema_version": "longform-prose-review.v3",
                     "manifest_digest": window["manifest_digest"], "window_id": window["window"]["window_id"],
                     "reviewed_dimensions": list(PROSE_DIMENSIONS), "findings": [{
                         "lineage_id": "controlled-future-plot:" + window["window"]["window_id"], "dimension": "motivation_cost", "judgment": "ISSUE",
                         "severity": "MAJOR", "confidence": 0.8, "claim": "Controlled future-plot diagnosis.",
                         "rationale": "Test source binding and native repair routing only.",
                         "evidence": [{"asset_version_id": span["asset_version_id"], "text_hash": span["text_hash"],
-                            "start": span["start"], "end": span["start"]+2, "quote": span["text"][:2]}],
+                            "quote": span["text"]}],
                         "repair": {"root_cause": "UPPER_PLOT", "problem_owner": "PLAN", "repair_scope": "FUTURE_REPLAN",
                             "revision_goal": "Review future plot intent.", "preserve": ["Selected manuscripts."],
                             "resolution_criteria": ["Bind an exact future plan candidate."]}}]},
@@ -484,7 +487,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
 
     assert updated["units"][1]["asset_version_id"] == manifest["units"][1]["asset_version_id"]
     assert updated["units"][1]["dependency_changes"]
-    assert any(change["chapter"] == 1 and (enhanced_working or "via_chapter" in change)
+    assert any(change["chapter"] == 1 and (sixth_has_direct_first_dependency or "via_chapter" in change)
         for change in updated["units"][5]["dependency_changes"])
     from novel_forge.modules.command_kernel.errors import KernelError
     with pytest.raises(KernelError, match="Export must match"):
