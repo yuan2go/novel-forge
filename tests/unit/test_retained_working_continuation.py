@@ -11,7 +11,7 @@ from novel_forge.modules.reader_calibration.manuscript_blind import extract_manu
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 from tests.unit.test_author_length_binding import context as length_context
 from tests.unit.test_converged_provider_inputs import _materialize
-from tests.unit.test_longform_working_history import _policy
+from tests.unit.test_longform_working_history import _native_history, _policy
 
 
 def trace():
@@ -150,3 +150,14 @@ def test_retained_native_source_freezes_and_reaches_writer_without_acceptance(mo
         assert evidence["provider_view"]["working_history_transport"]["projections"]
     else:
         assert "working_history_transport" not in evidence["provider_view"]
+
+
+def test_existing_v4_native_snapshot_replays_its_original_content_hash(monkeypatch):
+    from novel_forge.modules.book_authority import manuscript
+
+    uow, book, _ = _native_history(monkeypatch, 3)
+    snapshot = manuscript.freeze_working_context(uow, book, 3,
+        projection_policy=_policy(version="working-prose-projection.v4"))
+    assert snapshot["snapshot_hash"] == "sha256:75100245becbce3b01d5e0d31bb1de274561f331e4e9ab0b7132a0941e92df82"
+    manuscript.verify_working_context(uow, book, snapshot)
+    assert "source_history" not in snapshot
