@@ -752,7 +752,7 @@ def _pre_send_capacity_source(
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
             original = AuthorityAssetQuery(uow.database_url).require(project_id=frozen["project_id"], asset_version_id=context[0])
             if (original.content_hash != context[1] or original.content.get("book_id") != frozen["book_id"]
-                    or frozen.get("planning_scope") != "BOOK"):
+                    or original.content.get("planning_scope") != "BOOK"):
                 raise KernelError("PLANNING_METHOD_CONTEXT_SCOPE_REQUIRED", "Book method scope requires the exact experimental Book Context")
             project_book_method_scope(original.content.get("narrative_intelligence", {}))
         projection_revalidation.update(context_asset_version_id=context[0],context_content_hash=context[1])
