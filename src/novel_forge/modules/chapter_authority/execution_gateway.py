@@ -4682,7 +4682,7 @@ def _materialize_production_codex_prompt(
         if isinstance(item, Mapping)
     }
     required_allowed = (
-        {"model.provider.invoke", *agent_tool_names}
+        {"model.provider.invoke", *(agent_tool_names - {"skill.activate"})}
         if stage == "agent_session"
         else {"model.provider.invoke"}
     )
@@ -4731,8 +4731,20 @@ def _materialize_production_codex_prompt(
         if isinstance(item, Mapping)
         and str(item.get("tool_name") or "") != "skill.activate"
     ]
+    reference_prose = dict(dict(inputs.get("execution_contract_summary") or {}).get("reference_prose") or {})
+    if stage == "agent_session" and reference_prose:
+        if (reference_prose.get("contract_version") != "agent-reference-prose.v1"
+                or reference_prose.get("production_eligible") is not False
+                or reference_prose.get("tools_allowed") is not False
+                or reference_prose.get("skills_activation_allowed") is not False
+                or dict(inputs.get("accepted_boundary") or {}).get("accepted_through_chapter") != 0
+                or reference_prose.get("book_id") != dict(inputs.get("accepted_boundary") or {}).get("book_id")
+                or reference_prose.get("instruction_hash") != canonical_hash({"instruction": inputs.get("instruction")})):
+            raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "Reference prose must retain its frozen empty-boundary instruction")
+        stage_semantic_contract += " This controlled reference has no accepted story facts. Return FINAL using only its frozen instruction. Do not query Book plans, execute tools or activate Skills. The output is an ineligible reference sample."
     if (
         stage == "agent_session"
+        and not reference_prose
         and int(inputs.get("turn_number") or 0) == 1
         and not grounding_observations
         and "narrative.query_accepted" in agent_tool_names

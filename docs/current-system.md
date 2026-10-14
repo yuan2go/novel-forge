@@ -1784,6 +1784,33 @@ candidate requires a decision. Evidence informs a decision. A projection derives
 model. An accepted fact has crossed the owning acceptance boundary. These roles are not
 interchangeable even when represented in the same database.
 
+Agent sessions with `provider_io_policy=agent-io-budget.v1` retain independent frozen
+per-call input and output allocations, the canonical Context policy compiler receipt,
+and the complete rendered Provider admission. Membership calls declare no monetary
+reservation override. Historical admissions and sent intents retain their original
+budget protocol. The Codex CLI transport records the application output reserve; its
+command does not expose a remote output-token hard limit.
+
+Agent Runtime can register a known-unsent successor for the exact terminal membership
+monetary-override host failure through `/product/production/agent-runtime/agent-sessions/{source_session_id}/recover-unsent`.
+The scoped trusted operator binds original Session/Operation versions and request digest
+plus the exact target host release. The owner requires zero Effect, reservation, usage,
+tool result, domain output or live lease, preserves the failed history and instruction,
+Book boundary and budget, and appends a causal receipt atomically with deterministic
+successor admission. Release compatibility reconstructs the complete compilation,
+catalog, Binding Set and deployment from immutable native evidence. Only verified host
+release/build identities and their derived deployment evidence may differ; Prompt,
+Skill, model, route, Schema and policy semantics must remain identical. This recovery
+creates provenance and proposed output, not domain activation or reader acceptance.
+
+An explicitly selected `agent-reference-prose.v1` mode is restricted to a creative
+validation Book with accepted-through-zero and one frozen model call. It uses the same
+governed Provider, storage and transcript path but does not perform native Chapter
+planning, review or acceptance. Its frozen instruction is the only story input; the
+Harness refuses tool execution and Skill activation. The ordinary Agent grounding query
+remains mandatory outside this mode. Internal Skill activation is not an external Tool
+permission. Reference output remains ineligible and separately attributable.
+
 ## Narrative object model
 
 The runtime does not implement one universal narrative tree. It distinguishes structural

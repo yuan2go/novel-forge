@@ -39,6 +39,22 @@ def _hash(payload: Any) -> str:
     return "sha256:" + hashlib.sha256(_canonical(payload).encode("utf-8")).hexdigest()
 
 
+def reconstruct_compilation_catalog(compiled: dict[str, Any], manifest: CapabilityPackManifest,
+                                     workflow_catalog: WorkflowBindingCatalog,
+                                     tool_catalog: ToolDefinitionCatalog) -> dict[str, Any]:
+    return {"capability_type_policy": compiled["capability_type_policy"],
+            "capability_registry": compiled["resolved_capabilities"],
+            "operation_definitions": compiled["resolved_operations"],
+            "workflow_bindings": [{"node_id": item.node_id, "operation_name": item.operation_name,
+                "stage": item.stage, "handler_key": item.handler_key, "capability_id": item.capability_id,
+                "depends_on": list(item.depends_on), "primary_output_asset_type": item.primary_output_asset_type}
+                for item in workflow_catalog.bindings()],
+            "tool_definitions": [tool_catalog.resolve(str(tool.tool_ref)).to_dict()
+                for tool in sorted(manifest.tool_permissions.tools, key=lambda item: str(item.tool_ref))],
+            "resolved_artifacts": compiled["resolved_artifacts"],
+            "resolved_pack_set": compiled["version_resolution_snapshot"]["manifest_hashes"]}
+
+
 @dataclass(frozen=True, slots=True)
 class CompiledWorkflowNode:
     ordinal: int
@@ -357,32 +373,11 @@ class CapabilityPackCompiler:
             }
             for item in semantic.artifacts
         ]
-        catalog_snapshot = {
-            "capability_type_policy": type_policy.to_dict(),
-            "capability_registry": capabilities_snapshot,
-            "operation_definitions": operations_snapshot,
-            "workflow_bindings": [
-                {
-                    "node_id": item.node_id,
-                    "operation_name": item.operation_name,
-                    "stage": item.stage,
-                    "handler_key": item.handler_key,
-                    "capability_id": item.capability_id,
-                    "depends_on": list(item.depends_on),
-                    "primary_output_asset_type": item.primary_output_asset_type,
-                }
-                for item in self.workflow_catalog.bindings()
-            ],
-            "tool_definitions": [
-                self.tool_catalog.resolve(str(tool.tool_ref)).to_dict()
-                for tool in sorted(
-                    manifest.tool_permissions.tools,
-                    key=lambda item: str(item.tool_ref),
-                )
-            ],
-            "resolved_artifacts": artifacts_snapshot,
-            "resolved_pack_set": list(version_set.manifest_hashes),
-        }
+        catalog_snapshot = reconstruct_compilation_catalog({
+            "capability_type_policy": type_policy.to_dict(), "resolved_capabilities": capabilities_snapshot,
+            "resolved_operations": operations_snapshot, "resolved_artifacts": artifacts_snapshot,
+            "version_resolution_snapshot": {"manifest_hashes": list(version_set.manifest_hashes)},
+        }, manifest, self.workflow_catalog, self.tool_catalog)
         catalog_snapshot_hash = _hash(catalog_snapshot)
         payload_without_hash = {
             "schema_version": COMPILED_CAPABILITY_PACK_SCHEMA_VERSION,

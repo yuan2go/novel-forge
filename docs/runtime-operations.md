@@ -318,6 +318,18 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 ## Validation matrix
 
+Agent I/O or known-unsent host recovery changes require the unified Harness, model-effect
+budget settlement, Agent API, Provider Context compilation and Capability Pack compiler
+unit suites plus `test_agent_harness_scheduler_postgres.py`. Check independent output
+reserve, missing/new marker rejection, historical intent replay, source CAS and hash,
+foreign identity, UNKNOWN Effect refusal, idempotency and immutable terminal history.
+Use a disposable native copy to verify exact old/new release compatibility and the
+complete rendered request before any live Provider call. The recover-unsent API requires
+the original session ID, project, expected Operation and Session versions, request digest,
+target release SHA and reason; it cannot reconcile an external outcome. Read back both
+source and successor; an admission response alone is not successful execution. Save and
+export actual Provider prose separately from these engineering checks.
+
 For Production Preparation Book isolation, run the Authority production-preparation unit
 suite and the `preparation_book_scope` PostgreSQL test in
 `test_chapter_authority_scheduler_postgres.py`. Check foreign candidates beyond the

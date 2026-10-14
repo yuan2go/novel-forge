@@ -16,6 +16,7 @@ from novel_forge.modules.chapter_authority.model_effects import (
     _model_budget_settlement,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.agent_runtime.harness import canonical_execution_contract_hash
 from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClass,
     WorkerFailureClassifier,
@@ -545,3 +546,74 @@ def test_operator_pause_retains_frozen_reservation_without_reclassifying_unknown
     assert reserve.call_args.args[1].external_effect_id == "frozen-effect"
     assert release.call_count == settlement_calls
     settle.assert_not_called()
+
+
+def test_agent_provider_input_and_output_limits_are_independently_frozen(monkeypatch):
+    contract = {"contract_version": "agent-session-execution-contract.v1",
+                "provider_io_policy": "agent-io-budget.v1",
+                "budget": {"max_input_tokens": 16000, "max_output_tokens": 32000}}
+    digest = canonical_execution_contract_hash(contract)
+    request = ChapterHandlerRequest(operation_id="operation", project_id="project", workspace_id="workspace",
+        trace_id="trace", correlation_id="correlation", command={"context_token_budget": 16000,
+            "book_id": "book", "agent_session_id": "session", "agent_execution_contract": contract,
+            "agent_execution_contract_hash": digest}, inputs=(), attempt_id="attempt", fencing_token=1, worker_id="worker")
+    captured = {}
+    def freeze(**values):
+        captured.update(values["request_payload"])
+        raise KernelError("CAPTURED_BEFORE_SEND", "Only inspect the frozen Provider request")
+    adapter = SimpleNamespace(provider="provider", reconciliation_mode="NONE", capability_profile={},
+                              routes={"agent_session": SimpleNamespace(model_context_limit=258400)})
+    port = ExternalEffectChapterModelPort("postgresql://unit-not-connected", adapter=adapter, worker_id="worker",
+        max_cost_per_call="2", capability_binder=SimpleNamespace(freeze_before_external_effect=freeze))
+    monkeypatch.setattr(port, "_execution_identity", lambda *_a, **_kw: (1, "worker"))
+    monkeypatch.setattr(port, "_request_timeout_seconds", lambda _request: 30)
+    monkeypatch.setattr(model_effects, "read_external_effect_intent", lambda *_a, **_kw: None)
+    reservation = Mock(return_value={"source": "FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING",
+        "estimated_total_tokens": 48000, "input_token_ceiling": 16000, "max_output_tokens": 32000})
+    monkeypatch.setattr(model_effects, "resolve_provider_token_reservation_contract", reservation)
+    with pytest.raises(KernelError, match="CAPTURED_BEFORE_SEND"):
+        port.invoke(request, stage="agent_session", payload={"execution_contract_hash": digest,
+            "execution_contract_summary": {"budget": contract["budget"]}},
+            reservation_tokens=16000, provider_output_tokens=32000)
+    assert captured["max_output_tokens"] == 32000
+    assert captured["_production_execution"]["provider_token_limit"] == 48000
+    assert captured["_production_execution"]["agent_io_budget"]["execution_contract_hash"] == digest
+    assert reservation.call_args.kwargs["frozen_request_token_ceiling"] == 16000
+    assert reservation.call_args.kwargs["requested_output_token_ceiling"] == 32000
+    with pytest.raises(KernelError, match="AGENT_EXECUTION_IO_BUDGET_DRIFT"):
+        port.invoke(request, stage="agent_session", payload={"execution_contract_hash": digest,
+            "execution_contract_summary": {"budget": contract["budget"]}},
+            reservation_tokens=16000, provider_output_tokens=32001)
+    with pytest.raises(KernelError, match="AGENT_EXECUTION_IO_BUDGET_DRIFT"):
+        port.invoke(request, stage="agent_session", payload={"execution_contract_hash": digest,
+            "execution_contract_summary": {"budget": contract["budget"]}}, reservation_tokens=16000)
+    legacy_contract = {k:v for k,v in contract.items() if k != "provider_io_policy"}
+    legacy_hash = canonical_execution_contract_hash(legacy_contract)
+    legacy_payload = {"execution_contract_hash": legacy_hash,
+                      "execution_contract_summary": {"budget": legacy_contract["budget"]}}
+    legacy_request = replace(request, command={**request.command, "agent_execution_contract": legacy_contract,
+                                               "agent_execution_contract_hash": legacy_hash})
+    with pytest.raises(KernelError, match="AGENT_EXECUTION_IO_BUDGET_DRIFT"):
+        port.invoke(legacy_request, stage="agent_session", payload=legacy_payload,
+                    reservation_tokens=16000, provider_output_tokens=32000)
+    from copy import deepcopy
+    legacy_intent = deepcopy(captured)
+    legacy_intent.update(max_output_tokens=16000, input=legacy_payload)
+    legacy_intent["_production_execution"].pop("agent_io_budget")
+    legacy_intent["_production_execution"].update(agent_execution_contract=legacy_contract,
+        agent_execution_contract_hash=legacy_hash, provider_token_limit=258400,
+        provider_reservation_policy={"source": "FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING",
+            "estimated_total_tokens": 32000, "input_token_ceiling": 16000, "max_output_tokens": 16000,
+            "accounting_basis": "PRICED", "cost_authorization_ref": ""})
+    monkeypatch.setattr(model_effects, "read_external_effect_intent", lambda *_a, **_kw: {
+        "request_payload": legacy_intent, "provider": adapter.provider,
+        "capability": "model.agent_session", "max_attempts": 2, "provider_capability_profile": {}})
+    replay = {}
+    def capture_replay(_database, _context, **values):
+        replay.update(values["request_payload"])
+        raise KernelError("CAPTURED_LEGACY_REPLAY", "Do not send")
+    monkeypatch.setattr(model_effects, "plan_external_effect", capture_replay)
+    with pytest.raises(KernelError, match="CAPTURED_LEGACY_REPLAY"):
+        port.invoke(legacy_request, stage="agent_session", payload=legacy_payload, reservation_tokens=16000)
+    assert replay == legacy_intent
+    assert replay["max_output_tokens"] == 16000

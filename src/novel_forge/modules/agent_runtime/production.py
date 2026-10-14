@@ -58,9 +58,12 @@ AGENT_SESSION_STAGE = "agent_session"
 
 
 def _agent_turn_reservation_limits(
-    *, session: AgentHarnessSession, provider_call_cap: str
-) -> tuple[str, int]:
+    *, session: AgentHarnessSession, provider_call_cap: str,
+    accounting_basis: str = "VERIFIED_RATE_CARD",
+) -> tuple[str | None, int]:
     """INVARIANT: Monetary authorization and model capacity remain distinct from historical token consumption."""
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        return None, session.budget.max_input_tokens
     provider_maximum = Decimal(provider_call_cap)
     remaining_cost = Decimal(session.budget.max_cost_amount) - Decimal(
         session.usage.cost_amount
@@ -118,6 +121,31 @@ def agent_route_execution_identity(
         "gateway": "PRODUCTION_EXECUTION_GATEWAY",
     }
     return {**identity, "runtime_binding_hash": canonical_policy_hash(identity)}
+
+
+def agent_context_content(session: AgentHarnessSession, instruction: str) -> dict[str, Any]:
+    content = {"contract_version": "agent-harness-context.v1",
+               "accepted_boundary": asdict(session.accepted_boundary), "instruction": instruction,
+               "tool_policy": [PostgresProductionAgentModelTurnPort._tool_payload(item) for item in session.tool_policy],
+               "skill_bindings": [dict(item) for item in session.skill_bindings], "protected": True,
+               "source_authority": "POSTGRESQL_ACCEPTED_BOUNDARY"}
+    if session.execution_contract.get("provider_io_policy") == "agent-io-budget.v1":
+        from novel_forge.modules.context_builder.governance import (
+            ContextPolicySnapshot, PolicyIdentity, ContextBudgetLimits, compile_effective_context_policy,
+        )
+        policy = ContextPolicySnapshot(identity=PolicyIdentity(
+            policy_id="agent-session-frozen-input", version="caller-context-limit-v1",
+            content_hash=session.execution_contract_hash,
+            snapshot_ref=f"agent-session:{session.agent_session_id}:execution-contract"),
+            allowed_physical_types=("context_bundle",),
+            denied_physical_types=("raw_source_document", "raw_source_chunk"),
+            limits=ContextBudgetLimits(total=session.budget.max_input_tokens), maximum_raw_source_ratio=0.0)
+        compilation = compile_effective_context_policy((policy,))
+        content.update(contract_version="agent-harness-context.v2", agent_session_id=session.agent_session_id,
+            execution_contract_hash=session.execution_contract_hash,
+            context_manifest={"effective_policy": compilation.effective_policy.to_dict(),
+                              "policy_compilation": dict(compilation.receipt)})
+    return content
 
 
 class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinder):
@@ -211,6 +239,16 @@ class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinde
                 "AGENT_EXECUTION_RUNTIME_BINDING_DRIFT",
                 "current provider route differs from admission-frozen identity",
             )
+        if contract.get("provider_io_policy") == "agent-io-budget.v1":
+            budget = dict(contract.get("budget") or {})
+            admission = dict(preflight.effect_binding.get("provider_admission") or {})
+            output_reserve = int(request_payload.get("max_output_tokens") or 0)
+            input_reserve = int(admission.get("total_reserved") or 0) - output_reserve
+            if (admission.get("status") != "ADMITTED" or input_reserve <= 0
+                    or input_reserve > int(budget.get("max_input_tokens") or 0)
+                    or output_reserve != int(budget.get("max_output_tokens") or 0)):
+                raise KernelError("AGENT_PROVIDER_INPUT_CAPACITY_EXCEEDED",
+                                  "Complete rendered Agent request exceeds its frozen per-call input/output allocation")
         return preflight
 
 
@@ -253,6 +291,7 @@ class PostgresProductionAgentModelTurnPort:
         reservation_amount, reservation_tokens = _agent_turn_reservation_limits(
             session=session,
             provider_call_cap=self.model_port.max_cost_per_call,
+            accounting_basis=self.model_port.cost_accounting_basis,
         )
         context = self._context_asset(session, instruction)
         effect_instance = f"{request_id}:turn:{turn_number}"
@@ -289,6 +328,8 @@ class PostgresProductionAgentModelTurnPort:
             stage=AGENT_SESSION_STAGE,
             reservation_amount=reservation_amount,
             reservation_tokens=reservation_tokens,
+            **({"provider_output_tokens": session.budget.max_output_tokens}
+               if session.execution_contract.get("provider_io_policy") == "agent-io-budget.v1" else {}),
             payload={
                 "agent_session_id": session.agent_session_id,
                 "operation_id": session.operation_id,
@@ -310,6 +351,8 @@ class PostgresProductionAgentModelTurnPort:
                         session.execution_contract.get("agent_policy") or {}
                     ).get("policy_hash"),
                     "budget": asdict(session.budget),
+                    **({"reference_prose": dict(session.execution_contract["reference_prose"])}
+                       if session.execution_contract.get("reference_prose") else {}),
                 },
                 "tools": [self._tool_payload(item) for item in session.tool_policy],
                 "skills": [dict(item) for item in session.skill_bindings],
@@ -359,6 +402,11 @@ class PostgresProductionAgentModelTurnPort:
                 "AGENT_EXECUTION_CONTRACT_CORRUPT",
                 "Agent Session execution contract hash differs from content",
             )
+        if (contract.get("provider_io_policy") == "agent-io-budget.v1" and
+                (contract.get("budget") != asdict(session.budget)
+                 or contract.get("accepted_boundary") != asdict(session.accepted_boundary))):
+            raise KernelError("AGENT_EXECUTION_CONTRACT_DRIFT",
+                              "Session budget and accepted boundary differ from the frozen contract")
         binder = self.model_port.capability_binder
         pack_id = str(getattr(binder, "capability_pack_id", ""))
         route = self.model_port.adapter.routes.get(AGENT_SESSION_STAGE)
@@ -399,34 +447,28 @@ class PostgresProductionAgentModelTurnPort:
     def _context_asset(self, session: AgentHarnessSession, instruction: str) -> Any:
         logical_ref = f"agent_harness/context/{session.agent_session_id}"
         try:
-            return self.assets.require(
+            existing = self.assets.require(
                 project_id=session.project_id, logical_ref=logical_ref
             )
+            if session.execution_contract.get("provider_io_policy") == "agent-io-budget.v1" and dict(existing.content) != agent_context_content(session, instruction):
+                raise KernelError("AGENT_CONTEXT_CONTRACT_DRIFT", "Retained Context differs from this frozen Agent instruction, boundary and policy")
+            return existing
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
+        content = agent_context_content(session, instruction)
         return self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=session.operation_id,
                 project_id=session.project_id,
                 asset_id=f"agent-harness-context:{session.agent_session_id}",
                 asset_type="context_bundle",
-                schema_version="agent-harness-context.v1",
+                schema_version=content["contract_version"],
                 logical_ref=logical_ref,
                 category="agent_runtime",
                 output_key="agent_harness.context",
                 role="frozen_context",
-                content={
-                    "contract_version": "agent-harness-context.v1",
-                    "accepted_boundary": asdict(session.accepted_boundary),
-                    "instruction": instruction,
-                    "tool_policy": [
-                        self._tool_payload(item) for item in session.tool_policy
-                    ],
-                    "skill_bindings": [dict(item) for item in session.skill_bindings],
-                    "protected": True,
-                    "source_authority": "POSTGRESQL_ACCEPTED_BOUNDARY",
-                },
+                content=content,
                 qualification_policy="agent-harness-context-v1",
                 trace_id=self.trace_id,
                 correlation_id=f"agent-session:{session.agent_session_id}",
