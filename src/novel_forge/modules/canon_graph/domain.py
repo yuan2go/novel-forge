@@ -641,7 +641,9 @@ def validate_deterministic_continuity(
         raise ValueError("chapter must be positive")
     state = {kind: _state_items(values) for kind, values in historical_state.items()}
     world_binding = (planned_execution or {}).get("world_preparation") or {}
-    frozen_world = (world_binding.get("frozen_source") or {}).get("reality")
+    from novel_forge.modules.worldbuilding.foundation import foundation_revalidation_reality
+    frozen_source = world_binding.get("frozen_source")
+    frozen_world = foundation_revalidation_reality(frozen_source, (world_binding.get("action") or {}).get("host_revalidation")) if frozen_source else None
     conflicts: list[dict[str, Any]] = validate_observed_world_changes(
         extraction=extraction, historical_state=historical_state,
         frozen_reality=frozen_world,

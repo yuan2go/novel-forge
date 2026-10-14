@@ -75,8 +75,6 @@ def require_capacity_source(uow, *, source_operation_id, project_id, frozen, ver
         if not prior:
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_LINEAGE_INVALID", source_operation_id)
         depth = prior[0]
-    if depth >= 2:
-        raise KernelError("PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED", source_operation_id)
     uow.cursor.execute("SELECT attempt_id,result,error FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [source_operation_id])
     attempt = uow.cursor.fetchone()
     return {"source_operation_id":source_operation_id,"command":frozen,"version":version,

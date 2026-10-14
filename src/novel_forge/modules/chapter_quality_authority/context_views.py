@@ -320,9 +320,11 @@ def build_quality_context_view(
     if work_requirements:
         from novel_forge.modules.chapter_authority.chapter_plan_views import (
             build_creative_baseline,
+            validate_creative_baseline,
         )
 
-        baseline = build_creative_baseline(chapter_plan, context_bundle)
+        candidate_baseline = validate_creative_baseline(revision.get("creative_baseline"))
+        baseline = build_creative_baseline(chapter_plan, context_bundle, contract_version=candidate_baseline["contract_version"])
         if revision.get("creative_baseline") != baseline:
             raise KernelError(
                 "QUALITY_CREATIVE_BASELINE_DRIFT",

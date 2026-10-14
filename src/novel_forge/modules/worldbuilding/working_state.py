@@ -15,6 +15,51 @@ from novel_forge.modules.narrative_state.reducers import preview_state_events
 from .dynamics import WorldTransition
 
 
+def project_working_observation_context(*, reality: Mapping[str, Any], working: Mapping[str, Any],
+                                       characters: list[dict[str, Any]]) -> dict[str, Any]:
+    from copy import deepcopy
+    from novel_forge.modules.book_authority.working_prose import validate_working_projection
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+
+    validate_working_projection(working, project_id=reality["project_id"], book_id=reality["book_id"],
+        accepted_through_chapter=reality["chapter_number"])
+    names: dict[str, set[str]] = {}
+    for character in characters:
+        identity = character.get("character_id")
+        if identity not in reality["approved_character_ids"]:
+            continue
+        for name in (identity, character.get("name")):
+            if isinstance(name, str) and name:
+                names.setdefault(name, set()).add(identity)
+    entries, causes, omitted = [], [], []
+    for row in (working.get("working_memory") or {}).get("entries", []):
+        if row["perspective"] == "READER_ONLY" or row["source"]["chapter"] <= reality["chapter_number"]:
+            continue
+        reference = "working-observation:" + narrative_hash({"snapshot": working["snapshot_hash"], "observation": row["observation_id"]})
+        causes.append({"source_event_id": reference, "observation_id": row["observation_id"],
+            "source": deepcopy(row["source"]), "perspective": row["perspective"]})
+        if row["state_role"] != "LATEST_OBSERVATION" or not (row["kind"] == "KNOWLEDGE" or row["perspective"] in {"BELIEF", "HEARSAY"}):
+            continue
+        owners = names.get(row["knowledge_owner"], set())
+        if len(owners) != 1:
+            omitted.append({"observation_id": row["observation_id"], "reason": "CHARACTER_ATTRIBUTION_UNRESOLVED"})
+            continue
+        identity = next(iter(owners))
+        kind = "character_knowledge" if row["kind"] == "KNOWLEDGE" and row["perspective"] == "OBSERVED" else "character_belief"
+        entries.append({"state_kind": kind, "entity_key": reference, "source_event_id": reference,
+            "source_chapter": row["source"]["chapter"], "observation_id": row["observation_id"],
+            "state": {"character_id": identity, "proposition": row["claim"], "state_key": row["state_key"],
+                "perspective": row["perspective"], "epistemic_status": "UNREVIEWED_WORKING_OBSERVATION"},
+            "evidence_role": "SELECTED_WORKING_OBSERVATION"})
+    projection = {"contract_version": "world-working-observations.v1", "snapshot_hash": working["snapshot_hash"],
+        "target_chapter": working["target_chapter"], "accepted_through_chapter": reality["chapter_number"],
+        "authority": "SELECTED_WORKING_EXPERIENCE_FOR_CANDIDATES", "semantic_support": "NOT_VERIFIED",
+        "accepted_history_mutation_allowed": False, "character_knowledge_granted": False,
+        "interpretation": "These predicates describe the selected prose's unreviewed representation of the named character's information or belief. They do not establish an objective fact, a verified proposition or accepted knowledge. Director must compare the located observation against the actual passages before supporting a dependent action; belief and hearsay may be wrong.",
+        "entries": entries, "causes": causes, "omissions": omitted}
+    return {**deepcopy(dict(reality)), "working_observation_context": {**projection, "projection_hash": narrative_hash(projection)}}
+
+
 def preview_preparation_transition(
     *,
     reality: Mapping[str, Any],
@@ -99,6 +144,7 @@ def validate_preparation_batch(
     }
     known.update(event.get("event_id", "") for event in reality.get("events", []))
     known.update(reality.get("foundation_cause_refs", []))
+    known.update(row["source_event_id"] for row in (reality.get("working_observation_context") or {}).get("causes", []))
     known.discard("")
     graph = compile_causal_batch(
         [

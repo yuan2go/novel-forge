@@ -116,6 +116,34 @@ _DISCLOSURE_PRIVATE_FIELDS = frozenset(
     }
 )
 
+DISCLOSURE_FIELDS_V1 = "world-disclosure-fields.v1"
+DISCLOSURE_FIELDS_V2 = "world-disclosure-fields.v2"
+
+
+def resolve_disclosure_fields(state: Mapping[str, Any], fields: list[str], *, contract: str) -> tuple[list[str], dict[str, str]]:
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    if contract not in {DISCLOSURE_FIELDS_V1, DISCLOSURE_FIELDS_V2}:
+        raise KernelError("WORLD_DISCLOSURE_CONTRACT_INVALID", "Retain a supported frozen field-address contract")
+    resolved, bindings = [], {}
+    for field in fields:
+        selected = field
+        if contract == DISCLOSURE_FIELDS_V2 and field.startswith("changes."):
+            member = field.removeprefix("changes.")
+            if member in _DISCLOSURE_PRIVATE_FIELDS or member.startswith("changes."):
+                raise KernelError("WORLD_DISCLOSURE_FIELDS_INVALID", "Payload addresses cannot expose private metadata or nest payload selectors")
+            if field in state and member in state:
+                raise KernelError("WORLD_DISCLOSURE_FIELD_AMBIGUOUS", "A payload-prefixed selector resolves to two distinct state members")
+            if field not in state and member in state:
+                selected = member
+                bindings[field] = selected
+        if selected in resolved:
+            raise KernelError("WORLD_DISCLOSURE_FIELD_AMBIGUOUS", "Distinct selectors cannot duplicate one presented state member")
+        if selected in _DISCLOSURE_PRIVATE_FIELDS or selected not in state or not isinstance(state[selected], (str, int, float, bool, type(None))):
+            raise KernelError("WORLD_DISCLOSURE_FIELDS_INVALID", "presentation fields must select scalar accepted content and cannot expose private decision metadata")
+        resolved.append(selected)
+    return resolved, bindings
+
 
 def project_disclosure(reality: Mapping[str, Any], disclosure: Mapping[str, Any]) -> dict[str, Any]:
     return _project_disclosure(reality, disclosure)
@@ -241,15 +269,9 @@ def _project_disclosure(
             "an earlier occurrence cannot be presented as the current assertion after its state changed",
         )
     state = entry.get("state") or {}
-    if set(fields).intersection(_DISCLOSURE_PRIVATE_FIELDS) or any(
-        key not in state
-        or not isinstance(state[key], (str, int, float, bool, type(None)))
-        for key in fields
-    ):
-        raise KernelError(
-            "WORLD_DISCLOSURE_FIELDS_INVALID",
-            "presentation fields must select scalar accepted content and cannot expose private decision metadata",
-        )
+    fields, field_bindings = resolve_disclosure_fields(
+        state, fields, contract=str(reality.get("disclosure_fields_contract", DISCLOSURE_FIELDS_V1))
+    )
     return {
         "disclosure_id": disclosure["disclosure_id"],
         "fact_id": disclosure["event_id"],
@@ -258,6 +280,9 @@ def _project_disclosure(
         "presentation_channel": disclosure["presentation_channel"],
         "claim_kind": disclosure["claim_kind"],
         "permitted_fields": list(fields),
+        **({"field_resolution": {"contract_version": DISCLOSURE_FIELDS_V2, "source_fields": list(disclosure["fields"]),
+                "resolved_fields": list(fields), "bindings": field_bindings}}
+           if field_bindings else {}),
         "source": {
             "source_event_id": disclosure["event_id"],
             "state": {key: state[key] for key in fields}

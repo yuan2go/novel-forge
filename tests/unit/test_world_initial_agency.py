@@ -12,6 +12,69 @@ from novel_forge.modules.worldbuilding.dynamics import (
 from novel_forge.modules.worldbuilding.working_state import validate_preparation_batch
 
 
+def test_versioned_disclosure_address_preserves_exact_state_and_legacy_contract():
+    from novel_forge.modules.narrative_state.information import project_candidate_disclosure
+
+    source = genesis()
+    frozen = deepcopy(source)
+    disclosure = {"disclosure_id":"visible","event_id":"local:open","audience":"READER","mode":"CONFIRM",
+        "fields":["changes.access"],"presentation_channel":"witnessed opening","claim_kind":"HISTORICAL_OCCURRENCE"}
+    with pytest.raises(KernelError,match="WORLD_DISCLOSURE_FIELDS_INVALID"):
+        project_candidate_disclosure(source,disclosure,transitions=chain(),chapter_number=1,path_id="first")
+    current = {**source,"disclosure_fields_contract":"world-disclosure-fields.v2"}
+    projected = project_candidate_disclosure(current,disclosure,transitions=chain(),chapter_number=1,path_id="first")
+    assert projected["permitted_fields"] == ["access"]
+    assert projected["source"]["state"] == {"access":"AVAILABLE"}
+    assert projected["field_resolution"]["bindings"] == {"changes.access":"access"}
+    disclosure["audience"] = "character:reader"
+    character = project_candidate_disclosure(current,disclosure,transitions=chain(),chapter_number=1,path_id="first")
+    assert character["source"]["state"] == {}
+    assert source == frozen
+
+
+@pytest.mark.parametrize("state,fields,code", [
+    ({"provenance":"private"},["changes.provenance"],"WORLD_DISCLOSURE_FIELDS_INVALID"),
+    ({"changes.provenance":"private"},["changes.provenance"],"WORLD_DISCLOSURE_FIELDS_INVALID"),
+    ({"changes.changes.provenance":"private"},["changes.changes.provenance"],"WORLD_DISCLOSURE_FIELDS_INVALID"),
+    ({"access":{"private":"value"}},["changes.access"],"WORLD_DISCLOSURE_FIELDS_INVALID"),
+    ({"access":"AVAILABLE"},["changes.missing"],"WORLD_DISCLOSURE_FIELDS_INVALID"),
+    ({"access":"AVAILABLE","changes.access":"OTHER"},["changes.access"],"WORLD_DISCLOSURE_FIELD_AMBIGUOUS"),
+    ({"access":"AVAILABLE"},["access","changes.access"],"WORLD_DISCLOSURE_FIELD_AMBIGUOUS"),
+])
+def test_disclosure_alias_never_widens_visibility_or_guesses_a_field(state,fields,code):
+    from novel_forge.modules.narrative_state.information import resolve_disclosure_fields
+
+    with pytest.raises(KernelError) as rejected:
+        resolve_disclosure_fields(state,fields,contract="world-disclosure-fields.v2")
+    assert rejected.value.code == code
+
+
+def test_current_world_role_input_binds_same_agency_schema_as_action_validation():
+    from dataclasses import asdict
+    from novel_forge.modules.command_kernel.service import _validate_json_schema as validate
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation
+    from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
+
+    source = {"contract_version":"world-preparation-source.v3",
+        "reality":{**genesis(),"disclosure_fields_contract":"world-disclosure-fields.v2"},
+        "policy":asdict(WorldProductionPolicy()),"intent":{},"world_foundation":{},"character_definitions":[],
+        "planning_window":{},"entity_ids":genesis()["approved_entity_ids"]}
+    task = PlanningWorldPreparation._task(source,{"asset_version_id":"source","content_hash":"sha256:"+"b"*64},"WORLD_REASONER")
+    assert task["contract_version"] == "world-provider-task.v3"
+    assert task["transition_contract"]["version"] == "world-transition-payload.v2"
+    assert task["transition_contract"]["fields"] == list(task["transition_contract"]["payload_schema"]["properties"])
+    assert "action_mode" in task["transition_contract"]["fields"]
+    validate(task["transition_contract"]["payload_schema"],chain()[0])
+    validate(task["transition_contract"]["schema"],chain()[0])
+    assert candidate_transition(WorldTransition.from_mapping(chain()[0]),source["reality"])["eligible"]
+    legacy = {**source,"contract_version":"world-preparation-source.v2"}
+    legacy["reality"] = genesis()
+    frozen = PlanningWorldPreparation._task(legacy,{"asset_version_id":"source","content_hash":"sha256:"+"b"*64},"WORLD_REASONER")
+    assert frozen["transition_contract"]["version"] == "world-transition-payload.v1"
+    with pytest.raises(KernelError):
+        validate(frozen["transition_contract"]["payload_schema"],chain()[0])
+
+
 def genesis():
     return {
         "project_id": "project:agency",

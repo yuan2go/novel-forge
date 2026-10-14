@@ -8,6 +8,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import PLANNING_BOOTSTRAP_SOURCE_VERSIONS, WORLD_SAMPLE_TASKS, authorization_hash, bootstrap_command_hash
 from novel_forge.storage.authority_asset_store import AuthorityAssetDocument, AuthorityAssetDocumentRepository
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.modules.worldbuilding.production_planning import world_target_chapter
 
 from .domain import FrozenPlanningInput
 from .world_preparation import PlanningProviderStage, PlanningWorldPreparation
@@ -104,7 +105,7 @@ def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
     source_ref = _binding(source)
     selection = dict(context.content.get("narrative_intelligence") or {})
     source_contract = source.content.get("contract") or {}
-    if row[1] == "1.21.0" and (source_contract.get("contract_version") != "world-preparation-source.v2"
+    if row[1] == "1.21.0" and (source_contract.get("contract_version") not in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}
         or (source_contract.get("reality") or {}).get("epistemic_contract") != "world-agency.v2"):
         raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "Current World samples retain the native scoped agency contract")
     if source_contract.get("request") != source_payload["world_preparation_request"]:
@@ -296,13 +297,13 @@ def _require_world_reference(cursor: Any, *, frozen: FrozenWorldSample, binding:
     if isinstance(binding, Mapping) and binding.get("basis") == "MODEL_CONSENSUS":
         return require_model_consensus_reference(cursor, project_id=frozen.command_payload["project_id"],
             binding=binding, target_id=generation["asset_version_id"], target_hash=generation["content_hash"],
-            chapter=int(frozen.command_payload["world_preparation_request"]["accepted_through_chapter"]) + 1,
+            chapter=world_target_chapter(frozen.source.content["contract"]),
             expected_dimensions=dimensions, allowed_statuses={"PASSED", "FAILED"})
     return require_adjudicated_reference(cursor, project_id=frozen.command_payload["project_id"], binding=binding,
         target_id=generation["asset_version_id"], target_hash=generation["content_hash"],
         generators=[frozen.generation_sample["generation_actor_id"] if frozen.generation_sample else frozen.command_payload["actor_id"]],
         evaluator_actor_id=evaluator_actor_id,
-        chapter=int(frozen.command_payload["world_preparation_request"]["accepted_through_chapter"]) + 1,
+        chapter=world_target_chapter(frozen.source.content["contract"]),
         expected_dimensions=dimensions,
         allowed_statuses={"PASSED", "FAILED"})
 
@@ -331,7 +332,7 @@ def world_sample_result_review(frozen: FrozenWorldSample, result: dict[str, Any]
                 validate_knowledge_translations(result, selection)
         else:
             compile_world_plan(reality=source["reality"], generated=frozen.stage.task["generated_portfolio"], evaluation=result,
-                policy=policy, chapter_number=int(source["request"]["accepted_through_chapter"]) + 1, intent_version_id=source["intent_version_id"])
+                policy=policy, chapter_number=world_target_chapter(source), intent_version_id=source["intent_version_id"])
     except (KernelError, TypeError, ValueError, KeyError) as error:
         return {"rule_validation": {"status": "FAILED", "code": getattr(error, "code", type(error).__name__),
                                     "message": str(error)}, "reference_evaluation": None}
@@ -512,7 +513,7 @@ def actor_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: list[str]
                 ORDER BY version.created_at,version.asset_version_id""",
                 [project_id, target_id, contract["protocol_version"], contract["evaluation_version"]])
             labels = [{"asset_version_id": row[0], "content_hash": row[1]} for row in cursor.fetchall()]
-            chapter = int(frozen.stage.task["accepted_through_chapter"]) + 1
+            chapter = world_target_chapter(frozen.source.content["contract"])
             if labels:
                 reference = require_adjudicated_reference(cursor, project_id=project_id,
                     binding={"protocol_version": contract["protocol_version"], "adjudications": labels},

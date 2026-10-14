@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
+
 from novel_forge.logging.execution import execution_step
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -4248,6 +4250,7 @@ class PostgresPlanningExecutionPreparer:
             action = PlanningWorldPreparation(self).prepare(
                 operation_id=operation_id, command=command, execute_stage=execute_stage,
                 knowledge_selection=knowledge_context.content.get("narrative_intelligence") or {},
+                execution_lease=WorkerLeaseCommand(attempt_id, command.project_id, worker_id, fencing_token, command.trace_id, command.correlation_id),
             )
         return self._prepare_stage(**arguments, world_action=action)
 
@@ -5939,6 +5942,9 @@ class PostgresPlanningExecutionPreparer:
             )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
+            **({"foundation_input_projection_version": production_profile["foundation_input_projection_version"]}
+                if command.generator_operation_name in FOUNDATION_GENERATORS
+                and production_profile.get("foundation_input_projection_version") is not None else {}),
             **({"generated_title_contract": "generated-book-title.v1"}
                 if command.generator_operation_name == "creative.candidates.generate"
                 and production_profile.get("title_generation_contract") == "generated-book-title.v1" else {}),
@@ -6051,6 +6057,14 @@ class PostgresPlanningExecutionPreparer:
         }
         from novel_forge.modules.story_design_authority.author_input import author_binding_from_inputs, compile_planning_author_projection
 
+        if command.execution_contract_version == "1.21.0" and command.generator_operation_name in {
+            "book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"
+        } and production_profile.get("chapter_length"):
+            from novel_forge.modules.chapter_authority.quality_length_requirement import freeze_planning_length_source
+            author_length = freeze_planning_length_source(self.query.require(project_id=command.project_id,
+                asset_version_id=book["book_asset_version_id"]), production_profile)
+            if author_length is not None:
+                content["author_length_source"] = author_length
         author_design = author_binding_from_inputs(selected, project_id=command.project_id, book_id=command.book_id)
         if author_design:
             content["author_design_projection"] = compile_planning_author_projection(
@@ -6081,7 +6095,7 @@ class PostgresPlanningExecutionPreparer:
                 qualification_policy="planning-context-source-isolation-v1",
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
-                reference_asset_ids=tuple(document.asset_id for document in documents),
+                reference_asset_ids=self._planning_context_reference_assets(command, documents, content),
             )
         )
         return context, tuple(documents)
@@ -6140,9 +6154,22 @@ class PostgresPlanningExecutionPreparer:
                 qualification_policy="planning-context-source-isolation-v1",
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
-                reference_asset_ids=tuple(document.asset_id for document in documents),
+                reference_asset_ids=self._planning_context_reference_assets(command, documents, content),
             )
         )
+
+    def _planning_context_reference_assets(self, command, documents, content):
+        references = tuple(document.asset_id for document in documents)
+        source = content.get("author_length_source")
+        if source is None:
+            return references
+        from novel_forge.modules.chapter_authority.quality_length_requirement import freeze_planning_length_source
+        book = self.query.require(project_id=command.project_id, asset_version_id=source["asset_version_id"])
+        if (book.asset_type != "book_record" or book.content.get("book_id") != command.book_id
+            or book.content_hash != source["content_hash"]
+            or freeze_planning_length_source(book, book.content.get("production_profile") or {}) != source):
+            raise KernelError("CHAPTER_PLANNING_LENGTH_SOURCE_DRIFT", "Planning Context must retain its exact Book author scale dependency")
+        return tuple(dict.fromkeys((*references, book.asset_id)))
 
 
     def _world_context_bundle(self, *, operation_id, command, base, stage, calibration_sample=False):
@@ -6428,7 +6455,7 @@ class PostgresPlanningExecutionPreparer:
                 provenance={
                     "authority_asset_version_id": source_ref["asset_version_id"],
                     "source_content_hash": source_ref["content_hash"],
-                    "projection_contract": "world-provider-task.v1",
+                    "projection_contract": provider_stage.task["contract_version"],
                 },
                 section="WORLD_TASK",
                 bucket=provider_stage.task["role"],
@@ -6860,6 +6887,7 @@ class PostgresPlanningExecutionPreparer:
         contract: dict[str, Any],
         trace_id: str,
         correlation_id: str,
+        execution_lease: WorkerLeaseCommand | None = None,
     ) -> AuthorityAssetDocument:
         try:
             existing = self.query.require(
@@ -6880,6 +6908,17 @@ class PostgresPlanningExecutionPreparer:
                 )
             return existing
         token = _token(f"{project_id}:{logical_ref}")
+        guard = None
+        if asset_type == "narrative_governance_action" and (contract.get("host_revalidation") or {}).get("contract_version") == "world-host-revalidation.v3":
+            from .world_preparation import require_world_foundation_frontier
+            from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
+            if execution_lease is None:
+                raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_REQUIRED", "Known-result action adoption requires its actual executing Attempt fence")
+            def guard(uow, request):
+                attempt = require_current_fence(uow, execution_lease)
+                if attempt["operation_id"] != request.operation_id or execution_lease.project_id != request.project_id:
+                    raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_MISMATCH", "The current fence must belong to this exact Action operation and project")
+                require_world_foundation_frontier(uow, request)
         try:
             return self.writer.materialize_output(
                 AuthorityAssetWriteCommand(
@@ -6896,7 +6935,8 @@ class PostgresPlanningExecutionPreparer:
                     qualification_policy="production-execution-contract-v1",
                     trace_id=trace_id,
                     correlation_id=correlation_id,
-                )
+                ),
+                **({"materialization_guard": guard} if guard is not None else {}),
             )
         except KernelError as error:
             if error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":

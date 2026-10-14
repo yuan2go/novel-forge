@@ -259,7 +259,10 @@ def chapter_operation_definitions(
         draft_repair = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.DRAFT.definition_name))
         draft_repair["definition_version"] = "3.10.1"
         draft_repair["policy"].update(known_receipt_recovery="chapter-known-receipt.v2", scene_evidence_union_revalidation="scene-evidence-union.v1")
-        definitions = (*definitions, memo_repair, memo_completion, intent_repair, draft_repair)
+        scoped_draft = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.DRAFT.definition_name))
+        scoped_draft["definition_version"] = "3.10.3"
+        scoped_draft["policy"].update(creative_baseline_scope_revalidation="book-chapter-applicability.v1")
+        definitions = (*definitions, memo_repair, memo_completion, intent_repair, draft_repair, scoped_draft)
     if not author_input:
         return definitions
     from copy import deepcopy

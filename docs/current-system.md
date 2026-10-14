@@ -22,11 +22,22 @@ identity changes without a corresponding projection update.
 ## Ordinary author writing
 
 New Creation requests select `config/execution_templates/author_first.json` (v12).
-The default creation-input policy freezes `native-narrative-execution.v1`: Chapter Pack
-3.0.3 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
+The default creation-input policy freezes `native-narrative-execution.v2`: Chapter Pack
+3.0.4 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
 working-prose memory v3. The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 These native bindings do not establish literary effectiveness.
+Fresh work-requirements Contexts derive `chapter-generation-length.v1` from the exact
+visible frozen Platform profile. Writer receives its Han bounds, unit and source hashes;
+the candidate's creative baseline retains the same requirement for review and revision.
+The evidence-only policy segment remains outside Writer story inputs. Internal quality
+rules cannot be made public by this derivation. Fresh 1.21.0 hierarchical Planning
+Contexts freeze `book-author-length-source.v1` from the exact Book production profile
+and expose `chapter-planning-length.v1`, with the Book source retained as a Context
+reference. Both consumers use the manuscript Han-character unit. These input bindings
+do not prove that a plan contains enough narrative material or that prose reaches the
+requested scale. Previously frozen Contexts without these markers keep their original
+rendering, including any missing author scale.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author
@@ -402,7 +413,15 @@ continuous membership creation with no external intent or reservation may
 append a capacity successor; a retained Arc Context additionally requires its native typed-volume
 projection evidence. Both use the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
-reserves the configured model output and framing margin, and permits at most two successors.
+reserves the configured model output and framing margin, and requires each capacity allocation
+to increase within the actual model ceiling. Historical continuation depth is retained as
+an observation; it does not impose a lifetime recovery limit.
+For Foundation capacity recovery, the Creator's original operator authorization registers
+the existing Planning continuation for the latest failed generation of the current role.
+The scoped worker can follow that registration but cannot register it on its own. A different
+successor failure cannot borrow an older capacity cause. Coordination excludes only its exact
+own RuntimeJob lease from the wake check; cancellation, other live jobs and uncertain effects
+retain their guards.
 The final rendered-request admission remains authoritative. Located ReReview resolution with preserved unrelated prose may support working selection even when the model score changes by less than a historical threshold. Scores and correction-generation counts remain diagnostics; they do not veto a supported current repair or prove literary quality. Remaining issues and propagation guards still apply. Context compilation counts the same lossless structured representation used by current Provider transport for working manuscripts; per-passage hashes and repeated values remain reconstructible source evidence rather than inflated duplicate input. It still preserves author requirements and exact current prose, uses governed compression for necessary older history, and enforces final rendered request capacity with output reserved. A pre-send Planning capacity successor may retain completed World preparation: every Effect must match the selected action’s verified pure-generation receipt, the main Planning call must remain unsent, and active leases or cancellation still block succession. The v3 continuation binds the current failed source and original receipt owner, revalidates current World sources and reuses those outputs across successive recoveries without repeating calls or requiring usage settlement. Temporary model availability recorded alongside capacity is diagnostic, not a permanent failure ban. Ordinary continue follows this registered successor after a corrected runtime deployment; old Attempts and Pack snapshots remain immutable. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains recorded; it does not consume a new generation entitlement or impose a lifetime fault ceiling. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact semantic gate and verifying the original Director receipt. Pure-generation usage retains its original state without a reuse veto; repair cannot add accepted support or relax the semantic gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
@@ -440,6 +459,29 @@ it does not replace the separate pre-send capacity path. A complete Codex comple
 rejected only by literal-null interpretation may be revalidated against the original
 frozen schema and process/result hashes without another send. These paths append
 evidence and preserve the original terminal Operation, Effect and costs.
+Complete Planning output after a retryable release-only assembly failure has a separate
+`planning-gateway-result-revalidation.v2` contract. It binds the exact latest failed Attempt,
+source Operation and generation versions, original pure-model request, verified complete
+receipt and result, original Pack, inputs and Fence, and different source/target releases.
+The independent recovery owner revalidates the original output; it does not reopen the old
+Attempt or dispatch a model. Formation, source Operation and generation locks serialize
+admission with native cancellation. Isolation, an existing successor, live execution,
+unresolved effects or a different failure cause reject this path. Ordinary generation replay,
+recovery scanning and candidate consumption share this contract. The v1 terminal-failure
+contract remains unchanged, and materialization remains candidate evidence rather than
+Story Design approval or literary qualification.
+An already isolated pure-generation Planning continuation that has no admitted successor
+may append `planning-runtime-continuation.v4` deployment evidence through the same registration
+Owner. The original Creator authorization, scope, request, account, model, reasoning and
+all resolved story/policy/submission contracts must agree; persisted Pack manifests may
+differ only in their version identity. Only deployment, compilation, binding, release and
+version-derived aggregate identities can change. The original continuation row, failure,
+isolation and unknown usage remain immutable. Successor admission locks that continuation
+and rechecks its effective deployment in the admission transaction; an old worker that
+already preflighted a superseded deployment cannot enter. Exact duplicate registration
+and admission retain native idempotency, including after successor attachment. Creation
+registers this control evidence only for its exact deployment-drift checkpoint; a started
+successor or changed creative contract needs its separate existing recovery authority.
 
 World future preparation is explicitly `REQUIRED`, `OPTIONAL` or `DISABLED` under
 the frozen template. Governed optional deferral records `DEFER` / `NOT_RUN`; it creates
@@ -1914,11 +1956,28 @@ ExecutionIntent and every candidate/review/Quality baseline; statuses alone are 
 a sufficient Writer contract. Fresh 3.8 admission rejects legacy polluted projections
 with CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED. New sampler definitions 2.2/2.3
 bind the exact source Operation semantics separately from their own execution version;
-2.0/2.1 remain readable with frozen published source policies. Selected Book requirements and Chapter choices
-must agree: neither a generic threshold nor a Chapter NOT_APPLICABLE can override an
-effective requirement. Foundation style compile 2.1.4/v4 binds applicability to the
-selected Book Foundation and its approved source versions; frozen 2.1.1 emits v3.
-New 3.8 ExecutionIntent admission requires that v4 source-bound applicability projection,
+2.0/2.1 remain readable with frozen published source policies. Explicit author constraints
+remain in the bound author guidance, style constraints and prohibited outcomes.
+Foundation style compile 2.1.6/v5 records `book-applicability-assessment.v1` with its
+exact approved Book Foundation provenance. `creative-baseline.v2` keeps that Book
+assessment separately from the Chapter's selected methods. Book serial potential
+does not require a hook or serial function in every chapter, and a finite work's
+next-chapter continuity does not contradict its lack of long-serial potential.
+Quality recompiles the candidate's declared baseline version from the same exact inputs.
+Normal Creation v2 uses Chapter Pack 3.0.4 and the scoped Style compiler; v1 retains
+its Pack 3.0.3 binding. At a native Creation checkpoint without an active Chapter
+request or unresolved unisolated generation, the original Creator may derive v5
+from the same Foundation inputs through Content Authority. Normal preparation then
+freezes that eligible Style for future Chapter work. Existing Chapter inputs remain frozen.
+Style 2.1.4/v4 and baseline v1 retain the former strict Book-to-Chapter mapping as
+`HISTORICAL_COMPATIBILITY`; Style 2.1.1 still emits v3. Deterministic baseline checks
+precede Writer dispatch. A terminal v1 `QUALITY_APPLICABILITY_CONFLICT` with one
+verified complete Writer result may use the existing Kernel receipt successor to
+Draft 3.10.3. Registration, consumption and completion rederive the source-bound v2
+baseline and unchanged prose under the current unaccepted frontier. Cancellation,
+input or receipt drift rejects recovery; the successor cannot dispatch a Writer call.
+This wiring does not establish literary improvement or long-form qualification.
+Current ExecutionIntent admission accepts source-bound v4/v5 projections,
 including when preparation explicitly selects an older asset. Legacy v2/v3 styles fail
 with STYLE_PROJECTION_MIGRATION_REQUIRED. A migration must use a new explicit owning
 command; it cannot replace an old task's frozen style or baseline during recovery.
@@ -2328,6 +2387,76 @@ World generation uses one strict type contract for the nested world schema and p
 instructions. A Foundation task freezes one `BOOK` scope; `BOOK`, `VOLUME` and `ARC`
 are alternatives, not an output array. JSON-string transport is decoded and internally
 validated before Candidate materialization. Invalid Provider output remains evidence.
+Narrative World preparation is a separate consumer. Fresh 1.21 preparation with a
+projected working manuscript freezes `world-preparation-source.v5` and
+`world-provider-task.v4` with transition schema v3 and output schema v4; accepted-only
+preparation retains source v4/task v3 and transition schema v2. The new schema admits
+only supplied working observation references alongside Foundation and accepted references.
+Routine, perception and information-dependent actions retain distinct requirements.
+The v4 source separately projects scalar `world_rule` fields explicitly declared in the
+exact approved Foundation entities and addressed by compiled predicates. Predicate
+expected values never supply missing facts; recorded state takes precedence. This
+background view changes neither accepted history nor character knowledge. Frozen v3
+sources retain their original empty-genesis behavior for exact replay.
+The v5 consumer binds the target chapter and exact selected working packet separately
+from the accepted Reality. Book verifies selected versions, hashes and dependency
+changes in the owning UoW. World, Director, optional deferral and sample/reference
+consumers use the same target; Edition retains its exact scoped logical key.
+`world-working-observations.v1` projects located, attributed working observations as
+temporary candidate evidence. Own represented knowledge, belief and hearsay can support
+the character's later action; reader-only information cannot. These predicates retain
+unreviewed provenance and never establish objective World facts or accepted knowledge.
+Director must read their located source passages; semantic support remains unverified.
+Missing or invalid memory supplies no predicates and does not discard complete prose.
+An unexecuted PLANNED Chapter with an accepted-only World source that missed working
+history is replaced through the existing Supervisor and Planning activation boundary,
+with a new request identity. Frozen plans retain the existing PlanChange requirement.
+Frozen v4 Sources remain replayable with their accepted-cursor window and original
+missing working input. Installed native continuation and literary effects require
+separate evidence; a successful Source or model call does not establish them.
+`world-host-revalidation.v3` reuses both complete, verified World results for the exact
+first unexecuted Chapter after the legacy missing-background rejection. Generation and
+Director may retain different original owners only with the same source, Creator,
+Book request and trusted receipts. Migration 0209 binds full source/successor commands,
+compiled Foundation, isolated unknowns, reservations and leases. Registration locks the Formation cancellation boundary and verifies its Source,
+version and settled leases. Action and primary materialization verify the current
+Attempt fence and lock the same Formation boundary and current Book frontier. Zero-send capacity consumers bind their
+existing durable registration and typed admission evidence, including the exact parent
+proof, original inputs and repair fields; they do not substitute another capacity gate.
+Downstream causal preparation and Canon validation consume the same derived view. The original Source, rejected Action and failed Attempts remain immutable.
+Focused SQL/backup-restore evidence and source-owner validation are separate from
+installed native recovery, real-Provider execution and literary qualification.
+Earlier source/task v2 inputs preserve their original inconsistent nested schema and
+blanket knowledge instruction for frozen replay; their existence does not qualify that
+input contract. New disclosure addresses resolve a `changes.<field>` selector only
+to one existing public scalar member. Ambiguous, nested, private or absent fields fail
+closed; presentation alone cannot grant a character knowledge. Direct-key legacy
+disclosure remains unchanged. `world-host-revalidation.v2` reuses both exact complete
+World receipts after a terminal legacy field-address failure, through the existing
+continuation Owner and migration 0206. Formation cancellation, current unexecuted
+frontier, input hashes and receipt identity are checked again; original failure and
+unknown usage remain historical evidence. Focused PostgreSQL Creation evidence covers
+the recovery and downstream action consumer; installed real-Provider and literary
+qualification remain separate.
+Pre-send capacity continuation also carries the exact registered World revalidation
+proof before a World action has been materialized. It revalidates complete original
+receipts and current source, and checks the proof again at registration commit. Migration
+0207 binds that unchanged proof to the registered parent, Creator and Book scope;
+dropping or changing it is rejected. Previously admitted records without inheritance
+remain historical evidence. The focused native capacity-failure fixture verifies
+zero additional World calls; actual installed recovery is a separate evidence boundary.
+Isolated World stage reuse filters by the selected exact frozen source. An older
+Director output is skipped only when it binds its own retained source and the same
+World request; a matching result still requires its complete trusted receipt. The
+former ancestor scan could reject a complete generation sibling after reading a
+Director bound to another source. Migration 0208 permits a native correction of that
+exact unsent terminal failure, with original Creator, isolated parent, complete
+generation, current unexecuted frontier and cancellation checks. It preserves the
+original UNKNOWN and terminal history. Version-only pending deployment and another
+unsent capacity successor retain and revalidate the same correction and isolation
+proofs. Focused PostgreSQL guards and captured-case Owner registration/admission are
+execution evidence; complete installed Provider recovery and literary qualification
+require separate evidence.
 Planning result recovery links a new bounded Operation to the failed Operation and
 retained result, preserving the old terminal state and fully revalidating the repair.
 Model profile identities retain exact legacy contracts and distinguish different frozen
@@ -2357,6 +2486,14 @@ the capacity trigger does not silently suppress the delete before that guard exe
 Qualified Foundation planning projections retain mandatory constraints once with
 auditable exact references, defer prose examples to prose stages, and replace an
 integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.
+New default Creation profiles additionally freeze `foundation-stage-input.v1` into each
+Foundation Context. Its Provider view omits host constraint/binding/execution envelopes and
+Creative Foundation search-selection bookkeeping and style examples, recording each omitted
+field's source asset, hash and exact path. Author constraints, semantic assumptions, planned
+consequences and character/world sources remain available. Historical profiles without this
+marker keep their original view. This stage projection and lossless exact-value encoding do
+not guarantee a smaller request or literary improvement; final rendered capacity admission
+still applies.
 
 Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
 Description, Transition and Integration slots as needed. Dialogue and Interior slots

@@ -136,6 +136,11 @@ def replace_failed_step(
             and policy_evidence.get("scene_evidence_union_revalidation") == "scene-evidence-union.v1"
             and source["definition_name"] == "chapter.draft.generate" and source["definition_version"] == "3.10.0"
             and target_version == "3.10.1" and expected_failure_code == "REALIZATION_EPISTEMIC_SCOPE_VIOLATION")
+        scope_contract_repair = bool(known_receipt_effects
+            and policy_evidence.get("contract_version") == "chapter-known-receipt.v2"
+            and source["definition_name"] == "chapter.draft.generate" and source["definition_version"] == "3.10.0"
+            and target_version == "3.10.3" and expected_failure_code == "QUALITY_APPLICABILITY_CONFLICT"
+            and (policy_evidence.get("creative_baseline_scope_revalidation") or {}).get("contract_version") == "book-chapter-applicability.v1")
         memo_completion_repair = (source["definition_name"] == "chapter.memo.generate" and source["definition_version"] == "3.10.1" and target_version == "3.10.2" and policy_evidence.get("completion_revalidation") == "settled-memo-completion.v1")
         intent_contract_repair = (source["definition_name"] == "chapter.execution_intent.prepare"
             and source["definition_version"] == "3.10.0" and target_version == "3.10.1"
@@ -162,7 +167,7 @@ def replace_failed_step(
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if known_isolated_effects or unsent_transport or memory_transport or schema_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or optional_memo_repair or completed_revalidation else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if known_isolated_effects or unsent_transport or memory_transport or schema_transport or historical_input_repair or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair or scope_contract_repair or optional_memo_repair or completed_revalidation else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport and not memory_transport and not schema_transport and not historical_input_repair and not optional_memo_repair and not completed_revalidation)
@@ -231,6 +236,13 @@ def replace_failed_step(
         if known_receipt_effects:
             _require_verified_receipts(cursor, source=source, expected=known_receipt_effects,
                 isolated_siblings=bool(known_isolated_effects), completed_revalidation=completed_revalidation)
+            if scope_contract_repair:
+                from novel_forge.modules.chapter_authority.receipt_recovery import _receipt, revalidate_applicability_scope
+                if len(known_receipt_effects) != 1:
+                    raise KernelError("DRAFT_SCOPE_RECOVERY_SOURCE_INVALID", "Scope revalidation requires one complete original Writer result")
+                result = _receipt(cursor, known_receipt_effects[0][0], project, source_operation_id=source["operation_id"])
+                if revalidate_applicability_scope(source, result, asset_reader=uow.repositories.asset_documents) != policy_evidence.get("creative_baseline_scope_revalidation"):
+                    raise KernelError("DRAFT_SCOPE_RECOVERY_PROOF_DRIFT", "A marker cannot replace exact source and result validation")
             cursor.execute(
                 "SELECT e.external_effect_id,e.request_hash,e.status,b.status,e.effect_type FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id",
                 [predecessor_id],
@@ -508,6 +520,7 @@ def has_domain_outputs(cursor, operation_id):
             "normalized-output",
             "output-manifest",
             "process-receipt",
+            "prose-candidate",
             "raw-output",
             "rejected-output",
             "usage-receipt",

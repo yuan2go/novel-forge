@@ -453,12 +453,20 @@ def build_provider_task_view(
         return _task(stage, world_preparation=deepcopy(dict(task)))
     if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
         task = inputs.get("world_preparation")
-        if not isinstance(task, Mapping) or task.get("contract_version") not in {"world-provider-task.v1", "world-provider-task.v2"} or task.get("fact_mutation_allowed") is not False:
+        if not isinstance(task, Mapping) or task.get("contract_version") not in {"world-provider-task.v1", "world-provider-task.v2", "world-provider-task.v3", "world-provider-task.v4"} or task.get("fact_mutation_allowed") is not False:
             raise KernelError("WORLD_PROVIDER_TASK_INVALID", "world stages require their exact frozen role projection")
         expected_role = "WORLD_REASONER" if stage == "world_candidates.generate" else "DIRECTOR"
         if task.get("role") != expected_role:
             raise KernelError("WORLD_PROVIDER_ROLE_INVALID", "world stage cannot consume another role's context")
         projected_task = deepcopy(dict(task))
+        if task["contract_version"] == "world-provider-task.v4":
+            from novel_forge.modules.book_authority.working_prose import validate_working_projection
+            working = task.get("working_manuscript")
+            if not isinstance(working, Mapping):
+                raise KernelError("WORLD_WORKING_SOURCE_REQUIRED", "Working World tasks require their frozen selected-source packet")
+            validate_working_projection(working, project_id=working.get("project_id"),
+                book_id=working.get("book_id"), target_chapter=task.get("target_chapter"),
+                accepted_through_chapter=task.get("accepted_through_chapter"))
         for index, segment in enumerate(projected_task.get("planning_window") or []):
             if "loss_records" not in segment:
                 continue
@@ -472,7 +480,7 @@ def build_provider_task_view(
                 "audit_hash": _projection_hash(audit),
                 "loss_record_count": len(audit["loss_records"]),
             }
-        if projected_task["contract_version"] == "world-provider-task.v2":
+        if projected_task["contract_version"] in {"world-provider-task.v2", "world-provider-task.v3", "world-provider-task.v4"}:
             projection = projected_task["context_projection"]
             audit = {key: projection.pop(key) for key in ("policy", "rejections", "estimated_tokens", "token_accounting", "provider_admission", "task_workset") if key in projection}
             state_provenance = {}
@@ -1853,6 +1861,9 @@ def build_provider_context_view(
             (correctness or {}).get("receipt_hash") or ""
         ),
     }
+    if context_bundle.get("chapter_generation_length") is not None:
+        from .quality_length_requirement import require_generation_binding
+        view["chapter_generation_length"] = deepcopy(require_generation_binding(context_bundle))
     review_source_window = (task_view.get("cross_chapter_window") or task_view.get("source_window")
         or (task_view.get("targeted_repair") or {}).get("selected_source_window")
         or (task_view.get("targeted_repair") or {}).get("accepted_source_window"))
@@ -2247,6 +2258,13 @@ def _build_planning_context_view(
     if capacity_policy is not None and capacity_policy != _PLANNING_TASK_CAPACITY_POLICY:
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning capacity requires a supported frozen policy version")
     task_capacity = capacity_policy == _PLANNING_TASK_CAPACITY_POLICY
+    foundation_projection = context_bundle.get("foundation_input_projection_version")
+    if foundation_projection not in (None, "foundation-stage-input.v1"):
+        raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Unsupported frozen Foundation input projection")
+    if foundation_projection is not None:
+        from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS
+        if stage not in FOUNDATION_GENERATORS:
+            raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Foundation projection cannot change Planning inputs")
     typed_arc_sources = context_bundle.get("planning_contract_version") == "1.21.0"
     typed_volume_sources = context_bundle.get("typed_volume_projection_version") == "typed-volume-context-projection.v1"
     planning_window = None
@@ -2325,6 +2343,7 @@ def _build_planning_context_view(
             typed_arc_sources=typed_arc_sources,
             typed_volume_sources=typed_volume_sources,
             planning_window=planning_window,
+            foundation_projection=foundation_projection == "foundation-stage-input.v1",
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -2378,6 +2397,9 @@ def _build_planning_context_view(
                 "token_accounting": "utf8-byte-upper-bound.v1"} if task_capacity else {"maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS}),
         },
     }
+    if context_bundle.get("author_length_source") is not None:
+        from .quality_length_requirement import compile_planning_length
+        view["chapter_planning_length"] = compile_planning_length(context_bundle["author_length_source"])
     if context_bundle.get("author_design_projection"):
         view["author_design_projection"] = compile_provider_author_projection(context_bundle["author_design_projection"])
     continuity = _planning_working_continuity(context_bundle, context_bundle)
@@ -2962,6 +2984,7 @@ def _project_planning_content(
     typed_arc_sources: bool = False,
     typed_volume_sources: bool = False,
     planning_window: list[int] | None = None,
+    foundation_projection: bool = False,
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
@@ -2979,6 +3002,30 @@ def _project_planning_content(
     if stage in FOUNDATION_GENERATORS:
         if not isinstance(payload, Mapping):
             raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Foundation context must be structured")
+        if foundation_projection:
+            projected = deepcopy(dict(payload))
+            omitted = 0
+            prefix = "/candidate_payload" if "candidate_payload" in content else ""
+            def omit(parent: dict[str, Any], key: str, path: str, reason: str) -> None:
+                nonlocal omitted
+                if key not in parent:
+                    return
+                value = parent.pop(key)
+                record = _loss_record(source or {}, path=prefix + path, value=value, reason=reason)
+                omitted += record["removed_item_count"]
+                if loss_records is not None:
+                    loss_records.append(record)
+            for key in ("constraint_envelope", "foundation_parent_bindings", "execution_evidence"):
+                omit(projected, key, "/" + key, "HOST_PROTOCOL_RETAINED_IN_FROZEN_SOURCE")
+            if role == "creative_foundation":
+                search = projected.get("narrative_search_projection")
+                if isinstance(search, dict):
+                    for key in ("selection_summary", "strategy_fingerprint", "repetition_keys"):
+                        omit(search, key, "/narrative_search_projection/" + key, "COMPARISON_METADATA_NOT_STORY_INPUT")
+                style = projected.get("style_profile")
+                if isinstance(style, dict):
+                    omit(style, "original_examples", "/style_profile/original_examples", "PROSE_EXAMPLE_OUTSIDE_FOUNDATION_DESIGN")
+            return _compact(projected), omitted, 0
         return _compact({key: value for key, value in payload.items() if key not in {"constraint_envelope", "foundation_parent_bindings", "execution_evidence"}}), 0, 0
     if role == "creative_foundation" and isinstance(payload, Mapping) and "narrative_intent" in payload:
         from novel_forge.modules.story_design_authority.intent import NarrativeIntent

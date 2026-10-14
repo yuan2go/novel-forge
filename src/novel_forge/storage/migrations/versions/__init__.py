@@ -206,6 +206,11 @@ from . import (
     v20261012_0202_prepared_planning_continuation,
     v20261012_0203_capacity_availability_observation,
     v20261013_0204_retrieval_generation_progress,
+    v20261013_0205_completed_release_recovery,
+    v20261014_0206_world_disclosure_revalidation,
+    v20261014_0207_world_revalidation_capacity,
+    v20261014_0208_world_isolated_source_correction,
+    v20261014_0209_world_foundation_background,
 )
 
 VERSION_MODULES = [
@@ -414,6 +419,11 @@ VERSION_MODULES = [
     v20261012_0202_prepared_planning_continuation,
     v20261012_0203_capacity_availability_observation,
     v20261013_0204_retrieval_generation_progress,
+    v20261013_0205_completed_release_recovery,
+    v20261014_0206_world_disclosure_revalidation,
+    v20261014_0207_world_revalidation_capacity,
+    v20261014_0208_world_isolated_source_correction,
+    v20261014_0209_world_foundation_background,
 ]
 
 __all__ = ["VERSION_MODULES"]

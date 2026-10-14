@@ -56,11 +56,84 @@ def _receipt(cursor, effect_id, project_id, *, source_operation_id, allow_comple
 LEGACY_CONTRACT = "chapter-known-receipt.v1"
 
 
-def recover_known_draft_receipt(authority, *, book_run_id, principal):
+def lock_scope_recovery_creation(cursor, *, root_id, project_id):
+    cursor.execute("""SELECT formation.formation_run_id FROM authority_story_formation_run formation
+        JOIN authority_book_production book ON book.stable_idempotency_key=formation.formation_run_id || ':production'
+        AND book.project_id=formation.project_id JOIN authority_book_chapter_request request
+        ON request.chapter_request_id=book.active_chapter_request_id AND request.book_run_id=book.book_run_id
+        WHERE request.chapter_root_operation_id=%s AND book.project_id=%s FOR UPDATE OF formation""", [root_id, project_id])
+    row = cursor.fetchone()
+    if row is None:
+        raise KernelError("DRAFT_SCOPE_RECOVERY_SOURCE_INVALID", "Scope recovery requires its native Creation owner")
+    cursor.execute("""SELECT book.book_run_id FROM authority_book_production book
+        JOIN authority_book_chapter_request request ON request.chapter_request_id=book.active_chapter_request_id
+        AND request.book_run_id=book.book_run_id WHERE request.chapter_root_operation_id=%s AND book.project_id=%s
+        AND book.stable_idempotency_key=%s FOR UPDATE OF book""", [root_id, project_id, row[0] + ":production"])
+    if cursor.fetchone() is None:
+        raise KernelError("DRAFT_SCOPE_RECOVERY_FRONTIER_CHANGED", "Retain the exact active Chapter frontier")
+    cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_story_creation_cancellation WHERE formation_run_id=%s)", [row[0]])
+    if cursor.fetchone()[0]:
+        raise KernelError("DRAFT_SCOPE_RECOVERY_CANCELLED", "Original Creation cancellation prevents adoption")
+
+
+def guard_scope_draft_materialization(uow, request):
+    if request.definition_version != "3.10.3":
+        return
+    uow.cursor.execute("SELECT root_operation_id FROM authority_operation WHERE operation_id=%s AND project_id=%s",
+        [request.operation_id, request.project_id])
+    row = uow.cursor.fetchone()
+    if row is None:
+        raise KernelError("DRAFT_SCOPE_RECOVERY_SOURCE_INVALID", "Scope materialization requires its admitted native owner")
+    lock_scope_recovery_creation(uow.cursor, root_id=row[0], project_id=request.project_id)
+
+
+def revalidate_applicability_scope(source, result, *, asset_reader):
+    from .scene_receipt_recovery import draft_receipt_inputs
+    from .chapter_plan_views import build_creative_baseline, build_draft_style_view
+    from .realization_composition import compile_realization_contract, resolve_accepted_realization_sources
+    from .domain_handlers import normalize_draft_result
+    from .craft_execution import require_craft_delivery
+    from novel_forge.modules.book_authority.manuscript import validate_complete_prose
+
+    request = draft_receipt_inputs(source, asset_reader=asset_reader)
+    plan, context = request.require_input("chapter_plan"), request.require_input("context_bundle")
+    try:
+        build_creative_baseline(plan.content, context.content, contract_version="creative-baseline.v1")
+    except KernelError as error:
+        if error.code != "QUALITY_APPLICABILITY_CONFLICT":
+            raise
+    else:
+        raise KernelError("DRAFT_SCOPE_RECOVERY_NOT_APPLICABLE", "Require the original deterministic cross-scope conflict")
+    baseline = build_creative_baseline(plan.content, context.content, contract_version="creative-baseline.v2")
+    require_craft_delivery(plan=plan.content, intent=request.require_input("chapter_execution_intent").content,
+        memo=request.require_input("chapter_memo").content, context=context.content)
+    contract = compile_realization_contract(plan.content, build_draft_style_view(context.content, work_requirements=True),
+        core_policy="continuous-scene.v1", information_policy="actor-source-scope.v1",
+        accepted_sources=resolve_accepted_realization_sources(request, asset_reader=asset_reader, verify_content_hash=True),
+        world_preparation=context.content.get("chapter_execution_expectations", {}).get("world_preparation", {}))
+    content = normalize_draft_result(plan=plan.content, context_asset_version_id=context.asset_version_id,
+        context_content_hash=context.content_hash, context_content=context.content, result=result.output,
+        provider_evidence=result.to_evidence(), work_requirements=True,
+        core_policy="continuous-scene.v1", information_policy="actor-source-scope.v1", realization_contract=contract,
+        enforce_voice_contract=not bool((request.command.get("preparation_report") or {}).get("author_workflow")))
+    validate_complete_prose(content)
+    return {"contract_version": "book-chapter-applicability.v1", "source_contract": "creative-baseline.v1",
+        "target_contract": "creative-baseline.v2", "baseline_digest": baseline["baseline_digest"],
+        "raw_output_hash": snapshot_hash(result.output), "realization_contract_hash": snapshot_hash(contract),
+        "prose_changed": False, "author_constraints_changed": False, "fact_mutation_allowed": False}
+
+
+def recover_applicability_scope_receipt(authority, *, book_run_id, principal):
+    return recover_known_draft_receipt(authority, book_run_id=book_run_id, principal=principal,
+        failure_code="QUALITY_APPLICABILITY_CONFLICT")
+
+
+def recover_known_draft_receipt(authority, *, book_run_id, principal, failure_code=""):
     book = authority.require(book_run_id)
     principal.require("book.authority.execute", book["project_id"])
     principal.require("chapter.authority.execute", book["project_id"])
     if book["state"] not in {
+        "PAUSED",
         "CHAPTER_RUNNING",
         "CHAPTER_SUBMITTED",
         "CHAPTER_WAITING_RETRY",
@@ -78,8 +151,10 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
         u.cursor.execute(
             """SELECT DISTINCT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
-            AND o.status='FAILED_FINAL' AND ((o.definition_name='chapter.draft.generate' AND o.definition_version='3.10.0' AND a.result->>'error_code'='PROGRAMMING_BUG') OR (o.definition_name='chapter.review.evaluate' AND o.definition_version='3.9.0' AND a.result->>'error_code'='REVIEW_KNOWLEDGE_CHECK_INVALID') OR (o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.5' AND a.result->>'error_code'='MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE'))""",
-            [request["chapter_root_operation_id"], book["project_id"]],
+            AND o.status='FAILED_FINAL' AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor j WHERE j.predecessor_operation_id=o.operation_id)
+            AND ((o.definition_name='chapter.draft.generate' AND o.definition_version='3.10.0' AND a.result->>'error_code' IN ('PROGRAMMING_BUG','QUALITY_APPLICABILITY_CONFLICT')) OR (o.definition_name='chapter.review.evaluate' AND o.definition_version='3.9.0' AND a.result->>'error_code'='REVIEW_KNOWLEDGE_CHECK_INVALID') OR (o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.5' AND a.result->>'error_code'='MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE'))
+            AND (%s='' OR a.result->>'error_code'=%s)""",
+            [request["chapter_root_operation_id"], book["project_id"], failure_code, failure_code],
         )
         rows = u.cursor.fetchall()
         if not rows:
@@ -88,6 +163,11 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
             raise KernelError("KNOWN_RECEIPT_SOURCE_AMBIGUOUS", "Exactly one immutable stopped source is required")
         source = rows[0][0]
         _require_current_receipt_family(source)
+        u.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [source["operation_id"]])
+        failure_codes = {row[0] for row in u.cursor.fetchall()}
+        scope_repair = failure_codes == {"QUALITY_APPLICABILITY_CONFLICT"} and source["definition_name"] == "chapter.draft.generate"
+        if "QUALITY_APPLICABILITY_CONFLICT" in failure_codes and not scope_repair:
+            raise KernelError("DRAFT_SCOPE_RECOVERY_SOURCE_INVALID", "Only an exact applicability failure can change the scope contract")
         if source["actor_id"] != principal.principal_id or has_domain_outputs(
             u.cursor, source["operation_id"]
         ):
@@ -111,6 +191,8 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
         result = _receipt(u.cursor, effect["external_effect_id"], book["project_id"], source_operation_id=source["operation_id"])
         u.cursor.execute("SELECT d.dispatch_id FROM authority_external_effect_dispatch d JOIN authority_external_receipt r USING(dispatch_id) WHERE d.external_effect_id=%s AND d.status='SUCCEEDED' AND r.status='VERIFIED' ORDER BY d.generation DESC LIMIT 1", [effect["external_effect_id"]])
         source_dispatch = u.cursor.fetchone()[0]
+        if scope_repair:
+            scope_proof = revalidate_applicability_scope(source, result, asset_reader=u.repositories.asset_documents)
     rejected_ids, rejected_proof = completed_output_failures(authority.database_url, source, rejected) if rejected else ((), [])
     if source["definition_name"] == "chapter.canon.extract":
         from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
@@ -141,10 +223,13 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
         "source_request_hash": effect["request_hash"],
         "policy_admission": template,
         "completion_checks": "UNCHANGED",
+        **({"creative_baseline_scope_revalidation": scope_proof} if scope_repair else {}),
         **({"schema_rejection_receipts": rejected_proof} if rejected_proof else {}),
     }
 
     def guard(u):
+        if scope_repair:
+            lock_scope_recovery_creation(u.cursor, root_id=source["root_operation_id"], project_id=book["project_id"])
         u.cursor.execute(
             "SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s FOR UPDATE",
             [book_run_id],
@@ -166,10 +251,19 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
                 "KNOWN_RECEIPT_FRONTIER_CHANGED", "Reload the exact live frontier"
             )
 
+    target_version = "3.10.3" if scope_repair else "3.10.0"
+    if scope_repair:
+        from .definitions import chapter_operation_definitions
+        target = next(item for item in chapter_operation_definitions(application_build_id=authority.application_build_id,
+            commit_sha=authority.commit_sha, model_effects_required=True, coordinated_contract=True)
+            if item["name"] == "chapter.draft.generate" and item["definition_version"] == target_version)
+        with AuthorityUnitOfWork(authority.database_url) as u:
+            u.repositories.definitions.register(target)
+            u.commit()
     replace_failed_step(
         authority.database_url,
         predecessor_id=source["operation_id"],
-        target_version="3.10.0",
+        target_version=target_version,
         context=AdmissionContext(
             principal.principal_id,
             principal.permissions,
@@ -178,7 +272,7 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
             authority.commit_sha,
         ),
         policy_evidence=evidence,
-        expected_failure_code="MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE" if source["definition_name"] == "chapter.canon.extract" else "PROGRAMMING_BUG" if source["definition_name"] == "chapter.draft.generate" else "REVIEW_KNOWLEDGE_CHECK_INVALID",
+        expected_failure_code="QUALITY_APPLICABILITY_CONFLICT" if scope_repair else "MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE" if source["definition_name"] == "chapter.canon.extract" else "PROGRAMMING_BUG" if source["definition_name"] == "chapter.draft.generate" else "REVIEW_KNOWLEDGE_CHECK_INVALID",
         known_receipt_effects=((effect["external_effect_id"], effect["request_hash"]),),
         known_rejected_effects=rejected_ids,
         transaction_guard=guard,
@@ -197,7 +291,7 @@ def _require_current_receipt_family(source):
 
 
 def _consume_known_draft_receipt(request):
-    if request.definition_version not in {"3.10.0", "3.10.1", "3.10.2"} or not request.database_url:
+    if request.definition_version not in {"3.10.0", "3.10.1", "3.10.2", "3.10.3"} or not request.database_url:
         return None
     with AuthorityUnitOfWork(request.database_url) as u:
         u.cursor.execute(
@@ -252,6 +346,8 @@ def _consume_known_draft_receipt(request):
         u.cursor.execute("SELECT d.dispatch_id FROM authority_external_effect_dispatch d JOIN authority_external_receipt r USING(dispatch_id) WHERE d.external_effect_id=%s AND d.status='SUCCEEDED' AND r.status='VERIFIED' ORDER BY d.generation DESC LIMIT 1", [policy["source_effect_id"]])
         if u.cursor.fetchone() != (policy.get("source_dispatch_id"),) or policy.get("provider_invoked") is not False or policy.get("strict_certification_eligible") is not False:
             raise KernelError("KNOWN_RECEIPT_BINDING_INVALID", "Retain exact original dispatch and derivation boundary")
+        if request.definition_version == "3.10.3" and revalidate_applicability_scope(source, result, asset_reader=u.repositories.asset_documents) != policy.get("creative_baseline_scope_revalidation"):
+            raise KernelError("DRAFT_SCOPE_RECOVERY_PROOF_DRIFT", "Retain the exact source-bound scope correction")
         return result, policy
 
 
@@ -265,7 +361,7 @@ def _cancelled(cursor, book):
 
 def is_known_receipt_revalidation(database_url, operation_id):
     with AuthorityUnitOfWork(database_url) as u:
-        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version IN ('3.10.0','3.10.1') AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
+        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version IN ('3.10.0','3.10.1','3.10.3') AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
         return u.cursor.fetchone()[0]
 
 

@@ -49,6 +49,7 @@ def test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure(monkeypat
     from novel_forge.modules.book_authority import creation_runtime
     progress = ["FOUNDATION", "RUNNING", 1, 0, 0, [], {}]
     claim = SimpleNamespace(job_kind="BOOK_CREATION_ADVANCE", runtime_group="book_creation",
+        runtime_job_id="creation-job",
         subject_kind="STORY_FORMATION_RUN", subject_id="formation", project_id="project", attempt_id="attempt",
         input_snapshot={"frozen_input_digest": "digest", "operator_id": "operator", "sequence": 50,
             "stagnant_windows": 50, "progress": progress})
@@ -93,8 +94,9 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
     skill = next(item for item in planning.manifest["skill_binding"]["skills"] if item["skill_ref"] == "long-outline")
     assert skill["version"] == "long-outline-v5"
     assert planning.manifest["identity"]["version"] == "2.15.0"
-    assert path["chapter"] == {"pack_version_override": "3.0.3", "prose_skill_version": "prose-generation-v5",
+    assert path["chapter"] == {"pack_version_override": "3.0.4", "prose_skill_version": "prose-generation-v5",
         "prompt_template_version": "v15"}
+    assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v1"})["chapter"]["pack_version_override"] == "3.0.3"
     assert working_prose_policy(policy["profiles"]["production_profile"]["content"])["version"] == "working-prose-projection.v3"
     assert creation_narrative_execution({"contract_version": "creation-input-policy.v1"}) == {"chapter": {}, "planning": {}}
     with pytest.raises(Exception, match="Unknown frozen narrative execution contract"):

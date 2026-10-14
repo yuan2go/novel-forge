@@ -1,9 +1,10 @@
+from copy import deepcopy
 from dataclasses import asdict
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.reality import narrative_hash
-from novel_forge.modules.worldbuilding.foundation import WorldFoundation
+from novel_forge.modules.worldbuilding.foundation import WorldFoundation, foundation_revalidation_reality
 from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
 from novel_forge.storage.foundation_repositories import require_current_foundation_set
 from novel_forge.storage.narrative_reality_repositories import (
@@ -52,6 +53,7 @@ class WorldPreparationRepository:
                 "WORLD_BINDING_SOURCE_DRIFT",
                 "private working source differs from its immutable source artifact",
             )
+        foundation_revalidation_reality(source, action.get("host_revalidation"))
         if action.get('optional_preparation'):
             from novel_forge.modules.story_planning_runtime.world_optional import validate_optional_action
             validate_optional_action(self.cursor, action=action, source=source)
@@ -374,13 +376,14 @@ class WorldPreparationRepository:
         contract_version: str = "world-preparation-source.v2",
         provider_projection_version: str = "world-role-delivery.v3",
         epistemic_contract: str = "world-agency.v1",
+        working_manuscript: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         self.cursor.execute(
             """
             SELECT book.project_id, book.book_id, book.input_snapshot_id,
                    book.accepted_through_chapter, book.active_story_state_version_id,
                    book.active_canon_snapshot_version_id, to_jsonb(snapshot),
-                   profile.content
+                   profile.content, to_jsonb(book)
             FROM authority_book_production book
             JOIN authority_book_production_input_snapshot snapshot ON snapshot.snapshot_id=book.input_snapshot_id
             JOIN authority_asset_version profile ON profile.asset_version_id=book.production_profile_version
@@ -405,6 +408,21 @@ class WorldPreparationRepository:
                 "WORLD_PREPARATION_BASELINE_STALE",
                 "world preparation must use the exact current Book frontier",
             )
+        target_chapter = int(row[3]) + 1
+        working = None
+        if contract_version == "world-preparation-source.v5" and working_manuscript is not None:
+            from types import SimpleNamespace
+            from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow, verify_working_context
+            from novel_forge.modules.book_authority.working_prose import validate_working_projection
+            from novel_forge.storage.authority_repositories import AuthorityRepositories
+            book = dict(row[8])
+            if effective_workflow(self.cursor, book) != AUTHOR_WORKFLOW:
+                raise KernelError("WORLD_WORKING_SCOPE_INVALID", "Working World continuity requires an author-first Book")
+            working = deepcopy(dict(working_manuscript))
+            validate_working_projection(working, project_id=project_id, book_id=book_id,
+                accepted_through_chapter=int(row[3]))
+            verify_working_context(SimpleNamespace(cursor=self.cursor, repositories=AuthorityRepositories(self.cursor)), book, working)
+            target_chapter = working["target_chapter"]
         snapshot = dict(row[6])
         foundation = require_current_foundation_set(
             self.cursor,
@@ -529,6 +547,11 @@ class WorldPreparationRepository:
             reality["epistemic_contract"] = epistemic_contract
         elif epistemic_contract != "world-agency.v1":
             raise KernelError("WORLD_AGENCY_CONTRACT_INVALID", "World source must retain a supported agency contract")
+        if contract_version in {"world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}:
+            if epistemic_contract != "world-agency.v2":
+                raise KernelError("WORLD_AGENCY_CONTRACT_INVALID", "Aligned World source requires its explicit agency contract")
+            from novel_forge.modules.narrative_state.information import DISCLOSURE_FIELDS_V2
+            reality["disclosure_fields_contract"] = DISCLOSURE_FIELDS_V2
         world_binding = next(
             binding for binding in bindings if binding["role"] == "WORLD_BIBLE"
         )
@@ -543,6 +566,9 @@ class WorldPreparationRepository:
             }
             for rule in world["world_foundation"]["rules"]
         ]
+        if contract_version in {"world-preparation-source.v4", "world-preparation-source.v5"}:
+            from novel_forge.modules.worldbuilding.foundation import project_foundation_rule_background
+            reality = project_foundation_rule_background(reality=reality, foundation=world["world_foundation"], source_binding={key: world_binding[key] for key in ("asset_version_id", "content_hash")})
         intent_binding = next(
             binding for binding in bindings if binding["role"] == "CREATIVE_FOUNDATION"
         )
@@ -550,7 +576,7 @@ class WorldPreparationRepository:
         intent = intent.get("candidate_payload", intent)
         self.cursor.execute(
             "SELECT b.owner, b.project_id, b.subject_id, v.content_hash, v.content FROM authority_runtime_policy_binding b JOIN authority_runtime_policy_version v USING(owner,project_id,policy_version) WHERE b.owner='BOOK_CONTROL' AND b.project_id=%s AND b.subject_id=%s",
-            [project_id, f"{request['book_run_id']}:chapter:{chapter + 1}"],
+            [project_id, f"{request['book_run_id']}:chapter:{target_chapter}"],
         )
         control = self.cursor.fetchone()
         if control is None:
@@ -607,10 +633,10 @@ class WorldPreparationRepository:
         )
 
         planning_window = project_world_planning_window(
-            planning_inputs, chapter=chapter + 1, window=policy.planning_window_chapters,
+            planning_inputs, chapter=target_chapter, window=policy.planning_window_chapters,
             context_policy_version=policy.version,
         )
-        if contract_version == "world-preparation-source.v2" and chapter:
+        if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"} and chapter:
             history = repository.recent_world_events(
                 book_run_id=request["book_run_id"],
                 through_chapter=chapter,
@@ -624,7 +650,7 @@ class WorldPreparationRepository:
                 from novel_forge.modules.context_builder.reality_projection import ROLE_STATE_KINDS
                 from novel_forge.modules.context_builder.task_context import required_background_entities, required_task_event_ids, task_references, world_task_scope
 
-                task = world_task_scope(chapter=chapter + 1, intent=intent, planning_window=planning_window, world_foundation=world["world_foundation"])
+                task = world_task_scope(chapter=target_chapter, intent=intent, planning_window=planning_window, world_foundation=world["world_foundation"])
                 entities = required_background_entities(reality, task, ROLE_STATE_KINDS["DIRECTOR"])
                 current_ids = {entry["source_event_id"] for kind, entries in reality["current_state"].items() for entry in entries if (kind, entry["entity_key"]) in entities and entry.get("source_event_id")}
                 required_ids = tuple(sorted(required_task_event_ids(task) | current_ids | (task_references(task) & {event["event_id"] for event in reality["events"]})))
@@ -633,16 +659,21 @@ class WorldPreparationRepository:
                 reality["events"] = [combined[key] for key in sorted(combined)]
         continuations = (
             self.preparation_sources(reality=reality, limit=policy.max_candidates)
-            if contract_version == "world-preparation-source.v2" and chapter
+            if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"} and chapter
             else []
         )
+        if working is not None:
+            from novel_forge.modules.worldbuilding.working_state import project_working_observation_context
+            reality = project_working_observation_context(reality=reality, working=working, characters=list(cast.get("characters") or []))
         return {
             "contract_version": contract_version,
+            **({"target_chapter": target_chapter, "working_manuscript": working}
+                if contract_version == "world-preparation-source.v5" else {}),
             **({"provider_projection_version": provider_projection_version}
                 if provider_projection_version in {"world-role-delivery.v2", "world-role-delivery.v3"} else {}),
             **(
                 {"preparation_sources": continuations}
-                if contract_version == "world-preparation-source.v2"
+                if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}
                 else {}
             ),
             "request": dict(request),
@@ -819,6 +850,7 @@ class WorldPreparationRepository:
             contract_version=frozen["contract_version"],
             provider_projection_version=frozen.get("provider_projection_version", "world-role-delivery.v1"),
             epistemic_contract=frozen["reality"].get("epistemic_contract", "world-agency.v1"),
+            working_manuscript=frozen.get("working_manuscript"),
         )
         if narrative_hash(current) != narrative_hash(frozen):
             raise KernelError(

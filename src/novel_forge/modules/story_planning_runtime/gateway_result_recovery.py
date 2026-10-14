@@ -16,7 +16,7 @@ from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWrit
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
-    read_rejected_structured_completion, read_failed_operation_success,
+    read_rejected_structured_completion, read_failed_operation_success, read_retained_generation_stage_success,
 )
 from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
@@ -40,6 +40,15 @@ from .domain import (
 NAME = "story_planning.gateway_result.revalidate"
 HANDLER = "novel_forge." + NAME
 VERSION = "planning-gateway-result-revalidation.v1"
+RETRYABLE_RELEASE_VERSION = "planning-gateway-result-revalidation.v2"
+RELEASE_FAILURE_MESSAGE = "CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT: runtime contract differs from Pack execution snapshot: release_sha"
+
+
+def retryable_release_failure(status, attempt):
+    return (status == "FAILED_RETRYABLE" and attempt is not None and attempt[2] == "FAILED_RETRYABLE"
+        and isinstance(attempt[3], dict)
+        and attempt[3].get("error_code") == "CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT"
+        and attempt[3].get("error_message") == RELEASE_FAILURE_MESSAGE)
 
 
 def literal_null_paths(schema, value, path="$"):
@@ -158,15 +167,18 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         )
     with AuthorityUnitOfWork(application.database_url) as uow:
         uow.cursor.execute(
-            "SELECT o.status,o.command_payload->'payload',g.input_snapshot,g.version,g.candidate_asset_version_id FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.operation_id=%s AND o.project_id=%s",
+            "SELECT o.status,o.command_payload->'payload',g.input_snapshot,g.version,g.candidate_asset_version_id,o.version FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.operation_id=%s AND o.project_id=%s",
             [operation_id, command.project_id],
         )
         source = uow.cursor.fetchone()
         from .application import _command_payload
+        uow.cursor.execute("SELECT attempt_id,attempt_number,status,result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [operation_id])
+        failed_attempt = uow.cursor.fetchone()
+        retryable_release = source is not None and retryable_release_failure(source[0], failed_attempt)
 
         if (
             not source
-            or source[0] not in {"FAILED_FINAL", "DEAD_LETTER"}
+            or (source[0] not in {"FAILED_FINAL", "DEAD_LETTER"} and not retryable_release)
             or source[4]
             or source[1] != _command_payload(command)
         ):
@@ -187,6 +199,8 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             return None
         effect_id, payload, _, effect_status = effects[0]
         completed_local = effect_status == "SUCCEEDED"
+        if retryable_release and (not completed_local or command.execution_contract_version != "1.21.0"):
+            return None
         runtime = payload["_production_execution"]["capability_runtime"]
         template = verify_template_provenance(uow.cursor, runtime["routing_decision"])
         if (
@@ -205,7 +219,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
                 "PLANNING_GATEWAY_RESULT_SOURCE_INVALID",
                 "Require the one original native model-call record",
             )
-    read_result = read_failed_operation_success if completed_local else read_rejected_structured_completion
+    read_result = read_retained_generation_stage_success if retryable_release else read_failed_operation_success if completed_local else read_rejected_structured_completion
     retained = read_result(
         application.database_url,
         EffectCommandContext(
@@ -279,6 +293,8 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             "Retain the exact original fenced Pack snapshot",
         )
     frozen = snapshot.execution_snapshot
+    if retryable_release and frozen.release_sha == application.commit_sha:
+        raise KernelError("PLANNING_GATEWAY_RESULT_RELEASE_DRIFT_INVALID", "Release recovery requires distinct original and current implementation identities")
     context_ref = production["input_manifest"]["context_bundle_version"]
     context = query.require(project_id=command.project_id, asset_version_id=context_ref)
     artifact = next(
@@ -343,8 +359,12 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         capability_pack_attempt_snapshot_hash=snapshot.snapshot_hash,
     )
     recovery_id = "planning-gateway-revalidation:" + operation_id
+    contract_version = RETRYABLE_RELEASE_VERSION if retryable_release else VERSION
+    release_proof = ({"source_operation_version": source[5], "source_attempt_id": failed_attempt[0],
+        "source_attempt_number": failed_attempt[1], "source_failure_result": dict(failed_attempt[3])} if retryable_release else None)
     provenance = {
-        "contract_version": VERSION,
+        "contract_version": contract_version,
+        **({"retryable_release_recovery": release_proof} if retryable_release else {}),
         "source_operation_id": operation_id,
         "external_effect_id": effect_id,
         "recovery_id": recovery_id,
@@ -374,23 +394,41 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         "literary_qualification": "NOT_RUN",
         "reason": "Reuse the verified completed original output after bounded execution failure" if completed_local else "Correct known literal-null Schema engine rejection without resending the completed process",
     }
-    definition = gateway_result_revalidation_definition(application_build_id=application.application_build_id, commit_sha=application.commit_sha)
+    definition = gateway_result_revalidation_definition(application_build_id=application.application_build_id, commit_sha=application.commit_sha, contract_version=contract_version)
     with AuthorityUnitOfWork(application.database_url) as uow:
         uow.repositories.definitions.register(definition)
         uow.commit()
 
     def materialize(uow, registration_id, checkpoint):
         from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+        if retryable_release:
+            uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s ORDER BY formation_run_id FOR UPDATE", [command.project_id, command.book_id])
+            if not uow.cursor.fetchall():
+                raise KernelError("PLANNING_GATEWAY_RESULT_CREATION_OWNER_REQUIRED", "Release-result recovery requires the original Creation cancellation boundary")
         require_known_cli_lineage(uow.cursor, project_id=command.project_id, operation_id=operation_id)
         uow.cursor.execute(
-            "SELECT status FROM authority_operation WHERE operation_id=%s FOR UPDATE",
+            "SELECT status,version FROM authority_operation WHERE operation_id=%s FOR UPDATE",
             [operation_id],
         )
-        if uow.cursor.fetchone() != (source[0],):
+        owner = uow.cursor.fetchone()
+        if owner[0] != source[0] or (retryable_release and owner[1] != source[5]):
             raise KernelError(
                 "PLANNING_GATEWAY_RESULT_OWNER_DRIFT",
-                "Retain the failed-final original owner",
+                "Retain the stopped original owner and its release recovery version",
             )
+        if retryable_release:
+            uow.cursor.execute("SELECT attempt_id,attempt_number,status,result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [operation_id])
+            if uow.cursor.fetchone() != failed_attempt:
+                raise KernelError("PLANNING_GATEWAY_RESULT_OWNER_DRIFT", "Original latest failed Attempt changed before result admission")
+            uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
+                JOIN authority_story_formation_run formation USING(formation_run_id) WHERE formation.project_id=%s AND formation.book_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_generation_isolation WHERE operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_story_planning_generation WHERE repair_of_operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s)""",
+                [command.project_id, command.book_id, operation_id, operation_id, operation_id, operation_id])
+            if uow.cursor.fetchone()[0]:
+                raise KernelError("PLANNING_GATEWAY_RESULT_SUCCESSION_CONFLICT", "Cancellation, isolation or a registered successor prevents release-result adoption")
         uow.cursor.execute(
             "SELECT candidate_asset_version_id,version FROM authority_story_planning_generation WHERE operation_id=%s FOR UPDATE",
             [operation_id],
@@ -415,7 +453,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
                 project_id=command.project_id,
                 asset_id=recovery_id + ":validation",
                 asset_type="planning_gateway_result_revalidation",
-                schema_version=VERSION,
+                schema_version=contract_version,
                 logical_ref=f"planning/gateway_revalidation/{operation_id}/validation",
                 category="runs",
                 output_key="story_planning.gateway_revalidation",
@@ -587,7 +625,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         application.database_url,
         dict(
             definition_name=NAME,
-            definition_version="1.0.0",
+            definition_version=definition["definition_version"],
             project_id=command.project_id,
             workspace_id=command.workspace_id,
             book_id=command.book_id,
@@ -616,14 +654,14 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
     )
 
 
-def gateway_result_revalidation_definition(*, application_build_id: str, commit_sha: str):
+def gateway_result_revalidation_definition(*, application_build_id: str, commit_sha: str, contract_version: str = VERSION):
     from .result_admission import result_admission_definition
 
     definition = result_admission_definition(application_build_id=application_build_id, commit_sha=commit_sha)
     definition.update(
         name=NAME,
         handler_key=HANDLER,
-        handler_contract_version=VERSION,
+        handler_contract_version=contract_version,
         policy={
             "execution_classification": "transaction_command",
             "source_actor_or_scoped_operator_required": True,
@@ -636,6 +674,10 @@ def gateway_result_revalidation_definition(*, application_build_id: str, commit_
             "required_outbox_events": [NAME],
         },
     )
+    if contract_version == RETRYABLE_RELEASE_VERSION:
+        definition["definition_version"] = "1.1.0"
+    elif contract_version != VERSION:
+        raise ValueError("Unsupported saved Planning recovery contract")
     return definition
 
 
@@ -646,7 +688,13 @@ def recover_completed_planning_outputs(application, *, project_id, book_id, prin
         uow.cursor.execute("""SELECT operation.operation_id,operation.command_payload->'payload'
             FROM authority_operation operation JOIN authority_story_planning_generation generation USING(operation_id)
             WHERE operation.project_id=%s AND generation.book_id=%s
-              AND operation.status IN ('FAILED_FINAL','DEAD_LETTER') AND generation.candidate_asset_version_id IS NULL
+              AND (operation.status IN ('FAILED_FINAL','DEAD_LETTER') OR (
+                operation.status='FAILED_RETRYABLE' AND EXISTS(SELECT 1 FROM authority_attempt attempt
+                  WHERE attempt.operation_id=operation.operation_id AND attempt.status='FAILED_RETRYABLE'
+                    AND attempt.attempt_number=(SELECT max(latest.attempt_number) FROM authority_attempt latest WHERE latest.operation_id=operation.operation_id)
+                    AND attempt.result->>'error_code'='CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT'
+                    AND attempt.result->>'error_message'='CAPABILITY_PACK_RUNTIME_ADMISSION_DRIFT: runtime contract differs from Pack execution snapshot: release_sha')))
+              AND generation.candidate_asset_version_id IS NULL
               AND EXISTS(SELECT 1 FROM authority_external_effect effect
                 JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
                 JOIN authority_external_receipt receipt USING(dispatch_id)
