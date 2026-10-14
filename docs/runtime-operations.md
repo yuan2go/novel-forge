@@ -1042,6 +1042,22 @@ Historical Contexts and SQL
 guard branches remain replayable. Verify the complete rendered input separately from
 semantic projection and real Provider consumption; neither proves literary improvement.
 
+An exact unsent Chapter World protected-Context capacity failure may freeze
+`world-method-scope-projection.v1`. The native continuation preserves the stopped
+Operation and exactly its base Context and World source, with no Effects, reservations,
+live leases or cancellation. It reuses the original World source/hash and revalidates
+its Book frontier. Current methods, prerequisites, exceptions, UNKNOWN checks and typed
+plan fields remain complete. Only identical semantic-unverified retrieval terms and
+prior application audits move to hash-bound source receipts; each planning-window
+index binds its own asset/hash, including multiple Arc roles. New Contexts carry the
+explicit projection marker; older frozen Contexts retain their original views. Forward
+migration 0215 checks the complete protected-budget signature, the two exact outputs,
+original model/reasoning/backend/stable account, Pack hashes, inputs and opportunity.
+Run the method-scope, Provider view, continuation and World preparation unit suites,
+rehearse native registration and negative guards on a restored copy, and verify full
+rendered admission and actual Provider stdin separately. Projection delivery does not
+establish literary effect.
+
 The same opt-in records current scoped Card approval in Planning and adopted Writer
 views, preserving older Candidate-stage declarations and method content as historical
 evidence. A complete Provider result rejected by the knowledge translation contract is

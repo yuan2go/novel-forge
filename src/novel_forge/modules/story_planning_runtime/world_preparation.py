@@ -329,6 +329,7 @@ class PlanningWorldPreparation:
         command: Any,
         execute_stage: Callable[[PlanningProviderStage], Any],
         knowledge_selection: Mapping[str, Any] | None = None,
+        method_scope_projection: str | None = None,
     ) -> Any:
         from .schema_recovery import continuation_action as schema_continuation_action
         schema_action = schema_continuation_action(self.preparer.database_url, command)
@@ -383,9 +384,13 @@ class PlanningWorldPreparation:
         repair_source = None
         source_prefix = prefix
         revalidation = None
+        scope_proof = {}
         if command.runtime_continuation_id:
             from .runtime_continuation import require_binding
             revalidation = require_binding(self.preparer.database_url, command.runtime_continuation_id)["target_runtime"].get("world_host_revalidation")
+            scope_proof = require_binding(self.preparer.database_url, command.runtime_continuation_id)["target_runtime"].get("planning_capacity", {}).get("context_revalidation") or {}
+            if scope_proof.get("contract_version") == "world-method-scope-projection.v1":
+                source_prefix = f"world_preparation/{scope_proof['source_operation_id']}"
             if revalidation:
                 current = require_world_host_revalidation(self.preparer.database_url, command=command, operation_id=revalidation["source_operation_id"])
                 if current != revalidation:
@@ -446,6 +451,11 @@ class PlanningWorldPreparation:
                 source,
             )
         source = source_document.content["contract"]
+        if method_scope_projection:
+            if (scope_proof.get("contract_version") != method_scope_projection
+                    or source_document.asset_version_id != scope_proof.get("world_source_asset_version_id")
+                    or source_document.content_hash != scope_proof.get("world_source_content_hash")):
+                raise KernelError("WORLD_METHOD_SOURCE_DRIFT", "World projection must reuse its exact unsent source")
         with AuthorityUnitOfWork(self.preparer.database_url) as uow:
             WorldPreparationRepository(uow.cursor).assert_source_current(
                 project_id=command.project_id, book_id=command.book_id, frozen=source
@@ -519,7 +529,7 @@ class PlanningWorldPreparation:
         if generation_document is None:
             stage = self.generation_stage(
                 source, source_ref, knowledge_selection, actor_proposals=actor_proposals,
-                allowed_references=world_plan_references(source, command)
+                allowed_references=world_plan_references(source, command), method_scope_projection=method_scope_projection
             )
             if repair_source:
                 retained = self.preparer.query.require(
@@ -595,7 +605,7 @@ class PlanningWorldPreparation:
         }
         if evaluation_document is None:
             evaluated = execute_stage(
-                self.evaluation_stage(source, source_ref, generation, generation_ref, knowledge_selection, actor_proposals=actor_proposals)
+                self.evaluation_stage(source, source_ref, generation, generation_ref, knowledge_selection, actor_proposals=actor_proposals, method_scope_projection=method_scope_projection)
             )
             evaluation_document = self._store(
                 command,
@@ -681,12 +691,14 @@ class PlanningWorldPreparation:
         return action_document
 
     @classmethod
-    def generation_stage(cls, source, source_ref, knowledge_selection, *, actor_proposals=None, allowed_references=None):
+    def generation_stage(cls, source, source_ref, knowledge_selection, *, actor_proposals=None, allowed_references=None, method_scope_projection=None):
         from .knowledge_translation import add_translation_contract
 
         if source.get("actor_experiment") is not None and not actor_proposals:
             raise KernelError("WORLD_ACTOR_PROPOSAL_REQUIRED", "Actor intervention requires its frozen independent proposals; unified sampling cannot substitute for them")
         task = {**cls._task(source, source_ref, "WORLD_REASONER"), "narrative_intelligence": knowledge_selection}
+        if method_scope_projection:
+            task["world_method_scope_projection_version"] = method_scope_projection
         if allowed_references is not None:
             task["plan_reference_contract"] = {"version": "world-plan-references.v1", **allowed_references,
                 "instruction": "References must belong to these exact selected Arc and accepted obligation lists. Other visible arcs are background, not authority for this task."}
@@ -712,7 +724,7 @@ class PlanningWorldPreparation:
         )
 
     @classmethod
-    def evaluation_stage(cls, source, source_ref, generation, generation_ref, knowledge_selection, *, actor_proposals=None):
+    def evaluation_stage(cls, source, source_ref, generation, generation_ref, knowledge_selection, *, actor_proposals=None, method_scope_projection=None):
         if generation["source"] != source_ref:
             raise KernelError("WORLD_PREPARATION_RECEIPT_DRIFT", "evaluation must retain the generation's frozen World source")
         if source.get("actor_experiment") is not None and not actor_proposals:
@@ -724,6 +736,7 @@ class PlanningWorldPreparation:
         return PlanningProviderStage(
             "world_candidates.evaluate",
             {**cls._task(source, source_ref, "DIRECTOR"), "generated_portfolio": decoded,
+             **({"world_method_scope_projection_version": method_scope_projection} if method_scope_projection else {}),
              "generation_ref": generation_ref, "narrative_intelligence": knowledge_selection,
              "knowledge_translations": generation["output"].get("knowledge_translations", []),
              **({"actor_proposals": actor_proposals, "actor_adjudications": generation["output"]["actor_adjudications"]} if actor_proposals else {})},

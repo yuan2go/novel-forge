@@ -524,7 +524,16 @@ def build_provider_task_view(
                 "proposal_hash": proposal["proposal_hash"], "plan_hash": _projection_hash(plan),
                 "equivalent_state_pointer": "/intent_state", "authority": "PROPOSAL_NOT_ACCEPTANCE",
                 "proposed_step_dispositions": {step["step_id"]: {"decision": step["decision"], "reason": step["reason"]} for step in plan["steps"]}}
-        if "narrative_intelligence" in projected_task:
+        scope = projected_task.get("world_method_scope_projection_version")
+        if scope is not None:
+            if scope != "world-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Unknown World method projection")
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope
+            selection = projected_task.get("narrative_intelligence") or {}
+            if selection.get("recall_query_receipt", {}).get("contract_version") != scope:
+                projected_task["narrative_intelligence"] = project_world_method_scope(selection)
+            _reference_world_prior_method_audits(projected_task)
+        elif "narrative_intelligence" in projected_task:
             projected_task["narrative_intelligence"] = _project_selected_world_selection(projected_task["narrative_intelligence"])
         return _task(stage, world_preparation=_compact(projected_task))
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS, FOUNDATION_INPUT_ROLES, foundation_task
@@ -1477,6 +1486,13 @@ def build_provider_context_view(
                 "world task differs from its frozen role Context",
             )
         selection = task.get("narrative_intelligence") or {}
+        scope = task.get("world_method_scope_projection_version")
+        if scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope
+            if (scope != "world-method-scope-projection.v1"
+                    or context_bundle.get("world_method_scope_projection_version") != scope
+                    or selection != _compact(project_world_method_scope(context_bundle.get("narrative_intelligence", {})))):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "World methods must resolve to the complete frozen selection")
         if selection.get("world_selection_receipt") is not None:
             original = context_bundle.get("narrative_intelligence")
             if not isinstance(original, Mapping) or selection != _compact(_project_selected_world_selection(original)):
@@ -2667,6 +2683,28 @@ def _reference_planning_matrix_source(view: dict[str, Any], *, sources: list[Map
             "instruction": "Read this exact current-chapter matrix row and all its group constraints at the referenced locations in this same Context view. Both input roles bind the same immutable group asset and hash; this reference does not remove or weaken any group constraint.",
         }
         view["selection_explanation"]["role_reference_contract"] = "planning-input-role-references.v1"
+
+
+def _reference_world_prior_method_audits(task: dict[str, Any]) -> None:
+    for index, segment in enumerate(task.get("planning_window") or []):
+        content = segment.get("content") or {}
+        if "knowledge_translations" not in content:
+            continue
+        if not segment.get("asset_version_id") or not segment.get("content_hash"):
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Prior World methods require an exact frozen plan identity")
+        translations = content.pop("knowledge_translations")
+        content["prior_method_decisions"] = [
+            {key: deepcopy(row[key]) for key in ("knowledge_card_asset_version_id", "content_hash", "decision")}
+            for row in translations
+        ]
+        segment["prior_method_audit_receipt"] = {
+            "contract_version": "world-prior-method-audit-reference.v1",
+            "source_ref": deepcopy(task["source_ref"]),
+            "json_pointer": f"/contract/planning_window/{index}/content/knowledge_translations",
+            "plan_asset_version_id": segment["asset_version_id"], "plan_content_hash": segment["content_hash"],
+            "audit_hash": _projection_hash(translations),
+            "boundary": "PRIOR_APPLICATION_AUDIT_NOT_CURRENT_METHODS_OR_STORY_CONSTRAINTS",
+        }
 
 
 def _reference_prior_planning_method_audits(view: dict[str, Any], *, sources: list[Mapping[str, Any]]) -> None:

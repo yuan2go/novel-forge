@@ -50,6 +50,12 @@ def project_group_method_scope(selection: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def project_world_method_scope(selection: dict[str, Any]) -> dict[str, Any]:
+    result = project_group_method_scope(selection)
+    result["recall_query_receipt"]["contract_version"] = "world-method-scope-projection.v1"
+    return result
+
+
 def project_foundation_method_recall(selection: dict[str, Any]) -> dict[str, Any]:
     from .craft_selection import _hash
 

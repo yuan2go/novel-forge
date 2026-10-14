@@ -142,3 +142,58 @@ def test_group_reprojection_requires_the_explicit_registered_contract():
     assert new["planning_group_method_scope_projection_version"] == "group-method-scope-projection.v1"
     assert new["repair_context"] == old["repair_context"] == source["repair_context"]
     assert source == frozen
+
+
+def test_explicit_world_scope_retains_two_arcs_and_legacy_view():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    source = group_selection()
+    task = {"contract_version": "world-provider-task.v1", "role": "WORLD_REASONER", "fact_mutation_allowed": False,
+            "source_ref": {"asset_version_id": "world:v1", "content_hash": "sha256:world"},
+            "narrative_intelligence": source, "planning_window": []}
+    for index, decision in enumerate(("ADAPT", "REJECT")):
+        task["planning_window"].append({"role": "arc_plans", "asset_version_id": f"arc:{index}",
+            "content_hash": f"sha256:arc{index}", "content": {"hard_constraints": [f"Condition {index}"],
+            "knowledge_translations": [{"knowledge_card_asset_version_id": "method:v1", "content_hash": "sha256:method",
+                "decision": decision, "rationale": f"Prior rationale {index}", "use_sites": []}]}})
+    frozen = deepcopy(task)
+    legacy = build_provider_task_view("world_candidates.generate", {"world_preparation": task})["world_preparation"]
+    assert legacy == frozen
+    task["world_method_scope_projection_version"] = "world-method-scope-projection.v1"
+    projected = build_provider_task_view("world_candidates.generate", {"world_preparation": task})["world_preparation"]
+    assert build_provider_task_view("world_candidates.generate", {"world_preparation": projected})["world_preparation"] == projected
+    for index, segment in enumerate(projected["planning_window"]):
+        assert segment["content"]["hard_constraints"] == frozen["planning_window"][index]["content"]["hard_constraints"]
+        assert segment["prior_method_audit_receipt"]["plan_asset_version_id"] == f"arc:{index}"
+        assert segment["prior_method_audit_receipt"]["json_pointer"] == f"/contract/planning_window/{index}/content/knowledge_translations"
+        assert segment["content"]["prior_method_decisions"][0]["decision"] == ("ADAPT", "REJECT")[index]
+    assert projected["narrative_intelligence"]["selected"][0]["selected_content"] == source["selected"][0]["selected_content"]
+    assert "hard_constraints" not in projected["narrative_intelligence"]["need"]
+    source["selected"][0]["applicability_assessment"]["checks"].append({"method": "EXPLICIT_TYPED_CHECK", "result": "PASS"})
+    source["selection_digest"] = _hash({k: v for k, v in source.items() if k != "selection_digest"})
+    protected = build_provider_task_view("world_candidates.generate", {"world_preparation": task})["world_preparation"]
+    assert protected["narrative_intelligence"]["need"]["hard_constraints"] == source["need"]["hard_constraints"]
+
+
+@pytest.mark.parametrize("change", ["authorization", "model", "cli_directory"])
+def test_world_recovery_retains_exact_runtime_allowing_only_budget_authorization(change):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.world_context_recovery import require_runtime_identity
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    prior = {"model_provider": "codex-cli", "model_id": "same-model", "reasoning_effort": "high",
+             "model_backend_id": "same-backend", "runtime_class": "SUBSCRIPTION_CLI",
+             "cost_accounting_basis": "ACCOUNT_ENTITLEMENT",
+             "account": {"cli_directory": "/original", "entitlement": {"authorization_ref": "old", "account_identity": "same"}}}
+    source = {"source_operation_id": "stopped", "context_revalidation": {
+        "prior_runtime_continuation_id": "original", "prior_runtime_hash": canonical_hash(prior)}}
+    uow = SimpleNamespace(cursor=SimpleNamespace(execute=lambda *args: None, fetchone=lambda: (prior,)))
+    target = deepcopy(prior)
+    if change == "authorization":
+        target["account"]["entitlement"]["authorization_ref"] = "new-approved"
+        assert require_runtime_identity(uow, source=source, target=target)["authorization_reference_change"] == "NATIVE_BUDGET_SUCCESSOR_ALLOWED"
+    else:
+        if change == "model":
+            target["model_id"] = "different-model"
+        else:
+            target["account"]["cli_directory"] = "/different"
+        with pytest.raises(KernelError, match="WORLD_CONTEXT_RECOVERY_RUNTIME_DRIFT"):
+            require_runtime_identity(uow, source=source, target=target)

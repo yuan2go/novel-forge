@@ -216,6 +216,7 @@ from . import (
     v20261014_0212_group_method_scope_context,
     v20261014_0213_group_scope_identity,
     v20261014_0214_book_query_recovery,
+    v20261015_0215_world_method_context,
 )
 
 VERSION_MODULES = [
@@ -434,6 +435,7 @@ VERSION_MODULES = [
     v20261014_0212_group_method_scope_context,
     v20261014_0213_group_scope_identity,
     v20261014_0214_book_query_recovery,
+    v20261015_0215_world_method_context,
 ]
 
 __all__ = ["VERSION_MODULES"]

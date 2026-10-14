@@ -4271,6 +4271,7 @@ class PostgresPlanningExecutionPreparer:
             action = PlanningWorldPreparation(self).prepare(
                 operation_id=operation_id, command=command, execute_stage=execute_stage,
                 knowledge_selection=knowledge_context.content.get("narrative_intelligence") or {},
+                method_scope_projection=knowledge_context.content.get("world_method_scope_projection_version"),
             )
         return self._prepare_stage(**arguments, world_action=action)
 
@@ -5821,7 +5822,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1"}):
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1"}):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
@@ -6134,6 +6135,10 @@ class PostgresPlanningExecutionPreparer:
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if projection_contract == "world-method-scope-projection.v1":
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope
+            project_world_method_scope(content.get("narrative_intelligence", {}))
+            content["world_method_scope_projection_version"] = projection_contract
         if (command.generator_operation_name == "book_plan.generate" and content.get("narrative_intelligence", {}).get("selected")
                 and content.get("knowledge_access_policy", {}).get("mode") == "ALLOW_ONLY"
                 and content.get("knowledge_access_policy", {}).get("usage_scope") == "EXPERIMENTAL_VALIDATION"
@@ -6259,6 +6264,14 @@ class PostgresPlanningExecutionPreparer:
     def _world_context_content(cls, *, command, base, stage, source):
         if stage.task["source_ref"] != {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}:
             raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "World Context must retain its exact source version")
+        if stage.task.get("world_method_scope_projection_version"):
+            from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+            expected = build_provider_task_view(stage.name, {"world_preparation": {
+                **stage.task, "planning_window": source.content["contract"]["planning_window"],
+                "narrative_intelligence": base.content["narrative_intelligence"],
+            }})["world_preparation"]
+            if expected != stage.task:
+                raise KernelError("WORLD_METHOD_SOURCE_DRIFT", "World prior audits must resolve by exact source index, asset and hash")
         content = {**base.content, "world_preparation": dict(stage.task)}
         content["token_budget"] = stage.task["policy"]["context_token_budget"]
         selected = [{"role": stage.task["role"], "asset_version_id": source.asset_version_id,

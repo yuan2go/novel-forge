@@ -164,6 +164,11 @@ def require_source(
     if failure_code == "PROGRAMMING_BUG" and attempt and dict(attempt[2] or {}).get("error_message") == "canceling statement due to statement timeout":
         from .database_recovery import require_source as require_database_source
         return require_database_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
+    if (row[0] == "FAILED_FINAL" and attempt and attempt[0] == "FAILED_FINAL"
+            and failure_code == "PROGRAMMING_BUG"
+            and dict(attempt[2] or {}).get("error_message", "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED: ")):
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, world_capacity_failure=True)
     if row[0] == "FAILED_FINAL" and attempt and attempt[0] == "FAILED_FINAL" and dict(attempt[2] or {}).get("failure_details", {}).get("cause_code") == "PROVIDER_SCHEMA_REJECTED":
         from .schema_recovery import require_source as require_schema_source
         return require_schema_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
@@ -726,6 +731,7 @@ def _pre_send_capacity_source(
     attempt: Any,
     route_preflight: bool = False,
     rendered_capacity_failure: bool = False,
+    world_capacity_failure: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
@@ -772,6 +778,11 @@ def _pre_send_capacity_source(
         [source_operation_id] * 3,
     )
     unsafe = uow.cursor.fetchone()[0]
+    if world_capacity_failure:
+        from .world_context_recovery import require_projection_source
+        projection_revalidation = require_projection_source(uow, source_operation_id=source_operation_id,
+            frozen=frozen, attempt=attempt)
+        unsafe = False
     if rendered_capacity_failure:
         from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
         uow.cursor.execute("""SELECT output.asset_version_id,output.content_hash FROM authority_operation_output_asset output
@@ -985,6 +996,10 @@ def _capacity_authorization(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "Capacity allocation cannot replace the frozen Pack, prompt or model route",
         )
+    world_identity = None
+    if source.get("context_revalidation", {}).get("contract_version") == "world-method-scope-projection.v1":
+        from .world_context_recovery import require_runtime_identity
+        world_identity = require_runtime_identity(uow, source=source, target=target)
     return {
         "authorization_reference": auth["authorization_ref"],
         "formation_run_id": run["formation_run_id"],
@@ -992,6 +1007,7 @@ def _capacity_authorization(
         "template_policy_hash": template_binding["policy_snapshot"]["policy_hash"],
         "independent_human_review": "NOT_REVIEWED",
         "capacity_only": True,
+        **({"world_runtime_identity": world_identity} if world_identity else {}),
         **({"pack_version_successor": version_successor} if version_successor else {}),
         **({"capacity_inheritance": "generation-capacity-inheritance.v1"} if source.get("capacity_inheritance") else {}),
     }
@@ -1034,6 +1050,8 @@ def _capacity_target(
     from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
     ceiling = planning_input_capacity(route)
     allocated = min(baseline * 2, ceiling)
+    if source.get("context_revalidation", {}).get("contract_version") == "world-method-scope-projection.v1":
+        allocated = min(baseline, ceiling)
     if source.get("capacity_inheritance"):
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
         if allocated > ceiling:
