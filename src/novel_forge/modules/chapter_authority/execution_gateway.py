@@ -873,7 +873,7 @@ class PostgresChapterExecutionContractBinder:
             "prompt-template:agent-session-pack": {"v1"},
             "prompt-template:story-planning-pack": {"v1", "v2", "v3"},
             "prompt-template:reader-outcome-pack": {"v2"},
-            "prompt-template:longform-prose-review-pack": {"v2"},
+            "prompt-template:longform-prose-review-pack": {"v2", "v3"},
             "prompt-template:narrative-semantic-evaluation-pack": {"v1"},
             "prompt-template:model-reference-creation": {"v1"},
             "prompt-template:scene-screenplay-pack": {"v1"},

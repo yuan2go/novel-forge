@@ -149,6 +149,32 @@ def test_literal_flags_bind_formal_and_sample_output_to_quote_only_provider_sche
     assert "start" in old_schema["properties"]["findings"]["items"]["anyOf"][0]["properties"]["evidence"]["items"]["properties"]
 
 
+@pytest.mark.parametrize("version", ["v2", "v3", "unsupported"])
+def test_prose_template_adapter_admission_accepts_current_and_frozen_legacy_versions(version):
+    from types import SimpleNamespace
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+
+    class ReachedArtifactBinding(Exception):
+        pass
+
+    def artifacts(_metadata):
+        raise ReachedArtifactBinding()
+
+    binder = SimpleNamespace(routes={"longform_prose_review": None}, capability_pack_id="pack", provider_router=None,
+        _operation_graph=lambda *args: {"definition_name": "longform.prose_review"},
+        _resolve_pack_snapshot=lambda **kwargs: object(),
+        pack_resolver=SimpleNamespace(materialize_attempt_artifacts=lambda _snapshot: SimpleNamespace(
+            prompt_template=SimpleNamespace(ref="prompt-template:longform-prose-review-pack", version=version))),
+        _artifacts=artifacts)
+    metadata = {key: key for key in ("operation_id", "attempt_id", "project_id", "workspace_id", "book_id", "worker_id")}
+    metadata["fencing_token"] = 1
+    expected = KernelError if version == "unsupported" else ReachedArtifactBinding
+    with pytest.raises(expected):
+        PostgresChapterExecutionContractBinder.freeze_before_external_effect(binder,
+            capability="model.longform_prose_review", request_payload={"stage": "longform_prose_review", "_production_execution": metadata},
+            snapshot_fencing_token=1, snapshot_worker_id="worker")
+
+
 def test_literal_review_same_quote_in_overlapping_spans_has_one_absolute_location():
     frozen, window, raw = literal_report_case()
     window["spans"].append(deepcopy(window["spans"][0]))
