@@ -102,11 +102,13 @@ def require_chapter_projection_source(uow, *, source_operation_id, frozen, attem
     if len(rows) != 1:
         raise KernelError('CHAPTER_CONTEXT_RECOVERY_SOURCE_INVALID', 'Retain one exact base Planning Context')
     context = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=rows[0][0])
+    prior_audits = context.content.get('planning_chapter_method_scope_projection_version') == 'chapter-method-scope-projection.v1'
     if (context.content_hash != rows[0][1] or context.content.get('planning_scope') != 'CHAPTER'
             or context.content.get('project_id') != frozen['project_id']
             or context.content.get('workspace_id') != frozen['workspace_id']
             or context.content.get('book_id') != frozen['book_id']
-            or context.content.get('planning_chapter_method_scope_projection_version')):
+            or context.content.get('planning_chapter_method_scope_projection_version') not in (None, 'chapter-method-scope-projection.v1')
+            or context.content.get('planning_prior_method_audit_projection_version')):
         raise KernelError('CHAPTER_CONTEXT_RECOVERY_SOURCE_DRIFT', 'Chapter projection must preserve its complete unprojected selection')
     uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL)
         OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state IN ('ABORTED','CANCELLED','COMPLETED'))
@@ -122,7 +124,7 @@ def require_chapter_projection_source(uow, *, source_operation_id, frozen, attem
     prior = uow.cursor.fetchone()
     if not prior:
         raise KernelError('CHAPTER_CONTEXT_RECOVERY_RUNTIME_DRIFT', 'Chapter source must retain its exact registered runtime')
-    return {'contract_version': 'chapter-method-scope-projection.v1', 'source_operation_status': 'FAILED_RETRYABLE',
+    return {'contract_version': 'chapter-prior-method-audits.v1' if prior_audits else 'chapter-method-scope-projection.v1', 'source_operation_status': 'FAILED_RETRYABLE',
         'source_operation_id': source_operation_id, 'source_failure': failure,
         'context_asset_version_id': context.asset_version_id, 'context_content_hash': context.content_hash,
         'prior_runtime_continuation_id': frozen['runtime_continuation_id'], 'prior_runtime_hash': canonical_hash(prior[0]),

@@ -102,14 +102,16 @@ def test_group_scope_never_discards_explicit_constraint_checks_or_unmatched_quer
     assert "flattened_constraint_query" not in projected["recall_query_receipt"]
 
 
-def test_group_upstream_audit_reference_preserves_all_plan_constraints_and_failed_candidate():
+@pytest.mark.parametrize("chapter,role,generator", [(False,"related_arc:1","arc_plan.generate"),
+    (True,"related_arc:1","arc_plan.generate"), (True,"chapter_group_plan","chapter_group_plan.generate")])
+def test_group_upstream_audit_reference_preserves_all_plan_constraints_and_failed_candidate(chapter, role, generator):
     from novel_forge.modules.chapter_authority.provider_views import _reference_prior_planning_method_audits
     translations = [{"knowledge_card_asset_version_id": "method:v1", "content_hash": "sha256:method", "decision": "ADAPT", "use_sites": [{"target_pointer": "/objective", "realization_excerpt": "A local objective"}], "rationale": "Prior stage only"}]
-    content = {"generator_operation_name": "arc_plan.generate", "book_id": "book:one", "knowledge_translations": translations, "hard_constraints": ["Keep actual condition"], "forbidden_events": ["No invented knowledge"]}
-    segment = {"role": "related_arc:1", "asset_type": "planning_generation_candidate", "asset_version_id": "arc:v1", "content_hash": "sha256:arc", "content": deepcopy(content)}
+    content = {"generator_operation_name": generator, "book_id": "book:one", "knowledge_translations": translations, "hard_constraints": ["Keep actual condition"], "forbidden_events": ["No invented knowledge"]}
+    segment = {"role": role, "asset_type": "planning_generation_candidate", "asset_version_id": "arc:v1", "content_hash": "sha256:arc", "content": deepcopy(content)}
     view = {"narrative_position": {"book_id": "book:one"}, "segments": [deepcopy(segment)], "repair_context": {"source_candidate": {"content": deepcopy(content)}}, "selection_explanation": {"loss_records": [], "omitted_item_count": 0}}
     failed = deepcopy(view["repair_context"])
-    _reference_prior_planning_method_audits(view, sources=[segment])
+    _reference_prior_planning_method_audits(view, sources=[segment], chapter=chapter)
     projected = view["segments"][0]["content"]
     assert projected["hard_constraints"] == content["hard_constraints"]
     assert projected["forbidden_events"] == content["forbidden_events"]

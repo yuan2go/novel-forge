@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261015_0218_world_exact_context_accounting",
+  "migration_head": "20261015_0219_chapter_prior_method_audits",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9284,6 +9284,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261015_0218_world_exact_context_accounting.py",
           "id": "20261015_0218_world_exact_context_accounting",
           "locator": "MIGRATION_ID"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0219_chapter_prior_method_audits.py",
+          "id": "20261015_0219_chapter_prior_method_audits",
+          "locator": "MIGRATION_ID"
         }
       ],
       "external_effects": {
@@ -10236,7 +10241,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:25311c18c45af1554a388308f21414449cfdb6f80437d4513b0754cdcaea2670"
+    "implementation_tree_sha": "sha256:d1ea5d68d45d09d9308d48ba10dc3ebfc987c6f8ed4d647677a428ccd0499d3c"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

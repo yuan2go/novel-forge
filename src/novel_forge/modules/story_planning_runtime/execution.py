@@ -4751,6 +4751,7 @@ class PostgresPlanningExecutionPreparer:
                 **({"planning_method_scope_projection_version": context_document.content["planning_method_scope_projection_version"]} if context_document.content.get("planning_method_scope_projection_version") else {}),
                 **({"planning_group_method_scope_projection_version": context_document.content["planning_group_method_scope_projection_version"]} if context_document.content.get("planning_group_method_scope_projection_version") else {}),
                 **({"planning_chapter_method_scope_projection_version": context_document.content["planning_chapter_method_scope_projection_version"]} if context_document.content.get("planning_chapter_method_scope_projection_version") else {}),
+                **({"planning_prior_method_audit_projection_version": context_document.content["planning_prior_method_audit_projection_version"]} if context_document.content.get("planning_prior_method_audit_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5830,7 +5831,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1"}):
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
@@ -5988,6 +5989,7 @@ class PostgresPlanningExecutionPreparer:
             selection=narrative_intelligence, policy=knowledge_access_policy)
         if fresh_method_scope and world_exact_prompt == ("prompt-template:story-planning-pack", "v3"):
             fresh_method_scope["world_protected_context_accounting_version"] = "world-protected-context-accounting.v1"
+            fresh_method_scope["planning_prior_method_audit_projection_version"] = "chapter-prior-method-audits.v1"
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             **({"generated_title_contract": "generated-book-title.v1"}
@@ -6154,6 +6156,10 @@ class PostgresPlanningExecutionPreparer:
             if content.get("world_method_scope_projection_version") != "world-method-scope-projection.v1":
                 raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "Exact World accounting requires the already frozen method projection")
             content["world_protected_context_accounting_version"] = projection_contract
+        if projection_contract == "chapter-prior-method-audits.v1":
+            if content.get("planning_chapter_method_scope_projection_version") != "chapter-method-scope-projection.v1":
+                raise KernelError("CHAPTER_CONTEXT_SOURCE_DRIFT", "Prior audit projection requires the frozen current Chapter method view")
+            content["planning_prior_method_audit_projection_version"] = projection_contract
         if projection_contract == "chapter-method-scope-projection.v1":
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
             if command.generator_operation_name != "chapter_plan.generate":

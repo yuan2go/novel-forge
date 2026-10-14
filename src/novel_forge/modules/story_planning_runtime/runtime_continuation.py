@@ -1011,7 +1011,7 @@ def _capacity_authorization(
             "Capacity allocation cannot replace the frozen Pack, prompt or model route",
         )
     world_identity = None
-    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1"}:
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}:
         from .world_context_recovery import require_runtime_identity
         world_identity = require_runtime_identity(uow, source=source, target=target)
     return {
@@ -1066,7 +1066,7 @@ def _capacity_target(
     from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
     ceiling = planning_input_capacity(route)
     allocated = min(baseline * 2, ceiling)
-    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1"}:
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}:
         allocated = min(baseline, ceiling)
     if source.get("capacity_inheritance"):
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])

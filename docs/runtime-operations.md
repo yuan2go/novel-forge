@@ -3832,6 +3832,13 @@ request and Schema. Frozen Contexts without this marker keep their prior account
 Migration 0218 adds a separate zero-send recovery branch for an already projected
 World task: it reuses the exact original World source, request, policy and failure,
 and does not allocate more context or promote working prose to accepted facts.
+`chapter-prior-method-audits.v1` lets fresh experimental Chapter Contexts reference
+prior Book, Volume, Arc and Group method-application audits using the existing
+planning audit projection. It retains each decision and exact source/hash/location;
+current selected methods, conditions, histories and narrative plan constraints remain
+in the request. Migration 0219 permits only the matching unsent main-call recovery
+with its original verified World results, without redispatching those stages.
+Unmarked Contexts retain the earlier rendering.
 `authority-manuscript read|export --book-run-id <run> --candidate-version <version>`
 reads the original retained model candidate even when its Provider permission gate
 failed. The response and export retain the source Operation/Effect failure facts.

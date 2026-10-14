@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261015_0218_world_exact_context_accounting",
+  "head": "20261015_0219_chapter_prior_method_audits",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -221,6 +221,7 @@
     "20261015_0215_world_method_context",
     "20261015_0216_chapter_method_context",
     "20261015_0217_retained_working_continuation",
-    "20261015_0218_world_exact_context_accounting"
+    "20261015_0218_world_exact_context_accounting",
+    "20261015_0219_chapter_prior_method_audits"
   ]
 }
