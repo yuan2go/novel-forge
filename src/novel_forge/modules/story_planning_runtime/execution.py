@@ -5972,6 +5972,11 @@ class PostgresPlanningExecutionPreparer:
                 else {}
             ),
             "narrative_intelligence": narrative_intelligence,
+            **({"planning_method_scope_projection_version": "book-method-scope-projection.v1"}
+                if command.generator_operation_name == "book_plan.generate" and narrative_intelligence.get("selected")
+                and knowledge_access_policy.get("mode") == "ALLOW_ONLY"
+                and knowledge_access_policy.get("usage_scope") == "EXPERIMENTAL_VALIDATION"
+                and knowledge_access_policy.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1" else {}),
             **(
                 {
                     "planning_input_projection_version": "planning-input-role-references.v1"
