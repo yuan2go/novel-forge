@@ -26,6 +26,29 @@ def require_prose_planning_evidence(database_url, *, command, asset_version_id, 
                 WHERE dispatch.external_effect_id=effect.external_effect_id AND dispatch.status='SUCCEEDED')""",
             [asset_version_id, command.project_id, command.workspace_id, command.book_id])
         rows = uow.cursor.fetchall()
+        if not rows:
+            uow.cursor.execute("""SELECT to_jsonb(event),to_jsonb(run),book.book_id FROM authority_book_prose_review_event event
+                JOIN authority_book_prose_review_run run USING(run_id) JOIN authority_book_production book USING(book_run_id)
+                WHERE event.kind='WINDOW_REVALIDATED' AND event.content->>'report_asset_version_id'=%s
+                  AND run.project_id=%s AND run.workspace_id=%s AND run.exact_release_sha=%s""",
+                [asset_version_id,command.project_id,command.workspace_id,commit_sha])
+            corrected = uow.cursor.fetchall()
+            if len(corrected) != 1 or corrected[0][2] != command.book_id:
+                raise failure
+            event,run,_ = corrected[0]
+            from .prose_citation_evidence import require_revalidated_report
+            if require_revalidated_report(uow,run=run,event=event) != document.content:
+                raise failure
+            bound_run = (command.edition_execution or {}).get('book_run_id') or (command.world_preparation_request or {}).get('book_run_id')
+            working = run['manifest']['schema_version'] == 'longform-prose-manifest.v3'
+            if (bound_run and bound_run != run['book_run_id']) or (not bound_run and not working):
+                raise failure
+            current = freeze_manifest(project_id=command.project_id,workspace_id=command.workspace_id,book_run_id=run['book_run_id'],
+                sources=load_review_sources(uow,run['book_run_id'],command.project_id),policy=run['manifest']['policy'],
+                work_intent=run['manifest']['schema_version'] in {'longform-prose-manifest.v2','longform-prose-manifest.v3'})
+            if not review_sources_current(run['manifest']['sources'],current['sources'],run['manifest']['policy']):
+                raise KernelError('PLANNING_PROSE_EVIDENCE_STALE','Revalidated evidence still requires the exact current source prose')
+            return
         if len(rows) != 1 or rows[0][7] != commit_sha or document.asset_type != "longform_prose_review_report":
             raise failure
         operation, definition, version, payload, request, run_id, manifest, _ = rows[0]

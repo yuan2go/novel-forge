@@ -203,6 +203,28 @@ def project_working_sources(
     return projected
 
 
+def complete_prose_delivery(snapshot: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    validate_working_projection(snapshot, project_id=snapshot.get("project_id"), book_id=snapshot.get("book_id"))
+    delivered = deepcopy(dict(snapshot))
+    coalesced = []
+    for source in delivered["sources"]:
+        passages = source["passages"]
+        if source["omitted_ranges"] or len(passages) <= 1:
+            continue
+        text = "".join(passage["text"] for passage in passages)
+        if len(text) != source["source_characters"] or text_hash(text) != source["text_hash"]:
+            raise KernelError("WORKING_PROSE_DELIVERY_DRIFT", "Complete delivery must reconstruct the exact retained source text")
+        source["passages"] = [{"start": 0, "end": len(text), "text": text, "text_hash": source["text_hash"]}]
+        coalesced.append({"chapter": source["chapter"], "asset_version_id": source["asset_version_id"],
+            "content_hash": source["content_hash"], "text_hash": source["text_hash"], "original_passage_count": len(passages)})
+    delivered["snapshot_hash"] = canonical_hash({k: v for k, v in delivered.items() if k != "snapshot_hash"})
+    validate_working_projection(delivered, project_id=snapshot["project_id"], book_id=snapshot["book_id"])
+    receipt = {"contract_version": "world-working-prose-delivery.v1", "source_snapshot_hash": snapshot["snapshot_hash"],
+        "delivery_snapshot_hash": delivered["snapshot_hash"], "coalesced_sources": coalesced,
+        "accepted_history_mutation_allowed": False, "character_knowledge_granted": False}
+    return delivered, receipt
+
+
 def validate_working_projection(
     snapshot: Mapping[str, Any],
     *,

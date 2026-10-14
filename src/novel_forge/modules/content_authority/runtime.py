@@ -20,7 +20,7 @@ def execute_content_handler(
     execution_probe: Callable[[], object] | None = None,
 ) -> AuthorityExecutionResult:
     from novel_forge.modules.book_authority.creation_inputs import require_style_scope_frontier
-    from novel_forge.modules.story_planning_runtime.world_preparation import require_world_foundation_frontier
+    from novel_forge.modules.story_planning_runtime.world_preparation import require_world_revalidation_frontier
 
     return execute_authority_handler(
         database_url,
@@ -28,7 +28,7 @@ def execute_content_handler(
         registration=registry.registration(definition_name, definition_version),
         execution_probe=execution_probe,
         materialization_guard=require_style_scope_frontier if definition_name == "chapter.style_policy.compile" and definition_version == "2.1.6"
-            else require_world_foundation_frontier if definition_name == "story_planning.generate" else None,
+            else require_world_revalidation_frontier if definition_name == "story_planning.generate" else None,
     )
 
 

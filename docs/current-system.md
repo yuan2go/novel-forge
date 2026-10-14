@@ -38,6 +38,35 @@ reference. Both consumers use the manuscript Han-character unit. These input bin
 do not prove that a plan contains enough narrative material or that prose reaches the
 requested scale. Previously frozen Contexts without these markers keep their original
 rendering, including any missing author scale.
+Candidate World disclosure uses the exact validated working-observation target when
+that projection is present; accepted-only inputs retain the accepted frontier plus one.
+Local disclosure still requires a validated current-chapter preparation path and remains
+a planned occurrence. It neither advances the accepted cursor nor becomes accepted
+event evidence. Invalid target metadata or a different chapter cannot authorize disclosure.
+`world-host-revalidation.v4` uses the existing complete-result continuation Owner after
+a terminal legacy working-frontier disclosure rejection. Creation finds the current
+Director output, its exact generation and frozen v5 Source, including different
+causally linked stage Owners. Migration 0210 binds both verified receipts, unchanged
+selected working history and current unexecuted Chapter. Action and primary consumers
+recheck the fence, Formation cancellation and locked Book frontier; capacity successors
+retain the exact proof and cannot bypass a paused Book. Source, failed Attempts and
+unknown usage remain immutable. Focused PostgreSQL guards are execution evidence;
+installed native adoption and literary improvement require separate qualification.
+Fresh working World Sources select `world-role-delivery.v4` and deliver
+`world-provider-task.v5`. Complete contiguous prose is transported as one exact range
+per source after full-length and text-hash checks; stored paragraph locators and the
+original working snapshot remain unchanged. A separate receipt binds both representations
+without promoting working experience to accepted facts or character knowledge. The task
+retains one full transition schema and all selected knowledge, while Knowledge selection
+criteria remain auditable source data rather than character behavior rules. Old Sources
+retain their frozen projection. Protected World capacity failures now use the existing
+typed pre-send failure classification. Migration 0211 admits an exact legacy unsent
+programming failure only after reproducing its original protected-context rejection,
+verifying the compact delivery at unchanged capacity and checking the live Book frontier.
+The actual successor reuses the original frozen Context and MKAOS selection, checks its
+fresh Source against the original story inputs and reconstructs the registered task proof.
+Focused tests and captured database-copy execution are qualification evidence; installation,
+native production adoption and literary improvement require separate evidence.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author
@@ -1462,6 +1491,22 @@ need high confidence and paired evidence to block; intentional narrative variati
 aesthetic preferences and uncertainty cannot become cross-chapter blockers. A hard
 constraint claim must identify an explicitly approved frozen constraint; this extension
 does not promote inferred details into hard constraints.
+
+Frozen longform prose-review v1/v2 retains numeric code-point citations. New native
+root-cause review starts freeze `literal-prose-citation.v1`; Pack 1.5.0 delivers v3
+quote-only citations and the Host locates each unique literal in its supplied source
+version. Ambiguous, absent or mismatched source quotations remain invalid. Formal
+review and new literal reference sampling consume the same frozen diagnosis/citation
+flags. Legacy sample Intents retain their original payload, which omitted diagnosis
+flags even on v2 windows, so saved sample requests remain replayable.
+
+The existing Book start UoW can append `WINDOW_REVALIDATED` when a complete, verified
+v2 receipt failed only citation coordinates and all quotations resolve uniquely on
+unchanged supplied prose. It binds the actual original request/window/manifest and
+current start Owner, persists a separate report and per-citation proof, and retains
+original failure, receipt, judgments and repair goals. Readback and future Planning
+consume this proof through their existing owners; no model resend or manuscript/Canon
+mutation occurs. This is a result-delivery contract, not evidence of literary improvement.
 
 Cross-chapter repair uses ordered edits confined to diagnosed candidate locations;
 server-side reconstruction rejects changes elsewhere. ReReview retains the same source

@@ -516,7 +516,7 @@ class WorldPreparationRepository:
                 "events": [],
                 "world_clock": {},
             }
-        if provider_projection_version == "world-role-delivery.v3":
+        if provider_projection_version in {"world-role-delivery.v3", "world-role-delivery.v4"}:
             initial_id = str(snapshot.get("initial_story_state_version") or "")
             initial = repository.initial_state(version_id=initial_id, frozen_versions={initial_id} if initial_id else set())
             initial_binding = {"input_snapshot_id": request["input_snapshot_id"], "reality_revision_id": reality["revision_id"]}
@@ -646,7 +646,7 @@ class WorldPreparationRepository:
                 event["event_id"]: event for event in [*reality["events"], *history]
             }
             reality["events"] = [combined[key] for key in sorted(combined)]
-            if provider_projection_version == "world-role-delivery.v3":
+            if provider_projection_version in {"world-role-delivery.v3", "world-role-delivery.v4"}:
                 from novel_forge.modules.context_builder.reality_projection import ROLE_STATE_KINDS
                 from novel_forge.modules.context_builder.task_context import required_background_entities, required_task_event_ids, task_references, world_task_scope
 
@@ -670,7 +670,7 @@ class WorldPreparationRepository:
             **({"target_chapter": target_chapter, "working_manuscript": working}
                 if contract_version == "world-preparation-source.v5" else {}),
             **({"provider_projection_version": provider_projection_version}
-                if provider_projection_version in {"world-role-delivery.v2", "world-role-delivery.v3"} else {}),
+                if provider_projection_version in {"world-role-delivery.v2", "world-role-delivery.v3", "world-role-delivery.v4"} else {}),
             **(
                 {"preparation_sources": continuations}
                 if contract_version in {"world-preparation-source.v2", "world-preparation-source.v3", "world-preparation-source.v4", "world-preparation-source.v5"}

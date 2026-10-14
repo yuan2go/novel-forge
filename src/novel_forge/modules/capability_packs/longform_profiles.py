@@ -371,10 +371,11 @@ def build_longform_prose_review_pack_profile(
     *,
     operation_definition_hash: str,
     pack_id: str = "longform_prose_review_pack",
+    literal_citations: bool = True,
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.4.0"
+    manifest["identity"]["version"] = "1.5.0" if literal_citations else "1.4.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -445,13 +446,14 @@ def build_longform_prose_review_pack_profile(
         skill_path="skills/quality-review/SKILL.md",
         system_ref="prompt-system:longform-prose-review-pack",
         system_path=(
-            "config/capability_packs/artifacts/longform_prose_review_system_instruction.md"
+            "config/capability_packs/artifacts/longform_prose_review_system_instruction_v2.md" if literal_citations else "config/capability_packs/artifacts/longform_prose_review_system_instruction.md"
         ),
         template_ref="prompt-template:longform-prose-review-pack",
-        template_path=("config/capability_packs/artifacts/longform_prose_review_template.md"),
+        template_path=("config/capability_packs/artifacts/longform_prose_review_template_v3.md" if literal_citations else "config/capability_packs/artifacts/longform_prose_review_template.md"),
         input_schema_ref="schema:longform-prose-review-pack-input:v1",
         output_schema_ref="schema:longform-prose-review-pack-output:v1",
-        template_version="v2",
+        system_version="v2" if literal_citations else "v1",
+        template_version="v3" if literal_citations else "v2",
     )
     _update_policy_artifacts(manifest, artifacts)
     _append_capability_schemas(artifacts, "review.chapter.evaluate")

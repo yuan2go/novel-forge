@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261014_0209_world_foundation_background",
+  "migration_head": "20261014_0212_prose_citation_revalidation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9179,6 +9179,21 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261014_0209_world_foundation_background.py",
           "id": "20261014_0209_world_foundation_background",
           "locator": "20261014_0209_world_foundation_background"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261014_0210_world_working_frontier_revalidation.py",
+          "id": "20261014_0210_world_working_frontier_revalidation",
+          "locator": "20261014_0210_world_working_frontier_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261014_0211_world_input_delivery_recovery.py",
+          "id": "20261014_0211_world_input_delivery_recovery",
+          "locator": "20261014_0211_world_input_delivery_recovery"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261014_0212_prose_citation_revalidation.py",
+          "id": "20261014_0212_prose_citation_revalidation",
+          "locator": "20261014_0212_prose_citation_revalidation"
         }
       ],
       "external_effects": {
@@ -10131,7 +10146,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:8c4cf9212bb2cacaff319147ffe2066e0bbd8b59f56ace8edaf7588ffeba1dc0"
+    "implementation_tree_sha": "sha256:5922367fabe98c3cd4117acb6ce6a3146dcce6073edf8f7aecdd8d50c72762d2"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

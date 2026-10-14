@@ -36,7 +36,7 @@ def text_digest(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def prose_review_output_schema(*, root_cause: bool = False) -> dict[str, Any]:
+def prose_review_output_schema(*, root_cause: bool = False, literal_citations: bool = False, located_citations: bool = False) -> dict[str, Any]:
     text = {"type": "string", "minLength": 1}
 
     def obj(properties: dict[str, Any]) -> dict[str, Any]:
@@ -51,8 +51,8 @@ def prose_review_output_schema(*, root_cause: bool = False) -> dict[str, Any]:
         {
             "asset_version_id": text,
             "text_hash": text,
-            "start": {"type": "integer", "minimum": 0},
-            "end": {"type": "integer", "minimum": 1},
+            **({"start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}}
+               if not literal_citations or located_citations else {}),
             "quote": text,
         }
     )
@@ -90,7 +90,7 @@ def prose_review_output_schema(*, root_cause: bool = False) -> dict[str, Any]:
     finding = {"anyOf": [issue, observation]}
     return obj(
         {
-            "schema_version": {"type": "string", "enum": ["longform-prose-review.v2" if root_cause else PROSE_REVIEW_SCHEMA]},
+            "schema_version": {"type": "string", "enum": ["longform-prose-review.v3" if literal_citations else "longform-prose-review.v2" if root_cause else PROSE_REVIEW_SCHEMA]},
             "manifest_digest": text,
             "window_id": text,
             "reviewed_dimensions": {
@@ -105,7 +105,16 @@ def prose_review_output_schema(*, root_cause: bool = False) -> dict[str, Any]:
     )
 
 
-def normalize_prose_review_output(raw: Mapping[str, Any]) -> dict[str, Any]:
+def prose_review_invoke_payload(content: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "manifest_digest": content["manifest_digest"],
+        "window_id": content["window"]["window_id"],
+        **{"prose_" + key: content["policy"][key] for key in ("diagnosis_contract", "citation_locator_contract")
+           if content["policy"].get(key)},
+    }
+
+
+def normalize_prose_review_output(raw: Mapping[str, Any], *, located_citations: bool = False) -> dict[str, Any]:
     result = deepcopy(dict(raw))
     from novel_forge.modules.chapter_authority.provider_output_contracts import (
         validate_chapter_provider_output_against_schema,
@@ -115,7 +124,8 @@ def normalize_prose_review_output(raw: Mapping[str, Any]) -> dict[str, Any]:
         "longform_prose_review",
         {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
-            **prose_review_output_schema(root_cause=result.get("schema_version") == "longform-prose-review.v2"),
+            **prose_review_output_schema(root_cause=result.get("schema_version") in {"longform-prose-review.v2", "longform-prose-review.v3"},
+                literal_citations=result.get("schema_version") == "longform-prose-review.v3", located_citations=located_citations),
         },
         result,
     )
@@ -147,7 +157,7 @@ def freeze_manifest(
         "context_token_budget",
         "maximum_windows",
     }
-    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode", "source_current_policy"}
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode", "source_current_policy", "citation_locator_contract"}
     if (
         not required <= set(policy)
         or set(policy) - required - optional
@@ -196,6 +206,9 @@ def freeze_manifest(
         raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")
     if policy.get("diagnosis_contract") not in {None, "prose-root-cause.v1"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown root-cause diagnosis contract")
+    if (policy.get("citation_locator_contract") not in {None, "literal-prose-citation.v1"}
+        or (policy.get("citation_locator_contract") and policy.get("diagnosis_contract") != "prose-root-cause.v1")):
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Literal citation delivery requires its explicit diagnosis contract")
     if policy.get("source_current_policy") not in {None, "FROZEN_SELECTED_RANGE"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown source-currentness policy")
     if policy.get("reading_mode", "DESIGN_AWARE") not in {"DESIGN_AWARE", "BODY_FIRST"}:
@@ -300,11 +313,85 @@ def freeze_manifest(
     return {**body, "manifest_digest": completion_digest(body)}
 
 
+def revalidate_legacy_citation_report(report: Mapping[str, Any], *, source_manifest: Mapping[str, Any], source_window: Mapping[str, Any],
+    target_manifest: Mapping[str, Any], target_window: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    rejected = KernelError("LONGFORM_PROSE_CITATION_REVALIDATION_INVALID", "Only exact complete v2 judgments on unchanged supplied prose may use the versioned literal locator")
+    if (report.get("schema_version") != "longform-prose-review.v2"
+        or source_manifest["policy"].get("citation_locator_contract") is not None
+        or target_manifest["policy"].get("citation_locator_contract") != "literal-prose-citation.v1"
+        or source_manifest["policy"] != {key:value for key,value in target_manifest["policy"].items() if key != "citation_locator_contract"}
+        or any(source_manifest[key] != target_manifest[key] for key in ("project_id", "workspace_id", "book_run_id"))
+        or source_window["spans"] != target_window["spans"]):
+        raise rejected
+    try:
+        validate_window_report(report, manifest=source_manifest, window=source_window)
+    except KernelError as error:
+        if error.code != "LONGFORM_PROSE_CITATION_INVALID":
+            raise rejected from error
+    else:
+        raise rejected
+    original = normalize_prose_review_output(report)
+    result = deepcopy(original)
+    original_locations = []
+    for finding in result["findings"]:
+        for citation in finding["evidence"]:
+            original_locations.append({key: citation.pop(key) for key in ("start", "end")})
+    result.update(schema_version="longform-prose-review.v3",manifest_digest=target_manifest["manifest_digest"],window_id=target_window["window_id"])
+    result, locations = locate_report_citations(result, window=target_window)
+    result = validate_window_report(result,manifest=target_manifest,window=target_window)
+    proof = {"contract_version":"prose-citation-revalidation.v1", "source_report_hash":completion_digest(original),
+        "source_manifest_digest":source_manifest["manifest_digest"], "source_window_id":source_window["window_id"],
+        "target_manifest_digest":target_manifest["manifest_digest"], "target_window_id":target_window["window_id"],
+        "resolved_report_hash":completion_digest(result), "locations":[{**located,"original_location":prior}
+            for located,prior in zip(locations,original_locations,strict=True)],
+        "authority":"HOST_LITERAL_COORDINATES_ONLY; NARRATIVE_JUDGMENTS_UNCHANGED", "manuscript_mutation_allowed":False}
+    return result, proof
+
+
+def locate_report_citations(report: Mapping[str, Any], *, window: Mapping[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    findings = report.get("findings") if isinstance(report, Mapping) else None
+    located = isinstance(findings, list) and any("start" in citation or "end" in citation
+        for finding in findings if isinstance(finding, Mapping)
+        for citation in (finding.get("evidence") if isinstance(finding.get("evidence"), list) else []) if isinstance(citation, Mapping))
+    result = normalize_prose_review_output(report, located_citations=located)
+    supplied = []
+    for finding in result.get("findings", []):
+        for citation in finding.get("evidence", []):
+            supplied.append({key: citation.pop(key) for key in ("start", "end") if key in citation})
+    if result["schema_version"] != "longform-prose-review.v3":
+        raise KernelError("LONGFORM_PROSE_REPORT_CONTRACT_DRIFT", "Literal location requires the explicit v3 report")
+    resolutions = []
+    ordinal = 0
+    for finding in result["findings"]:
+        for citation in finding["evidence"]:
+            locations = set()
+            for span in window["spans"]:
+                if span["asset_version_id"] != citation["asset_version_id"] or span["text_hash"] != citation["text_hash"]:
+                    continue
+                offset = 0
+                while (offset := span["text"].find(citation["quote"], offset)) >= 0:
+                    locations.add((span["start"] + offset, span["start"] + offset + len(citation["quote"])))
+                    offset += 1
+            if len(locations) != 1:
+                raise KernelError("LONGFORM_PROSE_CITATION_NOT_UNIQUE", "Each quote must identify one exact location in its supplied source version; no fuzzy matching or invented coordinates")
+            start, end = next(iter(locations))
+            if supplied[ordinal] and supplied[ordinal] != {"start": start, "end": end}:
+                raise KernelError("LONGFORM_PROSE_CITATION_INVALID", "Persisted host coordinates must match their exact literal source")
+            citation.update(start=start, end=end)
+            resolutions.append({"citation_ordinal": ordinal, "asset_version_id": citation["asset_version_id"],
+                "text_hash": citation["text_hash"], "quote_hash": text_digest(citation["quote"]), "start": start, "end": end})
+            ordinal += 1
+    return result, resolutions
+
+
 def validate_window_report(
     report: Mapping[str, Any], *, manifest: Mapping[str, Any], window: Mapping[str, Any]
 ) -> dict[str, Any]:
-    report = normalize_prose_review_output(report)
-    expected_schema = "longform-prose-review.v2" if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else PROSE_REVIEW_SCHEMA
+    literal = manifest["policy"].get("citation_locator_contract") == "literal-prose-citation.v1"
+    if literal:
+        report, _ = locate_report_citations(report, window=window)
+    report = normalize_prose_review_output(report, located_citations=literal)
+    expected_schema = "longform-prose-review.v3" if literal else "longform-prose-review.v2" if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else PROSE_REVIEW_SCHEMA
     if report["schema_version"] != expected_schema:
         raise KernelError("LONGFORM_PROSE_REPORT_CONTRACT_DRIFT", "Report must retain its frozen diagnosis contract")
     if (

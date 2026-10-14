@@ -10,6 +10,7 @@ from novel_forge.modules.book_authority.working_prose import (
     INSTRUCTION,
     POLICY_VERSION,
     project_working_sources,
+    complete_prose_delivery,
     validate_working_projection,
     working_prose_policy,
 )
@@ -78,6 +79,28 @@ def rehash(body):
     body["snapshot_hash"] = canonical_hash(
         {k: v for k, v in body.items() if k != "snapshot_hash"}
     )
+
+
+def test_complete_prose_delivery_coalesces_ranges_without_changing_any_literal_or_omission():
+    original = snapshot()
+    before = deepcopy(original)
+    delivered, receipt = complete_prose_delivery(original)
+    assert original == before
+    validate_working_projection(delivered, project_id="p", book_id="b", target_chapter=5, accepted_through_chapter=0)
+    assert receipt["source_snapshot_hash"] == original["snapshot_hash"]
+    assert receipt["delivery_snapshot_hash"] == delivered["snapshot_hash"]
+    for raw, result in zip(original["sources"], delivered["sources"], strict=True):
+        assert {k: v for k, v in raw.items() if k != "passages"} == {k: v for k, v in result.items() if k != "passages"}
+        assert "".join(p["text"] for p in raw["passages"]) == "".join(p["text"] for p in result["passages"])
+        if raw["omitted_ranges"]:
+            assert raw == result
+        else:
+            assert len(result["passages"]) == 1
+    damaged = deepcopy(original)
+    damaged["sources"][-1]["text_hash"] = text_hash("different complete story")
+    rehash(damaged)
+    with pytest.raises(KernelError, match="WORKING_PROSE_DELIVERY_DRIFT"):
+        complete_prose_delivery(damaged)
 
 
 def test_projection_retains_literal_belief_and_reader_only_prose_without_promoting_it():

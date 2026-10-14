@@ -5788,7 +5788,8 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") == "typed-volume-context-projection.v1"):
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") == "typed-volume-context-projection.v1"
+                    or (proof.get("contract_version") == "planning-exact-value-reference.v1" and proof.get("world_input_delivery", {}).get("contract_version") == "world-input-delivery-revalidation.v1")):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
@@ -6182,7 +6183,14 @@ class PostgresPlanningExecutionPreparer:
                 "WORLD_CONTEXT_SOURCE_DRIFT",
                 "world role projection must retain its exact source version",
             )
-        content = self._world_context_content(command=command, base=base, stage=stage, source=source)
+        if command.runtime_continuation_id and not calibration_sample:
+            self._require_world_delivery_continuation(command=command, base=base, stage=stage, source=source)
+        try:
+            content = self._world_context_content(command=command, base=base, stage=stage, source=source)
+        except ValueError as error:
+            if not str(error).startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:"):
+                raise
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", str(error)) from error
         prefix = "world_sampling" if calibration_sample else "world_preparation"
         logical_ref = f"{prefix}/context/{operation_id}/{stage.name}"
         try:
@@ -6220,10 +6228,55 @@ class PostgresPlanningExecutionPreparer:
         )
         return document, source
 
+    def _require_world_delivery_continuation(self, *, command, base, stage, source):
+        from copy import deepcopy
+        from types import SimpleNamespace
+        from .runtime_continuation import require_binding, _context_projection_hash
+        from .world_preparation import PlanningWorldPreparation, world_plan_references
+
+        runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
+        context_proof = runtime.get("planning_capacity", {}).get("context_revalidation") or {}
+        proof = context_proof.get("world_input_delivery")
+        if not proof:
+            return
+        rejected = KernelError("WORLD_INPUT_DELIVERY_REVALIDATION_DRIFT", "The actual World request must match its registered frozen input proof")
+        original = self.query.require(project_id=command.project_id, asset_version_id=proof["source_ref"]["asset_version_id"])
+        frozen_base = self.query.require(project_id=command.project_id, asset_version_id=context_proof["context_asset_version_id"])
+        corrected = {**deepcopy(original.content["contract"]), "provider_projection_version": "world-role-delivery.v4"}
+        if (proof.get("contract_version") != "world-input-delivery-revalidation.v1"
+            or original.content_hash != proof["source_ref"]["content_hash"]
+            or frozen_base.content_hash != context_proof["context_content_hash"]
+            or source.content["contract"] != corrected
+            or base.content["narrative_intelligence"] != frozen_base.content["narrative_intelligence"]
+            or base.content["input_versions"] != frozen_base.content["input_versions"]):
+            raise rejected
+        preview = SimpleNamespace(asset_version_id=original.asset_version_id, asset_type=original.asset_type,
+            content={"contract": corrected}, content_hash=canonical_hash({"contract": corrected}))
+        selection = frozen_base.content["narrative_intelligence"]
+        arguments = {"allowed_references": world_plan_references(corrected, command)}
+        preview_stage = PlanningWorldPreparation.generation_stage(corrected,
+            {"asset_version_id": preview.asset_version_id, "content_hash": preview.content_hash}, selection, **arguments)
+        preview_context = self._world_context_content(command=command, base=frozen_base, stage=preview_stage, source=preview)
+        if (canonical_hash(preview_stage.task) != proof["delivered_task_hash"]
+            or _context_projection_hash(preview_context) != proof["context_projection_hash"]):
+            raise rejected
+        if stage.name == "world_candidates.generate":
+            expected = PlanningWorldPreparation.generation_stage(corrected,
+                {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}, selection, **arguments)
+            if stage.task != expected.task or stage.output_schema != expected.output_schema:
+                raise rejected
+
     @classmethod
     def _world_context_content(cls, *, command, base, stage, source):
         if stage.task["source_ref"] != {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}:
             raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "World Context must retain its exact source version")
+        if stage.task.get("contract_version") == "world-provider-task.v5":
+            from novel_forge.modules.book_authority.working_prose import complete_prose_delivery
+            frozen = source.content["contract"]
+            delivery, receipt = complete_prose_delivery(frozen["working_manuscript"])
+            if (frozen.get("provider_projection_version") != "world-role-delivery.v4"
+                or stage.task.get("working_manuscript") != delivery or stage.task.get("working_delivery_receipt") != receipt):
+                raise KernelError("WORLD_WORKING_DELIVERY_DRIFT", "World delivery must reconstruct its exact frozen source, including every selected passage")
         content = {**base.content, "world_preparation": dict(stage.task)}
         content["token_budget"] = stage.task["policy"]["context_token_budget"]
         selected = [{"role": stage.task["role"], "asset_version_id": source.asset_version_id,
@@ -6909,8 +6962,8 @@ class PostgresPlanningExecutionPreparer:
             return existing
         token = _token(f"{project_id}:{logical_ref}")
         guard = None
-        if asset_type == "narrative_governance_action" and (contract.get("host_revalidation") or {}).get("contract_version") == "world-host-revalidation.v3":
-            from .world_preparation import require_world_foundation_frontier
+        if asset_type == "narrative_governance_action" and (contract.get("host_revalidation") or {}).get("contract_version") in {"world-host-revalidation.v3", "world-host-revalidation.v4"}:
+            from .world_preparation import require_world_revalidation_frontier
             from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
             if execution_lease is None:
                 raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_REQUIRED", "Known-result action adoption requires its actual executing Attempt fence")
@@ -6918,7 +6971,7 @@ class PostgresPlanningExecutionPreparer:
                 attempt = require_current_fence(uow, execution_lease)
                 if attempt["operation_id"] != request.operation_id or execution_lease.project_id != request.project_id:
                     raise KernelError("WORLD_FOUNDATION_REVALIDATION_FENCE_MISMATCH", "The current fence must belong to this exact Action operation and project")
-                require_world_foundation_frontier(uow, request)
+                require_world_revalidation_frontier(uow, request)
         try:
             return self.writer.materialize_output(
                 AuthorityAssetWriteCommand(

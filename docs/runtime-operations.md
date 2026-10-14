@@ -181,6 +181,17 @@ unsupported: immutable isolation and forward schema facts survive a code rollbac
 applied database behavior with a new forward migration. These are deployment/restore procedures,
 not a new backup qualification gate.
 
+For an unsent legacy World `PROGRAMMING_BUG` whose exact message begins with
+`PROTECTED_CONTEXT_BUDGET_EXCEEDED:`, ordinary Creation continuation uses the existing
+Planning continuation Owner. Migration 0211 and the corrected runtime must be deployed
+together. The Owner reproduces the original failure on frozen inputs, verifies complete
+prose delivery, retains the original Context and knowledge selection, and admits one
+linked successor at unchanged Planning allocation and World capacity. Both capacities
+have their own source contracts; do not equate them or enlarge either as a substitute
+for correcting the input. Live Book, cancellation, input, lease or proof drift rejects
+recovery. Preserve the old failure, Sources and unknown usage; no history reset or
+manually substituted source is required.
+
 For a stopped native `longform.prose_review` sidecar, replay its original advance command.
 Recovery checks the immutable window, current matching manuscript prefix, actor, permissions,
 Tool denial, cancellation, all original receipts and released writers. Isolation, one native
@@ -190,6 +201,17 @@ unchanged. Known failures stop the current review for reconciliation or cause-bo
 recovery without blocking saved prose. Historical Effect deadlines and attempt limits
 remain receipt observations; they do not reserve or terminate a model process window.
 CLI stream/request retries remain disabled.
+
+When a complete v2 review failed only `LONGFORM_PROSE_CITATION_INVALID`, deploy migration
+0212 with Pack 1.5.0 and start a new native root-cause review run. The default new start
+freezes `literal-prose-citation.v1`; old runs and queued requests keep their contracts.
+The Book owner can derive an exact literal-citation report from the original verified
+receipt without resending the model call. Inspect `WINDOW_REVALIDATED`, its original
+Operation/Effect/receipt, derived report and per-citation proof. Unchanged supplied
+source hashes, actual Provider request and the current start Owner are required.
+Ambiguous quotes, other validation failures, cancellation or source drift do not receive
+automatic citation repair. This recovery changes neither manuscript nor model judgments;
+review completion, future plan adoption and literary improvement remain separate results.
 
 For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning
@@ -344,6 +366,18 @@ revision/continue must reuse Creation's actual Pack scope; the Chapter worker re
 the exact typed working-revision Root to its owning Book. Confirm installed launchers
 and recover the original Root after a pre-dispatch failure. Missing Writer memory and
 unverified observation semantics remain explicit; these checks do not establish prose quality.
+Working-frontier changes also cover candidate local disclosure in chapter 2 while
+accepted history remains at 0, rejection of chapter 1/3 and invalid projected targets,
+and unchanged accepted disclosure rules. Revalidate captured complete native World
+generation/Director results before adopting an installed fix; preserve the original
+Host failure and distinguish a read-only revalidation from fenced native adoption.
+Known working-frontier recovery also runs the v4 cases in
+`test_world_contract_migration_guards_postgres.py`. Cover Creation's automatic scan
+with only the current Director locator and an ancestor generation Owner, exact
+two-result receipts, current selected snapshot, paused/cancelled/advanced frontier,
+foreign Owner and unknown-effect rejection. Exercise 0209→0210 backup/restore and
+installed native Action/primary consumers with Provider dispatch forbidden before
+continuing the same Book; retain its original failure and unknown usage.
 Author scale binding additionally runs `test_author_length_binding.py`. Verify the
 exact frozen Book source in the hierarchical Planning request and the Platform source
 in the complete Writer stdin and saved creative baseline; a saved Context alone is

@@ -132,6 +132,114 @@ def test_disclosure_revalidation_guard_binds_complete_outputs_frontier_and_unkno
             assert connection.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id='evaluated-effect'").fetchone()==("HELD_UNKNOWN",)
 
 
+@pytest.mark.parametrize("generation_owner", ["source", "ancestor"])
+def test_working_frontier_revalidation_requires_exact_history_and_two_verified_native_results(generation_owner, monkeypatch):
+    with disposable_database_at_migration(DATABASE_URL, prefix="working_frontier_guard",
+        target_migration_id="20261014_0210_world_working_frontier_revalidation") as url:
+        with psycopg.connect(url) as connection:
+            _schema(connection)
+            generation = _seed(connection)
+            connection.execute("ALTER TABLE authority_asset_version ADD COLUMN content_hash text DEFAULT 'sha256:asset'")
+            connection.execute("ALTER TABLE authority_external_effect ADD COLUMN effect_type text DEFAULT 'model.invoke'")
+            connection.execute("ALTER TABLE authority_external_effect_dispatch ADD COLUMN status text DEFAULT 'SUCCEEDED'")
+            connection.execute("CREATE TEMP TABLE authority_external_receipt(dispatch_id text,status text,payload jsonb)")
+            connection.execute("ALTER TABLE authority_book_production ADD COLUMN current_chapter int DEFAULT 1")
+            connection.execute("ALTER TABLE authority_book_production ADD COLUMN accepted_through_chapter int DEFAULT 0")
+            connection.execute("ALTER TABLE authority_book_production ADD COLUMN active_chapter_request_id text")
+            connection.execute("ALTER TABLE authority_book_production ADD COLUMN input_snapshot_id text DEFAULT 'snapshot'")
+            connection.execute("ALTER TABLE authority_story_planning_runtime_continuation ADD COLUMN source_evidence_asset_version_id text DEFAULT 'generated'")
+            source = connection.execute("SELECT command_payload->'payload' FROM authority_operation WHERE operation_id='source'").fetchone()[0]
+            source = {**source, "execution_contract_version": "1.21.0", "logical_key": "chapter:2"}
+            child = {**source, "runtime_continuation_id": "runtime", "repair_reason": "WORLD_HOST_REVALIDATION_SUCCESSOR"}
+            connection.execute("UPDATE authority_operation SET definition_version='1.21.0',command_payload=%s WHERE operation_id='source'", [Jsonb({"payload": source})])
+            if generation_owner == "ancestor":
+                connection.execute("INSERT INTO authority_operation VALUES('ancestor','project','workspace','owner','FAILED_FINAL',%s,NULL,'story_planning.generate','1.21.0')", [Jsonb({"payload": source})])
+                connection.execute("UPDATE authority_operation SET causation_operation_id='ancestor' WHERE operation_id='source'")
+            connection.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id='child'", [Jsonb({"payload": child})])
+            connection.execute("UPDATE authority_story_planning_generation SET logical_key='chapter:2'")
+            connection.execute("UPDATE authority_attempt SET result=%s", [Jsonb({"error_code": "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"})])
+            refs = {key: {"asset_version_id": key, "content_hash": "sha256:asset"} for key in ("source-document", "generated", "evaluated")}
+            snapshot, observation = "sha256:" + "b" * 64, "sha256:" + "c" * 64
+            proof = {"contract_version": "world-host-revalidation.v4", "revalidation_kind": "WORKING_CHAPTER_FRONTIER",
+                "source_operation_id": "source", "source": refs["source-document"], "generation": refs["generated"], "evaluation": refs["evaluated"],
+                "plan_digest": "sha256:" + "a" * 64, "target_chapter": 2, "working_snapshot_hash": snapshot,
+                "working_observation_projection_hash": observation, "accepted_history_mutation_allowed": False, "character_knowledge_granted": False,
+                "retained_effect_ids": ["generated-effect", "evaluated-effect"], "result_owners": {"generation": generation_owner, "evaluation": "source"}}
+            connection.execute("UPDATE authority_story_planning_runtime_continuation SET source_command=%s,successor_command=%s,target_runtime=%s,decision_evidence=%s",
+                [Jsonb(source), Jsonb(child), Jsonb({"world_host_revalidation": proof}), Jsonb({"host_revalidation": "world-host-revalidation.v4"})])
+            frozen = {"contract": {"contract_version": "world-preparation-source.v5", "target_chapter": 2,
+                "request": source["world_preparation_request"], "working_manuscript": {"target_chapter": 2, "book_run_id": "run", "snapshot_hash": snapshot},
+                "reality": {"epistemic_contract": "world-agency.v2", "working_observation_context": {"target_chapter": 2, "snapshot_hash": snapshot,
+                    "projection_hash": observation, "accepted_history_mutation_allowed": False, "character_knowledge_granted": False}}}}
+            documents = {"source-document": frozen}
+            for key, stage in (("generated", "world_candidates.generate"), ("evaluated", "world_candidates.evaluate")):
+                owner = generation_owner if key == "generated" else "source"
+                output = {"fixture": key}
+                documents[key] = {"contract": {"source": refs["source-document"], "output": output,
+                    "evidence": {"external_receipt_ref": key + "-effect", "operation_id": owner},
+                    **({"generation": refs["generated"]} if key == "evaluated" else {})}}
+                connection.execute("INSERT INTO authority_external_effect(operation_id,status,external_effect_id,request_payload) VALUES(%s,'SUCCEEDED',%s,%s)",
+                    [owner, key + "-effect", Jsonb({"stage": stage, "input": {"world_preparation": {"source_ref": refs["source-document"]}}})])
+                evidence = {"result": output}
+                connection.execute("INSERT INTO authority_external_effect_dispatch(external_effect_id,generation,evidence,dispatch_id) VALUES(%s,1,%s,%s)", [key + "-effect", Jsonb(evidence), key + "-dispatch"])
+                connection.execute("INSERT INTO authority_external_receipt VALUES(%s,'VERIFIED',%s)", [key + "-dispatch", Jsonb({"evidence": evidence})])
+            connection.execute("DELETE FROM authority_external_effect WHERE external_effect_id='source-effect'")
+            connection.execute("DELETE FROM authority_budget_reservation")
+            connection.execute("INSERT INTO authority_budget_reservation(operation_id,status,external_effect_id) VALUES('source','HELD_UNKNOWN','evaluated-effect')")
+            for key, document in documents.items():
+                connection.execute("INSERT INTO authority_asset_version(asset_version_id,content) VALUES(%s,%s)", [key, Jsonb(document)])
+                connection.execute("INSERT INTO authority_operation_output_asset VALUES(%s,%s)", [generation_owner if key == "generated" else "source", key])
+            connection.execute("INSERT INTO authority_book_production(project_id,book_id,state,stable_idempotency_key,book_run_id) VALUES('project','book','READY','formation:production','run')")
+            generation = {**generation, "logical_key": "chapter:2", "repair_reason": "WORLD_HOST_REVALIDATION_SUCCESSOR"}
+            assert _admitted(connection, generation)
+            from types import SimpleNamespace
+            from unittest.mock import Mock
+            from novel_forge.modules.story_planning_runtime import runtime_continuation
+            connection.execute("ALTER TABLE authority_operation ADD COLUMN version int DEFAULT 7")
+            connection.execute("CREATE TEMP TABLE authority_asset_locator(project_id text,logical_ref text,current_asset_version_id text)")
+            connection.execute("INSERT INTO authority_asset_locator VALUES('project','world_preparation/source/evaluation','evaluated')")
+            connection.execute("CREATE TEMP TABLE authority_story_formation_run(project_id text,workspace_id text,book_id text,formation_run_id text,frozen_stage_inputs jsonb)")
+            auth = {"contract_version": "formation-auto-authorization.v1", "authorized_by_principal_id": "owner", "project_id": "project",
+                "workspace_id": "workspace", "book_id": "book", "authorization_ref": "native-creation"}
+            connection.execute("INSERT INTO authority_story_formation_run VALUES('project','workspace','book','formation',%s)", [Jsonb({"generation_policy": {"auto_authorization": auth}})])
+            application = SimpleNamespace(database_url=url, register_runtime_continuation=Mock())
+            principal = SimpleNamespace(principal_id="owner", require=Mock())
+            class ExistingUow:
+                def __init__(self, *_): self.cursor = connection.cursor()
+                def __enter__(self): return self
+                def __exit__(self, *_): self.cursor.close()
+            monkeypatch.setattr(runtime_continuation, "AuthorityUnitOfWork", ExistingUow)
+            connection.execute("SAVEPOINT frontier_scan")
+            connection.execute("DELETE FROM authority_story_planning_runtime_continuation")
+            book = {"state": "READY", "project_id": "project", "workspace_id": "workspace", "book_id": "book", "stable_idempotency_key": "formation:production",
+                "current_chapter": 1, "book_run_id": "run", "root_operation_id": "book-root"}
+            assert runtime_continuation.recover_world_result_frontier(application, book, principal=principal)
+            application.register_runtime_continuation.assert_called_once()
+            assert application.register_runtime_continuation.call_args.args == ("source",)
+            assert application.register_runtime_continuation.call_args.kwargs["expected_source_version"] == 7
+            connection.execute("ROLLBACK TO SAVEPOINT frontier_scan")
+            connection.execute("RELEASE SAVEPOINT frontier_scan")
+            for mutation in (
+                "UPDATE authority_book_production SET current_chapter=2", "UPDATE authority_book_production SET accepted_through_chapter=1",
+                "UPDATE authority_book_production SET state='PAUSED'", "UPDATE authority_book_production SET active_chapter_request_id='active'",
+                "UPDATE authority_book_production SET input_snapshot_id='changed'",
+                "UPDATE authority_asset_version SET content_hash='changed' WHERE asset_version_id='generated'",
+                "UPDATE authority_asset_version SET content=jsonb_set(content,'{contract,working_manuscript,snapshot_hash}','\"changed\"') WHERE asset_version_id='source-document'",
+                "UPDATE authority_external_receipt SET status='REJECTED'", "UPDATE authority_external_effect SET status='UNKNOWN' WHERE external_effect_id='evaluated-effect'",
+                "UPDATE authority_operation SET actor_id='foreign' WHERE operation_id='registration'",
+                "INSERT INTO authority_story_creation_cancellation VALUES('project','formation')",
+                "INSERT INTO authority_lease_acquisition VALUES('attempt','HELD')",
+                "INSERT INTO authority_budget_reservation(operation_id,status,external_effect_id) VALUES('source','HELD_UNKNOWN','unverified')",
+            ):
+                connection.execute("SAVEPOINT working_guard")
+                connection.execute(mutation)
+                assert not _admitted(connection, generation), mutation
+                connection.execute("ROLLBACK TO SAVEPOINT working_guard")
+                connection.execute("RELEASE SAVEPOINT working_guard")
+            assert connection.execute("SELECT status FROM authority_operation WHERE operation_id='source'").fetchone() == ("FAILED_FINAL",)
+            assert connection.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id='evaluated-effect'").fetchone() == ("HELD_UNKNOWN",)
+
+
 def test_disclosure_revalidation_upgrade_and_restore_preserve_history_constraint(tmp_path):
     from novel_forge.storage.migrations import run_migrations
     from tests.integration.migration_window_postgres_support import restored_generation_backup

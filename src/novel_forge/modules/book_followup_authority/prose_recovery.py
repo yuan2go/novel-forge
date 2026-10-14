@@ -91,3 +91,81 @@ def run_review_with_recovery(coordinator, operation_id, *, principal, scope):
             if not decisions or any(item.get('recovery_state')=='EXHAUSTED' for item in decisions):
                 return
             operation_id = decisions[0]['operation_id']
+
+
+def reuse_known_literal_windows(coordinator, uow, *, run_id, manifest, operation_id, principal):
+    from .prose_budget import frozen_prose_budget_scope
+    from .prose_review import revalidate_legacy_citation_report, completion_digest, review_sources_current
+    from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+
+    if manifest["policy"].get("citation_locator_contract") != "literal-prose-citation.v1":
+        return
+    uow.cursor.execute("""SELECT to_jsonb(source),old.manifest,old.run_id,effect.external_effect_id,effect.request_hash,
+            receipt.receipt_id,receipt.payload,old.exact_release_sha,effect.request_payload,event.content->>'operation_id'
+        FROM authority_book_prose_review_run old
+        JOIN authority_book_prose_review_event event ON event.run_id=old.run_id AND event.kind='WINDOW_ADMITTED'
+        JOIN authority_operation source ON source.operation_id=authority_generation_current_operation(event.content->>'operation_id')
+        JOIN authority_attempt attempt ON attempt.operation_id=source.operation_id
+            AND attempt.attempt_number=(SELECT max(attempt_number) FROM authority_attempt WHERE operation_id=source.operation_id)
+        JOIN authority_external_effect effect ON effect.operation_id=source.operation_id AND effect.effect_type='model.invoke' AND effect.status='SUCCEEDED'
+        JOIN authority_external_effect_dispatch dispatch ON dispatch.external_effect_id=effect.external_effect_id AND dispatch.status='SUCCEEDED'
+        JOIN authority_external_receipt receipt ON receipt.dispatch_id=dispatch.dispatch_id AND receipt.status='VERIFIED'
+        WHERE old.book_run_id=%s AND old.project_id=%s AND old.workspace_id=%s AND old.run_id<>%s
+          AND source.definition_name='longform.prose_review' AND source.status='FAILED_FINAL' AND source.actor_id=%s
+          AND attempt.status='FAILED_FINAL' AND attempt.result->>'error_code'='LONGFORM_PROSE_CITATION_INVALID'
+          AND receipt.payload->'evidence'=dispatch.evidence
+          AND NOT EXISTS(SELECT 1 FROM authority_external_effect other WHERE other.operation_id=source.operation_id AND other.external_effect_id<>effect.external_effect_id)
+          AND NOT EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt active USING(attempt_id) WHERE active.operation_id=source.operation_id AND lease.status='HELD')
+          AND COALESCE((SELECT kind FROM authority_book_prose_review_event control WHERE control.run_id=old.run_id AND kind IN ('PAUSED','RESUMED') ORDER BY event_version DESC LIMIT 1),'RESUMED')<>'PAUSED'
+        ORDER BY old.created_at DESC,receipt.received_at DESC""",
+        [manifest['book_run_id'],manifest['project_id'],manifest['workspace_id'],run_id,principal.principal_id])
+    rows = uow.cursor.fetchall()
+    uow.cursor.execute('SELECT content->>\'window_id\' FROM authority_book_prose_review_event WHERE run_id=%s',[run_id])
+    used = {row[0] for row in uow.cursor.fetchall()}
+    for source, old_manifest, old_run, effect_id, request_hash, receipt_id, receipt, old_release, request_payload, admitted_operation_id in rows:
+        if not review_sources_current(old_manifest['sources'],manifest['sources'],old_manifest['policy']):
+            continue
+        bindings = source['input_asset_snapshot']
+        if len(bindings) != 1:
+            continue
+        frozen = uow.repositories.asset_documents.require(project_id=manifest['project_id'],asset_version_id=bindings[0]['asset_version_id'])
+        content = frozen.content
+        if (frozen.asset_type != 'longform_prose_review_window' or frozen.content_hash != bindings[0]['content_hash']
+            or content.get('manifest_digest') != old_manifest['manifest_digest'] or content.get('book_run_id') != manifest['book_run_id']):
+            continue
+        old_window = content['window']
+        window = next((item for item in manifest['windows'] if item['spans']==old_window['spans'] and item['window_id'] not in used),None)
+        if window is None:
+            continue
+        raw = receipt.get('evidence',{}).get('result')
+        if not isinstance(raw,dict):
+            continue
+        try:
+            frozen_prose_budget_scope(uow.cursor, {'operation_id': source['operation_id'], 'source_operation_id': admitted_operation_id,
+                'command_payload': source['command_payload'], 'request_payload': request_payload}, project_id=manifest['project_id'])
+            resolved,proof = revalidate_legacy_citation_report(raw,source_manifest=old_manifest,source_window=old_window,
+                target_manifest=manifest,target_window=window)
+        except KernelError:
+            continue
+        proof.update(source_operation_id=source['operation_id'],source_run_id=old_run,source_release_sha=old_release,
+            source_window_ref={'asset_version_id':frozen.asset_version_id,'content_hash':frozen.content_hash},
+            source_effect_id=effect_id,source_request_hash=request_hash,source_receipt_id=receipt_id,
+            source_receipt_hash=completion_digest(receipt),target_release_sha=coordinator.commit_sha,
+            model_provider=receipt['evidence'].get('provider_id'),model_id=receipt['evidence'].get('model_id'),
+            prompt_version=receipt['evidence'].get('prompt_version'),skill_version=receipt['evidence'].get('skill_version'))
+        prefix=f'longform_prose/{run_id}/{window["window_id"][7:]}/citation_revalidation'
+        def store(kind,key,value,policy):
+            return uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(operation_id=operation_id,
+                project_id=manifest['project_id'],asset_id=prefix+':'+kind,asset_type=kind,schema_version=value.get('schema_version', 'prose-citation-revalidation.v1'),
+                logical_ref=prefix+'/'+kind,category='longform_prose_review',output_key=key,role='derived',content=value,
+                qualification_policy=policy,trace_id=source['trace_id'],correlation_id=source['correlation_id'],reference_asset_ids=(frozen.asset_id,)))
+        token=window['window_id']
+        stored_proof=store('prose_citation_revalidation','longform.prose_review.citation_proof:'+token,proof,'prose-citation-revalidation.v1')
+        stored_report=store('longform_prose_review_report','longform.prose_review.revalidated_report:'+token,resolved,'longform-prose-literal-review.v1')
+        uow.cursor.execute('SELECT COALESCE(max(event_version),0)+1 FROM authority_book_prose_review_event WHERE run_id=%s',[run_id])
+        version=uow.cursor.fetchone()[0]
+        coordinator._event(uow,run_id,version,'WINDOW_REVALIDATED',{'contract_version':'prose-citation-revalidation.v1',
+            'window_id':token,'operation_id':operation_id,'source_operation_id':source['operation_id'],
+            'source_run_id':old_run,
+            'report_asset_version_id':stored_report.asset_version_id,'proof_asset_version_id':stored_proof.asset_version_id},operation_id)
+        used.add(token)

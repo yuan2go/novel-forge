@@ -189,6 +189,12 @@ def review_progress(uow: AuthorityUnitOfWork, run: dict[str, Any]) -> dict[str, 
                     report = {**report, "manifest_digest": run["manifest_digest"]}
                 reports.append(report)
                 operations[-1]["report_asset_version_id"] = asset_version_id
+        elif event["kind"] == "WINDOW_REVALIDATED":
+            from .prose_citation_evidence import require_revalidated_report
+            report = require_revalidated_report(uow,run=run,event=event)
+            reports.append(report)
+            operations.append({**content,"status":"SUCCEEDED","external_effects":[],"generation_recovery":[],
+                "budget_receipts":[],"execution_evidence":[],"revalidation_only":True})
         elif event["kind"] == "FINDING_DISPOSITION":
             dispositions[content["lineage_id"]] = {
                 **content,
@@ -272,12 +278,15 @@ class BookProseReviewCoordinator:
         scope = dict(
             project_id=project_id, workspace_id=workspace_id, book_run_id=book_run_id
         )
+        delivered_policy = dict(policy)
+        if delivered_policy.get("diagnosis_contract") == "prose-root-cause.v1" and "citation_locator_contract" not in delivered_policy:
+            delivered_policy["citation_locator_contract"] = "literal-prose-citation.v1"
 
         def handler(
             uow: AuthorityUnitOfWork, operation_id: str, checkpoint: Any
         ) -> dict[str, Any]:
             sources = load_review_sources(uow, book_run_id, project_id)
-            manifest = freeze_manifest(**scope, sources=sources, policy=policy)
+            manifest = freeze_manifest(**scope, sources=sources, policy=delivered_policy)
             if policy.get("window_selection") == "EXPLICIT_RANGES_ONLY" and not evidence_ranges:
                 raise KernelError("LONGFORM_PROSE_RETRIEVAL_BOUNDS", "Manual selected review requires exact source ranges")
             if evidence_ranges:
@@ -300,7 +309,7 @@ class BookProseReviewCoordinator:
                     **scope,
                     "manifest_digest": manifest["manifest_digest"],
                     "window": window,
-                    "policy": policy,
+                    "policy": delivered_policy,
                     "source_isolation": manifest.get("source_isolation", "ACCEPTED_PROSE_ONLY"),
                 }
                 document = uow.repositories.asset_documents.materialize_output(
@@ -338,6 +347,8 @@ class BookProseReviewCoordinator:
                 ],
             )
             self._reuse_windows(uow, run_id, manifest, operation_id)
+            from .prose_recovery import reuse_known_literal_windows
+            reuse_known_literal_windows(self,uow,run_id=run_id,manifest=manifest,operation_id=operation_id,principal=principal)
             return {
                 "run_id": run_id,
                 "manifest_digest": manifest["manifest_digest"],
@@ -423,8 +434,27 @@ class BookProseReviewCoordinator:
                      AND (EXISTS (SELECT 1 FROM jsonb_array_elements(run.manifest->'windows') candidate_window
                          WHERE NOT EXISTS (SELECT 1 FROM authority_book_prose_review_event event
                              JOIN authority_operation operation ON operation.operation_id=authority_generation_current_operation(event.content->>'operation_id')
-                             WHERE event.run_id=run.run_id AND event.kind IN ('WINDOW_ADMITTED','WINDOW_REUSED')
-                             AND event.content->>'window_id'=candidate_window->>'window_id' AND operation.status='SUCCEEDED'))
+                             WHERE event.run_id=run.run_id AND event.kind IN ('WINDOW_ADMITTED','WINDOW_REUSED','WINDOW_REVALIDATED')
+                             AND event.content->>'window_id'=candidate_window->>'window_id' AND operation.status='SUCCEEDED'
+                             AND (event.kind<>'WINDOW_REVALIDATED' OR (
+                                 event.created_by_operation_id=run.created_by_operation_id
+                                 AND event.content->>'operation_id'=run.created_by_operation_id
+                                 AND operation.operation_id=run.created_by_operation_id
+                                 AND operation.definition_name='book.prose_review.start'
+                                 AND operation.project_id=run.project_id AND operation.workspace_id=run.workspace_id
+                                 AND event.content->>'contract_version'='prose-citation-revalidation.v1'
+                                 AND EXISTS(SELECT 1 FROM authority_operation_output_asset output
+                                     JOIN authority_asset_version version USING(asset_version_id)
+                                     JOIN authority_asset asset ON asset.asset_id=version.asset_id
+                                     WHERE output.operation_id=operation.operation_id AND output.content_hash=version.content_hash
+                                       AND output.asset_version_id=event.content->>'report_asset_version_id'
+                                       AND asset.asset_type='longform_prose_review_report')
+                                 AND EXISTS(SELECT 1 FROM authority_operation_output_asset output
+                                     JOIN authority_asset_version version USING(asset_version_id)
+                                     JOIN authority_asset asset ON asset.asset_id=version.asset_id
+                                     WHERE output.operation_id=operation.operation_id AND output.content_hash=version.content_hash
+                                       AND output.asset_version_id=event.content->>'proof_asset_version_id'
+                                       AND asset.asset_type='prose_citation_revalidation')))))
                          OR (run.manifest #>> '{policy,follow_acceptance}'='true'
                              AND EXISTS (SELECT 1 FROM authority_book_chapter_acceptance acceptance
                                  WHERE acceptance.book_run_id=authority_book_source_run(run.book_run_id,acceptance.chapter_number) AND acceptance.status='COMMITTED'

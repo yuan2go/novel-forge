@@ -14,7 +14,8 @@ def generated_paths():
 
 
 @pytest.mark.parametrize("lease_scope", [None, "foreign-operation", "foreign-project", "owned"])
-def test_known_world_action_requires_its_own_current_fence_before_frontier_adoption(monkeypatch, lease_scope):
+@pytest.mark.parametrize("revalidation_version", ["world-host-revalidation.v3", "world-host-revalidation.v4"])
+def test_known_world_action_requires_its_own_current_fence_before_frontier_adoption(monkeypatch, lease_scope, revalidation_version):
     from types import SimpleNamespace
     from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
     from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
@@ -30,10 +31,10 @@ def test_known_world_action_requires_its_own_current_fence_before_frontier_adopt
     preparer.query = SimpleNamespace(require=absent)
     preparer.writer = SimpleNamespace(materialize_output=materialize)
     monkeypatch.setattr(handler_runtime, "require_current_fence", lambda uow, lease: {"operation_id": "foreign" if lease_scope == "foreign-operation" else "current"})
-    monkeypatch.setattr(world_preparation, "require_world_foundation_frontier", lambda uow, command: visited.append(command.operation_id))
+    monkeypatch.setattr(world_preparation, "require_world_revalidation_frontier", lambda uow, command: visited.append(command.operation_id))
     lease = WorkerLeaseCommand("attempt", "foreign" if lease_scope == "foreign-project" else "project", "worker", 1, "trace", "correlation") if lease_scope else None
     values = dict(operation_id="current", project_id="project", logical_ref="world_preparation/current/action",
-        asset_type="narrative_governance_action", contract={"host_revalidation": {"contract_version": "world-host-revalidation.v3"}},
+        asset_type="narrative_governance_action", contract={"host_revalidation": {"contract_version": revalidation_version}},
         trace_id="trace", correlation_id="correlation", execution_lease=lease)
     if lease_scope == "owned":
         assert preparer._ensure_contract(**values).asset_version_id == "saved-action"
