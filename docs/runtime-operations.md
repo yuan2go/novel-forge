@@ -344,6 +344,11 @@ revision/continue must reuse Creation's actual Pack scope; the Chapter worker re
 the exact typed working-revision Root to its owning Book. Confirm installed launchers
 and recover the original Root after a pre-dispatch failure. Missing Writer memory and
 unverified observation semantics remain explicit; these checks do not establish prose quality.
+Working-frontier changes also cover candidate local disclosure in chapter 2 while
+accepted history remains at 0, rejection of chapter 1/3 and invalid projected targets,
+and unchanged accepted disclosure rules. Revalidate captured complete native World
+generation/Director results before adopting an installed fix; preserve the original
+Host failure and distinguish a read-only revalidation from fenced native adoption.
 Author scale binding additionally runs `test_author_length_binding.py`. Verify the
 exact frozen Book source in the hierarchical Planning request and the Platform source
 in the complete Writer stdin and saved creative baseline; a saved Context alone is

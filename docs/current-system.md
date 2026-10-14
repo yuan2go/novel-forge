@@ -38,6 +38,11 @@ reference. Both consumers use the manuscript Han-character unit. These input bin
 do not prove that a plan contains enough narrative material or that prose reaches the
 requested scale. Previously frozen Contexts without these markers keep their original
 rendering, including any missing author scale.
+Candidate World disclosure uses the exact validated working-observation target when
+that projection is present; accepted-only inputs retain the accepted frontier plus one.
+Local disclosure still requires a validated current-chapter preparation path and remains
+a planned occurrence. It neither advances the accepted cursor nor becomes accepted
+event evidence. Invalid target metadata or a different chapter cannot authorize disclosure.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author

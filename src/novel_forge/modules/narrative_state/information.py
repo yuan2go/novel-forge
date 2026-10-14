@@ -161,14 +161,15 @@ def project_candidate_disclosure(
     from novel_forge.modules.worldbuilding.working_state import (
         validate_preparation_batch,
     )
+    from novel_forge.modules.worldbuilding.dynamics import candidate_chapter
 
     if (
         reality.get("epistemic_contract") != "world-agency.v2"
-        or chapter_number != reality["chapter_number"] + 1
+        or chapter_number != candidate_chapter(reality)
     ):
         raise KernelError(
             "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID",
-            "candidate disclosure must belong to the next chapter of the frozen agency contract",
+            "candidate disclosure must belong to the exact accepted or selected-working target of the frozen agency contract",
         )
     _, preview = validate_preparation_batch(
         reality=reality,

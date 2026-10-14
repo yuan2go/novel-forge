@@ -139,13 +139,16 @@ def state_index(reality: Mapping[str, Any]) -> dict[tuple[str, str], dict[str, A
             state.setdefault(field["field"], field["value"])
             result[key] = {**prior, "state": state}
     working = reality.get("working_observation_context")
-    if working:
-        if (working.get("contract_version") != "world-working-observations.v1"
+    if working is not None:
+        if (not isinstance(working, Mapping)
+            or working.get("contract_version") != "world-working-observations.v1"
             or working.get("authority") != "SELECTED_WORKING_EXPERIENCE_FOR_CANDIDATES"
             or working.get("semantic_support") != "NOT_VERIFIED"
             or working.get("accepted_history_mutation_allowed") is not False
             or working.get("character_knowledge_granted") is not False
             or working.get("accepted_through_chapter") != reality["chapter_number"]
+            or type(working.get("target_chapter")) is not int
+            or working["target_chapter"] <= reality["chapter_number"]
             or working.get("projection_hash") != narrative_hash({key: value for key, value in working.items() if key != "projection_hash"})):
             raise KernelError("WORLD_WORKING_OBSERVATION_INVALID", "Candidate experience must retain its source-bound non-Canon projection")
         causes = {row["source_event_id"] for row in working["causes"]}
@@ -161,6 +164,14 @@ def state_index(reality: Mapping[str, Any]) -> dict[tuple[str, str], dict[str, A
                 raise KernelError("WORLD_WORKING_OBSERVATION_INVALID", "Working experience cannot grant objective state or another character's knowledge")
             result[key] = dict(entry)
     return result
+
+
+def candidate_chapter(reality: Mapping[str, Any]) -> int:
+    working = reality.get("working_observation_context")
+    if working is None:
+        return reality["chapter_number"] + 1
+    state_index(reality)
+    return working["target_chapter"]
 
 
 def evaluate_requirement(

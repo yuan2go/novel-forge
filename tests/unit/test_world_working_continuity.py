@@ -164,6 +164,49 @@ def test_working_belief_and_acquired_information_support_own_next_action_without
     assert not any(kind == "world_state" for kind, key in state_index(reality))
 
 
+def test_local_disclosure_uses_bound_working_chapter_without_advancing_accepted_history():
+    from novel_forge.modules.narrative_state.information import project_candidate_disclosure, project_disclosure
+    from tests.unit.test_world_initial_agency import chain
+
+    reality = working_epistemic_source()
+    reality["disclosure_fields_contract"] = "world-disclosure-fields.v2"
+    frozen = deepcopy(reality)
+    disclosure = {"disclosure_id": "visible", "event_id": "local:open", "audience": "READER", "mode": "CONFIRM",
+        "fields": ["changes.access"], "presentation_channel": "witnessed opening", "claim_kind": "HISTORICAL_OCCURRENCE"}
+    result = project_candidate_disclosure(reality, disclosure, transitions=chain(), chapter_number=2, path_id="working")
+    assert result["source"]["state"] == {"access": "AVAILABLE"}
+    assert result["source"]["evidence_role"] == "PLANNED_LOCAL_OCCURRENCE"
+    assert reality == frozen and reality["chapter_number"] == 0 and reality["events"] == []
+    with pytest.raises(KernelError, match="WORLD_DISCLOSURE_SOURCE_UNKNOWN"):
+        project_disclosure(reality, disclosure)
+    for target in (1, 3):
+        with pytest.raises(KernelError, match="WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"):
+            project_candidate_disclosure(reality, disclosure, transitions=chain(), chapter_number=target, path_id="working")
+
+
+@pytest.mark.parametrize("target", [None, True, 0, "2"])
+def test_unbound_or_invalid_working_frontier_cannot_authorize_candidate_disclosure(target):
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    from novel_forge.modules.worldbuilding.dynamics import candidate_chapter
+
+    reality = working_epistemic_source()
+    working = reality["working_observation_context"]
+    working["target_chapter"] = target
+    working["projection_hash"] = narrative_hash({key: value for key, value in working.items() if key != "projection_hash"})
+    with pytest.raises(KernelError, match="WORLD_WORKING_OBSERVATION_INVALID"):
+        candidate_chapter(reality)
+
+
+@pytest.mark.parametrize("projection", [{}, [], False])
+def test_corrupt_working_projection_cannot_fall_back_to_accepted_scope(projection):
+    from novel_forge.modules.worldbuilding.dynamics import candidate_chapter
+
+    reality = working_epistemic_source()
+    reality["working_observation_context"] = projection
+    with pytest.raises(KernelError, match="WORLD_WORKING_OBSERVATION_INVALID"):
+        candidate_chapter(reality)
+
+
 def test_supervisor_replans_only_future_when_world_missed_unchanged_working_history():
     from novel_forge.modules.book_authority.supervisor import PostgresBookProductionSupervisor
     supervisor = object.__new__(PostgresBookProductionSupervisor)
