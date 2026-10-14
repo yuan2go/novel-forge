@@ -344,6 +344,15 @@ revision/continue must reuse Creation's actual Pack scope; the Chapter worker re
 the exact typed working-revision Root to its owning Book. Confirm installed launchers
 and recover the original Root after a pre-dispatch failure. Missing Writer memory and
 unverified observation semantics remain explicit; these checks do not establish prose quality.
+Author scale binding additionally runs `test_author_length_binding.py`. Verify the
+exact frozen Book source in the hierarchical Planning request and the Platform source
+in the complete Writer stdin and saved creative baseline; a saved Context alone is
+insufficient. Include internal-only profile/fact/rules/bounds counterexamples, source
+drift and unsupported units. Replay old Contexts without new markers unchanged.
+World v4 output validation must cover generation and Director, native narrative-intent
+and actor-isolation suffixes, strict invalid-body rejection and legacy v3. The native
+PostgreSQL World continuity test traverses that complete output path. Keep scripted
+transport evidence separate from installed real-Provider requests and actual prose counts.
 Per-Chapter opt-in requires the local author/operator and freezes policy plus exact sources
 in the native request; omitted policy keeps the profile/default path. A literary comparison requires its own scoped input and existing runtime authorization.
 Do not resume paused original work or unresolved UNKNOWN effects as a comparison shortcut.

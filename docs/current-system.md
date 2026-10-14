@@ -27,6 +27,17 @@ The default creation-input policy freezes `native-narrative-execution.v2`: Chapt
 working-prose memory v3. The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 These native bindings do not establish literary effectiveness.
+Fresh work-requirements Contexts derive `chapter-generation-length.v1` from the exact
+visible frozen Platform profile. Writer receives its Han bounds, unit and source hashes;
+the candidate's creative baseline retains the same requirement for review and revision.
+The evidence-only policy segment remains outside Writer story inputs. Internal quality
+rules cannot be made public by this derivation. Fresh 1.21.0 hierarchical Planning
+Contexts freeze `book-author-length-source.v1` from the exact Book production profile
+and expose `chapter-planning-length.v1`, with the Book source retained as a Context
+reference. Both consumers use the manuscript Han-character unit. These input bindings
+do not prove that a plan contains enough narrative material or that prose reaches the
+requested scale. Previously frozen Contexts without these markers keep their original
+rendering, including any missing author scale.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author

@@ -1494,6 +1494,11 @@ class _ContextHandler:
             from novel_forge.modules.book_authority.manuscript import verify_working_handler
             verify_working_handler(request, working)
             bundle["working_manuscript"] = working
+        if request.work_requirements_enabled:
+            from .quality_length_requirement import generation_requirement
+            length_requirement = generation_requirement(bundle)
+            if length_requirement is not None:
+                bundle["chapter_generation_length"] = length_requirement
         return ChapterHandlerOutput(
             asset_type=ChapterNode.CONTEXT.asset_type,
             output_key=ChapterNode.CONTEXT.output_key,

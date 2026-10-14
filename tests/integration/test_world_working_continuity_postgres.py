@@ -39,6 +39,22 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
     env["NOVEL_FORGE_ENVIRONMENT"] = "production"
     for key, value in env.items():
         monkeypatch.setenv(key, value)
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+    resolve = PostgresProductionExecutionPayloadResolver.resolve
+    writer_prompts = []
+    chapter_planning_prompts = []
+
+    def capture_writer_prompt(resolver, request, admission):
+        payload = resolve(resolver, request, admission)
+        if request.stage in {"draft", "chapter_plan.generate"}:
+            start = payload.input_text.find('{"context_bundle":')
+            assert start >= 0
+            from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
+            envelope = expand_exact_context_references(json.JSONDecoder().raw_decode(payload.input_text[start:])[0])
+            (writer_prompts if request.stage == "draft" else chapter_planning_prompts).append(envelope)
+        return payload
+
+    monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_writer_prompt)
     input_file = tmp_path / "request.json"
     input_file.write_text(json.dumps({"version": "creation-request.v1", "title": harness.project_id,
         "target_chapters": 2, "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 1},
@@ -57,6 +73,26 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [result["book_run_id"]])
         book = uow.cursor.fetchone()[0]
         assert book["current_chapter"] == 1 and book["accepted_through_chapter"] == 0
+        uow.cursor.execute("""SELECT v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+            WHERE a.project_id=%s AND a.asset_type='context_bundle' AND v.content->>'stage'='draft'""", [book["project_id"]])
+        draft_contexts = [row[0] for row in uow.cursor.fetchall() if row[0].get("chapter_generation_length")]
+        assert len(draft_contexts) == 1
+        assert draft_contexts[0]["chapter_generation_length"]["minimum"] == 800
+        assert draft_contexts[0]["chapter_generation_length"]["maximum"] == 4000
+        from novel_forge.modules.chapter_authority.quality_length_requirement import require_generation_binding
+        require_generation_binding(draft_contexts[0])
+        assert len(writer_prompts) == 1
+        assert writer_prompts[0]["context_bundle"]["chapter_generation_length"] == draft_contexts[0]["chapter_generation_length"]
+        assert len(chapter_planning_prompts) == 1
+        scale = chapter_planning_prompts[0]["context_bundle"]["chapter_planning_length"]
+        assert scale["minimum"] == 800 and scale["maximum"] == 4000 and scale["unit"] == "HAN_CHARACTERS_V1"
+        uow.cursor.execute("SELECT current_book_asset_version_id FROM authority_book WHERE project_id=%s AND book_id=%s", [book["project_id"], book["book_id"]])
+        assert scale["source_book_asset_version_id"] == uow.cursor.fetchone()[0]
+        uow.cursor.execute("""SELECT v.content->'creative_baseline' FROM authority_asset_version v
+            JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='draft_chapter'""", [book["project_id"]])
+        baselines = [row[0] for row in uow.cursor.fetchall()]
+        assert len(baselines) == 1
+        assert baselines[0]["chapter_generation_length"] == draft_contexts[0]["chapter_generation_length"]
         uow.cursor.execute("""SELECT v.content->'contract' FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
             WHERE a.project_id=%s AND a.asset_type='world_preparation_source' ORDER BY v.created_at LIMIT 1""", [book["project_id"]])
         first_source = uow.cursor.fetchone()[0]

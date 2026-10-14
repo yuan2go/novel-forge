@@ -521,6 +521,9 @@ def build_creative_baseline(
             view.get("author_design_guidance") or {}
         ),
     }
+    if context_bundle.get("chapter_generation_length") is not None:
+        from .quality_length_requirement import require_generation_binding
+        baseline["chapter_generation_length"] = dict(require_generation_binding(context_bundle))
     baseline["baseline_digest"] = (
         "sha256:"
         + hashlib.sha256(
@@ -548,7 +551,8 @@ def validate_creative_baseline(baseline: Any) -> dict[str, Any]:
     }
     if (
         not isinstance(baseline, dict)
-        or set(baseline) != (keys | {"book_applicability"} if baseline.get("contract_version") == "creative-baseline.v2" else keys)
+        or set(baseline) != ((keys | {"book_applicability"} if baseline.get("contract_version") == "creative-baseline.v2" else keys)
+            | ({"chapter_generation_length"} if "chapter_generation_length" in baseline else set()))
         or baseline.get("contract_version") not in {"creative-baseline.v1", "creative-baseline.v2"}
     ):
         raise KernelError(
@@ -556,6 +560,9 @@ def validate_creative_baseline(baseline: Any) -> dict[str, Any]:
             "The work contract requires an exact public creative baseline",
         )
     body = {key: value for key, value in baseline.items() if key != "baseline_digest"}
+    if "chapter_generation_length" in baseline:
+        from .quality_length_requirement import validate_generation_requirement
+        validate_generation_requirement(baseline["chapter_generation_length"])
     digest = (
         "sha256:"
         + hashlib.sha256(

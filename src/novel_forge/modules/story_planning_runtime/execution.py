@@ -6057,6 +6057,14 @@ class PostgresPlanningExecutionPreparer:
         }
         from novel_forge.modules.story_design_authority.author_input import author_binding_from_inputs, compile_planning_author_projection
 
+        if command.execution_contract_version == "1.21.0" and command.generator_operation_name in {
+            "book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"
+        } and production_profile.get("chapter_length"):
+            from novel_forge.modules.chapter_authority.quality_length_requirement import freeze_planning_length_source
+            author_length = freeze_planning_length_source(self.query.require(project_id=command.project_id,
+                asset_version_id=book["book_asset_version_id"]), production_profile)
+            if author_length is not None:
+                content["author_length_source"] = author_length
         author_design = author_binding_from_inputs(selected, project_id=command.project_id, book_id=command.book_id)
         if author_design:
             content["author_design_projection"] = compile_planning_author_projection(
@@ -6087,7 +6095,7 @@ class PostgresPlanningExecutionPreparer:
                 qualification_policy="planning-context-source-isolation-v1",
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
-                reference_asset_ids=tuple(document.asset_id for document in documents),
+                reference_asset_ids=self._planning_context_reference_assets(command, documents, content),
             )
         )
         return context, tuple(documents)
@@ -6146,9 +6154,22 @@ class PostgresPlanningExecutionPreparer:
                 qualification_policy="planning-context-source-isolation-v1",
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
-                reference_asset_ids=tuple(document.asset_id for document in documents),
+                reference_asset_ids=self._planning_context_reference_assets(command, documents, content),
             )
         )
+
+    def _planning_context_reference_assets(self, command, documents, content):
+        references = tuple(document.asset_id for document in documents)
+        source = content.get("author_length_source")
+        if source is None:
+            return references
+        from novel_forge.modules.chapter_authority.quality_length_requirement import freeze_planning_length_source
+        book = self.query.require(project_id=command.project_id, asset_version_id=source["asset_version_id"])
+        if (book.asset_type != "book_record" or book.content.get("book_id") != command.book_id
+            or book.content_hash != source["content_hash"]
+            or freeze_planning_length_source(book, book.content.get("production_profile") or {}) != source):
+            raise KernelError("CHAPTER_PLANNING_LENGTH_SOURCE_DRIFT", "Planning Context must retain its exact Book author scale dependency")
+        return tuple(dict.fromkeys((*references, book.asset_id)))
 
 
     def _world_context_bundle(self, *, operation_id, command, base, stage, calibration_sample=False):

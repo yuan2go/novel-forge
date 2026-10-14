@@ -1861,6 +1861,9 @@ def build_provider_context_view(
             (correctness or {}).get("receipt_hash") or ""
         ),
     }
+    if context_bundle.get("chapter_generation_length") is not None:
+        from .quality_length_requirement import require_generation_binding
+        view["chapter_generation_length"] = deepcopy(require_generation_binding(context_bundle))
     review_source_window = (task_view.get("cross_chapter_window") or task_view.get("source_window")
         or (task_view.get("targeted_repair") or {}).get("selected_source_window")
         or (task_view.get("targeted_repair") or {}).get("accepted_source_window"))
@@ -2394,6 +2397,9 @@ def _build_planning_context_view(
                 "token_accounting": "utf8-byte-upper-bound.v1"} if task_capacity else {"maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS}),
         },
     }
+    if context_bundle.get("author_length_source") is not None:
+        from .quality_length_requirement import compile_planning_length
+        view["chapter_planning_length"] = compile_planning_length(context_bundle["author_length_source"])
     if context_bundle.get("author_design_projection"):
         view["author_design_projection"] = compile_provider_author_projection(context_bundle["author_design_projection"])
     continuity = _planning_working_continuity(context_bundle, context_bundle)

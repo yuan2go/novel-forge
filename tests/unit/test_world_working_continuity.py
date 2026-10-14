@@ -84,6 +84,35 @@ def test_native_working_generation_task_and_serialized_schema_share_the_scoped_t
     assert frozen.task["transition_contract"]["schema"] == world_transition_schema(agency=True)
 
 
+@pytest.mark.parametrize("legacy", [False, True])
+@pytest.mark.parametrize("narrative_intent", [False, True])
+@pytest.mark.parametrize("role", ["generation", "evaluation"])
+def test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema(legacy, narrative_intent, role):
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_native_world_schema_fragment
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+
+    source = world_source()
+    if legacy:
+        source["contract_version"] = "world-preparation-source.v4"
+    source_ref = {"asset_version_id": "source", "content_hash": "digest"}
+    output = {"disposition": "NO_OP", "reason": "The quiet scene requires no proposed World transition.", "candidates": []}
+    stage = PlanningWorldPreparation.generation_stage(source, source_ref, {})
+    if role == "evaluation":
+        stage = PlanningWorldPreparation.evaluation_stage(source, source_ref,
+            {"source": source_ref, "output": output}, {"asset_version_id": "generation", "content_hash": "generation-digest"}, {})
+        output = {"evaluations": [], "action_classifications": []}
+    schema = stage.output_schema
+    ref = stage.output_schema_ref
+    if narrative_intent:
+        schema = bind_narrative_intent_schema(schema)
+        ref += ":narrative-intent-v1"
+    assert validate_native_world_schema_fragment(stage.name, schema, output, output_schema_ref=ref) == output
+    with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_SCHEMA_INVALID"):
+        validate_native_world_schema_fragment(stage.name, schema, {**output, "invented": True}, output_schema_ref=ref)
+    with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED"):
+        validate_native_world_schema_fragment(stage.name, schema, output, output_schema_ref=ref.replace(":v3", ":v99").replace(":v4", ":v99"))
+
+
 def working_epistemic_source():
     from novel_forge.modules.book_authority.working_prose import project_working_sources, working_instruction
     from novel_forge.modules.narrative_state.working_memory import bind_packet_coverage, compile_working_memory, normalize_observations
