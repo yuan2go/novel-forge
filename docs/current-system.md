@@ -1810,6 +1810,11 @@ planning, review or acceptance. Its frozen instruction is the only story input; 
 Harness refuses tool execution and Skill activation. The ordinary Agent grounding query
 remains mandatory outside this mode. Internal Skill activation is not an external Tool
 permission. Reference output remains ineligible and separately attributable.
+The Kernel classifies this sealed one-call reference as pure generation only from its
+exact Session, budget, role and frozen server policy plus immutable validation Book
+deployment and compilation. Caller-supplied reference markers cannot create this scope.
+Original elapsed deadlines remain historical evidence; generation and completed-result
+reconciliation keep cancellation, lease fencing and actual model capacity boundaries.
 
 Agent rendering delivers its exact governed task and accepted-boundary Context even
 when a frozen template contains no placeholders. Reference task projection delivers only

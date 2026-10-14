@@ -338,6 +338,14 @@ known-unsent recovery, but proves an existing successful empty response and pres
 Read back the complete rendered author instruction in a disposable native copy before
 dispatch; fixture success alone is not prose delivery.
 
+Reference generation classification requires `test_generation_execution_policy.py`,
+`test_generation_execution_policy_postgres.py` and ordinary Harness admission cases.
+Verify that a self-declared marker, foreign Session, changed budget, non-Director role
+or missing frozen validation deployment remains ordinary Agent work. The exact sealed
+reference can reconcile a complete original receipt after its historical deadline,
+with no new model dispatch; cancellation, active leases, commit fencing and actual
+context capacity still apply. Report native prose readback independently of fixtures.
+
 Reconciled local generation isolation requires interrupted-CLI and native-API guard
 units plus CLI reconciliation, isolated receipt and production recovery PostgreSQL suites.
 Verify original stdin hashes, current native journal identity, live/unverifiable CLI and

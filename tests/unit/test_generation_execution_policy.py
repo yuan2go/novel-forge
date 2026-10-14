@@ -1,6 +1,11 @@
-from novel_forge.modules.command_kernel.generation_policy import pure_generation_capabilities
+from novel_forge.modules.command_kernel.generation_policy import (
+    pure_generation_capabilities,
+)
 from novel_forge.modules.production_execution.process_supervisor import ProcessTimeout
 from novel_forge.modules.production_execution.contracts import ExecutionRuntimeClass
+import pytest
+from copy import deepcopy
+from types import SimpleNamespace
 
 
 def test_only_model_effects_have_generation_recovery_policy():
@@ -10,8 +15,142 @@ def test_only_model_effects_have_generation_recovery_policy():
     assert not pure_generation_capabilities(["storage.object.put"])
 
 
+@pytest.mark.parametrize(
+    "fault",
+    [
+        None,
+        "hash",
+        "tools",
+        "skill",
+        "accepted",
+        "budget",
+        "publication",
+        "side_effect",
+        "caller_marker",
+        "session",
+        "role",
+        "session_budget",
+        "pack",
+        "policy",
+    ],
+)
+def test_reference_only_agent_never_reinstates_fixed_generation_deadline(fault):
+    from novel_forge.modules.command_kernel.generation_policy import (
+        reference_prose_generation,
+    )
+    from novel_forge.modules.command_kernel.external_effect_runtime import _hash
+
+    boundary = {"book_id": "reference-book", "accepted_through_chapter": 0}
+    reference = {
+        "contract_version": "agent-reference-prose.v1",
+        "book_id": "reference-book",
+        "instruction_hash": _hash({"instruction": "frozen reference"}),
+        "production_eligible": False,
+        "tools_allowed": False,
+        "skills_activation_allowed": False,
+        "publication": "NOT_AUTHORIZED",
+    }
+    contract = {
+        "contract_version": "agent-session-execution-contract.v1",
+        "reference_prose": reference,
+        "accepted_boundary": boundary,
+        "budget": {"max_turns": 1, "max_external_effects": 1},
+    }
+    pack = {
+        "release_sha": "a" * 40,
+        "commit_authority": "AGENT_RUNTIME_AUTHORITY",
+        "workflow_node_id": "agent_session",
+    }
+    policy = {
+        "policy_version": "agent-harness-server-policy.v1",
+        "authority": "POSTGRESQL_AGENT_DEFINITION",
+        "role": "STUDIO_DIRECTOR",
+        "model_binding": {},
+        "capability_pack_execution_snapshot": pack,
+        "capability_pack_snapshot_hash": _hash(pack),
+    }
+    policy["policy_hash"] = _hash(policy)
+    contract.update(
+        agent_policy=policy,
+        runtime_binding={},
+        capability_pack_execution_snapshot=pack,
+        capability_pack_snapshot_hash=_hash(pack),
+        release_sha="a" * 40,
+    )
+    if fault == "caller_marker":
+        contract.pop("agent_policy")
+    if fault == "tools":
+        reference["tools_allowed"] = True
+    elif fault == "skill":
+        reference["skills_activation_allowed"] = True
+    elif fault == "accepted":
+        boundary["accepted_through_chapter"] = 1
+    elif fault == "budget":
+        contract["budget"]["max_external_effects"] = 2
+    elif fault == "publication":
+        reference["publication"] = "AUTHORIZED"
+    digest = _hash(contract)
+    command = {
+        "instruction": "frozen reference",
+        "agent_session_id": "reference-session",
+        "execution_contract": deepcopy(contract),
+        "execution_contract_hash": digest,
+        "accepted_boundary": deepcopy(boundary),
+        "requested_skill_ids": [],
+        "policy_snapshot": deepcopy(contract.get("agent_policy", {})),
+        "budget": deepcopy(contract["budget"]),
+        "agent_role": "STUDIO_DIRECTOR",
+        "book_id": "reference-book",
+    }
+    if fault == "hash":
+        digest = "sha256:" + "0" * 64
+    session_id = "wrong" if fault == "session" else "reference-session"
+    session_budget = {} if fault == "session_budget" else deepcopy(contract["budget"])
+    role = "WRITER" if fault == "role" else "STUDIO_DIRECTOR"
+    durable_pack = fault != "pack"
+    if fault == "policy":
+        command["policy_snapshot"] = {}
+    row = (
+        command,
+        contract,
+        digest,
+        boundary,
+        {"tool_calls": 0},
+        {"irreversible_effect_policy": {"allowed": False}},
+        session_id,
+        session_budget,
+        role,
+        durable_pack,
+    )
+    if fault == "side_effect":
+        row = None
+    cursor = SimpleNamespace(execute=lambda *args: None, fetchone=lambda: row)
+    assert reference_prose_generation(cursor, "operation", "project") is (fault is None)
+
+
 def test_generation_process_has_no_elapsed_time_limit():
     assert ProcessTimeout(None).timeout_seconds is None
+
+
+def test_development_admission_cannot_self_declare_the_controlled_reference_marker():
+    from novel_forge.modules.agent_runtime.application import (
+        AgentRuntimeAuthorityApplication,
+    )
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    app = AgentRuntimeAuthorityApplication.__new__(AgentRuntimeAuthorityApplication)
+    app.runtime_environment = SimpleNamespace(controlled=False)
+    request = SimpleNamespace(
+        project_id="project",
+        actor_id="operator",
+        reference_prose=False,
+        execution_contract={
+            "reference_prose": {"contract_version": "agent-reference-prose.v1"}
+        },
+    )
+    principal = SimpleNamespace(principal_id="operator", require=lambda *_args: None)
+    with pytest.raises(KernelError, match="server-controlled validation admission"):
+        app.admit_harness_session(request, principal=principal)
 
 
 def test_complete_prose_survives_auxiliary_and_accounting_failure():

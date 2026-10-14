@@ -403,6 +403,8 @@ class AgentRuntimeAuthorityApplication:
             raise PermissionError("Agent Harness actor must be the trusted Principal")
         if request.reference_prose and not self.runtime_environment.controlled:
             raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "Reference prose requires the controlled validation runtime")
+        if not self.runtime_environment.controlled and request.execution_contract.get("reference_prose"):
+            raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "The reference marker is reserved for server-controlled validation admission")
         self._register_definitions()
         context = AdmissionContext(
             actor_id=principal.principal_id,
