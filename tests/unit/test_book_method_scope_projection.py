@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 
 import pytest
 
@@ -6,6 +7,24 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
 from novel_forge.modules.mkaos_authority.craft_selection import _hash
 from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references, expand_exact_context_references
+
+
+def test_nested_canonical_mission_strings_are_lossless_only_in_opted_in_transport():
+    mission = {"choice": "她愿意等到明天，也可以拒绝。" * 80, "limits": ["只知已发生事实", "不强制反转"]}
+    canonical = json.dumps(mission, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    source = {"intent": mission, "memo": {"execution_strategy": canonical},
+              "ordinary": json.dumps(mission, ensure_ascii=False, indent=2), "literal": "{unfinished"}
+    legacy, old_proof = compile_exact_context_references(source, structured_transport=True, short_literals=True)
+    encoded, proof = compile_exact_context_references(source, structured_transport=True, short_literals=True,
+        nested_canonical_strings=True)
+    assert expand_exact_context_references(encoded) == expand_exact_context_references(legacy) == source
+    assert encoded["ordinary"] == source["ordinary"] and encoded["literal"] == source["literal"]
+    assert legacy["memo"]["execution_strategy"] == canonical
+    assert len(json.dumps(encoded, ensure_ascii=False).encode()) < len(json.dumps(legacy, ensure_ascii=False).encode())
+    assert proof["transport_version"] == "provider-structured-exact-reference.v4"
+    assert old_proof["transport_version"] == "provider-structured-exact-reference.v3"
+    with pytest.raises(KernelError, match="Nested canonical strings require structured transport"):
+        compile_exact_context_references(source, nested_canonical_strings=True)
 
 
 def selection():

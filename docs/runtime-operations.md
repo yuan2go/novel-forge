@@ -3823,6 +3823,13 @@ reference anchor. Writer rendering consumes the frozen receipt and the same code
 the complete final request still passes the ordinary model-capacity admission. This
 changes transport accounting without changing story or method content, and applies only
 to newly built Contexts.
+New clean experimental Writer Contexts use `protected-context-exact-accounting.v2`
+to include nested canonical JSON object strings in that same lossless envelope.
+This avoids counting the Memo's serialized Mission as an unrelated second payload.
+Every original string must reconstruct byte for byte, including source order and
+Unicode; noncanonical strings remain literal. The frozen receipt selects the codec
+in both Context accounting and final rendering. Existing v1 receipts keep their
+original transport; complete Provider capacity admission remains mandatory.
 Fresh experimental Chapter Contexts may also carry
 `world-protected-context-accounting.v1`. World preparation counts each complete
 required role candidate with the existing lossless structured codec and 256 bytes

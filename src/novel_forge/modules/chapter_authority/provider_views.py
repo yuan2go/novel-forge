@@ -3656,7 +3656,7 @@ def _expand_text_fragments(value):
     return result
 
 
-def compile_exact_context_references(view, *, structured_transport=False, short_literals=False):
+def compile_exact_context_references(view, *, structured_transport=False, short_literals=False, nested_canonical_strings=False):
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     marker = "__exact_value_ref__"
     overrides, removed, json_string = "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
@@ -3697,7 +3697,7 @@ def compile_exact_context_references(view, *, structured_transport=False, short_
                 fragment_count += 1
             else:
                 result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
-        elif structured_transport and isinstance(value, str) and path.endswith("/safe_summary"):
+        elif structured_transport and isinstance(value, str) and (nested_canonical_strings or path.endswith("/safe_summary")):
             try:
                 parsed = json.loads(value)
             except ValueError:
@@ -3722,6 +3722,10 @@ def compile_exact_context_references(view, *, structured_transport=False, short_
             delta_reference_count=delta_count, canonical_json_string_count=json_count, text_fragment_group_count=fragment_count)
     if short_literals:
         proof.update(transport_version="provider-structured-exact-reference.v3",literal_minimum_bytes=96)
+    if nested_canonical_strings:
+        if not structured_transport:
+            raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Nested canonical strings require structured transport")
+        proof.update(transport_version="provider-structured-exact-reference.v4")
     return encoded, proof
 
 
