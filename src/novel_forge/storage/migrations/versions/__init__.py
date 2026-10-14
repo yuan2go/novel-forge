@@ -210,6 +210,7 @@ from . import (
     v20261014_0206_story_design_book_namespace,
     v20261014_0207_foundation_method_context,
     v20261014_0208_book_method_scope_context,
+    v20261014_0209_planning_input_scope_point_reads,
 )
 
 VERSION_MODULES = [
@@ -422,6 +423,7 @@ VERSION_MODULES = [
     v20261014_0206_story_design_book_namespace,
     v20261014_0207_foundation_method_context,
     v20261014_0208_book_method_scope_context,
+    v20261014_0209_planning_input_scope_point_reads,
 ]
 
 __all__ = ["VERSION_MODULES"]

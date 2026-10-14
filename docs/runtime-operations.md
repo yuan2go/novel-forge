@@ -4456,7 +4456,7 @@ An already registered successor stopped at FAILED_RETRYABLE may consume its orig
 verified single successful pure-model Effect on a later Worker release. The exact
 registered command, Book, frozen Attempt Pack, current fence and input checks still
 apply; a missing/unknown result, active lease or pending cancellation cannot use this
-compatibility path. The source release binding remains unchanged.
+compatibility path. The source release binding remains unchanged. Migration 0209 retains the input Project/Book checks while reading each immutable input version by identity before evaluating its Book metadata. Back up first; rehearse the upgrade on a restored copy and retain receipt/prose readback.
 
 A recovered complete pure-generation result is reconciled and revalidated through its
 native owner without a new generation or finalization deadline. Old deadlines and
