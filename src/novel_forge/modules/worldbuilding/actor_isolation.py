@@ -63,7 +63,7 @@ def actor_task(source: Mapping[str, Any], source_ref: Mapping[str, str], actor_i
         raise KernelError("WORLD_ACTOR_GOAL_UNAVAILABLE", "actor needs its own approved desire before any dispatch")
     traits = {key: cast[key] for key in ACTOR_TRAITS if isinstance(cast.get(key), str)}
     persistent = source.get("actor_experiment", {}).get("version") == "world-actor-experiment.v2"
-    continuous = source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"}
+    continuous = source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3", "world-role-delivery.v4"}
     if persistent and not continuous:
         raise KernelError("WORLD_ACTOR_POLICY_INVALID", "multi-step intentions require the current accepted private projection")
     knowledge_fields = CURRENT_KNOWLEDGE_FIELDS if continuous else KNOWLEDGE_FIELDS

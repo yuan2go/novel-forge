@@ -52,6 +52,21 @@ recheck the fence, Formation cancellation and locked Book frontier; capacity suc
 retain the exact proof and cannot bypass a paused Book. Source, failed Attempts and
 unknown usage remain immutable. Focused PostgreSQL guards are execution evidence;
 installed native adoption and literary improvement require separate qualification.
+Fresh working World Sources select `world-role-delivery.v4` and deliver
+`world-provider-task.v5`. Complete contiguous prose is transported as one exact range
+per source after full-length and text-hash checks; stored paragraph locators and the
+original working snapshot remain unchanged. A separate receipt binds both representations
+without promoting working experience to accepted facts or character knowledge. The task
+retains one full transition schema and all selected knowledge, while Knowledge selection
+criteria remain auditable source data rather than character behavior rules. Old Sources
+retain their frozen projection. Protected World capacity failures now use the existing
+typed pre-send failure classification. Migration 0211 admits an exact legacy unsent
+programming failure only after reproducing its original protected-context rejection,
+verifying the compact delivery at unchanged capacity and checking the live Book frontier.
+The actual successor reuses the original frozen Context and MKAOS selection, checks its
+fresh Source against the original story inputs and reconstructs the registered task proof.
+Focused tests and captured database-copy execution are qualification evidence; installation,
+native production adoption and literary improvement require separate evidence.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author

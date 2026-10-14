@@ -181,6 +181,17 @@ unsupported: immutable isolation and forward schema facts survive a code rollbac
 applied database behavior with a new forward migration. These are deployment/restore procedures,
 not a new backup qualification gate.
 
+For an unsent legacy World `PROGRAMMING_BUG` whose exact message begins with
+`PROTECTED_CONTEXT_BUDGET_EXCEEDED:`, ordinary Creation continuation uses the existing
+Planning continuation Owner. Migration 0211 and the corrected runtime must be deployed
+together. The Owner reproduces the original failure on frozen inputs, verifies complete
+prose delivery, retains the original Context and knowledge selection, and admits one
+linked successor at unchanged Planning allocation and World capacity. Both capacities
+have their own source contracts; do not equate them or enlarge either as a substitute
+for correcting the input. Live Book, cancellation, input, lease or proof drift rejects
+recovery. Preserve the old failure, Sources and unknown usage; no history reset or
+manually substituted source is required.
+
 For a stopped native `longform.prose_review` sidecar, replay its original advance command.
 Recovery checks the immutable window, current matching manuscript prefix, actor, permissions,
 Tool denial, cancellation, all original receipts and released writers. Isolation, one native

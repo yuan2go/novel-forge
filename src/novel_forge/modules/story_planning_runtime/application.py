@@ -1835,7 +1835,7 @@ class StoryPlanningGenerationApplication:
                 return continued
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
-                    "SELECT result->>'error_code',result#>>'{failure_details,cause_code}' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
+                    "SELECT result->>'error_code',result#>>'{failure_details,cause_code}',result->>'error_message' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
                     [row[0]],
                 )
                 failure = uow.cursor.fetchone()
@@ -1844,7 +1844,8 @@ class StoryPlanningGenerationApplication:
                     [row[0]],
                 )
                 source_version = int(uow.cursor.fetchone()[0])
-            if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
+            if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+                or (failure[0] == "PROGRAMMING_BUG" and len(failure) > 2 and str(failure[2] or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")) or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"
                     and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})):
                 if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:

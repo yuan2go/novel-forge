@@ -206,6 +206,10 @@ def require_source(
                 return source
             _require_world_lineage_settled(uow, source_operation_id=source_operation_id, project_id=project_id, book_id=str(row[4]), active_successor_operation_id=active_successor_operation_id)
             return mode(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
+    if (row[0] == "FAILED_FINAL" and failure_code == "PROGRAMMING_BUG"
+        and str(dict(attempt[2] or {}).get("error_message") or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")):
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen,
+            attempt=attempt, protected_world_failure=True)
     if (
         (row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED")
         or (row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PROVIDER_ROUTING_BLOCKED"
@@ -831,6 +835,66 @@ def require_capacity_route_candidates(decision, *, frozen, source_operation_id):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing failure is not solely a proven request capacity failure for an authorized candidate")
 
 
+def _require_protected_world_context_source(uow, *, source_operation_id, frozen, failure):
+    from types import SimpleNamespace
+    from .application import _command_from_payload
+    from .execution import PostgresPlanningExecutionPreparer
+    from .world_preparation import PlanningWorldPreparation, world_plan_references
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.storage.world_preparation_repositories import WorldPreparationRepository
+
+    rejected = KernelError("PLANNING_WORLD_DELIVERY_RECOVERY_INVALID", "Require the exact unsent historical World layout failure and unchanged current story")
+    command = _command_from_payload(frozen)
+    if (command.execution_contract_version != "1.21.0" or command.generator_operation_name != "chapter_plan.generate"
+        or not command.world_preparation_request or failure.get("error_code") != "PROGRAMMING_BUG"):
+        raise rejected
+    query = AuthorityAssetQuery(uow.database_url)
+    source = query.require(project_id=command.project_id, logical_ref=f"world_preparation/{source_operation_id}/source")
+    uow.cursor.execute("SELECT asset_version_id,content_hash FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle'", [source_operation_id])
+    bound = uow.cursor.fetchone()
+    if not bound:
+        raise rejected
+    base = query.require(project_id=command.project_id, asset_version_id=bound[0])
+    contract = source.content["contract"]
+    if (source.asset_type != "world_preparation_source" or base.content_hash != bound[1]
+        or PlanningWorldPreparation._source_operation(uow.database_url, command.project_id, source.asset_version_id) != source_operation_id
+        or contract.get("contract_version") != "world-preparation-source.v5" or contract.get("provider_projection_version") != "world-role-delivery.v3"
+        or contract.get("actor_experiment") or contract["request"] != dict(command.world_preparation_request)):
+        raise rejected
+    uow.cursor.execute("""SELECT formation.formation_run_id FROM authority_story_formation_run formation
+        JOIN authority_book_production book ON book.stable_idempotency_key=formation.formation_run_id||':production'
+        WHERE book.book_run_id=%s AND formation.project_id=%s AND formation.workspace_id=%s AND formation.book_id=%s FOR UPDATE OF formation""",
+        [contract["request"]["book_run_id"],command.project_id,command.workspace_id,command.book_id])
+    formation = uow.cursor.fetchone()
+    uow.cursor.execute("""SELECT current_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s AND book_id=%s
+        AND state IN ('READY','CHAPTER_PLAN_REQUIRED') AND active_chapter_request_id IS NULL FOR UPDATE""",
+        [contract["request"]["book_run_id"],command.project_id,command.book_id])
+    book = uow.cursor.fetchone()
+    if not formation or not book or command.logical_key != f"chapter:{book[0]+1}" or contract["target_chapter"] != book[0]+1:
+        raise rejected
+    WorldPreparationRepository(uow.cursor).assert_source_current(project_id=command.project_id, book_id=command.book_id, frozen=contract)
+    refs = {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}
+    arguments = {"allowed_references": world_plan_references(contract, command)}
+    stage = PlanningWorldPreparation.generation_stage(contract, refs, base.content.get("narrative_intelligence") or {}, **arguments)
+    try:
+        PostgresPlanningExecutionPreparer._world_context_content(command=command, base=base, stage=stage, source=source)
+    except ValueError as error:
+        if str(error) != failure.get("error_message"):
+            raise rejected from error
+    else:
+        raise rejected
+    corrected = {**deepcopy(contract), "provider_projection_version": "world-role-delivery.v4"}
+    projected_source = SimpleNamespace(asset_version_id=source.asset_version_id, asset_type=source.asset_type,
+        content={"contract": corrected}, content_hash=canonical_hash({"contract": corrected}))
+    stage = PlanningWorldPreparation.generation_stage(corrected, {"asset_version_id": projected_source.asset_version_id,
+        "content_hash": projected_source.content_hash}, base.content.get("narrative_intelligence") or {}, **arguments)
+    projected = PostgresPlanningExecutionPreparer._world_context_content(command=command, base=base, stage=stage, source=projected_source)
+    return {"contract_version": "planning-exact-value-reference.v1", "context_asset_version_id": base.asset_version_id,
+        "context_content_hash": base.content_hash, "world_input_delivery": {"contract_version": "world-input-delivery-revalidation.v1",
+            "source_ref": refs, "historical_failure": failure, "provider_projection_version": "world-role-delivery.v4",
+            "delivered_task_hash": canonical_hash(stage.task), "context_projection_hash": _context_projection_hash(projected)}}
+
+
 def _pre_send_capacity_source(
     uow: Any,
     *,
@@ -839,10 +903,14 @@ def _pre_send_capacity_source(
     frozen: dict[str, Any],
     attempt: Any,
     route_preflight: bool = False,
+    protected_world_failure: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
     projection_revalidation, retained_world, world_owner = None, None, source_operation_id
+    if protected_world_failure:
+        projection_revalidation = _require_protected_world_context_source(uow, source_operation_id=source_operation_id,
+            frozen=frozen, failure=dict(attempt[2] or {}))
     if route_preflight:
         uow.cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
             JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
@@ -866,6 +934,13 @@ def _pre_send_capacity_source(
         [source_operation_id] * 3,
     )
     unsafe = uow.cursor.fetchone()[0]
+    if protected_world_failure:
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status IN ('LEASED','RUNNING','CHECKPOINTED','RESULT_SUBMITTED'))
+            OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+                WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id] * 4)
+        unsafe = uow.cursor.fetchone()[0]
     if route_preflight:
         from .application import _command_from_payload
         from .schema_recovery import retained_world_action
@@ -1154,6 +1229,8 @@ def _capacity_target(
         - route.token_framing_overhead,
     )
     allocated = min(baseline * 2, ceiling)
+    if (source.get("context_revalidation") or {}).get("world_input_delivery"):
+        allocated = int(baseline)
     if source.get("capacity_inheritance"):
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
         if allocated > ceiling:
@@ -1188,7 +1265,7 @@ def _capacity_target(
         except KernelError as error:
             if error.code != "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
                 raise
-            if allocated == ceiling or source.get("capacity_inheritance"):
+            if allocated == ceiling or source.get("capacity_inheritance") or (source.get("context_revalidation") or {}).get("world_input_delivery"):
                 raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
                     "The retained task cannot fit its authorized single-request capacity",details=error.details) from error
             allocated=min(allocated*2,ceiling)

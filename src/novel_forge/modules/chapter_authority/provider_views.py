@@ -325,6 +325,30 @@ def _project_selected_world_selection(selection: Any) -> Any:
     return result
 
 
+def _project_world_knowledge_delivery(selection: Any) -> Any:
+    result = _project_selected_world_selection(selection)
+    if not isinstance(result, Mapping) or not isinstance(result.get("need"), Mapping):
+        return result
+    result = deepcopy(dict(result))
+    need = result["need"]
+    receipt = result.get("need_delivery_receipt")
+    fields = {"need_digest", "target_stage", "required_card_asset_version_ids"}
+    if receipt is not None:
+        if (not isinstance(receipt, Mapping) or receipt.get("contract_version") != "world-knowledge-need-delivery.v1"
+            or receipt.get("selection_digest") != result.get("selection_digest") or receipt.get("need_digest") != need.get("need_digest")
+            or set(need) - fields or receipt.get("authority") != "KNOWLEDGE_SELECTION_CRITERIA_NOT_CHARACTER_RULES"):
+            raise KernelError("WORLD_SELECTION_RECEIPT_INVALID", "Knowledge retrieval criteria retain their original selection identity")
+        return result
+    if not _is_exact_sha256(result.get("selection_digest")) or not _is_exact_sha256(need.get("need_digest")):
+        raise KernelError("WORLD_SELECTION_RECEIPT_INVALID", "Knowledge delivery requires exact frozen selection and need digests")
+    omitted = {key: need.pop(key) for key in tuple(need) if key not in fields}
+    result["need_delivery_receipt"] = {"contract_version": "world-knowledge-need-delivery.v1",
+        "selection_digest": result["selection_digest"], "need_digest": need["need_digest"],
+        "frozen_context_pointer": "/narrative_intelligence/need", "omitted_value_hash": _projection_hash(omitted),
+        "omitted_fields": sorted(omitted), "authority": "KNOWLEDGE_SELECTION_CRITERIA_NOT_CHARACTER_RULES"}
+    return result
+
+
 def _project_denied_planning_selection(selection: Mapping[str, Any], *, empty_query: bool = False) -> Mapping[str, Any]:
     from novel_forge.modules.mkaos_authority.domain import validate_book_knowledge_access_policy
 
@@ -453,20 +477,41 @@ def build_provider_task_view(
         return _task(stage, world_preparation=deepcopy(dict(task)))
     if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
         task = inputs.get("world_preparation")
-        if not isinstance(task, Mapping) or task.get("contract_version") not in {"world-provider-task.v1", "world-provider-task.v2", "world-provider-task.v3", "world-provider-task.v4"} or task.get("fact_mutation_allowed") is not False:
+        if not isinstance(task, Mapping) or task.get("contract_version") not in {"world-provider-task.v1", "world-provider-task.v2", "world-provider-task.v3", "world-provider-task.v4", "world-provider-task.v5"} or task.get("fact_mutation_allowed") is not False:
             raise KernelError("WORLD_PROVIDER_TASK_INVALID", "world stages require their exact frozen role projection")
         expected_role = "WORLD_REASONER" if stage == "world_candidates.generate" else "DIRECTOR"
         if task.get("role") != expected_role:
             raise KernelError("WORLD_PROVIDER_ROLE_INVALID", "world stage cannot consume another role's context")
         projected_task = deepcopy(dict(task))
-        if task["contract_version"] == "world-provider-task.v4":
-            from novel_forge.modules.book_authority.working_prose import validate_working_projection
+        if task["contract_version"] in {"world-provider-task.v4", "world-provider-task.v5"}:
+            from novel_forge.modules.book_authority.working_prose import complete_prose_delivery, validate_working_projection
             working = task.get("working_manuscript")
             if not isinstance(working, Mapping):
                 raise KernelError("WORLD_WORKING_SOURCE_REQUIRED", "Working World tasks require their frozen selected-source packet")
             validate_working_projection(working, project_id=working.get("project_id"),
                 book_id=working.get("book_id"), target_chapter=task.get("target_chapter"),
                 accepted_through_chapter=task.get("accepted_through_chapter"))
+            if task["contract_version"] == "world-provider-task.v5":
+                receipt = task.get("working_delivery_receipt")
+                if receipt is None:
+                    projected_task["working_manuscript"], receipt = complete_prose_delivery(working)
+                    projected_task["working_delivery_receipt"] = receipt
+                if (not isinstance(receipt, Mapping) or receipt.get("contract_version") != "world-working-prose-delivery.v1"
+                    or receipt.get("delivery_snapshot_hash") != projected_task["working_manuscript"]["snapshot_hash"]
+                    or receipt.get("source_snapshot_hash") != (task.get("working_observation_context") or {}).get("snapshot_hash")
+                    or receipt.get("accepted_history_mutation_allowed") is not False or receipt.get("character_knowledge_granted") is not False):
+                    raise KernelError("WORLD_WORKING_DELIVERY_DRIFT", "Working delivery retains the original selected-source and observation boundary")
+                transition = projected_task.get("transition_contract") or {}
+                alias = transition.get("schema_alias_receipt")
+                if "schema" in transition:
+                    if transition["schema"] != transition.get("payload_schema"):
+                        raise KernelError("WORLD_TRANSITION_SCHEMA_ALIAS_INVALID", "Only identical declared payload schemas may share their delivery")
+                    transition["schema_alias_receipt"] = {"contract_version": "world-transition-schema-alias.v1",
+                        "schema_hash": _projection_hash(transition.pop("schema")), "delivered_pointer": "/transition_contract/payload_schema"}
+                elif (not isinstance(alias, Mapping) or alias.get("contract_version") != "world-transition-schema-alias.v1"
+                    or alias.get("schema_hash") != _projection_hash(transition.get("payload_schema"))
+                    or alias.get("delivered_pointer") != "/transition_contract/payload_schema"):
+                    raise KernelError("WORLD_TRANSITION_SCHEMA_ALIAS_INVALID", "The omitted duplicate remains bound to the delivered full schema")
         for index, segment in enumerate(projected_task.get("planning_window") or []):
             if "loss_records" not in segment:
                 continue
@@ -480,7 +525,7 @@ def build_provider_task_view(
                 "audit_hash": _projection_hash(audit),
                 "loss_record_count": len(audit["loss_records"]),
             }
-        if projected_task["contract_version"] in {"world-provider-task.v2", "world-provider-task.v3", "world-provider-task.v4"}:
+        if projected_task["contract_version"] in {"world-provider-task.v2", "world-provider-task.v3", "world-provider-task.v4", "world-provider-task.v5"}:
             projection = projected_task["context_projection"]
             audit = {key: projection.pop(key) for key in ("policy", "rejections", "estimated_tokens", "token_accounting", "provider_admission", "task_workset") if key in projection}
             state_provenance = {}
@@ -525,7 +570,8 @@ def build_provider_task_view(
                 "equivalent_state_pointer": "/intent_state", "authority": "PROPOSAL_NOT_ACCEPTANCE",
                 "proposed_step_dispositions": {step["step_id"]: {"decision": step["decision"], "reason": step["reason"]} for step in plan["steps"]}}
         if "narrative_intelligence" in projected_task:
-            projected_task["narrative_intelligence"] = _project_selected_world_selection(projected_task["narrative_intelligence"])
+            projected_task["narrative_intelligence"] = (_project_world_knowledge_delivery(projected_task["narrative_intelligence"])
+                if projected_task["contract_version"] == "world-provider-task.v5" else _project_selected_world_selection(projected_task["narrative_intelligence"]))
         return _task(stage, world_preparation=_compact(projected_task))
     from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS, FOUNDATION_INPUT_ROLES, foundation_task
 
@@ -1449,11 +1495,15 @@ def build_provider_context_view(
                 "world task differs from its frozen role Context",
             )
         selection = task.get("narrative_intelligence") or {}
-        if selection.get("world_selection_receipt") is not None:
+        if task.get("contract_version") == "world-provider-task.v5":
+            original = context_bundle.get("narrative_intelligence") or {}
+            if selection != _compact(_project_world_knowledge_delivery(original)):
+                raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "World delivery retains its complete original knowledge selection outside the story rules")
+        elif selection.get("world_selection_receipt") is not None:
             original = context_bundle.get("narrative_intelligence")
             if not isinstance(original, Mapping) or selection != _compact(_project_selected_world_selection(original)):
                 raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "Selected World knowledge must resolve to the complete immutable selection")
-        if (selection.get("need") or {}).get("condition_sources_receipt") is not None:
+        if task.get("contract_version") != "world-provider-task.v5" and (selection.get("need") or {}).get("condition_sources_receipt") is not None:
             original = context_bundle.get("narrative_intelligence")
             policy = original.get("knowledge_access_policy") if isinstance(original, Mapping) else None
             if (not isinstance(original, Mapping) or not isinstance(policy, Mapping)

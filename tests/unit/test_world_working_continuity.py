@@ -38,6 +38,116 @@ def test_world_and_director_consume_selected_experience_without_granting_accepte
     assert source == frozen
 
 
+@pytest.mark.parametrize("role,stage", [("WORLD_REASONER", "world_candidates.generate"), ("DIRECTOR", "world_candidates.evaluate")])
+def test_compact_world_delivery_preserves_exact_story_and_original_observation_binding(role, stage):
+    from novel_forge.modules.worldbuilding.working_state import project_working_observation_context
+    source = world_source()
+    source["provider_projection_version"] = "world-role-delivery.v4"
+    source["reality"] = project_working_observation_context(reality=source["reality"], working=source["working_manuscript"], characters=[])
+    original = deepcopy(source)
+    task = PlanningWorldPreparation._task(source, {"asset_version_id": "source", "content_hash": "digest"}, role)
+    delivered = build_provider_task_view(stage, {"world_preparation": task})["world_preparation"]
+    assert source == original
+    assert delivered["contract_version"] == "world-provider-task.v5"
+    receipt = delivered["working_delivery_receipt"]
+    assert receipt["source_snapshot_hash"] == source["working_manuscript"]["snapshot_hash"]
+    assert receipt["source_snapshot_hash"] == delivered["working_observation_context"]["snapshot_hash"]
+    assert receipt["delivery_snapshot_hash"] == delivered["working_manuscript"]["snapshot_hash"]
+    assert receipt["character_knowledge_granted"] is False
+    assert delivered["working_manuscript"]["sources"][-1]["passages"][0]["text"] == "".join(p["text"] for p in source["working_manuscript"]["sources"][-1]["passages"])
+    assert "schema" not in delivered["transition_contract"]
+    assert delivered["transition_contract"]["payload_schema"] == task["transition_contract"]["payload_schema"]
+    assert build_provider_task_view(stage, {"world_preparation": delivered})["world_preparation"] == delivered
+    delivered["working_delivery_receipt"]["source_snapshot_hash"] = "sha256:another-source"
+    with pytest.raises(KernelError, match="WORLD_WORKING_DELIVERY_DRIFT"):
+        build_provider_task_view(stage, {"world_preparation": delivered})
+
+
+def test_world_delivery_keeps_knowledge_and_separates_selection_criteria_from_character_rules():
+    from novel_forge.modules.chapter_authority.provider_views import _project_world_knowledge_delivery
+    need = {"need_digest": "sha256:" + "a" * 64, "target_stage": "chapter_plan.generate", "required_card_asset_version_ids": [],
+        "hard_constraints": ["runtime-reference"], "condition_sources": {"source": {"asset_version_id": "asset", "content_hash": "hash"}}}
+    original = {"need": need, "selection_digest": "sha256:" + "b" * 64, "selected": [], "selection_status": "NO_ELIGIBLE_MATCH"}
+    frozen = deepcopy(original)
+    result = _project_world_knowledge_delivery(original)
+    assert original == frozen and result["selected"] == original["selected"]
+    assert result["need"] == {key: need[key] for key in ("need_digest", "target_stage", "required_card_asset_version_ids")}
+    assert "hard_constraints" in result["need_delivery_receipt"]["omitted_fields"]
+    assert _project_world_knowledge_delivery(result) == result
+    result["need_delivery_receipt"]["need_digest"] = "changed"
+    with pytest.raises(KernelError, match="WORLD_SELECTION_RECEIPT_INVALID"):
+        _project_world_knowledge_delivery(result)
+
+
+@pytest.mark.parametrize("version", ["world-role-delivery.v3", "world-role-delivery.v4"])
+def test_task_scoped_world_history_excludes_unselected_internal_event(version, monkeypatch):
+    from novel_forge.modules.story_planning_runtime import world_preparation as module
+    source = world_source()
+    source["provider_projection_version"] = version
+    source["reality"]["events"] = [{"event_id": identity, "state_kind": "world_state",
+        "identity": {"entity_key": identity}, "coordinate": {"source_chapter": 0},
+        "mutation": {"payload": {"world_transition": True, "description": value}}}
+        for identity, value in [("selected", "Visible consequence"), ("internal", "Private quality decision")]]
+    monkeypatch.setattr(module, "project_role_context", lambda **kwargs: {"context_digest": "digest",
+        "selection": [{"source_event_id": "selected"}]})
+    task = PlanningWorldPreparation._task(source, {"asset_version_id": "source", "content_hash": "digest"}, "DIRECTOR")
+    assert [event["event_id"] for event in task["accepted_history"]] == ["selected"]
+    assert task["accepted_history"][0]["fields"]["description"] == "Visible consequence"
+
+
+@pytest.mark.parametrize("drift", [None, "story", "knowledge", "inputs", "task", "proof"])
+def test_actual_world_successor_consumes_registered_frozen_delivery_proof(drift, monkeypatch):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime import runtime_continuation, world_preparation
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from novel_forge.modules.worldbuilding.working_state import project_working_observation_context
+    original_contract = world_source()
+    original_contract["provider_projection_version"] = "world-role-delivery.v3"
+    original_contract["reality"] = project_working_observation_context(reality=original_contract["reality"], working=original_contract["working_manuscript"], characters=[])
+    def document(identity, contract):
+        content = {"contract": contract}
+        return SimpleNamespace(asset_version_id=identity, asset_type="world_preparation_source", content=content, content_hash=canonical_hash(content))
+    original = document("original", original_contract)
+    corrected = {**deepcopy(original_contract), "provider_projection_version": "world-role-delivery.v4"}
+    current = document("successor", corrected)
+    preview = document("original", corrected)
+    base = SimpleNamespace(asset_version_id="context", content_hash="context-hash", content={"narrative_intelligence": {}, "input_versions": []})
+    monkeypatch.setattr(world_preparation, "world_plan_references", lambda *args: {})
+    def context_content(*, command, base, stage, source):
+        return {"context_manifest": {"provider_context_view": {"world_preparation": stage.task}}}
+    monkeypatch.setattr(PostgresPlanningExecutionPreparer, "_world_context_content", staticmethod(context_content))
+    command = SimpleNamespace(project_id="p", runtime_continuation_id="runtime")
+    def stage(source):
+        return PlanningWorldPreparation.generation_stage(source.content["contract"],
+            {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}, {}, allowed_references={})
+    actual = stage(current)
+    proposed = stage(preview)
+    proof = {"contract_version": "world-input-delivery-revalidation.v1", "source_ref": {"asset_version_id": original.asset_version_id, "content_hash": original.content_hash},
+        "delivered_task_hash": canonical_hash(proposed.task), "context_projection_hash": runtime_continuation._context_projection_hash(context_content(command=command,base=base,stage=proposed,source=preview))}
+    binding = {"target_runtime": {"planning_capacity": {"context_revalidation": {"context_asset_version_id": base.asset_version_id, "context_content_hash": base.content_hash, "world_input_delivery": proof}}}}
+    monkeypatch.setattr(runtime_continuation, "require_binding", lambda *args: binding)
+    preparer = object.__new__(PostgresPlanningExecutionPreparer)
+    preparer.database_url = "unused"
+    preparer.query = SimpleNamespace(require=lambda **kwargs: {"original": original, "context": base}[kwargs["asset_version_id"]])
+    actual_base = deepcopy(base)
+    if drift == "story":
+        current.content["contract"]["intent"] = {"changed": "New story input"}
+    elif drift == "knowledge":
+        actual_base.content["narrative_intelligence"] = {"new_selection": True}
+    elif drift == "inputs":
+        actual_base.content["input_versions"] = [{"asset_version_id": "foreign"}]
+    elif drift == "task":
+        actual.task["intent"] = {"changed": "New story input"}
+    elif drift == "proof":
+        proof["delivered_task_hash"] = "changed"
+    if drift:
+        with pytest.raises(KernelError, match="WORLD_INPUT_DELIVERY_REVALIDATION_DRIFT"):
+            preparer._require_world_delivery_continuation(command=command,base=actual_base,stage=actual,source=current)
+    else:
+        preparer._require_world_delivery_continuation(command=command,base=actual_base,stage=actual,source=current)
+
+
 @pytest.mark.parametrize("mutation", ["target", "book", "accepted", "missing-predecessor", "changed-passage"])
 def test_world_continuation_rejects_wrong_frontier_or_unbound_selected_prose(mutation):
     source = world_source()

@@ -520,7 +520,7 @@ class PlanningProviderStage:
             version = "v2"
         if self.task.get("contract_version") in {"world-provider-task.v3", "world-provider-task.v4"}:
             version = "v3"
-        if self.task.get("contract_version") == "world-provider-task.v4":
+        if self.task.get("contract_version") in {"world-provider-task.v4", "world-provider-task.v5"}:
             version = "v4"
         suffix = ":actor-isolation-v1" if self.task.get("actor_proposals") else ""
         return f"schema:{self.name}:{version}{suffix}"
@@ -800,6 +800,8 @@ class PlanningWorldPreparation:
                     else "world-preparation-source.v4" if command.execution_contract_version == "1.21.0"
                     else "world-preparation-source.v2",
                     epistemic_contract="world-agency.v2" if command.execution_contract_version == "1.21.0" else "world-agency.v1",
+                    provider_projection_version="world-role-delivery.v4" if command.execution_contract_version == "1.21.0"
+                        and ((command.arc_working_set or {}).get("working_manuscript") or {}).get("projection_policy") else "world-role-delivery.v3",
                     working_manuscript=(command.arc_working_set or {}).get("working_manuscript"),
                 )
             source_document = self._store(
@@ -1073,7 +1075,7 @@ class PlanningWorldPreparation:
             schema = actor_judge_schema(schema, actor_proposals)
             task["actor_proposals"] = actor_proposals
             task["actor_judgment_contract"] = "Adjudicate every exact proposal hash. Accept or reject each action and determine conflicts and consequences. Preserve actor_id and intended action verbatim in an executable transition. Do not replace intentions to satisfy the outline. No preparation branches, new actors or missing adjudications. Director may select or reorder feasible proposals but cannot change them."
-            if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"}:
+            if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3", "world-role-delivery.v4"}:
                 task["actor_judgment_contract"] += " For every CONTINUE commitment disposition, retain source_event_id in transition cause_refs and obligation_id in candidate obligation_refs. DEFER preserves the accepted commitment; it cannot cancel or fulfill it."
             if source.get("actor_experiment", {}).get("version") == "world-actor-experiment.v2":
                 task["actor_judgment_contract"] += " Future intent steps are private proposals, not facts or executable prerequisites. Judge only the selected current action and do not mark intention steps complete. A deferred or abandoned intent with no selected_step_id must be REJECTED and cannot produce a transition."
@@ -1118,11 +1120,11 @@ class PlanningWorldPreparation:
             reality=source["reality"],
             role=role,
             token_budget=source["policy"]["context_token_budget"],
-            task=world_task_scope(chapter=world_target_chapter(source) if source["contract_version"] == "world-preparation-source.v5" else int(source["reality"]["chapter_number"]) + 1, intent=source["intent"], planning_window=source["planning_window"], world_foundation=source["world_foundation"]) if source.get("provider_projection_version") == "world-role-delivery.v3" else None,
+            task=world_task_scope(chapter=world_target_chapter(source) if source["contract_version"] == "world-preparation-source.v5" else int(source["reality"]["chapter_number"]) + 1, intent=source["intent"], planning_window=source["planning_window"], world_foundation=source["world_foundation"]) if source.get("provider_projection_version") in {"world-role-delivery.v3", "world-role-delivery.v4"} else None,
             required_event_ids=tuple(sorted({entry["source_event_id"] for kind, entries in source["reality"]["current_state"].items() if kind in ROLE_STATE_KINDS.get(role, ()) for entry in entries})) if source.get("provider_projection_version") == "world-role-delivery.v2" else (),
         )
         return {
-            "contract_version": "world-provider-task.v4" if source["contract_version"] == "world-preparation-source.v5" else "world-provider-task.v3" if aligned else "world-provider-task.v2" if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"} else "world-provider-task.v1",
+            "contract_version": "world-provider-task.v5" if working and source.get("provider_projection_version") == "world-role-delivery.v4" else "world-provider-task.v4" if working else "world-provider-task.v3" if aligned else "world-provider-task.v2" if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"} else "world-provider-task.v1",
             **({"epistemic_contract": "world-agency.v2"} if source["reality"].get("epistemic_contract") == "world-agency.v2" else {}),
             "role": role,
             "source_ref": dict(source_ref),
@@ -1159,7 +1161,7 @@ class PlanningWorldPreparation:
                             },
                         }
                         for event in source["reality"].get("events", [])
-                        if (source.get("provider_projection_version") != "world-role-delivery.v3" or event["event_id"] in {row["source_event_id"] for row in projection["selection"]})
+                        if (source.get("provider_projection_version") not in {"world-role-delivery.v3", "world-role-delivery.v4"} or event["event_id"] in {row["source_event_id"] for row in projection["selection"]})
                         and event.get("mutation", {})
                         .get("payload", {})
                         .get("world_transition")

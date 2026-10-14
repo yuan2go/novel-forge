@@ -619,6 +619,28 @@ def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, requi
     assert allocations == [128_000, 224_608]
 
 
+def test_world_input_delivery_never_raises_capacity_when_reprojection_still_exceeds_window(monkeypatch):
+    from contextlib import nullcontext
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    allocations = []
+    def reproject(content, *, command, task_tokens):
+        allocations.append(task_tokens)
+        raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "Still does not fit")
+    pack = SimpleNamespace(require_attempt_snapshot=lambda **kwargs: "snapshot",
+        materialize_attempt_artifacts=lambda snapshot: SimpleNamespace(context_policy=SimpleNamespace(content={"planning_task_token_budget": 64_000})))
+    preparer = SimpleNamespace(pack_runtime=pack, _reproject_frozen_context=reproject,
+        query=SimpleNamespace(require=lambda **kwargs: SimpleNamespace(content_hash="context-hash", content={"input_versions": []})),
+        planning_route=SimpleNamespace(model_context_limit=258_400, model_output_limit=32_000, token_safety_margin=1_536, token_framing_overhead=256))
+    app = SimpleNamespace(database_url="unused", execution_binder=SimpleNamespace(resolver=SimpleNamespace(execution_preparer=preparer)))
+    source = {"attempt_id": "attempt", "snapshot_id": "snapshot", "snapshot_hash": "hash", "command": {}, "inputs": [],
+        "context_revalidation": {"context_asset_version_id": "context", "context_content_hash": "context-hash", "world_input_delivery": {"contract_version": "world-input-delivery-revalidation.v1"}}}
+    monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda database: nullcontext(SimpleNamespace()))
+    monkeypatch.setattr(runtime, "_capacity_authorization", lambda *args, **kwargs: {})
+    with pytest.raises(KernelError, match="PLANNING_CAPACITY_ALLOCATION_EXHAUSTED"):
+        runtime._capacity_target(app, source, SimpleNamespace(project_id="project"), SimpleNamespace(), {})
+    assert allocations == [64_000]
+
+
 @pytest.mark.parametrize("change", ["version", "prompt", "foreign_pack", "corrupt_snapshot"])
 def test_capacity_pack_successor_preserves_contracts_and_native_hashes(monkeypatch, change):
     from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime

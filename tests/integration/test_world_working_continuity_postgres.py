@@ -43,15 +43,17 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
     resolve = PostgresProductionExecutionPayloadResolver.resolve
     writer_prompts = []
     chapter_planning_prompts = []
+    world_prompts = []
 
     def capture_writer_prompt(resolver, request, admission):
         payload = resolve(resolver, request, admission)
-        if request.stage in {"draft", "chapter_plan.generate"}:
+        if request.stage in {"draft", "chapter_plan.generate", "world_candidates.generate", "world_candidates.evaluate"}:
             start = payload.input_text.find('{"context_bundle":')
             assert start >= 0
             from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
             envelope = expand_exact_context_references(json.JSONDecoder().raw_decode(payload.input_text[start:])[0])
-            (writer_prompts if request.stage == "draft" else chapter_planning_prompts).append(envelope)
+            target = writer_prompts if request.stage == "draft" else world_prompts if request.stage.startswith("world_candidates.") else chapter_planning_prompts
+            target.append(envelope)
         return payload
 
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_writer_prompt)
@@ -68,7 +70,14 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
     args.execution_template_file = tmp_path / "execution-template.json"
     args.execution_template_file.write_text(json.dumps(template))
     result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
-    assert result["stop_reason"] == "MANUSCRIPT_READY", result
+    if result["stop_reason"] != "MANUSCRIPT_READY":
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("""SELECT operation.definition_name,operation.status,attempt.result->>'error_code',attempt.result->>'error_message'
+                FROM authority_operation operation LEFT JOIN LATERAL (SELECT result FROM authority_attempt
+                    WHERE operation_id=operation.operation_id ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+                WHERE operation.project_id=%s ORDER BY operation.created_at DESC LIMIT 8""", [result["project_id"]])
+            failures = uow.cursor.fetchall()
+        pytest.fail(f"Native Creation stopped at {result['stop_reason']}: {failures!r}")
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [result["book_run_id"]])
         book = uow.cursor.fetchone()[0]
@@ -97,6 +106,14 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
             WHERE a.project_id=%s AND a.asset_type='world_preparation_source' ORDER BY v.created_at LIMIT 1""", [book["project_id"]])
         first_source = uow.cursor.fetchone()[0]
         assert first_source["contract_version"] == "world-preparation-source.v5"
+        assert first_source["provider_projection_version"] == "world-role-delivery.v4"
+        assert len(world_prompts) == 2
+        for envelope in world_prompts:
+            delivered = envelope["input_manifest"]["narrative_inputs"]["world_preparation"]
+            assert delivered["contract_version"] == "world-provider-task.v5"
+            assert delivered["working_delivery_receipt"]["source_snapshot_hash"] == first_source["working_manuscript"]["snapshot_hash"]
+            assert "schema" not in delivered["transition_contract"]
+            assert delivered["transition_contract"]["payload_schema"]
         working = freeze_working_context(uow, book, 2)
         BookControlRepository(uow.cursor).freeze(project_id=book["project_id"], book_run_id=book["book_run_id"],
             chapter_number=2, actor_id="native-creation-operator")
