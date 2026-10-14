@@ -80,7 +80,7 @@ def owned_codex_tool_evidence(stdout: str, *, codex_home: str, working_directory
     if Path(str(metadata[0].get("cwd") or "")).resolve() != Path(working_directory).resolve():
         raise ValueError("owned tool trace working directory differs")
     if not any(row.get("type") == "response_item" and row.get("payload", {}).get("type") == "message"
-        and row["payload"].get("role") == "assistant" and row["payload"].get("phase") == "final" for row in rows):
+        and row["payload"].get("role") == "assistant" and row["payload"].get("phase") in {"final", "final_answer"} for row in rows):
         raise ValueError("owned tool trace has no complete final message")
     calls = []
     for row in rows:

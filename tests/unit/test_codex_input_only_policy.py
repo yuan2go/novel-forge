@@ -71,6 +71,12 @@ def test_owned_trace_catches_custom_call_missing_from_stdout(tmp_path):
     assert result["calls"][0]["name"] == "exec"
 
 
+def test_owned_trace_accepts_installed_cli_final_answer_marker(tmp_path):
+    stdout, target = rollout(tmp_path)
+    target.write_text(target.read_text().replace('"phase": "final"', '"phase": "final_answer"'))
+    assert owned_codex_tool_evidence(stdout, codex_home=str(tmp_path), working_directory="/work")["calls"] == []
+
+
 def test_owned_trace_requires_exact_thread_and_directory(tmp_path):
     stdout, target = rollout(tmp_path)
     assert (
