@@ -432,7 +432,7 @@ def build_production_execution_composition(
     if values.get("NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"):
         from novel_forge.modules.production_execution.codex_model_catalog import require_uniform_headroom_catalog
         if (values["NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"] != "codex-cli-context-headroom.v1"
-                or router_providers != ("codex-cli",)):
+                or frozenset(router_providers) != frozenset({"codex-cli"})):
             raise ValueError("CODEX_OUTPUT_POLICY_ROUTING_SCOPE_INVALID")
         require_uniform_headroom_catalog(codex_catalog, context_limit=int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0))
     if codex_router_enabled:
