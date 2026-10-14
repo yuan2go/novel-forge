@@ -322,9 +322,12 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 Successful receipt recovery consumes the exact hash-verified receipt evidence. For
 `HISTORICAL_COMPATIBILITY`, a Dispatch row that merged an earlier transport failure may
-also retain `error_type`, `message` and `request_sent`. Every receipt field must still
+also retain `error_type`, `message`, `request_sent` and `failure_kind`. Every receipt field must still
 match the Dispatch projection; any other extra field, changed result, usage or receipt
 hash is rejected. Reads preserve those diagnostics and never dispatch a replacement.
+A successful original result whose owner stopped on receipt processing may use the
+existing terminal Planning output revalidation, preserving the failed owner and the
+original Provider call.
 Cover UNKNOWN-to-original-success intake, one-call reuse and corrupted evidence with
 the existing ExternalEffect runtime and CLI reconciliation PostgreSQL suites.
 

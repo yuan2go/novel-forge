@@ -195,7 +195,7 @@ def _receipt_matches_dispatch(provider_evidence: dict[str, Any], dispatch_eviden
     if not isinstance(dispatch_evidence, dict):
         return False
     diagnostic_keys = set(dispatch_evidence) - set(provider_evidence)
-    return diagnostic_keys <= {"error_type", "message", "request_sent"} and all(
+    return diagnostic_keys <= {"error_type", "message", "request_sent", "failure_kind"} and all(
         key in dispatch_evidence and dispatch_evidence[key] == value
         for key, value in provider_evidence.items()
     )

@@ -137,7 +137,8 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
             def execute(self, **kwargs):
                 self.calls += 1
                 self.saved = super().execute(**kwargs)
-                raise RuntimeError("original call completed before its response reached the owner")
+                raise ExternalEffectAdapterError("original call completed before its response reached the owner",
+                    request_sent=True, failure_kind="transport")
 
         context = self._context()
         adapter = LostResponse("success")
