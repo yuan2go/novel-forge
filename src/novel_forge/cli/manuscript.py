@@ -7,7 +7,7 @@ from typing import Any
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "continue-retained-working", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -68,7 +68,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             return retire_reference_failed_chapter(composition.authority,book_run_id=args.book_run_id,proposal_id=args.proposal_id,plan_change=composition.plan_change,principal=principal)
         finally:
             execution.close()
-    if args.action in {"use-working-candidate", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"}:
+    if args.action in {"use-working-candidate", "continue-retained-working", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"}:
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
         from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
         from novel_forge.modules.book_authority.manuscript import adopt_author_workflow
@@ -78,6 +78,10 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         book = authority.require(args.book_run_id)
         if book["project_id"] != args.project_id:
             raise PermissionError("Work is outside this Project")
+        if args.action == "continue-retained-working":
+            from novel_forge.modules.book_authority.retained_working import continue_retained_working
+            return continue_retained_working(authority, args.book_run_id, candidate_id=args.candidate_version,
+                expected_version=args.expected_version, idempotency_key=args.idempotency_key, reason=args.reason, principal=principal)
         if args.action == "use-working-candidate":
             if args.expected_version is None or not args.chapter or not args.candidate_version or not args.idempotency_key or not args.reason:
                 raise ValueError("Working selection requires exact chapter, candidate, expected Book version, idempotency key and reason")
@@ -120,7 +124,8 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             with args.output.open("x", encoding="utf-8") as stream:
                 if args.output.suffix.lower() in {".md", ".txt"}:
                     body = candidate["text"] if candidate["text"] is not None else candidate["raw_text"]
-                    stream.write(f"第{candidate['chapter']}章 — 候选正文\n\n来源：{candidate['asset_version_id']}\n状态：{candidate['completeness']}；{candidate['review_status']}；{candidate['selection_status']}；{candidate['acceptance_status']}\n\n{body}\n")
+                    origin = "\n源执行：" + str(candidate.get("source_operation_status")) + "；源Effect：" + str(candidate.get("source_effect_status")) + "；失败：" + ",".join(candidate.get("source_failure_codes") or []) if candidate.get("source_operation_status") else ""
+                    stream.write(f"第{candidate['chapter']}章 — 候选正文\n\n来源：{candidate['asset_version_id']}\n状态：{candidate['completeness']}；{candidate['review_status']}；{candidate['selection_status']}；{candidate['acceptance_status']}{origin}\n\n{body}\n")
                 else:
                     stream.write(json.dumps(candidate, ensure_ascii=False, indent=2))
         return candidate

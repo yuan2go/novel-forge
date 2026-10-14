@@ -3823,6 +3823,24 @@ reference anchor. Writer rendering consumes the frozen receipt and the same code
 the complete final request still passes the ordinary model-capacity admission. This
 changes transport accounting without changing story or method content, and applies only
 to newly built Contexts.
+`authority-manuscript read|export --book-run-id <run> --candidate-version <version>`
+reads the original retained model candidate even when its Provider permission gate
+failed. The response and export retain the source Operation/Effect failure facts.
+For an author-first experimental Book at a stopped, settled original Writer failure,
+`authority-manuscript continue-retained-working --book-run-id <run>
+--candidate-version <retained-prose-version> --expected-version <Book-version>
+--idempotency-key <stable-key> --reason <reason>` explicitly requests the separate
+working-use boundary. It never regenerates, edits, selects among returns or relabels
+the old failed Writer. Only a complete original with the exact two empty MCP metadata
+enumerations can qualify; resources, other Tools, incomplete traces, changed inputs,
+unsettled accounting, cancellation and live leases fail closed. External file checks
+precede the Book transaction; the transaction locks and rechecks the original source
+and frontier and appends immutable continuation evidence. Exact key/checkpoint replay
+returns that same decision. Normal successful-Draft delivery and formal acceptance
+retain their existing gates. Migration 0217 adds the separate evidence table; published
+schemas and failure records remain unchanged. Current-manuscript exports expose this
+source as `RETAINED_WORKING_ONLY` with the original permission failure, and anonymous
+reading can bind its exact text without disclosing the technical provenance to readers.
 A retained `WORLD_AGENCY_CLASSIFICATION_REJECTED` is a terminal proposal-contract
 failure, not a transport retry. Its bounded native result repair reproduces the
 classification against the exact generation and settled Director receipt even when

@@ -47,7 +47,10 @@ def extract_manuscript_chapter(
 ) -> dict[str, Any]:
     if type(chapter_number) is not int or chapter_number <= 0:
         raise ValueError("MANUSCRIPT_CHAPTER_RANGE_INVALID")
-    if asset_type == "draft_chapter" and selector == "/text":
+    if asset_type in {"draft_chapter", "retained_working_prose"} and selector == "/text":
+        if asset_type == "retained_working_prose" and (content.get("contract_version") != "retained-working-continuation.v1"
+                or content.get("retained_working_provenance", {}).get("source_permission_gate") != "FAILED_FINAL"):
+            raise ValueError("MANUSCRIPT_RETAINED_SOURCE_INVALID")
         if content.get("chapter") != chapter_number:
             raise ValueError("MANUSCRIPT_CHAPTER_IDENTITY_MISMATCH")
         title, text = content.get("title"), content.get("text")

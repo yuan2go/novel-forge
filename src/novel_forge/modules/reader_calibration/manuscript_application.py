@@ -24,7 +24,13 @@ def _load_chapter(authority, project_id: str, book_id: str, source: dict[str, An
             FROM authority_operation_output_asset binding JOIN authority_operation o USING(operation_id)
             WHERE binding.asset_version_id=%s AND o.project_id=%s""", [doc.asset_version_id, project_id])
         producer = uow.cursor.fetchone()
-        if not producer or producer[2] != "SUCCEEDED" or producer[3].get("book_id") != book_id:
+        retained = None
+        if doc.asset_type == "retained_working_prose":
+            retained = uow.cursor.execute("SELECT c.proof FROM authority_book_retained_working_continuation c JOIN authority_book_production b USING(book_run_id) WHERE c.working_asset_version_id=%s AND c.working_content_hash=%s AND b.project_id=%s AND b.book_id=%s AND c.created_by_operation_id=%s", [doc.asset_version_id, doc.content_hash, project_id, book_id, producer[0] if producer else None]).fetchone()
+            if (not retained or producer[1] != "book.authority.mutate" or producer[3].get("payload", {}).get("action") != "retained_working_continue"
+                    or retained[0] != doc.content.get("retained_working_provenance")):
+                raise KernelError("MANUSCRIPT_RETAINED_SOURCE_INVALID", "Retained reading requires its exact native working-use decision")
+        if not producer or producer[2] != "SUCCEEDED" or (not retained and producer[3].get("book_id") != book_id):
             raise KernelError("MANUSCRIPT_PRODUCER_SCOPE_INVALID", "Reading sources must have a completed native producer in the declared Book")
         if doc.asset_type == "execution_evidence" and not reference_prose_generation(uow.cursor, producer[0], project_id):
             raise KernelError("MANUSCRIPT_REFERENCE_PROOF_REQUIRED", "Reference body requires its sealed controlled-generation producer")

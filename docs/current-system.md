@@ -27,6 +27,16 @@ The default creation-input policy freezes `native-narrative-execution.v1`: Chapt
 working-prose memory v3. The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 These native bindings do not establish literary effectiveness.
+Complete rejected Writer returns remain readable and exportable as retained candidates
+with their original Operation, Effect and failure status. The explicit experimental
+`retained-working-continuation.v1` Book decision may continue one exact original whose
+only additional calls were two fully observed, empty MCP metadata enumerations. It
+locally checks the frozen Schema, Scene contract, process, complete trace, hashes and
+settled accounting, then records a separate `retained_working_prose` source. Only the
+unaccepted working cursor advances; the original permission failure, Chapter history,
+tool policy and Canon remain unchanged. This is working-use qualification and cannot
+be reported as a compliant native Writer result or author acceptance. Other Tool use,
+resources, uncertainty, live work or concurrent replacement remain ineligible.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author

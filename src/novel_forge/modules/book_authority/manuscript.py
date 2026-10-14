@@ -295,6 +295,8 @@ def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
         WHERE book_run_id=%s AND chapter_number=%s""", [book["book_run_id"], chapter])
     row = uow.cursor.fetchone()
     if row is None:
+        row = uow.cursor.execute("SELECT working_asset_version_id FROM authority_book_retained_working_continuation WHERE book_run_id=%s AND chapter_number=%s", [book["book_run_id"], chapter]).fetchone()
+    if row is None:
         uow.cursor.execute("""SELECT outcome.content->>'accepted_draft_asset_version_id'
             FROM authority_book_acceptance_lineage(%s) acceptance
             JOIN authority_asset_version outcome ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id
@@ -455,6 +457,10 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
               AND output.output_key='chapter.draft' AND output.role='primary'
             ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
     deliveries = uow.cursor.fetchall()
+    retained = uow.cursor.execute("SELECT chapter_number,working_asset_version_id,context_snapshot FROM authority_book_retained_working_continuation WHERE book_run_id=%s ORDER BY chapter_number", [book["book_run_id"]]).fetchall()
+    if {row[0] for row in deliveries}.intersection(row[0] for row in retained):
+        raise KernelError("MANUSCRIPT_CONTINUATION_COLLISION", "A retained original cannot replace a separately delivered native Draft")
+    deliveries = sorted([*deliveries, *retained], key=lambda row: row[0])
     sources = {number: selected_source(uow, book, number) for number, _, _ in deliveries}
     selected = {number: source.asset_version_id for number, source in sources.items()}
     changes = {}
@@ -897,6 +903,9 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
                 "manuscript_status": "SAVED", **_review_status(uow, book, source), "quality_status": "NOT_VERIFIED",
                 "requirements_status": length_status, "voice_observations": content.get("voice_evidence", []), "length": {"unit": "HAN_CHARACTERS_V1", "actual": actual_length, "target": length}, "dependency_changes": impacted,
                 "author_selection": author_selection})
+            if source.asset_type == "retained_working_prose":
+                units[-1].update(manuscript_status="RETAINED_WORKING_ONLY", author_selection="NOT_AUTHOR_ACCEPTED",
+                    origin_execution=content["retained_working_provenance"])
         if version_ids is not None and version_ids != [item["asset_version_id"] for item in units]:
             raise KernelError("MANUSCRIPT_EXPORT_VERSION_CONFLICT", "Export must match the exact selected version list; reload after a concurrent author change")
     manifest = {"version": "current-manuscript-export.v1", "book_run_id": book["book_run_id"],
@@ -1019,10 +1028,18 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
             raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
         if canonical_hash(payload).split(":", 1)[1] != source.content.get("payload_hash"):
             raise KernelError("MANUSCRIPT_CANDIDATE_HASH_INVALID", "Retained source bytes changed")
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [payload["operation_id"]])
+        source_operation_status = uow.cursor.fetchone()[0]
+        uow.cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s AND operation_id=%s", [payload["external_effect_id"], payload["operation_id"]])
+        effect = uow.cursor.fetchone()
+        failures = uow.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [payload["operation_id"]]).fetchall()
         return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_MODEL_CANDIDATE",
             "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,
             "chapter": row[2], "asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
             "text": payload.get("text"), "raw_text": payload["raw_text"],
             **{key: payload[key] for key in ("completeness", "structural_status", "review_status",
                 "selection_status", "acceptance_status", "accounting_status")},
+            "source_operation_id": payload["operation_id"], "source_operation_status": source_operation_status,
+            "source_external_effect_id": payload["external_effect_id"], "source_effect_status": effect[0] if effect else "UNKNOWN",
+            "source_failure_codes": [item[0] for item in failures if item[0]],
             "publication": "NOT_AUTHORIZED"}
