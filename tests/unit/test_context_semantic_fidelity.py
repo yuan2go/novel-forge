@@ -254,5 +254,13 @@ def test_frozen_semantics_reach_final_request_and_final_budget_admission():
     receipt = prepare_provider_admission(envelope, contract, complete_request_coverage=coverage)
     assert receipt.status == "ADMITTED"
     assert receipt.component_usage["provider_input"] == len(prompt.encode("utf-8"))
-    blocked = prepare_provider_admission(envelope, replace(contract, execution_token_limit=1000), complete_request_coverage=coverage)
+    historical_limit = prepare_provider_admission(envelope, replace(contract, execution_token_limit=1000), complete_request_coverage=coverage)
+    assert historical_limit.status == "ADMITTED"
+    assert historical_limit.accounting_contract["execution_token_limit"] == 1000
+    assert historical_limit.total_reserved > 1000
+    assert historical_limit.applicable_limit == contract.model_context_limit
+    blocked = prepare_provider_admission(envelope, replace(contract, model_context_limit=1000), complete_request_coverage=coverage)
     assert blocked.status == "REJECTED"
+    assert blocked.reason == "PROVIDER_CONTEXT_LIMIT_EXCEEDED"
+    assert blocked.total_reserved == receipt.total_reserved
+    assert blocked.applicable_limit == 1000

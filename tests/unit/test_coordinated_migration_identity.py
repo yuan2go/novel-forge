@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from novel_forge.storage.migrations import MIGRATIONS
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS
 from novel_forge.storage.migrations.runner import pending_migrations
 
 
@@ -32,7 +32,7 @@ def test_registered_forward_upgrade_uses_one_continuous_identity_chain():
     published = {migration.migration_id for migration in MIGRATIONS[:169]}
     pending = pending_migrations(published)
     assert pending == list(MIGRATIONS[169:])
-    assert pending[-1].migration_id == "20261010_0198_recovery_reference_indexes"
+    assert pending[-1].migration_id == LATEST_MIGRATION_ID
     assert all(current.down_revision == prior.migration_id for prior, current in zip(pending, pending[1:]))
     assert pending[0].down_revision == "20261007_0168_derived_step_revalidation"
 

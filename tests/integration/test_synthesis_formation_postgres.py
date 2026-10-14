@@ -331,6 +331,26 @@ def test_native_formation_generates_foundation_from_author_brief(
             return normal_validation(generator, raw, **kwargs)
         monkeypatch.setattr(result_recovery, "validate_raw_result", reject_valid_result_once)
         monkeypatch.setattr(result_recovery, "MAXIMUM_RESULT_REPAIRS", 0)
+        original_admission_chapter = transport.chapter
+        class AdmissionChapterTransport:
+            @property
+            def database_url(self):
+                return getattr(original_admission_chapter, "database_url", "")
+            @database_url.setter
+            def database_url(self, value):
+                original_admission_chapter.database_url = value
+            def __call__(self, stage, inputs):
+                value = original_admission_chapter(stage, inputs)
+                if stage in {"draft", "revision"}:
+                    from copy import deepcopy
+                    from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+                    value["scene_artifacts"][0]["text"] += "她收起信件，沿着来时的路走了回去。"
+                    value["text"] = serialize_realization(value["scene_artifacts"])
+                    original_admission_chapter.calls[-1]["output"] = deepcopy(value)
+                return value
+            def __getattr__(self, name):
+                return getattr(original_admission_chapter, name)
+        transport.chapter = AdmissionChapterTransport()
     if author_result_repair:
         original_author_planning = transport.planning
         damaged_author_decision = False
@@ -1580,6 +1600,14 @@ def test_native_formation_generates_foundation_from_author_brief(
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+            previous_window = before_native_wait
+            while valid_result_admission and creation_result['stop_reason'] == 'YIELDED_CHECKPOINT':
+                current_window = wait_facts()
+                assert current_window != previous_window, 'Checkpoint yielded without native progress'
+                previous_window = current_window
+                creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
+                    formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                    book_worker=worker, maximum_ticks=80, deadline=time.monotonic()+240, creation_policy=policy)
             if creation_result['stop_reason'] == 'WAITING_LEASE_OR_DEPENDENCY' and (world_optional_recovery or input_order_continuation or route_continuation or gateway_null_recovery):
                 assert wait_facts() == before_native_wait
                 original_book_run = creation_result['book_run_id']
@@ -1970,7 +1998,7 @@ def test_native_formation_generates_foundation_from_author_brief(
             )
             assert (
                 best["realization_contract"]["contract_version"]
-                == "scene-realization-composition.v2"
+                == "scene-realization-composition.v3"
             )
             assert best["realization_contract"]["craft_tasks"]["tasks"]
         if author_guided:

@@ -9,7 +9,9 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 POLICY_VERSION = "working-prose-projection.v2"
 MEMORY_POLICY_VERSION = "working-prose-projection.v3"
 PROGRESSION_POLICY_VERSION = "working-prose-projection.v4"
-MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION}
+LONGFORM_POLICY_VERSION = "working-prose-projection.v5"
+MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION, LONGFORM_POLICY_VERSION}
+RESOLVED_POLICY_VERSIONS = {PROGRESSION_POLICY_VERSION, LONGFORM_POLICY_VERSION}
 POLICY_VERSIONS = {POLICY_VERSION, *MEMORY_POLICY_VERSIONS}
 WORKING_SCHEDULE_POLICY = {"version": "working-story-schedule.v1", "history_basis": "SELECTED_WORKING_PROSE"}
 WORKING_SCHEDULE_INSTRUCTION = (
@@ -79,6 +81,18 @@ PROGRESSION_INSTRUCTION = (
     "static ending, expose the conflict for an authorized Planning/Plan Change correction; Writer "
     "cannot silently replace the plan. These are creation directives, not automatic literary checks. "
 )
+LONGFORM_INSTRUCTION = (
+    "Use realized experiences and supported consequences as the next chapter's starting situation. "
+    "Let this Book's goals, established character choices and unresolved commitments determine "
+    "what develops or pays off now. Use the author's declared chapter length and the frozen plan "
+    "to allocate sufficient meaningful action, conversation, reflection or quiet development. "
+    "No fixed number of turns, reversal, cost, irreversible change or dialogue outcome is required. "
+    "Return structural contradictions to the first affected design layer and use authorized Plan "
+    "Change for active future plans; Writer retains the frozen fictional constraints. "
+    "Earlier source identities locate host evidence. Their omitted prose remains unknown here, "
+    "not evidence that an experience never happened or that a promise was fulfilled. "
+    "Source receipts and workflow status impose no duties on fictional characters. "
+)
 INSTRUCTION = (
     CONTINUITY_INSTRUCTION
     + REACTION_INSTRUCTION
@@ -106,10 +120,12 @@ def working_instruction(policy: Mapping[str, Any]) -> str:
     return (
         (CONTINUITY_INSTRUCTION.replace("selected working versions", "effective working versions")
             .replace("Discarded or unselected versions", "Discarded or superseded versions")
-            if policy["version"] == PROGRESSION_POLICY_VERSION else CONTINUITY_INSTRUCTION)
+            if policy["version"] in RESOLVED_POLICY_VERSIONS else CONTINUITY_INSTRUCTION)
         + (REACTION_INSTRUCTION if focus in {"CHARACTER_REACTION", "COMBINED"} else "")
         + (
-            (PROGRESSION_INSTRUCTION if policy["version"] == PROGRESSION_POLICY_VERSION else CONSEQUENCE_INSTRUCTION)
+            (PROGRESSION_INSTRUCTION if policy["version"] == PROGRESSION_POLICY_VERSION
+                else CONSEQUENCE_INSTRUCTION + LONGFORM_INSTRUCTION if policy["version"] == LONGFORM_POLICY_VERSION
+                else CONSEQUENCE_INSTRUCTION)
             if focus in {"ACTION_CONSEQUENCES", "COMBINED"}
             else ""
         )
@@ -187,6 +203,7 @@ def project_working_sources(
             "Complete recent sources exceed the selected allocation; choose a new policy",
         )
     chosen = {(number, start, end) for number, start, end, _ in mandatory}
+    chosen_numbers = {number for number, _, _ in chosen}
     scored = [
         (
             sum(text.casefold().count(q.casefold()) for q in policy["queries"]),
@@ -206,8 +223,10 @@ def project_working_sources(
     for score, number, start, end, text in sorted(
         scored, key=lambda row: (-evidence_priority(row), -row[0], -row[1], row[2])
     ):
-        if len(text) <= remaining:
+        if len(text) <= remaining and (policy["version"] != LONGFORM_POLICY_VERSION
+                or number in chosen_numbers or len(chosen_numbers) < policy["history_chapters"]):
             chosen.add((number, start, end))
+            chosen_numbers.add(number)
             remaining -= len(text)
     projected = []
     for source in sources:
@@ -238,6 +257,104 @@ def project_working_sources(
             }
         )
     return projected
+
+
+def _source_identity(source: Mapping[str, Any]) -> dict[str, Any]:
+    keys = {"chapter", "asset_version_id", "content_hash", "text_hash", "source_characters", "source_resolution", "dependency_changes"}
+    return {key: deepcopy(value) for key, value in source.items() if key in keys}
+
+
+def freeze_source_history(sources: list[dict[str, Any]], *, book: Mapping[str, Any], target_chapter: int) -> dict[str, Any]:
+    body = {"contract_version": "working-source-history.v1",
+        **{key: book[key] for key in ("project_id", "book_id", "book_run_id")},
+        "target_chapter": target_chapter, "source_count": len(sources),
+        "sources": [_source_identity(source) for source in sources]}
+    return {**body, "content_hash": canonical_hash(body)}
+
+
+def _validate_source_resolution(row: Mapping[str, Any]) -> None:
+    resolution = row.get("source_resolution")
+    if (not isinstance(resolution, Mapping)
+        or set(resolution) != {"native_source", "native_basis", "overrides", "effective_source"}
+        or resolution["native_basis"] not in {"NATIVE_DELIVERY", "ACCEPTED_OUTCOME", "NATIVE_DRAFT_OUTPUT"}
+        or resolution["effective_source"] != {"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]}
+        or not isinstance(resolution["overrides"], list)
+        or resolution["native_basis"] == "ACCEPTED_OUTCOME" and bool(resolution["overrides"])):
+        raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Effective prose requires its exact native source and selection lineage")
+    pointers = [resolution["native_source"], *resolution["overrides"]]
+    if any(not isinstance(pointer, Mapping) or set(pointer) != {"asset_version_id", "content_hash"}
+        or any(not isinstance(pointer[key], str) or not pointer[key] for key in pointer) for pointer in pointers):
+        raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Source resolution pointers must retain exact version hashes")
+    if not resolution["overrides"] and resolution["native_source"] != resolution["effective_source"]:
+        raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "A changed effective source requires its selection lineage")
+
+
+def working_source_rows(snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
+    if (snapshot.get("projection_policy") or {}).get("version") != LONGFORM_POLICY_VERSION:
+        return snapshot["sources"]
+    history = snapshot.get("source_history")
+    expected = {"contract_version", "project_id", "book_id", "book_run_id", "target_chapter", "source_count", "sources", "content_hash"}
+    if (not isinstance(history, Mapping) or set(history) != expected
+            or history["contract_version"] != "working-source-history.v1"
+            or any(history[key] != snapshot[key] for key in ("project_id", "book_id", "book_run_id", "target_chapter"))
+            or not isinstance(history["sources"], list)
+            or type(history["source_count"]) is not int
+            or history["source_count"] != snapshot["target_chapter"] - 1
+            or history["content_hash"] != canonical_hash({key: value for key, value in history.items() if key != "content_hash"})):
+        raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Long-form host evidence requires its complete exact predecessor manifest")
+    numbers = []
+    for source in history["sources"]:
+        if (not isinstance(source, Mapping)
+                or set(source) - {"chapter", "asset_version_id", "content_hash", "text_hash", "source_characters", "source_resolution", "dependency_changes"}
+                or type(source.get("chapter")) is not int
+                or any(not isinstance(source.get(key), str) or not source[key] for key in ("asset_version_id", "content_hash", "text_hash"))
+                or type(source.get("source_characters")) is not int or source["source_characters"] <= 0):
+            raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Every predecessor must retain its exact source identity")
+        _validate_source_resolution(source)
+        numbers.append(source["chapter"])
+    if numbers != list(range(1, snapshot["target_chapter"])):
+        raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Long-form history requires every ordered predecessor version")
+    return history["sources"]
+
+
+def project_working_history_for_provider(snapshot: Mapping[str, Any]) -> dict[str, Any]:
+    if (snapshot.get("projection_policy") or {}).get("version") != LONGFORM_POLICY_VERSION:
+        return deepcopy(dict(snapshot))
+    validate_working_projection(snapshot, project_id=snapshot["project_id"], book_id=snapshot["book_id"])
+    if snapshot["source_history"]["contract_version"] == "working-source-history-reference.v1":
+        return deepcopy(dict(snapshot))
+    working_source_rows(snapshot)
+    result = deepcopy(dict(snapshot))
+    history = result["source_history"]
+    coverage = result["working_memory"]["source_coverage"]
+    visible = {source["asset_version_id"] for source in result["sources"]}
+    result["source_history"] = {"contract_version": "working-source-history-reference.v1",
+        **{key: history[key] for key in ("project_id", "book_id", "book_run_id", "target_chapter", "source_count")},
+        "source_history_hash": history["content_hash"], "source_snapshot_hash": snapshot["snapshot_hash"],
+        "visible_sources_hash": canonical_hash([_source_identity(source) for source in result["sources"]]),
+        "memory_source_coverage_hash": canonical_hash(coverage),
+        "boundary": "OMITTED_PROSE_UNKNOWN_NO_ACCEPTED_FACTS"}
+    memory = result["working_memory"]
+    memory["source_coverage"] = [row for row in coverage if row["asset_version_id"] in visible]
+    memory["packet_hash"] = canonical_hash({key: value for key, value in memory.items() if key != "packet_hash"})
+    result["snapshot_hash"] = canonical_hash({key: value for key, value in result.items() if key != "snapshot_hash"})
+    validate_working_projection(result, project_id=snapshot["project_id"], book_id=snapshot["book_id"])
+    return result
+
+
+def _validate_history_reference(snapshot: Mapping[str, Any]) -> None:
+    history = snapshot["source_history"]
+    expected = {"contract_version", "project_id", "book_id", "book_run_id", "target_chapter", "source_count",
+        "source_history_hash", "source_snapshot_hash", "visible_sources_hash", "memory_source_coverage_hash", "boundary"}
+    if (set(history) != expected or history["contract_version"] != "working-source-history-reference.v1"
+            or any(history[key] != snapshot[key] for key in ("project_id", "book_id", "book_run_id", "target_chapter"))
+            or type(history["source_count"]) is not int
+            or history["source_count"] != snapshot["target_chapter"] - 1
+            or history["boundary"] != "OMITTED_PROSE_UNKNOWN_NO_ACCEPTED_FACTS"
+            or any(not isinstance(history[key], str) or not history[key].startswith("sha256:")
+                for key in ("source_history_hash", "source_snapshot_hash", "memory_source_coverage_hash"))
+            or history["visible_sources_hash"] != canonical_hash([_source_identity(source) for source in snapshot["sources"]])):
+        raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Provider history is a scoped reference to immutable host evidence")
 
 
 def complete_prose_delivery(snapshot: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -307,6 +424,15 @@ def validate_working_projection(
             "WORKING_PROSE_PROJECTION_INVALID",
             "Working projection requires its policy and sources",
         )
+    history_sources = None
+    if policy["version"] == LONGFORM_POLICY_VERSION:
+        history = snapshot.get("source_history")
+        if isinstance(history, Mapping) and history.get("contract_version") == "working-source-history-reference.v1":
+            _validate_history_reference(snapshot)
+        else:
+            history_sources = {source["chapter"]: source for source in working_source_rows(snapshot)}
+    elif "source_history" in snapshot:
+        raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Historical projections cannot acquire a new predecessor manifest")
     numbers, characters = [], 0
     for row in snapshot["sources"]:
         if (
@@ -326,7 +452,7 @@ def validate_working_projection(
                 "source_resolution",
             }
             or type(row.get("chapter")) is not int
-            or not max(1, snapshot["target_chapter"] - policy["history_chapters"])
+            or not (1 if policy["version"] == LONGFORM_POLICY_VERSION else max(1, snapshot["target_chapter"] - policy["history_chapters"]))
             <= row["chapter"]
             < snapshot["target_chapter"]
             or row.get("status") != "UNREVIEWED_WORKING_PROSE"
@@ -345,22 +471,12 @@ def validate_working_projection(
                 "Working source is incomplete or falsely promoted",
             )
         resolution = row.get("source_resolution")
-        if policy["version"] == PROGRESSION_POLICY_VERSION:
-            if (not isinstance(resolution, Mapping)
-                or set(resolution) != {"native_source", "native_basis", "overrides", "effective_source"}
-                or resolution["native_basis"] not in {"NATIVE_DELIVERY", "ACCEPTED_OUTCOME", "NATIVE_DRAFT_OUTPUT"}
-                or resolution["effective_source"] != {"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]}
-                or not isinstance(resolution["overrides"], list)
-                or resolution["native_basis"] == "ACCEPTED_OUTCOME" and bool(resolution["overrides"])):
-                raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Effective prose requires its exact native source and selection lineage")
-            pointers = [resolution["native_source"], *resolution["overrides"]]
-            if any(not isinstance(pointer, Mapping) or set(pointer) != {"asset_version_id", "content_hash"}
-                or any(not isinstance(pointer[key], str) or not pointer[key] for key in pointer) for pointer in pointers):
-                raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Source resolution pointers must retain exact version hashes")
-            if not resolution["overrides"] and resolution["native_source"] != resolution["effective_source"]:
-                raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "A changed effective source requires its selection lineage")
+        if policy["version"] in RESOLVED_POLICY_VERSIONS:
+            _validate_source_resolution(row)
         elif resolution is not None:
             raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Historical projections cannot acquire new resolution evidence")
+        if history_sources is not None and history_sources.get(row["chapter"]) != _source_identity(row):
+            raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Projected prose must bind its exact complete host source history")
         ranges = []
         for passage in row["passages"]:
             if (
@@ -424,6 +540,11 @@ def validate_working_projection(
             snapshot["target_chapter"],
         )
     )
+    if policy["version"] == LONGFORM_POLICY_VERSION:
+        if (numbers != sorted(set(numbers)) or len(numbers) > policy["history_chapters"]
+                or not set(range(max(1, snapshot["target_chapter"] - policy["recent_complete_chapters"]), snapshot["target_chapter"])).issubset(numbers)):
+            raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Bounded long-form prose must retain every mandatory recent source")
+        expected = numbers
     if policy["version"] in MEMORY_POLICY_VERSIONS or snapshot.get("working_memory") is not None:
         from novel_forge.modules.narrative_state.working_memory import validate_memory_packet
         validate_memory_packet(snapshot["working_memory"], snapshot["sources"])

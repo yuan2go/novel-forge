@@ -429,21 +429,24 @@ def test_retained_working_revision_body_is_readable_without_new_call_qualificati
     class Uow:
         def __init__(self, *args):
             self.cursor = self
-            self.rows = iter([None, ("book", "workspace", 3) if owned else None])
+            self.rows = iter([None, ("book", "workspace", 3) if owned else None, ("FAILED_FINAL",)])
             self.repositories = SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **kwargs: source))
         def __enter__(self):
             return self
         def __exit__(self, *args):
             pass
         def execute(self, sql, params):
-            assert "authority_operation_output_asset" in sql and "runtime" not in sql.lower()
+            assert any(table in sql for table in ("authority_operation_output_asset", "authority_operation", "authority_attempt")) and "runtime" not in sql.lower()
         def fetchone(self):
             return next(self.rows)
+        def fetchall(self):
+            return [("MODEL_EFFECT_FINAL_UNAUTHORIZED_TOOL_INVOCATION",)]
     monkeypatch.setattr(manuscript, "AuthorityUnitOfWork", Uow)
     principal = SimpleNamespace(require=lambda permission, project: None)
     if owned:
         actual = manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
             asset_version_id="raw", principal=principal)
+        assert actual["source_operation_status"] == "FAILED_FINAL" and actual["source_effect_status"] == "UNKNOWN"
         assert actual["text"] == "完整候选" and actual["accounting_status"] == "UNKNOWN"
         assert actual["structural_status"] == "INVALID_AUXILIARY" and actual["publication"] == "NOT_AUTHORIZED"
     else:
@@ -756,8 +759,9 @@ def test_rebound_selected_dependencies_clear_only_the_repaired_chapter(monkeypat
         (2, "old:2", {"sources": [{"chapter": 1, "asset_version_id": "old:1"}]}),
         (3, "old:3", {"sources": [{"chapter": 2, "asset_version_id": "old:2"}]})]
     class Cursor:
-        def execute(self, *_): pass
-        def fetchall(self): return original
+        def execute(self, sql, *_):
+            self.rows = [] if "authority_book_retained_working_continuation" in sql else original
+        def fetchall(self): return self.rows
     sources = {number: SimpleNamespace(asset_version_id=version) for number, version in ((1, first), (2, "new:2"), (3, "old:3"))}
     monkeypatch.setattr(manuscript, "selected_source", lambda uow, book, number: sources[number])
     monkeypatch.setattr(manuscript, "_selected_working_dependencies", lambda uow, book, source:

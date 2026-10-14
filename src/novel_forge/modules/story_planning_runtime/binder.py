@@ -87,6 +87,7 @@ class PreparedPlanningExecution:
     validation_policy_ref: str
     commit_policy_ref: str
     timeout_policy_ref: str
+    receipt_consumption_release_sha: str = ""
 
     def __post_init__(self) -> None:
         references = (
@@ -287,7 +288,7 @@ class PostgresPlanningExecutionBundleResolver:
                 "context_policy_hash": prepared.context_policy_hash,
                 "evaluation_policy_ref": prepared.validation_policy_ref,
                 "evaluation_policy_hash": frozen.evaluation_policy_hash,
-                "release_sha": self.release_sha,
+                "release_sha": prepared.receipt_consumption_release_sha or self.release_sha,
             },
         )
         with AuthorityUnitOfWork(self.database_url) as uow:

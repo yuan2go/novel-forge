@@ -369,7 +369,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
             ArtifactKind.SKILL, str(skill.skill_ref), str(skill.version)
         )
         self.assertEqual(skill.content_hash, artifact.content_hash)
-        self.assertEqual(artifact.source_identity, "skills/chapter-outline/SKILL.md")
+        self.assertEqual(artifact.source_identity, "skills/chapter-outline/legacy-narrative-intent-20261010.md")
 
     def test_skill_hash_drift_is_rejected(self) -> None:
         payload = self.payload()

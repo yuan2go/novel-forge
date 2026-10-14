@@ -11,6 +11,26 @@ from novel_forge.storage.migrations.versions import v20260909_0124_corpus_fk_ind
 
 
 class PostgresMigrationTests(unittest.TestCase):
+    def test_migration_connection_respects_positive_dsn_timeout(self):
+        from novel_forge.storage.migrations.runner import _connect
+        try:
+            import psycopg
+        except ModuleNotFoundError:
+            self.skipTest("requires optional psycopg")
+        for dsn, timeout in (
+            ("postgresql:///test", 5),
+            ("postgresql:///test?connect_timeout=12", 12),
+            ("dbname=test connect_timeout=3", 3),
+        ):
+            with self.subTest(dsn=dsn), patch.object(psycopg, "connect") as connect:
+                _connect(dsn)
+                connect.assert_called_once_with(dsn, connect_timeout=timeout)
+        for value in ("0", "-1", "invalid", "", "1_0"):
+            with self.subTest(value=value), patch.object(psycopg, "connect") as connect:
+                with self.assertRaises(ValueError):
+                    _connect("postgresql:///test?connect_timeout=" + value)
+                connect.assert_not_called()
+
     def test_forward_opening_delete_fix_cannot_be_rolled_back_silently(self):
         connection = MagicMock()
         cursor = connection.__enter__.return_value.cursor.return_value.__enter__.return_value

@@ -75,10 +75,16 @@ def verify_creative_workspace(*, composition, chapter_application, book_run_id, 
             continue
         artifacts = workspace["artifacts"]
         memo = artifacts["memo"][0]
+        intent = next(item for item in artifacts["inputs"] if item["asset_type"] == "chapter_execution_intent")
+        assert memo["content"]["source_chapter_execution_intent_asset_version_id"] == intent["asset_version_id"]
         drafts = {item["asset_type"]: item for item in artifacts["candidates"]}
         best = drafts["best_draft_candidate"]
         assert best["content"]["creative_execution"]["memo_asset_version_id"] == memo["asset_version_id"]
-        assert best["content"]["creative_execution"]["guidance"]["emotional_turn"].startswith("先让人物")
+        guidance = dict(memo["content"].get("creative_guidance") or {})
+        assert best["content"]["creative_execution"]["guidance"] == guidance
+        assert best["content"]["creative_execution"]["scene_directives"] == list(memo["content"].get("scene_directives") or [])
+        if "emotional_turn" in guidance:
+            assert guidance["emotional_turn"].startswith("先让人物")
         canon = next(item for item in artifacts["facts"] if item["asset_type"] == "canon_patch")
         assert canon["content"]["grounding"]["candidate_asset_version_id"] == best["asset_version_id"]
         assert canon["content"]["grounding"]["text_hash"] == text_hash(best["content"]["text"])
@@ -94,7 +100,9 @@ def verify_creative_workspace(*, composition, chapter_application, book_run_id, 
             assert selected["resolution_checks"]
         workspaces.append(workspace)
     assert len(workspaces) >= minimum_chapters
-    for stage in ("memo", "draft", "review", "revision", "rereview", "canon_extraction", "canon_support"):
+    frozen_memos = sum(workspace["artifacts"]["memo"][0]["content"].get("execution_evidence") == {"source": "FROZEN_EXECUTION_INTENT", "model_call": "NOT_RUN"} for workspace in workspaces)
+    assert len([call for call in transport.calls if call["stage"] == "memo"]) + frozen_memos >= minimum_chapters
+    for stage in ("draft", "review", "revision", "rereview", "canon_extraction", "canon_support"):
         assert len([call for call in transport.calls if call["stage"] == stage]) >= minimum_chapters
     for call in transport.calls:
         if call["stage"] == "revision" and not transport.retain_original:

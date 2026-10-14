@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261014_0212_prose_citation_revalidation",
+  "migration_head": "20261015_0218_retained_working_convergence",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -6363,6 +6363,10 @@
         {
           "path": "src/novel_forge/api/routers/book_authority.py",
           "locator": "@router.post(\"/books/{book_id}/planning-generations/{operation_id}/runtime-continuation\")"
+        },
+        {
+          "path": "src/novel_forge/cli/authority.py",
+          "locator": "\"authority-story-design-scope-reconcile\""
         }
       ],
       "application": [
@@ -6413,6 +6417,10 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/application.py",
           "symbol": "StoryPlanningGenerationApplication.register_runtime_continuation"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/scope_recovery.py",
+          "symbol": "ReconcileStoryDesignScopeCommand"
         }
       ],
       "state_ownership": {
@@ -6434,6 +6442,10 @@
         {
           "path": "src/novel_forge/modules/story_design_authority/application.py",
           "symbol": "PostgresStoryDesignAssetAuthority.transition"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/application.py",
+          "symbol": "PostgresStoryDesignAssetAuthority.reconcile_scope"
         }
       ],
       "persistence": [
@@ -6467,6 +6479,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261006_0151_creative_design_admission.py",
           "locator": "MIGRATION_ID = \"20261006_0151_creative_design_admission\"",
           "id": "20261006_0151_creative_design_admission"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0214_story_design_book_scope.py",
+          "id": "20261015_0214_story_design_book_scope",
+          "locator": "MIGRATION_ID = \"20261015_0214_story_design_book_scope\""
         }
       ],
       "external_effects": {
@@ -6507,6 +6524,10 @@
         {
           "path": "tests/unit/test_planning_runtime_continuation_api.py",
           "symbol": "test_runtime_continuation_route_binds_trusted_principal_and_exact_source"
+        },
+        {
+          "path": "tests/integration/test_story_design_authority_postgres.py",
+          "symbol": "StoryDesignAuthorityPostgresTests.test_book_and_design_layer_namespaces_isolate_identical_logical_keys"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7121,6 +7142,10 @@
         {
           "path": "src/novel_forge/api/routers/chapter_editor.py",
           "locator": "@router.post(\"/manuscripts/export\")"
+        },
+        {
+          "path": "src/novel_forge/cli/manuscript.py",
+          "symbol": "run_manuscript_command"
         }
       ],
       "application": [
@@ -7155,6 +7180,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/manuscript.py",
           "symbol": "adopt_author_workflow"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/retained_working.py",
+          "symbol": "continue_retained_working"
         }
       ],
       "domain_symbols": [
@@ -7169,6 +7198,14 @@
         {
           "path": "src/novel_forge/modules/book_authority/prose_sources.py",
           "symbol": "freeze_accepted_prose"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_prose.py",
+          "symbol": "working_source_rows"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "resolve_working_source"
         }
       ],
       "commands_operations": [
@@ -7179,6 +7216,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/supervisor.py",
           "symbol": "BookProductionSupervisorTick"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "book_authority_mutation_definition"
         }
       ],
       "state_ownership": {
@@ -7188,7 +7229,8 @@
           "delegation and reconciliation state",
           "terminal completion state",
           "immutable manuscript delivery and separate writing cursor",
-          "versioned author workflow adoption"
+          "versioned author workflow adoption",
+          "explicit immutable unaccepted retained-original working continuation; original Provider failure remains separate"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -7203,6 +7245,10 @@
           {
             "path": "src/novel_forge/modules/book_authority/manuscript.py",
             "symbol": "deliver_manuscript"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/retained_working.py",
+            "symbol": "continue_retained_working"
           }
         ]
       },
@@ -7222,6 +7268,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/manuscript.py",
           "symbol": "adopt_author_workflow"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/retained_working.py",
+          "symbol": "continue_retained_working"
         }
       ],
       "persistence": [
@@ -7264,6 +7314,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261008_0181_author_manuscript_delivery.py",
           "id": "20261008_0181_author_manuscript_delivery",
           "locator": "MIGRATION_ID = \"20261008_0181_author_manuscript_delivery\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0218_retained_working_convergence.py",
+          "id": "20261015_0218_retained_working_convergence",
+          "locator": "MIGRATION_ID = \"20261015_0218_retained_working_convergence\""
         }
       ],
       "external_effects": {
@@ -7318,6 +7373,14 @@
         {
           "path": "tests/integration/test_author_first_manuscript_postgres.py",
           "symbol": "test_native_author_first_cross_chapter_edit_and_export"
+        },
+        {
+          "path": "tests/unit/test_retained_working_continuation.py",
+          "symbol": "test_other_tools_resources_and_incomplete_discovery_remain_ineligible"
+        },
+        {
+          "path": "tests/unit/test_manuscript_native_continuation.py",
+          "symbol": "test_formation_manuscript_continuation_resolves_its_original_project_pack_scope"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -8526,6 +8589,10 @@
         {
           "path": "src/novel_forge/api/routers/prose_review.py",
           "symbol": "create_router"
+        },
+        {
+          "path": "src/novel_forge/api/routers/quality_qualification.py",
+          "symbol": "create_router"
         }
       ],
       "application": [
@@ -8544,6 +8611,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/screenplay_application.py",
           "symbol": "ScreenplayApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/manuscript_application.py",
+          "symbol": "export_manuscript_pack"
         }
       ],
       "domain_symbols": [
@@ -8582,6 +8653,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/screenplay_handler.py",
           "symbol": "ScreenplayHandler"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/manuscript_blind.py",
+          "symbol": "public_from_private_mapping"
         }
       ],
       "commands_operations": [
@@ -8598,7 +8673,10 @@
           "calibration observations",
           "plan adjustment proposals",
           "frozen accepted prose manifests and window coverage",
-          "append-only review progress and exact-evidence dispositions"
+          "append-only review progress and exact-evidence dispositions",
+          "unassigned continuous manuscript comparisons",
+          "declared human manuscript observations",
+          "input-bound auxiliary model manuscript diagnosis"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -8624,6 +8702,10 @@
         {
           "path": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
           "symbol": "BookProseReviewCoordinator.advance"
+        },
+        {
+          "path": "src/novel_forge/modules/reader_calibration/application.py",
+          "symbol": "PostgresReaderCalibrationAuthority.record_manuscript_feedback"
         }
       ],
       "persistence": [
@@ -8665,6 +8747,10 @@
           {
             "path": "src/novel_forge/modules/book_followup_authority/prose_execution.py",
             "symbol": "PostgresLongformProseReviewExecutionContractBinder"
+          },
+          {
+            "path": "src/novel_forge/modules/agent_runtime/queries.py",
+            "symbol": "require_completed_reference_input"
           }
         ]
       },
@@ -8703,6 +8789,10 @@
         {
           "path": "tests/unit/test_screenplay.py",
           "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_reader_calibration.py",
+          "symbol": "test_kernel_manuscript_mapping_rebuild_prevents_replacement_of_saved_prose"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9194,6 +9284,122 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261014_0212_prose_citation_revalidation.py",
           "id": "20261014_0212_prose_citation_revalidation",
           "locator": "20261014_0212_prose_citation_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0213_source_method_isolation.py",
+          "id": "20261015_0213_source_method_isolation",
+          "locator": "MIGRATION_ID = \"20261015_0213_source_method_isolation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0215_planning_input_scope_reads.py",
+          "id": "20261015_0215_planning_input_scope_reads",
+          "locator": "MIGRATION_ID = \"20261015_0215_planning_input_scope_reads\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0216_operation_evidence_indexes.py",
+          "id": "20261015_0216_operation_evidence_indexes",
+          "locator": "MIGRATION_ID = \"20261015_0216_operation_evidence_indexes\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0217_craft_context_convergence.py",
+          "id": "20261015_0217_craft_context_convergence",
+          "locator": "MIGRATION_ID = \"20261015_0217_craft_context_convergence\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0218_retained_working_convergence.py",
+          "id": "20261015_0218_retained_working_convergence",
+          "locator": "MIGRATION_ID = \"20261015_0218_retained_working_convergence\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0205_source_observation_generation_isolation.py",
+          "id": "20261014_0205_source_observation_generation_isolation",
+          "locator": "20261014_0205_source_observation_generation_isolation",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0206_story_design_book_namespace.py",
+          "id": "20261014_0206_story_design_book_namespace",
+          "locator": "20261014_0206_story_design_book_namespace",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0207_foundation_method_context.py",
+          "id": "20261014_0207_foundation_method_context",
+          "locator": "20261014_0207_foundation_method_context",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0208_book_method_scope_context.py",
+          "id": "20261014_0208_book_method_scope_context",
+          "locator": "20261014_0208_book_method_scope_context",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0209_planning_input_scope_point_reads.py",
+          "id": "20261014_0209_planning_input_scope_point_reads",
+          "locator": "20261014_0209_planning_input_scope_point_reads",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0210_operation_outbox_lookup_indexes.py",
+          "id": "20261014_0210_operation_outbox_lookup_indexes",
+          "locator": "20261014_0210_operation_outbox_lookup_indexes",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0211_unsent_context_query_recovery.py",
+          "id": "20261014_0211_unsent_context_query_recovery",
+          "locator": "20261014_0211_unsent_context_query_recovery",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0212_group_method_scope_context.py",
+          "id": "20261014_0212_group_method_scope_context",
+          "locator": "20261014_0212_group_method_scope_context",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0213_group_scope_identity.py",
+          "id": "20261014_0213_group_scope_identity",
+          "locator": "20261014_0213_group_scope_identity",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0214_book_query_recovery.py",
+          "id": "20261014_0214_book_query_recovery",
+          "locator": "20261014_0214_book_query_recovery",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261015_0215_world_method_context.py",
+          "id": "20261015_0215_world_method_context",
+          "locator": "20261015_0215_world_method_context",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261015_0216_chapter_method_context.py",
+          "id": "20261015_0216_chapter_method_context",
+          "locator": "20261015_0216_chapter_method_context",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/historical/craft_2eb0e685/v20261015_0217_retained_working_continuation.py",
+          "id": "20261015_0217_retained_working_continuation",
+          "locator": "20261015_0217_retained_working_continuation",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "2eb0e685e0e4dc3c84a931330f3fb3e97156d8d7"
         }
       ],
       "external_effects": {
@@ -9299,6 +9505,22 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/craft_matching.py",
           "symbol": "assess_need"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
+          "symbol": "working_instances"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
+          "symbol": "working_phase_observation"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript_memory.py",
+          "symbol": "selected_working_craft_history"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
+          "symbol": "approved_method_activation_view"
         }
       ],
       "commands_operations": [
@@ -9362,6 +9584,21 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260920_0138_narrative_craft_origin.py",
           "id": "20260920_0138_narrative_craft_origin",
           "locator": "MIGRATION_ID = \"20260920_0138_narrative_craft_origin\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0213_source_method_isolation.py",
+          "id": "20261015_0213_source_method_isolation",
+          "locator": "MIGRATION_ID = \"20261015_0213_source_method_isolation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0214_story_design_book_scope.py",
+          "id": "20261015_0214_story_design_book_scope",
+          "locator": "MIGRATION_ID = \"20261015_0214_story_design_book_scope\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0217_craft_context_convergence.py",
+          "id": "20261015_0217_craft_context_convergence",
+          "locator": "MIGRATION_ID = \"20261015_0217_craft_context_convergence\""
         }
       ],
       "external_effects": {
@@ -9435,6 +9672,22 @@
         {
           "path": "tests/unit/test_craft_need_driven_selection.py",
           "symbol": "test_exact_baseline_selections_replay_under_legacy_contract"
+        },
+        {
+          "path": "tests/unit/test_working_craft_continuation.py",
+          "symbol": "test_exact_selected_delivery_continues_without_acceptance_or_claimed_effect"
+        },
+        {
+          "path": "tests/unit/test_working_craft_continuation.py",
+          "symbol": "test_phase_advance_and_end_require_a_separate_located_working_review"
+        },
+        {
+          "path": "tests/unit/test_working_craft_continuation.py",
+          "symbol": "test_selected_history_excludes_replacements_and_transitive_stale_sources"
+        },
+        {
+          "path": "tests/unit/test_craft_migration_convergence.py",
+          "symbol": "test_capacity_composition_retains_latest_world_delivery_and_inheritance_verbatim"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -10146,7 +10399,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:4eddd6797bdb332448af2e098fb1988a3a29148bbf51675f5b92c6fd44abc907"
+    "implementation_tree_sha": "sha256:b049dfc905db60e1310bfcf90ce6dd2753e116cef408e826298ae0810c2bb46c"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -11061,6 +11314,18 @@
         {
           "path": "src/novel_forge/modules/agent_runtime/application.py",
           "symbol": "AgentRuntimeAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/agent_runtime/unsent_recovery.py",
+          "symbol": "require_unsent_source"
+        },
+        {
+          "path": "src/novel_forge/modules/agent_runtime/production.py",
+          "symbol": "agent_context_content"
+        },
+        {
+          "path": "src/novel_forge/api/routers/agent_runtime.py",
+          "symbol": "create_router"
         }
       ]
     },

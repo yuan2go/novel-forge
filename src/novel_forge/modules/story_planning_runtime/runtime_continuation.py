@@ -162,6 +162,14 @@ def require_source(
         if attempt
         else ""
     )
+    if failure_code == "PROGRAMMING_BUG" and attempt and dict(attempt[2] or {}).get("error_message") == "canceling statement due to statement timeout":
+        from .database_recovery import require_source as require_database_source
+        return require_database_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
+    if (row[0] == "FAILED_FINAL" and attempt and attempt[0] == "FAILED_FINAL"
+            and failure_code == "PROGRAMMING_BUG"
+            and dict(attempt[2] or {}).get("error_message", "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED: ")):
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, world_capacity_failure=True)
     if row[0] == "FAILED_FINAL" and attempt and attempt[0] == "FAILED_FINAL" and dict(attempt[2] or {}).get("failure_details", {}).get("cause_code") == "PROVIDER_SCHEMA_REJECTED":
         from .schema_recovery import require_source as require_schema_source
         return require_schema_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
@@ -210,10 +218,24 @@ def require_source(
         and str(dict(attempt[2] or {}).get("error_message") or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")):
         return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen,
             attempt=attempt, protected_world_failure=True)
+    if (row[0] == "FAILED_RETRYABLE" and failure_code == "CONTEXT_CAPACITY_EXCEEDED"
+            and dict(attempt[2] or {}).get("error_message") == "CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation"
+            and frozen.get("execution_contract_version") == "1.21.0"
+            and frozen.get("generator_operation_name") == "chapter_plan.generate"
+            and frozen.get("world_preparation_request")):
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, rendered_chapter_capacity_failure=True)
+    if (row[0] == "FAILED_RETRYABLE" and failure_code == "CONTEXT_CAPACITY_EXCEEDED"
+            and dict(attempt[2] or {}).get("error_message") == "CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation"
+            and frozen.get("execution_contract_version") == "1.21.0"
+            and frozen.get("generator_operation_name") == "chapter_group_plan.generate"
+            and frozen.get("repair_of_candidate_id")):
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, rendered_capacity_failure=True)
     if (
         (row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED")
         or (row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PROVIDER_ROUTING_BLOCKED"
-            and frozen.get("generator_operation_name") in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})
+            and frozen.get("generator_operation_name") in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate", "character.cast.generate", "book_plan.generate"})
     ):
         return _pre_send_capacity_source(
             uow,
@@ -904,6 +926,9 @@ def _pre_send_capacity_source(
     attempt: Any,
     route_preflight: bool = False,
     protected_world_failure: bool = False,
+    rendered_capacity_failure: bool = False,
+    world_capacity_failure: bool = False,
+    rendered_chapter_capacity_failure: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
@@ -920,14 +945,33 @@ def _pre_send_capacity_source(
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing decision is absent")
         require_capacity_route_candidates(decision[0], frozen=frozen, source_operation_id=source_operation_id)
         group = frozen.get("generator_operation_name") == "chapter_group_plan.generate"
-        projection_revalidation = {"contract_version": "planning-exact-value-reference.v1" if frozen.get("generator_operation_name") == "chapter_plan.generate" else "typed-planning-window-projection.v1" if group else "typed-volume-context-projection.v1",
+        projection_revalidation = {"contract_version": "foundation-method-recall-projection.v1" if frozen.get("generator_operation_name") == "character.cast.generate" else "planning-exact-value-reference.v1" if frozen.get("generator_operation_name") == "chapter_plan.generate" else "typed-planning-window-projection.v1" if group else "typed-volume-context-projection.v1",
             "blocked_decision_id": decision[0]["decision_id"], "source_operation_status": str(row[0]),
-            "reason": "Retain typed planning fields and audit material outside the exact frozen narrative horizon" if group else "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions"}
+            "reason": "Retain selected methods, conditions and narrative inputs while recording retrieval query and matching diagnostics outside the Provider task" if frozen.get("generator_operation_name") == "character.cast.generate" else "Retain typed planning fields and audit material outside the exact frozen narrative horizon" if group else "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions"}
+        if frozen.get("generator_operation_name") == "book_plan.generate":
+            projection_revalidation.update(contract_version="book-method-scope-projection.v1",
+                reason="Retain complete current methods, constraints and histories; prior qualified Foundation application audits remain in exact source assets with decision and use-site evidence in the Provider view")
         uow.cursor.execute("""SELECT output.asset_version_id,output.content_hash FROM authority_operation_output_asset output
             WHERE output.operation_id=%s AND output.output_key='planning.context_bundle'""", [source_operation_id])
         context = uow.cursor.fetchone()
         if not context:
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_MISSING", "Routing capacity failure must retain its frozen Context")
+        if frozen.get("generator_operation_name") == "character.cast.generate":
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+
+            original = AuthorityAssetQuery(uow.database_url).require(project_id=frozen["project_id"], asset_version_id=context[0])
+            policy = original.content.get("knowledge_access_policy", {})
+            if (original.content_hash != context[1] or original.content.get("book_id") != frozen["book_id"]
+                    or policy.get("mode") != "ALLOW_ONLY" or policy.get("usage_scope") != "EXPERIMENTAL_VALIDATION"):
+                raise KernelError("PLANNING_METHOD_CONTEXT_SCOPE_REQUIRED", "Character Cast recall projection requires its exact experimental Book Context")
+            project_foundation_method_recall(original.content.get("narrative_intelligence", {}))
+        if frozen.get("generator_operation_name") == "book_plan.generate":
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+            original = AuthorityAssetQuery(uow.database_url).require(project_id=frozen["project_id"], asset_version_id=context[0])
+            if (original.content_hash != context[1] or original.content.get("book_id") != frozen["book_id"]
+                    or original.content.get("planning_scope") != "BOOK"):
+                raise KernelError("PLANNING_METHOD_CONTEXT_SCOPE_REQUIRED", "Book method scope requires the exact experimental Book Context")
+            project_book_method_scope(original.content.get("narrative_intelligence", {}))
         projection_revalidation.update(context_asset_version_id=context[0],context_content_hash=context[1])
     uow.cursor.execute(
         "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle')",
@@ -941,11 +985,47 @@ def _pre_send_capacity_source(
             OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
                 WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id] * 4)
         unsafe = uow.cursor.fetchone()[0]
-    if route_preflight:
+    if rendered_chapter_capacity_failure:
+        from .world_context_recovery import require_chapter_projection_source
+        projection_revalidation = require_chapter_projection_source(uow, source_operation_id=source_operation_id,
+            frozen=frozen, attempt=attempt)
+    if world_capacity_failure:
+        from .world_context_recovery import require_projection_source
+        projection_revalidation = require_projection_source(uow, source_operation_id=source_operation_id,
+            frozen=frozen, attempt=attempt)
+        unsafe = False
+    if rendered_capacity_failure:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+        uow.cursor.execute("""SELECT output.asset_version_id,output.content_hash FROM authority_operation_output_asset output
+            WHERE output.operation_id=%s AND output.output_key='planning.context_bundle'""", [source_operation_id])
+        contexts = uow.cursor.fetchall()
+        if len(contexts) != 1:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_MISSING", "Rendered Group capacity requires its single frozen Context")
+        original = AuthorityAssetQuery(uow.database_url).require(project_id=frozen["project_id"], asset_version_id=contexts[0][0])
+        if (original.content_hash != contexts[0][1] or original.content.get("book_id") != frozen["book_id"]
+                or original.content.get("planning_scope") != "CHAPTER_GROUP"
+                or original.content.get("planning_group_method_scope_projection_version")
+                or original.content.get("repair_context", {}).get("source_candidate", {}).get("asset_version_id") != frozen["repair_of_candidate_id"]):
+            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Group scope requires its exact unchanged rejected Candidate and unprojected Context")
+        project_group_method_scope(original.content.get("narrative_intelligence", {}))
+        projection_revalidation = {"contract_version": "group-method-scope-projection.v1",
+            "source_operation_status": str(row[0]), "context_asset_version_id": contexts[0][0],
+            "context_content_hash": contexts[0][1], "failure_message": "Complete input leaves no model context for generation",
+            "reason": "Preserve typed plan constraints, complete current methods and the entire rejected Candidate; reference prior plan application audits and unverified flattened retrieval terms in immutable sources"}
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key<>'planning.context_bundle')
+            OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status IN ('CLAIMED','EXECUTING','WAITING_EXTERNAL_RESULT','LEASED','RUNNING','CHECKPOINTED','RESULT_SUBMITTED'))
+            OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+                WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id]*5)
+        unsafe = uow.cursor.fetchone()[0]
+    if route_preflight or rendered_chapter_capacity_failure:
         from .application import _command_from_payload
         from .schema_recovery import retained_world_action
         action, retained_world = retained_world_action(uow.database_url,
             command=_command_from_payload(frozen), source_operation_id=source_operation_id)
+        if rendered_chapter_capacity_failure and (action is None or retained_world is None):
+            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Chapter projection requires its exact completed World action")
         receipts = []
         if action is not None:
             query = AuthorityAssetQuery(uow.database_url)
@@ -1173,6 +1253,10 @@ def _capacity_authorization(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "Capacity allocation cannot replace the frozen Pack, prompt or model route",
         )
+    world_identity = None
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}:
+        from .world_context_recovery import require_runtime_identity
+        world_identity = require_runtime_identity(uow, source=source, target=target)
     return {
         "authorization_reference": auth["authorization_ref"],
         "formation_run_id": run["formation_run_id"],
@@ -1180,6 +1264,7 @@ def _capacity_authorization(
         "template_policy_hash": template_binding["policy_snapshot"]["policy_hash"],
         "independent_human_review": "NOT_REVIEWED",
         "capacity_only": True,
+        **({"world_runtime_identity": world_identity} if world_identity else {}),
         **({"pack_version_successor": version_successor} if version_successor else {}),
         **({"capacity_inheritance": "generation-capacity-inheritance.v1"} if source.get("capacity_inheritance") else {}),
         **({"world_revalidation_inheritance":"world-revalidation-inheritance.v1"} if source.get("inherited_world_host_revalidation") else {}),
@@ -1221,16 +1306,13 @@ def _capacity_target(
             .get("allocated_task_tokens", baseline)
         )
     route = preparer.planning_route
-    ceiling = min(
-        512_000,
-        route.model_context_limit
-        - route.model_output_limit
-        - route.token_safety_margin
-        - route.token_framing_overhead,
-    )
+    from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
+    ceiling = planning_input_capacity(route)
     allocated = min(baseline * 2, ceiling)
     if (source.get("context_revalidation") or {}).get("world_input_delivery"):
         allocated = int(baseline)
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}:
+        allocated = min(baseline, ceiling)
     if source.get("capacity_inheritance"):
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
         if allocated > ceiling:
@@ -1250,7 +1332,7 @@ def _capacity_target(
                     any(original_inputs.get(item["role"], {}).get(key) != item[key] for key in ("asset_version_id","content_hash","asset_type"))
                     for item in source["inputs"]):
                     raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Context successor must retain every original input version")
-                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated)
+                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated, projection_contract=proof.get("contract_version"))
             else:
                 context, _ = preparer._context_bundle(
                 operation_id=source["source_operation_id"],
@@ -1613,6 +1695,10 @@ def register(
     reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
     world_source_correction = source.get("mode") == "ISOLATED_WORLD_SOURCE_CORRECTION"
     isolated_generation = source.get("mode") == "ISOLATED_PURE_GENERATION"
+    database_failure = source.get("mode") == "KNOWN_UNSENT_CONTEXT_QUERY_FAILURE"
+    if database_failure:
+        from .database_recovery import require_diagnostic
+        decision_evidence = {**decision_evidence, "unsent_context_query_diagnostic": require_diagnostic(decision_evidence, source)}
     contract_change = source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}
     schema_correction = source.get("mode") == "PROVIDER_SCHEMA_CORRECTION"
     host_revalidation = source.get("mode") in {
@@ -1677,6 +1763,7 @@ def register(
     if (
         not capacity
         and not isolated_generation
+        and not database_failure
         and not contract_change
         and not host_revalidation
         and not world_source_correction
@@ -1689,6 +1776,7 @@ def register(
     if (
         not capacity
         and not isolated_generation
+        and not database_failure
         and not contract_change
         and not host_revalidation
         and not world_source_correction
@@ -1719,7 +1807,8 @@ def register(
                 preparer = application.execution_binder.resolver.execution_preparer
                 route = preparer.planning_route
                 allocated = int(prior_capacity["allocated_task_tokens"])
-                ceiling = min(512000, route.model_context_limit-route.model_output_limit-route.token_safety_margin-route.token_framing_overhead)
+                from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
+                ceiling = planning_input_capacity(route)
                 if allocated > ceiling:
                     raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "The authorized successor model cannot retain original task capacity")
                 context, _ = preparer._context_bundle(operation_id=source_operation_id,
@@ -1769,6 +1858,10 @@ def register(
             "original_diagnostic": source["diagnostic"],
             **({} if reference_contract else {"source_world": source["source_world"]}),
         }
+    elif database_failure:
+        from .database_recovery import authorization as database_authorization
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = database_authorization(uow, source=source, successor=successor, principal=principal, target=target)
     elif capacity:
         target, route_evidence = _capacity_target(
             application, source, successor, principal, target
@@ -1831,6 +1924,7 @@ def register(
         )
         if (
             current != source
+            or (database_failure and database_authorization(uow, source=current, successor=successor, principal=principal, target=target) != route_evidence)
             or (
                 contract_change
                 and _capacity_authorization(
@@ -1889,6 +1983,7 @@ def register(
             or (
                 not capacity
                 and not isolated_generation
+                and not database_failure
                 and not contract_change
                 and not host_revalidation
                 and not world_source_correction
@@ -2062,7 +2157,8 @@ def require_successor(
     binding = require_binding(application.database_url, command.runtime_continuation_id)
     if (
         binding["successor_command"] != _command_payload(command)
-        or validate_runtime and binding["target_release_sha"] != application.commit_sha
+        or (validate_runtime and binding["target_release_sha"] != application.commit_sha
+            and not _completed_successor_receipt(application, command, binding))
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT",
@@ -2083,6 +2179,35 @@ def require_successor(
             "the exact registered Pack and model route changed",
         )
     return binding
+
+
+def _completed_successor_receipt(application, command, binding):
+    from .application import _command_payload
+    from novel_forge.modules.command_kernel.external_effect_runtime import (
+        EffectCommandContext, read_retained_generation_stage_success,
+    )
+    operation_id = binding.get("successor_operation_id")
+    if not operation_id or any(binding.get(key) != getattr(command, key) for key in ("project_id", "workspace_id", "book_id")):
+        return False
+    with AuthorityUnitOfWork(application.database_url) as uow:
+        uow.cursor.execute("""SELECT o.status,o.command_payload->'payload',o.workspace_id,g.book_id,
+            g.candidate_asset_version_id IS NOT NULL,
+            EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+                WHERE a.operation_id=o.operation_id AND l.status='HELD')
+              OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=o.operation_id AND acknowledged_at IS NULL)
+            FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id)
+            WHERE o.operation_id=%s AND o.project_id=%s""", [operation_id, command.project_id])
+        row = uow.cursor.fetchone()
+        if (not row or row[:4] != ("FAILED_RETRYABLE", _command_payload(command), command.workspace_id, command.book_id)
+                or row[4] or row[5]):
+            return False
+        uow.cursor.execute("SELECT external_effect_id,status,request_payload->>'stage' FROM authority_external_effect WHERE operation_id=%s", [operation_id])
+        effects = uow.cursor.fetchall()
+        if len(effects) != 1 or effects[0][1:] != ("SUCCEEDED", command.generator_operation_name):
+            return False
+    return read_retained_generation_stage_success(application.database_url,
+        EffectCommandContext(operation_id, command.project_id, command.actor_id, command.trace_id, command.correlation_id),
+        effect_id=effects[0][0]) is not None
 
 
 def require_snapshot(

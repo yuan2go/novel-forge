@@ -28,6 +28,7 @@ from novel_forge.modules.agent_runtime.production import (
     canonical_policy_hash,
 )
 from novel_forge.modules.agent_runtime.policy import SERVER_AGENT_TOOL_CATALOG
+from novel_forge.modules.agent_runtime.unsent_recovery import AgentUnsentRecoveryRequest
 from novel_forge.api.authority_dependencies import (
     build_production_execution_composition,
 )
@@ -47,7 +48,9 @@ from novel_forge.modules.command_kernel.budget_runtime import (
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     plan_external_effect,
+    dispatch_external_effect,
 )
+from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -83,7 +86,7 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
         ensure_migrated()
 
     def _admit_fixture(
-        self, *, execution_contract: dict[str, object] | None = None
+        self, *, execution_contract: dict[str, object] | None = None, unsent_contract: bool = False
     ) -> tuple[str, str, str, str]:
         project_id = identifier("agent-harness-recovery")
         workspace_id = f"workspace:{project_id}"
@@ -189,6 +192,13 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
                 canonical_policy_hash(execution_contract) if execution_contract else ""
             ),
         )
+        if unsent_contract:
+            contract = {"contract_version": "agent-session-execution-contract.v1",
+                        "budget": admission_request.command_input()["budget"],
+                        "accepted_boundary": admission_request.command_input()["accepted_boundary"],
+                        "release_sha": RELEASE_SHA}
+            admission_request = replace(admission_request, execution_contract=contract,
+                                        execution_contract_hash=canonical_policy_hash(contract))
         with self.assertRaisesRegex(
             KernelError, "latest complete accepted projection set"
         ):
@@ -212,6 +222,92 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
             principal=principal,
         )
         return project_id, session_id, str(admitted["operation_id"]), worker_id
+
+    def test_known_unsent_recovery_is_linked_idempotent_and_preserves_failed_source(self) -> None:
+        project_id, session_id, operation_id, worker_id = self._admit_fixture(unsent_contract=True)
+        proof = {"external": False}
+        class FailedBeforeSend:
+            def next_turn(self, **_values):
+                if proof["external"]:
+                    session = _values["session"]
+                    context = EffectCommandContext(session.operation_id, session.project_id,
+                        "fixture-original-worker", "trace:unknown-agent-fixture", "unknown-agent-fixture")
+                    adapter = FakeDeterministicProvider("raise_after")
+                    effect = plan_external_effect(DATABASE_URL, context, effect_type="model.invoke",
+                        provider=adapter.provider, capability="model.agent_session", stable_idempotency_key="unknown-agent-fixture",
+                        request_payload={"fixture_only": True}, max_attempts=1, reversible=False,
+                        completion_policy="synchronous_final", provider_capability_profile=adapter.capability_profile)
+                    try:
+                        dispatch_external_effect(DATABASE_URL, context, effect_id=effect["external_effect_id"],
+                                                 adapter=adapter, worker_id="unknown-agent-fixture-worker", lease_seconds=30)
+                    except KernelError as error:
+                        if error.code != "EFFECT_EXTERNAL_STATE_UNKNOWN":
+                            raise
+                raise KernelError("MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                                  "account entitlement cannot declare a monetary reservation")
+        original_factory = build_scripted_agent_harness_factory(DATABASE_URL, worker_id=worker_id)
+        def failing_factory(*values):
+            harness = original_factory(*values)
+            harness.model = FailedBeforeSend()
+            return harness
+        with self.assertRaises(KernelError):
+            AgentAuthorityScheduler(DATABASE_URL, execution_preparer=_UnusedPort(), worker_id=worker_id,
+                harness_factory=failing_factory).tick(project_id=project_id, agent_run_id=operation_id)
+        with connect() as connection:
+            before = connection.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
+                                        [operation_id]).fetchone()[0]
+            session_before = connection.execute("SELECT to_jsonb(s) FROM authority_agent_harness_session s WHERE agent_session_id=%s",
+                                                [session_id]).fetchone()[0]
+        request = AgentUnsentRecoveryRequest(project_id=project_id, source_session_id=session_id,
+            expected_operation_version=before["version"], expected_session_version=session_before["version"],
+            expected_request_digest=before["request_digest"], target_release_sha=RELEASE_SHA,
+            reason="Correct the unsent membership host reservation")
+        principal = Principal(principal_id="agent-harness-recovery-operator", principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"agent.authority.execute", "agent.authority.admin"}),
+            project_scope=frozenset({project_id}), authentication_source="integration-fixture")
+        application = AgentRuntimeAuthorityApplication(DATABASE_URL, application_build_id="agent-harness-recovery",
+            commit_sha=RELEASE_SHA, runtime_environment="test")
+        with self.assertRaisesRegex(KernelError, "AGENT_UNSENT_RECOVERY_SOURCE_DRIFT"):
+            application.recover_unsent_harness_session(replace(request, expected_operation_version=request.expected_operation_version+1), principal=principal)
+        with self.assertRaisesRegex(KernelError, "AGENT_UNSENT_RECOVERY_SOURCE_DRIFT"):
+            application.recover_unsent_harness_session(replace(request, expected_request_digest="0"*64), principal=principal)
+        with self.assertRaisesRegex(KernelError, "AGENT_UNSENT_RECOVERY_SOURCE_DRIFT"):
+            application.recover_unsent_harness_session(request, principal=replace(principal, principal_id="another-operator"))
+        recovered = application.recover_unsent_harness_session(request, principal=principal)
+        replay = application.recover_unsent_harness_session(request, principal=principal)
+        self.assertEqual(recovered["operation_id"], replay["operation_id"])
+        self.assertTrue(replay["replayed"])
+        with connect() as connection:
+            after = connection.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [operation_id]).fetchone()[0]
+            session_after = connection.execute("SELECT to_jsonb(s) FROM authority_agent_harness_session s WHERE agent_session_id=%s", [session_id]).fetchone()[0]
+            successor = connection.execute("SELECT causation_operation_id,command_payload FROM authority_operation WHERE operation_id=%s", [recovered["operation_id"]]).fetchone()
+            effect_count = connection.execute("SELECT COUNT(*) FROM authority_external_effect WHERE operation_id IN (%s,%s)", [operation_id,recovered["operation_id"]]).fetchone()[0]
+        self.assertEqual(before, after)
+        self.assertEqual(session_before, session_after)
+        self.assertEqual(before["status"], "FAILED_FINAL")
+        self.assertEqual(successor[0], operation_id)
+        self.assertEqual(successor[1]["instruction"], before["command_payload"]["instruction"])
+        self.assertEqual(successor[1]["budget"], before["command_payload"]["budget"])
+        self.assertEqual(successor[1]["execution_contract"]["provider_io_policy"], "agent-io-budget.v1")
+        self.assertEqual(effect_count, 0)
+        project_id, session_id, operation_id, worker_id = self._admit_fixture(unsent_contract=True)
+        proof["external"] = True
+        original_factory = build_scripted_agent_harness_factory(DATABASE_URL, worker_id=worker_id)
+        with self.assertRaises(KernelError):
+            AgentAuthorityScheduler(DATABASE_URL, execution_preparer=_UnusedPort(), worker_id=worker_id,
+                harness_factory=failing_factory).tick(project_id=project_id, agent_run_id=operation_id)
+        with connect() as connection:
+            operation = connection.execute("SELECT version,request_digest FROM authority_operation WHERE operation_id=%s", [operation_id]).fetchone()
+            session = connection.execute("SELECT version FROM authority_agent_harness_session WHERE agent_session_id=%s", [session_id]).fetchone()
+            external = connection.execute("SELECT status FROM authority_external_effect WHERE operation_id=%s", [operation_id]).fetchone()
+        self.assertEqual(external[0], "UNKNOWN")
+        request = replace(request, project_id=project_id, source_session_id=session_id,
+            expected_operation_version=operation[0], expected_request_digest=operation[1], expected_session_version=session[0])
+        with self.assertRaisesRegex(KernelError, "AGENT_UNSENT_RECOVERY_EXTERNAL_WORK_PRESENT"):
+            application.recover_unsent_harness_session(request, principal=replace(principal, project_scope=frozenset({project_id})))
+        with connect() as connection:
+            successors = connection.execute("SELECT COUNT(*) FROM authority_operation WHERE causation_operation_id=%s", [operation_id]).fetchone()[0]
+        self.assertEqual(successors, 0)
 
     def test_session_executes_on_attempt_lease_and_commits_transcript_only(
         self,

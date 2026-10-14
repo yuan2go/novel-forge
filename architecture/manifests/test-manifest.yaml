@@ -8,6 +8,68 @@
   ],
   "classification_rules": [
     {
+      "id": "craft-working-continuation-v2",
+      "patterns": [
+        "tests/unit/test_working_craft_continuation.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "mkaos-authority",
+      "capability": "narrative-craft-contract",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "retained-working-source-proof",
+      "patterns": [
+        "tests/unit/test_retained_working_continuation.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/retained_working.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "craft-book-scope-migration",
+      "patterns": [
+        "tests/integration/test_craft_scope_migration_postgres.py",
+        "tests/unit/test_craft_migration_convergence.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "migration-authority",
+      "capability": "fresh-install-and-supported-upgrade",
+      "production_target": "src/novel_forge/storage/migrations/versions/v20261015_0214_story_design_book_scope.py",
+      "qualification_role": "COMPATIBILITY_ONLY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    {
+      "id": "source-observation-isolation",
+      "patterns": [
+        "tests/integration/test_source_observation_isolation_postgres.py",
+        "tests/integration/test_source_abstraction_schema_recovery_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-import",
+      "capability": "retry-recovery-and-replay",
+      "production_target": "src/novel_forge/modules/source_import/generation_recovery.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "craft-method-scope-projection",
+      "patterns": [
+        "tests/unit/test_book_method_scope_projection.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "mkaos-authority",
+      "capability": "narrative-craft-contract",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
       "id": "world-foundation-background-recovery",
       "patterns": [
         "tests/integration/test_world_foundation_background_postgres.py"
@@ -36,7 +98,8 @@
       "id": "working-prose-source-projection",
       "patterns": [
         "tests/unit/test_working_prose_projection.py",
-        "tests/unit/test_working_memory.py"
+        "tests/unit/test_working_memory.py",
+        "tests/unit/test_longform_working_history.py"
       ],
       "classification": "CURRENT_RUNTIME_CONTRACT",
       "owner": "book-authority",

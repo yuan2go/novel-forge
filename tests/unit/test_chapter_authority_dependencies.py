@@ -592,6 +592,31 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             router._selected_route(base, {"status": "SELECTED", "task": {"task_type": "draft", "declared_requirements": {}},
                 "selected": {"candidate": asdict(judge)}})
 
+    def test_headroom_composition_binds_uniform_capacity_and_rejects_stage_override(self) -> None:
+        from tests.unit.test_codex_model_catalog import catalog
+        repository_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            environment = _mixed_router_environment(Path(directory))
+            value = catalog()
+            value["contract_version"] = "codex-router-models.v2"
+            for row in value["models"]:
+                row["output_limit"] = None
+            environment.update(NOVEL_FORGE_ROUTER_PROVIDERS="codex-cli",
+                NOVEL_FORGE_CODEX_ESCALATION_MODEL="gpt-6-sol", NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT="medium",
+                NOVEL_FORGE_CODEX_ROUTER_MODELS=json.dumps(value),
+                NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY="codex-cli-context-headroom.v1")
+            with (
+                patch("novel_forge.storage.object_store.MinioObjectStore", return_value=SimpleNamespace(client=object())),
+                patch("novel_forge.api.authority_dependencies.observe_codex_cli_version", return_value="codex-test 1.0"),
+            ):
+                settings = IndustrialSettings(root=repository_root, database_url="postgresql://authority")
+                execution = build_production_execution_composition(settings, env=environment)
+                self.assertEqual(execution.gateway.routes["draft"].model_output_limit, 200000)
+                self.assertEqual(execution.gateway.routes["draft"].output_reservation_policy, "codex-cli-context-headroom.v1")
+                environment["NOVEL_FORGE_DRAFT_MODEL_CONTEXT_LIMIT"] = "150000"
+                with self.assertRaisesRegex(ValueError, "OUTPUT_POLICY_ROUTING_SCOPE_INVALID"):
+                    build_production_execution_composition(settings, env=environment)
+
     def test_production_codex_only_router_has_no_deepseek_dependency(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as directory:

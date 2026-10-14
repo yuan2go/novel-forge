@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import replace
+import pytest
+
 from novel_forge.modules.capability_packs.validation_deployment import (
     install_chapter_validation_pack,
     install_longform_validation_pack,
@@ -149,6 +152,57 @@ def test_quality_validation_packs_deploy_to_one_exact_book_scope() -> None:
     )
 
 
+@pytest.mark.parametrize("automatic", [False, True])
+def test_shared_compilation_preserves_existing_book_authorization(automatic) -> None:
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
+    from novel_forge.modules.capability_pack_authority.runtime import CapabilityPackRuntimeResolver
+    from tests.unit.test_creative_execution_template import template
+
+    harness = CapabilityPackPostgresHarness("shared-compilation-books", book_count=2)
+    register_validation_runtime_definitions(
+        DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
+    )
+    common = dict(repository_root=ROOT, project_id=harness.project_id,
+        workspace_id=harness.workspace_id, application_build_id=harness.application_build_id,
+        commit_sha=harness.release_sha, compiler=harness.compiler,
+        approver=harness.approver, agent_admin=harness.agent_admin,
+        pack_id_override=harness.pack_id)
+    if automatic:
+        operator = replace(harness.compiler, permissions=harness.compiler.permissions | {"book.authority.execute", "agent.authority.admin"})
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+            content={"policy_version": "two-books.v1", "task_overrides": [], "reason": "isolated per-Book admission test",
+                "execution_templates": [template(book) for book in harness.book_ids]},
+            project_id=harness.project_id, workspace_id=harness.workspace_id,
+            idempotency_key=harness.project_id + ":templates", trace_id=harness.project_id,
+            correlation_id=harness.project_id, application_build_id=harness.application_build_id,
+            commit_sha=harness.release_sha, principal=operator)
+        common.update(compiler=operator, approver=operator, agent_admin=operator)
+    first = install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[0], **common)
+    resolver = CapabilityPackRuntimeResolver(DATABASE_URL)
+    request = replace(harness.resolution_request(), environment="validation", runtime_profile="validation")
+    assert resolver.resolve_active_deployment(request).deployment_id == first["deployment_id"]
+    if not automatic:
+        with pytest.raises(KernelError, match="CAPABILITY_PACK_SHARED_APPROVAL_SCOPE_REQUIRED"):
+            install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[1], **common)
+        assert resolver.resolve_active_deployment(request).deployment_id == first["deployment_id"]
+        return
+    second = install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[1], **common)
+    replay = install_chapter_validation_pack(DATABASE_URL, book_id=harness.book_ids[1], **common)
+    assert first["compilation_id"] == second["compilation_id"] == replay["compilation_id"]
+    assert first["deployment_id"] != second["deployment_id"] == replay["deployment_id"]
+    assert resolver.resolve_active_deployment(request).deployment_id == first["deployment_id"]
+    assert resolver.resolve_active_deployment(replace(request, book_id=harness.book_ids[1])).deployment_id == second["deployment_id"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""SELECT book_id,compilation_id FROM authority_capability_pack_deployment
+            WHERE project_id=%s AND deployment_id=ANY(%s) ORDER BY book_id""",
+            [harness.project_id, [first["deployment_id"], second["deployment_id"]]])
+        assert uow.cursor.fetchall() == sorted([
+            (harness.book_ids[0], first["compilation_id"]),
+            (harness.book_ids[1], second["compilation_id"]),
+        ])
+
+
 def test_chapter_sampling_pack_uses_separate_native_definitions_and_approval_scope() -> None:
     harness = CapabilityPackPostgresHarness("chapter-sampling-deployment")
     register_validation_runtime_definitions(
@@ -186,3 +240,25 @@ def test_model_reference_creation_pack_compiles_and_deploys_only_in_offline_vali
         "quality.model_reference.evaluate", "quality.model_reference.adjudicate"}
     assert all(node["authoritative_completion_contract"]["required_asset_selectors"][0]
         ["eligibility"] == "INELIGIBLE" for node in nodes)
+
+
+def test_existing_agent_session_pack_installs_with_server_harness_role_and_tools() -> None:
+    from novel_forge.modules.capability_packs.validation_deployment import install_agent_validation_pack
+    from novel_forge.modules.agent_runtime.policy import ServerAgentHarnessPolicyResolver
+    from novel_forge.modules.agent_runtime.harness import AutonomousAgentRole
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    harness = CapabilityPackPostgresHarness("agent-reference-deployment")
+    result = install_agent_validation_pack(DATABASE_URL, repository_root=ROOT,
+        project_id=harness.project_id, workspace_id=harness.workspace_id, book_id=harness.book_ids[0],
+        application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
+        compiler=harness.compiler, approver=harness.approver, agent_admin=harness.agent_admin)
+    assert result["pack_id"] == "agent_session_pack"
+    assert {node["node_id"] for node in result["compilation"]["compiled"]["workflow_nodes"]} == {"agent_session"}
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        tools, skills, policy = ServerAgentHarnessPolicyResolver(DATABASE_URL,
+            production_model_binding={"capability_pack_id": "agent_session_pack"}).resolve_in_uow(uow,
+                agent_id="studio-director", role=AutonomousAgentRole.STUDIO_DIRECTOR, caller_tools=(), caller_skills=())
+        assert policy["role"] == "STUDIO_DIRECTOR"
+        assert {tool.tool_name for tool in tools} >= {"narrative.query_accepted", "story_planning.generate_candidate", "plan_change.submit"}
+        assert skills[0]["skill_id"].startswith("agent-loop-governance@")

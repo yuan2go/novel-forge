@@ -107,7 +107,7 @@ def build_story_planning_pack_profile(
     if version != "1.21.0":
         artifacts = [item for item in artifacts if not (
             item["kind"] == ArtifactKind.SKILL.value and item["ref"] == "quality-review"
-            and item["version"] == "quality-review-v4")]
+            and item["version"] not in {"quality-review-v1", "quality-review-v2", "quality-review-v3"})]
         for item in artifacts:
             if item["kind"] == ArtifactKind.SKILL.value and item["ref"] == "quality-review" and item["version"] == "quality-review-v3":
                 item["source_identity"] = "skills/quality-review/SKILL.md"
@@ -219,6 +219,15 @@ def build_story_planning_pack_profile(
         system_version=STORY_PLANNING_PROMPT_VERSION if intent_boundary else "v11" if version == "1.21.0" else "v9" if version == "1.19.0" else "v8",
     )
     artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0", "1.21.0"}, historical_methods=version != "1.21.0", narrative_intent_boundary=intent_boundary)
+    if version != "1.21.0":
+        # COMPATIBILITY: Archived bytes retain their published catalog source identities for exact historical Pack replay.
+        origins = {("chapter-outline", "chapter-plan-skill-v3"): "skills/chapter-outline/SKILL.md",
+            ("prose-generation", "prose-generation-v4"): "skills/prose-generation/SKILL.md",
+            ("long-outline", "long-outline-v3"): "skills/long-outline/SKILL.md"}
+        for artifact in artifacts:
+            origin = origins.get((artifact["ref"], artifact["version"]))
+            if artifact["kind"] == ArtifactKind.SKILL.value and origin is not None:
+                artifact["source_identity"] = origin
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
         _append_capability_schemas(artifacts, capability)

@@ -24,7 +24,8 @@ identity changes without a corresponding projection update.
 New Creation requests select `config/execution_templates/author_first.json` (v12).
 The default creation-input policy freezes `native-narrative-execution.v2`: Chapter Pack
 3.0.4 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
-working-prose progression v4. The original Formation policy remains the replay source;
+working-prose projection v5, Craft budget v5 and selected-working delivery v2.
+The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 These native bindings do not establish literary effectiveness.
 Fresh work-requirements Contexts derive `chapter-generation-length.v1` from the exact
@@ -188,14 +189,25 @@ character reaction, action consequences or their combination without prescribing
 emotional endpoints or mandatory costs. These inputs cannot advance Canon or the accepted
 cursor. Absent policy retains v1 tails; frozen v1 requests reconstruct exactly, independently
 of later policy choices. Overflow of required recent prose closes admission rather than
-silently truncating it. New Creation profiles select `working-prose-projection.v4`.
-This policy resolves the contiguous predecessor chain with committed acceptance before
+silently truncating it. Historical `working-prose-projection.v4`
+resolves the contiguous predecessor chain with committed acceptance before
 explicit work selection and effective native delivery, retaining exact source and selection
 provenance without changing their records. Its shared Planning/Writer instruction treats
 realized beats as premises, compresses incidental daily transitions, and asks existing
 scene goals, conflicts, beats and exit states to carry immediate friction, costly action
 and an irreversible ending that demands a next action. Missing source coverage or exceeded
 history/allocation closes input admission; literary interpretation remains a review concern.
+New Creation profiles select `working-prose-projection.v5`. Book freezes every predecessor's
+exact effective source, source hash and selection lineage in `working-source-history.v1`,
+separately from the bounded prose passages sent to Planning, Memo and Writer. The configured
+128-chapter passage window does not reject chapter 130 or discard earlier source identities.
+Located observations and their causal passages can retrieve earlier material within the
+real character and complete-request capacity bounds. Omitted prose remains unknown.
+The current guidance follows this Book's goals, character choices, consequences and author
+length without requiring three turns, a reversal, a cost or a particular ending in every
+chapter. Source changes invalidate dependent observations and later frozen dependencies,
+including outside the visible passage window. Frozen v1-v4 requests retain their original
+source and guidance contracts. This mechanism does not establish 600-chapter continuity.
 New v4 Planning preserves a frozen repair reason as candidate correction intent and adds
 progression descriptions to the existing hierarchical schema fields. An exact parent-bound
 ending remains binding: changing it requires the owning upstream Plan Change.
@@ -967,6 +979,13 @@ selection, `ALLOW_ONLY` admits only the exact listed KnowledgeCard AssetVersions
 explicit empty `DENY_ALL` never falls back to project-wide cards. The same policy identity
 is carried through Planning, Context selection, Draft, Review and Revision, preventing
 comparison groups from sharing cards through cache, summary or an upstream plan.
+An experimental `ALLOW_ONLY` policy may explicitly select
+`explicit-allowlist-craft-review.v1` for at most six exact Card versions. Under need-driven
+selection v2, an unresolved lexical match can reach the existing Planning call for concrete
+`ADOPT`, `ADAPT` or `REJECT`; it does not become an adopted method. The task carries the
+current Card approval decision separately from historical Candidate-stage descriptions.
+Experimental approval permits consideration in its frozen Book and stage scope, not
+production eligibility, formal author acceptance or demonstrated literary effect.
 
 ## Production mechanism choices
 
@@ -999,6 +1018,15 @@ effects and Book Acceptance. No use-success state or additional knowledge store 
 Narrative Craft is a versioned specialization of governed MKAOS KnowledgeCards. The
 catalog and selection rules below are consumed by native Planning and Chapter execution;
 a declared Card, Prompt or Skill alone remains insufficient evidence of application.
+Design methods participate in the existing Foundation, character and hierarchical planning
+calls through each stage's frozen knowledge selection and concrete translation. Expression
+methods continue through Intent, Memo and Writer. Each stage decides ADOPT/ADAPT/REJECT
+against this Book's actual problem, prerequisites and author constraints. A Review finding
+about structure returns a proposal to the first affected design owner; active future plans
+change through Plan Change. Book, Volume/Arc, ChapterGroup and Chapter do not gain a new
+parallel knowledge or Agent authority from these inputs. Actual adoption and received model
+input still require the corresponding saved plan, Context and native receipt.
+
 
 Formation, World Preparation, Chapter Memo, scene realization, candidate retention and
 accepted-state reconciliation use their native Authorities. External writing workflows
@@ -1102,6 +1130,17 @@ Source prose remains restricted to analysis; only abstract approved Card project
 reach generation. Discovery does not approve a candidate. Legacy routing/frozen strategies
 retain their prior contracts.
 
+Writing-theory analysis may select `source-analysis-routing.writing-methods.v1` with
+`multidisciplinary-knowledge` method 1.2.0, or its explicit v2 successor with method 1.2.1
+and ordinary Observation Prompt 2.1. Bounded reading retains its own frozen Prompt.
+Structured Source evidence permits only the shortest necessary exact quotation in located
+`supports[].support_text`; source claims, analyst abstraction and application hypotheses
+stay distinct. KnowledgeCards and fiction use independent abstract expression. These routes
+do not prove that an authorized edition was read, that a Book adopted a method or that
+prose improved. New extraction freezes `narrative-craft-output.v2` and the exact Observation,
+Schema and cache identity. Source's schema-recovery entry can append an owned known-contract
+successor; it preserves the earlier Observation, failed output and any UNKNOWN outcome.
+
 New Craft selections freeze `craft-need-driven-selection.v2`, separately from the
 unchanged density/frequency budget versions. Problem, scene demand and reader-effect
 matches use explicit semantic dimensions. Genre, POV, scene-type labels, identifiers
@@ -1148,8 +1187,9 @@ output, known transport failure and unknown external outcome. It reuses native P
 result repair and cumulative budget, appending exact scoped exclusions and a new selector
 result. Mandatory uses remain required; alternate decisions retain predecessor results,
 receipts and updated combination reasons. Unknown external results require reconciliation.
-New v4 Planning Contexts explicitly freeze `planning-craft-history-projection.v1`.
-The Provider task retains every accepted observation once and replaces identical Card
+New v4/v5 Planning Contexts explicitly freeze `planning-craft-history-projection.v1`.
+The Provider task retains accepted observations and, for v5, distinct selected-working
+delivery and Review observations once, replacing identical Card
 history lists with ordered, hash-checked references to that same request. Context
 materialization recomputes the whole projection from the frozen source. The domain
 selection and ledger remain complete; older Contexts without this field retain their
@@ -1163,6 +1203,19 @@ The v4 concrete-scene check cannot substitute abstract set feasibility for actua
 `narrative-craft-strategy.v3` separates stable instance, use, phase and progress; located
 final accepted review supports CONTINUE, ADVANCE, DEFER or END. Approved scope changes
 require exact inheritance/rebinding/end evidence; older frozen strategies keep their semantics.
+
+`narrative-craft-budget.v5` and `narrative-craft-strategy.v4` add a separate
+`working-craft-delivery.v2` contract. Book verifies the exact selected sources and unchanged
+dependencies; MKAOS projects their original delivery receipts as `NOT_ASSESSED` allocations.
+A stable persistent or phased instance can CONTINUE or DEFER in the same phase from that
+delivery without inventing accepted IDs or claiming its effect was achieved. ADVANCE and
+END additionally require the selected version's located native phase Review support;
+a delivered ADVANCE needs its own supported Review before later-stage continuation.
+Review effects and side effects remain fallible working observations and soft selection
+cautions. A replaced source or changed dependency supplies no predecessor. Arc rebinding
+still requires the existing approved Plan Change evidence; generic working-memory notes
+are not typed Craft phase judgments. Accepted v3/v4 contracts retain their prior behavior.
+No applicable optional method leaves ordinary manuscript generation available.
 
 Explicit `narrative-craft-budget.v3` declares bounded usage types, scopes, frequency units,
 mechanism assignments and ordered phases. EVENT counts manifestations; PERSISTENT and
@@ -1402,6 +1455,15 @@ waiting is cancelled. Isolation checks the captured process identity and active 
 late complete responses retain revoked selection rights and their original accounting state. Native
 manuscript read/export can select an exact retained candidate reference independently
 of publication gates. Cancelled results retain revoked selection rights.
+An experimental author-first Book may explicitly append a `retained-working-continuation.v1`
+decision for an intact complete original rejected solely for the two fully captured empty
+metadata-discovery calls. The owner verifies its frozen request, Schema, input, dispatch,
+stopped process, settled reservation, source bytes and failed permission evidence. Other
+tools, resources, incomplete traces, live work and UNKNOWN effects remain ineligible.
+The resulting `retained_working_prose` is a distinct unaccepted working source, not a
+successful compliant Draft. Original Operation/Attempt/Effect failures and unknown usage
+remain unchanged. Book advances only its writing cursor; accepted Canon and author acceptance
+do not move. Reader and export views retain this origin and its exact native working-use proof.
 Remote waiting polls active lease/cancellation probes without a total generation deadline.
 The send path checks cancellation and lease health before starting and immediately before
 the Provider invocation, including the inherited owning guards in its invocation thread.
@@ -1887,6 +1949,16 @@ Realization is classified as an execution contract; ChapterGroup is an execution
 window. Foundation ownership is retained: the binding-set owner does not become the
 owner of the semantic assets it references.
 
+Story Design current projections use Project, proven Book, design layer and logical key.
+Book scope derives from immutable generation/candidate, typed binding or owned producer
+lineage; ambiguity fails closed. Assets without proven lineage retain `LEGACY_UNBOUND`.
+Book-scoped retrieval filters conflicting and foreign identities before its collection limit;
+truly unbound shared profiles remain eligible. Same Project does not authorize mixing novels.
+The native scope reconciliation command can restore only an unchanged approved BOOK/VOLUME
+version still selected by that Book's current Planning binding, using its exact activation,
+Opening and failed checkpoint. It appends administrative evidence, not a semantic Plan
+Change, new approval or literary proof. Frozen Chapter manifests remain replay sources.
+
 A newly computed Chapter Arc Working Set uses `frozen-chapter-arc-working-set-v2`
 when its frozen matrix row declares required contributions. The row owns which Arcs
 move in that Chapter; available portfolio capacity, accepted debt and starvation
@@ -2135,6 +2207,19 @@ separate dimensions. Scripted evidence can support contracts, not narrative qual
 AI evaluation is not human evidence, and a combined reader/longitudinal record cannot be
 duplicated into two independent proofs.
 
+Reader Calibration also owns anonymous comparisons of independent continuous manuscripts.
+The existing Quality Qualification router exports exact saved native Drafts, explicitly
+retained working originals or sealed controlled reference results. The private mapping binds
+Book producer, source versions, hashes and selectors; the public pack is rebuilt from that
+mapping with original titles, full text and chapter order. Human submissions remain declared
+observations, and an unassigned pack stays `PENDING_HUMAN_FEEDBACK`. Auxiliary model reading
+uses the existing one-turn controlled Agent/Provider path and verifies its complete public
+pack in the original instruction, Provider projection and actual input hash. Exact quotations
+must locate in the frozen prose; missing or ambiguous quotations stay unresolved. Model
+diagnosis is distinct from human feedback and does not grant Book acceptance or prove
+literary improvement. Reading, export and continuation do not require optional feedback.
+
+
 ## Bounded long-form retrieval
 
 Retrieval binds one campaign to the exact project, book, accepted-through chapter,
@@ -2192,10 +2277,13 @@ working phase, progress, payoff readiness and unresolved prerequisites as `UNASS
 Planning consumes the exact selected passages before choosing future contributions;
 absence of formal acceptance cannot establish absence of experience. Formal abandonment,
 violated obligations, frozen Chapter contributions and capacity remain enforced.
-`working-craft-delivery.v1` reads exact selected-source delivery receipts as a soft Craft
+Historical `working-craft-delivery.v1` reads exact selected-source delivery receipts as a soft Craft
 selection caution. Missing coverage stays unknown; these allocations prove neither realized
 Craft effect nor accepted phase transitions. The optional v3/v4 accepted Craft phase
-contracts remain separate.
+contracts remain separate. Current profiles freeze selected-working delivery v2 with
+Craft budget v5. Planned allocation, located working Review and formal acceptance remain
+separate evidence bases; Book's full source-history identity invalidates the appropriate
+method continuation after source replacement and transitive dependency changes.
 
 Optional long-form review `diagnosis_contract: prose-root-cause.v1` requests exact-source
 findings with language, scene organization, chapter structure, character trajectory or

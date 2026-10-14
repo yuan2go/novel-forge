@@ -590,6 +590,9 @@ class UnifiedAgentHarness:
                         observations=tuple(observations),
                     )
                 assert turn.tool_call is not None
+                if current.execution_contract.get("reference_prose"):
+                    raise KernelError("AGENT_REFERENCE_PROSE_TOOL_FORBIDDEN",
+                                      "Controlled reference prose cannot execute tools or activate Skills")
                 spec = self._authorize_tool(current, turn.tool_call)
                 tool_usage = current.usage.add(tool_calls=1)
                 tool_usage.require_within(current.budget, pure_generation=pure_generation)

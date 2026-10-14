@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any
 
 from novel_forge.modules.chapter_authority.author_editor import source_draft_content
@@ -30,6 +31,9 @@ def source_memory(uow, book, source):
 
 
 def selected_working_craft_history(database_url: str, *, snapshot, mkaos, policy) -> list[dict[str, Any]]:
+    from novel_forge.modules.mkaos_authority.craft_usage import WORKING_CRAFT_POLICY
+    if policy == WORKING_CRAFT_POLICY:
+        return _selected_working_craft_v2(database_url, snapshot=snapshot, mkaos=mkaos)
     from .manuscript import AUTHOR_WORKFLOW, effective_workflow, verify_working_context
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
     expected = {"version": "working-craft-delivery.v1", "use": "SOFT_SELECTION_CAUTION"}
@@ -65,6 +69,107 @@ def selected_working_craft_history(database_url: str, *, snapshot, mkaos, policy
         "reason": "DEPENDENCY_CHANGED" if source.get("dependency_changes") else "NO_MATCHED_DELIVERY_CRAFT_RECEIPT"}
         for identity,source in all_selected.items() if identity not in covered]
     return [history[key] for key in sorted(history)] + missing
+
+
+def _working_review_observations(uow, *, snapshot, source, draft, deliveries):
+    from novel_forge.modules.review.craft import craft_review_targets, validate_craft_checks
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    uow.cursor.execute(
+        """SELECT DISTINCT version.asset_version_id, version.created_at
+           FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+           JOIN authority_operation_output_asset output USING(asset_version_id)
+           JOIN authority_operation op USING(operation_id)
+           JOIN authority_book_chapter_request request ON request.chapter_root_operation_id=op.root_operation_id
+           WHERE asset.project_id=%s AND request.project_id=%s AND request.book_run_id=%s
+             AND request.chapter_number=%s AND asset.asset_type IN ('review_report','re_review_report')
+             AND (version.content->>'target_asset_version_id'=%s OR version.content->>'revision_version_id'=%s)
+           ORDER BY version.created_at DESC, version.asset_version_id DESC LIMIT 50""",
+        [snapshot["project_id"], snapshot["project_id"], snapshot["book_run_id"], source["chapter"],
+         source["asset_version_id"], source["asset_version_id"]])
+    identities = [row[0] for row in uow.cursor.fetchall()]
+    if not identities:
+        return []
+    try:
+        targets = craft_review_targets(draft)
+    except (KernelError, KeyError, TypeError, ValueError):
+        return []
+    if not targets:
+        return []
+    by_use = {row["use_id"]: row for row in deliveries}
+    for identity in identities[:1]:
+        document = uow.repositories.asset_documents.require(project_id=snapshot["project_id"], asset_version_id=identity)
+        review = document.content
+        if (document.content_hash != canonical_hash(review) or review.get("target_text_hash") != source["text_hash"]
+            or review.get("project_id") != snapshot["project_id"] or review.get("chapter") != source["chapter"]
+            or review.get("report_type") not in {"ReviewReport", "ReReviewReport"}):
+            continue
+        try:
+            checks = validate_craft_checks(checks=review.get("craft_checks"), targets=targets, issues=review.get("issues", []),
+                text=draft["text"], target_asset_version_id=source["asset_version_id"],
+                real_model_call=review.get("provider_evidence", {}).get("real_model_call") is True)
+        except (KernelError, KeyError, TypeError, ValueError):
+            continue
+        observations = []
+        for raw, check in zip(review["craft_checks"], checks, strict=True):
+            delivery = by_use.get(check["use_id"])
+            if (not delivery or raw.get("target_asset_version_id") != source["asset_version_id"]
+                or raw.get("target_text_hash") != source["text_hash"]
+                or any(raw.get(key) != delivery.get(key) for key in ("knowledge_card_asset_version_id", "content_hash", "mechanism_id", "mechanism_version"))):
+                continue
+            observations.append({**delivery, "usage_basis": "SELECTED_WORKING_PROSE_REVIEW",
+                "effect_status": check["effect_status"], "evidence": check["evidence"], "side_effects": check["side_effects"],
+                **({"phase_transition": check["phase_transition"]} if "phase_transition" in check else {}),
+                "review_asset_version_id": document.asset_version_id, "review_content_hash": document.content_hash,
+                "review_provider_evidence": deepcopy(review.get("provider_evidence", {})),
+                "evidence_class": check["evidence_class"], "reader_effect_proven": False,
+                "evidence_ceiling": "SELECTED_WORKING_REVIEW_NOT_FORMAL_ACCEPTANCE_OR_READER_EFFECT"})
+        if observations:
+            return observations
+    return []
+
+
+def _selected_working_craft_v2(database_url: str, *, snapshot, mkaos):
+    from .manuscript import AUTHOR_WORKFLOW, effective_workflow, verify_working_context
+    from .working_prose import working_source_rows
+    from novel_forge.modules.mkaos_authority.craft_usage import WORKING_CRAFT_POLICY
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    all_selected = {source["asset_version_id"]: source for source in working_source_rows(snapshot)}
+    history, missing = [], []
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s AND project_id=%s AND book_id=%s",
+            [snapshot["book_run_id"], snapshot["project_id"], snapshot["book_id"]])
+        row = uow.cursor.fetchone()
+        if not row or effective_workflow(uow.cursor, row[0]) != AUTHOR_WORKFLOW:
+            raise KernelError("WORKING_CRAFT_HISTORY_SCOPE_INVALID", "Require the owning author-first Book")
+        verify_working_context(uow, row[0], snapshot)
+        for source in all_selected.values():
+            deliveries = {}
+            if not source.get("dependency_changes"):
+                rows = mkaos.list_runtime_usage(project_id=snapshot["project_id"], book_id=snapshot["book_id"],
+                    result_asset_version_id=source["asset_version_id"], limit=500)
+                for usage_row in rows:
+                    if usage_row.get("result_asset_version_id") != source["asset_version_id"]:
+                        continue
+                    for use in usage_row.get("craft_usage", []):
+                        if use.get("chapter") != source["chapter"] or not use.get("external_receipt_ids"):
+                            continue
+                        deliveries[use["use_id"]] = {**use, "usage_basis": "SELECTED_WORKING_DELIVERY", "effect_status": "NOT_ASSESSED",
+                            "book_run_id": snapshot["book_run_id"], "selected_source_asset_version_id": source["asset_version_id"],
+                            "selected_source_content_hash": source["content_hash"], "target_text_hash": source["text_hash"],
+                            "working_snapshot_hash": snapshot["snapshot_hash"], "working_craft_policy": dict(WORKING_CRAFT_POLICY),
+                            "formal_acceptance": "NOT_GRANTED", "evidence_ceiling": "DELIVERED_PLANNED_ALLOCATION_NOT_REALIZED_EFFECT"}
+            if deliveries:
+                history.extend(deliveries.values())
+                document = uow.repositories.asset_documents.require(project_id=snapshot["project_id"], asset_version_id=source["asset_version_id"])
+                history.extend(_working_review_observations(uow, snapshot=snapshot, source=source,
+                    draft=source_draft_content(document), deliveries=list(deliveries.values())))
+            else:
+                missing.append({"usage_basis": "WORKING_CRAFT_COVERAGE", "status": "UNKNOWN", "chapter": source["chapter"],
+                    "selected_source_asset_version_id": source["asset_version_id"], "selected_source_content_hash": source["content_hash"],
+                    "working_snapshot_hash": snapshot["snapshot_hash"],
+                    "reason": "DEPENDENCY_CHANGED" if source.get("dependency_changes") else "NO_MATCHED_DELIVERY_CRAFT_RECEIPT"})
+        verify_working_context(uow, row[0], snapshot)
+    return sorted(history, key=lambda item: (item["chapter"], item["use_id"], item["usage_basis"])) + missing
 
 
 def save_manuscript_memory(authority, book_run_id: str, *, chapter: int, source_asset_version_id: str,

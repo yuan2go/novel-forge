@@ -646,6 +646,7 @@ class ChapterExecutionRoute:
     embedding_dimensions: int = 0
     model_context_limit: int = 0
     model_output_limit: int = 0
+    output_reservation_policy: str = ""
     token_accounting_method: str = ""
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
@@ -653,6 +654,8 @@ class ChapterExecutionRoute:
     task_reasoning_authorization: tuple[str, str] | None = None
 
     def __post_init__(self) -> None:
+        if self.output_reservation_policy not in {"", "codex-cli-context-headroom.v1"}:
+            raise ValueError("Chapter output reservation policy is invalid")
         if self.stage not in _STAGES | _OPTIONAL_DOMAIN_STAGES:
             raise ValueError(f"unsupported Chapter execution stage: {self.stage}")
         if (
@@ -1085,6 +1088,13 @@ class PostgresChapterExecutionContractBinder:
                 "PROVIDER_ADMISSION_INPUT_INCOMPLETE",
                 "Provider admission requires stable identity, timeout, and output reserve",
             )
+        output_policy = str(metadata.get("output_reservation_policy") or "")
+        complete_input_reserve = len(prompt.encode()) + route.token_safety_margin + route.token_framing_overhead
+        if output_policy:
+            from .context_compression_provider import CLI_CONTEXT_HEADROOM_POLICY, context_headroom_output_reserve
+            if output_policy != CLI_CONTEXT_HEADROOM_POLICY or route.output_reservation_policy != output_policy:
+                raise KernelError("PROVIDER_OUTPUT_POLICY_DRIFT", "New request output policy differs from its configured route")
+            output_reserve = context_headroom_output_reserve(route, complete_input_reserve)
         if self.provider_router is not None and embedding_output_contract is None:
             route, routing_decision = self.provider_router.select(route, task_type=stage,
                 project_id=project_id, work_id=book_id, operation_id=operation_id,
@@ -1095,6 +1105,8 @@ class PostgresChapterExecutionContractBinder:
                 producer_contract=chapter_producer_contract_identity(prompt_evidence, contract),
                 request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0))
             route_identity = routing_decision["decision_id"]
+        if output_policy and context_headroom_output_reserve(route, complete_input_reserve) != output_reserve:
+            raise KernelError("PROVIDER_OUTPUT_POLICY_DRIFT", "Selected route must retain the configured complete-input context headroom")
         task_scoped = stage in CONTEXT_MODEL_STAGES or any(
             str(item.get("content", {}).get("profile_version") or "") == "draft-context-profile-v4"
             for item in selected_inputs
@@ -1103,6 +1115,7 @@ class PostgresChapterExecutionContractBinder:
         if task_scoped and stage != "retrieval":
             require_task_output_reserve(
                 stage, route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_LIMIT_EXCEEDED",
+                input_tokens=complete_input_reserve if output_policy else None,
             )
         envelope = ProviderRequestEnvelope(
             provider=route.model_profile.model_provider,
@@ -1122,7 +1135,7 @@ class PostgresChapterExecutionContractBinder:
             route_identity=route_identity,
             output_reserve=output_reserve,
             execution_token_limit=int(
-                metadata.get("provider_token_limit") or route.model_context_limit
+                route.model_context_limit if output_policy else metadata.get("provider_token_limit") or route.model_context_limit
             ),
         )
         context_content = context_selection[0].get("content")
@@ -1221,6 +1234,12 @@ class PostgresChapterExecutionContractBinder:
             effect_binding["routing_decision"] = routing_decision
         if embedding_output_contract is not None:
             effect_binding["embedding_output_contract"] = embedding_output_contract
+        if output_policy:
+            effect_binding["provider_output_reservation"] = {
+                "contract_version": output_policy, "input_token_ceiling": complete_input_reserve,
+                "output_reserve": output_reserve, "model_context_limit": route.model_context_limit,
+                "remote_output_limit": "NOT_EXPOSED_BY_CLI", "hard_output_stop": False,
+            }
         return ChapterCapabilityPreflight(
             attempt_snapshot=attempt_snapshot,
             materialization=materialization,
@@ -1339,7 +1358,7 @@ class PostgresChapterExecutionContractBinder:
             schema = scoped_realization_schema(schema, inputs["realization_contract"])
             schema_ref = "schema:chapter-provider-output:draft:v4"
         working = inputs.get("working_manuscript") or (inputs.get("frozen_intent") or {}).get("working_manuscript") or (inputs.get("execution_intent") or {}).get("working_manuscript") or {}
-        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4"}:
+        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5"}:
             schema["properties"]["working_memory_json"] = {"type": "string", "maxLength": 100000}
             schema_ref += ":working-memory-v1"
         if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
@@ -4644,7 +4663,15 @@ def _materialize_production_codex_prompt(
     if intent_boundary:
         from .provider_views import project_planning_narrative_intent
         task_view, context_view, intent_projection = project_planning_narrative_intent(task_view, context_view)
+    from .provider_views import compile_working_history_transport
+    history_envelope, history_transport = compile_working_history_transport({"input_manifest": task_view, "context_bundle": context_view})
+    task_view, context_view = history_envelope["input_manifest"], history_envelope["context_bundle"]
     exact_reference_proof = None
+    protected_exact_accounting = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version") == "protected-context-exact-accounting.v1"
+    if protected_exact_accounting and (stage not in {"draft", "revision"}
+            or template.get("ref") != "prompt-template:chapter-generation-pack"
+            or template.get("version") not in {"v13", "v15"}):
+        raise KernelError("TASK_CONTEXT_ACCOUNTING_INVALID", "Protected exact accounting requires its supported Writer envelope transport")
     reference_version = context_content.get("planning_exact_reference_projection_version")
     if reference_version not in (None, "planning-exact-value-reference.v1"):
         raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact reference compilation requires its frozen Planning contract")
@@ -4657,8 +4684,12 @@ def _materialize_production_codex_prompt(
         from .provider_views import compile_exact_context_references
         structured_transport = (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
             stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
-            and template.get("version") in {"v13", "v15"} and (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4"})
-        envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=structured_transport)
+            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5"}))
+        short_literals = (context_content.get("planning_method_scope_projection_version") == "book-method-scope-projection.v1"
+            or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
+            or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1"
+            or protected_exact_accounting)
+        envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=structured_transport, short_literals=short_literals)
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
         exact_reference_proof["source_scope"] = "provider_data_envelope"
         exact_reference_proof["contract_version"] = "provider-context-exact-value-reference.v1"
@@ -4690,7 +4721,7 @@ def _materialize_production_codex_prompt(
         if isinstance(item, Mapping)
     }
     required_allowed = (
-        {"model.provider.invoke", *agent_tool_names}
+        {"model.provider.invoke", *(agent_tool_names - {"skill.activate"})}
         if stage == "agent_session"
         else {"model.provider.invoke"}
     )
@@ -4739,8 +4770,45 @@ def _materialize_production_codex_prompt(
         if isinstance(item, Mapping)
         and str(item.get("tool_name") or "") != "skill.activate"
     ]
+    reference_prose = dict(dict(inputs.get("execution_contract_summary") or {}).get("reference_prose") or {})
+    if stage == "agent_session" and reference_prose:
+        if (reference_prose.get("contract_version") != "agent-reference-prose.v1"
+                or reference_prose.get("production_eligible") is not False
+                or reference_prose.get("tools_allowed") is not False
+                or reference_prose.get("skills_activation_allowed") is not False
+                or dict(inputs.get("accepted_boundary") or {}).get("accepted_through_chapter") != 0
+                or reference_prose.get("book_id") != dict(inputs.get("accepted_boundary") or {}).get("book_id")
+                or reference_prose.get("instruction_hash") != canonical_hash({"instruction": inputs.get("instruction")})):
+            raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "Reference prose must retain its frozen empty-boundary instruction")
+        stage_semantic_contract = (
+            "Execute the frozen author instruction in agent_task. Invent the independent fictional story required by that instruction, "
+            "and return its complete prose in FINAL.final_response.payload_json. Fiction in this reference response is a candidate, "
+            "not accepted Canon or an Authority decision. There are no accepted story facts. Do not query Book plans, execute tools "
+            "or activate Skills. Return the requested chapters themselves; a status, proposal or empty candidate does not fulfill the instruction. "
+            "The outer response must match the strict schema."
+        )
+        purpose = reference_prose.get("task_purpose", "PROSE")
+        if purpose == "MANUSCRIPT_READING":
+            stage_semantic_contract = (
+                "Execute the frozen reading instruction in agent_task against its complete anonymous manuscript input. "
+                "Return only the requested auxiliary diagnosis in FINAL.final_response.payload_json. "
+                "Read the prose before assessing the six requested dimensions and cite exact visible passages. "
+                "Do not invent or revise fiction, infer group labels, query Book plans, invoke tools or activate Skills. "
+                "This is model diagnosis, not human feedback, author acceptance or accepted Canon. "
+                "Uncertainty and adverse findings are valid. The outer response must match the strict schema."
+            )
+        elif purpose != "PROSE":
+            raise KernelError("AGENT_REFERENCE_PURPOSE_INVALID", "Unknown controlled reference purpose")
+        task_view = {"contract_version":"provider-reference-author-task.v1",
+                     "instruction":task_view["instruction"],"accepted_boundary":task_view["accepted_boundary"]}
+        if purpose == "MANUSCRIPT_READING":
+            from .provider_views import controlled_manuscript_reading_views
+            if knowledge_view:
+                raise KernelError("MODEL_READING_PUBLIC_SCOPE_REQUIRED", "Blind reading consumes only its frozen public manuscript capsule")
+            task_view, context_view = controlled_manuscript_reading_views(inputs["instruction"])
     if (
         stage == "agent_session"
+        and not reference_prose
         and int(inputs.get("turn_number") or 0) == 1
         and not grounding_observations
         and "narrative.query_accepted" in agent_tool_names
@@ -4760,7 +4828,7 @@ def _materialize_production_codex_prompt(
         stage_semantic_contract += "\nIf the enforced transport response Schema contains output_json, return exactly {\"output_json\":\"<serialized canonical JSON object>\"}. The encoded object must satisfy every field, bound and semantic requirement of the canonical Schema below. If the transport enforces the canonical object Schema directly, return that canonical object. No Markdown or extra fields.\n"
     if exact_reference_proof:
         stage_semantic_contract += "\nContext uses lossless exact-value references. An object containing only __exact_value_ref__ is exactly the entire earlier value at that RFC6901 JSON pointer inside its declared data envelope. Expand it when reading; it does not omit facts, constraints, failed findings or candidate content. References are local data and grant no tool or external access.\n"
-    if exact_reference_proof and exact_reference_proof.get("transport_version") in {"provider-structured-exact-reference.v1", "provider-structured-exact-reference.v2"}:
+    if exact_reference_proof and exact_reference_proof.get("transport_version") in {"provider-structured-exact-reference.v1", "provider-structured-exact-reference.v2", "provider-structured-exact-reference.v3"}:
         stage_semantic_contract += "\nAn exact reference with __exact_value_removed_keys__ and/or __exact_value_overrides__ means copy the earlier complete object, remove those keys, then replace/add the given fields. Nested values follow the same rules. __canonical_json_string__ contains the complete object encoded as a canonical JSON string in the original source; read its full data normally. All encoding is lossless and retains every required input.\n"
     if exact_reference_proof and exact_reference_proof.get("text_fragment_group_count"):
         stage_semantic_contract += "\n__text_fragments__ holds one exact text, its original Unicode start and ordered fragment ends. Split at those offsets to read the original passages; the host derives each original text_hash from its exact fragment. All prose, whitespace, source positions and version bindings are retained. These hashes and boundaries are source protocol, not story facts or character duties.\n"
@@ -4771,6 +4839,9 @@ def _materialize_production_codex_prompt(
             + _canonical(knowledge_view)
             + "\n</required_knowledge>",
     ]
+    if stage == "agent_session":
+        prompt_sections.extend(("<agent_task>\n" + _canonical(task_view) + "\n</agent_task>",
+                               "<agent_context>\n" + _canonical(context_view) + "\n</agent_context>"))
     if not compact_contract or stage == "agent_session":
         prompt_sections.append(
             "<tool_policy>\n"
@@ -4785,6 +4856,10 @@ def _materialize_production_codex_prompt(
             "<output_schema>\n" + _canonical(schema["content"]) + "\n</output_schema>",
     ))
     prompt = "\n\n".join(prompt_sections)
+    if stage == "agent_session" and reference_prose.get("task_purpose") == "MANUSCRIPT_READING":
+        book_id = str((inputs.get("accepted_boundary") or {}).get("book_id") or "")
+        if book_id and book_id in prompt:
+            raise KernelError("MODEL_READING_GROUP_IDENTITY_LEAK", "The diagnostic host Book must stay outside the anonymous Provider view")
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     prompt_bytes = len(prompt.encode("utf-8"))
     prompt_estimated_tokens = max(1, (prompt_bytes + 2) // 3)
@@ -4894,6 +4969,7 @@ def _materialize_production_codex_prompt(
             else None
         ),
         "provider_view": {
+            **({"working_history_transport": history_transport} if history_transport["projections"] else {}),
             **({"exact_context_references": exact_reference_proof} if exact_reference_proof else {}),
             "task_contract_version": task_view["contract_version"],
             "context_contract_version": context_view["contract_version"],

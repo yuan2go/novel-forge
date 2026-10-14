@@ -42,8 +42,9 @@ def test_main_world_reader_and_runtime_registration_identity_are_exact():
     assert digest(runtime_continuation_definition(application_build_id="historical-hash-probe", commit_sha="1" * 40)) == FROZEN["foundation"]["runtime_continuation"]
 
 
-def test_current_planning_contract_keeps_main_serialization_and_adds_explicit_world_schema():
-    profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "b" * 64)
+def test_explicit_legacy_planning_contract_keeps_serialization_and_world_schema():
+    profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "b" * 64,
+        execution_contract_version="1.21.0", narrative_intent_boundary=False)
     assert profile.manifest["identity"]["version"] == "2.13.0"
     assert {node["operation_definition_ref"] for node in profile.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.21.0"}
     assert profile.manifest["prompt_binding"]["system_instruction_version"] == "v11"
@@ -53,6 +54,16 @@ def test_current_planning_contract_keeps_main_serialization_and_adds_explicit_wo
     current = world_generation_schema(WorldProductionPolicy(), agency=True)
     assert "action_mode" in json.loads(current["properties"]["candidates"]["items"]["properties"]["transition"]["properties"]["payload_json"]["description"].split(": ", 1)[1])["properties"]
     assert "action_mode" not in world_transition_schema()["properties"]
+
+
+def test_current_default_planning_pack_keeps_new_intent_boundary_separate_from_replay():
+    profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "b" * 64)
+    assert profile.manifest["identity"]["version"] == "2.14.0"
+    assert profile.manifest["prompt_binding"]["system_instruction_version"] == "v12"
+    assert profile.manifest["prompt_binding"]["template_version"] == "v3"
+    assert any(item["skill_ref"] == "long-outline" and item["version"] == "long-outline-v4"
+        for item in profile.manifest["skill_binding"]["skills"])
+    assert any(item["ref"] == "schema:story-planning-pack-input:v2" for item in profile.artifact_catalog["artifacts"])
 
 
 @pytest.mark.parametrize("version", ["1.18.0", "1.19.0"])
@@ -127,10 +138,14 @@ def test_native_world_current_schema_identity_keeps_exact_stage_and_historical_r
     assert validate_production_structured_result("world_candidates.generate", schema, raw, output_schema_ref="schema:world_candidates.generate:v3") == validated
     assert validate_native_world_schema_fragment("world_candidates.generate", annotated, raw,
         output_schema_ref="schema:world_candidates.generate:v3:narrative-intent-v1") == validated
+    assert validate_production_structured_result("world_candidates.generate", schema, raw,
+        output_schema_ref="schema:world_candidates.generate:v4") == validated
+    assert validate_native_world_schema_fragment("world_candidates.generate", annotated, raw,
+        output_schema_ref="schema:world_candidates.generate:v4:narrative-intent-v1") == validated
     with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED"):
         validate_native_world_schema_fragment("world_candidates.generate", schema, raw,
             output_schema_ref="schema:world_candidates.generate:v2:narrative-intent-v1")
-    for ref in ("schema:world_candidates.generate:v4", "schema:world_candidates.evaluate:v3", "schema:world_candidates.generate:v3:actor-isolation-v1"):
+    for ref in ("schema:world_candidates.generate:v5", "schema:world_candidates.evaluate:v3", "schema:world_candidates.generate:v3:actor-isolation-v1"):
         with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED"):
             validate_native_world_schema_fragment("world_candidates.generate", schema, raw, output_schema_ref=ref)
     with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED"):

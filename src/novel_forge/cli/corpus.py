@@ -64,6 +64,8 @@ def add_corpus_parser(subparsers: Any) -> None:
             "import",
             "run",
             "recover-stage",
+            "recover-abstraction-schema",
+            "recover-abstraction-composition",
             "abstract",
             "status",
             "results",
@@ -103,6 +105,7 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--decision", type=Path)
     parser.add_argument("--job-id", default="")
     parser.add_argument("--operation-id", default="")
+    parser.add_argument("--expected-version", type=int, default=-1)
     parser.add_argument("--observation-id", default="")
     parser.add_argument("--chunk-id", default="")
     parser.add_argument("--byte-start", type=int, default=0)
@@ -181,6 +184,14 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         project,
     )
     build, sha = authority_release_identity()
+    if args.action in {"recover-abstraction-schema", "recover-abstraction-composition"}:
+        from novel_forge.modules.source_import.abstraction_recovery import recover_abstraction_schema
+        if not args.operation_id or args.expected_version < 0:
+            raise ValueError("Schema recovery requires the original Operation and expected version")
+        app = SourceImportApplication(settings.database_url, application_build_id=build, commit_sha=sha)
+        return recover_abstraction_schema(app, project_id=project, operation_id=args.operation_id,
+            expected_version=args.expected_version, authorization_ref=args.authorization_ref, reason=args.reason, principal=principal,
+            reuse_completed_composition=args.action == "recover-abstraction-composition")
     if args.action == "abstract":
         from novel_forge.modules.source_import.corpus_ingestion.narrative_execution import admit_observation_abstraction
         if not args.job_id or not args.observation_id:

@@ -300,20 +300,24 @@ class AuthorityAssetDocumentRepository:
             and row[2] == "transaction_command"
         )
         retained_execution_fact = False
-        if recovery_fact is not None and recovery_fact.role != "primary" and (
+        if row[0] != "EXECUTING" and not transaction_admitted and recovery_fact is not None and recovery_fact.role != "primary" and (
             recovery_fact.asset_type, recovery_fact.schema_version, recovery_fact.category
         ) in {
             ("execution_evidence", "authority-execution-evidence.v1", "production_execution_evidence"),
             ("execution_recovery_session", "authority-execution-recovery.v1", "production_execution_recovery"),
         }:
-            self.cursor.execute("""SELECT 1 FROM authority_asset_version version
-                JOIN authority_asset asset USING(asset_id)
-                WHERE asset.project_id=%s AND asset.asset_type='execution_recovery_session'
-                  AND version.content->>'execution_id'=%s
-                  AND version.content #>> '{record,request,operation_id}'=%s
-                  AND version.content #>> '{record,request,project_id}'=%s
-                  AND (%s='execution_evidence' OR version.content->>'request_contract_hash'=%s)
-                LIMIT 1""", [project_id, recovery_fact.content.get("execution_id"), operation_id,
+            self.cursor.execute("""WITH retained_versions AS MATERIALIZED (
+                SELECT version.content FROM authority_operation_output_asset binding
+                JOIN authority_asset_version version USING(asset_version_id)
+                JOIN authority_asset asset ON asset.asset_id=version.asset_id
+                WHERE binding.operation_id=%s AND asset.project_id=%s
+                  AND asset.asset_type='execution_recovery_session'
+            ) SELECT 1 FROM retained_versions
+                WHERE content->>'execution_id'=%s
+                  AND content #>> '{record,request,operation_id}'=%s
+                  AND content #>> '{record,request,project_id}'=%s
+                  AND (%s='execution_evidence' OR content->>'request_contract_hash'=%s)
+                LIMIT 1""", [operation_id, project_id, recovery_fact.content.get("execution_id"), operation_id,
                     project_id, recovery_fact.asset_type, recovery_fact.content.get("request_contract_hash")])
             retained_execution_fact = self.cursor.fetchone() is not None
         if row[0] != "EXECUTING" and not transaction_admitted and not retained_execution_fact:

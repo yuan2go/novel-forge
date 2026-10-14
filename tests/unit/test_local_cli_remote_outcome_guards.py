@@ -146,6 +146,7 @@ def test_curated_source_gate_checks_own_lineage_before_reading_or_dispatch(monke
     from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import require_known_cli_outcomes
 
     cursor = Mock()
+    cursor.fetchall.return_value = []
     guard = Mock(side_effect=KernelError("EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED", "Original research outcome unknown") if unresolved else None)
     project_wide = Mock(side_effect=AssertionError("Independent Book requests are not Source dependencies"))
     monkeypatch.setattr(budget_runtime, "require_known_cli_lineage", guard)
