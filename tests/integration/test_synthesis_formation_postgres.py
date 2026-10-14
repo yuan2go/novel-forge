@@ -333,6 +333,12 @@ def test_native_formation_generates_foundation_from_author_brief(
         monkeypatch.setattr(result_recovery, "MAXIMUM_RESULT_REPAIRS", 0)
         original_admission_chapter = transport.chapter
         class AdmissionChapterTransport:
+            @property
+            def database_url(self):
+                return getattr(original_admission_chapter, "database_url", "")
+            @database_url.setter
+            def database_url(self, value):
+                original_admission_chapter.database_url = value
             def __call__(self, stage, inputs):
                 value = original_admission_chapter(stage, inputs)
                 if stage in {"draft", "revision"}:
@@ -1898,7 +1904,7 @@ def test_native_formation_generates_foundation_from_author_brief(
             )
             assert (
                 best["realization_contract"]["contract_version"]
-                == "scene-realization-composition.v2"
+                == "scene-realization-composition.v3"
             )
             assert best["realization_contract"]["craft_tasks"]["tasks"]
         if author_guided:
