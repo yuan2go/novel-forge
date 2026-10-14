@@ -544,3 +544,43 @@ def test_legacy_retryable_cli_uncertainty_queries_original_identity(outcome):
     with transaction() as connection:
         assert connection.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE dispatch_id=%s", [dispatch["dispatch_id"]]).fetchone()[0] == before
         assert connection.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect]).fetchone()[0] == 1
+
+
+def test_saved_result_scan_uses_owned_versions_and_keeps_book_actor_operation_scope():
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+    from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
+    from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
+    seeded = seed(held=True)
+    context, effect, *_ = seeded
+    writer = AuthorityAssetWriter(DATABASE_URL)
+    previous = None
+    for number in range(2):
+        previous = writer.materialize_output(AuthorityAssetWriteCommand(
+            operation_id=context.operation_id, project_id=context.project_id,
+            asset_id='session:'+effect, asset_type='execution_recovery_session',
+            schema_version='authority-execution-recovery.v1', logical_ref='sessions/'+effect,
+            category='production_execution_recovery', output_key='session', role='execution_recovery_projection',
+            content={'execution_id':'original-session', 'record':{'request':{'external_effect_id':effect,
+                'book_id':'same-book'}, 'observation':number}}, qualification_policy='fixture-only',
+            trace_id='trace', correlation_id='correlation',
+            expected_current_asset_version_id=previous.asset_version_id if previous else None))
+    class Captured(Exception):
+        pass
+    seen = []
+    def get_record(identity):
+        seen.append(identity)
+        raise Captured
+    transport = SimpleNamespace(session_for_project=lambda _: SimpleNamespace(
+        evidence_store=SimpleNamespace(get_record=get_record)))
+    with transaction() as c:
+        actor = c.execute('SELECT actor_id FROM authority_operation WHERE operation_id=%s', [context.operation_id]).fetchone()[0]
+    principal = SimpleNamespace(principal_id=actor, require=lambda *args: None)
+    args = dict(database_url=DATABASE_URL, project_id=context.project_id, book_id='same-book', principal=principal)
+    with pytest.raises(Captured):
+        recover_saved_local_results(transport, **args)
+    assert seen == ['original-session']
+    for changed in ({'book_id':'other-book'}, {'operation_ids':['unrelated-operation']},
+                    {'principal':SimpleNamespace(principal_id='other-actor', require=lambda *args: None)}):
+        assert recover_saved_local_results(transport, **{**args, **changed}) is False
+    assert seen == ['original-session']

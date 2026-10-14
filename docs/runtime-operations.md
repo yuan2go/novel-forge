@@ -4446,7 +4446,7 @@ TypeScript, the author market-reference browser flow, and applicable migration/e
 worker/Skill/reality projections. These establish engineering behavior under their
 reported environment; they cannot establish live access, text rights or prose benefit.
 
-Original saved local outputs are reread through the configured Codex backend, checked against the frozen manifests, and ingested by the existing Kernel receipt path. The stopped Operation may append execution evidence for its existing session; this does not grant primary output rights. A replay preserves the original reservation and does not dispatch a new request.
+Original saved local outputs are reread through the configured Codex backend, checked against the frozen manifests, and ingested by the existing Kernel receipt path. The stopped Operation may append execution evidence for its existing session; this does not grant primary output rights. A replay preserves the original reservation and does not dispatch a new request. Recovery scans first scope pending Effects, then read their execution-session versions through the owning Operation output bindings, retaining historical versions and exact Book/actor filters.
 
 Planning reuse of a verified original success appends a model-evidence receipt-consumption
 record bound to the consumer Attempt and fence. It preserves the original model-call
