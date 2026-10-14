@@ -1289,8 +1289,9 @@ class PostgresChapterExecutionContractBinder:
         )
         if stage == "longform_prose_review" and inputs.get("prose_diagnosis_contract") == "prose-root-cause.v1":
             from novel_forge.modules.book_followup_authority.prose_review import prose_review_output_schema
-            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **prose_review_output_schema(root_cause=True)}
-            schema_ref = "schema:chapter-provider-output:longform_prose_review:v2"
+            literal = inputs.get("prose_citation_locator_contract") == "literal-prose-citation.v1"
+            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **prose_review_output_schema(root_cause=True, literal_citations=literal)}
+            schema_ref = "schema:chapter-provider-output:longform_prose_review:v3" if literal else "schema:chapter-provider-output:longform_prose_review:v2"
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")

@@ -16,7 +16,7 @@ from novel_forge.modules.command_kernel.operation_graph import GraphCommandConte
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .contracts import BOOK_FOLLOWUP_DEFINITION_VERSION
-from .prose_review import PROSE_REVIEW_DEFINITION, validate_window_report
+from .prose_review import PROSE_REVIEW_DEFINITION, prose_review_invoke_payload, validate_window_report
 
 PROSE_SAMPLE_DEFINITION = "longform.prose_review.sample"
 PROSE_SAMPLE_VERSION = "1.0.0"
@@ -25,6 +25,12 @@ PROSE_SAMPLE_WORKFLOW = "book_followup_prose_sampling@1.0.0"
 PROSE_SAMPLE_TYPE = "longform_prose_review_sample"
 PROSE_SAMPLE_OUTPUT = "longform.prose_review.sample"
 PROSE_REVIEWER_PROTOCOL = "prose-reviewer-independent-quality.v1"
+
+
+def prose_sample_invoke_payload(content: Mapping[str, Any]) -> dict[str, Any]:
+    if content["policy"].get("citation_locator_contract") == "literal-prose-citation.v1":
+        return prose_review_invoke_payload(content)
+    return {"manifest_digest": content["manifest_digest"], "window_id": content["window"]["window_id"]}
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,7 +144,7 @@ def _source_producer(cursor: Any, *, command: ProseReviewSampleCommand, payload:
             target_scope={"scope_kind": "asset_version", "scope_id": payload["input_versions"][0]["asset_version_id"],
                 "project_id": command.project_id, "book_id": payload["book_id"],
                 "asset_version_id": payload["input_versions"][0]["asset_version_id"]},
-            stage="longform_prose_review", inputs={"manifest_digest": window["manifest_digest"], "window_id": window["window"]["window_id"]},
+            stage="longform_prose_review", inputs=prose_sample_invoke_payload(window),
             materialization=contract)
         producer = chapter_producer_contract_identity(evidence, contract)
         contracts[authorization_hash(producer)] = producer
@@ -245,7 +251,7 @@ class ProseReviewSampleHandler:
 
         snapshot = assert_origin()
         result = self.model_port.invoke(request, stage="longform_prose_review",
-            payload={"manifest_digest": source.content["manifest_digest"], "window_id": source.content["window"]["window_id"]},
+            payload=prose_sample_invoke_payload(source.content),
             reservation_tokens=source.content["policy"]["context_token_budget"], pre_send_assertion=assert_origin)
         report = validate_window_report(result.output, manifest=source.content, window=source.content["window"])
         grant = snapshot["authorization"]

@@ -1492,6 +1492,22 @@ aesthetic preferences and uncertainty cannot become cross-chapter blockers. A ha
 constraint claim must identify an explicitly approved frozen constraint; this extension
 does not promote inferred details into hard constraints.
 
+Frozen longform prose-review v1/v2 retains numeric code-point citations. New native
+root-cause review starts freeze `literal-prose-citation.v1`; Pack 1.5.0 delivers v3
+quote-only citations and the Host locates each unique literal in its supplied source
+version. Ambiguous, absent or mismatched source quotations remain invalid. Formal
+review and new literal reference sampling consume the same frozen diagnosis/citation
+flags. Legacy sample Intents retain their original payload, which omitted diagnosis
+flags even on v2 windows, so saved sample requests remain replayable.
+
+The existing Book start UoW can append `WINDOW_REVALIDATED` when a complete, verified
+v2 receipt failed only citation coordinates and all quotations resolve uniquely on
+unchanged supplied prose. It binds the actual original request/window/manifest and
+current start Owner, persists a separate report and per-citation proof, and retains
+original failure, receipt, judgments and repair goals. Readback and future Planning
+consume this proof through their existing owners; no model resend or manuscript/Canon
+mutation occurs. This is a result-delivery contract, not evidence of literary improvement.
+
 Cross-chapter repair uses ordered edits confined to diagnosed candidate locations;
 server-side reconstruction rejects changes elsewhere. ReReview retains the same source
 coverage, binds the new target hash, and requires explicit per-issue dispositions plus

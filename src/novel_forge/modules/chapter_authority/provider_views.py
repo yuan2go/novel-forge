@@ -1113,7 +1113,8 @@ def build_provider_task_view(
                      **({"screenplay_source_contract": inputs["screenplay_source_contract"]} if inputs.get("screenplay_source_contract") else {}))
     if stage == "longform_prose_review":
         return _task(stage, manifest_digest=inputs.get("manifest_digest"), window_id=inputs.get("window_id"),
-                     **({"prose_diagnosis_contract": inputs["prose_diagnosis_contract"]} if inputs.get("prose_diagnosis_contract") else {}))
+                     **({"prose_diagnosis_contract": inputs["prose_diagnosis_contract"]} if inputs.get("prose_diagnosis_contract") else {}),
+                     **({"prose_citation_locator_contract": inputs["prose_citation_locator_contract"]} if inputs.get("prose_citation_locator_contract") else {}))
     if stage == "reader_outcome":
         return _task(
             stage,
@@ -3471,6 +3472,9 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
     if len(inputs) != 1 or inputs[0].get("asset_type") != "longform_prose_review_window":
         raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "exactly one bounded prose window is required")
     projection = inputs[0]["projection"]
+    literal_citations = projection["policy"].get("citation_locator_contract") == "literal-prose-citation.v1"
+    citation_requirement = ("只提交给定片段中的唯一精确引文及其 asset_version_id、text_hash；Unicode 坐标由 Host 在原文中定位"
+        if literal_citations else "只引用给定原文 Unicode code-point 坐标和精确 quote")
     if projection["policy"].get("reading_mode") == "BODY_FIRST":
         if any("creative_baseline" in span or "work_intent_status" in span
                for span in projection["window"]["spans"]):
@@ -3493,7 +3497,7 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
         "contract_version": "provider-context-view-v3", "stage": "longform_prose_review",
         "frozen_prose": projection,
         **({"diagnosis_instruction": diagnosis_instruction} if diagnosis_instruction else {}),
-        "instruction": "审读实际提供的原书正文，按每个来源章节冻结的 creative_baseline 检查题材、风格、受众、人物、结构与已选技法。作者有意的稳定、观察、开放结尾或重复不是默认缺陷；选择了变化、压力、伏笔或兑现时才检查相应承诺。UNKNOWN_LEGACY_BASELINE 表示作品目标未知，只判断可由原文证明的客观问题，不能推定玄幻、武侠、转化或商业节奏。逐项区分客观错误、作品目标偏差与审美建议；未到兑现期、合理变化及证据不足不能要求补写。只引用给定原文 Unicode code-point 坐标和精确 quote，不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。relation_hypothesis 是未核验关系假设，ISSUE 或 INTENTIONAL 判断必须分别引用两个给定片段，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见，不得修改正文、Canon 或计划。",
+        "instruction": "审读实际提供的原书正文，按每个来源章节冻结的 creative_baseline 检查题材、风格、受众、人物、结构与已选技法。作者有意的稳定、观察、开放结尾或重复不是默认缺陷；选择了变化、压力、伏笔或兑现时才检查相应承诺。UNKNOWN_LEGACY_BASELINE 表示作品目标未知，只判断可由原文证明的客观问题，不能推定玄幻、武侠、转化或商业节奏。逐项区分客观错误、作品目标偏差与审美建议；未到兑现期、合理变化及证据不足不能要求补写。" + citation_requirement + "，不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。relation_hypothesis 是未核验关系假设，ISSUE 或 INTENTIONAL 判断必须分别引用两个给定片段，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见，不得修改正文、Canon 或计划。",
     }
 
 

@@ -73,6 +73,122 @@ def report(frozen, window, judgment="ISSUE", lineage="goal"):
     }
 
 
+def literal_report_case():
+    frozen = manifest()
+    frozen["policy"].update(diagnosis_contract="prose-root-cause.v1", citation_locator_contract="literal-prose-citation.v1")
+    window = frozen["windows"][0]
+    raw = report(frozen, window)
+    raw["schema_version"] = "longform-prose-review.v3"
+    raw["findings"][0]["repair"] = {"root_cause": "SCENE_ORGANIZATION", "problem_owner": "PLAN", "repair_scope": "FUTURE_REPLAN",
+        "revision_goal": "Clarify the future scene's purpose", "preserve": ["The existing reason for stopping"], "resolution_criteria": ["The next event follows that decision"]}
+    citation = raw["findings"][0]["evidence"][0]
+    citation.pop("start")
+    citation.pop("end")
+    return frozen, window, raw
+
+
+def test_literal_review_locates_unicode_quote_without_model_arithmetic_and_preserves_judgment():
+    frozen, window, raw = literal_report_case()
+    original = deepcopy(raw)
+    result = validate_window_report(raw, manifest=frozen, window=window)
+    assert raw == original
+    assert result["findings"][0]["evidence"][0]["start"] == 0
+    assert result["findings"][0]["evidence"][0]["end"] == 2
+    assert result["findings"][0]["repair"] == original["findings"][0]["repair"]
+    assert result["findings"][0]["severity"] == original["findings"][0]["severity"]
+    assert validate_window_report(result, manifest=frozen, window=window) == result
+
+
+@pytest.mark.parametrize("drift", ["quote", "source", "hash", "ambiguous", "stored_location"])
+def test_literal_review_rejects_unbound_or_nonunique_quote_without_fuzzy_repair(drift):
+    frozen, window, raw = literal_report_case()
+    citation = raw["findings"][0]["evidence"][0]
+    if drift == "quote":
+        citation["quote"] = "An unprovided action"
+    elif drift == "source":
+        citation["asset_version_id"] = "foreign"
+    elif drift == "hash":
+        citation["text_hash"] = "changed"
+    elif drift == "ambiguous":
+        window["spans"][0]["text"] = citation["quote"] * 2
+    else:
+        citation.update(start=1,end=3)
+    with pytest.raises(KernelError, match="LONGFORM_PROSE_CITATION"):
+        validate_window_report(raw, manifest=frozen, window=window)
+
+
+def test_frozen_numeric_review_still_rejects_wrong_offsets_even_when_quote_is_unique():
+    frozen = manifest()
+    window = frozen["windows"][0]
+    raw = report(frozen, window)
+    raw["findings"][0]["evidence"][0].update(start=1,end=3)
+    with pytest.raises(KernelError, match="LONGFORM_PROSE_CITATION_INVALID"):
+        validate_window_report(raw,manifest=frozen,window=window)
+
+
+def test_literal_flags_bind_formal_and_sample_output_to_quote_only_provider_schema():
+    from novel_forge.modules.book_followup_authority.prose_review import prose_review_invoke_payload
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+
+    frozen, window, raw = literal_report_case()
+    content = {**frozen, "window": window}
+    invocation = prose_review_invoke_payload(content)
+    from novel_forge.modules.book_followup_authority.prose_sampling import prose_sample_invoke_payload
+    assert prose_sample_invoke_payload(content) == invocation
+    schema, identity = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="longform_prose_review", request_payload={"input": invocation})
+    assert identity == "schema:chapter-provider-output:longform_prose_review:v3"
+    citation = schema["properties"]["findings"]["items"]["anyOf"][0]["properties"]["evidence"]["items"]
+    assert set(citation["properties"]) == {"asset_version_id", "text_hash", "quote"}
+    assert schema["properties"]["schema_version"]["enum"] == [raw["schema_version"]]
+    legacy = {**content, "policy": {"diagnosis_contract": "prose-root-cause.v1"}}
+    assert prose_sample_invoke_payload(legacy) == {"manifest_digest": frozen["manifest_digest"], "window_id": window["window_id"]}
+    old_schema, old_identity = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="longform_prose_review", request_payload={"input": prose_review_invoke_payload(legacy)})
+    assert old_identity == "schema:chapter-provider-output:longform_prose_review:v2"
+    assert "start" in old_schema["properties"]["findings"]["items"]["anyOf"][0]["properties"]["evidence"]["items"]["properties"]
+
+
+def test_literal_review_same_quote_in_overlapping_spans_has_one_absolute_location():
+    frozen, window, raw = literal_report_case()
+    window["spans"].append(deepcopy(window["spans"][0]))
+    resolved = validate_window_report(raw, manifest=frozen, window=window)
+    assert resolved["findings"][0]["evidence"][0]["start"] == 0
+
+
+@pytest.mark.parametrize("fault", [None, "already_valid", "missing_quote", "changed_prose"])
+def test_legacy_citation_revalidation_preserves_judgments_and_requires_only_numeric_failure(fault):
+    from novel_forge.modules.book_followup_authority.prose_review import revalidate_legacy_citation_report
+
+    target, window, raw = literal_report_case()
+    source = deepcopy(target)
+    source["policy"].pop("citation_locator_contract")
+    old = deepcopy(raw)
+    old["schema_version"] = "longform-prose-review.v2"
+    old["findings"][0]["evidence"][0].update(start=1, end=3)
+    source_window = deepcopy(window)
+    if fault == "already_valid":
+        old["findings"][0]["evidence"][0].update(start=0, end=2)
+    elif fault == "missing_quote":
+        old["findings"][0]["evidence"][0]["quote"] = "未提供的句子"
+    elif fault == "changed_prose":
+        source_window["spans"][0]["text"] += "changed"
+    before = deepcopy(old)
+    if fault:
+        with pytest.raises(KernelError, match="LONGFORM_PROSE_CITATION"):
+            revalidate_legacy_citation_report(old, source_manifest=source, source_window=source_window,
+                target_manifest=target, target_window=window)
+    else:
+        resolved, proof = revalidate_legacy_citation_report(old, source_manifest=source, source_window=source_window,
+            target_manifest=target, target_window=window)
+        assert resolved["findings"][0]["repair"] == old["findings"][0]["repair"]
+        assert resolved["findings"][0]["rationale"] == old["findings"][0]["rationale"]
+        assert proof["locations"][0]["original_location"] == {"start": 1, "end": 3}
+        assert proof["locations"][0]["start"] == 0
+        assert proof["manuscript_mutation_allowed"] is False
+    assert old == before
+
+
 def test_exact_chinese_coverage_and_exclusions():
     frozen = manifest()
     first = report(frozen, frozen["windows"][0], "INSUFFICIENT_EVIDENCE")

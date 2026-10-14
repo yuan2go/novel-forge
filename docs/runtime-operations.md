@@ -202,6 +202,17 @@ recovery without blocking saved prose. Historical Effect deadlines and attempt l
 remain receipt observations; they do not reserve or terminate a model process window.
 CLI stream/request retries remain disabled.
 
+When a complete v2 review failed only `LONGFORM_PROSE_CITATION_INVALID`, deploy migration
+0212 with Pack 1.5.0 and start a new native root-cause review run. The default new start
+freezes `literal-prose-citation.v1`; old runs and queued requests keep their contracts.
+The Book owner can derive an exact literal-citation report from the original verified
+receipt without resending the model call. Inspect `WINDOW_REVALIDATED`, its original
+Operation/Effect/receipt, derived report and per-citation proof. Unchanged supplied
+source hashes, actual Provider request and the current start Owner are required.
+Ambiguous quotes, other validation failures, cancellation or source drift do not receive
+automatic citation repair. This recovery changes neither manuscript nor model judgments;
+review completion, future plan adoption and literary improvement remain separate results.
+
 For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning
 capacity/DEAD_LETTER/OPTIONAL admission, governed route drift, actor/scope/input drift,

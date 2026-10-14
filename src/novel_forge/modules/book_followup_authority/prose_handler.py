@@ -6,7 +6,7 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from .contracts import ReaderOutcomeModelPort
-from .prose_review import validate_window_report
+from .prose_review import prose_review_invoke_payload, validate_window_report
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,11 +111,7 @@ class LongformProseReviewHandler:
         result = self.model_port.invoke(
             request,
             stage="longform_prose_review",
-            payload={
-                "manifest_digest": content["manifest_digest"],
-                "window_id": content["window"]["window_id"],
-                **({"prose_diagnosis_contract": content["policy"]["diagnosis_contract"]} if content["policy"].get("diagnosis_contract") else {}),
-            },
+            payload=prose_review_invoke_payload(content),
             reservation_tokens=content["policy"]["context_token_budget"],
             pre_send_assertion=lambda: assert_current(dispatch=True),
         )
