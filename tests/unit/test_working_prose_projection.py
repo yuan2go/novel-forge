@@ -469,3 +469,120 @@ def test_legacy_writer_view_keeps_its_original_intent_summary():
     view = build_provider_context_view('draft', context, {})
     assert 'frozen_intent' not in view
     assert any(row['asset_type'] == 'chapter_execution_intent' for row in view['segments'])
+
+
+@pytest.mark.parametrize("target", [4, 5])
+def test_partial_selection_resolves_contiguous_native_prose_with_provenance(monkeypatch, target):
+    from novel_forge.modules.book_authority.working_prose import PROGRESSION_POLICY_VERSION
+    documents = {}
+    for number in (1, 2, 3, 4):
+        text = f"Trial {number} spent material and changed the next choice."
+        documents[f"native:{number}"] = SimpleNamespace(asset_version_id=f"native:{number}",
+            content_hash=f"hash:{number}", asset_type="draft_chapter", governance="CLEAR", eligibility="ELIGIBLE",
+            content={"chapter": number, "title": "", "text": text})
+    documents["chosen:1"] = SimpleNamespace(asset_version_id="chosen:1", content_hash="chosen-hash",
+        asset_type="best_draft_candidate", governance="CLEAR", eligibility="ELIGIBLE",
+        content={"chapter": 1, "title": "", "text": "The paid trial secured access, not acceptance."})
+    selection = SimpleNamespace(asset_version_id="selection:1", content_hash="selection-hash", content={
+        "book_run_id": "run", "native_source_asset_version_id": "native:1",
+        "selected_asset_version_id": "chosen:1", "selected_content_hash": "chosen-hash"})
+    uow = MagicMock()
+    def execute(query, args):
+        # This fixture exercises the real delivery -> acceptance -> native-output fallback.
+        number = args[-1]
+        if "authority_book_manuscript_delivery" in query or "authority_book_acceptance_lineage" in query:
+            uow.cursor.fetchone.return_value = None
+        else:
+            uow.cursor.fetchone.return_value = (f"native:{number}",)
+    uow.cursor.execute.side_effect = execute
+    uow.repositories.asset_documents.require.side_effect = lambda **kwargs: documents[kwargs["asset_version_id"]]
+    monkeypatch.setattr(manuscript, "_optional_document", lambda _uow, _project, ref: selection if ref.endswith("/1") else None)
+    monkeypatch.setattr(manuscript, "_session_ref", lambda scope: "session")
+    original_require = uow.repositories.asset_documents.require.side_effect
+    def require(**kwargs):
+        if kwargs.get("logical_ref") == "session":
+            raise KernelError("AUTHORITY_ASSET_NOT_FOUND", "No editor choice")
+        return original_require(**kwargs)
+    uow.repositories.asset_documents.require.side_effect = require
+    monkeypatch.setattr(manuscript, "working_dependency_changes", lambda *_: ([], {}))
+    monkeypatch.setattr(manuscript, "require_prose_propagation", lambda *_: None)
+    monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", lambda *_: ([], {"status": "NOT_REQUESTED"}))
+    book = {"project_id": "p", "workspace_id": "w", "book_id": "b", "book_run_id": "run", "accepted_through_chapter": 0}
+    chosen_policy = policy(version=PROGRESSION_POLICY_VERSION, history_chapters=128, recent_complete_chapters=3)
+    before = deepcopy(book)
+    value = manuscript.freeze_working_context(uow, book, target, projection_policy=chosen_policy)
+    validate_working_projection(value, project_id="p", book_id="b", target_chapter=target, accepted_through_chapter=0)
+    assert [row["asset_version_id"] for row in value["sources"]] == ["chosen:1", *[f"native:{n}" for n in range(2, target)]]
+    assert [row["chapter"] for row in value["sources"]] == list(range(1, target))
+    assert all(row["omitted_ranges"] == [] for row in value["sources"])
+    assert value["sources"][0]["source_resolution"]["overrides"] == [{"asset_version_id": "selection:1", "content_hash": "selection-hash"}]
+    assert all(row["source_resolution"]["native_basis"] == "NATIVE_DRAFT_OUTPUT" for row in value["sources"])
+    assert all(row["source_resolution"]["overrides"] == [] for row in value["sources"][1:])
+    assert value == manuscript.freeze_working_context(uow, book, target, projection_policy=chosen_policy)
+    assert book == before
+    assert all(call.args[0].lstrip().startswith("SELECT") for call in uow.cursor.execute.call_args_list)
+    uow.cursor.execute.side_effect = lambda *_: setattr(uow.cursor.fetchone, "return_value", None)
+    with pytest.raises(KernelError, match="MANUSCRIPT_CHAPTER_MISSING"):
+        manuscript.freeze_working_context(uow, book, target, projection_policy=chosen_policy)
+
+
+def test_progression_policy_survives_planning_and_writer_frozen_views_without_rewriting_history():
+    from novel_forge.modules.book_authority.working_prose import PROGRESSION_POLICY_VERSION, working_instruction
+    from tests.unit.test_planning_working_continuity import inputs
+    from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
+    old = snapshot()
+    legacy_instruction = old["instruction"]
+    working = deepcopy(old)
+    working["projection_policy"]["version"] = PROGRESSION_POLICY_VERSION
+    working["instruction"] = working_instruction(working["projection_policy"])
+    for row in working["sources"]:
+        pointer = {key: row[key] for key in ("asset_version_id", "content_hash")}
+        row["source_resolution"] = {"native_source": pointer, "effective_source": pointer,
+            "native_basis": "NATIVE_DRAFT_OUTPUT", "overrides": []}
+    working["working_memory"] = bind_packet_coverage(compile_working_memory([], queries=[], max_characters=1000), working["sources"])
+    rehash(working)
+    raw, context = inputs()
+    for value in (raw, context):
+        value["arc_working_set"]["working_manuscript"] = working
+        value["working_continuity_projection_version"] = "planning-working-continuity.v3"
+        value["planning_command"] = {"project_id": "p", "book_id": "b", "logical_key": "chapter:5", "planning_scope": "CHAPTER"}
+    context.update(project_id="p", book_id="b")
+    task = build_provider_task_view("chapter_plan.generate", raw)
+    view = build_provider_context_view("chapter_plan.generate", context, task)
+    assert task["working_continuity"]["instruction"] == view["working_continuity"]["instruction"] == working["instruction"]
+    for phrase in ("starting premises", "single bridging clause", "three connected", "cost-gain exchange", "irreversible", "open action loop", "never a static reset"):
+        assert phrase in working["instruction"]
+    assert "Do not force conflict" not in working["instruction"]
+    assert snapshot()["instruction"] == legacy_instruction
+    assert "three connected" not in legacy_instruction
+    assert working["accepted_through_chapter"] == 0 and working["structured_facts"] == []
+    bad = deepcopy(working)
+    bad["sources"][1]["source_resolution"]["effective_source"]["asset_version_id"] = "unselected"
+    rehash(bad)
+    with pytest.raises(KernelError, match="WORKING_PROSE_SOURCE_RESOLUTION_INVALID"):
+        validate_working_projection(bad, project_id="p")
+
+
+def test_progression_prefers_committed_acceptance_over_delivery_and_selection(monkeypatch):
+    source = SimpleNamespace(asset_version_id="accepted:1", content_hash="accepted-hash",
+        asset_type="draft_chapter", governance="CLEAR", eligibility="ELIGIBLE",
+        content={"chapter": 1, "title": "", "text": "The already committed choice remains the premise."})
+    uow = MagicMock()
+    uow.cursor.fetchone.return_value = (source.asset_version_id,)
+    uow.repositories.asset_documents.require.return_value = source
+    selection = MagicMock(side_effect=AssertionError("Acceptance must not be overridden"))
+    monkeypatch.setattr(manuscript, "_optional_document", selection)
+    book = {"project_id": "p", "workspace_id": "w", "book_id": "b", "book_run_id": "run"}
+    actual, provenance = manuscript.resolve_working_source(uow, book, 1)
+    assert actual is source and provenance["native_basis"] == "ACCEPTED_OUTCOME"
+    assert provenance["overrides"] == []
+    assert "authority_book_acceptance_lineage" in uow.cursor.execute.call_args.args[0]
+    assert uow.cursor.execute.call_count == 1
+    selection.assert_not_called()
+
+
+def test_progression_does_not_silently_drop_early_predecessors():
+    from novel_forge.modules.book_authority.working_prose import PROGRESSION_POLICY_VERSION
+    book = {"project_id": "p", "book_id": "b", "book_run_id": "run", "accepted_through_chapter": 0}
+    with pytest.raises(KernelError, match="WORKING_PROSE_HISTORY_INCOMPLETE"):
+        manuscript.freeze_working_context(MagicMock(), book, 5, projection_policy=policy(version=PROGRESSION_POLICY_VERSION, history_chapters=3))

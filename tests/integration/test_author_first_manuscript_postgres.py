@@ -75,13 +75,13 @@ def prepare_context_model_stages(transport, monkeypatch):
     monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
 
 
-@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption"])
+@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory"), (False, False, "progression")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption", "working-progression-interruption"])
 def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
-    if enhanced_working == "memory":
+    if enhanced_working in {"memory", "progression"}:
         parent_transport = transport.chapter
         class MemoryTransport:
             def __getattr__(self, name):
@@ -213,10 +213,10 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     if enhanced_working:
         creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
         creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
-            "version": "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2", "history_chapters": 8,
+            "version": "working-prose-projection.v4" if enhanced_working == "progression" else "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2", "history_chapters": 8,
             "recent_complete_chapters": 2, "max_characters": 32000,
             "queries": ["flood"], "guidance_mode": "COMBINED"}
-        if enhanced_working != "memory":
+        if enhanced_working not in {"memory", "progression"}:
             for key in ("working_schedule_policy", "working_craft_history_policy", "future_planning_feedback_policy"):
                 creation_policy["profiles"]["production_profile"]["content"].pop(key, None)
         args.creation_policy_file = tmp_path / "working-creation-policy.json"
@@ -330,7 +330,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         frozen_working = uow.cursor.fetchone()[0]
         sources = frozen_working["sources"]
         if enhanced_working:
-            assert frozen_working["projection_policy"]["version"] == ("working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2")
+            assert frozen_working["projection_policy"]["version"] == ("working-prose-projection.v4" if enhanced_working == "progression" else "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2")
             assert len(sources) == 6 and sources[-1]["omitted_ranges"] == []
             uow.cursor.execute("""SELECT content FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
                 WHERE a.project_id=%s AND a.asset_type='chapter_execution_intent'
@@ -339,7 +339,11 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             assert frozen_intent["working_manuscript"] == frozen_working
             assert frozen_intent["accepted_boundary"]["accepted_through_chapter"] == 0
             assert frozen_intent["working_manuscript"]["structured_facts"] == []
-            if enhanced_working == "memory":
+            if enhanced_working == "progression":
+                assert [row["chapter"] for row in sources] == list(range(1, 7))
+                assert all(row["source_resolution"]["effective_source"]["asset_version_id"] == row["asset_version_id"] for row in sources)
+                assert "irreversible" in frozen_intent["working_manuscript"]["instruction"]
+            if enhanced_working in {"memory", "progression"}:
                 assert frozen_working["working_memory"]["entries"][0]["source"]["chapter"] == 1
                 assert next(row for row in frozen_working["working_memory"]["source_coverage"] if row["chapter"] == 2)["status"] == "UNAVAILABLE"
                 second = uow.repositories.asset_documents.require(project_id=project, asset_version_id=prefix_versions[1])

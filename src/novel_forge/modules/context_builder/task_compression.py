@@ -39,7 +39,7 @@ def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
             intent = None
         working = intent.get("working_manuscript") if isinstance(intent, dict) else None
         if (isinstance(working, dict) and isinstance(working.get("projection_policy"), dict)
-            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"}):
+            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4"}):
             from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
             encoded, _ = compile_exact_context_references({**payload, 'safe_summary': intent}, structured_transport=True)
             return max(1, serialized_token_upper_bound(encoded) + 64), "STRUCTURED_WORKING_INTENT"

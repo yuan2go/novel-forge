@@ -8,6 +8,9 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 POLICY_VERSION = "working-prose-projection.v2"
 MEMORY_POLICY_VERSION = "working-prose-projection.v3"
+PROGRESSION_POLICY_VERSION = "working-prose-projection.v4"
+MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION}
+POLICY_VERSIONS = {POLICY_VERSION, *MEMORY_POLICY_VERSIONS}
 WORKING_SCHEDULE_POLICY = {"version": "working-story-schedule.v1", "history_basis": "SELECTED_WORKING_PROSE"}
 WORKING_SCHEDULE_INSTRUCTION = (
     "Assess Arc progress and prerequisites from the exact selected working prose before choosing future contributions. "
@@ -45,6 +48,31 @@ EXPRESSION_INSTRUCTION = (
     "Use this information to write natural prose, "
     "without explaining these categories or a state checklist to the reader."
 )
+PROGRESSION_INSTRUCTION = (
+    "Consequence-forward chapter contract: resolved inquiries, confirmed arrangements and daily "
+    "baselines in the effective working sources are starting premises, not scenes to perform again. "
+    "Inherit their realized consequences while retaining each character's actual knowledge limits. "
+    "Prior prose supplies continuity, not a model for repeating its domestic framing: compress "
+    "necessary eating, washing, tool packing and resting transitions to a single bridging clause. "
+    "Planning must give the declared chapter length enough dramatic capacity, including a "
+    "4000–5000 Chinese-character allocation when supplied. Use three connected "
+    "dramatic turns in the existing scene goals, conflicts, beats and exit states: opening immediate "
+    "friction inherited from the predecessor; middle substantive escalation through an attempted "
+    "action, resistance, adjustment and a real cost-gain exchange; ending an irreversible, measurable "
+    "change in ability, leverage, obligation or risk that leaves an open action loop for the next chapter. "
+    "The turns can share a scene; do not manufacture three scenes or generic peril. Use physical "
+    "execution, trial and adjustment, concrete obstacle friction or competing interests to earn "
+    "progress within the characters' established abilities and constraints. Costs can be resources, "
+    "time, foregone options, obligation or exposed leverage; choose what this story supports. "
+    "Repeated verbal inquiry or passive confirmation cannot supply the middle. "
+    "Writer must realize these planned turns in concrete action; spend the length allocation on their "
+    "choices, attempts, resistance, negotiation and consequences, rather than internal recap. "
+    "Dialogue must change a decision, price, permission or relationship. End on the changed situation demanding a next action, never "
+    "a static reset of tidying tools, reviewing the day or going to sleep. Quiet breakthroughs can carry "
+    "this hook without an unrelated threat. If a frozen plan instead mandates routine padding or a "
+    "static ending, expose the conflict for an authorized Planning/Plan Change correction; Writer "
+    "cannot silently replace the plan. These are creation directives, not automatic literary checks. "
+)
 INSTRUCTION = (
     CONTINUITY_INSTRUCTION
     + REACTION_INSTRUCTION
@@ -67,13 +95,15 @@ def working_instruction(policy: Mapping[str, Any]) -> str:
         "(empty for unattributed world observations or reader-only disclosures), an unambiguous literal quote, "
         "and causes (only observation_ids present in the frozen working memory, or []). Do not turn future "
         "plans into past events or return this metadata inside Scene prose. "
-        if policy["version"] == MEMORY_POLICY_VERSION else ""
+        if policy["version"] in MEMORY_POLICY_VERSIONS else ""
     )
     return (
-        CONTINUITY_INSTRUCTION
+        (CONTINUITY_INSTRUCTION.replace("selected working versions", "effective working versions")
+            .replace("Discarded or unselected versions", "Discarded or superseded versions")
+            if policy["version"] == PROGRESSION_POLICY_VERSION else CONTINUITY_INSTRUCTION)
         + (REACTION_INSTRUCTION if focus in {"CHARACTER_REACTION", "COMBINED"} else "")
         + (
-            CONSEQUENCE_INSTRUCTION
+            (PROGRESSION_INSTRUCTION if policy["version"] == PROGRESSION_POLICY_VERSION else CONSEQUENCE_INSTRUCTION)
             if focus in {"ACTION_CONSEQUENCES", "COMBINED"}
             else ""
         )
@@ -97,7 +127,7 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
     if (
         not isinstance(value, Mapping)
         or set(value) != keys
-        or value.get("version") not in {POLICY_VERSION, MEMORY_POLICY_VERSION}
+        or value.get("version") not in POLICY_VERSIONS
         or not isinstance(value.get("guidance_mode"), str)
         or value.get("guidance_mode")
         not in {
@@ -106,8 +136,9 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
             "ACTION_CONSEQUENCES",
             "COMBINED",
         }
+        or value.get("version") == PROGRESSION_POLICY_VERSION and value.get("guidance_mode") != "COMBINED"
         or type(value.get("history_chapters")) is not int
-        or not 1 <= value["history_chapters"] <= (10000 if value["version"] == MEMORY_POLICY_VERSION else 32)
+        or not 1 <= value["history_chapters"] <= (10000 if value["version"] in MEMORY_POLICY_VERSIONS else 32)
         or type(value.get("recent_complete_chapters")) is not int
         or not 1 <= value["recent_complete_chapters"] <= value["history_chapters"]
         or type(value.get("max_characters")) is not int
@@ -236,6 +267,8 @@ def validate_working_projection(
     policy = working_prose_policy(
         {"working_prose_policy": snapshot.get("projection_policy")}
     )
+    if policy and policy["version"] == PROGRESSION_POLICY_VERSION and type(snapshot.get("target_chapter")) is int and snapshot["target_chapter"] - 1 > policy["history_chapters"]:
+        raise KernelError("WORKING_PROSE_HISTORY_INCOMPLETE", "Progression requires the contiguous predecessor chain within its declared history allocation")
     if (
         policy is None
         or snapshot.get("version") != CONTEXT_VERSION
@@ -284,6 +317,7 @@ def validate_working_projection(
                 "status",
                 "character_knowledge",
                 "dependency_changes",
+                "source_resolution",
             }
             or type(row.get("chapter")) is not int
             or not max(1, snapshot["target_chapter"] - policy["history_chapters"])
@@ -304,6 +338,23 @@ def validate_working_projection(
                 "WORKING_PROSE_PROJECTION_INVALID",
                 "Working source is incomplete or falsely promoted",
             )
+        resolution = row.get("source_resolution")
+        if policy["version"] == PROGRESSION_POLICY_VERSION:
+            if (not isinstance(resolution, Mapping)
+                or set(resolution) != {"native_source", "native_basis", "overrides", "effective_source"}
+                or resolution["native_basis"] not in {"NATIVE_DELIVERY", "ACCEPTED_OUTCOME", "NATIVE_DRAFT_OUTPUT"}
+                or resolution["effective_source"] != {"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]}
+                or not isinstance(resolution["overrides"], list)
+                or resolution["native_basis"] == "ACCEPTED_OUTCOME" and bool(resolution["overrides"])):
+                raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Effective prose requires its exact native source and selection lineage")
+            pointers = [resolution["native_source"], *resolution["overrides"]]
+            if any(not isinstance(pointer, Mapping) or set(pointer) != {"asset_version_id", "content_hash"}
+                or any(not isinstance(pointer[key], str) or not pointer[key] for key in pointer) for pointer in pointers):
+                raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Source resolution pointers must retain exact version hashes")
+            if not resolution["overrides"] and resolution["native_source"] != resolution["effective_source"]:
+                raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "A changed effective source requires its selection lineage")
+        elif resolution is not None:
+            raise KernelError("WORKING_PROSE_SOURCE_RESOLUTION_INVALID", "Historical projections cannot acquire new resolution evidence")
         ranges = []
         for passage in row["passages"]:
             if (
@@ -367,10 +418,10 @@ def validate_working_projection(
             snapshot["target_chapter"],
         )
     )
-    if policy["version"] == MEMORY_POLICY_VERSION or snapshot.get("working_memory") is not None:
+    if policy["version"] in MEMORY_POLICY_VERSIONS or snapshot.get("working_memory") is not None:
         from novel_forge.modules.narrative_state.working_memory import validate_memory_packet
         validate_memory_packet(snapshot["working_memory"], snapshot["sources"])
-        if policy["version"] != MEMORY_POLICY_VERSION:
+        if policy["version"] not in MEMORY_POLICY_VERSIONS:
             raise KernelError("WORKING_MEMORY_POLICY_INVALID", "Frozen older projections cannot acquire observations")
     if numbers != expected or characters > policy["max_characters"]:
         raise KernelError(

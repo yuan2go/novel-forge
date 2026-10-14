@@ -97,7 +97,7 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
     assert path["chapter"] == {"pack_version_override": "3.0.4", "prose_skill_version": "prose-generation-v5",
         "prompt_template_version": "v15"}
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v1"})["chapter"]["pack_version_override"] == "3.0.3"
-    assert working_prose_policy(policy["profiles"]["production_profile"]["content"])["version"] == "working-prose-projection.v3"
+    assert working_prose_policy(policy["profiles"]["production_profile"]["content"])["version"] == "working-prose-projection.v4"
     assert creation_narrative_execution({"contract_version": "creation-input-policy.v1"}) == {"chapter": {}, "planning": {}}
     with pytest.raises(Exception, match="Unknown frozen narrative execution contract"):
         creation_narrative_execution({"narrative_execution_contract": "unknown"})

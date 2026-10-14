@@ -1339,7 +1339,7 @@ class PostgresChapterExecutionContractBinder:
             schema = scoped_realization_schema(schema, inputs["realization_contract"])
             schema_ref = "schema:chapter-provider-output:draft:v4"
         working = inputs.get("working_manuscript") or (inputs.get("frozen_intent") or {}).get("working_manuscript") or (inputs.get("execution_intent") or {}).get("working_manuscript") or {}
-        if stage == "draft" and (working.get("projection_policy") or {}).get("version") == "working-prose-projection.v3":
+        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4"}:
             schema["properties"]["working_memory_json"] = {"type": "string", "maxLength": 100000}
             schema_ref += ":working-memory-v1"
         if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
@@ -4650,7 +4650,7 @@ def _materialize_production_codex_prompt(
         from .provider_views import compile_exact_context_references
         structured_transport = (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
             stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
-            and template.get("version") in {"v13", "v15"} and (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"})
+            and template.get("version") in {"v13", "v15"} and (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4"})
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=structured_transport)
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
         exact_reference_proof["source_scope"] = "provider_data_envelope"
