@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import hashlib
+import json
 from pathlib import Path
 
 from novel_forge.tools.head_integrity import build_head_integrity_report, _pr_gate_delegates_to_p0
@@ -11,6 +13,32 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class HeadIntegrityTests(unittest.TestCase):
+    def test_retained_migration_imports_require_exact_tracked_manifest_and_body(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "src/novel_forge/storage/migrations"
+            versions = package / "versions"
+            archive = package / "historical/craft_test"
+            versions.mkdir(parents=True)
+            archive.mkdir(parents=True)
+            filename = "v20261014_0205_source_observation_generation_isolation.py"
+            (versions / "__init__.py").write_text(f"from .{filename[:-3]} import UPGRADE_STATEMENTS\n")
+            (versions / "v20261009_0185_pure_generation_isolation.py").write_text("UPGRADE_STATEMENTS=[]\n")
+            retained = archive / filename
+            retained.write_text("from .v20261009_0185_pure_generation_isolation import UPGRADE_STATEMENTS\n")
+            manifest = archive / "manifest.json"
+            manifest.write_text(json.dumps({"contract_version":"published-craft-migration-retention.v1",
+                "registered_on_main":False,"modules":[{"original_path":str((versions/filename).relative_to(root)),
+                    "retained_path":str(retained.relative_to(root)),"sha256":hashlib.sha256(retained.read_bytes()).hexdigest()}]}))
+            tracked = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
+            complete = build_head_integrity_report(root, tracked_paths=tracked, required_imports=())
+            self.assertEqual(complete.missing_import_targets, ())
+            incomplete = build_head_integrity_report(root, tracked_paths=tracked-{str(manifest.relative_to(root))}, required_imports=())
+            self.assertIn(str(manifest.relative_to(root)), incomplete.untracked_required_paths)
+            retained.write_text(retained.read_text()+"ALTERED=True\n")
+            altered = build_head_integrity_report(root, tracked_paths=tracked, required_imports=())
+            self.assertTrue(altered.missing_import_targets)
+
     def test_pr_gate_must_execute_and_validate_p0_inside_implementation_branch(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

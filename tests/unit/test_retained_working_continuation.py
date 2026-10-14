@@ -1,11 +1,17 @@
 from copy import deepcopy
 import json
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 
 from novel_forge.modules.book_authority.retained_working import require_empty_discovery_trace
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.reader_calibration.manuscript_blind import extract_manuscript_chapter
+from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+from tests.unit.test_author_length_binding import context as length_context
+from tests.unit.test_converged_provider_inputs import _materialize
+from tests.unit.test_longform_working_history import _policy
 
 
 def trace():
@@ -77,3 +83,70 @@ def test_withdrawn_original_inputs_cannot_be_laundered_as_new_working_prose(fiel
     setattr(document, field, value)
     with pytest.raises(KernelError, match="RETAINED_WORKING_INPUT_CHANGED"):
         _require_governed(document)
+
+
+def _retained_store():
+    book = {"project_id": "project", "workspace_id": "workspace", "book_id": "book",
+            "book_run_id": "run", "accepted_through_chapter": 0}
+    content = {"contract_version": "retained-working-continuation.v1", "project_id": "project",
+               "book_id": "book", "chapter": 1, "title": "原始工作稿", "text": "她已经拒绝过这个条件，下一次选择须从后果开始。",
+               "retained_working_provenance": {"source_permission_gate": "FAILED_FINAL",
+                   "source_failure_code": "MODEL_EFFECT_FINAL_UNAUTHORIZED_TOOL_INVOCATION",
+                   "formal_acceptance": "NOT_GRANTED", "author_acceptance": "NOT_GRANTED", "provider_calls": 0}}
+    document = SimpleNamespace(asset_version_id="retained:1", content_hash=canonical_hash(content),
+                               content=content, asset_type="retained_working_prose", governance="CLEAR", eligibility="ELIGIBLE")
+    uow = MagicMock()
+
+    def execute(statement, parameters):
+        uow.cursor.fetchone.return_value = None
+        uow.cursor.fetchall.return_value = []
+        if "SELECT working_asset_version_id FROM authority_book_retained_working_continuation" in statement:
+            assert parameters == [book["book_run_id"], 1]
+            uow.cursor.fetchone.return_value = (document.asset_version_id,)
+        elif "SELECT chapter_number,working_asset_version_id,context_snapshot" in statement:
+            assert parameters == [book["book_run_id"]]
+            uow.cursor.fetchall.return_value = [(1, document.asset_version_id, {"sources": []})]
+        return uow.cursor
+
+    def require(**arguments):
+        assert arguments["project_id"] == book["project_id"]
+        if arguments.get("asset_version_id") == document.asset_version_id:
+            return document
+        raise KernelError("AUTHORITY_ASSET_NOT_FOUND", "No selection, editor or annotation overrides")
+
+    uow.cursor.execute.side_effect = execute
+    uow.repositories.asset_documents.require.side_effect = require
+    return uow, book, document
+
+
+@pytest.mark.parametrize("version", ["working-prose-projection.v4", "working-prose-projection.v5"])
+def test_retained_native_source_freezes_and_reaches_writer_without_acceptance(monkeypatch, version):
+    from novel_forge.modules.book_authority import manuscript
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Retained source projection cannot invoke external I/O")
+
+    monkeypatch.setattr("subprocess.Popen", forbidden)
+    monkeypatch.setattr("socket.socket.connect", forbidden)
+    monkeypatch.setattr("psycopg.connect", forbidden)
+    uow, book, document = _retained_store()
+    original_content = deepcopy(document.content)
+    source, resolution = manuscript.resolve_working_source(uow, book, 1)
+    assert source is document and resolution["native_basis"] == "RETAINED_WORKING_CONTINUATION"
+    snapshot = manuscript.freeze_working_context(uow, book, 2, projection_policy=_policy(version=version))
+    manuscript.verify_working_context(uow, book, snapshot)
+    context = length_context()
+    context.update(project_id="project", book_id="book", chapter=2,
+                   accepted_boundary={"accepted_through_chapter": 0}, working_manuscript=snapshot)
+    _, evidence, envelope, _ = _materialize("draft", {"plan": {"chapter": 2}, "style": {},
+        "chapter_memo": {}, "realization_contract": {}}, context, writer=True)
+    delivered = envelope["context_bundle"]["working_manuscript"]
+    assert delivered["sources"] == snapshot["sources"]
+    assert delivered["sources"][0]["source_resolution"] == resolution
+    assert delivered["sources"][0]["passages"][0]["text"] == document.content["text"]
+    assert delivered["accepted_through_chapter"] == 0 and delivered["structured_facts"] == []
+    assert document.content == original_content and source.content["retained_working_provenance"]["source_permission_gate"] == "FAILED_FINAL"
+    if version.endswith(".v5"):
+        assert evidence["provider_view"]["working_history_transport"]["projections"]
+    else:
+        assert "working_history_transport" not in evidence["provider_view"]

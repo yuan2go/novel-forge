@@ -276,7 +276,7 @@ def _validate_source_resolution(row: Mapping[str, Any]) -> None:
     resolution = row.get("source_resolution")
     if (not isinstance(resolution, Mapping)
         or set(resolution) != {"native_source", "native_basis", "overrides", "effective_source"}
-        or resolution["native_basis"] not in {"NATIVE_DELIVERY", "ACCEPTED_OUTCOME", "NATIVE_DRAFT_OUTPUT"}
+        or resolution["native_basis"] not in {"NATIVE_DELIVERY", "ACCEPTED_OUTCOME", "NATIVE_DRAFT_OUTPUT", "RETAINED_WORKING_CONTINUATION"}
         or resolution["effective_source"] != {"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]}
         or not isinstance(resolution["overrides"], list)
         or resolution["native_basis"] == "ACCEPTED_OUTCOME" and bool(resolution["overrides"])):

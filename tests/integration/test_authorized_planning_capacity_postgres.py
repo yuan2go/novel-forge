@@ -3,9 +3,9 @@ import pytest
 from psycopg.types.json import Jsonb
 
 from novel_forge.storage.migrations.versions.v20261015_0217_craft_context_convergence import CAPACITY_STATEMENT
-UPGRADE_STATEMENTS = (CAPACITY_STATEMENT,)
 from tests.integration.authority_postgres_support import DATABASE_URL
 
+UPGRADE_STATEMENTS = (CAPACITY_STATEMENT,)
 
 @pytest.mark.parametrize("scenario,world_revalidation", [(scenario, world) for scenario in ["chapter", "group"] for world in [False, True, "source-correction", "foundation-background"]] + [("cast", False)])
 def test_authorized_capacity_sql_keeps_scope_counters_effects_and_lease_guards(scenario,world_revalidation):

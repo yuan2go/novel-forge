@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-# COMPATIBILITY: Frozen craft modules retain their original relative imports and bytes outside the active migration registry.
-__path__.append(str(Path(__file__).resolve().parent.parent / "historical" / "craft_16291555"))
-__path__.append(str(Path(__file__).resolve().parent.parent / "historical" / "craft_2eb0e685"))
-
 from . import (
+    _historical_paths as _historical_paths,
     v20260625_0001_initial_industrial_schema,
     v20260628_0002_query_and_release_indexes,
     v20260702_0003_mkaos_p0,

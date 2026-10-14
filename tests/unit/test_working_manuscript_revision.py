@@ -740,14 +740,22 @@ def test_selected_revision_dependency_binding_rejects_scope_and_frozen_drift(dri
     from novel_forge.modules.book_authority.manuscript import _working_dependency_binding
     book, source, selection, root = _working_dependency_case()
     binding = root["command_payload"]["preparation_report"]["working_revision"]
-    if drift == "book": binding["book_run_id"] = "another"
-    elif drift == "workspace": root["workspace_id"] = "another"
-    elif drift == "chapter": root["command_payload"]["chapter"] = 3
-    elif drift == "cancelled": root["status"] = "CANCELLED"
-    elif drift == "source_hash": binding["source_content_hash"] = "another"
-    elif drift == "selection_hash": selection["selected_content_hash"] = "another"
-    elif drift == "missing_input": root["input_asset_snapshot"].pop()
-    elif drift == "missing_predecessor": binding["previous_sources"] = []
+    if drift == "book":
+        binding["book_run_id"] = "another"
+    elif drift == "workspace":
+        root["workspace_id"] = "another"
+    elif drift == "chapter":
+        root["command_payload"]["chapter"] = 3
+    elif drift == "cancelled":
+        root["status"] = "CANCELLED"
+    elif drift == "source_hash":
+        binding["source_content_hash"] = "another"
+    elif drift == "selection_hash":
+        selection["selected_content_hash"] = "another"
+    elif drift == "missing_input":
+        root["input_asset_snapshot"].pop()
+    elif drift == "missing_predecessor":
+        binding["previous_sources"] = []
     with pytest.raises(KernelError, match="MANUSCRIPT_WORK_DEPENDENCY_INVALID"):
         _working_dependency_binding(book, selection, source, root)
 
@@ -761,7 +769,8 @@ def test_rebound_selected_dependencies_clear_only_the_repaired_chapter(monkeypat
     class Cursor:
         def execute(self, sql, *_):
             self.rows = [] if "authority_book_retained_working_continuation" in sql else original
-        def fetchall(self): return self.rows
+        def fetchall(self):
+            return self.rows
     sources = {number: SimpleNamespace(asset_version_id=version) for number, version in ((1, first), (2, "new:2"), (3, "old:3"))}
     monkeypatch.setattr(manuscript, "selected_source", lambda uow, book, number: sources[number])
     monkeypatch.setattr(manuscript, "_selected_working_dependencies", lambda uow, book, source:
@@ -770,7 +779,8 @@ def test_rebound_selected_dependencies_clear_only_the_repaired_chapter(monkeypat
     assert deliveries == [(number, dependencies) for number, _, dependencies in original]
     assert (changes[2] == []) is (first == "new:1")
     assert changes[3][0]["chapter"] == 2
-    if first == "newer:1": assert changes[3][1]["chapter"] == 1
+    if first == "newer:1":
+        assert changes[3][1]["chapter"] == 1
 
 
 @pytest.mark.parametrize("revised,fresh", [(True, False), (False, True), (False, False)])
@@ -779,13 +789,18 @@ def test_best_dependency_rebinding_requires_this_root_revision_or_fresh_incumben
     from novel_forge.modules.review.diagnostics import prose_hash
     book, source, selection, root = _working_dependency_case()
     source.content["selected_review"] = {"selection_review_source_asset_version_id": "review"}
-    if not revised: source.content["selected_source_asset_version_id"] = "old:2"
+    if not revised:
+        source.content["selected_source_asset_version_id"] = "old:2"
     class Cursor:
-        def __init__(self): self.query = 0
-        def execute(self, *_): self.query += 1
+        def __init__(self):
+            self.query = 0
+        def execute(self, *_):
+            self.query += 1
         def fetchall(self):
-            if self.query == 1: return [(root, "chapter.candidate.select_best")]
-            if self.query == 2: return [("chapter.revision.apply",)] if revised else []
+            if self.query == 1:
+                return [(root, "chapter.candidate.select_best")]
+            if self.query == 2:
+                return [("chapter.revision.apply",)] if revised else []
             return [({"target_asset_version_id": "old:2", "target_text_hash": prose_hash("正文")},)] if fresh else []
     monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(content=selection))
     result = manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, source)
@@ -803,15 +818,22 @@ def test_working_editor_selection_inherits_rebound_native_base(monkeypatch, drif
     selected = {**book, "chapter": 2, "selected_asset_version_id": editor.asset_version_id,
         "selected_content_hash": editor.content_hash, "source_asset_version_id": source.asset_version_id,
         "source_content_hash": source.content_hash}
-    if drift == "base_hash": editor.content["base_asset_hash"] = "wrong"
-    elif drift == "workspace": selected["workspace_id"] = "another"
-    elif drift == "selection_hash": selected["selected_content_hash"] = "wrong"
+    if drift == "base_hash":
+        editor.content["base_asset_hash"] = "wrong"
+    elif drift == "workspace":
+        selected["workspace_id"] = "another"
+    elif drift == "selection_hash":
+        selected["selected_content_hash"] = "wrong"
     class Cursor:
-        def __init__(self): self.query = 0
-        def execute(self, *_): self.query += 1
+        def __init__(self):
+            self.query = 0
+        def execute(self, *_):
+            self.query += 1
         def fetchall(self):
-            if self.query == 1: return [(original_selection,)] * (2 if drift == "ambiguous_history" else 1)
-            if self.query == 2: return [(root, "chapter.candidate.select_best")]
+            if self.query == 1:
+                return [(original_selection,)] * (2 if drift == "ambiguous_history" else 1)
+            if self.query == 2:
+                return [(root, "chapter.candidate.select_best")]
             return [("chapter.revision.apply",)]
     monkeypatch.setattr(author_editor, "require_source", lambda *_: source)
     monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(asset_id="work-selection", content=selected))
@@ -821,7 +843,8 @@ def test_working_editor_selection_inherits_rebound_native_base(monkeypatch, drif
     else:
         result = manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, editor)
         assert (result is None) is (drift == "ambiguous_history")
-        if result: assert result["sources"][0]["asset_version_id"] == "new:1"
+        if result:
+            assert result["sources"][0]["asset_version_id"] == "new:1"
 
 
 
