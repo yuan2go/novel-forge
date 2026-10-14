@@ -620,6 +620,12 @@ def build_provider_task_view(
             if stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1":
                 raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope requires its supported frozen stage")
             projected_selection = _compact(project_book_method_scope(narrative_intelligence))
+        group_scope = inputs.get("planning_group_method_scope_projection_version")
+        if group_scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+            if stage != "chapter_group_plan.generate" or group_scope != "group-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group method scope requires its frozen stage")
+            projected_selection = _compact(project_group_method_scope(narrative_intelligence))
         if projection_version:
             projected_selection = project_planning_craft_histories(projected_selection)
         task = _task(
@@ -636,6 +642,8 @@ def build_provider_task_view(
             task["craft_history_projection_version"] = projection_version
         if method_scope:
             task["planning_method_scope_projection_version"] = method_scope
+        if group_scope:
+            task["planning_group_method_scope_projection_version"] = group_scope
         continuity = _planning_working_continuity(inputs, command)
         if continuity is not None:
             task["working_continuity"] = continuity
@@ -1579,6 +1587,17 @@ def build_provider_context_view(
                     or task_view.get("planning_method_scope_projection_version") != method_scope
                     or projected_selection != expected_scope):
                 raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope differs from its complete frozen selection")
+        group_scope = context_bundle.get("planning_group_method_scope_projection_version")
+        if group_scope or task_view.get("planning_group_method_scope_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+            expected_group = _compact(project_group_method_scope(context_bundle.get("narrative_intelligence", {})))
+            if context_bundle.get("craft_history_projection_version"):
+                from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+                expected_group = project_planning_craft_histories(expected_group)
+            if (stage != "chapter_group_plan.generate" or group_scope != "group-method-scope-projection.v1"
+                    or task_view.get("planning_group_method_scope_projection_version") != group_scope
+                    or projected_selection != expected_group):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group methods differ from the complete frozen selection")
         recall_version = context_bundle.get("planning_recall_query_projection_version")
         if recall_version or task_view.get("planning_recall_query_projection_version"):
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
@@ -1593,6 +1612,8 @@ def build_provider_context_view(
             expected = project_planning_craft_histories(_compact(_project_denied_planning_selection(context_bundle.get("narrative_intelligence", {}))))
             if method_scope:
                 expected = project_planning_craft_histories(_compact(project_book_method_scope(context_bundle["narrative_intelligence"])))
+            if group_scope:
+                expected = project_planning_craft_histories(_compact(project_group_method_scope(context_bundle["narrative_intelligence"])))
             if (projection_version != "planning-craft-history-projection.v1"
                 or task_view.get("craft_history_projection_version") != projection_version
                 or projected_selection != expected):
@@ -2509,6 +2530,14 @@ def _build_planning_context_view(
         if stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1":
             raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope requires its frozen stage")
         project_book_method_scope(context_bundle.get("narrative_intelligence", {}))
+    group_scope = context_bundle.get("planning_group_method_scope_projection_version")
+    if group_scope is not None:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+        if stage != "chapter_group_plan.generate" or group_scope != "group-method-scope-projection.v1":
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group method scope requires its frozen stage")
+        project_group_method_scope(context_bundle.get("narrative_intelligence", {}))
+        _reference_prior_planning_method_audits(view, sources=raw_inputs)
+        view["planning_group_method_scope_projection_version"] = group_scope
     _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""), method_scope=bool(method_scope))
     _compact_planning_loss_sources(view)
     source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""
@@ -2638,6 +2667,41 @@ def _reference_planning_matrix_source(view: dict[str, Any], *, sources: list[Map
             "instruction": "Read this exact current-chapter matrix row and all its group constraints at the referenced locations in this same Context view. Both input roles bind the same immutable group asset and hash; this reference does not remove or weaken any group constraint.",
         }
         view["selection_explanation"]["role_reference_contract"] = "planning-input-role-references.v1"
+
+
+def _reference_prior_planning_method_audits(view: dict[str, Any], *, sources: list[Mapping[str, Any]]) -> None:
+    source_by_role = {str(source.get("role")): source for source in sources}
+    for segment in view["segments"]:
+        role, content = segment["role"], segment["content"]
+        generator = {"book_plan": "book_plan.generate", "volume_plan": "volume_plan.generate", "arc_plans": "arc_plan.generate"}.get(role)
+        if role.startswith(("related_arc:", "dependent_arc:")):
+            generator = "arc_plan.generate"
+        if generator is None or "knowledge_translations" not in content:
+            continue
+        source = source_by_role[role]
+        original = source["content"]
+        if (source.get("asset_type") not in {"planning_generation_candidate", generator.removesuffix(".generate")}
+                or source.get("asset_version_id") != segment["asset_version_id"]
+                or source.get("content_hash") != segment["content_hash"]
+                or original.get("book_id") != view["narrative_position"]["book_id"]
+                or (source.get("asset_type") == "planning_generation_candidate" and original.get("generator_operation_name") != generator)):
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Prior method audit must bind its typed frozen plan")
+        translations = content.pop("knowledge_translations")
+        content["prior_method_decisions"] = [
+            {key: deepcopy(row[key]) for key in ("knowledge_card_asset_version_id", "content_hash", "decision")}
+            for row in translations
+        ]
+        view["selection_explanation"]["loss_records"].append(_loss_record(
+            source, path="/knowledge_translations", value=translations,
+            reason="PRIOR_PLAN_METHOD_APPLICATION_AUDIT_RETAINED_IN_IMMUTABLE_SOURCE"))
+        view["selection_explanation"]["omitted_item_count"] += len(translations)
+    view["prior_method_decision_boundary"] = (
+        "Prior plan decisions identify method consideration in those exact immutable source plans. "
+        "Full rationale, checks and use-site locations remain in each source's /knowledge_translations; "
+        "the narrative plan fields and all their constraints remain here. They do not prescribe techniques for "
+        "this Group. Complete current method bodies, prerequisites, exceptions, UNKNOWN checks and histories "
+        "are delivered for this stage's own ADOPT/ADAPT/REJECT. The rejected repair candidate is unchanged."
+    )
 
 
 def _compact_qualified_foundation_planning(

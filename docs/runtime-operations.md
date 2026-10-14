@@ -1023,6 +1023,22 @@ historical codecs keep their original encoding. Migration 0208 adds only this Bo
 scope to the existing zero-Effect guard. Run the Book method scope, Provider view,
 continuation and authorized Planning capacity suites. Backup before migration, rehearse
 on a native copy, check actual admission before sending and retain the original failure.
+A rejected experimental Group whose complete rendered request failed before dispatch may
+freeze `group-method-scope-projection.v1` through the same native continuation. Retain
+the entire rejected Candidate and report, all typed plan constraints, current method
+bodies, conditions, exceptions and UNKNOWN checks. Upstream plan application audits
+remain at each immutable source's `/knowledge_translations`; their method IDs, hashes
+and prior decisions stay visible. Flattened recursive retrieval terms may be referenced
+outside the request only when all selected assessments bind the identical query and
+all their checks are explicitly `SEMANTIC_UNVERIFIED`; explicit typed checks keep the
+full query. These terms are not additional author requirements. Migration 0212 permits
+only the exact retained zero-Effect, zero-reservation rendered capacity failure with
+its original repair/input/search/opportunity identities. Forward fix 0213 compares scope
+to the owning generation; immutable command payloads derive scope from the generator.
+Historical Contexts and SQL
+guard branches remain replayable. Verify the complete rendered input separately from
+semantic projection and real Provider consumption; neither proves literary improvement.
+
 The same opt-in records current scoped Card approval in Planning and adopted Writer
 views, preserving older Candidate-stage declarations and method content as historical
 evidence. A complete Provider result rejected by the knowledge translation contract is

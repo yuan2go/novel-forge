@@ -691,3 +691,28 @@ def test_new_release_may_only_consume_completed_registered_successor(monkeypatch
     else:
         assert module.require_successor(app, command) == binding
         assert reads == ['effect']
+
+
+@pytest.mark.parametrize("change,admitted", [({}, True), ({"error_message": "Different failure"}, False), ({"generator_operation_name": "chapter_plan.generate"}, False), ({"execution_contract_version": "1.20.0"}, False), ({"repair_of_candidate_id": None}, False)])
+def test_rendered_group_capacity_recovery_has_an_exact_unsent_signature(monkeypatch, change, admitted):
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    frozen = {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "generator_operation_name": "chapter_group_plan.generate", "execution_contract_version": "1.21.0", "repair_of_candidate_id": "candidate:v1"}
+    frozen.update({k: v for k, v in change.items() if k != "error_message"})
+    responses = iter([("FAILED_RETRYABLE", 2, "workspace", frozen, "book", None), None, ("FAILED_RETRYABLE", {}, {"error_code": "CONTEXT_CAPACITY_EXCEEDED", "error_message": change.get("error_message", "CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation")})])
+    class Cursor:
+        def execute(self, *args):
+            self.row = next(responses)
+        def fetchone(self):
+            return self.row
+    captured = []
+    def capacity(*args, **kwargs):
+        captured.append(kwargs)
+        return {"proof": "REQUIRE_ACTUAL_ZERO_SEND_AND_FROZEN_CONTEXT"}
+    monkeypatch.setattr(runtime, "_pre_send_capacity_source", capacity)
+    if admitted:
+        assert require_source(SimpleNamespace(cursor=Cursor()), source_operation_id="source", project_id="project")["proof"] == "REQUIRE_ACTUAL_ZERO_SEND_AND_FROZEN_CONTEXT"
+        assert captured[0]["rendered_capacity_failure"] is True
+    else:
+        with pytest.raises(KernelError):
+            require_source(SimpleNamespace(cursor=Cursor()), source_operation_id="source", project_id="project")
+        assert not captured

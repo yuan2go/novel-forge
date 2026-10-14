@@ -188,6 +188,13 @@ def require_source(
         if mode:
             _require_world_lineage_settled(uow, source_operation_id=source_operation_id, project_id=project_id, book_id=str(row[4]), active_successor_operation_id=active_successor_operation_id)
             return mode(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
+    if (row[0] == "FAILED_RETRYABLE" and failure_code == "CONTEXT_CAPACITY_EXCEEDED"
+            and dict(attempt[2] or {}).get("error_message") == "CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation"
+            and frozen.get("execution_contract_version") == "1.21.0"
+            and frozen.get("generator_operation_name") == "chapter_group_plan.generate"
+            and frozen.get("repair_of_candidate_id")):
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, rendered_capacity_failure=True)
     if (
         (row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED")
         or (row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PROVIDER_ROUTING_BLOCKED"
@@ -718,6 +725,7 @@ def _pre_send_capacity_source(
     frozen: dict[str, Any],
     attempt: Any,
     route_preflight: bool = False,
+    rendered_capacity_failure: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
@@ -764,6 +772,31 @@ def _pre_send_capacity_source(
         [source_operation_id] * 3,
     )
     unsafe = uow.cursor.fetchone()[0]
+    if rendered_capacity_failure:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+        uow.cursor.execute("""SELECT output.asset_version_id,output.content_hash FROM authority_operation_output_asset output
+            WHERE output.operation_id=%s AND output.output_key='planning.context_bundle'""", [source_operation_id])
+        contexts = uow.cursor.fetchall()
+        if len(contexts) != 1:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_MISSING", "Rendered Group capacity requires its single frozen Context")
+        original = AuthorityAssetQuery(uow.database_url).require(project_id=frozen["project_id"], asset_version_id=contexts[0][0])
+        if (original.content_hash != contexts[0][1] or original.content.get("book_id") != frozen["book_id"]
+                or original.content.get("planning_scope") != "CHAPTER_GROUP"
+                or original.content.get("planning_group_method_scope_projection_version")
+                or original.content.get("repair_context", {}).get("source_candidate", {}).get("asset_version_id") != frozen["repair_of_candidate_id"]):
+            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Group scope requires its exact unchanged rejected Candidate and unprojected Context")
+        project_group_method_scope(original.content.get("narrative_intelligence", {}))
+        projection_revalidation = {"contract_version": "group-method-scope-projection.v1",
+            "source_operation_status": str(row[0]), "context_asset_version_id": contexts[0][0],
+            "context_content_hash": contexts[0][1], "failure_message": "Complete input leaves no model context for generation",
+            "reason": "Preserve typed plan constraints, complete current methods and the entire rejected Candidate; reference prior plan application audits and unverified flattened retrieval terms in immutable sources"}
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key<>'planning.context_bundle')
+            OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status IN ('CLAIMED','EXECUTING','WAITING_EXTERNAL_RESULT','LEASED','RUNNING','CHECKPOINTED','RESULT_SUBMITTED'))
+            OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+                WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id]*5)
+        unsafe = uow.cursor.fetchone()[0]
     if route_preflight:
         from .application import _command_from_payload
         from .schema_recovery import retained_world_action
@@ -1020,7 +1053,7 @@ def _capacity_target(
                     any(original_inputs.get(item["role"], {}).get(key) != item[key] for key in ("asset_version_id","content_hash","asset_type"))
                     for item in source["inputs"]):
                     raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Context successor must retain every original input version")
-                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated)
+                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated, projection_contract=proof.get("contract_version"))
             else:
                 context, _ = preparer._context_bundle(
                 operation_id=source["source_operation_id"],

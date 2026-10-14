@@ -23,6 +23,33 @@ def project_book_method_scope(selection: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def project_group_method_scope(selection: dict[str, Any]) -> dict[str, Any]:
+    from .craft_selection import _hash
+
+    policy = selection.get("knowledge_access_policy") or {}
+    if policy.get("mode") != "ALLOW_ONLY" or policy.get("usage_scope") != "EXPERIMENTAL_VALIDATION":
+        raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group method scope requires its explicit experimental policy")
+    result = project_foundation_method_recall(selection)
+    result["recall_query_receipt"]["contract_version"] = "group-method-scope-projection.v1"
+    query = selection["need"].get("hard_constraints")
+    assessments = [card.get("applicability_assessment", {}) for card in result["selected"]]
+    if (isinstance(query, list) and query and all(
+            assessment.get("hard_constraints") == query
+            and assessment.get("hard_constraint_semantics") == "UNVERIFIED_EXCEPT_EXPLICIT_TYPED_CHECKS"
+            and all(check.get("method") == "SEMANTIC_UNVERIFIED" for check in assessment.get("checks", []))
+            for assessment in assessments)):
+        result["need"].pop("hard_constraints")
+        for assessment in assessments:
+            assessment.pop("hard_constraints")
+        result["recall_query_receipt"]["flattened_constraint_query"] = {
+            "json_pointer": "/narrative_intelligence/need/hard_constraints",
+            "content_hash": _hash(query), "item_count": len(query),
+            "boundary": "UNVERIFIED_RETRIEVAL_TERMS_NOT_ADDITIONAL_STORY_CONSTRAINTS",
+            "preserved": "Every typed plan constraint, current method body, applicability check, prerequisite, exception and UNKNOWN result; no explicit typed constraint check is eligible for this query projection.",
+        }
+    return result
+
+
 def project_foundation_method_recall(selection: dict[str, Any]) -> dict[str, Any]:
     from .craft_selection import _hash
 

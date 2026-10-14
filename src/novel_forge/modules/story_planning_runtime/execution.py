@@ -4742,6 +4742,7 @@ class PostgresPlanningExecutionPreparer:
                 **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
                 **({"planning_recall_query_projection_version": context_document.content["planning_recall_query_projection_version"]} if context_document.content.get("planning_recall_query_projection_version") else {}),
                 **({"planning_method_scope_projection_version": context_document.content["planning_method_scope_projection_version"]} if context_document.content.get("planning_method_scope_projection_version") else {}),
+                **({"planning_group_method_scope_projection_version": context_document.content["planning_group_method_scope_projection_version"]} if context_document.content.get("planning_group_method_scope_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5820,7 +5821,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1"}):
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1"}):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
@@ -5831,7 +5832,7 @@ class PostgresPlanningExecutionPreparer:
                         selected = sorted(selected,key=lambda item:original_order[item["role"]])
                     self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected, context_policy_ref=context_policy_ref)
                     self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
-                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id)
+                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"))
                     return self._materialize_planning_context(operation_id=operation_id, command=command, logical_ref=logical_ref, documents=documents, content=content), tuple(documents)
         else:
             self._validate_frozen_context_retry(
@@ -6128,7 +6129,7 @@ class PostgresPlanningExecutionPreparer:
 
 
 
-    def _reproject_frozen_context(self, source, *, command, task_tokens, operation_id=None):
+    def _reproject_frozen_context(self, source, *, command, task_tokens, operation_id=None, projection_contract=None):
         from copy import deepcopy
 
         content = deepcopy(dict(source))
@@ -6149,6 +6150,15 @@ class PostgresPlanningExecutionPreparer:
             content["typed_volume_projection_version"] = "typed-volume-context-projection.v1"
         if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id:
             content["typed_window_projection_version"] = "typed-planning-window-projection.v1"
+        if (projection_contract == "group-method-scope-projection.v1"
+                and command.generator_operation_name == "chapter_group_plan.generate"
+                and content.get("knowledge_access_policy", {}).get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"
+                and content.get("narrative_intelligence", {}).get("selected")
+                and content.get("knowledge_access_policy", {}).get("mode") == "ALLOW_ONLY"
+                and content.get("knowledge_access_policy", {}).get("usage_scope") == "EXPERIMENTAL_VALIDATION"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+            project_group_method_scope(content["narrative_intelligence"])
+            content["planning_group_method_scope_projection_version"] = "group-method-scope-projection.v1"
         if command.execution_contract_version == "1.21.0":
             content["planning_contract_version"] = "1.21.0"
         if operation_id and "realization_reference_contract" in content:

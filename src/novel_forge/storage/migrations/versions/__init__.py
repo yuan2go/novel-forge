@@ -213,6 +213,8 @@ from . import (
     v20261014_0209_planning_input_scope_point_reads,
     v20261014_0210_operation_outbox_lookup_indexes,
     v20261014_0211_unsent_context_query_recovery,
+    v20261014_0212_group_method_scope_context,
+    v20261014_0213_group_scope_identity,
 )
 
 VERSION_MODULES = [
@@ -428,6 +430,8 @@ VERSION_MODULES = [
     v20261014_0209_planning_input_scope_point_reads,
     v20261014_0210_operation_outbox_lookup_indexes,
     v20261014_0211_unsent_context_query_recovery,
+    v20261014_0212_group_method_scope_context,
+    v20261014_0213_group_scope_identity,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261014_0211_unsent_context_query_recovery",
+  "head": "20261014_0213_group_scope_identity",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -214,6 +214,8 @@
     "20261014_0208_book_method_scope_context",
     "20261014_0209_planning_input_scope_point_reads",
     "20261014_0210_operation_outbox_lookup_indexes",
-    "20261014_0211_unsent_context_query_recovery"
+    "20261014_0211_unsent_context_query_recovery",
+    "20261014_0212_group_method_scope_context",
+    "20261014_0213_group_scope_identity"
   ]
 }
