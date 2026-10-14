@@ -12,7 +12,7 @@ from novel_forge.modules.agent_runtime.application import (
     AgentHarnessAdmissionRequest,
     AgentRuntimeAdminCommand,
 )
-from novel_forge.modules.agent_runtime.unsent_recovery import AgentUnsentRecoveryRequest
+from novel_forge.modules.agent_runtime.unsent_recovery import AgentUnsentRecoveryRequest, AgentReferenceRecoveryRequest
 from novel_forge.modules.agent_runtime.harness import (
     AcceptedBoundaryRef,
     AgentHarnessBudget,
@@ -94,6 +94,17 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     )
     application = ctx.services.agent_runtime_authority_application
     query = ctx.services.agent_runtime_query
+
+    @router.post("/agent-sessions/{source_session_id}/recover-reference", status_code=202)
+    def recover_reference_session(source_session_id: str, request: AgentUnsentRecoveryBody) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            return application.recover_reference_harness_session(AgentReferenceRecoveryRequest(
+                source_session_id=source_session_id,**{**request.model_dump(),"reference_prose":True}),principal=principal)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403,detail=str(exc)) from exc
+        except KernelError as exc:
+            raise HTTPException(status_code=409,detail={"code":exc.code,"message":exc.message}) from exc
 
     @router.post("/agent-sessions/{source_session_id}/recover-unsent", status_code=202)
     def recover_unsent_session(source_session_id: str, request: AgentUnsentRecoveryBody) -> dict[str, Any]:

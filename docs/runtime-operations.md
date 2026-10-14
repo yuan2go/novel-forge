@@ -330,6 +330,19 @@ target release SHA and reason; it cannot reconcile an external outcome. Read bac
 source and successor; an admission response alone is not successful execution. Save and
 export actual Provider prose separately from these engineering checks.
 
+Reference instruction delivery also requires `test_agent_reference_recovery.py` and the
+Agent literal-template rendering cases. Verify a completed empty protocol can receive a
+causal continuation while saved prose, altered transcript/output hashes and UNKNOWN
+Effects cannot. The `recover-reference` API takes the same exact source identities as
+known-unsent recovery, but proves an existing successful empty response and preserves it.
+Read back the complete rendered author instruction in a disposable native copy before
+dispatch; fixture success alone is not prose delivery.
+
+Reconciled local generation isolation requires interrupted-CLI and native-API guard
+units plus CLI reconciliation, isolated receipt and production recovery PostgreSQL suites.
+Verify original stdin hashes, current native journal identity, live/unverifiable CLI and
+supervisor refusal, recoverable-result reuse, unchanged dispatch and UNKNOWN accounting.
+
 For Production Preparation Book isolation, run the Authority production-preparation unit
 suite and the `preparation_book_scope` PostgreSQL test in
 `test_chapter_authority_scheduler_postgres.py`. Check foreign candidates beyond the

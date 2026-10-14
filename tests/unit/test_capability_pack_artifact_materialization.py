@@ -409,6 +409,34 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
     assert '"contract_version":"provider-context-view-v2"' in prompt
 
 
+@pytest.mark.parametrize("reference", [False,True])
+def test_agent_literal_template_still_delivers_exact_instruction_and_context(reference):
+    *_, request = contracts(backend_id="codex-cli",runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    boundary = {"book_id":"book-1","accepted_through_chapter":0}
+    instruction = "冻结作者简报：独立构建故事，返回三章正文。"
+    inputs = {"instruction":instruction,"accepted_boundary":boundary,"turn_number":1,
+        "tools":[{"tool_name":"narrative.query_accepted"}]}
+    if reference:
+        inputs["execution_contract_summary"] = {"reference_prose":{
+            "contract_version":"agent-reference-prose.v1","production_eligible":False,
+            "tools_allowed":False,"skills_activation_allowed":False,"book_id":"book-1",
+            "instruction_hash":canonical_hash({"instruction":instruction})}}
+    materialization = {"pack_artifacts":{
+        key:{"ref":key,"version":"v1","content":{"text":"Literal frozen instruction without placeholders."}}
+        for key in ("system_instruction","prompt_template","skill")},
+        "context_selection":[{"content":{"protected":True,"source_authority":"POSTGRESQL_ACCEPTED_BOUNDARY","accepted_boundary":boundary}}],
+        "knowledge_selection":[],"tool_permissions":{"allowed":["model.provider.invoke","narrative.query_accepted"]},
+        "output_schema":{"ref":"schema:agent-workspace-execute:v1","content":{"type":"object"}}}
+    prompt,_ = _materialize_chapter_codex_prompt(request=request,stage="agent_session",inputs=inputs,materialization=materialization)
+    assert prompt.count(instruction) == 1
+    assert '<agent_task>' in prompt and '<agent_context>' in prompt
+    assert ('first ungrounded Agent turn' in prompt) is not reference
+    if reference:
+        assert 'complete prose in FINAL.final_response.payload_json' in prompt
+        task = json.loads(prompt.split('<agent_task>\n',1)[1].split('\n</agent_task>',1)[0])
+        assert set(task) == {'contract_version','instruction','accepted_boundary'}
+
+
 def test_codex_prompt_projects_governed_context_once_without_runtime_evidence() -> None:
     *_, request = contracts(
         backend_id="codex-cli",

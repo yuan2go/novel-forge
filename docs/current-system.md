@@ -1811,6 +1811,22 @@ Harness refuses tool execution and Skill activation. The ordinary Agent groundin
 remains mandatory outside this mode. Internal Skill activation is not an external Tool
 permission. Reference output remains ineligible and separately attributable.
 
+Agent rendering delivers its exact governed task and accepted-boundary Context even
+when a frozen template contains no placeholders. Reference task projection delivers only
+the author instruction and isolation boundary, without prior Book plans or an unused
+Tool/Skill catalog. The frozen governed Pack and external Tool-policy envelope remain.
+`recover-reference` can append one deterministic causal continuation for the exact
+completed empty-reference protocol response, after verifying the original successful
+Effect, normalized output and transcript hashes. Existing prose, another response,
+UNKNOWN external work or active leases reject this path. The original complete empty
+response remains readable; a continuation does not rewrite it or establish literary quality.
+
+Pure-generation isolation may use the original local receipt recovered by native query
+when dispatch history lacks it. The Kernel verifies the current reconciliation journal,
+immutable recovery record, original Request/Handle/Result/Process identities, frozen
+input hash and stopped local process. CLI payload hashes and application envelope hashes
+retain their distinct meanings. Original dispatches and unknown remote usage remain unchanged.
+
 ## Narrative object model
 
 The runtime does not implement one universal narrative tree. It distinguishes structural

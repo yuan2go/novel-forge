@@ -65,6 +65,96 @@ def require_native_api_isolation_record(content, *, project_id, book_id, operati
     return original, record
 
 
+def require_reconciled_cli_isolation_record(content, execution, *, effect, project_id, book_id, capability):
+    from novel_forge.modules.production_execution.contracts import ExecutionRequest
+    from .external_effect_runtime import _hash
+    import re
+
+    record = content.get("record") or {}
+    original = ExecutionRequest.from_dict(record.get("request") or {})
+    frozen = record.get("frozen_output_contract") or {}
+    result = record.get("result") or {}
+    process = record.get("process_receipt") or {}
+    handle = record.get("handle") or {}
+    capability_evidence = (record.get("raw_evidence") or {}).get("capability_evidence") or {}
+    provider_view = capability_evidence.get("provider_view") or {}
+    prompt_hash = (provider_view.get("component_hashes") or {}).get("fully_rendered_prompt")
+    prompt_digest = str(prompt_hash or "").removeprefix("sha256:")
+    if (content.get("contract_version") != "authority-execution-recovery.v1"
+            or content.get("execution_id") != original.execution_id
+            or content.get("request_contract_hash") != original.contract_hash
+            or content.get("record_state_hash") != _hash(record).removeprefix("sha256:")
+            or original.project_id != project_id or original.book_id != book_id
+            or original.operation_id != effect["operation_id"]
+            or original.external_effect_id != effect["external_effect_id"]
+            or original.stable_idempotency_key != effect["stable_idempotency_key"]
+            or frozen.get("execution_request_hash") != original.contract_hash
+            or capability_evidence.get("provider_request_envelope_hash") != capability.get("provider_request_envelope_hash")
+            or not re.fullmatch(r"sha256:[0-9a-f]{64}", str(frozen.get("request_hash") or ""))
+            or frozen.get("contract_hash") != _hash({k:v for k,v in frozen.items() if k != "contract_hash"})
+            or handle.get("transport") != "LOCAL_CLI_REMOTE_INFERENCE"
+            or not handle.get("backend_id") or not re.fullmatch(r"[0-9a-f]{64}", prompt_digest)
+            or process.get("input_sha256") != prompt_digest
+            or any(execution.get(key) != record.get(field) for key,field in (
+                ("execution_request", "request"), ("execution_handle", "handle"), ("execution_result", "result")))
+            or any(process.get(key) != getattr(original, key) or result.get(key) != getattr(original, key)
+                   or handle.get(key) != getattr(original, key)
+                for key in ("execution_id", "operation_id", "attempt_id", "fencing_token"))):
+        raise KernelError("GENERATION_ISOLATION_IDENTITY_CONFLICT", "Reconciled CLI evidence must match the exact durable original execution")
+    if (result.get("outcome") not in {"UNKNOWN", "ORPHANED", "TIMED_OUT", "CANCELLED"}
+            or any(result.get(key) for key in ("normalized_output_ref", "output_manifest_ref", "raw_output_ref", "usage_receipt_ref"))
+            or (record.get("provider_result") or {}).get("outcome") == "success"
+            or process.get("status") not in {"FAILED", "TIMED_OUT", "ORPHANED", "CANCELLED"}
+            or process.get("result_integrity") == "VALID"):
+        raise KernelError("GENERATION_ISOLATION_RESULT_RECOVERABLE", "Reuse the original result or stop its process before isolation")
+    require_stopped_reconciled_cli_process(process)
+    return record
+
+
+def require_stopped_reconciled_cli_process(process):
+    from novel_forge.modules.production_execution.process_supervisor import PosixProcessIdentityProbe
+
+    group = process.get("process_group") or {}
+    if not group.get("pid") or process.get("recovery_reason") == "START_INTERRUPTED_PROCESS_ID_UNKNOWN":
+        raise KernelError("GENERATION_ISOLATION_PROCESS_LIVE", "The original CLI process identity is unresolved")
+    probe = PosixProcessIdentityProbe()
+    for pid, recorded_start in ((group["pid"], group.get("process_start_token")),):
+        if pid and probe.is_alive(int(pid)):
+            current_start = probe.process_start_token(int(pid))
+            if not current_start or not recorded_start or str(recorded_start).startswith("unverified:") or current_start == recorded_start:
+                raise KernelError("GENERATION_ISOLATION_PROCESS_LIVE", "Original CLI or supervisor is live or its identity cannot be established")
+    if process.get("supervisor_pid") and probe.is_alive(int(process["supervisor_pid"])):
+        raise KernelError("GENERATION_ISOLATION_PROCESS_LIVE", "The original supervisor identity remains live or unresolved")
+
+
+def reconciled_cli_isolation_execution(uow, effect, *, project_id, book_id, capability):
+    from .external_effect_runtime import _hash
+
+    cursor = uow.cursor
+    cursor.execute("""SELECT r.reconciliation_id,r.outcome,r.evidence,r.provider,r.stable_idempotency_key,e.reconciliation
+        FROM authority_effect_reconciliation_evidence r JOIN authority_external_effect e USING(external_effect_id)
+        WHERE r.external_effect_id=%s ORDER BY r.reconciled_at DESC,r.reconciliation_id DESC LIMIT 1""", [effect["external_effect_id"]])
+    row = cursor.fetchone()
+    if (not row or row[1] != "ambiguous" or row[2] != row[5]
+            or row[3] != effect["provider"] or row[4] != effect["stable_idempotency_key"]):
+        raise KernelError("GENERATION_ISOLATION_RECEIPT_MISSING", "Require the original receipt or its exact native query reconciliation")
+    execution = row[2].get("production_execution") or {}
+    execution_id = (execution.get("execution_request") or {}).get("execution_id")
+    cursor.execute("""SELECT v.asset_version_id FROM authority_asset_version v
+        JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='execution_recovery_session'
+          AND v.content->>'execution_id'=%s ORDER BY v.created_at DESC,v.asset_version_id DESC LIMIT 1""", [project_id, execution_id])
+    session = cursor.fetchone()
+    if not session:
+        raise KernelError("GENERATION_ISOLATION_EXECUTION_EVIDENCE_MISSING", "Retain the original durable recovery session")
+    document = uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=session[0])
+    if document.content_hash != _hash(document.content):
+        raise KernelError("GENERATION_ISOLATION_IDENTITY_CONFLICT", "The original recovery session hash must verify")
+    record = require_reconciled_cli_isolation_record(document.content, execution,
+        effect=effect, project_id=project_id, book_id=book_id, capability=capability)
+    return execution, record, {"reconciliation_evidence_id":row[0], "execution_recovery_asset_version_id":session[0],
+        "execution_recovery_content_hash":document.content_hash}
+
+
 def isolation(cursor, effect_id: str):
     cursor.execute(
         "SELECT proof FROM authority_generation_isolation WHERE external_effect_id=%s",
@@ -532,6 +622,11 @@ def append_isolation(uow, effect, command):
     last = dispatches[-1]
     execution = last["evidence"].get("production_execution") or {}
     result = execution.get("execution_result") or {}
+    reconciled_record, reconciled_binding = None, {}
+    if not result.get("process_receipt_ref") and (execution.get("execution_handle") or {}).get("transport") != "REMOTE_PROVIDER_API":
+        execution, reconciled_record, reconciled_binding = reconciled_cli_isolation_execution(uow, effect,
+            project_id=command.project_id, book_id=generation[0], capability=capability)
+        result = execution["execution_result"]
     from types import SimpleNamespace
     transport = (execution.get("execution_handle") or {}).get("transport")
     if source_generation and transport != "LOCAL_CLI_REMOTE_INFERENCE":
@@ -567,6 +662,11 @@ def append_isolation(uow, effect, command):
             project_id=command.project_id, asset_version_id=ref.split(":", 1)[1]
         )
         process = receipt.content.get("payload", receipt.content)
+        if reconciled_record is not None:
+            from .external_effect_runtime import _hash
+            if (process != reconciled_record["process_receipt"]
+                    or receipt.content.get("payload_hash") != _hash(process).removeprefix("sha256:")):
+                raise KernelError("GENERATION_ISOLATION_IDENTITY_CONFLICT", "The queried process receipt must verify against its exact native recovery record")
         if (
             process.get("operation_id") != effect["operation_id"]
             or process.get("status") not in {"FAILED", "TIMED_OUT", "ORPHANED", "CANCELLED"}
@@ -619,6 +719,7 @@ def append_isolation(uow, effect, command):
         )
         evidence_asset_version_id = receipt.asset_version_id
     proof = {
+        **reconciled_binding,
         "observed_failure": observed,
         "contract_version": "source-generation-isolation.v1" if source_generation else CONTRACT,
         "external_effect_id": effect["external_effect_id"],

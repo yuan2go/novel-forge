@@ -62,7 +62,7 @@ from .harness import (
     with_skill_activation_tool,
 )
 from .policy import ServerAgentHarnessPolicyResolver
-from .unsent_recovery import AgentUnsentRecoveryRequest, require_unsent_source, require_host_release_compatibility
+from .unsent_recovery import AgentUnsentRecoveryRequest, AgentReferenceRecoveryRequest, require_unsent_source, require_host_release_compatibility, recovery_session_identity
 
 
 @dataclass(frozen=True, slots=True)
@@ -420,9 +420,9 @@ class AgentRuntimeAuthorityApplication:
                     raise KernelError("AGENT_UNSENT_RECOVERY_RUNTIME_DRIFT", "Recovery target must name the actual host release")
                 source_session, source_operation, lineage = require_unsent_source(uow, _unsent_recovery, principal)
                 source_command = source_operation["command_payload"]
-                if (request.agent_session_id != f"agent-unsent-successor:{source_operation['operation_id']}"
+                if (request.agent_session_id != recovery_session_identity(_unsent_recovery,source_operation['operation_id'])
                         or request.reference_prose != _unsent_recovery.reference_prose
-                        or request.idempotency_key != f"agent-unsent-successor:{source_operation['operation_id']}"
+                        or request.idempotency_key != recovery_session_identity(_unsent_recovery,source_operation['operation_id'])
                         or request.instruction != source_command["instruction"]
                         or request.accepted_boundary != source_session.accepted_boundary
                         or request.budget != source_session.budget
@@ -592,7 +592,7 @@ class AgentRuntimeAuthorityApplication:
                     lineage["host_release_compatibility"] = require_host_release_compatibility(
                         uow, dict(source_session.execution_contract), execution_contract, self.commit_sha,
                         project_id=effective.project_id)
-                    execution_contract["unsent_recovery"] = lineage
+                    execution_contract["reference_recovery" if isinstance(_unsent_recovery,AgentReferenceRecoveryRequest) else "unsent_recovery"] = lineage
                 execution_contract_hash = canonical_execution_contract_hash(
                     execution_contract
                 )
@@ -677,7 +677,8 @@ class AgentRuntimeAuthorityApplication:
                         project_id=effective.project_id, actor_id=principal.principal_id,
                         trace_id=effective.trace_id, correlation_id=effective.correlation_id,
                         causation_id=lineage["source_operation_id"],
-                    ), lineage["source_operation_id"], "authority.agent.unsent_successor_registered",
+                    ), lineage["source_operation_id"],
+                        "authority.agent.reference_successor_registered" if isinstance(_unsent_recovery,AgentReferenceRecoveryRequest) else "authority.agent.unsent_successor_registered",
                         {"successor_operation_id": operation_id,
                          "successor_session_id": stored.agent_session_id, "lineage": lineage})
             uow.commit()
@@ -720,14 +721,14 @@ class AgentRuntimeAuthorityApplication:
             "policy_hash": str(effective.policy_snapshot.get("policy_hash") or ""),
             "execution_contract_hash": stored.execution_contract_hash,
             "replayed": bool(admitted["replayed"]),
-            **({"unsent_recovery": lineage} if lineage else {}),
+            **({("reference_recovery" if isinstance(_unsent_recovery,AgentReferenceRecoveryRequest) else "unsent_recovery"): lineage} if lineage else {}),
         }
 
     def recover_unsent_harness_session(self, request: AgentUnsentRecoveryRequest, *, principal: Principal) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             source, operation, _lineage = require_unsent_source(uow, request, principal)
         command = operation["command_payload"]
-        identity = f"agent-unsent-successor:{operation['operation_id']}"
+        identity = recovery_session_identity(request,operation['operation_id'])
         return self.admit_harness_session(AgentHarnessAdmissionRequest(
             project_id=source.project_id, workspace_id=source.workspace_id,
             book_id=source.accepted_boundary.book_id, actor_id=principal.principal_id,
@@ -739,6 +740,11 @@ class AgentRuntimeAuthorityApplication:
             requested_skill_ids=tuple(command["requested_skill_ids"]),
             reference_prose=request.reference_prose,
         ), principal=principal, _unsent_recovery=request)
+
+    def recover_reference_harness_session(self, request: AgentReferenceRecoveryRequest, *, principal: Principal) -> dict[str, Any]:
+        if not isinstance(request,AgentReferenceRecoveryRequest) or self.runtime_environment.value != "validation":
+            raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "Empty reference continuation is controlled validation only")
+        return self.recover_unsent_harness_session(request,principal=principal)
 
     @staticmethod
     def _validate_harness_accepted_boundary(

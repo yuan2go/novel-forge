@@ -4741,7 +4741,15 @@ def _materialize_production_codex_prompt(
                 or reference_prose.get("book_id") != dict(inputs.get("accepted_boundary") or {}).get("book_id")
                 or reference_prose.get("instruction_hash") != canonical_hash({"instruction": inputs.get("instruction")})):
             raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "Reference prose must retain its frozen empty-boundary instruction")
-        stage_semantic_contract += " This controlled reference has no accepted story facts. Return FINAL using only its frozen instruction. Do not query Book plans, execute tools or activate Skills. The output is an ineligible reference sample."
+        stage_semantic_contract = (
+            "Execute the frozen author instruction in agent_task. Invent the independent fictional story required by that instruction, "
+            "and return its complete prose in FINAL.final_response.payload_json. Fiction in this reference response is a candidate, "
+            "not accepted Canon or an Authority decision. There are no accepted story facts. Do not query Book plans, execute tools "
+            "or activate Skills. Return the requested chapters themselves; a status, proposal or empty candidate does not fulfill the instruction. "
+            "The outer response must match the strict schema."
+        )
+        task_view = {"contract_version":"provider-reference-author-task.v1",
+                     "instruction":task_view["instruction"],"accepted_boundary":task_view["accepted_boundary"]}
     if (
         stage == "agent_session"
         and not reference_prose
@@ -4775,6 +4783,9 @@ def _materialize_production_codex_prompt(
             + _canonical(knowledge_view)
             + "\n</required_knowledge>",
     ]
+    if stage == "agent_session":
+        prompt_sections.extend(("<agent_task>\n" + _canonical(task_view) + "\n</agent_task>",
+                               "<agent_context>\n" + _canonical(context_view) + "\n</agent_context>"))
     if not compact_contract or stage == "agent_session":
         prompt_sections.append(
             "<tool_policy>\n"
