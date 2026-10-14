@@ -196,6 +196,13 @@ def require_source(
     if (row[0] == "FAILED_RETRYABLE" and failure_code == "CONTEXT_CAPACITY_EXCEEDED"
             and dict(attempt[2] or {}).get("error_message") == "CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation"
             and frozen.get("execution_contract_version") == "1.21.0"
+            and frozen.get("generator_operation_name") == "chapter_plan.generate"
+            and frozen.get("world_preparation_request")):
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, rendered_chapter_capacity_failure=True)
+    if (row[0] == "FAILED_RETRYABLE" and failure_code == "CONTEXT_CAPACITY_EXCEEDED"
+            and dict(attempt[2] or {}).get("error_message") == "CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation"
+            and frozen.get("execution_contract_version") == "1.21.0"
             and frozen.get("generator_operation_name") == "chapter_group_plan.generate"
             and frozen.get("repair_of_candidate_id")):
         return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
@@ -732,6 +739,7 @@ def _pre_send_capacity_source(
     route_preflight: bool = False,
     rendered_capacity_failure: bool = False,
     world_capacity_failure: bool = False,
+    rendered_chapter_capacity_failure: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
@@ -778,6 +786,10 @@ def _pre_send_capacity_source(
         [source_operation_id] * 3,
     )
     unsafe = uow.cursor.fetchone()[0]
+    if rendered_chapter_capacity_failure:
+        from .world_context_recovery import require_chapter_projection_source
+        projection_revalidation = require_chapter_projection_source(uow, source_operation_id=source_operation_id,
+            frozen=frozen, attempt=attempt)
     if world_capacity_failure:
         from .world_context_recovery import require_projection_source
         projection_revalidation = require_projection_source(uow, source_operation_id=source_operation_id,
@@ -808,11 +820,13 @@ def _pre_send_capacity_source(
             OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
                 WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id]*5)
         unsafe = uow.cursor.fetchone()[0]
-    if route_preflight:
+    if route_preflight or rendered_chapter_capacity_failure:
         from .application import _command_from_payload
         from .schema_recovery import retained_world_action
         action, retained_world = retained_world_action(uow.database_url,
             command=_command_from_payload(frozen), source_operation_id=source_operation_id)
+        if rendered_chapter_capacity_failure and (action is None or retained_world is None):
+            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Chapter projection requires its exact completed World action")
         receipts = []
         if action is not None:
             query = AuthorityAssetQuery(uow.database_url)
@@ -997,7 +1011,7 @@ def _capacity_authorization(
             "Capacity allocation cannot replace the frozen Pack, prompt or model route",
         )
     world_identity = None
-    if source.get("context_revalidation", {}).get("contract_version") == "world-method-scope-projection.v1":
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}:
         from .world_context_recovery import require_runtime_identity
         world_identity = require_runtime_identity(uow, source=source, target=target)
     return {
@@ -1050,7 +1064,7 @@ def _capacity_target(
     from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
     ceiling = planning_input_capacity(route)
     allocated = min(baseline * 2, ceiling)
-    if source.get("context_revalidation", {}).get("contract_version") == "world-method-scope-projection.v1":
+    if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}:
         allocated = min(baseline, ceiling)
     if source.get("capacity_inheritance"):
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])

@@ -197,3 +197,25 @@ def test_world_recovery_retains_exact_runtime_allowing_only_budget_authorization
             target["account"]["cli_directory"] = "/different"
         with pytest.raises(KernelError, match="WORLD_CONTEXT_RECOVERY_RUNTIME_DRIFT"):
             require_runtime_identity(uow, source=source, target=target)
+
+
+def test_chapter_scope_is_explicit_and_rejects_another_stage():
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    source = {"input_versions": [], "narrative_intelligence": group_selection(), "planning_scope": "CHAPTER",
+              "arc_working_set": {"working_manuscript": {"snapshot_hash": "original"}}}
+    source["knowledge_access_policy"] = deepcopy(source["narrative_intelligence"]["knowledge_access_policy"])
+    frozen = deepcopy(source)
+    command = SimpleNamespace(generator_operation_name="chapter_plan.generate", execution_contract_version="1.21.0")
+    port = SimpleNamespace(_planning_context_manifest=lambda **kwargs: {"token_accounting": {"accepted_tokens": 100}})
+    legacy = PostgresPlanningExecutionPreparer._reproject_frozen_context(port, source, command=command, task_tokens=1000)
+    projected = PostgresPlanningExecutionPreparer._reproject_frozen_context(port, source, command=command,
+        task_tokens=1000, projection_contract="chapter-method-scope-projection.v1")
+    assert "planning_chapter_method_scope_projection_version" not in legacy
+    assert projected["narrative_intelligence"] == frozen["narrative_intelligence"]
+    assert projected["arc_working_set"] == frozen["arc_working_set"]
+    assert source == frozen
+    command.generator_operation_name = "book_plan.generate"
+    with pytest.raises(KernelError, match="CRAFT_CONTEXT_PROJECTION_DRIFT"):
+        PostgresPlanningExecutionPreparer._reproject_frozen_context(port, source, command=command,
+            task_tokens=1000, projection_contract="chapter-method-scope-projection.v1")

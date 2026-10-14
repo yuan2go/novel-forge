@@ -86,3 +86,42 @@ def require_runtime_identity(uow, *, source, target):
         raise KernelError("WORLD_CONTEXT_RECOVERY_RUNTIME_DRIFT", "Retain the exact prior model, reasoning, backend and stable account")
     return {"prior_runtime_continuation_id": proof["prior_runtime_continuation_id"], "prior_runtime_hash": proof["prior_runtime_hash"],
         "authorization_reference_change": "NATIVE_BUDGET_SUCCESSOR_ALLOWED"}
+
+
+def require_chapter_projection_source(uow, *, source_operation_id, frozen, attempt):
+    failure = dict(attempt[2] or {})
+    if (attempt[0] != 'FAILED_RETRYABLE' or failure.get('error_code') != 'CONTEXT_CAPACITY_EXCEEDED'
+            or failure.get('error_message') != 'CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation'
+            or failure.get('failure_class') != 'retryable' or not frozen.get('runtime_continuation_id')):
+        raise KernelError('CHAPTER_CONTEXT_RECOVERY_SOURCE_INVALID', 'Require the exact unsent main input capacity failure')
+    uow.cursor.execute("""SELECT asset_version_id,content_hash FROM authority_operation_output_asset
+        WHERE operation_id=%s AND output_key='planning.context_bundle'""", [source_operation_id])
+    rows = uow.cursor.fetchall()
+    if len(rows) != 1:
+        raise KernelError('CHAPTER_CONTEXT_RECOVERY_SOURCE_INVALID', 'Retain one exact base Planning Context')
+    context = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=rows[0][0])
+    if (context.content_hash != rows[0][1] or context.content.get('planning_scope') != 'CHAPTER'
+            or context.content.get('project_id') != frozen['project_id']
+            or context.content.get('workspace_id') != frozen['workspace_id']
+            or context.content.get('book_id') != frozen['book_id']
+            or context.content.get('planning_chapter_method_scope_projection_version')):
+        raise KernelError('CHAPTER_CONTEXT_RECOVERY_SOURCE_DRIFT', 'Chapter projection must preserve its complete unprojected selection')
+    uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL)
+        OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state IN ('ABORTED','CANCELLED','COMPLETED'))
+        OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status IN ('CLAIMED','EXECUTING','WAITING_EXTERNAL_RESULT','LEASED','RUNNING','CHECKPOINTED','RESULT_SUBMITTED'))""",
+        [source_operation_id, frozen['project_id'], frozen['book_id'], source_operation_id])
+    if uow.cursor.fetchone()[0]:
+        raise KernelError('CHAPTER_CONTEXT_RECOVERY_DISPATCH_UNSAFE', 'Cancelled or terminal Book cannot acquire a projection successor')
+    from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+    project_chapter_method_scope(context.content.get('narrative_intelligence', {}))
+    uow.cursor.execute("""SELECT target_runtime FROM authority_story_planning_runtime_continuation
+        WHERE continuation_id=%s AND successor_operation_id=%s AND project_id=%s AND workspace_id=%s AND book_id=%s""",
+        [frozen['runtime_continuation_id'], source_operation_id, frozen['project_id'], frozen['workspace_id'], frozen['book_id']])
+    prior = uow.cursor.fetchone()
+    if not prior:
+        raise KernelError('CHAPTER_CONTEXT_RECOVERY_RUNTIME_DRIFT', 'Chapter source must retain its exact registered runtime')
+    return {'contract_version': 'chapter-method-scope-projection.v1', 'source_operation_status': 'FAILED_RETRYABLE',
+        'source_operation_id': source_operation_id, 'source_failure': failure,
+        'context_asset_version_id': context.asset_version_id, 'context_content_hash': context.content_hash,
+        'prior_runtime_continuation_id': frozen['runtime_continuation_id'], 'prior_runtime_hash': canonical_hash(prior[0]),
+        'reason': 'Retain complete current methods, usage histories, typed plans and the verified completed World action; reference only duplicate semantic-unverified retrieval terms and recall diagnostics'}

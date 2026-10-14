@@ -635,6 +635,12 @@ def build_provider_task_view(
             if stage != "chapter_group_plan.generate" or group_scope != "group-method-scope-projection.v1":
                 raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group method scope requires its frozen stage")
             projected_selection = _compact(project_group_method_scope(narrative_intelligence))
+        chapter_scope = inputs.get("planning_chapter_method_scope_projection_version")
+        if chapter_scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+            if stage != "chapter_plan.generate" or chapter_scope != "chapter-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter method scope requires its frozen stage")
+            projected_selection = _compact(project_chapter_method_scope(narrative_intelligence))
         if projection_version:
             projected_selection = project_planning_craft_histories(projected_selection)
         task = _task(
@@ -653,6 +659,8 @@ def build_provider_task_view(
             task["planning_method_scope_projection_version"] = method_scope
         if group_scope:
             task["planning_group_method_scope_projection_version"] = group_scope
+        if chapter_scope:
+            task["planning_chapter_method_scope_projection_version"] = chapter_scope
         continuity = _planning_working_continuity(inputs, command)
         if continuity is not None:
             task["working_continuity"] = continuity
@@ -1615,6 +1623,17 @@ def build_provider_context_view(
                     or projected_selection != expected_group):
                 raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group methods differ from the complete frozen selection")
         recall_version = context_bundle.get("planning_recall_query_projection_version")
+        chapter_scope = context_bundle.get("planning_chapter_method_scope_projection_version")
+        if chapter_scope or task_view.get("planning_chapter_method_scope_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+            expected_chapter = _compact(project_chapter_method_scope(context_bundle.get("narrative_intelligence", {})))
+            if context_bundle.get("craft_history_projection_version"):
+                from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+                expected_chapter = project_planning_craft_histories(expected_chapter)
+            if (stage != "chapter_plan.generate" or chapter_scope != "chapter-method-scope-projection.v1"
+                    or task_view.get("planning_chapter_method_scope_projection_version") != chapter_scope
+                    or projected_selection != expected_chapter):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter methods differ from the complete frozen selection")
         if recall_version or task_view.get("planning_recall_query_projection_version"):
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
 
@@ -1630,6 +1649,8 @@ def build_provider_context_view(
                 expected = project_planning_craft_histories(_compact(project_book_method_scope(context_bundle["narrative_intelligence"])))
             if group_scope:
                 expected = project_planning_craft_histories(_compact(project_group_method_scope(context_bundle["narrative_intelligence"])))
+            if chapter_scope:
+                expected = project_planning_craft_histories(_compact(project_chapter_method_scope(context_bundle["narrative_intelligence"])))
             if (projection_version != "planning-craft-history-projection.v1"
                 or task_view.get("craft_history_projection_version") != projection_version
                 or projected_selection != expected):
@@ -2554,6 +2575,13 @@ def _build_planning_context_view(
         project_group_method_scope(context_bundle.get("narrative_intelligence", {}))
         _reference_prior_planning_method_audits(view, sources=raw_inputs)
         view["planning_group_method_scope_projection_version"] = group_scope
+    chapter_scope = context_bundle.get("planning_chapter_method_scope_projection_version")
+    if chapter_scope is not None:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+        if stage != "chapter_plan.generate" or chapter_scope != "chapter-method-scope-projection.v1":
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter method scope requires its frozen stage")
+        project_chapter_method_scope(context_bundle.get("narrative_intelligence", {}))
+        view["planning_chapter_method_scope_projection_version"] = chapter_scope
     _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""), method_scope=bool(method_scope))
     _compact_planning_loss_sources(view)
     source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""

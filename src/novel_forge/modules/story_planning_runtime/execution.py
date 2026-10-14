@@ -4744,6 +4744,7 @@ class PostgresPlanningExecutionPreparer:
                 **({"planning_recall_query_projection_version": context_document.content["planning_recall_query_projection_version"]} if context_document.content.get("planning_recall_query_projection_version") else {}),
                 **({"planning_method_scope_projection_version": context_document.content["planning_method_scope_projection_version"]} if context_document.content.get("planning_method_scope_projection_version") else {}),
                 **({"planning_group_method_scope_projection_version": context_document.content["planning_group_method_scope_projection_version"]} if context_document.content.get("planning_group_method_scope_projection_version") else {}),
+                **({"planning_chapter_method_scope_projection_version": context_document.content["planning_chapter_method_scope_projection_version"]} if context_document.content.get("planning_chapter_method_scope_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5822,7 +5823,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1"}):
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
@@ -6135,6 +6136,12 @@ class PostgresPlanningExecutionPreparer:
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if projection_contract == "chapter-method-scope-projection.v1":
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+            if command.generator_operation_name != "chapter_plan.generate":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter method scope requires its frozen stage")
+            project_chapter_method_scope(content.get("narrative_intelligence", {}))
+            content["planning_chapter_method_scope_projection_version"] = projection_contract
         if projection_contract == "world-method-scope-projection.v1":
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope
             project_world_method_scope(content.get("narrative_intelligence", {}))

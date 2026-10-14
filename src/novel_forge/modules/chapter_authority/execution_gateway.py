@@ -4670,7 +4670,8 @@ def _materialize_production_codex_prompt(
             stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
             and template.get("version") in {"v13", "v15"} and (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"})
         short_literals = (context_content.get("planning_method_scope_projection_version") == "book-method-scope-projection.v1"
-            or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1")
+            or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
+            or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1")
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view}, structured_transport=structured_transport, short_literals=short_literals)
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
         exact_reference_proof["source_scope"] = "provider_data_envelope"

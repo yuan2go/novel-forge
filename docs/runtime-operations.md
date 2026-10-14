@@ -1058,6 +1058,19 @@ rehearse native registration and negative guards on a restored copy, and verify 
 rendered admission and actual Provider stdin separately. Projection delivery does not
 establish literary effect.
 
+If the main Chapter request then fails the exact complete-input capacity check after
+both World calls succeeded, `chapter-method-scope-projection.v1` reuses the existing
+verified World action through native prepared-world continuation. It does not resend
+World or replace its selected result. Complete current methods, conditions, histories,
+typed plans and working continuity remain; only duplicate unverified retrieval query
+and recall diagnostics move to source receipts. The final transport may use the existing
+lossless short-literal reference codec. Migration 0216 checks the retained pair of
+trusted World receipts, absence of a main/third Effect, the original failed Attempt,
+input/repair/search identities, runtime, Pack and cancellation boundaries. Registration
+appends the stopped Operation's terminal transition; it does not rewrite the original
+Attempt. Qualify native continuation and the complete rendered main request on a
+restored copy before sending. Historical Contexts and Writer delivery remain separate.
+
 The same opt-in records current scoped Card approval in Planning and adopted Writer
 views, preserving older Candidate-stage declarations and method content as historical
 evidence. A complete Provider result rejected by the knowledge translation contract is
