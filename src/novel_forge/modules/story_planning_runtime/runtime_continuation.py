@@ -161,6 +161,9 @@ def require_source(
         if attempt
         else ""
     )
+    if failure_code == "PROGRAMMING_BUG" and attempt and dict(attempt[2] or {}).get("error_message") == "canceling statement due to statement timeout":
+        from .database_recovery import require_source as require_database_source
+        return require_database_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
     if row[0] == "FAILED_FINAL" and attempt and attempt[0] == "FAILED_FINAL" and dict(attempt[2] or {}).get("failure_details", {}).get("cause_code") == "PROVIDER_SCHEMA_REJECTED":
         from .schema_recovery import require_source as require_schema_source
         return require_schema_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
@@ -1374,6 +1377,10 @@ def register(
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
     isolated_generation = source.get("mode") == "ISOLATED_PURE_GENERATION"
+    database_failure = source.get("mode") == "KNOWN_UNSENT_CONTEXT_QUERY_FAILURE"
+    if database_failure:
+        from .database_recovery import require_diagnostic
+        decision_evidence = {**decision_evidence, "unsent_context_query_diagnostic": require_diagnostic(decision_evidence, source)}
     contract_change = source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}
     schema_correction = source.get("mode") == "PROVIDER_SCHEMA_CORRECTION"
     host_revalidation = source.get("mode") in {
@@ -1426,6 +1433,7 @@ def register(
     if (
         not capacity
         and not isolated_generation
+        and not database_failure
         and not contract_change
         and not host_revalidation
         and source["snapshot"]["release_sha"] == application.commit_sha
@@ -1437,6 +1445,7 @@ def register(
     if (
         not capacity
         and not isolated_generation
+        and not database_failure
         and not contract_change
         and not host_revalidation
         and (
@@ -1517,6 +1526,10 @@ def register(
             "original_diagnostic": source["diagnostic"],
             **({} if reference_contract else {"source_world": source["source_world"]}),
         }
+    elif database_failure:
+        from .database_recovery import authorization as database_authorization
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = database_authorization(uow, source=source, successor=successor, principal=principal, target=target)
     elif capacity:
         target, route_evidence = _capacity_target(
             application, source, successor, principal, target
@@ -1575,6 +1588,7 @@ def register(
         )
         if (
             current != source
+            or (database_failure and database_authorization(uow, source=current, successor=successor, principal=principal, target=target) != route_evidence)
             or (
                 contract_change
                 and _capacity_authorization(
@@ -1633,6 +1647,7 @@ def register(
             or (
                 not capacity
                 and not isolated_generation
+                and not database_failure
                 and not contract_change
                 and not host_revalidation
                 and require_route_evidence(

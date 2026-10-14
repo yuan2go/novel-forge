@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261014_0210_operation_outbox_lookup_indexes",
+  "migration_head": "20261014_0211_unsent_context_query_recovery",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9227,6 +9227,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261014_0210_operation_outbox_lookup_indexes.py",
           "id": "20261014_0210_operation_outbox_lookup_indexes",
           "locator": "20261014_0210_operation_outbox_lookup_indexes"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261014_0211_unsent_context_query_recovery.py",
+          "id": "20261014_0211_unsent_context_query_recovery",
+          "locator": "20261014_0211_unsent_context_query_recovery"
         }
       ],
       "external_effects": {
@@ -10179,7 +10184,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:0ec7cee3c321fab4837ba75456e6fefa033f5b04ad08690eefe6ed055b06182f"
+    "implementation_tree_sha": "sha256:30469b9faaa12714b0a96f09035a8c1d96647c23d5068941544604f9d08540ef"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
