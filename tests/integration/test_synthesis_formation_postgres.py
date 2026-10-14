@@ -1486,6 +1486,14 @@ def test_native_formation_generates_foundation_from_author_brief(
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+            previous_window = before_native_wait
+            while valid_result_admission and creation_result['stop_reason'] == 'YIELDED_CHECKPOINT':
+                current_window = wait_facts()
+                assert current_window != previous_window, 'Checkpoint yielded without native progress'
+                previous_window = current_window
+                creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
+                    formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                    book_worker=worker, maximum_ticks=80, deadline=time.monotonic()+240, creation_policy=policy)
             if creation_result['stop_reason'] == 'WAITING_LEASE_OR_DEPENDENCY' and (world_optional_recovery or input_order_continuation or route_continuation or gateway_null_recovery):
                 assert wait_facts() == before_native_wait
                 original_book_run = creation_result['book_run_id']

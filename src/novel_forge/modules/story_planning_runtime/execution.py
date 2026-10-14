@@ -3770,7 +3770,7 @@ class _PlanningPepPort:
                 "PLANNING_PEP_CAPABILITY_DRIFT",
                 "Planning command differs from the frozen execution capability",
             )
-        if self.recovered_completion and self.recovered_completion.get("budget_usage_correction"):
+        if self.recovered_completion:
             self.recovered_completion = self._verified_reconciled_completion()
         try:
             dispatched = self.recovered_completion or dispatch_external_effect(
@@ -4003,7 +4003,7 @@ class _PlanningPepPort:
             candidate_kind=CandidateKind.GENERATION,
             raw_output=dict(raw),
             evidence=DomainExecutionEvidence(
-                execution_id=str(execution_result["execution_id"]) if dispatched.get("budget_usage_correction") else request.execution_id,
+                execution_id=str(execution_result["execution_id"]),
                 operation_id=request.operation_id,
                 attempt_id=request.attempt_id,
                 fencing_token=request.fencing_token,
@@ -5339,6 +5339,7 @@ class PostgresPlanningExecutionPreparer:
             validation_policy_ref=frozen.evaluation_policy_ref,
             commit_policy_ref=capability.commit_policy_ref,
             timeout_policy_ref=capability.timeout_policy_ref,
+            receipt_consumption_release_sha=binding.route_snapshot.release_sha if recovered_completion is not None else "",
         )
 
     def _recovered_planning_route(

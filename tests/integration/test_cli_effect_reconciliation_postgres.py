@@ -584,3 +584,27 @@ def test_saved_result_scan_uses_owned_versions_and_keeps_book_actor_operation_sc
                     {'principal':SimpleNamespace(principal_id='other-actor', require=lambda *args: None)}):
         assert recover_saved_local_results(transport, **{**args, **changed}) is False
     assert seen == ['original-session']
+
+
+def test_planning_original_success_without_usage_correction_keeps_execution_identity():
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.external_effect_runtime import accept_external_effect_receipt
+    seeded = seed(production=True, held=True)
+    context, effect, dispatch, *_ = seeded
+    _, evidence = production_confirmation(seeded)
+    accept_external_effect_receipt(DATABASE_URL, context, dispatch_id=dispatch['dispatch_id'],
+        provider=FakeDeterministicProvider('success').provider, receipt_id='original-complete',
+        message_id='original-complete', payload_hash=_hash(evidence), provider_correlation_id='original',
+        generation=1, outcome='success', evidence=evidence)
+    with transaction() as c:
+        reservation = c.execute('SELECT reservation_id FROM authority_budget_reservation WHERE external_effect_id=%s',[effect]).fetchone()[0]
+    settle_provider_budget(DATABASE_URL, reservation_id=reservation, project_id=context.project_id,
+        actual_amount=None, actual_tokens=1000, evidence={'usage_settlement_basis':'RESERVATION_CEILING'})
+    completion = read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+    assert not completion.get('budget_usage_correction')
+    port = recovered_port(seeded, completion)
+    candidate = port.execute(SimpleNamespace(capability='model.test'))
+    assert candidate.raw_output == evidence['result']
+    assert candidate.evidence.execution_id == 'original-execution'
+    with transaction() as c:
+        assert c.execute('SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s',[effect]).fetchone()[0] == 1
