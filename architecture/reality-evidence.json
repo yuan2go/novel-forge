@@ -10179,7 +10179,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:c02453caa355ea221dd94b375a71ac5409ccdb7aee2bb587ba9830e26ff6d4a0"
+    "implementation_tree_sha": "sha256:0ec7cee3c321fab4837ba75456e6fefa033f5b04ad08690eefe6ed055b06182f"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

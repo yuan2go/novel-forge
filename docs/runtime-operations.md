@@ -15,7 +15,9 @@ npm --prefix web/admin ci
 files. Provider composition separately reads process environment (or its explicit `env`
 mapping); settings-file parsing does not export Provider keys into that environment.
 Start from `.env.example` and verify the actual launcher/container environment. Never
-commit or print Provider, PostgreSQL or object-store credentials.
+commit or print Provider, PostgreSQL or object-store credentials. Migration connections
+default to five seconds and honor a positive `connect_timeout` in the database URL.
+This is connection startup policy, not a creation-task lifetime limit.
 
 ## Start and inspect the stack
 
