@@ -620,6 +620,8 @@ class ExternalEffectChapterModelPort:
                 "execution_binding_domain": self.execution_binding_domain,
                 "provider_request_timeout_seconds": provider_request_timeout_seconds,
                 "provider_reservation_policy": dict(reservation_contract),
+                **({"output_reservation_policy": route.output_reservation_policy}
+                   if existing_intent is None and getattr(route, "output_reservation_policy", "") else {}),
                 **({"agent_io_budget": agent_io_budget} if agent_io_budget else {}),
                 "provider_reservation_amount": bounded_reservation_amount,
                 "provider_token_limit": provider_admission_token_limit,
@@ -745,6 +747,26 @@ class ExternalEffectChapterModelPort:
                             "PROVIDER_ADMISSION_INVALID",
                             "Provider admission has no positive bounded request usage",
                         )
+                    output_policy = dict(preflight.effect_binding.get("provider_output_reservation") or {})
+                    if output_policy:
+                        provider_output_token_ceiling = int(output_policy["output_reserve"])
+                        reservation_contract = resolve_provider_token_reservation_contract(
+                            self.database_url, operation_id=request.operation_id, project_id=request.project_id,
+                            currency="UNKNOWN" if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else "USD",
+                            frozen_request_token_ceiling=int(output_policy["input_token_ceiling"]),
+                            requested_output_token_ceiling=provider_output_token_ceiling,
+                            accounting_basis=self.cost_accounting_basis, cost_authorization_ref=self.account_authorization_ref,
+                        )
+                        if (int(reservation_contract["max_output_tokens"]) != provider_output_token_ceiling
+                                or int(reservation_contract["estimated_total_tokens"]) != bounded_reservation_tokens):
+                            raise KernelError("PROVIDER_OUTPUT_POLICY_DRIFT", "Frozen output headroom differs from its native reservation")
+                        effect_request_payload["max_output_tokens"] = provider_output_token_ceiling
+                        effect_request_payload["_production_execution"]["provider_reservation_policy"] = dict(reservation_contract)
+                        effect_request_payload["_production_execution"]["provider_token_limit"] = bounded_reservation_tokens
+                        if agent_io_budget:
+                            effect_request_payload["_production_execution"]["agent_io_budget"] = {
+                                **agent_io_budget, "output_token_ceiling": provider_output_token_ceiling,
+                            }
                 metadata = dict(effect_request_payload["_production_execution"])
                 frozen_artifacts = list(metadata["input_artifacts"])
                 frozen_artifacts.append(preflight.materialization_artifact.to_dict())

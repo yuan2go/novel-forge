@@ -429,6 +429,12 @@ def build_production_execution_composition(
         if not codex_router_enabled:
             raise ValueError("Codex model catalog requires the formal Codex Router")
         codex_catalog = parse_codex_model_catalog(values["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+    if values.get("NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"):
+        from novel_forge.modules.production_execution.codex_model_catalog import require_uniform_headroom_catalog
+        if (values["NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"] != "codex-cli-context-headroom.v1"
+                or router_providers != ("codex-cli",)):
+            raise ValueError("CODEX_OUTPUT_POLICY_ROUTING_SCOPE_INVALID")
+        require_uniform_headroom_catalog(codex_catalog, context_limit=int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0))
     if codex_router_enabled:
         codex_router_reasoning = str(values.get(
             "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT", "high"
@@ -457,7 +463,7 @@ def build_production_execution_composition(
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
             catalog_model = next((entry for entry in codex_catalog
                 if entry["model"] == model and entry["reasoning"] == reasoning), None)
-            output_limit = int(catalog_model["output_limit"] if catalog_model
+            output_limit = int((catalog_model["output_limit"] or catalog_model["context_limit"]) if catalog_model
                 else values.get("NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT") or 0)
             accounting_method = "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
             accounting_evidence = str(values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or "")
@@ -932,6 +938,7 @@ def build_production_execution_composition(
                 or values.get("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT")
                 or 0
             ),
+            output_reservation_policy=str(values.get("NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY") or "") if profile.backend_id == "codex-cli" else "",
             token_accounting_method=str(
                 values.get(f"NOVEL_FORGE_{stage.upper()}_TOKEN_ACCOUNTING_METHOD")
                 or values.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD")
@@ -949,6 +956,8 @@ def build_production_execution_composition(
                 values.get("NOVEL_FORGE_PROVIDER_TOKEN_FRAMING_OVERHEAD") or 16
             ),
         )
+        if routes[stage].output_reservation_policy and routes[stage].model_context_limit != int(values["NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT"]):
+            raise ValueError("CODEX_OUTPUT_POLICY_ROUTING_SCOPE_INVALID")
     if controlled:
         _build_id, verified_release_sha = authority_release_identity(env=values)
         verified_runtime_host = str(
@@ -2513,6 +2522,7 @@ def build_story_planning_generation_application(
         release_sha=base_route.release_sha,
         model_context_limit=base_route.model_context_limit if planning_model_capability_bound else 0,
         model_output_limit=base_route.model_output_limit if planning_model_capability_bound else 0,
+        output_reservation_policy=getattr(base_route, "output_reservation_policy", "") if planning_model_capability_bound else "",
         token_accounting_method=base_route.token_accounting_method if planning_model_capability_bound else "",
         token_accounting_evidence_ref=base_route.token_accounting_evidence_ref if planning_model_capability_bound else "",
         token_safety_margin=base_route.token_safety_margin,

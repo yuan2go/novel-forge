@@ -548,6 +548,47 @@ def test_operator_pause_retains_frozen_reservation_without_reclassifying_unknown
     settle.assert_not_called()
 
 
+def test_headroom_admission_freezes_matching_intent_and_native_reservation_before_send(monkeypatch):
+    from novel_forge.modules.production_execution.contracts import ExecutionRuntimeClass
+    request = ChapterHandlerRequest(operation_id="operation", project_id="project", workspace_id="workspace",
+        trace_id="trace", correlation_id="correlation", command={"context_token_budget": 16000,
+            "book_id": "book", "draft_profile_version": "draft-context-profile-v4"}, inputs=(),
+        attempt_id="attempt", fencing_token=1, worker_id="worker")
+    route = SimpleNamespace(model_context_limit=258400, output_reservation_policy="codex-cli-context-headroom.v1",
+        model_profile=SimpleNamespace(backend_id="codex-cli", model_provider="codex-cli",
+            runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE))
+    adapter = SimpleNamespace(provider="provider", reconciliation_mode="NONE", capability_profile={},
+        production_execution_gateway_backed=True, routes={"draft": route})
+    pointer = SimpleNamespace(to_dict=lambda: {"asset_version_id": "materialization"})
+    preflight = SimpleNamespace(materialization_artifact=pointer, provider_admission_artifact=pointer,
+        effect_binding={"provider_admission": {"status": "ADMITTED", "total_reserved": 258400},
+            "provider_output_reservation": {"contract_version": "codex-cli-context-headroom.v1",
+                "input_token_ceiling": 20000, "output_reserve": 238400}})
+    port = ExternalEffectChapterModelPort("postgresql://unit-not-connected", adapter=adapter, worker_id="worker",
+        max_cost_per_call="2", capability_binder=SimpleNamespace(freeze_before_external_effect=lambda **_kw: preflight))
+    monkeypatch.setattr(port, "_execution_identity", lambda *_a, **_kw: (1, "worker"))
+    monkeypatch.setattr(port, "_request_timeout_seconds", lambda _request: 30)
+    monkeypatch.setattr(model_effects, "read_external_effect_intent", lambda *_a, **_kw: None)
+    contracts = []
+    def reservation(_db, **kw):
+        contracts.append(kw)
+        return {"source": "FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING", "accounting_basis": "PRICED",
+            "cost_authorization_ref": "", "estimated_total_tokens": kw["frozen_request_token_ceiling"] + kw["requested_output_token_ceiling"],
+            "max_output_tokens": kw["requested_output_token_ceiling"]}
+    monkeypatch.setattr(model_effects, "resolve_provider_token_reservation_contract", reservation)
+    captured = {}
+    def capture(_db, _ctx, **kw):
+        captured.update(kw["request_payload"])
+        raise KernelError("CAPTURED_BEFORE_SEND", "No external intent or Provider call")
+    monkeypatch.setattr(model_effects, "plan_external_effect", capture)
+    with pytest.raises(KernelError, match="CAPTURED_BEFORE_SEND"):
+        port.invoke(request, stage="draft", payload={})
+    assert captured["max_output_tokens"] == 238400
+    assert captured["_production_execution"]["provider_token_limit"] == 258400
+    assert captured["_production_execution"]["provider_reservation_policy"]["max_output_tokens"] == 238400
+    assert contracts[-1]["frozen_request_token_ceiling"] == 20000
+
+
 def test_agent_provider_input_and_output_limits_are_independently_frozen(monkeypatch):
     contract = {"contract_version": "agent-session-execution-contract.v1",
                 "provider_io_policy": "agent-io-budget.v1",

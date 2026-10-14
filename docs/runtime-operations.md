@@ -318,6 +318,21 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 ## Validation matrix
 
+`NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY=codex-cli-context-headroom.v1` selects an
+optional per-request output reservation: the bound model context minus the complete
+rendered application input, framing and safety margin. `codex-router-models.v2` permits
+`output_limit=null` for a CLI that does not expose a remote output cap; its Router
+candidate uses context capacity as an admission bound. This does not assert a remote
+output limit or set a CLI hard output stop. This opt-in requires an explicitly uniform
+context-bound v2 catalog with null output limits and membership-only Codex routing;
+mixed capacities or Providers are rejected during composition before execution. Other
+catalogs retain their existing policy and candidate opportunities. Explicit model context, cancellation,
+fencing and receipt validation remain enforced. Planning and Chapter/Agent Effects
+freeze the computed reservation before external I/O; replay uses the original intent.
+Existing v1 catalogs and reservations keep their original behavior. For a newly
+admitted Agent under this policy, its explicit output allocation must cover the
+computed headroom; a frozen older session does not acquire the policy automatically.
+
 Agent I/O or known-unsent host recovery changes require the unified Harness, model-effect
 budget settlement, Agent API, Provider Context compilation and Capability Pack compiler
 unit suites plus `test_agent_harness_scheduler_postgres.py`. Check independent output

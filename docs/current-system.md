@@ -2210,6 +2210,13 @@ selected version makes it stale. Historical policies retain whole-manifest curre
 
 ## Context governance and Provider admission
 
+An explicitly selected `codex-cli-context-headroom.v1` policy reserves the output space
+remaining after complete rendered input, framing and safety within the declared model
+context. It applies only to a uniform-capacity Codex membership catalog with unexposed
+remote output limits. This per-request reservation is frozen before dispatch; it does
+not impose a fixed 32,000-token output stop. Historical catalogs, intents and sessions
+retain their original configuration, while cancellation and commit fencing remain enforced.
+
 Context assembly has one governed seam. A ContextBundle compiles ContextProfile,
 ProductionStageProfile and caller limits; Provider preflight then intersects that frozen
 receipt with the Capability Pack and route policy. The resulting five inputs use logical

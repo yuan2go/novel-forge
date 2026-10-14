@@ -938,6 +938,7 @@ class PlanningExecutionRoute:
     release_sha: str
     model_context_limit: int = 0
     model_output_limit: int = 0
+    output_reservation_policy: str = ""
     token_accounting_method: str = ""
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
@@ -945,6 +946,8 @@ class PlanningExecutionRoute:
     task_reasoning_authorization: tuple[str, str] | None = None
 
     def __post_init__(self) -> None:
+        if self.output_reservation_policy not in {"", "codex-cli-context-headroom.v1"}:
+            raise ValueError("Planning output reservation policy is invalid")
         if (
             self.model_profile.profile_id
             not in self.route_policy.allowed_model_profile_ids
@@ -4771,6 +4774,8 @@ class PostgresPlanningExecutionPreparer:
             )
             output_modes = dict(dict(context_policy.get("provider_output_modes") or {}).get(stage_name) or {})
             transport_schema = json.dumps(output_schema, sort_keys=True, ensure_ascii=False) if output_modes.get("deepseek") else ""
+            if planning_route.output_reservation_policy == "codex-cli-context-headroom.v1":
+                transport_schema = ""
             components = provider_request_token_components(
                 complete_prompt, output_schema_json=transport_schema,
                 output_reserve=1, safety_margin=planning_route.token_safety_margin,
@@ -4783,6 +4788,7 @@ class PostgresPlanningExecutionPreparer:
 
             requested_output_token_ceiling = task_provider_output_reserve(
                 stage_name, planning_route, router_binding_pending=provider_router is not None,
+                input_tokens=frozen_request_token_ceiling,
             )
         if existing_intent is not None:
             provider_token_contract = dict(existing_intent["request_payload"].get("provider_token_contract") or {})
@@ -4816,6 +4822,9 @@ class PostgresPlanningExecutionPreparer:
         )
         stable_request_payload["max_output_tokens"] = provider_token_contract["max_output_tokens"]
         stable_request_payload["provider_token_contract"] = provider_token_contract
+        output_policy = str(existing_intent["request_payload"].get("output_reservation_policy") or "") if existing_intent is not None else planning_route.output_reservation_policy
+        if output_policy:
+            stable_request_payload["output_reservation_policy"] = output_policy
         if existing_intent is None:
             materialization_document = self._ensure_contract(
                 operation_id=operation_id,
@@ -4853,6 +4862,8 @@ class PostgresPlanningExecutionPreparer:
                 if deepseek_mode
                 else ""
             )
+            if planning_route.output_reservation_policy == "codex-cli-context-headroom.v1":
+                transport_schema_json = ""
             token_components = provider_request_token_components(
                 prompt,
                 output_schema_json=transport_schema_json,
@@ -4912,6 +4923,7 @@ class PostgresPlanningExecutionPreparer:
                 require_task_reasoning(planning_route, task_scoped=True)
                 require_task_output_reserve(
                     stage_name, planning_route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_EXCEEDED",
+                    input_tokens=sum(token_components.values()) - output_reserve,
                 )
             route_identity = ":".join(
                 (

@@ -995,13 +995,8 @@ def _capacity_target(
             .get("allocated_task_tokens", baseline)
         )
     route = preparer.planning_route
-    ceiling = min(
-        512_000,
-        route.model_context_limit
-        - route.model_output_limit
-        - route.token_safety_margin
-        - route.token_framing_overhead,
-    )
+    from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
+    ceiling = planning_input_capacity(route)
     allocated = min(baseline * 2, ceiling)
     if source.get("capacity_inheritance"):
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
@@ -1471,7 +1466,8 @@ def register(
                 preparer = application.execution_binder.resolver.execution_preparer
                 route = preparer.planning_route
                 allocated = int(prior_capacity["allocated_task_tokens"])
-                ceiling = min(512000, route.model_context_limit-route.model_output_limit-route.token_safety_margin-route.token_framing_overhead)
+                from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
+                ceiling = planning_input_capacity(route)
                 if allocated > ceiling:
                     raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "The authorized successor model cannot retain original task capacity")
                 context, _ = preparer._context_bundle(operation_id=source_operation_id,

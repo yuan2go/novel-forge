@@ -646,6 +646,7 @@ class ChapterExecutionRoute:
     embedding_dimensions: int = 0
     model_context_limit: int = 0
     model_output_limit: int = 0
+    output_reservation_policy: str = ""
     token_accounting_method: str = ""
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
@@ -653,6 +654,8 @@ class ChapterExecutionRoute:
     task_reasoning_authorization: tuple[str, str] | None = None
 
     def __post_init__(self) -> None:
+        if self.output_reservation_policy not in {"", "codex-cli-context-headroom.v1"}:
+            raise ValueError("Chapter output reservation policy is invalid")
         if self.stage not in _STAGES | _OPTIONAL_DOMAIN_STAGES:
             raise ValueError(f"unsupported Chapter execution stage: {self.stage}")
         if (
@@ -1085,6 +1088,13 @@ class PostgresChapterExecutionContractBinder:
                 "PROVIDER_ADMISSION_INPUT_INCOMPLETE",
                 "Provider admission requires stable identity, timeout, and output reserve",
             )
+        output_policy = str(metadata.get("output_reservation_policy") or "")
+        complete_input_reserve = len(prompt.encode()) + route.token_safety_margin + route.token_framing_overhead
+        if output_policy:
+            from .context_compression_provider import CLI_CONTEXT_HEADROOM_POLICY, context_headroom_output_reserve
+            if output_policy != CLI_CONTEXT_HEADROOM_POLICY or route.output_reservation_policy != output_policy:
+                raise KernelError("PROVIDER_OUTPUT_POLICY_DRIFT", "New request output policy differs from its configured route")
+            output_reserve = context_headroom_output_reserve(route, complete_input_reserve)
         if self.provider_router is not None and embedding_output_contract is None:
             route, routing_decision = self.provider_router.select(route, task_type=stage,
                 project_id=project_id, work_id=book_id, operation_id=operation_id,
@@ -1095,6 +1105,8 @@ class PostgresChapterExecutionContractBinder:
                 producer_contract=chapter_producer_contract_identity(prompt_evidence, contract),
                 request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0))
             route_identity = routing_decision["decision_id"]
+        if output_policy and context_headroom_output_reserve(route, complete_input_reserve) != output_reserve:
+            raise KernelError("PROVIDER_OUTPUT_POLICY_DRIFT", "Selected route must retain the configured complete-input context headroom")
         task_scoped = stage in CONTEXT_MODEL_STAGES or any(
             str(item.get("content", {}).get("profile_version") or "") == "draft-context-profile-v4"
             for item in selected_inputs
@@ -1103,6 +1115,7 @@ class PostgresChapterExecutionContractBinder:
         if task_scoped and stage != "retrieval":
             require_task_output_reserve(
                 stage, route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_LIMIT_EXCEEDED",
+                input_tokens=complete_input_reserve if output_policy else None,
             )
         envelope = ProviderRequestEnvelope(
             provider=route.model_profile.model_provider,
@@ -1122,7 +1135,7 @@ class PostgresChapterExecutionContractBinder:
             route_identity=route_identity,
             output_reserve=output_reserve,
             execution_token_limit=int(
-                metadata.get("provider_token_limit") or route.model_context_limit
+                route.model_context_limit if output_policy else metadata.get("provider_token_limit") or route.model_context_limit
             ),
         )
         context_content = context_selection[0].get("content")
@@ -1221,6 +1234,12 @@ class PostgresChapterExecutionContractBinder:
             effect_binding["routing_decision"] = routing_decision
         if embedding_output_contract is not None:
             effect_binding["embedding_output_contract"] = embedding_output_contract
+        if output_policy:
+            effect_binding["provider_output_reservation"] = {
+                "contract_version": output_policy, "input_token_ceiling": complete_input_reserve,
+                "output_reserve": output_reserve, "model_context_limit": route.model_context_limit,
+                "remote_output_limit": "NOT_EXPOSED_BY_CLI", "hard_output_stop": False,
+            }
         return ChapterCapabilityPreflight(
             attempt_snapshot=attempt_snapshot,
             materialization=materialization,

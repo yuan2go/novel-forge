@@ -120,6 +120,9 @@ def agent_route_execution_identity(
         "capability_pack_id": capability_pack_id,
         "gateway": "PRODUCTION_EXECUTION_GATEWAY",
     }
+    if getattr(route, "output_reservation_policy", ""):
+        identity["output_reservation_policy"] = route.output_reservation_policy
+        identity["model_context_limit"] = route.model_context_limit
     return {**identity, "runtime_binding_hash": canonical_policy_hash(identity)}
 
 
@@ -243,10 +246,16 @@ class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinde
             budget = dict(contract.get("budget") or {})
             admission = dict(preflight.effect_binding.get("provider_admission") or {})
             output_reserve = int(request_payload.get("max_output_tokens") or 0)
+            output_policy = dict(preflight.effect_binding.get("provider_output_reservation") or {})
+            if output_policy:
+                if output_policy.get("contract_version") != expected_binding.get("output_reservation_policy"):
+                    raise KernelError("AGENT_EXECUTION_IO_BUDGET_DRIFT", "Agent output policy differs from its admission-frozen runtime binding")
+                output_reserve = int(output_policy["output_reserve"])
             input_reserve = int(admission.get("total_reserved") or 0) - output_reserve
             if (admission.get("status") != "ADMITTED" or input_reserve <= 0
                     or input_reserve > int(budget.get("max_input_tokens") or 0)
-                    or output_reserve != int(budget.get("max_output_tokens") or 0)):
+                    or (not output_policy and output_reserve != int(budget.get("max_output_tokens") or 0))
+                    or (output_policy and output_reserve > int(budget.get("max_output_tokens") or 0))):
                 raise KernelError("AGENT_PROVIDER_INPUT_CAPACITY_EXCEEDED",
                                   "Complete rendered Agent request exceeds its frozen per-call input/output allocation")
         return preflight
