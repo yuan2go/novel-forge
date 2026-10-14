@@ -4514,6 +4514,8 @@ def _materialize_production_codex_prompt(
     system_text, system = required_text("system_instruction")
     template_text, template = required_text("prompt_template")
     skill_text, skill = required_text("skill")
+    working = inputs.get("working_manuscript") or (inputs.get("execution_intent") or {}).get("working_manuscript") or (inputs.get("arc_working_set") or {}).get("working_manuscript") or {}
+    progression = (working.get("projection_policy") or {}).get("version") == "working-prose-projection.v4" and stage in {"draft", "chapter_group_plan.generate", "chapter_plan.generate"}
     if (template.get("ref"), template.get("version")) == ("prompt-template:chapter-generation-pack", "v15"):
         from .prompt_methods import project_chapter_template
         template_text = project_chapter_template(template_text, stage=stage)
@@ -4572,6 +4574,11 @@ def _materialize_production_codex_prompt(
     if system.get("ref") == "prompt-system:story-planning-pack" and system.get("version") in {"v8", "v12"}:
         system_text = project_planning_system(system_text, stage=stage, narrative_intent_boundary=intent_boundary)
         calibrated_methods = True
+    progression_overlay = ""
+    if progression:
+        from novel_forge.modules.book_authority.working_prose import PROGRESSION_INSTRUCTION
+        progression_overlay = "\nThe selected frozen progression policy governs this new candidate within its fictional constraints.\n" + PROGRESSION_INSTRUCTION
+        system_text += progression_overlay
     task_view = build_provider_task_view(
         stage,
         inputs,
@@ -4819,6 +4826,13 @@ def _materialize_production_codex_prompt(
         "reusable_prefix_bytes": len(prompt.split("</governed_skill>", 1)[0].encode())
         + len("</governed_skill>".encode()),
         "fully_rendered_prompt_hash": prompt_hash,
+        **({"progression_policy_projection": {
+            "version": "working-prose-system-guidance.v1",
+            "policy_version": working["projection_policy"]["version"],
+            "source_snapshot_hash": working["snapshot_hash"],
+            "overlay_hash": "sha256:" + hashlib.sha256(progression_overlay.encode("utf-8")).hexdigest(),
+            "effective_system_hash": "sha256:" + hashlib.sha256(system_text.encode("utf-8")).hexdigest(),
+        }} if progression else {}),
         "required_reader_facing_language": required_language,
         **({"narrative_intent_projection": intent_projection} if intent_projection else {}),
         "provider_prompt_projection_version": "planning-narrative-intent-projection.v1" if intent_boundary else "authority-projection-work-requirements.v1"

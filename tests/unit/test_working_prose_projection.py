@@ -293,7 +293,8 @@ def test_frozen_legacy_reconstruction_does_not_load_new_profile(monkeypatch):
     uow.repositories.asset_documents.require.assert_not_called()
 
 
-def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill():
+@pytest.mark.parametrize("stage,progression", [("memo", False), ("draft", False), ("draft", True)])
+def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill(stage="memo", progression=False):
     from pathlib import Path
     from novel_forge.modules.capability_packs.artifacts import (
         ArtifactKind,
@@ -316,6 +317,18 @@ def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill(
 
     plan = _plan()
     plan["book_id"] = "b"
+    working = snapshot()
+    if progression:
+        from novel_forge.modules.book_authority.working_prose import PROGRESSION_POLICY_VERSION, working_instruction
+        from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
+        working["projection_policy"]["version"] = PROGRESSION_POLICY_VERSION
+        working["instruction"] = working_instruction(working["projection_policy"])
+        for row in working["sources"]:
+            pointer = {key: row[key] for key in ("asset_version_id", "content_hash")}
+            row["source_resolution"] = {"native_source": pointer, "effective_source": pointer,
+                "native_basis": "NATIVE_DRAFT_OUTPUT", "overrides": []}
+        working["working_memory"] = bind_packet_coverage(compile_working_memory([], queries=[], max_characters=1000), working["sources"])
+        rehash(working)
     intent = build_chapter_execution_intent(
         project_id="p",
         operation_id="op",
@@ -324,7 +337,7 @@ def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill(
         chapter_plan=plan,
         accepted_inputs=[],
         accepted_through_chapter=0,
-        working_manuscript=snapshot(),
+        working_manuscript=working,
     )
     registered, binding = _registered_version_and_snapshot()
     pack = materialize_registered_pack_version(binding, registered)
@@ -333,14 +346,14 @@ def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill(
     )
     prompt, evidence = _materialize_chapter_codex_prompt(
         request=request,
-        stage="memo",
-        inputs={"execution_intent": intent},
+        stage=stage,
+        inputs={"execution_intent": intent, "plan": plan, "style": {"policies": []}},
         materialization={
             "materialization_hash": binding.manifest_hash,
             "pack_artifacts": {
                 "system_instruction": pack.system_instruction.to_dict(),
                 "prompt_template": pack.prompt_template.to_dict(),
-                "skill": {
+                "skill": pack.skill.to_dict() if stage == "draft" else {
                     "ref": "chapter-outline",
                     "version": "chapter-plan-skill-v3",
                     "content_hash": "sha256:skill",
@@ -349,7 +362,10 @@ def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill(
                     },
                 },
             },
-            "context_selection": [{"asset_version_id": "intent", "content": intent}],
+            "context_selection": [{"asset_version_id": "intent", "content": intent if stage == "memo" else {
+                "project_id": "p", "book_id": "b", "chapter": 5,
+                "context_segments": [], "working_manuscript": working,
+            }}],
             "knowledge_selection": [item.to_dict() for item in pack.required_knowledge],
             "tool_permissions": {"allowed": ["model.provider.invoke"], "denied": []},
             "output_schema": {
@@ -361,7 +377,20 @@ def test_enhanced_memo_reaches_final_provider_prompt_and_preserves_legacy_skill(
     )
     assert "Only the reader saw the broken wire." in prompt
     assert "AUTHOR_WORKING_PROSE_ONLY" in prompt and "NOT_VERIFIED" in prompt
-    assert "FROZEN_INTENT_ONLY" in prompt
+    if stage == "memo":
+        assert "FROZEN_INTENT_ONLY" in prompt
+    if progression:
+        import hashlib
+        from novel_forge.modules.book_authority.working_prose import PROGRESSION_INSTRUCTION
+        projection = evidence["progression_policy_projection"]
+        assert projection["source_snapshot_hash"] == working["snapshot_hash"]
+        assert PROGRESSION_INSTRUCTION in prompt
+        assert projection["overlay_hash"].startswith("sha256:")
+        assert projection["effective_system_hash"] != pack.system_instruction.content_hash
+        overlay = "\nThe selected frozen progression policy governs this new candidate within its fictional constraints.\n" + PROGRESSION_INSTRUCTION
+        assert projection["overlay_hash"] == "sha256:" + hashlib.sha256(overlay.encode()).hexdigest()
+    else:
+        assert "progression_policy_projection" not in evidence
     resolver = default_chapter_artifact_resolver(Path(__file__).resolve().parents[2])
     assert (
         resolver.resolve(

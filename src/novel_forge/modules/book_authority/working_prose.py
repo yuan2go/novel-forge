@@ -69,6 +69,8 @@ PROGRESSION_INSTRUCTION = (
     "access rather than injury or loss. Name this friction, the attempted response and its consequence "
     "in the existing plan fields; a reminder to ask again later cannot replace a triggered next action. "
     "Repeated verbal inquiry or passive confirmation cannot supply the middle. "
+    "A practical trial must change a task that matters to the participants now; repeated measurements, "
+    "written records and explanations of the same limit do not supply further turns. "
     "Writer must realize these planned turns in concrete action; spend the length allocation on their "
     "choices, attempts, resistance, negotiation and consequences, rather than internal recap. "
     "Dialogue must change a decision, price, permission or relationship. End on the changed situation demanding a next action, never "
