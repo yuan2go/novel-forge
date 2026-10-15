@@ -26,6 +26,8 @@ def test_main_upgrade_appends_convergence_and_rejects_both_foreign_and_discontin
         "20261015_0216_operation_evidence_indexes",
         "20261015_0217_craft_context_convergence",
         "20261015_0218_retained_working_convergence",
+        "20261015_0219_world_exact_context_convergence",
+        "20261015_0220_chapter_prior_audit_convergence",
     ]
     with pytest.raises(ValueError, match="MIGRATION_HISTORY_FOREIGN"):
         pending_migrations(applied | {"20261014_0205_source_observation_generation_isolation"})
@@ -62,9 +64,31 @@ def test_retained_working_published_bytes_and_exact_sql_are_preserved_after_cano
     assert row["sha256"] == "c7d6edf87979553c12d32679a42f8056c941f0ea0b9150a25f40b89ee1fa0718"
     assert retained_convergence.DOWN_REVISION == convergence.MIGRATION_ID
     assert retained_convergence.UPGRADE_STATEMENTS == retained_published.UPGRADE_STATEMENTS
-    assert MIGRATIONS[-1].migration_id == retained_convergence.MIGRATION_ID
+    retained_index = next(index for index, item in enumerate(MIGRATIONS)
+                          if item.migration_id == retained_convergence.MIGRATION_ID)
+    assert MIGRATIONS[retained_index + 1].down_revision == retained_convergence.MIGRATION_ID
     with pytest.raises(ValueError, match="MIGRATION_HISTORY_FOREIGN"):
         pending_migrations({item.migration_id for item in MIGRATIONS[:-1]} | {retained_published.MIGRATION_ID})
+
+
+def test_latest_published_fork_sources_remain_importable_without_becoming_active_migrations():
+    import importlib
+    root = Path(__file__).resolve().parents[2]
+    history = root / "src/novel_forge/storage/migrations/historical/craft_f06f4dac"
+    manifest = json.loads((history / "manifest.json").read_text())
+    assert manifest["source_commit"] == "f06f4daccada314b25f7559733ad331d5c056da0"
+    assert manifest["registered_on_main"] is False and len(manifest["modules"]) == 3
+    active = {item.migration_id for item in MIGRATIONS}
+    for row in manifest["modules"]:
+        original = root / row["original_path"]
+        retained = root / row["retained_path"]
+        assert not original.exists()
+        assert hashlib.sha256(retained.read_bytes()).hexdigest() == row["sha256"]
+        module = importlib.import_module("novel_forge.storage.migrations.versions." + retained.stem)
+        assert hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest() == row["sha256"]
+        assert module.MIGRATION_ID not in active
+    from novel_forge.tools.architecture_manifest import check_migrations
+    assert check_migrations(root)["head"] == "20261015_0220_chapter_prior_audit_convergence"
 
 
 def test_capacity_composition_retains_latest_world_delivery_and_inheritance_verbatim():

@@ -357,8 +357,10 @@ manifest for their exact identities. Published fork modules remain byte-preserve
 `src/novel_forge/storage/migrations/historical/craft_2eb0e685/` with
 separate source/hash manifests; their original IDs are historical evidence, not main IDs.
 The frozen fork modules `v20261015_0218_world_exact_context_accounting.py` and
-`v20261015_0219_chapter_prior_method_audits.py` remain unregistered SQL source evidence;
-only their new main successors 0219 and 0220 may be applied through the registry.
+`v20261015_0219_chapter_prior_method_audits.py` remain byte-preserved SQL source evidence
+under `src/novel_forge/storage/migrations/historical/craft_f06f4dac/`, with their source
+and hash manifest. Their original import paths resolve through the existing historical
+module search path; only their main successors 0219 and 0220 are registered for execution.
 Ordinary migration admission still requires the exact registered prefix. A fork restore
 needs an explicitly bounded reconstruction with preserved applied history, matching database,
 object storage and execution evidence; do not rewrite applied IDs, weaken foreign-history
