@@ -1,0 +1,42 @@
+{
+  "archive": "diagnostic-evidence.zip",
+  "archive_sha256": "482dbbe0f8ebfcf5687c0e8708984bdeb8e13600ccffcd6df098c83d7704c23f",
+  "members": [
+    {
+      "path": "manifests.log",
+      "bytes": 1449728,
+      "sha256": "6c4f53572573523fbf5c260c25d9632ec562123bfd9b2be398dae81e2a4da164"
+    },
+    {
+      "path": "manifests-final.log",
+      "bytes": 1450524,
+      "sha256": "2e2968760eb2f0aa35812091740356816a08faa5545f3e0eaa21aa1836918ec9"
+    },
+    {
+      "path": "test-reality-first.json",
+      "bytes": 1326132,
+      "sha256": "4861871f8da6f311bd5e463736cb24753e1f181a7b97ff8a11ea1a905138b3ac"
+    },
+    {
+      "path": "test-reality-final.json",
+      "bytes": 1326687,
+      "sha256": "e803c38bfa2b484f6c1bfab038b0a9483b6aa56f97fb009c1d7aacca0b09a920"
+    },
+    {
+      "path": "wheel-build.log",
+      "bytes": 368647,
+      "sha256": "07c9730736e002b031d67e4f9a581ccb5945e00aa7b14adc167052a4e181c9ca"
+    },
+    {
+      "path": "wheel-build-final.log",
+      "bytes": 239782,
+      "sha256": "0a29041850430c54a9ea9c624784f32108bd2dcf3ab2e9850c84da942d8047c4"
+    },
+    {
+      "path": "wheel-build-versioned.log",
+      "bytes": 239960,
+      "sha256": "19a36795e1abbee505b5dfa2e8e0c53ba81404350bc5d4195b3436ce50503eb2"
+    }
+  ],
+  "roundtrip_verified": true
+}

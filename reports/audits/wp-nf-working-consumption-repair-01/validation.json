@@ -92,7 +92,7 @@
     },
     "instruction_and_manifests": {
       "status": "PASS",
-      "log": "manifests-final.log"
+      "log": "diagnostic-evidence.zip#manifests-final.log"
     }
   },
   "same_book": {
@@ -171,5 +171,7 @@
   },
   "source_tree_identity": "sha256:47aa3ebb02c110cfe86e3dd019e8f2fc2a272cf14bc5a57f4e1615ebf1089ac6",
   "overall_status": "BLOCKED",
-  "overall_reason": "Implementation and focused native checks delivered; new real same-Book continuation and complete publication qualification are not executed."
+  "overall_reason": "Implementation and focused native checks delivered; new real same-Book continuation and complete publication qualification are not executed.",
+  "implementation_commit": "e1cfffb6473e52981cae032248d4ba712eae3c5b",
+  "diagnostic_archive": "diagnostic-archive-index.json"
 }
