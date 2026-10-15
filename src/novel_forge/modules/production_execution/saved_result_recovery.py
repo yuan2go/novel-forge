@@ -31,19 +31,22 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
             context=EffectCommandContext(operation_id,project_id,principal.principal_id,trace_id,correlation_id)
             verified=_read_verified_success(uow,uow.repositories.external_effects,context,effect_id)
             accounting.append((effect_id,verified["provider_evidence"]))
-        uow.cursor.execute("""SELECT DISTINCT v.content->>'execution_id'
-            FROM authority_asset_version v JOIN authority_asset asset USING(asset_id)
-            JOIN authority_external_effect effect
-              ON effect.external_effect_id=v.content #>> '{record,request,external_effect_id}'
-            JOIN authority_operation operation ON operation.operation_id=effect.operation_id
-            WHERE asset.project_id=%s AND asset.asset_type='execution_recovery_session'
-              AND effect.effect_type='model.invoke' AND operation.actor_id=%s
-              AND v.content #>> '{record,request,book_id}'=%s
+        uow.cursor.execute("""WITH pending AS MATERIALIZED (
+            SELECT effect.external_effect_id,operation.operation_id
+            FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
+            WHERE effect.project_id=%s AND effect.effect_type='model.invoke' AND operation.actor_id=%s
               AND effect.status IN ('DISPATCHING','DISPATCHED','UNKNOWN','RECONCILIATION_REQUIRED')
               AND operation.status IN ('EXECUTING','FAILED_RETRYABLE','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
               AND NOT authority_generation_isolated(effect.external_effect_id)
-              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""",
-            [project_id, source_actor_id, book_id,list(operation_ids),list(operation_ids)])
+              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s)))
+            SELECT DISTINCT v.content->>'execution_id'
+            FROM pending JOIN authority_operation_output_asset output USING(operation_id)
+            JOIN authority_asset asset USING(asset_id)
+            JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+            WHERE asset.project_id=%s AND asset.asset_type='execution_recovery_session'
+              AND pending.external_effect_id=v.content #>> '{record,request,external_effect_id}'
+              AND v.content #>> '{record,request,book_id}'=%s""",
+            [project_id, source_actor_id, list(operation_ids),list(operation_ids),project_id,book_id])
         identities = [row[0] for row in uow.cursor.fetchall()]
     for effect_id,evidence in accounting:
         _resolve_reconciled_budget(database_url,project_id=project_id,effect_id=effect_id,outcome="success",evidence=evidence)

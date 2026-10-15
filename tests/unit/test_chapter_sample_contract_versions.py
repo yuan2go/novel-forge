@@ -299,6 +299,7 @@ def test_published_sample_policy_does_not_change_when_current_chapter_contract_c
 def test_new_sample_adapter_uses_exact_source_semantics_without_changing_sample_execution_version(
     monkeypatch, sample_version, source_version, work_enabled
 ):
+    from novel_forge.modules.chapter_authority import receipt_recovery
     from novel_forge.modules.authority_handler_runtime.contracts import (
         AuthorityHandlerRequest,
     )
@@ -332,6 +333,8 @@ def test_new_sample_adapter_uses_exact_source_semantics_without_changing_sample_
         [],
     )
     monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda _: uow)
+    completed_proof = MagicMock(return_value=None)
+    monkeypatch.setattr(receipt_recovery, "completed_result_proof", completed_proof)
     monkeypatch.setattr(
         runtime,
         "load_bootstrap_authorization",
@@ -380,6 +383,7 @@ def test_new_sample_adapter_uses_exact_source_semantics_without_changing_sample_
         (),
     )
     output = adapter.execute(request)
+    completed_proof.assert_called_once_with(requests[0])
     assert requests[0].definition_version == sample_version
     assert requests[0].work_requirements_enabled is work_enabled
     assert (

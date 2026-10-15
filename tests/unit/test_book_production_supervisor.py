@@ -381,6 +381,7 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
             resolve_override=lambda **_values: SimpleNamespace(
                 asset_type="production_profile",
                 content={},
+                book_scope_ids=(),
             )
         )
     )
@@ -410,6 +411,17 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
     }
     assert request.knowledge_access_policy["mode"] == "PROJECT_DEFAULT"
     assert request.knowledge_access_policy["configured_explicitly"] is False
+    frozen_book = {
+        "project_id": "project:1", "workspace_id": "workspace:1", "book_id": "book:1",
+        "stable_idempotency_key": "book:1", "production_profile_version": "production-profile:v1",
+        "longform_context_versions": {"platform_profile_version": "platform:frozen-v7"},
+    }
+    frozen = supervisor._chapter_preparation_request(book=frozen_book, next_chapter=1,
+        explicit_overrides={"chapter_plan": "chapter-plan:v1"})
+    assert frozen.explicit_asset_version_overrides["platform_profile"] == "platform:frozen-v7"
+    with pytest.raises(KernelError, match="BOOK_FROZEN_PLATFORM_PROFILE_MISMATCH"):
+        supervisor._chapter_preparation_request(book=frozen_book, next_chapter=1,
+            explicit_overrides={"platform_profile": "platform:project-latest"})
 
     report = supervisor._stage_budgeted_preparation_report(
         SimpleNamespace(
@@ -643,7 +655,7 @@ def test_explicit_profile_context_survives_process_defaults_and_new_profile_sele
         "profile:old": {"chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v2", "draft_token_budget": 12000, "quality_token_budget": 18000}},
         "profile:new": {"chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v3", "draft_token_budget": 20000, "quality_token_budget": 28000}},
     }
-    supervisor.production_preparation = SimpleNamespace(resolver=SimpleNamespace(resolve_override=lambda **values: SimpleNamespace(asset_type="production_profile", content=policies[values["asset_version_id"]])))
+    supervisor.production_preparation = SimpleNamespace(resolver=SimpleNamespace(resolve_override=lambda **values: SimpleNamespace(asset_type="production_profile", content=policies[values["asset_version_id"]], book_scope_ids=())))
     book = {"project_id": "p", "workspace_id": "w", "book_id": "b", "stable_idempotency_key": "run:1", "production_profile_version": "profile:old"}
     old_request = supervisor._chapter_preparation_request(book=book, next_chapter=1, explicit_overrides={})
     old_report = supervisor._stage_budgeted_preparation_report(SimpleNamespace(preparation_report={}, context_token_budget=old_request.context_token_budget), book=book)

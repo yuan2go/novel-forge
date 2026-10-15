@@ -308,6 +308,10 @@ def resolve_working_source(uow: Any, book: dict[str, Any], chapter: int, *, pref
         uow.cursor.execute("""SELECT source_asset_version_id FROM authority_book_manuscript_delivery
             WHERE book_run_id=%s AND chapter_number=%s""", [book["book_run_id"], chapter])
         row = uow.cursor.fetchone()
+    if row is None:
+        basis = "RETAINED_WORKING_CONTINUATION"
+        uow.cursor.execute("SELECT working_asset_version_id FROM authority_book_retained_working_continuation WHERE book_run_id=%s AND chapter_number=%s", [book["book_run_id"], chapter])
+        row = uow.cursor.fetchone()
     if row is None and not prefer_accepted:
         basis = "ACCEPTED_OUTCOME"
         row = accepted_source()
@@ -463,6 +467,7 @@ def _selected_working_dependencies(uow, book, source):
 
 
 def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any], dict[int, list[dict[str, Any]]]]:
+    from .working_prose import LONGFORM_POLICY_VERSION, working_source_rows
     uow.cursor.execute("""SELECT DISTINCT ON (r.chapter_number) r.chapter_number, output.asset_version_id,
             COALESCE(d.context_snapshot,r.command_payload #> '{preparation_report,working_manuscript}','{\"sources\":[]}'::jsonb)
             FROM authority_book_chapter_request r
@@ -473,17 +478,33 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
               AND output.output_key='chapter.draft' AND output.role='primary'
             ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
     deliveries = uow.cursor.fetchall()
+    uow.cursor.execute("SELECT chapter_number,working_asset_version_id,context_snapshot FROM authority_book_retained_working_continuation WHERE book_run_id=%s ORDER BY chapter_number", [book["book_run_id"]])
+    retained = uow.cursor.fetchall()
+    if {row[0] for row in deliveries}.intersection(row[0] for row in retained):
+        raise KernelError("MANUSCRIPT_CONTINUATION_COLLISION", "A retained original cannot replace a separately delivered native Draft")
+    deliveries = sorted([*deliveries, *retained], key=lambda row: row[0])
     sources = {number: selected_source(uow, book, number) for number, _, _ in deliveries}
     selected = {number: source.asset_version_id for number, source in sources.items()}
     changes = {}
+    resolutions = {}
     for number, _, dependencies in deliveries:
         dependencies = _selected_working_dependencies(uow, book, sources[number]) or dependencies
         affected = {}
-        for row in dependencies.get("sources", []):
+        for row in working_source_rows({"sources": [], **dependencies}):
             predecessor = row["chapter"]
-            if selected.get(predecessor) != row["asset_version_id"]:
+            current_id = selected.get(predecessor)
+            lineage_changed = False
+            if (dependencies.get("projection_policy") or {}).get("version") == LONGFORM_POLICY_VERSION:
+                if predecessor not in resolutions:
+                    resolutions[predecessor] = resolve_working_source(uow, book, predecessor)
+                current, resolution = resolutions[predecessor]
+                current_id = current.asset_version_id
+                lineage_changed = current_id == row["asset_version_id"] and (
+                    current.content_hash != row["content_hash"] or resolution != row["source_resolution"])
+            if current_id != row["asset_version_id"] or lineage_changed:
                 affected[predecessor] = {"chapter": predecessor, "source_asset_version_id": row["asset_version_id"],
-                    "current_asset_version_id": selected.get(predecessor)}
+                    "current_asset_version_id": current_id,
+                    **({"source_resolution_changed": True} if lineage_changed else {})}
             for inherited in changes.get(predecessor, []):
                 affected.setdefault(inherited["chapter"], {**inherited, "via_chapter": predecessor})
         changes[number] = list(affected.values())
@@ -492,7 +513,7 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
 
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                            projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None) -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, WORKING_SCHEDULE_POLICY, project_working_sources, working_instruction, working_prose_policy
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSION, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
 
     schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
@@ -510,9 +531,10 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     history = projection_policy["history_chapters"] if projection_policy else 4
     if projection_policy and projection_policy["version"] == PROGRESSION_POLICY_VERSION and chapter - 1 > history:
         raise KernelError("WORKING_PROSE_HISTORY_INCOMPLETE", "Progression requires every predecessor source within its declared history allocation")
-    for number in range(max(1, chapter - history), chapter):
+    longform = bool(projection_policy and projection_policy["version"] == LONGFORM_POLICY_VERSION)
+    for number in range(1 if longform else max(1, chapter - history), chapter):
         resolution = None
-        if projection_policy and projection_policy["version"] == PROGRESSION_POLICY_VERSION:
+        if projection_policy and projection_policy["version"] in RESOLVED_POLICY_VERSIONS:
             source, resolution = resolve_working_source(uow, book, number)
         else:
             source = selected_source(uow, book, number)
@@ -535,10 +557,15 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
         memory_packet = compile_working_memory(rows, queries=projection_policy["queries"],
                                                max_characters=projection_policy["max_characters"] // 3)
+    source_history = None
     if projection_policy:
         rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)
+        if longform:
+            source_history = freeze_source_history(rows, book=book, target_chapter=chapter)
     if memory_packet is not None:
         memory_packet = bind_packet_coverage(memory_packet, rows)
+    if longform:
+        rows = [row for row in rows if row["passages"]]
     result = {"version": CONTEXT_VERSION if projection_policy else "working-manuscript-context.v1", "book_run_id": book["book_run_id"],
         "project_id": book["project_id"], "book_id": book["book_id"], "target_chapter": chapter,
         "accepted_through_chapter": int(book["accepted_through_chapter"]), "sources": rows,
@@ -546,6 +573,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         **({"projection_policy": projection_policy} if projection_policy else {}),
         **({"scheduling_policy": dict(schedule_policy)} if schedule_policy else {}),
         **({"working_memory": memory_packet} if memory_packet is not None else {}),
+        **({"source_history": source_history} if source_history is not None else {}),
         "instruction": working_instruction(projection_policy) if projection_policy else LEGACY_GUIDANCE["instruction"]}
     return {**result, "snapshot_hash": canonical_hash(result)}
 
@@ -694,7 +722,7 @@ def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> No
 
 
 def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, Any], *, require_current: bool = True) -> None:
-    from .working_prose import CONTEXT_VERSION, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, validate_working_projection
+    from .working_prose import CONTEXT_VERSION, MEMORY_POLICY_VERSIONS, RESOLVED_POLICY_VERSIONS, validate_working_projection, working_source_rows
     enhanced = snapshot.get("projection_policy") is not None
     if enhanced:
         validate_working_projection(snapshot, project_id=book["project_id"], book_id=book["book_id"])
@@ -703,23 +731,25 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             or snapshot.get("snapshot_hash") != canonical_hash(plain)
             or any(snapshot.get(key) != book[key] for key in ("project_id", "book_id", "book_run_id"))):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Working context must bind its exact Book and immutable sources")
+    history_sources = working_source_rows(snapshot)
     if require_current:
         def current_source(number):
-            if enhanced and snapshot["projection_policy"]["version"] == PROGRESSION_POLICY_VERSION:
+            if enhanced and snapshot["projection_policy"]["version"] in RESOLVED_POLICY_VERSIONS:
                 return resolve_working_source(uow, book, number)[0]
             return selected_source(uow, book, number)
         if enhanced and snapshot["projection_policy"]["version"] in MEMORY_POLICY_VERSIONS:
             _, changes = working_dependency_changes(uow, book)
             current = snapshot["accepted_through_chapter"] == int(book["accepted_through_chapter"]) and all(current_source(row["chapter"]).asset_version_id == row["asset_version_id"]
-                          and changes.get(row["chapter"], []) == row.get("dependency_changes", []) for row in snapshot["sources"])
+                          and changes.get(row["chapter"], []) == row.get("dependency_changes", []) for row in history_sources)
         else:
             current = snapshot == freeze_working_context(uow, book, snapshot["target_chapter"],
                 projection_policy=snapshot.get("projection_policy") if enhanced else None,
                 scheduling_policy=snapshot.get("scheduling_policy"))
         if not current:
             raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
-    for item in snapshot["sources"]:
-        if require_current and enhanced and snapshot["projection_policy"]["version"] == PROGRESSION_POLICY_VERSION:
+    projected_sources = {row["chapter"]: row for row in snapshot["sources"]} if enhanced else {}
+    for item in history_sources:
+        if require_current and enhanced and snapshot["projection_policy"]["version"] in RESOLVED_POLICY_VERSIONS:
             _, resolution = resolve_working_source(uow, book, item["chapter"])
             if resolution != item["source_resolution"]:
                 raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "Effective source selection lineage changed after freeze")
@@ -747,7 +777,7 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
                 if not memory or expected not in memory["entries"]:
                     raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen observations do not belong to the located source")
         if enhanced and (len(source_draft_content(source)["text"]) != item["source_characters"]
-                or any(source_draft_content(source)["text"][p["start"]:p["end"]] != p["text"] for p in item["passages"])):
+                or any(source_draft_content(source)["text"][p["start"]:p["end"]] != p["text"] for p in projected_sources.get(item["chapter"], {}).get("passages", []))):
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working passage does not match its exact source range")
 
 
@@ -931,6 +961,9 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
                 "manuscript_status": "SAVED", **_review_status(uow, book, source), "quality_status": "NOT_VERIFIED",
                 "requirements_status": length_status, "voice_observations": content.get("voice_evidence", []), "length": {"unit": "HAN_CHARACTERS_V1", "actual": actual_length, "target": length}, "dependency_changes": impacted,
                 "author_selection": author_selection})
+            if source.asset_type == "retained_working_prose":
+                units[-1].update(manuscript_status="RETAINED_WORKING_ONLY", author_selection="NOT_AUTHOR_ACCEPTED",
+                    origin_execution=content["retained_working_provenance"])
         if version_ids is not None and version_ids != [item["asset_version_id"] for item in units]:
             raise KernelError("MANUSCRIPT_EXPORT_VERSION_CONFLICT", "Export must match the exact selected version list; reload after a concurrent author change")
     manifest = {"version": "current-manuscript-export.v1", "book_run_id": book["book_run_id"],
@@ -1053,10 +1086,21 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
             raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
         if canonical_hash(payload).split(":", 1)[1] != source.content.get("payload_hash"):
             raise KernelError("MANUSCRIPT_CANDIDATE_HASH_INVALID", "Retained source bytes changed")
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [payload["operation_id"]])
+        source_operation_status = uow.cursor.fetchone()[0]
+        effect = None
+        if payload.get("external_effect_id"):
+            uow.cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s AND operation_id=%s", [payload["external_effect_id"], payload["operation_id"]])
+            effect = uow.cursor.fetchone()
+        uow.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [payload["operation_id"]])
+        failures = uow.cursor.fetchall()
         return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_MODEL_CANDIDATE",
             "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,
             "chapter": row[2], "asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
             "text": payload.get("text"), "raw_text": payload["raw_text"],
             **{key: payload[key] for key in ("completeness", "structural_status", "review_status",
                 "selection_status", "acceptance_status", "accounting_status")},
+            "source_operation_id": payload["operation_id"], "source_operation_status": source_operation_status,
+            "source_external_effect_id": payload.get("external_effect_id", ""), "source_effect_status": effect[0] if effect else "UNKNOWN",
+            "source_failure_codes": [item[0] for item in failures if item[0]],
             "publication": "NOT_AUTHORIZED"}

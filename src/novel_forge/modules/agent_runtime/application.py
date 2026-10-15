@@ -62,6 +62,7 @@ from .harness import (
     with_skill_activation_tool,
 )
 from .policy import ServerAgentHarnessPolicyResolver
+from .unsent_recovery import AgentUnsentRecoveryRequest, AgentReferenceRecoveryRequest, require_unsent_source, require_host_release_compatibility, recovery_session_identity
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,9 +237,14 @@ class AgentHarnessAdmissionRequest:
     execution_contract: Mapping[str, Any] = dataclass_field(default_factory=dict)
     execution_contract_hash: str = ""
     requested_skill_ids: tuple[str, ...] = ()
+    reference_prose: bool = False
+    reference_purpose: str = "PROSE"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "agent_role", AutonomousAgentRole(self.agent_role))
+        if self.reference_purpose not in {"PROSE", "MANUSCRIPT_READING"} or (
+                self.reference_purpose != "PROSE" and not self.reference_prose):
+            raise ValueError("Controlled reference purpose requires explicit reference admission")
         required = (
             self.project_id,
             self.workspace_id,
@@ -393,11 +399,16 @@ class AgentRuntimeAuthorityApplication:
         request: AgentHarnessAdmissionRequest,
         *,
         principal: Principal,
+        _unsent_recovery: AgentUnsentRecoveryRequest | None = None,
     ) -> dict[str, Any]:
 
         principal.require("agent.authority.execute", request.project_id)
         if principal.principal_id != request.actor_id:
             raise PermissionError("Agent Harness actor must be the trusted Principal")
+        if request.reference_prose and not self.runtime_environment.controlled:
+            raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "Reference prose requires the controlled validation runtime")
+        if not self.runtime_environment.controlled and request.execution_contract.get("reference_prose"):
+            raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "The reference marker is reserved for server-controlled validation admission")
         self._register_definitions()
         context = AdmissionContext(
             actor_id=principal.principal_id,
@@ -408,12 +419,32 @@ class AgentRuntimeAuthorityApplication:
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             effective = request
+            lineage: dict[str, Any] = {}
+            source_operation: dict[str, Any] = {}
+            if _unsent_recovery is not None:
+                if _unsent_recovery.target_release_sha != self.commit_sha:
+                    raise KernelError("AGENT_UNSENT_RECOVERY_RUNTIME_DRIFT", "Recovery target must name the actual host release")
+                source_session, source_operation, lineage = require_unsent_source(uow, _unsent_recovery, principal)
+                source_command = source_operation["command_payload"]
+                if (request.agent_session_id != recovery_session_identity(_unsent_recovery,source_operation['operation_id'])
+                        or request.reference_prose != _unsent_recovery.reference_prose
+                        or request.idempotency_key != recovery_session_identity(_unsent_recovery,source_operation['operation_id'])
+                        or request.instruction != source_command["instruction"]
+                        or request.accepted_boundary != source_session.accepted_boundary
+                        or request.budget != source_session.budget
+                        or request.agent_id != source_command["agent_id"]
+                        or request.agent_role != source_session.role
+                        or request.tool_policy != source_session.tool_policy
+                        or request.skill_bindings != source_session.skill_bindings
+                        or list(request.requested_skill_ids) != source_command["requested_skill_ids"]):
+                    raise KernelError("AGENT_UNSENT_RECOVERY_INPUT_DRIFT", "Successor must retain its source instruction and frozen session inputs")
             if self.runtime_environment.controlled:
                 tools, skills, policy = self.harness_policy.resolve_in_uow(
                     uow,
                     agent_id=request.agent_id,
                     role=request.agent_role,
-                    caller_tools=request.tool_policy,
+                    caller_tools=tuple(tool for tool in request.tool_policy
+                                       if not (_unsent_recovery is not None and tool.tool_name == "skill.activate")),
                     caller_skills=request.skill_bindings,
                 )
                 model_binding = dict(policy.get("model_binding") or {})
@@ -537,7 +568,39 @@ class AgentRuntimeAuthorityApplication:
                     "accepted_boundary": asdict(request.accepted_boundary),
                     "budget": asdict(request.budget),
                     "authority_policy": "SUBMIT_ONLY_NO_DIRECT_MUTATION",
+                    "provider_io_policy": "agent-io-budget.v1",
                 }
+                if request.reference_prose:
+                    from novel_forge.modules.production_execution.execution_template import selected_book_template
+                    template = selected_book_template(uow.cursor, project_id=request.project_id, book_id=request.book_id)
+                    if (self.runtime_environment.value != "validation" or not template
+                            or template["mode"] != "CREATIVE_VALIDATION"
+                            or request.accepted_boundary.accepted_through_chapter != 0
+                            or request.agent_role != AutonomousAgentRole.STUDIO_DIRECTOR
+                            or request.requested_skill_ids or request.budget.max_turns != 1
+                            or request.budget.max_external_effects != 1):
+                        raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID",
+                                          "Reference prose requires explicit validation scope, empty accepted boundary and one frozen model call")
+                    execution_contract["reference_prose"] = {
+                        "contract_version": "agent-reference-prose.v1", "book_id": request.book_id,
+                        "accepted_through_chapter": 0, "instruction_hash": canonical_execution_contract_hash({"instruction": request.instruction}),
+                        "tools_allowed": False, "skills_activation_allowed": False,
+                        "production_eligible": False, "publication": "NOT_AUTHORIZED"}
+                    if request.reference_purpose != "PROSE":
+                        execution_contract["reference_prose"]["task_purpose"] = request.reference_purpose
+                if not lineage:
+                    uow.cursor.execute("""SELECT command_payload->'execution_contract'
+                        FROM authority_operation WHERE project_id=%s
+                        AND idempotency_scope='project:agent-harness' AND idempotency_key=%s""",
+                        [effective.project_id, effective.idempotency_key])
+                    retained = uow.cursor.fetchone()
+                    if retained is not None and "provider_io_policy" not in dict(retained[0] or {}):
+                        execution_contract.pop("provider_io_policy")
+                if lineage:
+                    lineage["host_release_compatibility"] = require_host_release_compatibility(
+                        uow, dict(source_session.execution_contract), execution_contract, self.commit_sha,
+                        project_id=effective.project_id)
+                    execution_contract["reference_recovery" if isinstance(_unsent_recovery,AgentReferenceRecoveryRequest) else "unsent_recovery"] = lineage
                 execution_contract_hash = canonical_execution_contract_hash(
                     execution_contract
                 )
@@ -566,6 +629,11 @@ class AgentRuntimeAuthorityApplication:
                     + ", ".join(unknown_requested_skills),
                 )
             self._validate_harness_accepted_boundary(uow, effective)
+            if lineage and not self.runtime_environment.controlled:
+                execution_contract = {**dict(source_session.execution_contract),
+                                      "provider_io_policy": "agent-io-budget.v1", "unsent_recovery": lineage}
+                effective = replace(effective, execution_contract=execution_contract,
+                                    execution_contract_hash=canonical_execution_contract_hash(execution_contract))
             admitted = admit_command_in_uow(
                 uow,
                 {
@@ -582,7 +650,8 @@ class AgentRuntimeAuthorityApplication:
                     "trace_id": effective.trace_id,
                     "span_id": str(uuid4()),
                     "correlation_id": effective.correlation_id,
-                    "causation_id": "",
+                    "causation_id": str(lineage.get("source_operation_id") or ""),
+                    **({"causation_operation_id": lineage["source_operation_id"]} if lineage else {}),
                     "input": effective.command_input(),
                     "input_assets": [],
                 },
@@ -603,7 +672,23 @@ class AgentRuntimeAuthorityApplication:
                 execution_contract=effective.execution_contract,
                 execution_contract_hash=effective.execution_contract_hash,
             )
-            stored = uow.repositories.agent_runtime.create_harness_session(session)
+            if admitted["replayed"]:
+                stored = uow.repositories.agent_runtime.require_harness_session(session.agent_session_id, lock=True)
+                if replace(stored, status=session.status, usage=session.usage,
+                           next_sequence=session.next_sequence, version=session.version) != session:
+                    raise KernelError("AGENT_HARNESS_SESSION_CONFLICT", "Replayed admission has different frozen session content")
+            else:
+                stored = uow.repositories.agent_runtime.create_harness_session(session)
+                if lineage:
+                    from novel_forge.modules.command_kernel.operation_graph import _record
+                    _record(uow.repositories.operation_graph, GraphCommandContext(
+                        project_id=effective.project_id, actor_id=principal.principal_id,
+                        trace_id=effective.trace_id, correlation_id=effective.correlation_id,
+                        causation_id=lineage["source_operation_id"],
+                    ), lineage["source_operation_id"],
+                        "authority.agent.reference_successor_registered" if isinstance(_unsent_recovery,AgentReferenceRecoveryRequest) else "authority.agent.unsent_successor_registered",
+                        {"successor_operation_id": operation_id,
+                         "successor_session_id": stored.agent_session_id, "lineage": lineage})
             uow.commit()
         start_saga(
             self.database_url,
@@ -639,12 +724,36 @@ class AgentRuntimeAuthorityApplication:
             "agent_session_id": stored.agent_session_id,
             "agent_run_id": operation_id,
             "operation_id": operation_id,
-            "status": "READY",
+            "status": "READY" if state["status"] == "ADMITTED" else state["status"],
             "accepted_boundary": asdict(stored.accepted_boundary),
             "policy_hash": str(effective.policy_snapshot.get("policy_hash") or ""),
             "execution_contract_hash": stored.execution_contract_hash,
             "replayed": bool(admitted["replayed"]),
+            **({("reference_recovery" if isinstance(_unsent_recovery,AgentReferenceRecoveryRequest) else "unsent_recovery"): lineage} if lineage else {}),
         }
+
+    def recover_unsent_harness_session(self, request: AgentUnsentRecoveryRequest, *, principal: Principal) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            source, operation, _lineage = require_unsent_source(uow, request, principal)
+        command = operation["command_payload"]
+        identity = recovery_session_identity(request,operation['operation_id'])
+        return self.admit_harness_session(AgentHarnessAdmissionRequest(
+            project_id=source.project_id, workspace_id=source.workspace_id,
+            book_id=source.accepted_boundary.book_id, actor_id=principal.principal_id,
+            agent_session_id=identity, agent_role=source.role, instruction=command["instruction"],
+            accepted_boundary=source.accepted_boundary, tool_policy=source.tool_policy,
+            skill_bindings=source.skill_bindings, budget=source.budget,
+            idempotency_key=identity, trace_id=operation["trace_id"],
+            correlation_id=operation["correlation_id"], agent_id=command["agent_id"],
+            requested_skill_ids=tuple(command["requested_skill_ids"]),
+            reference_prose=request.reference_prose,
+            reference_purpose=(source.execution_contract.get("reference_prose") or {}).get("task_purpose", "PROSE"),
+        ), principal=principal, _unsent_recovery=request)
+
+    def recover_reference_harness_session(self, request: AgentReferenceRecoveryRequest, *, principal: Principal) -> dict[str, Any]:
+        if not isinstance(request,AgentReferenceRecoveryRequest) or self.runtime_environment.value != "validation":
+            raise KernelError("AGENT_REFERENCE_PROSE_SCOPE_INVALID", "Empty reference continuation is controlled validation only")
+        return self.recover_unsent_harness_session(request,principal=principal)
 
     @staticmethod
     def _validate_harness_accepted_boundary(

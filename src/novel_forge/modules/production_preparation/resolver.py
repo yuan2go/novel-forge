@@ -10,6 +10,29 @@ from novel_forge.modules.production_preparation.contracts import ResolvedProduct
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
+_BOOK_SCOPES_SQL = """
+    SELECT COALESCE(array_agg(DISTINCT scope.book_id), ARRAY[]::text[]) AS ids
+    FROM (
+        SELECT NULLIF(version.content->>'book_id','') AS book_id
+        UNION ALL SELECT NULLIF(version.content #>> '{scope,book_id}','')
+        UNION ALL SELECT NULLIF(version.content #>> '{creative_input_selection,book_id}','')
+        UNION ALL SELECT state.book_id FROM authority_story_design_version_state state
+          WHERE state.project_id=asset.project_id AND state.asset_version_id=version.asset_version_id
+        UNION ALL SELECT candidate.book_id FROM authority_story_planning_candidate candidate
+          WHERE candidate.project_id=asset.project_id AND candidate.candidate_asset_version_id=version.asset_version_id
+        UNION ALL SELECT binding.book_id FROM story_plan_binding binding
+          WHERE binding.project_id=asset.project_id AND binding.asset_version_id=version.asset_version_id
+        UNION ALL SELECT book.book_id FROM authority_book book
+          WHERE book.project_id=asset.project_id AND book.current_book_design_asset_version_id=version.asset_version_id
+        UNION ALL SELECT book.book_id FROM authority_operation_output_asset output
+          JOIN authority_operation operation ON operation.operation_id=output.operation_id
+          JOIN authority_book_chapter_request request ON request.chapter_root_operation_id=operation.root_operation_id
+          JOIN authority_book_production book ON book.book_run_id=request.book_run_id
+          WHERE output.asset_version_id=version.asset_version_id AND book.project_id=asset.project_id
+    ) scope WHERE scope.book_id IS NOT NULL
+"""
+
+
 class PostgresProductionAssetResolver:
 
     def __init__(self, database_url: str) -> None:
@@ -74,21 +97,22 @@ class PostgresProductionAssetResolver:
         return self._asset(row, "latest eligible authority version")
 
     def resolve_all(
-        self, *, project_id: str, asset_type: str, limit: int = 200
+        self, *, project_id: str, asset_type: str, limit: int = 200, book_id: str = ""
     ) -> tuple[ResolvedProductionAsset, ...]:
         if limit <= 0 or limit > 1000:
             raise ValueError("production asset selection limit is invalid")
         if asset_type in {"story_state_snapshot", "canon_snapshot"}:
             return self._resolve_accepted_states(
-                project_id=project_id, asset_type=asset_type, limit=limit
+                project_id=project_id, asset_type=asset_type, limit=limit, book_id=book_id
             )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
-                """
+                f"""
                 SELECT asset.project_id, asset.asset_id, version.asset_version_id,
                        asset.asset_type, version.content_hash, version.content,
                        COALESCE(qualification.decision, 'ELIGIBLE'),
-                       producer.operation_id, producer.definition_name, producer.status
+                       producer.operation_id, producer.definition_name, producer.status,
+                       book_scope.ids
                 FROM authority_asset AS asset
                 JOIN authority_asset_version AS version ON version.asset_id = asset.asset_id
                 LEFT JOIN LATERAL (
@@ -105,11 +129,14 @@ class PostgresProductionAssetResolver:
                     ORDER BY binding.created_at DESC, operation.updated_at DESC
                     LIMIT 1
                 ) AS producer ON TRUE
+                CROSS JOIN LATERAL ({_BOOK_SCOPES_SQL}) AS book_scope
                 WHERE asset.project_id = %s AND asset.asset_type = %s
                   AND version.lifecycle = 'ACTIVE'
                   AND version.eligibility = 'ELIGIBLE'
                   AND version.governance = 'CLEAR'
                   AND COALESCE(qualification.decision, 'ELIGIBLE') = 'ELIGIBLE'
+                  AND (%s = '' OR cardinality(book_scope.ids) = 0
+                       OR book_scope.ids = ARRAY[%s]::text[])
                   AND NOT EXISTS (
                     SELECT 1 FROM authority_asset_version AS newer
                     WHERE newer.asset_id = version.asset_id
@@ -122,10 +149,37 @@ class PostgresProductionAssetResolver:
                     version.asset_version_id DESC
                 LIMIT %s
                 """,
-                [project_id, asset_type, limit],
+                [project_id, asset_type, book_id, book_id, limit],
             )
             rows = uow.cursor.fetchall()
-        return tuple(self._asset(row, "eligible scoped authority collection") for row in rows)
+        return tuple(replace(self._asset(row[:10], "eligible scoped authority collection"),
+            book_scope_ids=tuple(row[10])) for row in rows)
+
+    def resolve_all_for_book(self, *, project_id: str, book_id: str,
+                             asset_type: str, limit: int = 200) -> tuple[ResolvedProductionAsset, ...]:
+        if not book_id:
+            raise ValueError("production Book scope is required")
+        return self.resolve_all(project_id=project_id, book_id=book_id,
+            asset_type=asset_type, limit=limit)
+
+    def require_current_brief(self, *, asset: ResolvedProductionAsset,
+                              workspace_id: str, book_id: str) -> None:
+        from novel_forge.modules.creative.input_selection import require_selected_brief
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_selected_brief(uow.cursor, asset_version_id=asset.asset_version_id,
+                content_hash=asset.content_hash, project_id=asset.project_id,
+                workspace_id=workspace_id, book_id=book_id)
+
+    def _bind_book_scope(self, asset: ResolvedProductionAsset) -> ResolvedProductionAsset:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(f"""SELECT book_scope.ids FROM authority_asset asset
+                JOIN authority_asset_version version USING(asset_id)
+                CROSS JOIN LATERAL ({_BOOK_SCOPES_SQL}) book_scope
+                WHERE asset.project_id=%s AND version.asset_version_id=%s""",
+                [asset.project_id, asset.asset_version_id])
+            row = uow.cursor.fetchone()
+        return replace(asset, book_scope_ids=tuple(row[0]) if row else ())
 
     def resolve_accepted_for_boundary(
         self,
@@ -221,7 +275,7 @@ class PostgresProductionAssetResolver:
             )
             if initial_scope is not None:
                 asset = self._bind_initial_state_scope(asset, *initial_scope)
-        return asset
+        return self._bind_book_scope(asset)
 
     def _foundation_projection(self, asset: ResolvedProductionAsset) -> ResolvedProductionAsset:
         from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_GENERATORS

@@ -212,6 +212,7 @@ def resolve_book_knowledge_access_policy(
         "allowed_knowledge_card_asset_version_ids",
         "usage_scope",
         "experimental_policy_version",
+        "craft_candidate_review_version",
     }
     if set(value) - allowed_fields:
         raise KernelError(
@@ -228,6 +229,7 @@ def resolve_book_knowledge_access_policy(
     experimental_policy_version = str(
         value.get("experimental_policy_version") or ""
     ).strip()
+    candidate_review = str(value.get("craft_candidate_review_version") or "")
     if (
         mode not in BOOK_KNOWLEDGE_ACCESS_MODES
         or not policy_id
@@ -243,6 +245,9 @@ def resolve_book_knowledge_access_policy(
             "Book Knowledge access policy has invalid identity, version, mode, or set",
         )
     allowed = tuple(str(item).strip() for item in raw_allowed)
+    if candidate_review and (candidate_review != "explicit-allowlist-craft-review.v1"
+            or mode != "ALLOW_ONLY" or usage_scope != "EXPERIMENTAL_VALIDATION" or len(allowed) > 6):
+        raise KernelError("BOOK_KNOWLEDGE_ACCESS_POLICY_INVALID", "Candidate review requires a bounded exact experimental allowlist")
     if (
         len(allowed) > 5_000
         or any(not item or len(item) > 500 for item in allowed)
@@ -288,6 +293,8 @@ def resolve_book_knowledge_access_policy(
                 "experimental_policy_version": experimental_policy_version,
             }
         )
+    if candidate_review:
+        body["craft_candidate_review_version"] = candidate_review
     return {**body, "policy_hash": _canonical_hash(body)}
 
 
@@ -309,6 +316,8 @@ def validate_book_knowledge_access_policy(
     schema_version = frozen.get("schema_version")
     if schema_version == BOOK_KNOWLEDGE_ACCESS_EXPERIMENTAL_SCHEMA_VERSION:
         required.update({"usage_scope", "experimental_policy_version"})
+        if "craft_candidate_review_version" in frozen:
+            required.add("craft_candidate_review_version")
     if (
         set(frozen) != required
         or schema_version
@@ -333,6 +342,8 @@ def validate_book_knowledge_access_policy(
                 "allowed_knowledge_card_asset_version_ids": frozen[
                     "allowed_knowledge_card_asset_version_ids"
                 ],
+                **({"craft_candidate_review_version": frozen["craft_candidate_review_version"]}
+                    if "craft_candidate_review_version" in frozen else {}),
                 **(
                     {
                         "usage_scope": frozen["usage_scope"],
@@ -431,6 +442,7 @@ def select_narrative_intelligence(
     cards: tuple[Mapping[str, Any], ...],
     *,
     limit: int = 6,
+    candidate_review_card_asset_version_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
 
     if limit < 1 or limit > 12:
@@ -440,6 +452,11 @@ def select_narrative_intelligence(
     craft_policy = validate_craft_policy(need.craft_policy)
     recent = {item.casefold() for item in need.recently_used_repetition_keys}
     required_ids = set(need.required_card_asset_version_ids)
+    review_ids = set(candidate_review_card_asset_version_ids)
+    if (len(review_ids) > 6 or len(review_ids) != len(candidate_review_card_asset_version_ids)
+            or not review_ids <= {str(card.get("asset_version_id")) for card in cards}
+            or (review_ids and need.craft_selection_policy_version != "craft-need-driven-selection.v2")):
+        raise KernelError("CRAFT_CANDIDATE_REVIEW_SCOPE_INVALID", "Review only the bounded eligible exact Card pool")
     if len(required_ids) > limit:
         raise KernelError("MKAOS_REQUIRED_KNOWLEDGE_SCOPE_TOO_LARGE", "required inherited mechanisms exceed this planning scope; split the scope before generation")
     requested_tags = {
@@ -504,6 +521,11 @@ def select_narrative_intelligence(
                 rejected.append({"knowledge_card_asset_version_id": asset_version_id, "content_hash": content_hash, "reason": craft_assessment["rejection_reason"], "applicability_assessment": assessment, "craft_assessment": craft_assessment})
                 continue
             assessment = {**assessment, "status": "UNKNOWN" if assessment["status"] == "UNKNOWN" else "CONDITIONAL", "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"}
+            if (asset_version_id in review_ids and craft_assessment["rejection_reason"] == "CRAFT_NO_CONTEXT_MATCH"):
+                craft_assessment = {**craft_assessment, "score": 1, "rejection_reason": "",
+                    "candidate_review_policy_version": "explicit-allowlist-craft-review.v1",
+                    "match_reasons": [*craft_assessment["match_reasons"], "EXPLICIT_CANDIDATE_REVIEW_NOT_NEED_MATCH"]}
+                craft_assessment["matching_assessment"]["candidate_review_adjustment"] = 1
         repetition_key = normalized["repetition_key"]
         if not craft_assessment and repetition_key.casefold() in recent and assessment["usage_role"] == "INSPIRATION" and asset_version_id not in required_ids:
             rejected.append(
@@ -631,6 +653,13 @@ def select_narrative_intelligence(
         },
     }
     result["selection_digest"] = _canonical_hash(result)
+    if review_ids:
+        result["candidate_review"] = {"contract_version": "explicit-allowlist-craft-review.v1",
+            "bounded_pool_card_asset_version_ids": sorted(review_ids),
+            "exact_candidate_card_asset_version_ids": sorted(review_ids & {item["knowledge_card_asset_version_id"] for item in selected}),
+            "instruction": "A zero lexical score leaves applicability unresolved. Assess the current Book goals, proposed events and available prior text in this same planning call; ADOPT, ADAPT or REJECT each received candidate at concrete sites. A recall score, metadata label or delivery is not semantic adoption, a required technique, a Book fact or an effect judgment.",
+            "authority_boundary": "CANDIDATE_DELIVERY_ONLY; PLANNING_MUST_ADOPT_ADAPT_OR_REJECT; NO_REQUIRED_USE_OR_EFFECT_PROOF"}
+        result["selection_digest"] = _canonical_hash({key: value for key, value in result.items() if key != "selection_digest"})
     return result
 
 
@@ -725,6 +754,42 @@ def assert_narrative_method_activation_safe(candidate: Mapping[str, Any]) -> Non
                 check(item, f"{path}[{index}]")
     for field in ("concept_name", "abstract_principle", "mechanism", "applicability", "failure_conditions", "constraints", "conflict_generators", "review_checks", "preconditions", "exceptions", "misuse_risks"):
         check(candidate.get(field), field)
+
+
+def project_narrative_method_lineage(candidate: Mapping[str, Any]) -> tuple[dict, dict]:
+    from copy import deepcopy
+
+    original = deepcopy(dict(candidate))
+    if (original.get("knowledge_kind") != "NARRATIVE_INTELLIGENCE"
+            or original.get("semantic_family") != "NARRATIVE_MECHANISM"
+            or original.get("craft_mechanism", {}).get("provenance", {}).get("origin") != "SOURCE_ABSTRACTION"):
+        raise KernelError("MKAOS_METHOD_PROJECTION_SCOPE_INVALID", "Project only Source-derived narrative method metadata")
+    projected = deepcopy(original)
+    removed = []
+    kept = []
+    for index, value in enumerate(original.get("constraints") or ()):
+        try:
+            assert_narrative_method_activation_safe({"knowledge_kind": "NARRATIVE_INTELLIGENCE", "constraints": [value]})
+        except KernelError as error:
+            if error.code != "MKAOS_NARRATIVE_METHOD_OPERATIONAL_LEAK":
+                raise
+            identifier = r"[A-Za-z0-9:_-]+"
+            administrative = (r"Project binding: (?:(?:project_id|book_id|scope_kind|scope_id)=" + identifier + r";?\s*)+\.?",
+                r"This object is an unapproved Knowledge Candidate for project_id[ =]" + identifier
+                + r", book_id[ =]" + identifier + r" and observation scope " + identifier
+                + r"\. It grants no downstream adoption or active plan change\.")
+            if not any(re.fullmatch(pattern, value) for pattern in administrative):
+                raise
+            removed.append({"field": "constraints", "index": index, "value": value})
+        else:
+            kept.append(value)
+    projected["constraints"] = kept
+    validate_knowledge_candidate(projected)
+    assert_narrative_method_activation_safe(projected)
+    return projected, {"contract_version": "narrative-method-lineage-projection.v1",
+        "candidate_payload_hash": _canonical_hash(original), "abstract_content_hash": _canonical_hash(projected),
+        "research_only_statements": removed, "non_constraints_fields_unchanged": True,
+        "original_candidate_preserved": True, "evidence_ceiling": "METADATA_PROJECTION_NOT_EFFECT_VALIDATION"}
 
 
 def _validate_structured_narrative_intelligence(candidate: Mapping[str, Any]) -> None:

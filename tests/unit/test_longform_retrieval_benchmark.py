@@ -35,6 +35,11 @@ def test_bounded_expansion_improves_hard_recall_without_context_or_leakage_regre
     assert report["candidate"]["hidden_knowledge_leakage"] == 0
     assert report["candidate"]["final_context_tokens_max"] <= 6000
     assert report["candidate"]["max_round_count"] <= 3
+    cases = {case["case_id"]: case for case in report["scales"][0]["cases"]}
+    assert len(cases["causal-two"]["required_document_ids"]) == 2
+    assert len(cases["causal-three"]["required_document_ids"]) == 3
+    assert cases["causal-two"]["candidate"]["coverage_sufficient"]
+    assert cases["causal-three"]["candidate"]["coverage_sufficient"]
     assert report["candidate"]["replay_identity_drift"] == 0
     assert report["proof_scope"]["does_not_establish"]
     assert BENCHMARK_CHAPTER_COUNTS[-1] == 1000

@@ -76,14 +76,25 @@ class MkaosAuthorityQuery:
             and card["operation_status"] == "SUCCEEDED"
             and _context_eligible_card(card, access)
         )
-        if mode == "ALLOW_ONLY" and {
+        candidate_review = access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"
+        if mode == "ALLOW_ONLY" and not candidate_review and {
             str(card["asset_version_id"]) for card in eligible
         } != set(allowed_ids):
             raise KernelError(
                 "PLANNING_KNOWLEDGE_ALLOWLIST_INELIGIBLE",
                 "one or more exact KnowledgeCard versions are missing or ineligible",
             )
-        selection = select_narrative_intelligence(need, eligible, limit=limit)
+        review_ids = tuple(str(card["asset_version_id"]) for card in eligible if card.get("content", {}).get("abstract_content", {}).get("craft_mechanism")) if candidate_review else ()
+        selection = select_narrative_intelligence(need, eligible, limit=limit,
+            **({"candidate_review_card_asset_version_ids": review_ids} if review_ids else {}))
+        if candidate_review:
+            selection["missing_optional_card_asset_version_ids"] = sorted(set(allowed_ids) - {str(card["asset_version_id"]) for card in eligible})
+            from .craft_context_projection import approved_method_activation_view
+            by_id = {str(card["asset_version_id"]): card for card in eligible}
+            for selected in selection["selected"]:
+                card = by_id[selected["knowledge_card_asset_version_id"]]
+                selected["activation_evidence"] = approved_method_activation_view(card["content"],
+                    asset_version_id=card["asset_version_id"], content_hash=card["content_hash"])
         selection["project_id"] = project_id
         selection["eligible_card_count"] = len(eligible)
         selection["examined_card_count"] = len(cards)
@@ -431,7 +442,26 @@ class MkaosAuthorityQuery:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT context_output.operation_id,
+                WITH context_scope AS MATERIALIZED (
+                    SELECT context_output.operation_id,
+                           context_output.created_at,
+                           context_version.asset_version_id,
+                           context_version.content_hash,
+                           context_version.content,
+                           context_asset.project_id
+                    FROM authority_operation_output_asset AS context_output
+                    JOIN authority_asset_version AS context_version
+                      ON context_version.asset_version_id=context_output.asset_version_id
+                    JOIN authority_asset AS context_asset
+                      ON context_asset.asset_id=context_version.asset_id
+                    LEFT JOIN authority_story_planning_generation AS scope_generation
+                      ON scope_generation.operation_id=context_output.operation_id
+                    WHERE context_asset.project_id=%s
+                      AND context_output.output_key='planning.context_bundle'
+                      AND (%s='' OR scope_generation.book_id=%s
+                           OR scope_generation.operation_id IS NULL)
+                )
+                SELECT context_version.operation_id,
                        context_version.asset_version_id,
                        context_version.content_hash,
                        context_version.content,
@@ -439,7 +469,7 @@ class MkaosAuthorityQuery:
                        candidate_output.asset_version_id,
                        candidate_version.content,
                        binding.binding_id, binding.execution_scope,
-                       binding.freshness, context_output.created_at,
+                       binding.freshness, context_version.created_at,
                        COALESCE((
                            SELECT jsonb_agg(jsonb_build_object(
                                'external_effect_id', effect.external_effect_id,
@@ -449,33 +479,26 @@ class MkaosAuthorityQuery:
                                'selection_digest', effect.request_payload #>> '{input,narrative_intelligence,selection_digest}'
                            ))
                            FROM authority_external_effect effect
-                           WHERE effect.operation_id=context_output.operation_id
-                             AND effect.project_id=context_asset.project_id
+                           WHERE effect.operation_id=context_version.operation_id
+                             AND effect.project_id=context_version.project_id
                              AND effect.effect_type='model.invoke'
                              AND effect.status='SUCCEEDED'
                              AND effect.request_payload #>> '{input,narrative_intelligence,selection_digest}'=
                                  context_version.content #>> '{narrative_intelligence,selection_digest}'
                        ), '[]'::jsonb)
-                FROM authority_operation_output_asset AS context_output
-                JOIN authority_asset_version AS context_version
-                  ON context_version.asset_version_id=
-                     context_output.asset_version_id
-                JOIN authority_asset AS context_asset
-                  ON context_asset.asset_id=context_version.asset_id
+                FROM context_scope AS context_version
                 JOIN authority_operation AS operation
-                  ON operation.operation_id=context_output.operation_id
+                  ON operation.operation_id=context_version.operation_id
                 LEFT JOIN authority_operation_output_asset AS candidate_output
-                  ON candidate_output.operation_id=context_output.operation_id
+                  ON candidate_output.operation_id=context_version.operation_id
                  AND candidate_output.output_key='story_planning.candidate'
                 LEFT JOIN authority_asset_version AS candidate_version
                   ON candidate_version.asset_version_id=
                      candidate_output.asset_version_id
                 LEFT JOIN story_plan_binding AS binding
-                  ON binding.project_id=context_asset.project_id
+                  ON binding.project_id=context_version.project_id
                  AND binding.asset_version_id=candidate_output.asset_version_id
-                WHERE context_asset.project_id=%s
-                  AND context_output.output_key='planning.context_bundle'
-                  AND context_version.content->>'schema_version'=
+                WHERE context_version.content->>'schema_version'=
                       'novelos.planning_context_bundle.v1'
                   AND (%s='' OR context_version.content->>'book_id'=%s)
                   AND (%s='' OR EXISTS (
@@ -484,11 +507,11 @@ class MkaosAuthorityQuery:
                       ) AS selected_card
                       WHERE selected_card->>'knowledge_card_asset_version_id'=%s
                   ))
-                ORDER BY context_output.created_at DESC,
+                ORDER BY context_version.created_at DESC,
                          context_version.asset_version_id
                 LIMIT %s
                 """,
-                [project_id, book_id, book_id, knowledge_card_asset_version_id,
+                [project_id, book_id, book_id, book_id, book_id, knowledge_card_asset_version_id,
                  knowledge_card_asset_version_id, limit],
             )
             rows = uow.cursor.fetchall()

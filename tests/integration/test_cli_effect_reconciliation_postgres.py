@@ -292,6 +292,44 @@ def test_planning_consumes_original_result_without_dispatch_or_resettlement():
         assert c.execute('SELECT actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s', [effect]).fetchone()[0] == 1000
 
 
+def test_same_attempt_receipt_consumption_preserves_first_call_log_and_cost():
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.attempt_runtime import acquire_attempt_lease
+    seeded = seed(production=True)
+    context, effect, *_ = seeded
+    command, evidence = production_confirmation(seeded)
+    resolve_external_effect_manually(DATABASE_URL, command)
+    completion = read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+    port = recovered_port(seeded, completion)
+    port._record_model_evidence(evidence=evidence, usage=evidence['usage'], cost=evidence['cost'],
+        amount=None, total_tokens=150, accepted_candidate=False, recovered_completion=False)
+    with transaction() as c:
+        original = c.execute("SELECT v.asset_version_id,v.content_hash,v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='model_call_log'", [context.project_id]).fetchone()
+        c.execute("UPDATE authority_lease_acquisition SET acquired_at=NOW()-INTERVAL '2 minutes',heartbeat_at=NOW()-INTERVAL '1 minute',expires_at=NOW()-INTERVAL '1 second' WHERE attempt_id=%s AND status='HELD'", [port.binding.request.attempt_id])
+    lease = acquire_attempt_lease(DATABASE_URL, attempt_id=port.binding.request.attempt_id,
+        project_id=context.project_id, worker_id=port.worker_id, lease_seconds=60,
+        trace_id='trace', correlation_id='correlation')
+    port.binding.request.fencing_token = lease['fencing_token']
+    assert lease['fencing_token'] == 2
+    candidate = port.execute(SimpleNamespace(capability='model.test'))
+    assert candidate.raw_output == evidence['result']
+    assert port.execute(SimpleNamespace(capability='model.test')).raw_output == evidence['result']
+    with transaction() as c:
+        assert c.execute('SELECT content_hash,content FROM authority_asset_version WHERE asset_version_id=%s', [original[0]]).fetchone() == original[1:]
+        assert c.execute("SELECT count(*) FROM authority_asset a WHERE a.project_id=%s AND a.asset_type='cost_ledger'", [context.project_id]).fetchone()[0] == 1
+        consumed = c.execute("SELECT v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='model_call_log' AND v.content->>'evidence_kind'='ORIGINAL_RECEIPT_CONSUMPTION'", [context.project_id]).fetchall()
+        assert len(consumed) == 1
+        assert consumed[0][0]['consumer_fencing_token'] == 2
+        assert consumed[0][0]['provider_invoked_this_attempt'] is False
+        assert consumed[0][0]['source_external_effect_id'] == effect
+        assert c.execute('SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s', [effect]).fetchone()[0] == 1
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with pytest.raises(KernelError, match='PLANNING_RECEIPT_CONSUMPTION_CONFLICT'):
+        port._record_evidence('model_call_log', {**consumed[0][0], 'candidate_accepted': True})
+    with pytest.raises(KernelError, match='PLANNING_RECEIPT_CONSUMPTION_CONFLICT'):
+        port._record_evidence('model_call_log', {**consumed[0][0], 'candidate_accepted': 0})
+
+
 @pytest.mark.parametrize('stale,changed_input', [(True, False), (False, True)])
 def test_planning_cannot_consume_under_stale_fence_or_changed_input(stale, changed_input):
     from types import SimpleNamespace
@@ -506,3 +544,67 @@ def test_legacy_retryable_cli_uncertainty_queries_original_identity(outcome):
     with transaction() as connection:
         assert connection.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE dispatch_id=%s", [dispatch["dispatch_id"]]).fetchone()[0] == before
         assert connection.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect]).fetchone()[0] == 1
+
+
+def test_saved_result_scan_uses_owned_versions_and_keeps_book_actor_operation_scope():
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+    from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
+    from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
+    seeded = seed(held=True)
+    context, effect, *_ = seeded
+    writer = AuthorityAssetWriter(DATABASE_URL)
+    previous = None
+    for number in range(2):
+        previous = writer.materialize_output(AuthorityAssetWriteCommand(
+            operation_id=context.operation_id, project_id=context.project_id,
+            asset_id='session:'+effect, asset_type='execution_recovery_session',
+            schema_version='authority-execution-recovery.v1', logical_ref='sessions/'+effect,
+            category='production_execution_recovery', output_key='session', role='execution_recovery_projection',
+            content={'execution_id':'original-session', 'record':{'request':{'external_effect_id':effect,
+                'book_id':'same-book'}, 'observation':number}}, qualification_policy='fixture-only',
+            trace_id='trace', correlation_id='correlation',
+            expected_current_asset_version_id=previous.asset_version_id if previous else None))
+    class Captured(Exception):
+        pass
+    seen = []
+    def get_record(identity):
+        seen.append(identity)
+        raise Captured
+    transport = SimpleNamespace(session_for_project=lambda _: SimpleNamespace(
+        evidence_store=SimpleNamespace(get_record=get_record)))
+    with transaction() as c:
+        actor = c.execute('SELECT actor_id FROM authority_operation WHERE operation_id=%s', [context.operation_id]).fetchone()[0]
+    principal = SimpleNamespace(principal_id=actor, require=lambda *args: None)
+    args = dict(database_url=DATABASE_URL, project_id=context.project_id, book_id='same-book', principal=principal)
+    with pytest.raises(Captured):
+        recover_saved_local_results(transport, **args)
+    assert seen == ['original-session']
+    for changed in ({'book_id':'other-book'}, {'operation_ids':['unrelated-operation']},
+                    {'principal':SimpleNamespace(principal_id='other-actor', require=lambda *args: None)}):
+        assert recover_saved_local_results(transport, **{**args, **changed}) is False
+    assert seen == ['original-session']
+
+
+def test_planning_original_success_without_usage_correction_keeps_execution_identity():
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.external_effect_runtime import accept_external_effect_receipt
+    seeded = seed(production=True, held=True)
+    context, effect, dispatch, *_ = seeded
+    _, evidence = production_confirmation(seeded)
+    accept_external_effect_receipt(DATABASE_URL, context, dispatch_id=dispatch['dispatch_id'],
+        provider=FakeDeterministicProvider('success').provider, receipt_id='original-complete',
+        message_id='original-complete', payload_hash=_hash(evidence), provider_correlation_id='original',
+        generation=1, outcome='success', evidence=evidence)
+    with transaction() as c:
+        reservation = c.execute('SELECT reservation_id FROM authority_budget_reservation WHERE external_effect_id=%s',[effect]).fetchone()[0]
+    settle_provider_budget(DATABASE_URL, reservation_id=reservation, project_id=context.project_id,
+        actual_amount=None, actual_tokens=1000, evidence={'usage_settlement_basis':'RESERVATION_CEILING'})
+    completion = read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+    assert not completion.get('budget_usage_correction')
+    port = recovered_port(seeded, completion)
+    candidate = port.execute(SimpleNamespace(capability='model.test'))
+    assert candidate.raw_output == evidence['result']
+    assert candidate.evidence.execution_id == 'original-execution'
+    with transaction() as c:
+        assert c.execute('SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s',[effect]).fetchone()[0] == 1

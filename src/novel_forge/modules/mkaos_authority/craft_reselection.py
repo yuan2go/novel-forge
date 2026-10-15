@@ -27,7 +27,7 @@ def rejection_details(candidate: Mapping[str, Any], selection: Mapping[str, Any]
 
 
 def validate_concrete_selection(candidate: Mapping[str, Any], selection: Mapping[str, Any]) -> None:
-    if selection.get("craft_policy", {}).get("schema_version") != "narrative-craft-budget.v4":
+    if selection.get("craft_policy", {}).get("schema_version") not in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
         return
     for translation in candidate.get("knowledge_translations", []):
         if translation.get("decision") != "REJECT" and (translation.get("rejected_scene_ids") or translation.get("failure_condition")):
@@ -56,7 +56,7 @@ def validate_concrete_selection(candidate: Mapping[str, Any], selection: Mapping
 
 def next_reselection_context(*, selection: Mapping[str, Any], source: Mapping[str, Any], task_identity: str) -> dict[str, Any]:
     policy = selection.get("craft_policy") or {}
-    if policy.get("schema_version") != "narrative-craft-budget.v4":
+    if policy.get("schema_version") not in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
         return {}
     prior = deepcopy(selection.get("need", {}).get("craft_context", {}).get("reselection") or {})
     if prior and prior["task_identity"] != task_identity:

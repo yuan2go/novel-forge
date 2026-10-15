@@ -294,6 +294,7 @@ class StoryDesignRepository:
                    execution_evidence, semantic_repair_count,
                    structural_regeneration_count, created_by_operation_id,
                    updated_by_operation_id, version
+                   , book_id, scope_key, scope_layer
             FROM authority_story_design_version_state
             WHERE project_id=%s AND asset_version_id=%s
             """,
@@ -325,6 +326,7 @@ class StoryDesignRepository:
             "created_by_operation_id",
             "updated_by_operation_id",
             "version",
+            "book_id", "scope_key", "scope_layer",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -513,14 +515,17 @@ class StoryDesignRepository:
         operation_id: str,
         owns_asset_lifecycle: bool,
     ) -> None:
+        self.cursor.execute("SELECT book_id,scope_key,scope_layer FROM authority_story_design_version_state WHERE project_id=%s AND asset_version_id=%s FOR UPDATE", [project_id, asset_version_id])
+        book_id, scope_key, scope_layer = self.cursor.fetchone()
+        self.cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", [f"story-design-active:{project_id}:{scope_key}:{scope_layer}:{logical_key}"])
         self.cursor.execute(
             """
             SELECT asset_version_id
             FROM authority_story_design_active_version
-            WHERE project_id=%s AND logical_key=%s
+            WHERE project_id=%s AND scope_key=%s AND scope_layer=%s AND logical_key=%s
             FOR UPDATE
             """,
-            [project_id, logical_key],
+            [project_id, scope_key, scope_layer, logical_key],
         )
         previous = self.cursor.fetchone()
         if previous is not None and str(previous[0]) != asset_version_id:
@@ -557,14 +562,14 @@ class StoryDesignRepository:
             """
             INSERT INTO authority_story_design_active_version(
                 project_id, logical_key, asset_version_id,
-                activated_by_operation_id
-            ) VALUES (%s, %s, %s, %s)
-            ON CONFLICT (project_id, logical_key) DO UPDATE
+                activated_by_operation_id,book_id,scope_layer
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (project_id,scope_key,scope_layer,logical_key) DO UPDATE
             SET asset_version_id=EXCLUDED.asset_version_id,
                 activated_by_operation_id=EXCLUDED.activated_by_operation_id,
                 activated_at=NOW()
             """,
-            [project_id, logical_key, asset_version_id, operation_id],
+            [project_id, logical_key, asset_version_id, operation_id, book_id, scope_layer],
         )
 
     def _record_event(

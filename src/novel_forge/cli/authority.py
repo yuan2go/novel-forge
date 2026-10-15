@@ -93,6 +93,8 @@ def _authority_parser() -> argparse.ArgumentParser:
     add_creative_budget_parser(subparsers)
     from novel_forge.cli.creation import add_creation_parser
     add_creation_parser(subparsers)
+    scope_reconcile = subparsers.add_parser("authority-story-design-scope-reconcile", help="reconcile one proven cross-namespace projection error without changing story content")
+    scope_reconcile.add_argument("--input-file", type=Path, required=True)
     from novel_forge.cli.execution_template import add_execution_template_parser
     add_execution_template_parser(subparsers)
     from novel_forge.cli.provider_routing import add_provider_routing_parser
@@ -148,6 +150,15 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
         if args.command == "authority-creation":
             from novel_forge.cli.creation import run_creation_command
             print(json.dumps(run_creation_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.command == "authority-story-design-scope-reconcile":
+            from novel_forge.api.authority_dependencies import build_trusted_principal_resolver, authority_release_identity
+            from novel_forge.modules.story_design_authority.application import PostgresStoryDesignAssetAuthority
+            from novel_forge.modules.story_design_authority.scope_recovery import ReconcileStoryDesignScopeCommand
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            build_id, sha = authority_release_identity()
+            authority = PostgresStoryDesignAssetAuthority(settings.database_url, application_build_id=build_id, commit_sha=sha)
+            print(json.dumps(authority.reconcile_scope(ReconcileStoryDesignScopeCommand(**json.loads(args.input_file.read_text())), principal=principal), ensure_ascii=False, indent=2, default=str))
             return 0
         if args.command == "authority-execution-template":
             from novel_forge.cli.execution_template import run_execution_template_command

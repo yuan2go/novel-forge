@@ -15,7 +15,101 @@ def pure_generation_operation(cursor, operation_id: str, project_id: str) -> boo
         [operation_id, project_id],
     )
     row = cursor.fetchone()
-    return bool(row and pure_generation_capabilities(row[0] or ()))
+    return bool(
+        row
+        and (
+            pure_generation_capabilities(row[0] or ())
+            or "tool.remote.invoke" in (row[0] or ())
+            and reference_prose_generation(cursor, operation_id, project_id)
+        )
+    )
+
+
+def reference_prose_generation(cursor, operation_id: str, project_id: str) -> bool:
+    from .external_effect_runtime import _hash
+
+    cursor.execute(
+        """SELECT o.command_payload,s.execution_contract,s.execution_contract_hash,
+        s.accepted_boundary,s.usage,o.definition_snapshot,s.agent_session_id,s.budget,s.agent_role,
+        EXISTS(SELECT 1 FROM authority_capability_pack_deployment d
+            JOIN authority_capability_pack_compilation c USING(compilation_id)
+            JOIN authority_capability_pack_binding_set b USING(binding_set_id)
+            WHERE d.deployment_id=s.execution_contract #>> '{capability_pack_execution_snapshot,deployment_id}'
+            AND d.environment='validation' AND c.runtime_profile='validation'
+            AND d.target_scope_type='BOOK' AND d.project_id=o.project_id AND d.workspace_id=o.workspace_id
+            AND d.book_id=o.command_payload->>'book_id'
+            AND c.compilation_hash=s.execution_contract #>> '{capability_pack_execution_snapshot,compilation_hash}'
+            AND b.binding_set_hash=s.execution_contract #>> '{capability_pack_execution_snapshot,binding_set_hash}'
+            AND c.release_sha=s.execution_contract->>'release_sha')
+        FROM authority_operation o JOIN authority_agent_harness_session s USING(operation_id)
+        WHERE o.operation_id=%s AND o.project_id=%s AND o.definition_name='agent.session.execute'
+          AND o.root_operation_id=o.operation_id AND o.parent_operation_id IS NULL
+          AND s.project_id=o.project_id AND s.workspace_id=o.workspace_id
+          AND NOT EXISTS(SELECT 1 FROM authority_operation child WHERE child.root_operation_id=o.operation_id AND child.operation_id<>o.operation_id)
+          AND NOT EXISTS(SELECT 1 FROM authority_external_effect e WHERE e.operation_id=o.operation_id AND e.effect_type<>'model.invoke')""",
+        [operation_id, project_id],
+    )
+    row = cursor.fetchone()
+    if not row or len(row) != 10:
+        return False
+    (
+        command,
+        contract,
+        contract_hash,
+        boundary,
+        usage,
+        definition,
+        session_id,
+        session_budget,
+        role,
+        durable_pack,
+    ) = row
+    reference = contract.get("reference_prose") or {}
+    budget = contract.get("budget") or {}
+    policy = contract.get("agent_policy") or {}
+    pack = contract.get("capability_pack_execution_snapshot") or {}
+    return bool(
+        contract.get("contract_version") == "agent-session-execution-contract.v1"
+        and durable_pack is True
+        and command.get("agent_session_id") == session_id
+        and role == command.get("agent_role") == policy.get("role") == "STUDIO_DIRECTOR"
+        and session_budget == budget == command.get("budget")
+        and policy.get("policy_version") == "agent-harness-server-policy.v1"
+        and policy.get("authority") == "POSTGRESQL_AGENT_DEFINITION"
+        and policy.get("policy_hash")
+        == _hash({key: value for key, value in policy.items() if key != "policy_hash"})
+        and policy == command.get("policy_snapshot")
+        and policy.get("model_binding") == contract.get("runtime_binding")
+        and policy.get("capability_pack_execution_snapshot") == pack
+        and _hash(pack)
+        == policy.get("capability_pack_snapshot_hash")
+        == contract.get("capability_pack_snapshot_hash")
+        and pack.get("release_sha") == contract.get("release_sha")
+        and pack.get("commit_authority") == "AGENT_RUNTIME_AUTHORITY"
+        and pack.get("workflow_node_id") == "agent_session"
+        and command.get("book_id") == boundary.get("book_id")
+        and _hash(contract) == contract_hash == command.get("execution_contract_hash")
+        and contract == command.get("execution_contract")
+        and contract.get("accepted_boundary")
+        == boundary
+        == command.get("accepted_boundary")
+        and boundary.get("accepted_through_chapter") == 0
+        and boundary.get("book_id") == reference.get("book_id")
+        and command.get("agent_session_id")
+        and reference.get("contract_version") == "agent-reference-prose.v1"
+        and reference.get("task_purpose", "PROSE") in {"PROSE", "MANUSCRIPT_READING"}
+        and reference.get("instruction_hash")
+        == _hash({"instruction": command.get("instruction")})
+        and reference.get("production_eligible") is False
+        and reference.get("tools_allowed") is False
+        and reference.get("skills_activation_allowed") is False
+        and reference.get("publication") == "NOT_AUTHORIZED"
+        and budget.get("max_turns") == 1
+        and budget.get("max_external_effects") == 1
+        and int(usage.get("tool_calls") or 0) == 0
+        and not command.get("requested_skill_ids")
+        and definition.get("irreversible_effect_policy", {}).get("allowed") is False
+    )
 
 
 def _reference_coordinator_roots(
@@ -214,7 +308,7 @@ def _reference_coordinator_roots(
 
 def generation_graph(cursor, operation_id: str, project_id: str) -> bool:
     cursor.execute(
-        """SELECT op.root_operation_id FROM authority_operation op
+        """SELECT op.root_operation_id,root.definition_name FROM authority_operation op
         JOIN authority_operation root ON root.operation_id=op.root_operation_id
           AND root.project_id=op.project_id AND root.workspace_id IS NOT DISTINCT FROM op.workspace_id
         WHERE op.operation_id=%s AND op.project_id=%s""",
@@ -224,6 +318,8 @@ def generation_graph(cursor, operation_id: str, project_id: str) -> bool:
     if not row:
         return False
     root_id = row[0]
+    if len(row)>1 and row[1]=='agent.session.execute' and reference_prose_generation(cursor,root_id,project_id):
+        return True
     references = _reference_coordinator_roots(cursor, root_id, project_id)
     roots = [root_id, *(references or ())]
     cursor.execute(

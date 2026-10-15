@@ -7,17 +7,27 @@ from novel_forge.modules.mkaos_authority.craft import craft_mechanism_schema
 
 CRAFT_DISCOVERY_POLICY = "narrative-craft-abstraction.v1"
 CRAFT_DISCOVERY_ROUTING = "source-analysis-routing.craft.v1"
+WRITING_METHODS_ROUTING = "source-analysis-routing.writing-methods.v1"
+WRITING_METHODS_EVIDENCE_ROUTING = "source-analysis-routing.writing-methods.v2"
+WRITING_METHOD_ROUTES = {WRITING_METHODS_ROUTING, WRITING_METHODS_EVIDENCE_ROUTING}
 
 
 def craft_discovery_strategy(strategy: Any) -> Any:
-    if strategy.routing_policy_version != CRAFT_DISCOVERY_ROUTING:
+    if strategy.routing_policy_version not in {CRAFT_DISCOVERY_ROUTING, *WRITING_METHOD_ROUTES}:
         return strategy
+    if strategy.routing_policy_version in WRITING_METHOD_ROUTES and strategy.content_type.value != "WRITING_THEORY":
+        raise ValueError("Writing methods require a governed writing-theory profile")
     if strategy.content_type.value not in {"WEB_NOVEL", "PUBLISHED_FICTION", "CLASSIC_LITERATURE", "WRITING_THEORY"}:
         raise ValueError("Craft discovery requires a governed fiction or writing-theory profile")
     return replace(strategy, profile_id="craft." + strategy.profile_id, profile_version="1.0", abstraction_policy_version=CRAFT_DISCOVERY_POLICY)
 
 
-def craft_discovery_schema(*, grounded: bool, observation_id: str) -> dict[str, Any]:
+CRAFT_OUTPUT_CONTRACT = "narrative-craft-output.v2"
+LEGACY_CRAFT_OUTPUT_CONTRACT = "narrative-craft-output.v1"
+
+
+def craft_discovery_schema(*, grounded: bool, observation_id: str,
+    contract_version: str = CRAFT_OUTPUT_CONTRACT) -> dict[str, Any]:
     from .execution_contracts import MKAOS_STAGE, content_intelligence_output_schema, grounded_knowledge_output_schema
 
     schema = grounded_knowledge_output_schema() if grounded else content_intelligence_output_schema(MKAOS_STAGE)
@@ -32,7 +42,13 @@ def craft_discovery_schema(*, grounded: bool, observation_id: str) -> dict[str, 
         "supersedes_card_asset_version_id": "",
     }.items():
         provenance[field]["const"] = value
-    provenance["source_observation_asset_version_ids"]["const"] = [observation_id]
+    ids = provenance["source_observation_asset_version_ids"]
+    if contract_version == LEGACY_CRAFT_OUTPUT_CONTRACT:
+        ids["const"] = [observation_id]
+    elif contract_version == CRAFT_OUTPUT_CONTRACT:
+        ids.update(minItems=1, maxItems=1, items={**ids["items"], "const": observation_id})
+    else:
+        raise ValueError("Unsupported frozen Craft output contract")
     schema["properties"].update({"craft_mechanism": craft, "usage_role": {"type": "string", "const": "MECHANISM"}})
     schema["properties"]["knowledge_kind"]["const"] = "NARRATIVE_INTELLIGENCE"
     schema["properties"]["semantic_family"]["const"] = "NARRATIVE_MECHANISM"
@@ -42,9 +58,12 @@ def craft_discovery_schema(*, grounded: bool, observation_id: str) -> dict[str, 
 
 def validate_discovery_schema(schema: dict[str, Any]) -> bool:
     try:
-        ids = schema["properties"]["craft_mechanism"]["properties"]["provenance"]["properties"]["source_observation_asset_version_ids"]["const"]
+        field = schema["properties"]["craft_mechanism"]["properties"]["provenance"]["properties"]["source_observation_asset_version_ids"]
+        legacy = "const" in field
+        ids = field["const"] if legacy else [field["items"]["const"]]
         if not isinstance(ids, list) or len(ids) != 1 or not isinstance(ids[0], str) or not ids[0]:
             return False
-        return schema == craft_discovery_schema(grounded="source_finding_codes" in schema["properties"], observation_id=ids[0])
+        return schema == craft_discovery_schema(grounded="source_finding_codes" in schema["properties"], observation_id=ids[0],
+            contract_version=LEGACY_CRAFT_OUTPUT_CONTRACT if legacy else CRAFT_OUTPUT_CONTRACT)
     except (KeyError, TypeError):
         return False

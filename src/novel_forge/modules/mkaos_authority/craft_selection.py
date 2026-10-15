@@ -35,15 +35,16 @@ CRAFT_MECHANISM_CADENCE_V2 = {
 def _policy_defaults(version: str) -> dict[str, Any]:
     if version == "narrative-craft-budget.v1":
         return dict(DEFAULT_CRAFT_POLICY)
-    if version in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"}:
+    if version in {"narrative-craft-budget.v3", "narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
         from copy import deepcopy
-        from .craft_usage import DEFAULT_USAGE_TYPES
+        from .craft_usage import DEFAULT_USAGE_TYPES, WORKING_CRAFT_POLICY
         types = deepcopy(DEFAULT_USAGE_TYPES)
-        if version == "narrative-craft-budget.v4":
+        if version in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
             for spec in types.values():
                 spec["transition_policy"] = "accepted-phase-transitions.v1"
         return {**DEFAULT_CRAFT_POLICY, "schema_version": version, "usage_types": types, "mechanism_usage_types": {},
-                **({"reselection_policy": {"contract_version": "craft-reselection.v1", "maximum_reselections": 2, "optional_abstention": True}} if version == "narrative-craft-budget.v4" else {})}
+                **({"reselection_policy": {"contract_version": "craft-reselection.v1", "maximum_reselections": 2, "optional_abstention": True}} if version in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"} else {}),
+                **({"working_craft_policy": deepcopy(WORKING_CRAFT_POLICY)} if version == "narrative-craft-budget.v5" else {})}
     if version == "narrative-craft-budget.v2":
         return {**DEFAULT_CRAFT_POLICY, "schema_version": version, "mechanism_cadence": dict(CRAFT_MECHANISM_CADENCE_V2)}
     raise KernelError("CRAFT_POLICY_INVALID", "Craft budget requires a supported explicit policy version")
@@ -70,7 +71,11 @@ def validate_craft_policy(value: Mapping[str, Any] | None = None) -> dict[str, A
             or retry["contract_version"] != "craft-reselection.v1" or type(retry["maximum_reselections"]) is not int
             or not 1 <= retry["maximum_reselections"] <= 4 or type(retry["optional_abstention"]) is not bool):
             raise KernelError("CRAFT_POLICY_INVALID", "Concrete reselection requires an explicit bounded policy")
-    for key in set(result) - {"schema_version", "classification", "mechanism_cadence", "usage_types", "mechanism_usage_types", "reselection_policy"}:
+    if "working_craft_policy" in result:
+        from .craft_usage import WORKING_CRAFT_POLICY
+        if result["working_craft_policy"] != WORKING_CRAFT_POLICY:
+            raise KernelError("CRAFT_POLICY_INVALID", "Working continuation requires its exact versioned evidence boundary")
+    for key in set(result) - {"schema_version", "classification", "mechanism_cadence", "usage_types", "mechanism_usage_types", "reselection_policy", "working_craft_policy"}:
         if type(result[key]) is not int or not 0 <= result[key] <= 100:
             raise KernelError("CRAFT_POLICY_INVALID", "Craft policy values must be bounded nonnegative integers")
     if not 1 <= result["max_craft_candidates"] <= 12 or not result["max_uses_per_scene"] or not result["max_uses_per_chapter"]:
@@ -138,6 +143,11 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         and item.get("evidence") and item.get("effect_status") in {"ACHIEVED", "FAILED", "UNCERTAIN"}
     }
     observations = [accepted_history[key] for key in sorted(accepted_history) if current_chapter - policy["recent_chapter_window"] <= int(accepted_history[key].get("chapter") or 0)]
+    working_enabled = policy["schema_version"] == "narrative-craft-budget.v5"
+    from .craft_usage import is_working_delivery
+    working_history = [dict(item) for item in recent_usage if working_enabled
+        and int(item.get("chapter") or 0) < current_chapter
+        and (is_working_delivery(item) or item.get("usage_basis") == "SELECTED_WORKING_PROSE_REVIEW")]
     working_allocations = {(item.get("chapter"),item.get("use_id")):dict(item) for item in recent_usage
         if item.get("usage_basis") == "SELECTED_WORKING_DELIVERY" and item.get("effect_status") == "NOT_ASSESSED"
         and item.get("selected_source_asset_version_id") and item.get("selected_source_content_hash")
@@ -146,6 +156,12 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         and int(item.get("chapter") or 0) > 0 and item.get("use_id") and (item.get("chapter"),item.get("use_id")) not in accepted_history}
     working_matching = [value for value in working_allocations.values() if value.get("mechanism_id") == identity]
     working_caution = len(working_matching) * policy["repetition_penalty"]
+    working_feedback = [item for item in working_history if item.get("usage_basis") == "SELECTED_WORKING_PROSE_REVIEW"
+        and item.get("mechanism_id") == identity and current_chapter - policy["recent_chapter_window"] <= int(item.get("chapter") or 0)
+        and (item.get("effect_status") != "ACHIEVED" or any(side.get("status") in {"PRESENT", "UNCERTAIN"} for side in item.get("side_effects", [])))]
+    working_feedback_penalty = len(working_feedback) * policy["repetition_penalty"]
+    if working_feedback:
+        reasons.append(f"CRAFT_WORKING_REVIEW_CAUTION:{len(working_feedback)}")
     working_coverage_gaps = [dict(item) for item in recent_usage if item.get("usage_basis") == "WORKING_CRAFT_COVERAGE"
         and item.get("status") == "UNKNOWN" and item.get("selected_source_asset_version_id") and item.get("working_snapshot_hash")
         and current_chapter - policy["recent_chapter_window"] <= int(item.get("chapter") or 0) < current_chapter]
@@ -161,7 +177,7 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         reasons.append(f"CRAFT_ACCEPTED_REALIZATION_CAUTION:{len(feedback)}")
     frequency = len(matching)
     usage_spec = None
-    if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"}:
+    if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
         from .craft_usage import usage_type
         type_id, usage_spec = usage_type(policy, identity)
         if usage_spec["frequency_unit"] == "INSTANCE":
@@ -184,28 +200,39 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
     salience_penalty = sum(item.get("role") == "PRIMARY" for item in matching) * policy["salience_penalty"]
     if matching:
         reasons.append(f"CRAFT_RECENT_ACCEPTED_FREQUENCY:{frequency}")
-    elif score and not feedback and not working_matching and not working_coverage_gaps:
+    elif score and not feedback and not working_matching and not working_feedback and not working_coverage_gaps:
         score += policy["variation_bonus"]
         reasons.append("CRAFT_VARIATION_BONUS")
     in_cooldown = any(0 < current_chapter - int(item["chapter"]) <= policy["cooldown_chapters"] for item in matching)
     cadence_class = policy.get("mechanism_cadence", {}).get(identity, "EXPRESSIVE")
     temporal_budget_applied = cadence_class != "CONTINUOUS"
+    working_frequency = 0
     if usage_spec:
-        from .craft_usage import realized_instances, usage_is_open, approved_scope_transition
+        from .craft_usage import realized_instances, usage_is_open, working_usage_is_open, approved_scope_transition
         instances = realized_instances([row for row in accepted_history.values() if row.get("mechanism_id") == identity], usage_spec)
+        if working_enabled:
+            from .craft_usage import working_instances
+            working = working_instances([row for row in working_history if row.get("mechanism_id") == identity], usage_spec)
+            accepted_instance_ids = {item.get("usage", {}).get("instance_id") for item in matching}
+            working_frequency = len({item.get("usage", {}).get("instance_id") or item["use_id"] for item in working_matching
+                if is_working_delivery(item)} - accepted_instance_ids)
+            for instance_id, item in working.items():
+                if instance_id not in instances or (item["chapter"], item["use_id"]) > (instances[instance_id]["chapter"], instances[instance_id]["use_id"]):
+                    instances[instance_id] = item
         scope_context = context.get("usage_scope_context") or {}
         continuable = any(bool(scope_context.get("project_id"))
             and (card_identity is None or (item.get("knowledge_card_asset_version_id"), item.get("content_hash")) == card_identity)
             and item.get("usage", {}).get("scope_binding", {}).get("project_id") == scope_context.get("project_id")
             and item["usage"]["scope_binding"].get("book_id") == scope_context.get("book_id")
             and (usage_spec["scope"] != "ARC" or item["usage"]["scope_id"] in scope_context.get("arc_plan_version_ids", [])
-                 or (usage_spec.get("transition_policy") and any(approved_scope_transition(scope_context, prior=item["usage"], use=item, latest=item,
+                 or (item.get("usage_basis") == "ACCEPTED_PROSE_REVIEW" and usage_spec.get("transition_policy") and any(approved_scope_transition(scope_context, prior=item["usage"], use=item, latest=item,
                     binding={"project_id": scope_context["project_id"], "book_id": scope_context["book_id"], "scope": "ARC", "scope_id": identity})
                     for identity in scope_context.get("arc_plan_version_ids", []))))
             and (usage_spec["scope"] not in {"SCENE", "CHAPTER"} or item["usage"]["scope_binding"].get("chapter_number") == current_chapter)
-            and usage_is_open(item["usage"]) for item in instances.values())
+            and (working_usage_is_open(item, working_history) if item.get("usage_basis") == "SELECTED_WORKING_DELIVERY"
+                 else usage_is_open(item["usage"])) for item in instances.values())
         temporal_budget_applied = not continuable
-    rejection = "CRAFT_COOLDOWN" if temporal_budget_applied and in_cooldown else "CRAFT_FREQUENCY_BUDGET" if temporal_budget_applied and frequency >= policy["max_frequency_in_window"] else "" if score else "CRAFT_NO_CONTEXT_MATCH"
+    rejection = "CRAFT_COOLDOWN" if temporal_budget_applied and in_cooldown else "CRAFT_FREQUENCY_BUDGET" if temporal_budget_applied and frequency + working_frequency >= policy["max_frequency_in_window"] else "" if score else "CRAFT_NO_CONTEXT_MATCH"
     budget_assessment = {"frequency": frequency, "repetition_penalty": repetition_penalty, "pattern_similarity_penalty": pattern_penalty, "salience_penalty": salience_penalty, "feedback_penalty": feedback_penalty, "realization_cautions": feedback, "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION", "in_cooldown": in_cooldown, "pattern_signature": sorted(signature), "pattern_comparisons": similarities, "recent_usage": observations, "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"}
     if working_allocations:
         budget_assessment.update(working_allocation_history=list(working_allocations.values()), working_allocation_caution=working_caution,
@@ -215,18 +242,21 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
     if matching_assessment is not None:
         budget_assessment.update(pattern_signature_version=signature_version,
             noncomparable_pattern_use_ids=[item["use_id"] for item in realized if item.get("mechanism_id") != identity and not item.get("semantic_pattern_signature") and item.get("pattern_signature_version") != SEMANTIC_SIGNATURE])
-        matching_assessment.update(final_score=max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty - working_caution) if score else 0,
+        matching_assessment.update(final_score=max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty - working_caution - working_feedback_penalty) if score else 0,
             variation_adjustment=policy["variation_bonus"] if "CRAFT_VARIATION_BONUS" in reasons else 0,
-            total_penalty=repetition_penalty + pattern_penalty + salience_penalty + feedback_penalty + working_caution)
+            total_penalty=repetition_penalty + pattern_penalty + salience_penalty + feedback_penalty + working_caution + working_feedback_penalty)
     if policy["schema_version"] == "narrative-craft-budget.v2":
         budget_assessment.update(cadence_class=cadence_class, policy_version=policy["schema_version"], temporal_budget_applied=temporal_budget_applied, classification="CONFIGURABLE_POLICY", creative_benefit="NOT_PROVEN")
     if usage_spec:
         budget_assessment.update(accepted_usage_history=[accepted_history[key] for key in sorted(accepted_history) if accepted_history[key].get("mechanism_id") == identity], usage_type=type_id, usage_type_policy=dict(usage_spec), manifestation_count=len(matching),
             realized_phase_count=len({(item.get("usage", {}).get("instance_id", item["use_id"]), item.get("usage", {}).get("phase", "LEGACY")) for item in matching}),
             temporal_budget_applied=temporal_budget_applied, policy_version=policy["schema_version"])
+    if working_enabled:
+        budget_assessment.update(working_usage_history=[row for row in working_history if row.get("mechanism_id") == identity], working_frequency=working_frequency,
+            working_realization_cautions=working_feedback, working_feedback_penalty=working_feedback_penalty)
     return {
         "rejection_reason": rejection,
-        "score": max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty - working_caution) if score else 0,
+        "score": max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty - working_caution - working_feedback_penalty) if score else 0,
         "match_reasons": reasons,
         "budget_assessment": budget_assessment,
         "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED",
@@ -269,7 +299,7 @@ def build_craft_strategy(candidate: Mapping[str, Any], selection: Mapping[str, A
                 "preservation_requirements": list(dict.fromkeys([*site["preservation_requirements"], *mechanism["preservation_constraints"]])),
             }
             use["use_id"] = "craft-use:" + _hash({"selection_digest": selection["selection_digest"], "card": card["knowledge_card_asset_version_id"], "scene_id": scene["scene_id"], "pointer": site["target_pointer"]})[-24:]
-            if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"}:
+            if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
                 from .craft_usage import bind_usage
                 use["usage"] = bind_usage(site=site, use=use, card=card, policy=policy,
                     scope_context=selection.get("need", {}).get("craft_context", {}).get("usage_scope_context"))
@@ -279,8 +309,8 @@ def build_craft_strategy(candidate: Mapping[str, Any], selection: Mapping[str, A
     for scene_id in dict.fromkeys(use["scene_id"] for use in uses):
         group = [use for use in uses if use["scene_id"] == scene_id]
         composition.append({"scene_id": scene_id, "ordered_use_ids": [use["use_id"] for use in group], "intended_combined_reader_effect": "；".join(dict.fromkeys(str(use["intended_reader_effect"] or "") for use in group)), "judgment_basis": judgment_basis,
-            **({"combination_rationales": [{"use_id": use["use_id"], "rationale": use["planning_use_site"].get("craft_combination")} for use in group]} if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"} else {})})
-    strategy = {"schema_version": "narrative-craft-strategy.v3" if policy["schema_version"] == "narrative-craft-budget.v4" else "narrative-craft-strategy.v2" if policy["schema_version"] == "narrative-craft-budget.v3" else "narrative-craft-strategy.v1", "selection_digest": selection["selection_digest"], "policy": policy, "uses": uses, "composition": composition, "evidence_ceiling": "PLANNING_JUDGMENT_NOT_READER_EFFECT"}
+            **({"combination_rationales": [{"use_id": use["use_id"], "rationale": use["planning_use_site"].get("craft_combination")} for use in group]} if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4", "narrative-craft-budget.v5"} else {})})
+    strategy = {"schema_version": "narrative-craft-strategy.v4" if policy["schema_version"] == "narrative-craft-budget.v5" else "narrative-craft-strategy.v3" if policy["schema_version"] == "narrative-craft-budget.v4" else "narrative-craft-strategy.v2" if policy["schema_version"] == "narrative-craft-budget.v3" else "narrative-craft-strategy.v1", "selection_digest": selection["selection_digest"], "policy": policy, "uses": uses, "composition": composition, "evidence_ceiling": "PLANNING_JUDGMENT_NOT_READER_EFFECT"}
     strategy["strategy_digest"] = _hash(strategy)
     return validate_craft_strategy(strategy, scenes=scenes)
 
@@ -288,13 +318,13 @@ def build_craft_strategy(candidate: Mapping[str, Any], selection: Mapping[str, A
 def validate_craft_strategy(strategy: Mapping[str, Any], *, scenes: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
     from .craft import validate_craft_mechanism
 
-    if not isinstance(strategy, Mapping) or set(strategy) != {"schema_version", "selection_digest", "policy", "uses", "composition", "evidence_ceiling", "strategy_digest"} or strategy.get("schema_version") not in {"narrative-craft-strategy.v1", "narrative-craft-strategy.v2", "narrative-craft-strategy.v3"} or strategy.get("evidence_ceiling") != "PLANNING_JUDGMENT_NOT_READER_EFFECT":
+    if not isinstance(strategy, Mapping) or set(strategy) != {"schema_version", "selection_digest", "policy", "uses", "composition", "evidence_ceiling", "strategy_digest"} or strategy.get("schema_version") not in {"narrative-craft-strategy.v1", "narrative-craft-strategy.v2", "narrative-craft-strategy.v3", "narrative-craft-strategy.v4"} or strategy.get("evidence_ceiling") != "PLANNING_JUDGMENT_NOT_READER_EFFECT":
         raise KernelError("CRAFT_STRATEGY_INVALID", "Craft strategy requires the versioned governed planning contract")
     if not str(strategy["selection_digest"]).startswith("sha256:") or strategy["strategy_digest"] != _hash({key: value for key, value in strategy.items() if key != "strategy_digest"}):
         raise KernelError("CRAFT_STRATEGY_DRIFT", "Craft strategy must retain its frozen selection and content digest")
     policy = _frozen_craft_policy(strategy["policy"])
-    typed = strategy["schema_version"] in {"narrative-craft-strategy.v2", "narrative-craft-strategy.v3"}
-    if strategy["schema_version"] != {"narrative-craft-budget.v1": "narrative-craft-strategy.v1", "narrative-craft-budget.v2": "narrative-craft-strategy.v1", "narrative-craft-budget.v3": "narrative-craft-strategy.v2", "narrative-craft-budget.v4": "narrative-craft-strategy.v3"}[policy["schema_version"]]:
+    typed = strategy["schema_version"] in {"narrative-craft-strategy.v2", "narrative-craft-strategy.v3", "narrative-craft-strategy.v4"}
+    if strategy["schema_version"] != {"narrative-craft-budget.v1": "narrative-craft-strategy.v1", "narrative-craft-budget.v2": "narrative-craft-strategy.v1", "narrative-craft-budget.v3": "narrative-craft-strategy.v2", "narrative-craft-budget.v4": "narrative-craft-strategy.v3", "narrative-craft-budget.v5": "narrative-craft-strategy.v4"}[policy["schema_version"]]:
         raise KernelError("CRAFT_POLICY_INVALID", "Typed strategies require their explicit v3 policy")
     uses = strategy["uses"]
     if not isinstance(uses, list) or len(uses) > policy["max_uses_per_chapter"]:

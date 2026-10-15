@@ -22,6 +22,106 @@ def need(context, **kwargs):
     return NarrativeIntelligenceNeed(scope='SCENE', target_stage='chapter_plan.generate', craft_context=context, **kwargs)
 
 
+def test_foundation_recall_projection_retains_methods_conditions_and_real_history_and_rejects_drift():
+    from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+    from novel_forge.modules.mkaos_authority.craft_selection import _hash
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_INPUT_ROLES, foundation_task
+
+    selected_need = {'target_stage': 'character.cast.generate', 'hard_constraints': ['Retain the author input'],
+        'required_card_asset_version_ids': ['method:v1'], 'craft_context': {'scene_goal': 'RETRIEVAL_QUERY'},
+        'condition_sources': {'world_bible': {'asset_version_id': 'world:v1', 'content_hash': 'sha256:world'}},
+        'recent_craft_usage': [{'source': 'real-prior-observation'}]}
+    selected_need['need_digest'] = _hash(selected_need)
+    selection = {'schema_version': 'mkaos-narrative-intelligence-selection.v1', 'need': selected_need,
+        'knowledge_access_policy': {'craft_candidate_review_version': 'explicit-allowlist-craft-review.v1'},
+        'selected': [{'knowledge_card_asset_version_id': 'method:v1',
+            'selected_content': {'mechanism': 'A choice follows available information', 'epistemic_status': 'HYPOTHESIS'},
+            'applicability_assessment': {'status': 'UNKNOWN', 'checks': [{'result': 'UNKNOWN', 'statement': 'Keep intentional ambiguity'}]},
+            'craft_assessment': {'applicability_judgment': 'HYPOTHESIS', 'matching_assessment': {'terms': ['RETRIEVAL_QUERY']},
+                'budget_assessment': {'recent_usage': [{'source': 'real-prior-observation'}]}}}]}
+    selection['selection_digest'] = _hash(selection)
+    original = deepcopy(selection)
+    projected = project_foundation_method_recall(selection)
+    assert selection == original
+    assert projected['selected'][0]['selected_content'] == selection['selected'][0]['selected_content']
+    assert projected['selected'][0]['applicability_assessment'] == selection['selected'][0]['applicability_assessment']
+    assert projected['selected'][0]['craft_assessment']['budget_assessment'] == selection['selected'][0]['craft_assessment']['budget_assessment']
+    assert projected['need']['hard_constraints'] == selected_need['hard_constraints']
+    assert projected['need']['recent_craft_usage'] == selected_need['recent_craft_usage']
+    assert 'craft_context' not in projected['need']
+    working = deepcopy(selection)
+    budget = working['selected'][0]['craft_assessment']['budget_assessment']
+    budget['recent_usage'] = []
+    budget['working_allocation_history'] = [{'draft_version': 'working:v1'}]
+    budget['working_coverage_gaps'] = [{'use_id': 'unrealized:v1'}]
+    working['selection_digest'] = _hash({key: value for key, value in working.items() if key != 'selection_digest'})
+    assert project_foundation_method_recall(working)['selected'][0]['craft_assessment']['budget_assessment'] == budget
+    inputs = {'planning_command': {'planning_scope': 'NOT_APPLICABLE'},
+        'frozen_inputs': [{'role': role} for role in FOUNDATION_INPUT_ROLES['character.cast.generate']],
+        'foundation_task': foundation_task('character.cast.generate'), 'narrative_intelligence': selection}
+    legacy = build_provider_task_view('character.cast.generate', inputs)
+    assert legacy['narrative_intelligence'] == original
+    newer = build_provider_task_view('character.cast.generate', {**inputs,
+        'planning_recall_query_projection_version': 'foundation-method-recall-projection.v1'})
+    assert newer['narrative_intelligence'] == projected
+    for changed in ('method', 'need'):
+        mutated = deepcopy(selection)
+        if changed == 'method':
+            mutated['selected'][0]['selected_content']['mechanism'] = 'Changed method'
+        else:
+            mutated['need']['hard_constraints'].append('Changed author requirement')
+        with pytest.raises(KernelError, match='CRAFT_CONTEXT_PROJECTION_DRIFT'):
+            project_foundation_method_recall(mutated)
+
+
+def test_current_activation_evidence_keeps_historical_candidate_and_method_conditions_unchanged():
+    from novel_forge.modules.mkaos_authority.craft_context_projection import approved_method_activation_view
+    content = {'source_policy': {'approval_class': 'EXPERIMENTAL_VALIDATION', 'approval_policy_version': 'experiment.v1',
+        'review_class': 'EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN', 'production_context_eligible': False, 'experimental_context_eligible': True},
+        'lineage': {'governance_decision_asset_version_id': 'decision:v1'},
+        'abstract_content': {'constraints': ['This earlier discovery candidate is unapproved.', 'Keep an intentionally uncertain motive unresolved.'],
+            'epistemic_status': 'HYPOTHESIS'}}
+    original = deepcopy(content)
+    view = approved_method_activation_view(content, asset_version_id='card:v1', content_hash='sha256:card')
+    assert content == original
+    assert view['approval_class'] == 'EXPERIMENTAL_VALIDATION'
+    assert view['production_context_eligible'] is False
+    assert view['governance_decision_asset_version_id'] == 'decision:v1'
+    assert 'Historical discovery-stage statements' in view['instruction']
+    assert 'prerequisites, source restrictions and hypothesis status remain unchanged' in view['instruction']
+
+
+def test_bounded_candidate_review_delivers_zero_lexical_matches_without_claiming_adoption():
+    cards = tuple(_card(item) for item in core_catalog()[:3])
+    cold = need({'writing_problem': ['这是全新的中文创作简报'], 'chapter_function': ['WORK_PRODUCTION']})
+    assert select_narrative_intelligence(cold, cards)['selected'] == []
+    ids = tuple(card['asset_version_id'] for card in cards)
+    result = select_narrative_intelligence(cold, cards, candidate_review_card_asset_version_ids=ids)
+    assert len(result['selected']) == 3
+    assert result['need']['required_card_asset_version_ids'] == []
+    assert all(card['craft_assessment']['matching_assessment']['need_score'] == 0 for card in result['selected'])
+    assert all(card['craft_assessment']['selection_reason'] == 'BOUNDED_CANDIDATE_REVIEW' for card in result['selected'])
+    assert 'PLANNING_MUST_ADOPT_ADAPT_OR_REJECT' in result['candidate_review']['authority_boundary']
+    assert 'craft_strategy' not in result
+    bounded = select_narrative_intelligence(cold, cards, limit=1, candidate_review_card_asset_version_ids=ids)
+    assert len(bounded['selected']) == 1
+    assert bounded['candidate_review']['bounded_pool_card_asset_version_ids'] == sorted(ids)
+    assert bounded['candidate_review']['exact_candidate_card_asset_version_ids'] == [bounded['selected'][0]['knowledge_card_asset_version_id']]
+    blocked = deepcopy(cards[0])
+    blocked['content']['abstract_content']['applicability_contract'] = {'schema_version': 'knowledge-applicability.v1',
+        'usage_role': 'MECHANISM', 'prerequisites': [], 'exceptions': [], 'hard_conflicts': [
+            {'condition_id': 'author-forbids', 'path': '/hard_constraints', 'operator': 'CONTAINS', 'value': '禁止此方法'}]}
+    refused = select_narrative_intelligence(need({}, hard_constraints=('禁止此方法',)), (blocked,),
+        candidate_review_card_asset_version_ids=(blocked['asset_version_id'],))
+    assert refused['selected'] == []
+    assert refused['rejected'][0]['reason'] == 'KNOWLEDGE_APPLICABILITY_REJECTED'
+    assert refused['candidate_review']['exact_candidate_card_asset_version_ids'] == []
+    with pytest.raises(KernelError, match='CRAFT_CANDIDATE_REVIEW_SCOPE_INVALID'):
+        select_narrative_intelligence(need({}, craft_selection_policy_version=LEGACY_SELECTION), cards,
+            candidate_review_card_asset_version_ids=ids)
+
+
 def test_exact_baseline_selections_replay_under_legacy_contract():
     cards = tuple(_card(m) for m in LEGACY['mechanisms'])
     for frozen in LEGACY['selections']:

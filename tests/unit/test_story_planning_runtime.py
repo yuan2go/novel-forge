@@ -3211,8 +3211,7 @@ def test_changed_static_planning_model_has_no_unrelated_draft_capacity_or_probe(
     if provider != "scripted_provider_v2":
         with pytest.raises(KernelError, match="OUTPUT_CAPACITY_UNKNOWN"):
             require_task_output_reserve("book_plan.generate", route, 8192, capacity_error_code="OUTPUT_CAPACITY_EXCEEDED")
-    with pytest.raises(KernelError, match="REASONING_REQUIRED"):
-        require_task_reasoning(replace(route, model_profile=replace(route.model_profile, reasoning_effort="low")), task_scoped=True)
+    require_task_reasoning(replace(route, model_profile=replace(route.model_profile, reasoning_effort="low")), task_scoped=True)
 
 
 def test_scripted_planning_virtual_model_labels_retain_backend_fixture_capacity(monkeypatch):

@@ -1,4 +1,5 @@
 from dataclasses import replace
+from copy import deepcopy
 import json
 from pathlib import Path
 
@@ -84,7 +85,7 @@ def test_formation_v5_freezes_author_comparison_and_creation_profiles():
 
 def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay():
     from novel_forge.modules.book_authority.creation_runtime import creation_narrative_execution
-    from novel_forge.modules.book_authority.working_prose import working_prose_policy
+    from novel_forge.modules.book_authority.working_prose import working_instruction, working_prose_policy
     from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
     root = Path(__file__).resolve().parents[2]
     policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
@@ -97,7 +98,26 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
     assert path["chapter"] == {"pack_version_override": "3.0.4", "prose_skill_version": "prose-generation-v5",
         "prompt_template_version": "v15"}
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v1"})["chapter"]["pack_version_override"] == "3.0.3"
-    assert working_prose_policy(policy["profiles"]["production_profile"]["content"])["version"] == "working-prose-projection.v4"
+    profile = policy["profiles"]["production_profile"]["content"]
+    current = working_prose_policy(profile)
+    assert current["version"] == "working-prose-projection.v5"
+    assert "No fixed number of turns" in working_instruction(current)
+    assert profile["craft_budget_policy"]["schema_version"] == "narrative-craft-budget.v5"
+    assert profile["working_craft_history_policy"] == {"version": "working-craft-delivery.v2", "use": "SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}
+    historical = deepcopy(policy)
+    historical_profile = historical["profiles"]["production_profile"]["content"]
+    historical_profile["working_prose_policy"]["version"] = "working-prose-projection.v4"
+    historical_profile["craft_budget_policy"] = {"schema_version": "narrative-craft-budget.v4"}
+    historical_profile["working_craft_history_policy"] = {"version": "working-craft-delivery.v1", "use": "SOFT_SELECTION_CAUTION"}
+    historical_profile["language_contract"] = {"required_language": "zh-CN"}
+    legacy = working_prose_policy(historical_profile)
+    assert legacy["version"] == "working-prose-projection.v4"
+    assert "Use three connected" in working_instruction(legacy)
+    frozen = replace(_input(), generation_policy={**_input().generation_policy, "contract_version": "formation-generation.v4",
+        "creation_input_policy": historical})
+    replayed = StoryFormationInput.from_mapping(frozen.to_dict())
+    assert replayed.digest == frozen.digest
+    assert replayed.generation_policy["creation_input_policy"] == historical
     assert creation_narrative_execution({"contract_version": "creation-input-policy.v1"}) == {"chapter": {}, "planning": {}}
     with pytest.raises(Exception, match="Unknown frozen narrative execution contract"):
         creation_narrative_execution({"narrative_execution_contract": "unknown"})

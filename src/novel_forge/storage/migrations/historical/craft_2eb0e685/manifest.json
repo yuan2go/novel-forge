@@ -1,0 +1,12 @@
+{
+  "contract_version": "published-craft-migration-retention.v1",
+  "source_commit": "2eb0e685e0e4dc3c84a931330f3fb3e97156d8d7",
+  "registered_on_main": false,
+  "modules": [
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261015_0217_retained_working_continuation.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_2eb0e685/v20261015_0217_retained_working_continuation.py",
+      "sha256": "c7d6edf87979553c12d32679a42f8056c941f0ea0b9150a25f40b89ee1fa0718"
+    }
+  ]
+}

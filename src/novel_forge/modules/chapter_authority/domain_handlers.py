@@ -339,7 +339,7 @@ def build_context_bundle(
             if asset_type == "retrieval_result"
             else {key: value for key, value in content.items() if key != "execution_evidence"}
         )
-        if asset_type == "chapter_memo" and (content.get("craft_strategy") or {}).get("schema_version") in {"narrative-craft-strategy.v2", "narrative-craft-strategy.v3"}:
+        if asset_type == "chapter_memo" and (content.get("craft_strategy") or {}).get("schema_version") in {"narrative-craft-strategy.v2", "narrative-craft-strategy.v3", "narrative-craft-strategy.v4"}:
             strategy = content["craft_strategy"]
             if execution_intent_asset_version_id and strategy == (execution_intent or {}).get("craft_strategy"):
                 rendered_content.pop("craft_strategy")
@@ -419,6 +419,10 @@ def build_context_bundle(
             "memo_fingerprint": str((chapter_memo or {}).get("memo_fingerprint") or ""),
             "preserve_quotes": list(plan.get("preserve_quotes") or ()),
         }
+        if (clean_history and access.get("mode") == "ALLOW_ONLY"
+                and access.get("usage_scope") == "EXPERIMENTAL_VALIDATION"
+                and access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"):
+            task["protected_context_accounting_version"] = "protected-context-exact-accounting.v1"
         admitted_source_ids = validate_task_context_sources(
             project_id=project_id, book_id=book_id, candidates=candidates,
             token_budget=token_budget, required_asset_types=tuple(required_asset_types),
@@ -656,7 +660,7 @@ def normalize_draft_result(
     )
     memory = None
     working = (context_content or {}).get("working_manuscript") or {}
-    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4"}:
+    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5"}:
         from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
         memory = optional_draft_memory(result.get("working_memory_json"), text,
             available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})

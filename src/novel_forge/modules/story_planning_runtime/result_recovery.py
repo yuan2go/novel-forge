@@ -325,7 +325,9 @@ def require_result_repair_source(
         if not world_generation:
             from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
             validate_author_decisions(validated_result, context_content.get("author_design_projection") or {})
-        if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"][
+        selection = context_content.get("narrative_intelligence") or {}
+        candidate_review = selection.get("candidate_review", {}).get("contract_version") == "explicit-allowlist-craft-review.v1"
+        if candidate_review or source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"][
             "error_code"
         ].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
             from novel_forge.modules.mkaos_authority.craft_reselection import (
@@ -336,13 +338,17 @@ def require_result_repair_source(
             )
 
             from .knowledge_translation import validate_knowledge_translations
-            context = AuthorityAssetQuery(database_url).require(project_id=command.project_id, asset_version_id=evidence["context_bundle_asset_version_id"])
+            context = AuthorityAssetQuery(database_url).require(project_id=command.project_id, asset_version_id=str(context_id))
             selection = context.content["narrative_intelligence"]
-            if (context.content_hash != evidence["context_bundle_hash"] or selection["selection_digest"] != evidence["narrative_intelligence_selection_digest"]):
+            digest = evidence.get("narrative_intelligence_selection_digest")
+            if (context.content_hash != context_hash
+                    or (digest != selection["selection_digest"] and not (
+                        candidate_review and source.asset_type == "model_call_log" and digest is None))):
                 raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Concrete failure must retain its exact frozen selection")
             validate_knowledge_translations(validated_result, selection)
-            validate_concrete_selection(validated_result, selection)
-            build_craft_strategy(validated_result, selection)
+            if not candidate_review or command.generator_operation_name == "chapter_plan.generate":
+                validate_concrete_selection(validated_result, selection)
+                build_craft_strategy(validated_result, selection)
     except KernelError as error:
         if require_valid_result:
             raise KernelError("PLANNING_RESULT_ADMISSION_INVALID", error.message) from error

@@ -35,6 +35,12 @@ def test_quality_qualification_router_exposes_operator_and_reviewer_safe_paths()
         ("/api/quality-qualification/campaigns/{campaign_id}/blind-packs", "GET"),
         ("/api/quality-qualification/blind-packs/{pack_id}", "GET"),
         ("/api/quality-qualification/blind-decisions", "POST"),
+        ("/api/quality-qualification/manuscript-packs", "POST"),
+        ("/api/quality-qualification/manuscript-packs/{pack_id}", "GET"),
+        ("/api/quality-qualification/manuscript-packs/{pack_id}/feedback", "GET"),
+        ("/api/quality-qualification/manuscript-packs/{pack_id}/reading", "GET"),
+        ("/api/quality-qualification/manuscript-feedback", "POST"),
+        ("/api/quality-qualification/manuscript-model-diagnoses", "POST"),
     } <= routes
 
 
@@ -54,3 +60,23 @@ def test_quality_api_uses_frozen_campaign_bounds_instead_of_eight_chapter_limit(
         for name in ("chapter_start", "chapter_end"):
             assert fields[name]["minimum"] == 1
             assert "maximum" not in fields[name]
+
+
+def test_reading_page_preserves_source_text_and_keeps_source_markup_inert() -> None:
+    import html
+    from novel_forge.api.manuscript_reading import manuscript_reading_page
+
+    text = '原稿 __RATINGS__\r\n</script><script>evil()</script>😀'
+    public = {"manuscripts": [{"display_name": "作品 1", "manuscript_token": "opaque",
+        "chapters": [{"chapter_token": "chapter", "chapter_number": 1,
+                      "title": "<雨>", "text": text}]}],
+        "response_template": {"human_attestation": False}}
+    page = manuscript_reading_page(public, project_id="project:reading",
+                                   workspace_id="workspace:actual-reading", pack_id="pack:reading")
+    assert html.escape(text) in page
+    assert 'evil()</script>' not in page
+    assert '<h3>第 1 章 · &lt;雨&gt;</h3>' in page
+    assert 'id="attestation" type="checkbox" required>' in page
+    assert 'human_attestation": false' in page
+    assert 'workspace:actual-reading' in page
+    assert 'workspace:project:reading' not in page

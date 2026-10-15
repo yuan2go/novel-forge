@@ -248,6 +248,48 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
+    def test_preparation_book_scope_filters_before_limit_and_retains_shared_profiles(self) -> None:
+        from tests.integration.authority_postgres_support import seed_authority_project_book
+
+        project = identifier("preparation-scope-project")
+        book = identifier("preparation-own-book")
+        foreign = identifier("preparation-foreign-book")
+        for index, identity in enumerate((book, foreign)):
+            seed_authority_project_book(project_id=project, workspace_id="workspace:"+identity,
+                book_id=identity, seed_project=index == 0)
+        inserted = []
+        with transaction() as connection, connection.cursor() as cursor:
+            contents = [{"book_id": book}, {}, *[{"scope": {"book_id": foreign}, "priority": 10} for _ in range(201)],
+                {"book_id": book, "creative_input_selection": {"book_id": foreign}, "priority": 11}]
+            for content in contents:
+                asset_id, version = identifier("scope-asset"), identifier("scope-version")
+                cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES(%s,%s,'style_policy')",
+                    [asset_id, project])
+                cursor.execute("""INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,
+                    lifecycle,eligibility,governance,content,content_hash,schema_version)
+                    VALUES(%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'fixture.v1')""",
+                    [version, asset_id, json.dumps(content), "sha256:"+hashlib.sha256(json.dumps(content).encode()).hexdigest()])
+                inserted.append(version)
+            cursor.execute("UPDATE authority_book SET current_book_design_asset_version_id=%s WHERE project_id=%s AND book_id=%s",
+                [inserted[1], project, book])
+        resolver = PostgresProductionAssetResolver(DATABASE_URL)
+        selected = resolver.resolve_all_for_book(project_id=project, book_id=book, asset_type="style_policy")
+        self.assertEqual({item.asset_version_id for item in selected}, set(inserted[:2]))
+        owned_bookless = next(item for item in selected if item.asset_version_id == inserted[1])
+        self.assertEqual(owned_bookless.book_scope_ids, (book,))
+        self.assertNotIn(inserted[1], {item.asset_version_id for item in
+            resolver.resolve_all_for_book(project_id=project, book_id=foreign, asset_type="style_policy")})
+        unscoped = resolver.resolve_all(project_id=project, asset_type="style_policy")
+        self.assertEqual(len(unscoped), 200)
+        self.assertFalse({item.asset_version_id for item in unscoped} & set(inserted[:2]))
+        conflict = resolver.resolve_override(project_id=project, asset_version_id=inserted[-1])
+        self.assertEqual(set(conflict.book_scope_ids), {book, foreign})
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE authority_book SET current_book_design_asset_version_id=NULL WHERE project_id=%s AND book_id=%s",
+                [project, book])
+        shared = resolver.resolve_all_for_book(project_id=project, book_id=foreign, asset_type="style_policy", limit=1000)
+        self.assertIn(inserted[1], {item.asset_version_id for item in shared})
+
     def test_admission_does_not_execute_and_ticks_rebuild_full_saga(self) -> None:
         project_id = identifier("async-chapter-project")
         candidates = self._release_evidence(project_id)

@@ -16,7 +16,10 @@ CLASSIFICATION_STAGE = "source.content.classify"
 def source_analysis_output_instruction(stage: str, inputs: Mapping[str, Any]) -> str:
     if (
         stage == DECONSTRUCTION_STAGE
-        and inputs.get("reading_context")
+        and (inputs.get("reading_context") or (
+            inputs.get("observation_contract")
+            and (inputs.get("analyzer") or {}).get("prompt_version") == "2.1"
+        ))
         and inputs.get("source_segments")
         and "review_target" not in inputs
     ):

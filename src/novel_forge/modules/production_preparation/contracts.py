@@ -60,6 +60,7 @@ class ResolvedProductionAsset:
     content: dict[str, Any]
     qualification: str
     selected_reason: str
+    book_scope_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

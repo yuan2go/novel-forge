@@ -84,7 +84,9 @@ def test_source_craft_discovery_uses_native_effect_observation_governance_and_ex
                     provenance_schema = schema["properties"]["craft_mechanism"]["properties"]["provenance"]["properties"]
                     assert provenance_schema["origin"]["const"] == "SOURCE_ABSTRACTION"
                     assert provenance_schema["confidence"]["const"] == "HYPOTHESIS"
-                    assert provenance_schema["source_observation_asset_version_ids"]["const"][0] in discovered_by_observation
+                    observation_schema = provenance_schema["source_observation_asset_version_ids"]
+                    assert observation_schema["minItems"] == observation_schema["maxItems"] == 1
+                    assert observation_schema["items"]["const"] in discovered_by_observation
                 cursor.execute(
                     """SELECT external_effect_id,request_payload,status FROM authority_external_effect
                        WHERE project_id=%s AND request_payload ? '_source_intelligence' ORDER BY external_effect_id""",

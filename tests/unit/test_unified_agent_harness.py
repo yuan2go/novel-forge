@@ -24,6 +24,7 @@ from novel_forge.modules.agent_runtime.harness import (
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.agent_runtime.production import (
     _agent_turn_reservation_limits,
+    agent_context_content,
 )
 
 
@@ -365,6 +366,51 @@ def test_agent_turn_history_does_not_exhaust_new_model_input_capacity() -> None:
     amount, tokens = _agent_turn_reservation_limits(session=session, provider_call_cap="1.0")
     assert tokens == 100
     assert amount == "1.0"
+
+
+def test_membership_turn_does_not_declare_a_zero_monetary_reservation() -> None:
+    session = replace(_session(), budget=replace(_session().budget, max_cost_amount="0"),
+        usage=AgentHarnessUsage(input_tokens=1000, cost_amount="0"))
+    amount, tokens = _agent_turn_reservation_limits(session=session, provider_call_cap="0",
+        accounting_basis="ACCOUNT_ENTITLEMENT")
+    assert amount is None
+    assert tokens == session.budget.max_input_tokens
+
+
+def test_versioned_agent_context_passes_the_real_provider_context_policy_compiler() -> None:
+    from novel_forge.modules.chapter_authority.execution_gateway import _provider_effective_context_policy
+    from novel_forge.modules.agent_runtime.harness import canonical_execution_contract_hash
+    contract = {"provider_io_policy": "agent-io-budget.v1"}
+    session = replace(_session(), execution_contract=contract,
+                      execution_contract_hash=canonical_execution_contract_hash(contract))
+    content = agent_context_content(session, "Only the independent frozen author brief")
+    receipt = _provider_effective_context_policy(context_selection=[{"artifact_type": "context_bundle", "content": content}],
+        context_policy_payload={"policy_id": "pack", "allowed_asset_types": ["context_bundle"],
+            "forbidden_asset_types": ["raw_source_document", "raw_source_chunk"], "max_tokens": 100},
+        context_policy_hash="sha256:" + "b" * 64, context_policy_ref="pack:context",
+        route_identity="agent-session:test", route_allowed_physical_types=("context_bundle",))
+    assert receipt["conflict_decision"] == "PASS"
+    assert content["context_manifest"]["effective_policy"]["maximum_raw_source_ratio"] == 0
+    historical = agent_context_content(_session(), "Original instruction")
+    assert historical["contract_version"] == "agent-harness-context.v1"
+    assert "context_manifest" not in historical
+
+
+def test_controlled_reference_refuses_a_model_tool_request_before_execution() -> None:
+    from novel_forge.modules.agent_runtime.harness import canonical_execution_contract_hash
+    contract = {"reference_prose": {"contract_version": "agent-reference-prose.v1", "tools_allowed": False}}
+    session = replace(_session(), execution_contract=contract,
+                      execution_contract_hash=canonical_execution_contract_hash(contract))
+    tools = _Tools()
+    called = []
+    tools.invoke = lambda **values: called.append(values)
+    harness = UnifiedAgentHarness(transcript=_Transcript(), model=_Model((AgentModelTurn(
+        message="Read a plan", operation_id="operation-1", attempt_id="attempt-1", external_effect_id="effect-1",
+        input_tokens=1, output_tokens=1, cost_amount="0", tool_call=AgentToolCall(
+            tool_name="narrative.query_accepted", arguments={}, reason="request")),)), tools=tools, cancellation=_Cancellation())
+    with pytest.raises(KernelError, match="AGENT_REFERENCE_PROSE_TOOL_FORBIDDEN"):
+        harness.execute_request(session=session, request_id="reference", instruction="Frozen independent brief", trace_id="trace", attempt_id="attempt-1")
+    assert called == []
 
 
 def test_harness_turn_budget_fails_closed_without_committing_request() -> None:

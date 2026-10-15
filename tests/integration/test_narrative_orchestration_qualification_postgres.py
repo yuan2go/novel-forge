@@ -250,6 +250,17 @@ def _qualification_planning_response(
         # refine Arc contributions through the governed Working Set, but must
         # preserve the static row's exact structural fields for admission.
         payload["narrative_density"] = "MEDIUM"
+    if command.get("execution_contract_version") == "1.21.0":
+        for manifest, fields in (
+            ("world_realization", ("invariant_refs", "structure_refs", "state_ref")),
+            ("character_realization", ("identity_ref", "state_ref", "trajectory_ref")),
+        ):
+            for entity in payload.get(manifest, []):
+                for field in fields:
+                    raw = entity[field]
+                    selectors = raw if isinstance(raw, list) else [raw]
+                    selected_sources = [{"asset_version_id": item["asset_version_id"]} for item in selectors]
+                    entity[field] = selected_sources if isinstance(raw, list) else selected_sources[0]
     return payload
 
 

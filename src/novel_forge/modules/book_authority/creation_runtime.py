@@ -1066,7 +1066,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         profiles = deepcopy(json.loads(args.creation_policy_file.read_text()))
         from novel_forge.modules.production_execution.codex_model_catalog import parse_codex_model_catalog
         catalog = parse_codex_model_catalog(os.environ.get("NOVEL_FORGE_CODEX_ROUTER_MODELS", ""))
-        windows = [model["context_limit"] - model["output_limit"] for model in catalog if model["role"] == "PRIMARY"]
+        # CONSTRAINT: Headroom catalogs reserve output from the final Provider envelope instead of a fixed catalog allowance.
+        windows = [model["context_limit"] - (model["output_limit"] or 0) for model in catalog if model["role"] == "PRIMARY"]
         if not windows or max(windows) <= 0:
             raise ValueError("CREATION_CONTEXT_WINDOW_REQUIRED")
         profile_content = profiles["profiles"]["production_profile"]["content"]

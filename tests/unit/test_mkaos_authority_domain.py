@@ -592,3 +592,72 @@ def test_narrative_method_activation_rejects_operational_strings_in_semantic_fie
     for field in ("mechanism", "constraints", "review_checks"):
         with unittest.TestCase().assertRaisesRegex(KernelError, "OPERATIONAL_LEAK"):
             assert_narrative_method_activation_safe({**valid, field: ["project_id=research; observation_hash=sha256:fixture"]})
+
+
+def test_experimental_method_lineage_projection_keeps_old_candidate_and_requires_explicit_scope():
+    from copy import deepcopy
+    from novel_forge.modules.mkaos_authority.craft import core_catalog, craft_candidate
+    from novel_forge.modules.mkaos_authority.domain import project_narrative_method_lineage
+
+    craft = core_catalog()[0]
+    craft.update(version=1, schema_version="narrative-craft-mechanism.v1")
+    craft.pop("affinity_evidence", None)
+    craft["provenance"].update(origin="SOURCE_ABSTRACTION", source_observation_asset_version_ids=["observation:1"], confidence="HYPOTHESIS")
+    payload = craft_candidate(craft)
+    payload["constraints"].insert(0, "Project binding: project_id=project; book_id=source-scope; scope_id=observation:1.")
+    original = deepcopy(payload)
+    projected, receipt = project_narrative_method_lineage(payload)
+    assert payload == original
+    assert projected["constraints"] == original["constraints"][1:]
+    assert {key: value for key, value in projected.items() if key != "constraints"} == {key: value for key, value in original.items() if key != "constraints"}
+    assert receipt["research_only_statements"] == [{"field": "constraints", "index": 0, "value": original["constraints"][0]}]
+    candidate = {"project_id": "project", "workspace_id": "workspace", "status": "NEEDS_REVIEW",
+        "lifecycle": "CANDIDATE", "eligibility": "PENDING_EVALUATION", "governance": "CLEAR",
+        "content": {"candidate": payload, "execution_evidence": {"proof": {
+            "fixture_protocol_only": False, "real_provider_proven": True, "production_verified": False}}}}
+    policy = dict(project_id="project", workspace_id="workspace", policy_version="policy", reviewer_id="operator")
+    application = MkaosAuthorityApplication("unused", application_build_id="test", commit_sha="f" * 40,
+        experimental_approval_policy=ExperimentalKnowledgeApprovalPolicy(**policy))
+    args = dict(**policy, approval_class="EXPERIMENTAL_VALIDATION")
+    with unittest.TestCase().assertRaisesRegex(KernelError, "OPERATIONAL_LEAK"):
+        application._require_approvable(candidate, **args)
+    application.experimental_approval_policy = ExperimentalKnowledgeApprovalPolicy(**policy,
+        method_lineage_projection_version="narrative-method-lineage-projection.v1")
+    approved = application._require_approvable(candidate, **args)
+    assert approved["method_lineage_projection"] == receipt
+    assert approved["production_context_eligible"] is False
+    assert approved["review_class"] == "EXPERIMENTAL_POLICY_APPROVAL_NOT_HUMAN"
+    for changed in ({**args, "workspace_id": "other"}, {**args, "approval_class": "PRODUCTION"}):
+        with unittest.TestCase().assertRaises(KernelError):
+            application._require_approvable(candidate, **changed)
+    changed_method = deepcopy(payload)
+    changed_method["mechanism"] = "project_id=project; do something"
+    with unittest.TestCase().assertRaisesRegex(KernelError, "OPERATIONAL_LEAK"):
+        project_narrative_method_lineage(changed_method)
+    mixed_condition = deepcopy(payload)
+    mixed_condition["constraints"][0] = "Project binding: project_id=project; a condition affecting story choices"
+    with unittest.TestCase().assertRaisesRegex(KernelError, "OPERATIONAL_LEAK"):
+        project_narrative_method_lineage(mixed_condition)
+    general = deepcopy(candidate)
+    general["content"]["candidate"] = deepcopy(_planning_card(0)["content"]["abstract_content"])
+    general_contract = application._require_approvable(general, **args)
+    assert "method_lineage_projection" not in general_contract
+    assert general_contract["experimental_context_eligible"] is True
+
+
+def test_candidate_review_policy_is_explicit_bounded_experimental_and_missing_methods_are_optional():
+    value = {"policy_id": "review", "policy_version": 1, "mode": "ALLOW_ONLY",
+        "allowed_knowledge_card_asset_version_ids": ["card:1"], "usage_scope": "EXPERIMENTAL_VALIDATION",
+        "experimental_policy_version": "experiment.v1", "craft_candidate_review_version": "explicit-allowlist-craft-review.v1"}
+    access = resolve_book_knowledge_access_policy(production_profile={"knowledge_access_policy": value}, project_id="project", book_id="book")
+    assert validate_book_knowledge_access_policy(access, project_id="project", book_id="book") == access
+    for changed in ({**value, "mode": "PROJECT_DEFAULT"}, {**value, "usage_scope": "PRODUCTION"},
+            {**value, "allowed_knowledge_card_asset_version_ids": [f"card:{index}" for index in range(7)]}):
+        with unittest.TestCase().assertRaises(KernelError):
+            resolve_book_knowledge_access_policy(production_profile={"knowledge_access_policy": changed}, project_id="project", book_id="book")
+    query = MkaosAuthorityQuery("unused")
+    with patch.object(query, "_planning_cards", return_value=[]):
+        missing = query.resolve_narrative_intelligence(project_id="project", book_id="book",
+            need=NarrativeIntelligenceNeed(scope="STORY", target_stage="creative.candidates.generate"), knowledge_access_policy=access)
+    assert missing["selected"] == []
+    assert missing["missing_optional_card_asset_version_ids"] == ["card:1"]

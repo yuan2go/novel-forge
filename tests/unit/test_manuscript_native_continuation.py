@@ -234,3 +234,31 @@ def test_aborted_work_never_acquires_a_new_continuation(monkeypatch):
         principal=principal,
     )
     assert result["status"] == "ABORTED" and all(c[0] == "permission" for c in calls)
+
+
+@pytest.mark.parametrize("explicit", [None, "explicit-author-pack"])
+def test_formation_manuscript_continuation_resolves_its_original_project_pack_scope(monkeypatch, explicit):
+    from unittest.mock import Mock
+    from novel_forge.api import authority_dependencies as deps
+    from novel_forge.modules.book_authority import creation_runtime
+
+    book, principal, _ = setup_runtime(monkeypatch)
+    monkeypatch.setattr(creation_runtime, "creation_cancellation", lambda *args: None)
+    if explicit:
+        monkeypatch.setenv("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID", explicit)
+    else:
+        monkeypatch.delenv("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID", raising=False)
+    builders = []
+    for name in ("build_production_execution_composition", "build_chapter_authority_application", "build_book_production_composition"):
+        previous = getattr(deps, name)
+        def call(settings, _previous=previous, _name=name, **kwargs):
+            return _previous(settings) if _name == "build_production_execution_composition" else _previous(settings, **{k:v for k,v in kwargs.items() if k != "env"})
+        wrapper = Mock(side_effect=call)
+        builders.append((wrapper, previous))
+        monkeypatch.setattr(deps, name, wrapper)
+    result = _continue_native_work(SimpleNamespace(database_url="db"), SimpleNamespace(stop_after_chapter=5),
+        book=book, principal=principal, formation_run_id="original-formation")
+    assert result["status"] == "MANUSCRIPT_READY"
+    environments = [wrapper.call_args.kwargs["env"] for wrapper, _ in builders]
+    assert environments[0] == environments[1] == environments[2]
+    assert environments[0]["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"] == (explicit or creation_runtime.creation_runtime_environment("p", {})["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"])

@@ -96,7 +96,13 @@ def test_memo_is_the_authoritative_retrieval_query_input() -> None:
     assert "semantic_candidate_limit" not in plan
     assert sum(plan["ranking_weights"].values()) == 1.0
     assert plan["result_limit"] == 24
-    assert plan["campaign_policy"]["total_round_limit"] == 3
+    assert plan["campaign_policy"] == {
+        "policy_version": "coverage-progress-retrieval-campaign-v2",
+        "queries_per_round_limit": 4,
+        "candidates_per_round_limit": 256,
+        "result_limit": 24,
+        "fallback_mode": "DETERMINISTIC_FALLBACK",
+    }
     assert plan["coverage_contract"]["accepted_boundary"] == {
         "accepted_through_chapter": 8
     }

@@ -1,6 +1,8 @@
 """SECURITY: only task-specific projections may expose frozen Chapter inputs to a Provider; audit and duplicate representations stay excluded."""
 
 from __future__ import annotations
+
+
 from copy import deepcopy
 import hashlib
 import json
@@ -10,6 +12,12 @@ from novel_forge.modules.narrative_state import (
     compact_canon_facts,
     compact_current_state_facts,
 )
+
+def controlled_manuscript_reading_views(instruction: str) -> tuple[dict, dict]:
+    return ({"contract_version": "provider-public-manuscript-reading.v1", "instruction": instruction},
+        {"contract_version": "controlled-manuscript-reading-context.v1", "accepted_facts": [],
+            "source": "FROZEN_PUBLIC_MANUSCRIPT_CAPSULE_ONLY"})
+
 
 _MAX_SEGMENTS = 24
 _MAX_FACTS_PER_SEGMENT = 32
@@ -279,7 +287,7 @@ def _project_empty_world_query_directory(selection: dict[str, Any]) -> dict[str,
 
 
 def _project_selected_world_selection(selection: Any) -> Any:
-    if not isinstance(selection, Mapping) or not selection.get("selected") or selection.get("craft_policy", {}).get("schema_version") != "narrative-craft-budget.v4":
+    if not isinstance(selection, Mapping) or not selection.get("selected") or selection.get("craft_policy", {}).get("schema_version") not in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
         return _project_empty_world_selection(selection)
     result = deepcopy(dict(selection))
     receipt = result.get("world_selection_receipt")
@@ -311,7 +319,6 @@ def _project_selected_world_selection(selection: Any) -> Any:
         assessment = card.get("craft_assessment", {})
         if "budget_assessment" in assessment:
             omitted[f"/selected/{index}/craft_assessment/budget_assessment"] = assessment.pop("budget_assessment")
-    # WHY: Retrieval terms are a search query, not additional facts; World consumes its exact role projection and parent plans.
     for key in tuple(need):
         if key not in {"need_digest", "target_stage", "hard_constraints", "required_card_asset_version_ids"}:
             omitted["/need/" + key] = need.pop(key)
@@ -496,8 +503,20 @@ def build_provider_task_view(
                 if receipt is None:
                     projected_task["working_manuscript"], receipt = complete_prose_delivery(working)
                     projected_task["working_delivery_receipt"] = receipt
+                history_transport = projected_task.get("working_history_delivery_receipt")
+                delivery_hash = projected_task["working_manuscript"]["snapshot_hash"]
+                if history_transport is not None:
+                    history = projected_task["working_manuscript"].get("source_history") or {}
+                    if (not isinstance(history_transport, Mapping)
+                            or history_transport.get("contract_version") != "world-working-history-delivery.v1"
+                            or history_transport.get("source_snapshot_hash") != history.get("source_snapshot_hash")
+                            or history_transport.get("delivery_snapshot_hash") != delivery_hash
+                            or history_transport.get("source_history_hash") != history.get("source_history_hash")
+                            or history_transport.get("prose_unchanged") is not True):
+                        raise KernelError("WORLD_WORKING_DELIVERY_DRIFT", "World history transport must bind the exact original and delivered snapshots")
+                    delivery_hash = history_transport["source_snapshot_hash"]
                 if (not isinstance(receipt, Mapping) or receipt.get("contract_version") != "world-working-prose-delivery.v1"
-                    or receipt.get("delivery_snapshot_hash") != projected_task["working_manuscript"]["snapshot_hash"]
+                    or receipt.get("delivery_snapshot_hash") != delivery_hash
                     or receipt.get("source_snapshot_hash") != (task.get("working_observation_context") or {}).get("snapshot_hash")
                     or receipt.get("accepted_history_mutation_allowed") is not False or receipt.get("character_knowledge_granted") is not False):
                     raise KernelError("WORLD_WORKING_DELIVERY_DRIFT", "Working delivery retains the original selected-source and observation boundary")
@@ -569,7 +588,17 @@ def build_provider_task_view(
                 "proposal_hash": proposal["proposal_hash"], "plan_hash": _projection_hash(plan),
                 "equivalent_state_pointer": "/intent_state", "authority": "PROPOSAL_NOT_ACCEPTANCE",
                 "proposed_step_dispositions": {step["step_id"]: {"decision": step["decision"], "reason": step["reason"]} for step in plan["steps"]}}
-        if "narrative_intelligence" in projected_task:
+        scope = projected_task.get("world_method_scope_projection_version")
+        if scope is not None:
+            if scope != "world-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Unknown World method projection")
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope, project_world_method_delivery
+            selection = projected_task.get("narrative_intelligence") or {}
+            if selection.get("recall_query_receipt", {}).get("contract_version") != scope:
+                projected_task["narrative_intelligence"] = (project_world_method_delivery(selection)
+                    if projected_task["contract_version"] == "world-provider-task.v5" else project_world_method_scope(selection))
+            _reference_world_prior_method_audits(projected_task)
+        elif "narrative_intelligence" in projected_task:
             projected_task["narrative_intelligence"] = (_project_world_knowledge_delivery(projected_task["narrative_intelligence"])
                 if projected_task["contract_version"] == "world-provider-task.v5" else _project_selected_world_selection(projected_task["narrative_intelligence"]))
         return _task(stage, world_preparation=_compact(projected_task))
@@ -581,7 +610,18 @@ def build_provider_task_view(
         task = inputs.get("foundation_task")
         if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2", rfc6901_paths=command.get("execution_contract_version") in {"1.19.0", "1.21.0"}, narrative_search=command.get("execution_contract_version") == "1.21.0" and bool(command.get("narrative_search_id")), generated_title=command.get("generated_title_contract") == "generated-book-title.v1"):
             raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
-        return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
+        selection = inputs.get("narrative_intelligence")
+        recall_version = inputs.get("planning_recall_query_projection_version")
+        if recall_version not in (None, "foundation-method-recall-projection.v1"):
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Unknown Foundation recall projection")
+        if recall_version:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+
+            selection = project_foundation_method_recall(selection)
+        result = _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(selection))
+        if recall_version:
+            result["planning_recall_query_projection_version"] = recall_version
+        return result
     if stage in _PLANNING_STAGES:
         command = inputs.get("planning_command")
         if not isinstance(command, Mapping):
@@ -648,6 +688,25 @@ def build_provider_task_view(
         projected_selection = _compact(_project_denied_planning_selection(
             narrative_intelligence, empty_query=empty_query_version is not None,
         ))
+        method_scope = inputs.get("planning_method_scope_projection_version")
+        if method_scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+
+            if stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope requires its supported frozen stage")
+            projected_selection = _compact(project_book_method_scope(narrative_intelligence))
+        group_scope = inputs.get("planning_group_method_scope_projection_version")
+        if group_scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+            if stage != "chapter_group_plan.generate" or group_scope != "group-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group method scope requires its frozen stage")
+            projected_selection = _compact(project_group_method_scope(narrative_intelligence))
+        chapter_scope = inputs.get("planning_chapter_method_scope_projection_version")
+        if chapter_scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+            if stage != "chapter_plan.generate" or chapter_scope != "chapter-method-scope-projection.v1":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter method scope requires its frozen stage")
+            projected_selection = _compact(project_chapter_method_scope(narrative_intelligence))
         if projection_version:
             projected_selection = project_planning_craft_histories(projected_selection)
         task = _task(
@@ -662,6 +721,12 @@ def build_provider_task_view(
         if projection_version:
             task["contract_version"] = "provider-task-view-v2"
             task["craft_history_projection_version"] = projection_version
+        if method_scope:
+            task["planning_method_scope_projection_version"] = method_scope
+        if group_scope:
+            task["planning_group_method_scope_projection_version"] = group_scope
+        if chapter_scope:
+            task["planning_chapter_method_scope_projection_version"] = chapter_scope
         continuity = _planning_working_continuity(inputs, command)
         if continuity is not None:
             task["working_continuity"] = continuity
@@ -1496,7 +1561,16 @@ def build_provider_context_view(
                 "world task differs from its frozen role Context",
             )
         selection = task.get("narrative_intelligence") or {}
-        if task.get("contract_version") == "world-provider-task.v5":
+        scope = task.get("world_method_scope_projection_version")
+        if scope is not None:
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope, project_world_method_delivery
+            expected_selection = (project_world_method_delivery(context_bundle.get("narrative_intelligence", {}))
+                if task.get("contract_version") == "world-provider-task.v5" else project_world_method_scope(context_bundle.get("narrative_intelligence", {})))
+            if (scope != "world-method-scope-projection.v1"
+                    or context_bundle.get("world_method_scope_projection_version") != scope
+                    or selection != _compact(expected_selection)):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "World methods must resolve to the complete frozen selection")
+        elif task.get("contract_version") == "world-provider-task.v5":
             original = context_bundle.get("narrative_intelligence") or {}
             if selection != _compact(_project_world_knowledge_delivery(original)):
                 raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "World delivery retains its complete original knowledge selection outside the story rules")
@@ -1598,10 +1672,58 @@ def build_provider_context_view(
         if task_view.get("working_continuity") != continuity:
             raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Planning task and Context must bind the same selected working prefix")
         projected_selection = task_view.get("narrative_intelligence", {})
+        method_scope = context_bundle.get("planning_method_scope_projection_version")
+        if method_scope or task_view.get("planning_method_scope_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+
+            expected_scope = _compact(project_book_method_scope(context_bundle.get("narrative_intelligence", {})))
+            if context_bundle.get("craft_history_projection_version"):
+                from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+                expected_scope = project_planning_craft_histories(expected_scope)
+            if (stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1"
+                    or task_view.get("planning_method_scope_projection_version") != method_scope
+                    or projected_selection != expected_scope):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope differs from its complete frozen selection")
+        group_scope = context_bundle.get("planning_group_method_scope_projection_version")
+        if group_scope or task_view.get("planning_group_method_scope_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+            expected_group = _compact(project_group_method_scope(context_bundle.get("narrative_intelligence", {})))
+            if context_bundle.get("craft_history_projection_version"):
+                from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+                expected_group = project_planning_craft_histories(expected_group)
+            if (stage != "chapter_group_plan.generate" or group_scope != "group-method-scope-projection.v1"
+                    or task_view.get("planning_group_method_scope_projection_version") != group_scope
+                    or projected_selection != expected_group):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group methods differ from the complete frozen selection")
+        recall_version = context_bundle.get("planning_recall_query_projection_version")
+        chapter_scope = context_bundle.get("planning_chapter_method_scope_projection_version")
+        if chapter_scope or task_view.get("planning_chapter_method_scope_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+            expected_chapter = _compact(project_chapter_method_scope(context_bundle.get("narrative_intelligence", {})))
+            if context_bundle.get("craft_history_projection_version"):
+                from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
+                expected_chapter = project_planning_craft_histories(expected_chapter)
+            if (stage != "chapter_plan.generate" or chapter_scope != "chapter-method-scope-projection.v1"
+                    or task_view.get("planning_chapter_method_scope_projection_version") != chapter_scope
+                    or projected_selection != expected_chapter):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter methods differ from the complete frozen selection")
+        if recall_version or task_view.get("planning_recall_query_projection_version"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_foundation_method_recall
+
+            if (stage not in FOUNDATION_GENERATORS or recall_version != "foundation-method-recall-projection.v1"
+                    or task_view.get("planning_recall_query_projection_version") != recall_version
+                    or projected_selection != _compact(project_foundation_method_recall(context_bundle["narrative_intelligence"]))):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Foundation task must preserve its exact frozen methods and recall receipt")
         projection_version = context_bundle.get("craft_history_projection_version")
         if projection_version or task_view.get("craft_history_projection_version") or "planning_history_projection" in projected_selection:
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
             expected = project_planning_craft_histories(_compact(_project_denied_planning_selection(context_bundle.get("narrative_intelligence", {}))))
+            if method_scope:
+                expected = project_planning_craft_histories(_compact(project_book_method_scope(context_bundle["narrative_intelligence"])))
+            if group_scope:
+                expected = project_planning_craft_histories(_compact(project_group_method_scope(context_bundle["narrative_intelligence"])))
+            if chapter_scope:
+                expected = project_planning_craft_histories(_compact(project_chapter_method_scope(context_bundle["narrative_intelligence"])))
             if (projection_version != "planning-craft-history-projection.v1"
                 or task_view.get("craft_history_projection_version") != projection_version
                 or projected_selection != expected):
@@ -2526,8 +2648,32 @@ def _build_planning_context_view(
     if task_capacity:
         view["selection_explanation"]["task_target_tokens"] = token_budget
     character_budget = min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4) if token_budget is not None else _MAX_PROVIDER_CONTEXT_CHARACTERS
-    _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""))
+    method_scope = context_bundle.get("planning_method_scope_projection_version")
+    if method_scope:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+        if stage != "book_plan.generate" or method_scope != "book-method-scope-projection.v1":
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Book method scope requires its frozen stage")
+        project_book_method_scope(context_bundle.get("narrative_intelligence", {}))
+    group_scope = context_bundle.get("planning_group_method_scope_projection_version")
+    if group_scope is not None:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+        if stage != "chapter_group_plan.generate" or group_scope != "group-method-scope-projection.v1":
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group method scope requires its frozen stage")
+        project_group_method_scope(context_bundle.get("narrative_intelligence", {}))
+        _reference_prior_planning_method_audits(view, sources=raw_inputs)
+        view["planning_group_method_scope_projection_version"] = group_scope
+    chapter_scope = context_bundle.get("planning_chapter_method_scope_projection_version")
+    if chapter_scope is not None:
+        from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+        if stage != "chapter_plan.generate" or chapter_scope != "chapter-method-scope-projection.v1":
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter method scope requires its frozen stage")
+        project_chapter_method_scope(context_bundle.get("narrative_intelligence", {}))
+        view["planning_chapter_method_scope_projection_version"] = chapter_scope
+    _compact_qualified_foundation_planning(view, sources=raw_inputs, stage=stage, project_id=str(context_bundle.get("project_id") or ""), method_scope=bool(method_scope))
     _compact_planning_loss_sources(view)
+    view, history_transport = compile_working_history_transport(view)
+    if history_transport["projections"] and projection_audit is not None:
+        projection_audit["working_history_transport"] = history_transport
     source_hash = planning_context_source_hash(context_bundle) if projection_audit is not None else ""
     _prune_optional_planning_context(view, sources=raw_inputs, character_budget=character_budget,
                                     task_token_budget=token_budget if task_capacity else None, audit_source_hash=source_hash)
@@ -2567,7 +2713,7 @@ def project_planning_narrative_intent(
     narrative_command: dict[str, Any] = {}
     if isinstance(command, dict):
         working = (projected_task.get("arc_working_set") or {}).get("working_manuscript") or {}
-        if (working.get("projection_policy") or {}).get("version") == "working-prose-projection.v4" and command.get("repair_reason"):
+        if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v4", "working-prose-projection.v5"} and command.get("repair_reason"):
             projected_task["planning_correction"] = {
                 "source_pointer": "/planning_command/repair_reason",
                 "instruction": command["repair_reason"],
@@ -2670,12 +2816,70 @@ def _reference_planning_matrix_source(view: dict[str, Any], *, sources: list[Map
         view["selection_explanation"]["role_reference_contract"] = "planning-input-role-references.v1"
 
 
+def _reference_world_prior_method_audits(task: dict[str, Any]) -> None:
+    for index, segment in enumerate(task.get("planning_window") or []):
+        content = segment.get("content") or {}
+        if "knowledge_translations" not in content:
+            continue
+        if not segment.get("asset_version_id") or not segment.get("content_hash"):
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Prior World methods require an exact frozen plan identity")
+        translations = content.pop("knowledge_translations")
+        content["prior_method_decisions"] = [
+            {key: deepcopy(row[key]) for key in ("knowledge_card_asset_version_id", "content_hash", "decision")}
+            for row in translations
+        ]
+        segment["prior_method_audit_receipt"] = {
+            "contract_version": "world-prior-method-audit-reference.v1",
+            "source_ref": deepcopy(task["source_ref"]),
+            "json_pointer": f"/contract/planning_window/{index}/content/knowledge_translations",
+            "plan_asset_version_id": segment["asset_version_id"], "plan_content_hash": segment["content_hash"],
+            "audit_hash": _projection_hash(translations),
+            "boundary": "PRIOR_APPLICATION_AUDIT_NOT_CURRENT_METHODS_OR_STORY_CONSTRAINTS",
+        }
+
+
+def _reference_prior_planning_method_audits(view: dict[str, Any], *, sources: list[Mapping[str, Any]]) -> None:
+    source_by_role = {str(source.get("role")): source for source in sources}
+    for segment in view["segments"]:
+        role, content = segment["role"], segment["content"]
+        generator = {"book_plan": "book_plan.generate", "volume_plan": "volume_plan.generate", "arc_plans": "arc_plan.generate"}.get(role)
+        if role.startswith(("related_arc:", "dependent_arc:")):
+            generator = "arc_plan.generate"
+        if generator is None or "knowledge_translations" not in content:
+            continue
+        source = source_by_role[role]
+        original = source["content"]
+        if (source.get("asset_type") not in {"planning_generation_candidate", generator.removesuffix(".generate")}
+                or source.get("asset_version_id") != segment["asset_version_id"]
+                or source.get("content_hash") != segment["content_hash"]
+                or original.get("book_id") != view["narrative_position"]["book_id"]
+                or (source.get("asset_type") == "planning_generation_candidate" and original.get("generator_operation_name") != generator)):
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Prior method audit must bind its typed frozen plan")
+        translations = content.pop("knowledge_translations")
+        content["prior_method_decisions"] = [
+            {key: deepcopy(row[key]) for key in ("knowledge_card_asset_version_id", "content_hash", "decision")}
+            for row in translations
+        ]
+        view["selection_explanation"]["loss_records"].append(_loss_record(
+            source, path="/knowledge_translations", value=translations,
+            reason="PRIOR_PLAN_METHOD_APPLICATION_AUDIT_RETAINED_IN_IMMUTABLE_SOURCE"))
+        view["selection_explanation"]["omitted_item_count"] += len(translations)
+    view["prior_method_decision_boundary"] = (
+        "Prior plan decisions identify method consideration in those exact immutable source plans. "
+        "Full rationale, checks and use-site locations remain in each source's /knowledge_translations; "
+        "the narrative plan fields and all their constraints remain here. They do not prescribe techniques for "
+        "this Group. Complete current method bodies, prerequisites, exceptions, UNKNOWN checks and histories "
+        "are delivered for this stage's own ADOPT/ADAPT/REJECT. The rejected repair candidate is unchanged."
+    )
+
+
 def _compact_qualified_foundation_planning(
     view: dict[str, Any],
     *,
     sources: list[Mapping[str, Any]],
     stage: str,
     project_id: str,
+    method_scope: bool = False,
 ) -> None:
     from novel_forge.modules.book_design_authority.foundation import QualifiedFoundationSet
     from novel_forge.modules.story_design_authority.domain import matches_generated_foundation_source
@@ -2733,6 +2937,15 @@ def _compact_qualified_foundation_planning(
     for role, segment in selected.items():
         content = segment["content"]
         source = source_by_role[role]
+        if method_scope and "knowledge_translations" in content:
+            translations = content["knowledge_translations"]
+            view["prior_method_decision_boundary"] = "Prior method decisions describe already qualified Foundation application, not author requirements or additional story facts. Their target pointers bind the exact segment source asset, including fields deferred outside this Book scope. Full prior rationales, checks and preservation notes remain in that immutable source; complete current method bodies, prerequisites, exceptions and histories are delivered separately for this stage's own ADOPT/ADAPT/REJECT."
+            content["prior_method_decisions"] = [
+                {key: deepcopy(row[key]) for key in ("knowledge_card_asset_version_id", "content_hash", "decision")}
+                | {"use_sites": [{key: deepcopy(site[key]) for key in ("target_pointer", "realization_excerpt")} for site in row["use_sites"]]}
+                for row in translations
+            ]
+            remove(content, "knowledge_translations", source, "/knowledge_translations", "PRIOR_QUALIFIED_STAGE_METHOD_AUDIT_RETAINED_IN_FROZEN_FOUNDATION")
         for field in ("type", "book_id", "project_id", "logical_key", "planning_scope", "schema_version", "generator_operation_name", "foundation_parent_bindings", "knowledge_translation_policy_version"):
             if field in content:
                 remove(content, field, source, "/" + field, "CONTROL_METADATA_RETAINED_IN_FROZEN_INPUT")
@@ -3559,7 +3772,37 @@ def _expand_text_fragments(value):
     return result
 
 
-def compile_exact_context_references(view, *, structured_transport=False):
+def compile_working_history_transport(view):
+    from novel_forge.modules.book_authority.working_prose import LONGFORM_POLICY_VERSION, project_working_history_for_provider
+
+    receipts = []
+    def project(value, path):
+        if isinstance(value, Mapping):
+            if (value.get("projection_policy") or {}).get("version") == LONGFORM_POLICY_VERSION and "source_history" in value:
+                result = project_working_history_for_provider(value)
+                if result != value:
+                    receipts.append({"json_pointer": path, "source_snapshot_hash": value["snapshot_hash"],
+                        "delivery_snapshot_hash": result["snapshot_hash"], "source_history_hash": value["source_history"]["content_hash"],
+                        "source_count": value["source_history"]["source_count"], "prose_unchanged": True})
+                return result
+            result = {key: project(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in value.items()}
+            original_working = value.get("working_manuscript")
+            if (value.get("contract_version") == "world-provider-task.v5" and isinstance(original_working, Mapping)
+                    and original_working != result.get("working_manuscript")):
+                history = result["working_manuscript"]["source_history"]
+                result["working_history_delivery_receipt"] = {"contract_version": "world-working-history-delivery.v1",
+                    "source_snapshot_hash": original_working["snapshot_hash"],
+                    "delivery_snapshot_hash": result["working_manuscript"]["snapshot_hash"],
+                    "source_history_hash": history["source_history_hash"], "prose_unchanged": True}
+            return result
+        if isinstance(value, list):
+            return [project(item, path + "/" + str(index)) for index, item in enumerate(value)]
+        return deepcopy(value)
+    result = project(view, "")
+    return result, {"contract_version": "working-history-provider-transport.v1", "projections": receipts}
+
+
+def compile_exact_context_references(view, *, structured_transport=False, short_literals=False):
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     marker = "__exact_value_ref__"
     overrides, removed, json_string = "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
@@ -3570,10 +3813,12 @@ def compile_exact_context_references(view, *, structured_transport=False):
         if isinstance(value, Mapping) and any(key in value for key in (marker, overrides, removed, json_string, fragments)):
             raise KernelError("PROVIDER_EXACT_REFERENCE_COLLISION", "Reserved reference syntax occurs in source content")
         identity = _canonical_exact_reference_value(value)
-        large = len(identity.encode("utf-8")) >= 256
+        large = len(identity.encode("utf-8")) >= (96 if short_literals and isinstance(value,str) else 256)
         if large and identity in seen:
-            count += 1
-            return {marker: seen[identity]}
+            reference = {marker: seen[identity]}
+            if not short_literals or len(_canonical_exact_reference_value(reference).encode("utf-8")) < len(identity.encode("utf-8")):
+                count += 1
+                return reference
         if isinstance(value, Mapping):
             result = {key: encode(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in sorted(value.items())}
             if structured_transport and large:
@@ -3621,6 +3866,8 @@ def compile_exact_context_references(view, *, structured_transport=False):
     if structured_transport:
         proof.update(transport_version="provider-structured-exact-reference.v2" if fragment_count else "provider-structured-exact-reference.v1",
             delta_reference_count=delta_count, canonical_json_string_count=json_count, text_fragment_group_count=fragment_count)
+    if short_literals:
+        proof.update(transport_version="provider-structured-exact-reference.v3",literal_minimum_bytes=96)
     return encoded, proof
 
 

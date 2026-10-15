@@ -149,9 +149,9 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
-The published chain through 0197 is immutable. The original audit boundary is
-0194; published 0196 and 0197 retain stopped CLI isolation and authorized Planning capacity.
-The current head additionally includes 0198, which adds missing foreign-key reference indexes
+Published migration bodies are immutable across the complete registered chain.
+Migrations 0196 and 0197 retain stopped CLI isolation and authorized Planning capacity.
+Migration 0198 adds missing foreign-key reference indexes
 without rewriting facts or admission rules. Migration 0199 permits an unsent ChapterGroup
 capacity successor from an exact native Plan Change request as well as Narrative Search.
 It retains the frozen context and input hashes, original executor and author entitlement,
@@ -340,6 +340,28 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 ## Validation matrix
 
+For the Craft convergence upgrade, active migrations 0213-0218 append Source generation
+isolation, proven Book namespaces, planning point reads, evidence indexes, combined method
+Context recovery and retained-working source schema. Consult the migration registry and
+manifest for their exact identities. Published fork modules remain byte-preserved in
+`src/novel_forge/storage/migrations/historical/craft_16291555/` and
+`src/novel_forge/storage/migrations/historical/craft_2eb0e685/` with
+separate source/hash manifests; their original IDs are historical evidence, not main IDs.
+Ordinary migration admission still requires the exact registered prefix. A fork restore
+needs an explicitly bounded reconstruction with preserved applied history, matching database,
+object storage and execution evidence; do not rewrite applied IDs, weaken foreign-history
+checks or discard a failed restore. Original databases and workers remain on their release
+until explicitly switched. Migration fixtures do not establish deployment.
+Include `test_craft_migration_convergence.py` and
+`test_craft_scope_migration_postgres.py` in the backend migration matrix, alongside fresh
+installation and actual supported upgrade/history checks. The scope suite checks nested
+identity and native producer agreement, missing owners and ambiguity. Source isolation and
+owned abstraction recovery additionally use `test_source_observation_isolation_postgres.py`
+and `test_source_abstraction_schema_recovery_postgres.py`; their artificial receipt fixtures
+are not real Provider evidence. The combined recovery guards must retain current World,
+Foundation, complete-result reuse, unsent capacity, cancellation and lease semantics.
+
+
 For creative-requirement changes, focused regression coverage includes
 `test_work_intent_consistency.py`, `test_work_foundation_contract.py` and
 `test_work_realization_contract.py`, plus existing Pack materialization, Provider
@@ -355,6 +377,12 @@ Skill/Pack materialization, Planning working continuity and the enhanced-working
 of `test_author_first_manuscript_postgres.py`. Record source coverage separately from
 Writer semantic attribution. For v4, include the working-progression-interruption variant,
 accepted/selected/native precedence and frozen correction/schema-description checks.
+For current v5, include `test_working_manuscript_revision.py`,
+`test_working_craft_continuation.py` and the long-form source-history cases in
+`test_working_prose_projection.py`. Verify source identity beyond the visible passage window,
+selected replacement and transitive dependency invalidation, neutral guidance, located
+working Review phase support and unchanged frozen v1-v4 replay. Fixtures establish input
+contracts only; separately capture the actual sent Provider input and saved prose.
 An offline located-case PASS, a scripted PostgreSQL execution
 or model evaluation cannot establish literary improvement or independent human validation.
 For World working continuity, run `test_world_working_continuity.py`,
@@ -429,8 +457,15 @@ Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy t
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
-New Creation profiles enable `working-story-schedule.v1`, `working-craft-delivery.v1`
-and `native-prose-plan-feedback.v1`. Verify the selected working sources through Book,
+New Creation profiles enable `working-prose-projection.v5`,
+`working-story-schedule.v1`, `working-craft-delivery.v2`, `narrative-craft-budget.v5`
+and `native-prose-plan-feedback.v1`. The exact working Craft policy is
+`{"version":"working-craft-delivery.v2","use":"SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}`;
+its frozen strategy is `narrative-craft-strategy.v4`. Historical profiles retain their
+existing versions. The v5 source-history manifest contains every predecessor, while
+passages and located observations remain bounded by real request capacity. Check the
+host manifest separately from the shorter Provider projection; no omitted prose or
+receipt may be treated as realized experience or method success. Verify the selected working sources through Book,
 then the separate Arc assessment and Craft delivery histories in frozen Planning Context.
 Only current nonconflicting native plan findings enter future `PLANNED` replacement;
 their exact reports, request identity and lineage remain bound. A new review can use
@@ -439,6 +474,13 @@ Changed selected versions invalidate it. Existing policies retain historical cur
 Focused checks additionally cover `test_longform_narrative_contracts.py`,
 `test_craft_selection.py`, `test_prose_planning_evidence_working.py` and the native
 working-memory PostgreSQL variant. These checks prove consumption, not literary effects.
+For method continuation, retain `NOT_ASSESSED` delivery allocations separately from
+source-bound working Review and formal acceptance. CONTINUE/DEFER can retain a stable
+same-phase instance; ADVANCE/END require located native phase Review support on the exact
+selected version. A delivered ADVANCE cannot serve later-phase continuation until its own
+Review supports it. Generic manuscript annotations are not Craft phase evidence. Changed
+selected sources and dependent chapters invalidate the old continuation; Arc inheritance
+and rebinding continue through the existing approved Plan Change owner.
 
 An activated upstream PlanChange can make an unfinished Chapter's frozen Context stale.
 `authority-manuscript recover-upstream-plan --proposal-id ... --corrected-plan-version ...`
@@ -865,6 +907,15 @@ To request Source discovery, pass `intelligence_policy.routing_policy_version` a
 Provider authorization, budget and review gates unchanged. New candidates remain
 `NEEDS_REVIEW`; review the Observation, abstraction/isolation, applicability and duplicate
 mechanisms before approving. Do not treat a source hypothesis as reader-effect evidence.
+Writing-method analysis can freeze `source-analysis-routing.writing-methods.v2`, method
+1.2.1 and Observation Prompt 2.1; earlier methods and bounded-reading Prompts retain their
+contracts. Check the authorized edition and actual source range, located Source support,
+abstract Card version and intended Book/stage before considering it a book-learning result.
+Keep raw expression and examples in their permitted analysis scope. Experimental Card
+approval allows an existing Planning ADOPT/ADAPT/REJECT decision, not production certification.
+Known abstraction Schema/composition failures use Corpus's existing
+`recover-abstraction-schema` or `recover-abstraction-composition` entry with the original
+operation identity and retained receipts. UNKNOWN is reconciled before any successor.
 
 The Planning Context records selected/rejected candidates, match and applicability reasons,
 receipt-backed recent usage and frozen Craft policy. Chapter run queries with
@@ -873,6 +924,20 @@ use exact Card/use/selection/strategy hashes to compare Plan, Intent, Memo, real
 Review, targeted edits, ReReview, candidate comparison and accepted manuscript. Missing
 receipt or reader evidence remains missing. Draft task and Context delivery are separately
 observable; a planning claim alone is not proof of received input.
+
+Anonymous manuscript comparison uses Reader Calibration through the existing
+Quality Qualification router: POST `/api/quality-qualification/manuscript-packs`, GET
+`/api/quality-qualification/manuscript-packs/{pack_id}` and its `/reading` and `/feedback`
+views, POST `/api/quality-qualification/manuscript-feedback`, and POST
+`/api/quality-qualification/manuscript-model-diagnoses`. Freeze independent Book sources,
+parent hashes, selectors and the private blind mapping; reconstruct the public pack from
+saved text. A genuine human fills the blank response and declares its origin; no submission
+means `PENDING_HUMAN_FEEDBACK`. Auxiliary model reading reuses a sealed `MANUSCRIPT_READING`
+Agent turn and validates the full public pack against its original instruction, Provider
+projection and actual input hash. Locate quotations in the frozen prose and retain unresolved
+ones. Check `test_reader_calibration.py`, `test_quality_qualification_api.py`, existing
+Reader PostgreSQL and controlled Agent suites. These engineering checks, model diagnoses
+and human declarations remain separate; none certifies literary improvement or accepts prose.
 
 Focused Craft tests are classified in the `narrative_craft_engineering` backend semantic
 slice. Run the complete applicable validation matrix above after production changes,
@@ -2662,8 +2727,26 @@ novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$
 ```
 
 `.md` and `.txt` exports contain readable source text plus its candidate status;
-other suffixes retain the exact JSON projection and raw result. Export never selects
-or accepts a candidate. A fragment or ambiguous JSON remains raw and is not labeled
+other suffixes retain the exact JSON projection and raw result, including original
+Operation/Effect status and failure codes. Export never selects or accepts a candidate.
+
+For the exact eligible experimental author-first original, an authenticated author can use:
+
+```sh
+novel-forge authority-manuscript continue-retained-working --book-run-id "$BOOK_RUN" \
+  --candidate-version "$RETAINED_ASSET_VERSION" --expected-version "$BOOK_VERSION" \
+  --idempotency-key "$WORKING_USE_KEY" --reason "$WORKING_USE_REASON"
+```
+
+This operation verifies the original complete bytes, frozen request/Schema/input, native
+failed dispatch, stopped process, settled reservation and the two fully captured empty
+metadata-discovery calls. Other tools, resources, incomplete trace or UNKNOWN/live work
+reject the path. Reuse the exact key, candidate, reason and checkpoint after uncertain
+local outcome. The new source is `RETAINED_WORKING_ONLY`, not a compliant successful Draft;
+original permission failure and unknown usage remain. No Provider call, formal acceptance
+or Canon update occurs. Include `test_retained_working_continuation.py`,
+`test_manuscript_native_continuation.py` and the existing author-first PostgreSQL suite in
+applicable verification; an empty restored table does not justify deleting its schema. A fragment or ambiguous JSON remains raw and is not labeled
 complete prose. A repeated export cannot overwrite an existing file.
 
 Migration 0200 removes cumulative Planning
