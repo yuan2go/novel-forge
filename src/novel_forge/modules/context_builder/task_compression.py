@@ -62,7 +62,7 @@ def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
     return max(1, serialized_token_upper_bound(payload)), "SERIALIZED_SUMMARY"
 
 
-def _protected_envelope_accounting(candidates, *, required_asset_types):
+def _protected_envelope_accounting(candidates, *, required_asset_types, version="protected-context-exact-accounting.v1"):
     from .domain import context_candidate_class
     from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
 
@@ -71,12 +71,13 @@ def _protected_envelope_accounting(candidates, *, required_asset_types):
         or item.asset_type in required_asset_types or item.asset_type in _EXACT)]
     source = {"context_segments": [{"asset_version_id": item.asset_version_id, **_payload(item)} for item in protected]}
     accounted = {"context_segments": [_history_accounting_payload(row) for row in source["context_segments"]]}
-    encoded, proof = compile_exact_context_references(accounted, structured_transport=True, short_literals=True)
+    encoded, proof = compile_exact_context_references(accounted, structured_transport=True, short_literals=True,
+        nested_canonical_strings=version == "protected-context-exact-accounting.v2")
     amounts = {item.asset_version_id: serialized_token_upper_bound(row) + 256
                for item, row in zip(protected, encoded["context_segments"])}
     result = [replace(item, estimated_tokens=amounts[item.asset_version_id])
               if item.asset_version_id in amounts else item for item in candidates]
-    return result, {**proof, "contract_version": "protected-context-exact-accounting.v1",
+    return result, {**proof, "contract_version": version,
                     "protected_asset_version_ids": [item.asset_version_id for item in protected],
                     "members": [{"asset_version_id": item.asset_version_id, "content_hash": item.content_digest,
                                  "payload_hash": narrative_hash(_payload(item)), "allocated_bytes": amounts[item.asset_version_id]}
@@ -208,12 +209,13 @@ def compile_task_context(
         normalized.append(replace(candidate, estimated_tokens=amount, truncation_strategy=""))
     normalized, deduplications = deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("reference_analysis" if reference else "draft").required_asset_types)
     exact_accounting = None
-    if task.get("protected_context_accounting_version") not in (None, "protected-context-exact-accounting.v1"):
+    if task.get("protected_context_accounting_version") not in (None, "protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"):
         raise KernelError("TASK_CONTEXT_ACCOUNTING_INVALID", "Unknown protected Context accounting version")
-    if task.get("protected_context_accounting_version") == "protected-context-exact-accounting.v1":
+    if task.get("protected_context_accounting_version") is not None:
         if reference or task.get("writer_projection_version") != "accepted-writer-history.v2":
             raise KernelError("TASK_CONTEXT_ACCOUNTING_INVALID", "Protected exact accounting requires its Writer projection")
-        normalized, exact_accounting = _protected_envelope_accounting(normalized, required_asset_types=required_asset_types)
+        normalized, exact_accounting = _protected_envelope_accounting(normalized, required_asset_types=required_asset_types,
+            version=task["protected_context_accounting_version"])
         by_id = {item.asset_version_id: item for item in normalized}
         for row in candidate_accounting:
             if row["asset_version_id"] in exact_accounting["protected_asset_version_ids"]:

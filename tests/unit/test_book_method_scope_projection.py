@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 
 import pytest
 
@@ -6,6 +7,24 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
 from novel_forge.modules.mkaos_authority.craft_selection import _hash
 from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references, expand_exact_context_references
+
+
+def test_nested_canonical_mission_strings_are_lossless_only_in_opted_in_transport():
+    mission = {"choice": "她愿意等到明天，也可以拒绝。" * 80, "limits": ["只知已发生事实", "不强制反转"]}
+    canonical = json.dumps(mission, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    source = {"intent": mission, "memo": {"execution_strategy": canonical},
+              "ordinary": json.dumps(mission, ensure_ascii=False, indent=2), "literal": "{unfinished"}
+    legacy, old_proof = compile_exact_context_references(source, structured_transport=True, short_literals=True)
+    encoded, proof = compile_exact_context_references(source, structured_transport=True, short_literals=True,
+        nested_canonical_strings=True)
+    assert expand_exact_context_references(encoded) == expand_exact_context_references(legacy) == source
+    assert encoded["ordinary"] == source["ordinary"] and encoded["literal"] == source["literal"]
+    assert legacy["memo"]["execution_strategy"] == canonical
+    assert len(json.dumps(encoded, ensure_ascii=False).encode()) < len(json.dumps(legacy, ensure_ascii=False).encode())
+    assert proof["transport_version"] == "provider-structured-exact-reference.v4"
+    assert old_proof["transport_version"] == "provider-structured-exact-reference.v3"
+    with pytest.raises(KernelError, match="Nested canonical strings require structured transport"):
+        compile_exact_context_references(source, nested_canonical_strings=True)
 
 
 def selection():
@@ -102,14 +121,16 @@ def test_group_scope_never_discards_explicit_constraint_checks_or_unmatched_quer
     assert "flattened_constraint_query" not in projected["recall_query_receipt"]
 
 
-def test_group_upstream_audit_reference_preserves_all_plan_constraints_and_failed_candidate():
+@pytest.mark.parametrize("chapter,role,generator", [(False,"related_arc:1","arc_plan.generate"),
+    (True,"related_arc:1","arc_plan.generate"), (True,"chapter_group_plan","chapter_group_plan.generate")])
+def test_group_upstream_audit_reference_preserves_all_plan_constraints_and_failed_candidate(chapter, role, generator):
     from novel_forge.modules.chapter_authority.provider_views import _reference_prior_planning_method_audits
     translations = [{"knowledge_card_asset_version_id": "method:v1", "content_hash": "sha256:method", "decision": "ADAPT", "use_sites": [{"target_pointer": "/objective", "realization_excerpt": "A local objective"}], "rationale": "Prior stage only"}]
-    content = {"generator_operation_name": "arc_plan.generate", "book_id": "book:one", "knowledge_translations": translations, "hard_constraints": ["Keep actual condition"], "forbidden_events": ["No invented knowledge"]}
-    segment = {"role": "related_arc:1", "asset_type": "planning_generation_candidate", "asset_version_id": "arc:v1", "content_hash": "sha256:arc", "content": deepcopy(content)}
+    content = {"generator_operation_name": generator, "book_id": "book:one", "knowledge_translations": translations, "hard_constraints": ["Keep actual condition"], "forbidden_events": ["No invented knowledge"]}
+    segment = {"role": role, "asset_type": "planning_generation_candidate", "asset_version_id": "arc:v1", "content_hash": "sha256:arc", "content": deepcopy(content)}
     view = {"narrative_position": {"book_id": "book:one"}, "segments": [deepcopy(segment)], "repair_context": {"source_candidate": {"content": deepcopy(content)}}, "selection_explanation": {"loss_records": [], "omitted_item_count": 0}}
     failed = deepcopy(view["repair_context"])
-    _reference_prior_planning_method_audits(view, sources=[segment])
+    _reference_prior_planning_method_audits(view, sources=[segment], chapter=chapter)
     projected = view["segments"][0]["content"]
     assert projected["hard_constraints"] == content["hard_constraints"]
     assert projected["forbidden_events"] == content["forbidden_events"]

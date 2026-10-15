@@ -68,6 +68,17 @@ The actual successor reuses the original frozen Context and MKAOS selection, che
 fresh Source against the original story inputs and reconstructs the registered task proof.
 Focused tests and captured database-copy execution are qualification evidence; installation,
 native production adoption and literary improvement require separate evidence.
+
+Complete rejected Writer returns remain readable and exportable as retained candidates
+with their original Operation, Effect and failure status. The explicit experimental
+`retained-working-continuation.v1` Book decision may continue one exact original whose
+only additional calls were two fully observed, empty MCP metadata enumerations. It
+locally checks the frozen Schema, Scene contract, process, complete trace, hashes and
+settled accounting, then records a separate `retained_working_prose` source. Only the
+unaccepted working cursor advances; the original permission failure, Chapter history,
+tool policy and Canon remain unchanged. This is working-use qualification and cannot
+be reported as a compliant native Writer result or author acceptance. Other Tool use,
+resources, uncertainty, live work or concurrent replacement remain ineligible.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author
@@ -3057,3 +3068,13 @@ exact native 1.21 ChapterGroup generation. It reuses the existing deterministic 
 chapter slice and retains every frozen event; historical single-slice contracts keep their guard.
 Membership retry compatibility excludes durably isolated historical execution rows while
 retaining current leases, cancellation, identity checks and paid accounting exposure.
+
+Fresh experimental Chapter World preparation can select
+`world-protected-context-accounting.v1`: complete required candidates retain exact
+values and hashes while lossless encoding determines their internal byte allocation.
+Final Provider admission still measures the complete actual request and Schema.
+Unmarked frozen Contexts retain historical accounting. Migration 0219 permits the
+matching zero-send continuation to reuse its original World source and request.
+Migration 0220 adds the distinct Chapter prior-method-audit continuation. Both append
+to main's existing guard dispatch; neither replaces the combined capacity predicate,
+rewrites published migration identities, or qualifies an installed database.
