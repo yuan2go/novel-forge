@@ -4251,10 +4251,12 @@ class PostgresPlanningExecutionPreparer:
         )
         action = None
         if command.world_preparation_request:
-            context_policy_content = self.pack_runtime.materialize_attempt_artifacts(attempt_snapshot).context_policy.content
+            artifacts = self.pack_runtime.materialize_attempt_artifacts(attempt_snapshot)
+            context_policy_content = artifacts.context_policy.content
             knowledge_context, _ = self._context_bundle(
                 operation_id=operation_id, attempt_id=attempt_id, command=command, inputs=inputs,
                 context_policy_ref=attempt_snapshot.execution_snapshot.context_policy_ref,
+                world_exact_prompt=(artifacts.prompt_template.ref, artifacts.prompt_template.version),
                 planning_task_token_budget=json.loads(attempt_snapshot.execution_snapshot.context_policy_payload_json).get("planning_task_token_budget", context_policy_content.get("planning_task_token_budget")),
             )
 
@@ -4337,6 +4339,7 @@ class PostgresPlanningExecutionPreparer:
                 command=command,
                 inputs=inputs,
                 context_policy_ref=frozen.context_policy_ref,
+                world_exact_prompt=(pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version),
                 planning_task_token_budget=json.loads(frozen.context_policy_payload_json).get("planning_task_token_budget", pack_materialization.context_policy.content.get("planning_task_token_budget")),
             )
         if provider_stage is not None and frozen_world_sample is None:
@@ -4494,6 +4497,9 @@ class PostgresPlanningExecutionPreparer:
 
                 output_schema = bind_planned_knowledge_schema(output_schema, by_role["story_state"].content)
                 output_schema_ref += ":accepted-knowledge-v1"
+        if (context_document.content.get("world_protected_context_accounting_version") == "world-protected-context-accounting.v1"
+                and (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) != ("prompt-template:story-planning-pack", "v3")):
+            raise KernelError("WORLD_EXACT_ACCOUNTING_TRANSPORT_DRIFT", "Frozen exact accounting requires the original structured Planning transport")
         if (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
             from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
 
@@ -4752,6 +4758,7 @@ class PostgresPlanningExecutionPreparer:
                 **({"planning_method_scope_projection_version": context_document.content["planning_method_scope_projection_version"]} if context_document.content.get("planning_method_scope_projection_version") else {}),
                 **({"planning_group_method_scope_projection_version": context_document.content["planning_group_method_scope_projection_version"]} if context_document.content.get("planning_group_method_scope_projection_version") else {}),
                 **({"planning_chapter_method_scope_projection_version": context_document.content["planning_chapter_method_scope_projection_version"]} if context_document.content.get("planning_chapter_method_scope_projection_version") else {}),
+                **({"planning_prior_method_audit_projection_version": context_document.content["planning_prior_method_audit_projection_version"]} if context_document.content.get("planning_prior_method_audit_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5660,6 +5667,7 @@ class PostgresPlanningExecutionPreparer:
         context_policy_ref: str = "",
         planning_task_token_budget: int | None = None,
         preflight_only: bool = False,
+        world_exact_prompt: tuple[str, str] | None = None,
     ) -> tuple[Any, tuple[AuthorityAssetDocument, ...]]:
         from .character_references import require_planning_character_references
         documents: list[AuthorityAssetDocument] = []
@@ -5830,7 +5838,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}
                     or (proof.get("contract_version") == "planning-exact-value-reference.v1" and proof.get("world_input_delivery", {}).get("contract_version") == "world-input-delivery-revalidation.v1")):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
@@ -5987,6 +5995,9 @@ class PostgresPlanningExecutionPreparer:
         fresh_method_scope = experimental_chapter_method_scope(
             generator=command.generator_operation_name, contract_version=command.execution_contract_version,
             selection=narrative_intelligence, policy=knowledge_access_policy)
+        if fresh_method_scope and world_exact_prompt == ("prompt-template:story-planning-pack", "v3"):
+            fresh_method_scope["world_protected_context_accounting_version"] = "world-protected-context-accounting.v1"
+            fresh_method_scope["planning_prior_method_audit_projection_version"] = "chapter-prior-method-audits.v1"
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             **({"foundation_input_projection_version": production_profile["foundation_input_projection_version"]}
@@ -6160,6 +6171,14 @@ class PostgresPlanningExecutionPreparer:
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if projection_contract == "world-protected-context-accounting.v1":
+            if content.get("world_method_scope_projection_version") != "world-method-scope-projection.v1":
+                raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "Exact World accounting requires the already frozen method projection")
+            content["world_protected_context_accounting_version"] = projection_contract
+        if projection_contract == "chapter-prior-method-audits.v1":
+            if content.get("planning_chapter_method_scope_projection_version") != "chapter-method-scope-projection.v1":
+                raise KernelError("CHAPTER_CONTEXT_SOURCE_DRIFT", "Prior audit projection requires the frozen current Chapter method view")
+            content["planning_prior_method_audit_projection_version"] = projection_contract
         if projection_contract == "chapter-method-scope-projection.v1":
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
             if command.generator_operation_name != "chapter_plan.generate":
@@ -6432,6 +6451,16 @@ class PostgresPlanningExecutionPreparer:
                 sort_keys=True,
                 separators=(",", ":"),
             )
+            accounting = {}
+            accounted_bytes = len(rendered.encode("utf-8"))
+            if (provider_stage is not None and task_byte_accounting and content.get("world_protected_context_accounting_version")
+                    == "world-protected-context-accounting.v1"):
+                from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
+                encoded, proof = compile_exact_context_references(value, structured_transport=True, short_literals=True)
+                accounted_bytes = len(json.dumps(encoded, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()) + 256
+                accounting = {"exact_accounting": {**proof, "contract_version": "world-protected-context-accounting.v1",
+                    "semantic_hash": canonical_hash(value), "allocated_bytes": accounted_bytes,
+                    "framing_bytes": 256, "final_provider_capacity_check": "REQUIRED"}}
             projection_hash = canonical_hash(value)
             semantic_value = (
                 value.get("content")
@@ -6446,7 +6475,7 @@ class PostgresPlanningExecutionPreparer:
                     physical_asset_type=physical_asset_type,
                     project_id=command.project_id,
                     book_id=command.book_id,
-                    estimated_tokens=max(1, len(rendered.encode("utf-8")) if task_byte_accounting else (len(rendered) + 3) // 4),
+                    estimated_tokens=max(1, accounted_bytes if task_byte_accounting else (len(rendered) + 3) // 4),
                     content_digest=projection_hash,
                     source_revision=source_revision,
                     source_identity=source_identity,
@@ -6461,7 +6490,7 @@ class PostgresPlanningExecutionPreparer:
                     compression_method="authority_projection",
                     context_class="PROTECTED",
                     required=True,
-                    provenance=dict(provenance),
+                    provenance={**dict(provenance), **accounting},
                     accepted_boundary=accepted_state_boundary,
                     section=section,
                     bucket=bucket,

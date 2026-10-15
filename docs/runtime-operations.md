@@ -340,13 +340,19 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 ## Validation matrix
 
-For the Craft convergence upgrade, active migrations 0213-0218 append Source generation
+For the Craft convergence upgrade, active migrations 0213-0220 append Source generation
 isolation, proven Book namespaces, planning point reads, evidence indexes, combined method
-Context recovery and retained-working source schema. Consult the migration registry and
+Context recovery, retained-working source schema, exact World accounting and Chapter
+prior-method-audit continuation. The final two migrations extend the existing common
+guard without replacing main's combined capacity predicate or receipt contracts.
+Consult the migration registry and
 manifest for their exact identities. Published fork modules remain byte-preserved in
 `src/novel_forge/storage/migrations/historical/craft_16291555/` and
 `src/novel_forge/storage/migrations/historical/craft_2eb0e685/` with
 separate source/hash manifests; their original IDs are historical evidence, not main IDs.
+The frozen fork modules `v20261015_0218_world_exact_context_accounting.py` and
+`v20261015_0219_chapter_prior_method_audits.py` remain unregistered SQL source evidence;
+only their new main successors 0219 and 0220 may be applied through the registry.
 Ordinary migration admission still requires the exact registered prefix. A fork restore
 needs an explicitly bounded reconstruction with preserved applied history, matching database,
 object storage and execution evidence; do not rewrite applied IDs, weaken foreign-history
@@ -3705,6 +3711,62 @@ candidate rule; published migration bodies remain unchanged.
 Historical template v1 keeps
 its original rendering. Chapter transitions describe one entry-to-exit change per
 (state_kind, entity_key); Scene contracts retain intermediate changes.
+New Chapter Planning Contexts using the explicit experimental method allowlist freeze
+Chapter and World method-scope projection versions. The fresh World path verifies that
+both its Source and base Context belong to the current Operation and that the complete
+selection matches; registered recovery still binds its original Source ID and hash.
+Changing the Book knowledge policy disables these projections for future Contexts;
+previously frozen Contexts retain their original rendering.
+For clean Writer Contexts under that same experimental policy,
+`protected-context-exact-accounting.v1` counts the protected sources together with the
+lossless structured codec. Its receipt binds ordered members, source and payload hashes,
+individual encoded allocations and reconstruction equality. Selection must retain every
+reference source with the same allocation. Optional content cannot supply a shared
+reference anchor. Writer rendering consumes the frozen receipt and the same codec mode;
+the complete final request still passes the ordinary model-capacity admission. This
+changes transport accounting without changing story or method content, and applies only
+to newly built Contexts.
+New clean experimental Writer Contexts use `protected-context-exact-accounting.v2`
+to include nested canonical JSON object strings in that same lossless envelope.
+This avoids counting the Memo's serialized Mission as an unrelated second payload.
+Every original string must reconstruct byte for byte, including source order and
+Unicode; noncanonical strings remain literal. The frozen receipt selects the codec
+in both Context accounting and final rendering. Existing v1 receipts keep their
+original transport; complete Provider capacity admission remains mandatory.
+Fresh experimental Chapter Contexts may also carry
+`world-protected-context-accounting.v1`. World preparation counts each complete
+required role candidate with the existing lossless structured codec and 256 bytes
+of framing, retaining its semantic hash and reconstruction receipt. Every candidate
+remains required; complete Provider admission still measures the actual rendered
+request and Schema. Frozen Contexts without this marker keep their prior accounting.
+Migration 0219 adds a separate zero-send recovery branch for an already projected
+World task: it reuses the exact original World source, request, policy and failure,
+and does not allocate more context or promote working prose to accepted facts.
+`chapter-prior-method-audits.v1` lets fresh experimental Chapter Contexts reference
+prior Book, Volume, Arc and Group method-application audits using the existing
+planning audit projection. It retains each decision and exact source/hash/location;
+current selected methods, conditions, histories and narrative plan constraints remain
+in the request. Migration 0220 permits only the matching unsent main-call recovery
+with its original verified World results, without redispatching those stages.
+Unmarked Contexts retain the earlier rendering.
+`authority-manuscript read|export --book-run-id <run> --candidate-version <version>`
+reads the original retained model candidate even when its Provider permission gate
+failed. The response and export retain the source Operation/Effect failure facts.
+For an author-first experimental Book at a stopped, settled original Writer failure,
+`authority-manuscript continue-retained-working --book-run-id <run>
+--candidate-version <retained-prose-version> --expected-version <Book-version>
+--idempotency-key <stable-key> --reason <reason>` explicitly requests the separate
+working-use boundary. It never regenerates, edits, selects among returns or relabels
+the old failed Writer. Only a complete original with the exact two empty MCP metadata
+enumerations can qualify; resources, other Tools, incomplete traces, changed inputs,
+unsettled accounting, cancellation and live leases fail closed. External file checks
+precede the Book transaction; the transaction locks and rechecks the original source
+and frontier and appends immutable continuation evidence. Exact key/checkpoint replay
+returns that same decision. Normal successful-Draft delivery and formal acceptance
+retain their existing gates. Migration 0218 adds the separate evidence table; published
+schemas and failure records remain unchanged. Current-manuscript exports expose this
+source as `RETAINED_WORKING_ONLY` with the original permission failure, and anonymous
+reading can bind its exact text without disclosing the technical provenance to readers.
 A retained `WORLD_AGENCY_CLASSIFICATION_REJECTED` is a terminal proposal-contract
 failure, not a transport retry. Its bounded native result repair reproduces the
 classification against the exact generation and settled Director receipt even when

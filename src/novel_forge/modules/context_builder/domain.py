@@ -1102,7 +1102,7 @@ def build_authority_context_bundle(
         from novel_forge.modules.narrative_state.reality import narrative_hash
         members = exact_accounting.get("members") or []
         by_id = {item.asset_version_id: item for item in selection.selected}
-        if (exact_accounting.get("contract_version") != "protected-context-exact-accounting.v1"
+        if (exact_accounting.get("contract_version") not in {"protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"}
                 or exact_accounting.get("decoded_equal") is not True
                 or [row["asset_version_id"] for row in members] != exact_accounting.get("protected_asset_version_ids")
                 or any(row["asset_version_id"] not in by_id
