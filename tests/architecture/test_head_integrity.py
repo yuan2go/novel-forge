@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 class HeadIntegrityTests(unittest.TestCase):
     def test_identical_retained_origins_are_compatible_but_divergent_origins_reject(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             source = root / "src"
             filename = "v20261015_0217_retained_working_continuation.py"
             original = "src/novel_forge/storage/migrations/versions/" + filename

@@ -20,6 +20,95 @@ from tests.integration.synthesis_production_support import AdviceOnlySynthesisCh
 from tests.unit.test_working_prose_projection import rehash
 
 
+def test_native_v5_writer_admission_bounds_observation_ledger_and_keeps_complete_previous_prose(tmp_path, monkeypatch):
+    harness = CapabilityPackPostgresHarness("bounded-working-memory")
+    root = Path(__file__).resolve().parents[2]
+    transport = SynthesisTransport()
+    class MemoryTransport(AdviceOnlySynthesisChapterTransport):
+        def __call__(self, stage, inputs):
+            output = super().__call__(stage, inputs)
+            if stage == "draft":
+                output["working_memory_json"] = json.dumps([{
+                    "kind": "EVENT", "subject": "archivist", "state_key": f"located-event-{index}",
+                    "claim": f"Observation {index}. " + "The located opening remains unreviewed evidence. " * 10,
+                    "perspective": "OBSERVED", "knowledge_owner": "",
+                    "quote": output["scene_artifacts"][0]["text"][:200], "causes": []
+                } for index in range(64)], ensure_ascii=False)
+            return output
+    transport.chapter = MemoryTransport()
+    transport.chapter.controlled_prose = "唯一起点的纸签压在账本上。" + "她停在门外，听见木轮碾过石板。" * 80
+    transport.database_url = DATABASE_URL
+    env = controlled_member_environment(tmp_path, {
+        "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+        "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+        "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+        "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+        "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": "native-planning-evaluator",
+        "NOVEL_FORGE_ENVIRONMENT": "production",
+    }, monkeypatch, transport)
+    env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+    resolve = PostgresProductionExecutionPayloadResolver.resolve
+    writers = []
+    def capture(resolver, request, admission):
+        payload = resolve(resolver, request, admission)
+        if request.stage == "draft":
+            writers.append(payload)
+        return payload
+    monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture)
+    source = tmp_path / "bounded-request.json"
+    source.write_text(json.dumps({"version": "creation-request.v1", "title": harness.project_id,
+        "target_chapters": 2, "chapter_length": {"minimum": 800, "maximum": 4000},
+        "language_contract": {"required_language": "zh-CN"},
+        "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+            "genre": "social mystery", "audience": "adult readers", "constraints": ["Keep limited viewpoint"], "source_boundaries": ["Original work"]}}))
+    policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
+    policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
+        "version": "working-prose-projection.v5", "history_chapters": 128,
+        "recent_complete_chapters": 2, "max_characters": 8000, "queries": [], "guidance_mode": "COMBINED"}
+    policy_file = tmp_path / "bounded-policy.json"
+    policy_file.write_text(json.dumps(policy))
+    args = _authority_parser().parse_args(["authority-creation", "start", "--input-file", str(source),
+        "--repository-root", str(root), "--creation-policy-file", str(policy_file), "--foreground"])
+    result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
+    assert result["stop_reason"] == "MANUSCRIPT_READY", result
+    assert len(writers) == 2
+    from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
+    prompt = writers[1].input_text
+    envelope = expand_exact_context_references(json.JSONDecoder().raw_decode(prompt[prompt.index('{"context_bundle":'):])[0])
+    assert transport.chapter.controlled_prose in json.dumps(envelope, ensure_ascii=False)
+    packets = []
+    def collect(value):
+        if isinstance(value, dict):
+            if value.get("version") == "working-observations-provider.v1":
+                packets.append(value)
+            for child in value.values():
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+    collect(envelope)
+    assert packets and all(packet["candidate_count"] == 64 and packet["omitted_observation_count"] > 0 for packet in packets)
+    assert "omitted_observation_ids" not in prompt
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=2", [result["book_run_id"]])
+        frozen = uow.cursor.fetchone()[0]
+        assert frozen["accepted_through_chapter"] == 0
+        assert frozen["working_memory"]["candidate_count"] == 64
+        assert frozen["working_memory"]["omitted_observation_ids"]
+        assert frozen["sources"][0]["omitted_ranges"] == []
+        assert transport.chapter.controlled_prose in "".join(p["text"] for p in frozen["sources"][0]["passages"])
+    assert writers[1].capability_evidence["provider_request_envelope_hash"]
+    print(json.dumps({"scope": "SCRIPTED_NATIVE_V5_POSTGRES", "book_run_id": result["book_run_id"],
+        "candidate_observations": 64, "host_omitted_count": len(frozen["working_memory"]["omitted_observation_ids"]),
+        "prompt_bytes": len(prompt.encode()), "prompt_hash": writers[1].capability_evidence["fully_rendered_prompt_hash"]}))
+
+
 def test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience(tmp_path, monkeypatch):
     harness = CapabilityPackPostgresHarness("world-working")
     root = Path(__file__).resolve().parents[2]
