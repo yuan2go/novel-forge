@@ -750,7 +750,7 @@ class PlanningWorldPreparation:
             from .runtime_continuation import require_binding
             revalidation = require_binding(self.preparer.database_url, command.runtime_continuation_id)["target_runtime"].get("world_host_revalidation")
             scope_proof = require_binding(self.preparer.database_url, command.runtime_continuation_id)["target_runtime"].get("planning_capacity", {}).get("context_revalidation") or {}
-            if scope_proof.get("contract_version") == "world-method-scope-projection.v1":
+            if scope_proof.get("contract_version") in {"world-method-scope-projection.v1", "world-protected-context-accounting.v1"}:
                 source_prefix = f"world_preparation/{scope_proof['source_operation_id']}"
             if revalidation:
                 current = require_world_host_revalidation(self.preparer.database_url, command=command, operation_id=revalidation["source_operation_id"])
@@ -824,7 +824,9 @@ class PlanningWorldPreparation:
             if command.logical_key != expected_key:
                 raise KernelError("WORLD_WORKING_FRONTIER_INVALID", "World source must bind its Chapter Planning target and Edition")
         if method_scope_projection:
-            if scope_proof.get("contract_version") == method_scope_projection:
+            if scope_proof.get("contract_version") == method_scope_projection or (
+                    scope_proof.get("contract_version") == "world-protected-context-accounting.v1"
+                    and method_scope_projection == "world-method-scope-projection.v1"):
                 if (source_document.asset_version_id != scope_proof.get("world_source_asset_version_id")
                         or source_document.content_hash != scope_proof.get("world_source_content_hash")):
                     raise KernelError("WORLD_METHOD_SOURCE_DRIFT", "World projection must reuse its exact unsent source")

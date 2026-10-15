@@ -534,7 +534,8 @@ def test_working_intent_budget_counts_the_structured_provider_value_without_esca
         assert _candidate_tokens(legacy) == (serialized_token_upper_bound(_payload(legacy)), "SERIALIZED_SUMMARY")
 
 
-def test_protected_envelope_accounting_keeps_exact_sources_and_optional_eviction_cannot_break_references():
+@pytest.mark.parametrize("accounting_version", ["protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"])
+def test_protected_envelope_accounting_keeps_exact_sources_and_optional_eviction_cannot_break_references(accounting_version):
     import json
     from novel_forge.modules.context_builder.task_compression import _candidate_tokens
     repeated = {"method": "保留人物已有的选择依据、后果和例外。" * 100}
@@ -544,7 +545,7 @@ def test_protected_envelope_accounting_keeps_exact_sources_and_optional_eviction
     sources = [replace(item, content_digest="hash:" + item.asset_version_id,
                        source_identity=item.asset_version_id, source_revision="hash:" + item.asset_version_id,
                        provenance={"authority_asset_version_id": item.asset_version_id}) for item in sources]
-    task = {**TASK, "writer_projection_version": "accepted-writer-history.v2", "protected_context_accounting_version": "protected-context-exact-accounting.v1"}
+    task = {**TASK, "writer_projection_version": "accepted-writer-history.v2", "protected_context_accounting_version": accounting_version}
     budget = _candidate_tokens(sources[0])[0] + 1400
     output, receipt = compile_task_context(sources, task=task, token_budget=budget, required_asset_types=())
     kept = {item.asset_version_id: item for item in output if not (item.provenance or {}).get("task_excluded")}

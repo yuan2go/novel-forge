@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-15T17:03:19.959648+00:00",
+  "audit_sha": "54eda51172b8d915d172381914d73cba9c026328",
+  "repair_head": "5b97bca3e4e9c9ade7ab12f0815eecdfd019cea2",
+  "latest_main": "a068382c69ca2f1363ff2e2cf0069843d4d22fa4",
+  "implementation_tree_sha": "sha256:b0a4a6f7134b879acb76ecce3b6e535deacf5bebae725da9e761152323d9e992",
+  "open_prs": [],
+  "upstream_delta": "PR175; exact-context accounting and prior method audits; main migrations 0219/0220",
+  "conflict": {
+    "field": "projection_source.implementation_tree_sha",
+    "retained_raw_sha256": "e7f7405e1703f13091c5e032319f70082d39a755f213744e530563169c22d3b4"
+  },
+  "author_supplied_agent_rules": "Latest direct user rules override prior AGENTS instructions",
+  "process_dispatch_brake_is_authorization_evidence": false,
+  "qualification": "NOT_RUN"
+}

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261015_0218_retained_working_convergence",
+  "migration_head": "20261015_0220_chapter_prior_audit_convergence",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9311,6 +9311,30 @@
           "locator": "MIGRATION_ID = \"20261015_0218_retained_working_convergence\""
         },
         {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0219_world_exact_context_convergence.py",
+          "id": "20261015_0219_world_exact_context_convergence",
+          "locator": "MIGRATION_ID = \"20261015_0219_world_exact_context_convergence\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0220_chapter_prior_audit_convergence.py",
+          "id": "20261015_0220_chapter_prior_audit_convergence",
+          "locator": "MIGRATION_ID = \"20261015_0220_chapter_prior_audit_convergence\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0218_world_exact_context_accounting.py",
+          "id": "20261015_0218_world_exact_context_accounting",
+          "locator": "MIGRATION_ID = \"20261015_0218_world_exact_context_accounting\"",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "f06f4daccada314b25f7559733ad331d5c056da0"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261015_0219_chapter_prior_method_audits.py",
+          "id": "20261015_0219_chapter_prior_method_audits",
+          "locator": "MIGRATION_ID = \"20261015_0219_chapter_prior_method_audits\"",
+          "classification": "HISTORICAL_COMPATIBILITY",
+          "source_commit": "f06f4daccada314b25f7559733ad331d5c056da0"
+        },
+        {
           "path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0205_source_observation_generation_isolation.py",
           "id": "20261014_0205_source_observation_generation_isolation",
           "locator": "20261014_0205_source_observation_generation_isolation",
@@ -10399,7 +10423,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:5afe18974833199cd0673f671468a8a2890a97ec27b68afe3c9b7c48815791e0"
+    "implementation_tree_sha": "sha256:b0a4a6f7134b879acb76ecce3b6e535deacf5bebae725da9e761152323d9e992"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

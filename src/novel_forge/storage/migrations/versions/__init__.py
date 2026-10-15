@@ -221,6 +221,8 @@ from . import (
     v20261015_0216_operation_evidence_indexes,
     v20261015_0217_craft_context_convergence,
     v20261015_0218_retained_working_convergence,
+    v20261015_0219_world_exact_context_convergence,
+    v20261015_0220_chapter_prior_audit_convergence,
 )
 
 VERSION_MODULES = [
@@ -443,6 +445,8 @@ VERSION_MODULES = [
     v20261015_0216_operation_evidence_indexes,
     v20261015_0217_craft_context_convergence,
     v20261015_0218_retained_working_convergence,
+    v20261015_0219_world_exact_context_convergence,
+    v20261015_0220_chapter_prior_audit_convergence,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -727,6 +727,8 @@ def build_provider_task_view(
             task["planning_group_method_scope_projection_version"] = group_scope
         if chapter_scope:
             task["planning_chapter_method_scope_projection_version"] = chapter_scope
+        if inputs.get("planning_prior_method_audit_projection_version"):
+            task["planning_prior_method_audit_projection_version"] = inputs["planning_prior_method_audit_projection_version"]
         continuity = _planning_working_continuity(inputs, command)
         if continuity is not None:
             task["working_continuity"] = continuity
@@ -1704,6 +1706,11 @@ def build_provider_context_view(
                     or task_view.get("planning_group_method_scope_projection_version") != group_scope
                     or projected_selection != expected_group):
                 raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Group methods differ from the complete frozen selection")
+        prior_audit = context_bundle.get("planning_prior_method_audit_projection_version")
+        if prior_audit or task_view.get("planning_prior_method_audit_projection_version"):
+            if (stage != "chapter_plan.generate" or prior_audit != "chapter-prior-method-audits.v1"
+                    or task_view.get("planning_prior_method_audit_projection_version") != prior_audit):
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter prior audits require the same frozen task and Context version")
         recall_version = context_bundle.get("planning_recall_query_projection_version")
         chapter_scope = context_bundle.get("planning_chapter_method_scope_projection_version")
         if chapter_scope or task_view.get("planning_chapter_method_scope_projection_version"):
@@ -2671,6 +2678,12 @@ def _build_planning_context_view(
         project_group_method_scope(context_bundle.get("narrative_intelligence", {}))
         _reference_prior_planning_method_audits(view, sources=raw_inputs)
         view["planning_group_method_scope_projection_version"] = group_scope
+    prior_audit = context_bundle.get("planning_prior_method_audit_projection_version")
+    if prior_audit:
+        if stage != "chapter_plan.generate" or prior_audit != "chapter-prior-method-audits.v1":
+            raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter prior audit projection requires its frozen stage")
+        _reference_prior_planning_method_audits(view, sources=raw_inputs, chapter=True)
+        view["planning_prior_method_audit_projection_version"] = prior_audit
     chapter_scope = context_bundle.get("planning_chapter_method_scope_projection_version")
     if chapter_scope is not None:
         from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
@@ -2847,11 +2860,13 @@ def _reference_world_prior_method_audits(task: dict[str, Any]) -> None:
         }
 
 
-def _reference_prior_planning_method_audits(view: dict[str, Any], *, sources: list[Mapping[str, Any]]) -> None:
+def _reference_prior_planning_method_audits(view: dict[str, Any], *, sources: list[Mapping[str, Any]], chapter: bool = False) -> None:
     source_by_role = {str(source.get("role")): source for source in sources}
     for segment in view["segments"]:
         role, content = segment["role"], segment["content"]
         generator = {"book_plan": "book_plan.generate", "volume_plan": "volume_plan.generate", "arc_plans": "arc_plan.generate"}.get(role)
+        if chapter and role == "chapter_group_plan":
+            generator = "chapter_group_plan.generate"
         if role.startswith(("related_arc:", "dependent_arc:")):
             generator = "arc_plan.generate"
         if generator is None or "knowledge_translations" not in content:
@@ -2877,7 +2892,7 @@ def _reference_prior_planning_method_audits(view: dict[str, Any], *, sources: li
         "Prior plan decisions identify method consideration in those exact immutable source plans. "
         "Full rationale, checks and use-site locations remain in each source's /knowledge_translations; "
         "the narrative plan fields and all their constraints remain here. They do not prescribe techniques for "
-        "this Group. Complete current method bodies, prerequisites, exceptions, UNKNOWN checks and histories "
+        + ("this Chapter. " if chapter else "this Group. ") + "Complete current method bodies, prerequisites, exceptions, UNKNOWN checks and histories "
         "are delivered for this stage's own ADOPT/ADAPT/REJECT. The rejected repair candidate is unchanged."
     )
 
@@ -3813,7 +3828,7 @@ def compile_working_history_transport(view, *, contract_version="working-history
     return result, {"contract_version": contract_version, "projections": receipts}
 
 
-def compile_exact_context_references(view, *, structured_transport=False, short_literals=False):
+def compile_exact_context_references(view, *, structured_transport=False, short_literals=False, nested_canonical_strings=False):
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     marker = "__exact_value_ref__"
     overrides, removed, json_string = "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
@@ -3854,7 +3869,7 @@ def compile_exact_context_references(view, *, structured_transport=False, short_
                 fragment_count += 1
             else:
                 result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
-        elif structured_transport and isinstance(value, str) and path.endswith("/safe_summary"):
+        elif structured_transport and isinstance(value, str) and (nested_canonical_strings or path.endswith("/safe_summary")):
             try:
                 parsed = json.loads(value)
             except ValueError:
@@ -3879,6 +3894,10 @@ def compile_exact_context_references(view, *, structured_transport=False, short_
             delta_reference_count=delta_count, canonical_json_string_count=json_count, text_fragment_group_count=fragment_count)
     if short_literals:
         proof.update(transport_version="provider-structured-exact-reference.v3",literal_minimum_bytes=96)
+    if nested_canonical_strings:
+        if not structured_transport:
+            raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Nested canonical strings require structured transport")
+        proof.update(transport_version="provider-structured-exact-reference.v4")
     return encoded, proof
 
 
