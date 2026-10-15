@@ -9321,14 +9321,14 @@
           "locator": "MIGRATION_ID = \"20261015_0220_chapter_prior_audit_convergence\""
         },
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20261015_0218_world_exact_context_accounting.py",
+          "path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0218_world_exact_context_accounting.py",
           "id": "20261015_0218_world_exact_context_accounting",
           "locator": "MIGRATION_ID = \"20261015_0218_world_exact_context_accounting\"",
           "classification": "HISTORICAL_COMPATIBILITY",
           "source_commit": "f06f4daccada314b25f7559733ad331d5c056da0"
         },
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20261015_0219_chapter_prior_method_audits.py",
+          "path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0219_chapter_prior_method_audits.py",
           "id": "20261015_0219_chapter_prior_method_audits",
           "locator": "MIGRATION_ID = \"20261015_0219_chapter_prior_method_audits\"",
           "classification": "HISTORICAL_COMPATIBILITY",
