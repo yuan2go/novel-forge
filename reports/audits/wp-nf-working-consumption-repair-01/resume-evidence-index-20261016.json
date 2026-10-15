@@ -1,0 +1,257 @@
+{
+  "archive": "resume-evidence-20261016.zip",
+  "sha256": "6bef882d66b1f7935d8687a22b57de9ba7055f1601a6405592da729581e4cd8e",
+  "files": [
+    {
+      "path": "audit-message-metadata.json",
+      "sha256": "444f08e96e0eb0b966b81f29a369960ae2aec32fcf59c2ae8ccaacd55a84a165",
+      "bytes": 539
+    },
+    {
+      "path": "focused-final.log",
+      "sha256": "593cd14529d1827836ea176d341f150f03d92a9030afdae75fce3ef94dc0ff5f",
+      "bytes": 180
+    },
+    {
+      "path": "focused-tests.log",
+      "sha256": "4923eb03d999e676ce9d87ade70a455889273502550d873a1dfb53cddef0fe9d",
+      "bytes": 340
+    },
+    {
+      "path": "input-replay.json",
+      "sha256": "be04133a8a2e8e1d793daa2a5debdf65b6ae8cf52dedd8d884a9af23b8aeedda",
+      "bytes": 56600
+    },
+    {
+      "path": "install-current.log",
+      "sha256": "5d946bca8121b35413ae98ebe15664b8719e31d0942b0cd99868f3c8ceaef6bb",
+      "bytes": 622
+    },
+    {
+      "path": "installed-check-current.log",
+      "sha256": "f38d9e6d623f21f1eef428d3afcd0369a3e63cf87a0a4b84942e6842923250d5",
+      "bytes": 2306
+    },
+    {
+      "path": "installed-check-final.log",
+      "sha256": "47a9b41b7a9b9c0f37879db2652664abc4058c9797cf858dda83ae8299a9de17",
+      "bytes": 87
+    },
+    {
+      "path": "installed-verification.json",
+      "sha256": "5bf2e26524318352c93233c70b5641955db15d15f26ef1c2e9f18df36fa90d8e",
+      "bytes": 121655
+    },
+    {
+      "path": "main-baseline-tests.log",
+      "sha256": "e27dc614fa2d19bf7797b51fb462e1dba9f2f4a39642d07fc29697e4ae3fee0d",
+      "bytes": 9636
+    },
+    {
+      "path": "migration-head-corrected.log",
+      "sha256": "d338bbe922b8a4ad8d36e7b44601af1411e4aa6254881f0211bbb1f63168462d",
+      "bytes": 99
+    },
+    {
+      "path": "migration-head-final.log",
+      "sha256": "6316ba22e3e67bfad5477624b098add4a13b0bb13bd016ee0587ffc13992aa1f",
+      "bytes": 2009
+    },
+    {
+      "path": "migration-test-first.log",
+      "sha256": "f74fdd799ab013042d8bb1c1e7dea65ba96f8f3f0838d63987bef2e98ee2e901",
+      "bytes": 2791
+    },
+    {
+      "path": "native-eight.log",
+      "sha256": "ad8283503aef20b4a461e29d543b62e44953cab1125442a7d7cae4a192c88c74",
+      "bytes": 1664
+    },
+    {
+      "path": "native-postgres.log",
+      "sha256": "eddadc24e7f717c92977779f07ea4511e672214cd61e59e6781ca1670f3ad90d",
+      "bytes": 99
+    },
+    {
+      "path": "native-v5-final.log",
+      "sha256": "c9e05b1d3601da4d561ad2571eedf70e59d7590f5f1efe510b6820d805c37a22",
+      "bytes": 295
+    },
+    {
+      "path": "native-v5-verified.log",
+      "sha256": "ed0b14620a6aea6bd59f3dc6e340a9c4925c0acc6baf649f3ef3f4ab93b6b681",
+      "bytes": 295
+    },
+    {
+      "path": "native-v5.log",
+      "sha256": "02b762da9f113befa628b0039c8c75089af3b7473a491f2f86b420ffd90362d6",
+      "bytes": 6219
+    },
+    {
+      "path": "p0/novel-forge-p0-bb1968104a30-53242ba4049640ffa0b2f8ded48d03a2/documentation-reality-process.json",
+      "sha256": "31c55d288d6262b026e7c44eeb11c06cdff3fa50dfcd21fca38ae118d6f2d49e",
+      "bytes": 883
+    },
+    {
+      "path": "p0/novel-forge-p0-bb1968104a30-53242ba4049640ffa0b2f8ded48d03a2/documentation-reality.json",
+      "sha256": "332b1c42bac3f5582a94c44f1a46fef49da603a16bd44a6cc15632ef3609c170",
+      "bytes": 771
+    },
+    {
+      "path": "p0/novel-forge-p0-bb1968104a30-53242ba4049640ffa0b2f8ded48d03a2/static-and-manifests.json",
+      "sha256": "81f64c38d080a2b7c3a0f2571539725447dd450daaec312fd6162ce6dafade3d",
+      "bytes": 3682
+    },
+    {
+      "path": "p0/p0-backend-qualification-bb1968104a30fed62895aad86698ed8e30c53c33.json",
+      "sha256": "0acb9f9c4fd14a8397ddd7cb20c11bd1e88d930d2f67f160f09cb81332e675d3",
+      "bytes": 10357
+    },
+    {
+      "path": "p0-current/novel-forge-p0-f1822d180480-dde6a10e2f674b8d897a487645d3ef3d/documentation-reality-process.json",
+      "sha256": "80f70aa9730c460d2d3aaf28ca40b14afbe451c1ef1a05be44be4020f45493eb",
+      "bytes": 883
+    },
+    {
+      "path": "p0-current/novel-forge-p0-f1822d180480-dde6a10e2f674b8d897a487645d3ef3d/documentation-reality.json",
+      "sha256": "977472dce3e9692a3c435bfa8c1031c478c0e47fabc2ee7ac307d8ee357ada60",
+      "bytes": 771
+    },
+    {
+      "path": "p0-current/novel-forge-p0-f1822d180480-dde6a10e2f674b8d897a487645d3ef3d/static-and-manifests.json",
+      "sha256": "0b3b8d7ce62c206568501960b638ca0b6e7e6164f59f545b1c78957273eb32ba",
+      "bytes": 2213
+    },
+    {
+      "path": "p0-current/p0-backend-qualification-f1822d180480a9a5d8eb542ce9dd672ba6afab0f.json",
+      "sha256": "fd8f7f96f263caf79c3b8c2fb64cebb7e8d01bb828e378b4db4398fedb81ccc0",
+      "bytes": 11649
+    },
+    {
+      "path": "p0-current-process.log",
+      "sha256": "2ca97d287f1891c9b17f1dd68fcc14d93da3e4eb39533b5dc8fdc7dcf7cce10e",
+      "bytes": 365
+    },
+    {
+      "path": "p0-final/novel-forge-p0-d7431496a4da-cb72d5c108764f7296e9ea21c951633b/backend-pytest-collection.json",
+      "sha256": "2080f820007eea59647c8d7575e5f36b95c7396aac40e5b0be23893fe7fa4836",
+      "bytes": 851713
+    },
+    {
+      "path": "p0-final/novel-forge-p0-d7431496a4da-cb72d5c108764f7296e9ea21c951633b/backend-pytest-process.json",
+      "sha256": "7f5a2194420814ca4ce5f84bc584313b51366f599422a2178e1832a1a3429a7d",
+      "bytes": 21475
+    },
+    {
+      "path": "p0-final/novel-forge-p0-d7431496a4da-cb72d5c108764f7296e9ea21c951633b/backend-pytest.xml",
+      "sha256": "e41dff3c576e8592dd32eec5ebaa221c681b971767f3600d27173f75eab831c2",
+      "bytes": 1045326
+    },
+    {
+      "path": "p0-final/novel-forge-p0-d7431496a4da-cb72d5c108764f7296e9ea21c951633b/documentation-reality-process.json",
+      "sha256": "6970fb0bd31028809309a07bf779cd17f7e9acea29522583763fbdc3f66fc796",
+      "bytes": 883
+    },
+    {
+      "path": "p0-final/novel-forge-p0-d7431496a4da-cb72d5c108764f7296e9ea21c951633b/documentation-reality.json",
+      "sha256": "a5fa3b0fb9d9581e9dcdb7f447c9e730db865b3b0013ad20b40c37044328a0c9",
+      "bytes": 771
+    },
+    {
+      "path": "p0-final/novel-forge-p0-d7431496a4da-cb72d5c108764f7296e9ea21c951633b/static-and-manifests.json",
+      "sha256": "6bc8fc4a77dfdb0164f5faf5d88b52b3958400a8a79d8a18e01d745368cdc63d",
+      "bytes": 1550127
+    },
+    {
+      "path": "p0-final/p0-backend-qualification-d7431496a4dab440880bcd52ba96fcb8e8702466.json",
+      "sha256": "76446195857b2d104ffe247329d5cad7dcd0f41f4451f572b542af9595b99ca3",
+      "bytes": 10333
+    },
+    {
+      "path": "p0-final-process.log",
+      "sha256": "b52b7f6c03207414f57e5657993d7aecc38c2d40ef916505e8f0063ba3803359",
+      "bytes": 363
+    },
+    {
+      "path": "p0-fixed/novel-forge-p0-849dbb4eec64-a71b4682d49e4643808c292ba78d943b/documentation-reality-process.json",
+      "sha256": "22306146282ccad441ca06f76e492d103e04f031da70bd2c835b1f2c6f4ea7d5",
+      "bytes": 1213
+    },
+    {
+      "path": "p0-fixed/p0-backend-qualification-849dbb4eec6482e7331a7265afec049f3d9cb78d.json",
+      "sha256": "eac06b09484aa481b3d754ede56396ccf2bd5aef72a3b9ee9cc1102441257c15",
+      "bytes": 10674
+    },
+    {
+      "path": "p0-fixed-process.log",
+      "sha256": "07d489c45c6092348b99a9f7d80fbb7dd437304fc0e4749dfc62371886d7cfcb",
+      "bytes": 363
+    },
+    {
+      "path": "p0-process.log",
+      "sha256": "dfb29e53d51f735ba089ac3f44d8ac215652dda76ac16398b0a55b4e28c4f28b",
+      "bytes": 357
+    },
+    {
+      "path": "p0-source-final/novel-forge-p0-576a785ed4df-2888084d86f4410b83c96427734365e2/backend-pytest-collection.json",
+      "sha256": "26d5f579850f3493c7a129f13649943a104f6ccb2133a192eca08543d74e315f",
+      "bytes": 851713
+    },
+    {
+      "path": "p0-source-final/novel-forge-p0-576a785ed4df-2888084d86f4410b83c96427734365e2/backend-pytest-process.json",
+      "sha256": "0b0594b423f20946ccfc0cfb477546478db015a0aa339eb7963e4cfe882b5b7e",
+      "bytes": 19676
+    },
+    {
+      "path": "p0-source-final/novel-forge-p0-576a785ed4df-2888084d86f4410b83c96427734365e2/backend-pytest.xml",
+      "sha256": "037fa582ecc08b4765f263d52e4960d1f4ec0f1424900e54ab8ecc9de60c3aa0",
+      "bytes": 1043759
+    },
+    {
+      "path": "p0-source-final/novel-forge-p0-576a785ed4df-2888084d86f4410b83c96427734365e2/documentation-reality-process.json",
+      "sha256": "f6224bad00151976f337d6d2339e5c99b185b266c8dc2d1d9e2fc44253b65f85",
+      "bytes": 883
+    },
+    {
+      "path": "p0-source-final/novel-forge-p0-576a785ed4df-2888084d86f4410b83c96427734365e2/documentation-reality.json",
+      "sha256": "6be68c70dfc95b8409fa6f31f68d2233f583f95138e16025be8f33945bc75636",
+      "bytes": 771
+    },
+    {
+      "path": "p0-source-final/novel-forge-p0-576a785ed4df-2888084d86f4410b83c96427734365e2/static-and-manifests.json",
+      "sha256": "267b07e588735fd42f77b50517db51f9c803e55df862795b32143d8b13dc84e4",
+      "bytes": 1550127
+    },
+    {
+      "path": "p0-source-final/p0-backend-qualification-576a785ed4df179abaf696fd97ef1630fb4d2e68.json",
+      "sha256": "528a393b89b8b2c6af57b516f3c4fdbbda0ce40a7f0998ef4fb5441bdf9de70f",
+      "bytes": 10333
+    },
+    {
+      "path": "p0-source-final-process.log",
+      "sha256": "94e22b5706a9c50ad9ea3b341897f31bc243c432580b4b962f7d318748227ed4",
+      "bytes": 370
+    },
+    {
+      "path": "post-state.json",
+      "sha256": "fc9842aef4ba75dbdd8c0e905e7471692bc9d33474b0b25ef3bdeeee62f3d22a",
+      "bytes": 1911
+    },
+    {
+      "path": "preflight.json",
+      "sha256": "62ca5f4aba3195d831a6f43f442650ceef88184db996192f7db9cc57c2e0fc08",
+      "bytes": 45482
+    },
+    {
+      "path": "same-book-prepare.json",
+      "sha256": "567608c3d9858e6c272263804d9107b73bf4e35bb508a17debd668ff364e42f3",
+      "bytes": 304
+    },
+    {
+      "path": "upgrade-compose.json",
+      "sha256": "36077b34f42c0531845c5be68d2efebc88ae046a2b9c6d15e95a1a811772de0c",
+      "bytes": 85629
+    }
+  ],
+  "configured_secret_matches": 0
+}
