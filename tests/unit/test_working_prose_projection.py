@@ -527,7 +527,7 @@ def test_partial_selection_resolves_contiguous_native_prose_with_provenance(monk
     def execute(query, args):
         # This fixture exercises the real delivery -> acceptance -> native-output fallback.
         number = args[-1]
-        if "authority_book_manuscript_delivery" in query or "authority_book_acceptance_lineage" in query:
+        if any(table in query for table in ("authority_book_manuscript_delivery", "authority_book_acceptance_lineage", "authority_book_retained_working_continuation")):
             uow.cursor.fetchone.return_value = None
         else:
             uow.cursor.fetchone.return_value = (f"native:{number}",)

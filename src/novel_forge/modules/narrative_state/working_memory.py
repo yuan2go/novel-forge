@@ -7,6 +7,7 @@ from novel_forge.modules.review.diagnostics import prose_hash as text_hash, vali
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 MEMORY_VERSION = "working-observations.v1"
+PROVIDER_MEMORY_VERSION = "working-observations-provider.v1"
 KINDS = {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP", "EVENT", "CONSEQUENCE", "PROMISE"}
 PERSPECTIVES = {"OBSERVED", "BELIEF", "HEARSAY", "READER_ONLY"}
 ENTRY_KEYS = {"kind", "subject", "state_key", "claim", "perspective", "knowledge_owner", "quote", "causes"}
@@ -103,6 +104,17 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
     return {**packet, "packet_hash": canonical_hash(packet)}
 
 
+def project_memory_for_provider(packet: Mapping[str, Any], visible: set[str]) -> dict[str, Any]:
+    result = {key: deepcopy(packet[key]) for key in ("authority", "semantic_support", "entries", "candidate_count")}
+    result.update(version=PROVIDER_MEMORY_VERSION, host_packet_hash=packet["packet_hash"],
+        source_coverage=[deepcopy(row) for row in packet["source_coverage"] if row["asset_version_id"] in visible],
+        source_coverage_hash=canonical_hash(packet["source_coverage"]))
+    for source, target in (("omitted_observation_ids", "omitted_observation"), ("retrieval_omissions", "retrieval_omission")):
+        result[target + "_count"] = len(packet[source])
+        result[target + "_hash"] = canonical_hash(packet[source])
+    return {**result, "packet_hash": canonical_hash(result)}
+
+
 def _location_covered(location: Mapping[str, Any], passages: list[dict[str, Any]]) -> bool:
     start, end, quote = location.get("start"), location.get("end"), location.get("quote")
     if type(start) is not int or type(end) is not int or not isinstance(quote, str) or end - start != len(quote) or start >= end:
@@ -139,15 +151,25 @@ def bind_packet_coverage(packet: dict[str, Any], sources: list[dict[str, Any]]) 
 
 def validate_memory_packet(packet: Any, sources: list[dict[str, Any]]) -> None:
     failure = KernelError("WORKING_MEMORY_PACKET_INVALID", "Working memory requires source-bound unreviewed observations")
-    if (not isinstance(packet, Mapping) or packet.get("version") != MEMORY_VERSION
+    provider = isinstance(packet, Mapping) and packet.get("version") == PROVIDER_MEMORY_VERSION
+    fields = ({"host_packet_hash", "source_coverage_hash", "omitted_observation_count", "omitted_observation_hash",
+        "retrieval_omission_count", "retrieval_omission_hash"} if provider else {"omitted_observation_ids", "retrieval_omissions"})
+    if (not isinstance(packet, Mapping) or packet.get("version") not in {MEMORY_VERSION, PROVIDER_MEMORY_VERSION}
             or packet.get("authority") != "UNREVIEWED_WORKING_OBSERVATIONS"
             or packet.get("semantic_support") != "NOT_VERIFIED"
-            or set(packet) != {"version", "authority", "semantic_support", "entries", "omitted_observation_ids",
-                               "source_coverage", "candidate_count", "retrieval_omissions", "packet_hash"}
+            or set(packet) != {"version", "authority", "semantic_support", "entries", "source_coverage", "candidate_count", "packet_hash"} | fields
             or packet["packet_hash"] != canonical_hash({k: v for k, v in packet.items() if k != "packet_hash"})
             or not isinstance(packet["entries"], list)
             or type(packet["candidate_count"]) is not int or packet["candidate_count"] < 0
-            or any(not isinstance(packet[key], list) for key in ("omitted_observation_ids", "retrieval_omissions", "source_coverage"))
+            or not isinstance(packet["source_coverage"], list)):
+        raise failure
+    if provider:
+        if (any(type(packet[key]) is not int or packet[key] < 0 for key in ("omitted_observation_count", "retrieval_omission_count"))
+                or any(not isinstance(packet[key], str) or len(packet[key]) != 71 or not packet[key].startswith("sha256:")
+                    for key in ("host_packet_hash", "source_coverage_hash", "omitted_observation_hash", "retrieval_omission_hash"))
+                or packet["candidate_count"] != len(packet["entries"]) + packet["omitted_observation_count"] + packet["retrieval_omission_count"]):
+            raise failure
+    elif (any(not isinstance(packet[key], list) for key in ("omitted_observation_ids", "retrieval_omissions"))
             or packet["candidate_count"] != sum(len(packet[key]) for key in ("entries", "omitted_observation_ids", "retrieval_omissions"))):
         raise failure
     by_version = {row["asset_version_id"]: row for row in sources}
@@ -170,5 +192,5 @@ def validate_memory_packet(packet: Any, sources: list[dict[str, Any]]) -> None:
         if not isinstance(location, Mapping) or not _location_covered(location, source["passages"]):
             raise failure
         identities.append(entry["observation_id"])
-    if len(set(identities)) != len(identities) or bind_packet_coverage(dict(packet), sources) != dict(packet):
+    if len(set(identities)) != len(identities) or not provider and bind_packet_coverage(dict(packet), sources) != dict(packet):
         raise failure

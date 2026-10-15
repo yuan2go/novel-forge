@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/collect_chain.py", line 15, in <module>
+    evidence=log['provider_evidence'];execution=evidence.get('production_execution',{});request=ExecutionRequest.from_dict(execution['execution_request'])
+             ~~~^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'provider_evidence'

@@ -23,6 +23,38 @@ def world_source():
 
 
 @pytest.mark.parametrize("role,stage", [("WORLD_REASONER", "world_candidates.generate"), ("DIRECTOR", "world_candidates.evaluate")])
+@pytest.mark.parametrize("drift", [None, "book", "target", "accepted", "hash", "legacy"])
+def test_world_author_intent_binds_frozen_working_frontier(role, stage, drift):
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+    from tests.unit.test_author_design_adoption import _world_author_context
+    _, _, context = _world_author_context(stage)
+    source = world_source()
+    task = PlanningWorldPreparation._task(source, {"asset_version_id": "source", "content_hash": "digest"}, role)
+    context.update(project_id="p", book_id="b", logical_key="chapter:5", world_preparation=task)
+    author = context["author_design_projection"]
+    author["chapter_range"] = [5, 5]
+    for fragment in author["fragments"]:
+        fragment["chapter_range"] = [5, 5]
+    if drift == "book":
+        context["book_id"] = "other"
+    elif drift == "target":
+        task["target_chapter"] = 6
+    elif drift == "accepted":
+        task["accepted_through_chapter"] = 1
+    elif drift == "hash":
+        task["working_manuscript"]["sources"][0]["content_hash"] = "stale"
+    elif drift == "legacy":
+        task.pop("working_manuscript")
+    if drift:
+        with pytest.raises(KernelError):
+            build_provider_context_view(stage, context, {"world_preparation": task})
+    else:
+        view = build_provider_context_view(stage, context, {"world_preparation": task})
+        assert view["accepted_state_boundary"]["accepted_through_chapter"] == 0
+        assert view["author_design_projection"]["chapter_range"] == [5, 5]
+
+
+@pytest.mark.parametrize("role,stage", [("WORLD_REASONER", "world_candidates.generate"), ("DIRECTOR", "world_candidates.evaluate")])
 def test_world_and_director_consume_selected_experience_without_granting_accepted_knowledge(role, stage):
     source = world_source()
     frozen = deepcopy(source)

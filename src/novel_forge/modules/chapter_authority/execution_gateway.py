@@ -3423,34 +3423,6 @@ class PostgresProductionExecutionPayloadResolver:
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
                     "Provider materialization hash differs from frozen ExternalEffect",
                 )
-            if source_execution:
-                input_text, prompt_evidence = _materialize_source_intelligence_prompt(
-                    request=request,
-                    stage=stage,
-                    inputs=inputs,
-                    materialization=materialization,
-                )
-            else:
-                input_text, prompt_evidence = _materialize_production_codex_prompt(
-                    request=request,
-                    stage=stage,
-                    inputs=inputs,
-                    materialization=materialization,
-                )
-            output_schema = materialization.get("output_schema")
-            if not isinstance(output_schema, Mapping) or not isinstance(
-                output_schema.get("content"), Mapping
-            ):
-                raise KernelError(
-                    "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
-                    "frozen Capability materialization has no output schema content",
-                )
-            tool_permissions = materialization.get("tool_permissions")
-            if not isinstance(tool_permissions, Mapping):
-                raise KernelError(
-                    "CHAPTER_CAPABILITY_TOOL_POLICY_INVALID",
-                    "frozen Capability materialization has no Tool policy",
-                )
             admission_version_id = str(
                 capability_runtime.get("provider_admission_asset_version_id") or ""
             )
@@ -3474,6 +3446,38 @@ class PostgresProductionExecutionPayloadResolver:
                 raise KernelError(
                     "PROVIDER_ADMISSION_IDENTITY_DRIFT",
                     "Provider admission contract is malformed",
+                )
+            frozen_prompt = frozen_admission.get("prompt_materialization") or {}
+            if source_execution:
+                input_text, prompt_evidence = _materialize_source_intelligence_prompt(
+                    request=request,
+                    stage=stage,
+                    inputs=inputs,
+                    materialization=materialization,
+                )
+            else:
+                input_text, prompt_evidence = _materialize_production_codex_prompt(
+                    request=request,
+                    stage=stage,
+                    inputs=inputs,
+                    materialization=materialization,
+                    history_transport_version=(frozen_prompt.get("provider_view", {}).get("working_history_transport") or {}).get(
+                        "contract_version", "working-history-provider-transport.v1"),
+                    template_render_contract=frozen_prompt.get("template_render_contract", "sequential-template-substitution.v1"),
+                )
+            output_schema = materialization.get("output_schema")
+            if not isinstance(output_schema, Mapping) or not isinstance(
+                output_schema.get("content"), Mapping
+            ):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
+                    "frozen Capability materialization has no output schema content",
+                )
+            tool_permissions = materialization.get("tool_permissions")
+            if not isinstance(tool_permissions, Mapping):
+                raise KernelError(
+                    "CHAPTER_CAPABILITY_TOOL_POLICY_INVALID",
+                    "frozen Capability materialization has no Tool policy",
                 )
             try:
                 envelope = ProviderRequestEnvelope.from_identity_dict(
@@ -4497,6 +4501,8 @@ def _materialize_production_codex_prompt(
     stage: str,
     inputs: Mapping[str, Any],
     materialization: Mapping[str, Any],
+    history_transport_version: str = "working-history-provider-transport.v2",
+    template_render_contract: str = "opaque-template-substitution.v1",
 ) -> tuple[str, dict[str, Any]]:
     if request is not None:
         resolved_target_scope = request.target_scope.to_dict()
@@ -4664,7 +4670,8 @@ def _materialize_production_codex_prompt(
         from .provider_views import project_planning_narrative_intent
         task_view, context_view, intent_projection = project_planning_narrative_intent(task_view, context_view)
     from .provider_views import compile_working_history_transport
-    history_envelope, history_transport = compile_working_history_transport({"input_manifest": task_view, "context_bundle": context_view})
+    history_envelope, history_transport = compile_working_history_transport(
+        {"input_manifest": task_view, "context_bundle": context_view}, contract_version=history_transport_version)
     task_view, context_view = history_envelope["input_manifest"], history_envelope["context_bundle"]
     exact_reference_proof = None
     protected_exact_accounting = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version") == "protected-context-exact-accounting.v1"
@@ -4706,10 +4713,18 @@ def _materialize_production_codex_prompt(
         "{{context_bundle}}": _canonical(context_view),
         "{{output_schema_ref}}": str(schema.get("ref") or ""),
     }
-    rendered_template = template_text
-    for marker, value in replacements.items():
-        rendered_template = rendered_template.replace(marker, value)
-    if re.search(r"\{\{[a-zA-Z0-9_]+\}\}", rendered_template):
+    marker_pattern = r"\{\{[a-zA-Z0-9_]+\}\}"
+    if template_render_contract == "sequential-template-substitution.v1":
+        rendered_template = template_text
+        for marker, value in replacements.items():
+            rendered_template = rendered_template.replace(marker, value)
+        unresolved = bool(re.search(marker_pattern, rendered_template))
+    elif template_render_contract == "opaque-template-substitution.v1":
+        unresolved = any(marker not in replacements for marker in re.findall(marker_pattern, template_text))
+        rendered_template = re.sub(marker_pattern, lambda match: replacements.get(match[0], match[0]), template_text)
+    else:
+        raise KernelError("CHAPTER_CAPABILITY_TEMPLATE_INVALID", "Template rendering requires its frozen contract")
+    if unresolved:
         raise KernelError(
             "CHAPTER_CAPABILITY_TEMPLATE_INVALID",
             "frozen Prompt Template contains unresolved placeholders",
@@ -4944,6 +4959,7 @@ def _materialize_production_codex_prompt(
             else {}
         ),
         "rendered_prompt_bytes": prompt_bytes,
+        "template_render_contract": template_render_contract,
         "rendered_prompt_estimated_tokens": prompt_estimated_tokens,
         "system_instruction": {
             key: system.get(key) for key in ("ref", "version", "content_hash")

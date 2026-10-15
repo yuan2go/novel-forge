@@ -1,0 +1,329 @@
+F.....................                                                   [100%]
+=================================== FAILURES ===================================
+_ test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-5/test_native_creation_world_bin0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a616000>
+
+    def test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience(tmp_path, monkeypatch):
+        harness = CapabilityPackPostgresHarness("world-working")
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        transport.database_url = DATABASE_URL
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": "native-planning-evaluator",
+            "NOVEL_FORGE_ENVIRONMENT": "production",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        writer_prompts = []
+        chapter_planning_prompts = []
+        world_prompts = []
+    
+        def capture_writer_prompt(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage in {"draft", "chapter_plan.generate", "world_candidates.generate", "world_candidates.evaluate"}:
+                start = payload.input_text.find('{"context_bundle":')
+                assert start >= 0
+                from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
+                envelope = expand_exact_context_references(json.JSONDecoder().raw_decode(payload.input_text[start:])[0])
+                target = writer_prompts if request.stage == "draft" else world_prompts if request.stage.startswith("world_candidates.") else chapter_planning_prompts
+                target.append(envelope)
+            return payload
+    
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_writer_prompt)
+        input_file = tmp_path / "request.json"
+        input_file.write_text(json.dumps({"version": "creation-request.v1", "title": harness.project_id,
+            "target_chapters": 2, "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 1},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Keep the witness's limited viewpoint"], "source_boundaries": ["Original work"]}}))
+        args = _authority_parser().parse_args(["authority-creation", "start", "--input-file", str(input_file),
+            "--repository-root", str(root), "--maximum-ticks", "100", "--foreground"])
+        template = json.loads((root / args.execution_template_file).read_text())
+        template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+        args.execution_template_file = tmp_path / "execution-template.json"
+        args.execution_template_file.write_text(json.dumps(template))
+        result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
+        if result["stop_reason"] != "MANUSCRIPT_READY":
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("""SELECT operation.definition_name,operation.status,attempt.result->>'error_code',attempt.result->>'error_message'
+                    FROM authority_operation operation LEFT JOIN LATERAL (SELECT result FROM authority_attempt
+                        WHERE operation_id=operation.operation_id ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+                    WHERE operation.project_id=%s ORDER BY operation.created_at DESC LIMIT 8""", [result["project_id"]])
+                failures = uow.cursor.fetchall()
+            pytest.fail(f"Native Creation stopped at {result['stop_reason']}: {failures!r}")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [result["book_run_id"]])
+            book = uow.cursor.fetchone()[0]
+            assert book["current_chapter"] == 1 and book["accepted_through_chapter"] == 0
+            uow.cursor.execute("""SELECT v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+                WHERE a.project_id=%s AND a.asset_type='context_bundle' AND v.content->>'stage'='draft'""", [book["project_id"]])
+            draft_contexts = [row[0] for row in uow.cursor.fetchall() if row[0].get("chapter_generation_length")]
+            assert len(draft_contexts) == 1
+            assert draft_contexts[0]["chapter_generation_length"]["minimum"] == 800
+            assert draft_contexts[0]["chapter_generation_length"]["maximum"] == 4000
+            from novel_forge.modules.chapter_authority.quality_length_requirement import require_generation_binding
+            require_generation_binding(draft_contexts[0])
+            assert len(writer_prompts) == 1
+            assert writer_prompts[0]["context_bundle"]["chapter_generation_length"] == draft_contexts[0]["chapter_generation_length"]
+            assert len(chapter_planning_prompts) == 1
+            scale = chapter_planning_prompts[0]["context_bundle"]["chapter_planning_length"]
+            assert scale["minimum"] == 800 and scale["maximum"] == 4000 and scale["unit"] == "HAN_CHARACTERS_V1"
+            uow.cursor.execute("SELECT current_book_asset_version_id FROM authority_book WHERE project_id=%s AND book_id=%s", [book["project_id"], book["book_id"]])
+            assert scale["source_book_asset_version_id"] == uow.cursor.fetchone()[0]
+            uow.cursor.execute("""SELECT v.content->'creative_baseline' FROM authority_asset_version v
+                JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='draft_chapter'""", [book["project_id"]])
+            baselines = [row[0] for row in uow.cursor.fetchall()]
+            assert len(baselines) == 1
+            assert baselines[0]["chapter_generation_length"] == draft_contexts[0]["chapter_generation_length"]
+            uow.cursor.execute("""SELECT v.content->'contract' FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+                WHERE a.project_id=%s AND a.asset_type='world_preparation_source' ORDER BY v.created_at LIMIT 1""", [book["project_id"]])
+            first_source = uow.cursor.fetchone()[0]
+            assert first_source["contract_version"] == "world-preparation-source.v5"
+            assert first_source["provider_projection_version"] == "world-role-delivery.v4"
+            assert len(world_prompts) == 2
+            for envelope in world_prompts:
+                delivered = envelope["input_manifest"]["narrative_inputs"]["world_preparation"]
+                assert delivered["contract_version"] == "world-provider-task.v5"
+                assert delivered["working_delivery_receipt"]["source_snapshot_hash"] == first_source["working_manuscript"]["snapshot_hash"]
+                assert "schema" not in delivered["transition_contract"]
+                assert delivered["transition_contract"]["payload_schema"]
+            working = freeze_working_context(uow, book, 2)
+            BookControlRepository(uow.cursor).freeze(project_id=book["project_id"], book_run_id=book["book_run_id"],
+                chapter_number=2, actor_id="native-creation-operator")
+            repository = WorldPreparationRepository(uow.cursor)
+            source = repository.require_source(project_id=book["project_id"], book_id=book["book_id"],
+                request=first_source["request"], contract_version="world-preparation-source.v5", epistemic_contract="world-agency.v2",
+                working_manuscript=working)
+            assert source["target_chapter"] == 2 and source["reality"]["chapter_number"] == 0
+            assert source["working_manuscript"]["sources"][0]["passages"] == working["sources"][0]["passages"]
+            repository.assert_source_current(project_id=book["project_id"], book_id=book["book_id"], frozen=source)
+            task = PlanningWorldPreparation._task(source, {"asset_version_id": "controlled-source", "content_hash": "digest"}, "DIRECTOR")
+            assert task["target_chapter"] == 2 and task["accepted_through_chapter"] == 0
+            from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+            from tests.unit.test_author_design_adoption import _world_author_context
+            _, _, author_context = _world_author_context("world_candidates.evaluate")
+            author_context.update(project_id=book["project_id"], book_id=book["book_id"], logical_key="chapter:2", world_preparation=task)
+            author_context["author_design_projection"]["chapter_range"] = [2, 2]
+            for fragment in author_context["author_design_projection"]["fragments"]:
+                fragment["chapter_range"] = [2, 2]
+>           view = build_provider_context_view("world_candidates.evaluate", author_context, {"world_preparation": task})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_world_working_continuity_postgres.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stage = 'world_candidates.evaluate'
+context_bundle = {'project_id': 'project:author:0946a5429e8bcaf7d44322b34599b720889ceac60aa4fa0cbf2eadccf8ca2c57', 'book_id': 'book:aut...aration_source', 'content_hash': 'sha256:486ea46224d1bb4fb680f34f7c9ad96a8f24ec88be73ea8e5a6c65260e9cb8a7', ...}], ...}
+task_view = {'world_preparation': {'contract_version': 'world-provider-task.v4', 'epistemic_contract': 'world-agency.v2', 'role': 'DIRECTOR', 'source_ref': {'asset_version_id': 'controlled-source', 'content_hash': 'digest'}, ...}}
+clean_writer_context = False, writer_projection_version = ''
+
+    def build_provider_context_view(
+        stage: str,
+        context_bundle: Mapping[str, Any],
+        task_view: Mapping[str, Any],
+        *, clean_writer_context: bool = False, writer_projection_version: str = "",
+    ) -> dict[str, Any]:
+    
+        if stage in {"model_reference_evaluate", "model_reference_adjudicate"}:
+            from novel_forge.modules.command_kernel.routing_bootstrap import validate_model_reference_creation_binding
+    
+            frozen = task_view.get("model_reference")
+            validate_model_reference_creation_binding(frozen)
+            if (context_bundle.get("model_reference") != frozen
+                or context_bundle.get("source_isolation") != "FROZEN_MODEL_REFERENCE_ONLY"):
+                raise KernelError("MODEL_REFERENCE_CONTEXT_DRIFT", "Provider Context differs from frozen reference task")
+            view = context_bundle.get("provider_context_view")
+            if not isinstance(view, Mapping) or view.get("source_isolation") != "FROZEN_MODEL_REFERENCE_ONLY":
+                raise KernelError("MODEL_REFERENCE_CONTEXT_DRIFT", "Provider Context projection is missing")
+            return deepcopy(dict(view))
+    
+        if stage in {"context_compress", "context_fidelity"}:
+            from .context_compression_provider import compression_boundary_identity
+    
+            if (
+                compression_boundary_identity(context_bundle.get("accepted_boundary") or {})
+                != compression_boundary_identity(task_view.get("accepted_boundary") or {})
+                or str(context_bundle.get("memo_fingerprint") or "") != str(task_view.get("memo_fingerprint") or "")
+            ):
+                raise KernelError("CONTEXT_COMPRESSION_BOUNDARY_DRIFT", "compression must use the frozen Memo boundary")
+            return {
+                "contract_version": "provider-context-view-v4", "stage": stage,
+                "accepted_boundary": deepcopy(context_bundle["accepted_boundary"]),
+                "memo_fingerprint": context_bundle["memo_fingerprint"],
+                "source_isolation": "FROZEN_TASK_CHUNK_ONLY", "protected": True,
+            }
+        if stage == "memo":
+            intent = task_view.get("frozen_intent") or {}
+            if intent.get("intent_fingerprint") != context_bundle.get("intent_fingerprint"):
+                raise KernelError("CHAPTER_MEMO_INTENT_DRIFT", "Memo Context differs from frozen Intent")
+            if context_bundle.get("working_manuscript") is not None:
+                from novel_forge.modules.book_authority.working_prose import validate_working_projection
+                validate_working_projection(context_bundle["working_manuscript"], project_id=context_bundle["project_id"],
+                    book_id=context_bundle.get("book_id"), target_chapter=context_bundle["chapter"],
+                    accepted_through_chapter=context_bundle["accepted_boundary"]["accepted_through_chapter"])
+                if intent.get("working_manuscript") != context_bundle["working_manuscript"] or intent.get("character_situation") != context_bundle.get("character_situation"):
+                    raise KernelError("CHAPTER_MEMO_INTENT_DRIFT", "Memo must consume the exact working projection and character situation")
+            return {"contract_version": "provider-context-view-v2", "stage": stage,
+                    "accepted_boundary": deepcopy(context_bundle.get("accepted_boundary")),
+                    "source_isolation": "FROZEN_INTENT_ONLY", "protected": True}
+        if stage == "retrieval_query_expansion":
+            boundary = context_bundle.get("accepted_boundary")
+            if (
+                not isinstance(boundary, Mapping)
+                or dict(boundary) != dict(task_view.get("accepted_boundary") or {})
+                or str(context_bundle.get("memo_fingerprint") or "")
+                != str(task_view.get("memo_fingerprint") or "")
+            ):
+                raise KernelError(
+                    "RETRIEVAL_EXPANSION_PROVIDER_CONTEXT_INVALID",
+                    "query expansion context must be the exact frozen ChapterMemo boundary",
+                )
+            return {
+                "contract_version": "provider-context-view-v2",
+                "schema_version": "novelos.retrieval_expansion_context.v1",
+                "stage": stage,
+                "source_isolation": "FROZEN_MISSION_MEMO_COVERAGE_ONLY",
+                "accepted_boundary": _compact(boundary),
+                "memo_fingerprint": str(context_bundle.get("memo_fingerprint") or ""),
+                "protected": True,
+            }
+        if stage == "retrieval":
+            return {
+                "contract_version": "provider-context-view-v2",
+                "schema_version": "novelos.retrieval_input_context.v1",
+                "stage": stage,
+                "source_isolation": "FROZEN_RETRIEVAL_TEXT_ONLY",
+                "protected": True,
+                "query_plan_fingerprint": str(
+                    task_view.get("query_plan_fingerprint") or ""
+                ),
+            }
+        if stage in {"world_candidates.generate", "world_candidates.evaluate", "world_candidates.actor_0", "world_candidates.actor_1", "world_candidates.actor_2"}:
+            task = task_view.get("world_preparation") or {}
+            task_capacity = dict(task.get("policy") or {}).get("version") == "world-production-policy.v4"
+            if context_bundle.get("world_preparation") != task:
+                raise KernelError(
+                    "WORLD_CONTEXT_IDENTITY_MISMATCH",
+                    "world task differs from its frozen role Context",
+                )
+            selection = task.get("narrative_intelligence") or {}
+            scope = task.get("world_method_scope_projection_version")
+            if scope is not None:
+                from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope, project_world_method_delivery
+                expected_selection = (project_world_method_delivery(context_bundle.get("narrative_intelligence", {}))
+                    if task.get("contract_version") == "world-provider-task.v5" else project_world_method_scope(context_bundle.get("narrative_intelligence", {})))
+                if (scope != "world-method-scope-projection.v1"
+                        or context_bundle.get("world_method_scope_projection_version") != scope
+                        or selection != _compact(expected_selection)):
+                    raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "World methods must resolve to the complete frozen selection")
+            elif task.get("contract_version") == "world-provider-task.v5":
+                original = context_bundle.get("narrative_intelligence") or {}
+                if selection != _compact(_project_world_knowledge_delivery(original)):
+                    raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "World delivery retains its complete original knowledge selection outside the story rules")
+            elif selection.get("world_selection_receipt") is not None:
+                original = context_bundle.get("narrative_intelligence")
+                if not isinstance(original, Mapping) or selection != _compact(_project_selected_world_selection(original)):
+                    raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "Selected World knowledge must resolve to the complete immutable selection")
+            if task.get("contract_version") != "world-provider-task.v5" and (selection.get("need") or {}).get("condition_sources_receipt") is not None:
+                original = context_bundle.get("narrative_intelligence")
+                policy = original.get("knowledge_access_policy") if isinstance(original, Mapping) else None
+                if (not isinstance(original, Mapping) or not isinstance(policy, Mapping)
+                    or policy.get("project_id") != context_bundle["project_id"]
+                    or policy.get("book_id") != context_bundle["book_id"]
+                    or selection != _compact(_project_empty_world_selection(original,
+                        project_query_directory=(selection.get("need") or {}).get("query_directory_receipt") is not None))):
+                    raise KernelError("WORLD_SELECTION_RECEIPT_DRIFT", "World source omission must resolve to its exact complete selection in the frozen Context")
+            view = {
+                "contract_version": "provider-context-view-v2",
+                "stage": stage,
+                "source_isolation": "FROZEN_WORLD_ROLE_PROJECTION_ONLY",
+                "protected": True,
+                "accepted_state_boundary": {
+                    "project_id": context_bundle["project_id"],
+                    "book_id": context_bundle["book_id"],
+                    "accepted_through_chapter": task["accepted_through_chapter"],
+                    "baseline_id": task["baseline_id"],
+                    "baseline_kind": task["baseline_kind"],
+                },
+                "segments": [
+                    {
+                        "asset_version_id": task["source_ref"]["asset_version_id"],
+                        "role": task["role"],
+                        "content": {
+                            "source_ref": task["source_ref"],
+                            "context_projection_hash": task["projection_identity"],
+                        },
+                    }
+                ],
+            }
+            author = context_bundle.get("author_design_projection") if task.get("role") != "ACTOR" else None
+            if author is not None:
+                chapter = _planning_chapter(context_bundle)
+                target_chapter = int(task["accepted_through_chapter"]) + 1
+                if task.get("working_manuscript") is not None:
+                    from novel_forge.modules.book_authority.working_prose import validate_working_projection
+                    target_chapter = task.get("target_chapter")
+                    validate_working_projection(task["working_manuscript"], project_id=context_bundle["project_id"],
+                        book_id=context_bundle["book_id"], target_chapter=target_chapter,
+                        accepted_through_chapter=task["accepted_through_chapter"])
+                    if type(target_chapter) is not int or task["working_manuscript"]["target_chapter"] != target_chapter:
+                        raise KernelError("WORLD_AUTHOR_CONTEXT_INVALID", "World author intent requires its frozen working target")
+                fragments = author.get("fragments") if isinstance(author, Mapping) else None
+                if (
+                    not isinstance(author, Mapping)
+                    or set(author) != {"contract_version", "target", "brief_asset_version_id", "brief_content_hash", "design_version", "binding_digest", "evidence_class", "authority", "chapter_range", "fragments", "exclusions"}
+                    or author.get("contract_version") != "author-design-projection.v1"
+                    or author.get("target") != "CHAPTER"
+                    or author.get("authority") != "AUTHOR_INTENT_NOT_CANON"
+                    or chapter != target_chapter
+                    or author.get("chapter_range") != [chapter, chapter]
+                    or not isinstance(fragments, list)
+                    or not all(
+                        isinstance(item, Mapping)
+                        and set(item) == {"fragment_id", "source_path", "start", "end", "content_hash", "targets", "chapter_range", "visibility", "strength", "text", "source_document_hash"}
+                        and item.get("visibility") == "SCENE_INTENT"
+                        and "CHAPTER" in (item.get("targets") or [])
+                        and isinstance(item.get("chapter_range"), list)
+                        and len(item["chapter_range"]) == 2
+                        and all(type(value) is int for value in item["chapter_range"])
+                        and item["chapter_range"][0] <= chapter <= item["chapter_range"][1]
+                        and isinstance(item.get("text"), str)
+                        and "sha256:" + hashlib.sha256(item["text"].encode("utf-8")).hexdigest() == item.get("content_hash")
+                        for item in fragments
+                    )
+                    or not isinstance(author.get("exclusions"), list)
+                    or not all(isinstance(item, Mapping) and set(item) == {"fragment_id", "content_hash", "reason"} for item in author["exclusions"])
+                ):
+                    raise KernelError(
+                        "WORLD_AUTHOR_CONTEXT_INVALID",
+                        "World preparation requires exact current-chapter scene intent, without private author sources",
+                    )
+                from novel_forge.modules.story_design_authority.author_input import compile_provider_author_projection
+                view["author_design_projection"] = compile_provider_author_projection(author)
+                token_budget = context_bundle.get("token_budget")
+                if type(token_budget) is not int or token_budget <= 0:
+                    raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_INVALID", "World author context requires its frozen token budget")
+                if not task_capacity and _serialized_character_count(view) > min(_MAX_PROVIDER_CONTEXT_CHARACTERS, token_budget * 4):
+                    raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "Protected World author context exceeds its frozen budget; narrow the governed scope")
+            if task_capacity:
+                token_budget = context_bundle.get("token_budget")
+                if type(token_budget) is not int or not 0 < token_budget <= 512_000 or token_budget != task["policy"].get("context_token_budget"):
+>                   raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_INVALID", "World task capacity requires its exact frozen token budget")
+E                   novel_forge.modules.command_kernel.errors.KernelError: WORLD_PROVIDER_CONTEXT_BUDGET_INVALID: World task capacity requires its exact frozen token budget
+
+src/novel_forge/modules/chapter_authority/provider_views.py:1665: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_world_working_continuity_postgres.py::test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience
+1 failed, 21 passed in 42.23s

@@ -1,0 +1,38 @@
+{
+  "native_read_faults": [
+    {
+      "fault": "receipt",
+      "status": "PASS",
+      "body_unchanged": true,
+      "units": 4,
+      "review_status": "UNAVAILABLE",
+      "codes": [
+        "LONGFORM_PROSE_RECEIPT_MISSING"
+      ]
+    },
+    {
+      "fault": "sql",
+      "status": "PASS",
+      "body_unchanged": true,
+      "units": 4,
+      "review_status": "UNAVAILABLE",
+      "codes": [
+        "22012"
+      ]
+    }
+  ],
+  "measurement": {
+    "source_count": 599,
+    "candidate_count": 38336,
+    "omitted_count": 38326,
+    "old_provider_projection_characters": 2985201,
+    "new_provider_projection_characters": 111170,
+    "final_prompt_bytes": 103277,
+    "final_prompt_hash": "sha256:d6fb607547e3fb3cd6d05a472bd2204a2dd5c24a71da9d2961592bb1dfe3c3af",
+    "required_sources_unchanged": true,
+    "selected_observations_unchanged": true,
+    "host_packet_hash": "sha256:d487d2b6939d4d563488faf6a1fa738cfd57ec7b0b60bfbea2bcd705aa154c51"
+  },
+  "scope": "SYNTHETIC_LONG_HISTORY_FINAL_MATERIALIZER_AND_REAL_BOOK_READS",
+  "provider_calls": 0
+}

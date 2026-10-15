@@ -11,6 +11,12 @@ uv pip install -e '.[api,postgres,provider-openai,test,object,ingestion,industri
 npm --prefix web/admin ci
 ```
 
+Non-editable wheels install `config/execution_templates/author_first.json` under the
+installation's shared Novel Forge data directory. Workflow adoption
+resolves the source checkout or that installed resource through `runtime_resource`.
+Verify the installed template digest against the release source from outside the checkout;
+an editable import does not establish packaged-resource availability.
+
 `IndustrialSettings.from_env` reads its settings from the environment and local `.env`
 files. Provider composition separately reads process environment (or its explicit `env`
 mapping); settings-file parsing does not export Provider keys into that environment.
@@ -2996,6 +3002,14 @@ and the final rendered-request admission remain authoritative; admitting a
 successor does not prove that its Context or Writer will fit.
 
 ## Evidence interpretation
+
+Provider template rendering scans placeholders only in the frozen template. Inserted
+author text, including literal `{{target_scope}}` or other brace markers, remains opaque.
+New materialization evidence records `opaque-template-substitution.v1` and the final
+rendered Prompt hash. Replay selects the history transport and renderer from the original
+admission. An older admission without the rendering field retains sequential v1 semantics.
+Existing admission hashes remain binding: a changed reconstruction
+must fail identity checks and use the owning recovery path, without rewriting old inputs.
 
 Local tests and Compose runs use fixtures unless a separately controlled route and live
 evidence say otherwise. Keep these claims distinct:

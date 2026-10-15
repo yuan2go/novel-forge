@@ -67,3 +67,6 @@ novel-forge-d0-provider-worker = "novel_forge.workers.d0_provider_qualification:
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.data-files]
+"share/novel-forge/config/execution_templates" = ["config/execution_templates/author_first.json"]

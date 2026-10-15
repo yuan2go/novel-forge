@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "scope": "CURRENT_NATIVE_SCRIPTED_POSTGRES",
+  "database": "nf_working_consumption_native_20261015_test",
+  "books": [
+    [
+      "book-run:e2fb6b71-febd-4c83-a81a-56de251d2538",
+      "project:author:6e1c96b0f11595dd65155a4a0e48a73910b8fe357db9a12be85f1d811353ad1f",
+      "book:author:6e1c96b0f11595dd65155a4a0e48a73910b8fe357db9a12be85f1d811353ad1f",
+      1,
+      0,
+      7
+    ]
+  ],
+  "working_selection_receipts": [
+    [
+      "5c1593a1-1651-443b-92d3-3327e96f5080",
+      "sha256:133d9bd141cfe154e7f69bf40328287a22402250267c4c77f57db7fc4039a486",
+      {
+        "reason": "Use native revised work",
+        "book_id": "book:author:6e1c96b0f11595dd65155a4a0e48a73910b8fe357db9a12be85f1d811353ad1f",
+        "chapter": 1,
+        "version": "book-working-manuscript-selection.v1",
+        "actor_id": "native-creation-operator",
+        "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+        "project_id": "project:author:6e1c96b0f11595dd65155a4a0e48a73910b8fe357db9a12be85f1d811353ad1f",
+        "book_run_id": "book-run:e2fb6b71-febd-4c83-a81a-56de251d2538",
+        "workspace_id": "workspace:author:6e1c96b0f11595dd65155a4a0e48a73910b8fe357db9a12be85f1d811353ad1f",
+        "author_selection": "NOT_GRANTED",
+        "formal_acceptance": "NOT_GRANTED",
+        "source_content_hash": "sha256:e24101bd53725c45a6d5d2677da2edce59776146827e288b563f4228263f8942",
+        "selected_content_hash": "sha256:a471a5f523b6eb0f7509dbe8f51c9abb83856b8edfc6316de11d5dce14bc597b",
+        "source_asset_version_id": "authority-output:967dc413-6a05-4858-bc57-e3521bac8811:chapter.draft:v1",
+        "selected_asset_version_id": "authority-output:b93e5931-58d2-412e-9353-a29196984c14:chapter.best_candidate:v1",
+        "native_source_asset_version_id": "authority-output:967dc413-6a05-4858-bc57-e3521bac8811:chapter.draft:v1"
+      }
+    ]
+  ],
+  "stages": [
+    [
+      "709f38f5-2196-4ff4-a6f4-eb3fbc90a209",
+      "chapter.slice.run",
+      "SUCCEEDED"
+    ],
+    [
+      "cc90ae5d-69e2-4a0a-9a80-eb9ea60f15a4",
+      "chapter.review.evaluate",
+      "SUCCEEDED"
+    ],
+    [
+      "e4353782-8b0e-4a89-8c2a-d1d676547139",
+      "chapter.revision.apply",
+      "SUCCEEDED"
+    ],
+    [
+      "b93e5931-58d2-412e-9353-a29196984c14",
+      "chapter.candidate.select_best",
+      "SUCCEEDED"
+    ]
+  ],
+  "assertions": [
+    "verified-working-target accepted=0",
+    "source drift rejected",
+    "native revision completed",
+    "native working receipt projected",
+    "next chapter freeze uses exact selected version",
+    "optional receipt and SQL failure preserve exact body",
+    "duplicate selection replays same receipt",
+    "late selection of old revision rejected",
+    "native Creation cancellation retains exact selected prose"
+  ],
+  "real_provider": false,
+  "literary_quality": "NOT_VERIFIED",
+  "test_log": "postgres-native-final-03.log"
+}

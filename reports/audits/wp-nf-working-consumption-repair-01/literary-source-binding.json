@@ -1,0 +1,63 @@
+{
+  "scope": "CURRENT_SELECTED_CHAPTERS_1_4",
+  "manuscript_text_hash": "sha256:d22cae0c4242a6953292b7cb4e3389253ed0f9eae9d0ffc71f2a05d1f5d0cc43",
+  "private_read_source": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/same-book-manuscript.private.md",
+  "read_lines": [
+    1,
+    698
+  ],
+  "evaluator": "CODING_AGENT_DIRECT_READING",
+  "human_acceptance": "NOT_GRANTED",
+  "quality": "NOT_QUALIFIED_BY_THIS_READING",
+  "findings": [
+    {
+      "chapter": 1,
+      "finding": "Concrete job loss, travel and tool use establish an ordinary worker; repeated packing and rest dilute pace."
+    },
+    {
+      "chapter": 2,
+      "finding": "Paid-work arrangement and initial medical assessment are real changes; much dialogue explains scope and limits."
+    },
+    {
+      "chapter": 3,
+      "finding": "The first completed job and actual payment supply a clear payoff; a tool demonstration changes the protagonist understanding."
+    },
+    {
+      "chapter": 4,
+      "finding": "A second tool lesson has incremental value, but food, washing and rest occupy much of the chapter; its explicit scene allocation already requires this rhythm."
+    }
+  ],
+  "earliest_confirmed_owner": "HIERARCHICAL_PLANNING_CHAPTER_PLAN",
+  "chapter_4_intent": {
+    "asset_version_id": "authority-output:6b14b7ce-d5f0-44eb-94d0-473dbf6f95fb:chapter.execution_intent:v1",
+    "content_hash": "sha256:d91bb54e82fcd93c1777db28eccfb7453ddc27663812cebb1c5ffb9835329ba8",
+    "source_chapter_plan": {
+      "locked": true,
+      "content_hash": "sha256:58488a2bf1511025e8686ae41ba6347982f4e5366936975541abdfde83351eed",
+      "asset_version_id": "authority-output:3d4a33db-8f9c-4dfe-b8f4-73e541f8cf30:chapter.plan:v1"
+    },
+    "scene_goals": [
+      "借旧工具问明白前次示范的适用条件，在严述的工作间隙完成一次具体求教。",
+      "吃一顿已经挣得的饭，安排当下生活而不挤掉休息。",
+      "让身体和受教内容都有沉淀的时间，把下一次求教留成具体而有限的打算。"
+    ]
+  },
+  "successor_group": {
+    "asset_version_id": "authority-output:f11e806e-0218-426c-9d10-94b7e7e7b930:story_planning.candidate:v1",
+    "chapter_range": [
+      5,
+      8
+    ],
+    "behavior": "Existing frozen plan schedules tool repair, treatment and another paid cold-side job."
+  },
+  "plan_change": "NOT_RUN_NO_MODEL_DISPATCH_CURRENT_RUNTIME",
+  "new_prompt_instructions_added": false,
+  "goals_retained": {
+    "whole_book_chapters": 600,
+    "initial_delivery_chapters": 100,
+    "han_per_chapter": [
+      4000,
+      5000
+    ]
+  }
+}

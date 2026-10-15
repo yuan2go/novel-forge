@@ -16,7 +16,7 @@ from novel_forge.storage.world_preparation_repositories import WorldPreparationR
 from tests.integration.authority_postgres_support import DATABASE_URL
 from tests.integration.capability_pack_postgres_support import CapabilityPackPostgresHarness
 from tests.integration.creative_validation_production_support import controlled_member_environment
-from tests.integration.synthesis_production_support import SynthesisTransport
+from tests.integration.synthesis_production_support import AdviceOnlySynthesisChapterTransport, SynthesisTransport
 from tests.unit.test_working_prose_projection import rehash
 
 
@@ -24,6 +24,17 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
     harness = CapabilityPackPostgresHarness("world-working")
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
+    class WorkingRevisionTransport(AdviceOnlySynthesisChapterTransport):
+        def __call__(self, stage, inputs):
+            result = super().__call__(stage, inputs)
+            if stage == "revision":
+                result["text"] = inputs["draft"]["text"]
+            if stage == "rereview":
+                for check in result.get("preservation_checks", []):
+                    check["evidence"] = {"quote": check["evidence"]["quote"]}
+            return result
+    transport.chapter = WorkingRevisionTransport()
+    transport.chapter.controlled_prose = "唯一起点的纸签压在账本上。" + "她停在门外，听见木轮碾过石板。" * 80
     transport.database_url = DATABASE_URL
     env = controlled_member_environment(tmp_path, {
         "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
@@ -126,6 +137,17 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         repository.assert_source_current(project_id=book["project_id"], book_id=book["book_id"], frozen=source)
         task = PlanningWorldPreparation._task(source, {"asset_version_id": "controlled-source", "content_hash": "digest"}, "DIRECTOR")
         assert task["target_chapter"] == 2 and task["accepted_through_chapter"] == 0
+        from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+        from tests.unit.test_author_design_adoption import _world_author_context
+        _, _, author_context = _world_author_context("world_candidates.evaluate")
+        author_context.update(project_id=book["project_id"], book_id=book["book_id"], logical_key="chapter:2",
+            world_preparation=task, token_budget=task["policy"]["context_token_budget"])
+        author_context["author_design_projection"]["chapter_range"] = [2, 2]
+        for fragment in author_context["author_design_projection"]["fragments"]:
+            fragment["chapter_range"] = [2, 2]
+        view = build_provider_context_view("world_candidates.evaluate", author_context, {"world_preparation": task})
+        assert view["author_design_projection"]["chapter_range"] == [2, 2]
+        assert view["accepted_state_boundary"]["accepted_through_chapter"] == 0
         changed = deepcopy(source)
         changed["working_manuscript"]["sources"][0]["content_hash"] = "sha256:" + "0" * 64
         rehash(changed["working_manuscript"])
@@ -140,3 +162,52 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
     admitted = run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), revision)
     assert PostgresBookProductionQuery(DATABASE_URL).uses_creation_scope(project_id=book["project_id"], subject_id=admitted["root_operation_id"])
     assert not PostgresBookProductionQuery(DATABASE_URL).uses_creation_scope(project_id="other-project", subject_id=admitted["root_operation_id"])
+    continued_revision = _authority_parser().parse_args(["authority-manuscript", "continue-revision", "--project-id", book["project_id"],
+        "--book-run-id", book["book_run_id"], "--revision-root", admitted["root_operation_id"], "--foreground", "--work-window-seconds", "30"])
+    revised = run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), continued_revision)
+    assert revised["status"] == "SUCCEEDED", revised
+    candidate = next(row["asset_version_id"] for row in revised["stages"] if row["output_key"] == "chapter.best_candidate")
+    selection_args = _authority_parser().parse_args(["authority-manuscript", "use-working-candidate", "--project-id", book["project_id"],
+        "--book-run-id", book["book_run_id"], "--chapter", "1", "--candidate-version", candidate,
+        "--expected-version", str(book["version"]), "--idempotency-key", harness.project_id + ":work-select", "--reason", "Use native revised work"])
+    selected = run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), selection_args)
+    from novel_forge.modules.book_authority.manuscript import require_manuscript
+    from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+    principal = build_trusted_principal_resolver().resolve_api_principal()
+    current = require_manuscript(DATABASE_URL, project_id=book["project_id"], book_run_id=book["book_run_id"], principal=principal)
+    unit = current["units"][0]
+    assert unit["asset_version_id"] == candidate
+    assert unit["working_selection"]["asset_version_id"] == selected["selection_asset_version_id"]
+    assert unit["author_selection"] == unit["working_selection"]["formal_acceptance"] == "NOT_GRANTED"
+    from novel_forge.modules.book_authority import manuscript as manuscript_module
+    for failure in ("receipt", "sql"):
+        def broken_review(uow, _book, _source):
+            if failure == "sql":
+                uow.cursor.execute("SELECT 1/0")
+            raise KernelError("LONGFORM_PROSE_RECEIPT_MISSING", "Controlled missing auxiliary report")
+        with monkeypatch.context() as patch:
+            patch.setattr(manuscript_module, "_review_status", broken_review)
+            readable = require_manuscript(DATABASE_URL, project_id=book["project_id"], book_run_id=book["book_run_id"],
+                principal=principal, version_ids=[candidate])
+            assert readable["text_digest"] == current["text_digest"]
+            assert readable["units"][0]["review_status"] == "UNAVAILABLE"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [book["book_run_id"]])
+        latest = uow.cursor.fetchone()[0]
+        following = freeze_working_context(uow, latest, 2)
+        assert following["sources"][0]["asset_version_id"] == candidate
+        assert latest["accepted_through_chapter"] == 0
+    replay = run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), selection_args)
+    assert replay["selection_asset_version_id"] == selected["selection_asset_version_id"]
+    from copy import copy
+    late = copy(selection_args)
+    late.expected_version = latest["version"]
+    late.idempotency_key += ":late"
+    with pytest.raises(KernelError, match="MANUSCRIPT_WORK_SELECTION_STALE"):
+        run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), late)
+    cancellation = _authority_parser().parse_args(["authority-creation", "cancel", "--project-id", book["project_id"],
+        "--formation-run-id", result["formation_run_id"], "--repository-root", str(root),
+        "--idempotency-key", harness.project_id + ":cancel", "--reason", "Controlled cancellation keeps selected prose"])
+    run_creation_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), cancellation)
+    retained = require_manuscript(DATABASE_URL, project_id=book["project_id"], book_run_id=book["book_run_id"], principal=principal)
+    assert retained["text_digest"] == current["text_digest"] and retained["units"][0]["asset_version_id"] == candidate

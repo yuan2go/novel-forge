@@ -160,12 +160,12 @@ def adopt_author_workflow(authority: Any, book_run_id: str, *, principal: Any,
             admission = selected_book_template(uow.cursor, project_id=book["project_id"], book_id=book["book_id"], allow_literary_required=True)
             template = selected_template(admission["policy_snapshot"]["policy"], book["book_id"]) if admission else None
         if not template or template.get("author_workflow") != AUTHOR_WORKFLOW:
-            from pathlib import Path
+            from novel_forge.runtime_resources import runtime_resource
             from types import SimpleNamespace
             from novel_forge.modules.authority_handler_runtime.policy_commands import configure_execution_template
             configure_execution_template(settings, SimpleNamespace(project_id=book["project_id"], workspace_id=book["workspace_id"],
                 book_id=book["book_id"], policy_version=idempotency_key + ":routing", idempotency_key=idempotency_key + ":routing",
-                template_file=Path(__file__).resolve().parents[4] / "config/execution_templates/author_first.json",
+                template_file=runtime_resource("config/execution_templates/author_first.json"),
                 inherited_template=template))
     def commit(uow, operation_id, checkpoint):
         current = _require_workflow_checkpoint(uow, book, expected_version)
@@ -940,11 +940,11 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
         available = [number for number, _ in deliveries]
         if chapters is not None and (not chapters or chapters != sorted(set(chapters)) or any(number not in available for number in chapters)):
             raise KernelError("MANUSCRIPT_RANGE_INVALID", "Choose an ordered, available chapter range")
-        units = []
+        units, review_sources = [], []
         for number, dependencies in deliveries:
             if chapters is not None and number not in chapters:
                 continue
-            source = selected_source(uow, book, number)
+            source, resolution = resolve_working_source(uow, book, number)
             content = source_draft_content(source)
             from novel_forge.modules.revision.domain import han_characters
             actual_length = han_characters(content["text"])
@@ -955,17 +955,32 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
             if source.asset_type == "author_edit_candidate":
                 uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='author_edit_decision' AND v.content->>'candidate_asset_version_id'=%s AND v.content->>'decision'='ACCEPT')", [book["project_id"], source.asset_version_id])
                 author_selection = "ADOPTED" if uow.cursor.fetchone()[0] else "WORKING_SELECTED"
+            selection = _optional_document(uow, book["project_id"], _working_selection_ref(book, number))
+            working_selection = {"status": "NOT_SELECTED"}
+            if selection and any(row["asset_version_id"] == selection.asset_version_id for row in resolution["overrides"]):
+                working_selection = {"status": "SELECTED", "asset_version_id": selection.asset_version_id,
+                    "content_hash": selection.content_hash,
+                    **{key: selection.content[key] for key in ("selected_asset_version_id", "selected_content_hash", "authority", "author_selection", "formal_acceptance")}}
+                if author_selection == "GENERATED_CURRENT":
+                    author_selection = "NOT_GRANTED"
             units.append({"chapter": number, "asset_version_id": source.asset_version_id,
                 "content_hash": source.content_hash, "text_hash": text_hash(content["text"]),
                 "title": content.get("title", ""), "text": content["text"],
-                "manuscript_status": "SAVED", **_review_status(uow, book, source), "quality_status": "NOT_VERIFIED",
+                "manuscript_status": "SAVED", "quality_status": "NOT_VERIFIED", "working_selection": working_selection,
                 "requirements_status": length_status, "voice_observations": content.get("voice_evidence", []), "length": {"unit": "HAN_CHARACTERS_V1", "actual": actual_length, "target": length}, "dependency_changes": impacted,
                 "author_selection": author_selection})
+            review_sources.append(source)
             if source.asset_type == "retained_working_prose":
                 units[-1].update(manuscript_status="RETAINED_WORKING_ONLY", author_selection="NOT_AUTHOR_ACCEPTED",
                     origin_execution=content["retained_working_provenance"])
         if version_ids is not None and version_ids != [item["asset_version_id"] for item in units]:
             raise KernelError("MANUSCRIPT_EXPORT_VERSION_CONFLICT", "Export must match the exact selected version list; reload after a concurrent author change")
+    for unit, source in zip(units, review_sources):
+        try:
+            with AuthorityUnitOfWork(database_url) as review_uow:
+                unit.update(_review_status(review_uow, book, source))
+        except Exception as error:
+            unit.update(review_status="UNAVAILABLE", review_error_code=getattr(error, "code", None) or getattr(error, "sqlstate", None) or type(error).__name__)
     manifest = {"version": "current-manuscript-export.v1", "book_run_id": book["book_run_id"],
         "project_id": book["project_id"], "workspace_id": book["workspace_id"], "book_id": book["book_id"], "accepted_through_chapter": book["accepted_through_chapter"],
         "units": units, "kind": "CURRENT_AUTHOR_MANUSCRIPT", "publication": "NOT_AUTHORIZED",

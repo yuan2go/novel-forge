@@ -1,0 +1,206 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-9/test_native_creation_world_bin0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bc75fd0>
+
+    def test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience(tmp_path, monkeypatch):
+        harness = CapabilityPackPostgresHarness("world-working")
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        class WorkingRevisionTransport(AdviceOnlySynthesisChapterTransport):
+            def __call__(self, stage, inputs):
+                result = super().__call__(stage, inputs)
+                if stage == "revision":
+                    result["text"] = inputs["draft"]["text"]
+                return result
+        transport.chapter = WorkingRevisionTransport()
+        transport.chapter.controlled_prose = "她停在门外，听见木轮碾过石板。" * 80
+        transport.database_url = DATABASE_URL
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": "native-planning-evaluator",
+            "NOVEL_FORGE_ENVIRONMENT": "production",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        writer_prompts = []
+        chapter_planning_prompts = []
+        world_prompts = []
+    
+        def capture_writer_prompt(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            if request.stage in {"draft", "chapter_plan.generate", "world_candidates.generate", "world_candidates.evaluate"}:
+                start = payload.input_text.find('{"context_bundle":')
+                assert start >= 0
+                from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
+                envelope = expand_exact_context_references(json.JSONDecoder().raw_decode(payload.input_text[start:])[0])
+                target = writer_prompts if request.stage == "draft" else world_prompts if request.stage.startswith("world_candidates.") else chapter_planning_prompts
+                target.append(envelope)
+            return payload
+    
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_writer_prompt)
+        input_file = tmp_path / "request.json"
+        input_file.write_text(json.dumps({"version": "creation-request.v1", "title": harness.project_id,
+            "target_chapters": 2, "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 1},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Keep the witness's limited viewpoint"], "source_boundaries": ["Original work"]}}))
+        args = _authority_parser().parse_args(["authority-creation", "start", "--input-file", str(input_file),
+            "--repository-root", str(root), "--maximum-ticks", "100", "--foreground"])
+        template = json.loads((root / args.execution_template_file).read_text())
+        template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+        args.execution_template_file = tmp_path / "execution-template.json"
+        args.execution_template_file.write_text(json.dumps(template))
+        result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
+        if result["stop_reason"] != "MANUSCRIPT_READY":
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("""SELECT operation.definition_name,operation.status,attempt.result->>'error_code',attempt.result->>'error_message'
+                    FROM authority_operation operation LEFT JOIN LATERAL (SELECT result FROM authority_attempt
+                        WHERE operation_id=operation.operation_id ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+                    WHERE operation.project_id=%s ORDER BY operation.created_at DESC LIMIT 8""", [result["project_id"]])
+                failures = uow.cursor.fetchall()
+            pytest.fail(f"Native Creation stopped at {result['stop_reason']}: {failures!r}")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [result["book_run_id"]])
+            book = uow.cursor.fetchone()[0]
+            assert book["current_chapter"] == 1 and book["accepted_through_chapter"] == 0
+            uow.cursor.execute("""SELECT v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+                WHERE a.project_id=%s AND a.asset_type='context_bundle' AND v.content->>'stage'='draft'""", [book["project_id"]])
+            draft_contexts = [row[0] for row in uow.cursor.fetchall() if row[0].get("chapter_generation_length")]
+            assert len(draft_contexts) == 1
+            assert draft_contexts[0]["chapter_generation_length"]["minimum"] == 800
+            assert draft_contexts[0]["chapter_generation_length"]["maximum"] == 4000
+            from novel_forge.modules.chapter_authority.quality_length_requirement import require_generation_binding
+            require_generation_binding(draft_contexts[0])
+            assert len(writer_prompts) == 1
+            assert writer_prompts[0]["context_bundle"]["chapter_generation_length"] == draft_contexts[0]["chapter_generation_length"]
+            assert len(chapter_planning_prompts) == 1
+            scale = chapter_planning_prompts[0]["context_bundle"]["chapter_planning_length"]
+            assert scale["minimum"] == 800 and scale["maximum"] == 4000 and scale["unit"] == "HAN_CHARACTERS_V1"
+            uow.cursor.execute("SELECT current_book_asset_version_id FROM authority_book WHERE project_id=%s AND book_id=%s", [book["project_id"], book["book_id"]])
+            assert scale["source_book_asset_version_id"] == uow.cursor.fetchone()[0]
+            uow.cursor.execute("""SELECT v.content->'creative_baseline' FROM authority_asset_version v
+                JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='draft_chapter'""", [book["project_id"]])
+            baselines = [row[0] for row in uow.cursor.fetchall()]
+            assert len(baselines) == 1
+            assert baselines[0]["chapter_generation_length"] == draft_contexts[0]["chapter_generation_length"]
+            uow.cursor.execute("""SELECT v.content->'contract' FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+                WHERE a.project_id=%s AND a.asset_type='world_preparation_source' ORDER BY v.created_at LIMIT 1""", [book["project_id"]])
+            first_source = uow.cursor.fetchone()[0]
+            assert first_source["contract_version"] == "world-preparation-source.v5"
+            assert first_source["provider_projection_version"] == "world-role-delivery.v4"
+            assert len(world_prompts) == 2
+            for envelope in world_prompts:
+                delivered = envelope["input_manifest"]["narrative_inputs"]["world_preparation"]
+                assert delivered["contract_version"] == "world-provider-task.v5"
+                assert delivered["working_delivery_receipt"]["source_snapshot_hash"] == first_source["working_manuscript"]["snapshot_hash"]
+                assert "schema" not in delivered["transition_contract"]
+                assert delivered["transition_contract"]["payload_schema"]
+            working = freeze_working_context(uow, book, 2)
+            BookControlRepository(uow.cursor).freeze(project_id=book["project_id"], book_run_id=book["book_run_id"],
+                chapter_number=2, actor_id="native-creation-operator")
+            repository = WorldPreparationRepository(uow.cursor)
+            source = repository.require_source(project_id=book["project_id"], book_id=book["book_id"],
+                request=first_source["request"], contract_version="world-preparation-source.v5", epistemic_contract="world-agency.v2",
+                working_manuscript=working)
+            assert source["target_chapter"] == 2 and source["reality"]["chapter_number"] == 0
+            assert source["working_manuscript"]["sources"][0]["passages"] == working["sources"][0]["passages"]
+            repository.assert_source_current(project_id=book["project_id"], book_id=book["book_id"], frozen=source)
+            task = PlanningWorldPreparation._task(source, {"asset_version_id": "controlled-source", "content_hash": "digest"}, "DIRECTOR")
+            assert task["target_chapter"] == 2 and task["accepted_through_chapter"] == 0
+            from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+            from tests.unit.test_author_design_adoption import _world_author_context
+            _, _, author_context = _world_author_context("world_candidates.evaluate")
+            author_context.update(project_id=book["project_id"], book_id=book["book_id"], logical_key="chapter:2",
+                world_preparation=task, token_budget=task["policy"]["context_token_budget"])
+            author_context["author_design_projection"]["chapter_range"] = [2, 2]
+            for fragment in author_context["author_design_projection"]["fragments"]:
+                fragment["chapter_range"] = [2, 2]
+            view = build_provider_context_view("world_candidates.evaluate", author_context, {"world_preparation": task})
+            assert view["author_design_projection"]["chapter_range"] == [2, 2]
+            assert view["accepted_state_boundary"]["accepted_through_chapter"] == 0
+            changed = deepcopy(source)
+            changed["working_manuscript"]["sources"][0]["content_hash"] = "sha256:" + "0" * 64
+            rehash(changed["working_manuscript"])
+            with pytest.raises(KernelError, match="MANUSCRIPT_SOURCE_HASH_INVALID|WORKING_PROSE_SOURCE_RESOLUTION_INVALID"):
+                repository.assert_source_current(project_id=book["project_id"], book_id=book["book_id"], frozen=changed)
+            assert uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book["book_run_id"]]).fetchone() == (0,)
+        from novel_forge.cli.manuscript import run_manuscript_command
+        from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+        revision = _authority_parser().parse_args(["authority-manuscript", "revise", "--project-id", book["project_id"],
+            "--book-run-id", book["book_run_id"], "--chapter", "1", "--expected-version", str(book["version"]),
+            "--idempotency-key", harness.project_id + ":working-revision", "--reason", "Native selected working review"])
+        admitted = run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), revision)
+        assert PostgresBookProductionQuery(DATABASE_URL).uses_creation_scope(project_id=book["project_id"], subject_id=admitted["root_operation_id"])
+        assert not PostgresBookProductionQuery(DATABASE_URL).uses_creation_scope(project_id="other-project", subject_id=admitted["root_operation_id"])
+        continued_revision = _authority_parser().parse_args(["authority-manuscript", "continue-revision", "--project-id", book["project_id"],
+            "--book-run-id", book["book_run_id"], "--revision-root", admitted["root_operation_id"], "--foreground", "--work-window-seconds", "30"])
+>       revised = run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), continued_revision)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_world_working_continuity_postgres.py:164: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/manuscript.py:56: in run_manuscript_command
+    return _run_working_revision_command(settings, args, principal=principal)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/cli/manuscript.py:317: in _run_working_revision_command
+    tick = scheduler.tick(project_id=args.project_id, root_operation_id=root_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:331: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1862: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:266: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:51: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:176: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1628: in execute
+    content = normalize_review_result(
+src/novel_forge/modules/chapter_authority/domain_handlers.py:692: in normalize_review_result
+    reviewed = evaluate_review_result(
+src/novel_forge/modules/review/domain.py:60: in evaluate_review_result
+    diagnosis = paired_diagnosis(item, text=str(prose_text), window=cross_chapter_window,
+src/novel_forge/modules/review/cross_chapter.py:65: in paired_diagnosis
+    return validate_diagnosis(issue, text)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/review/diagnostics.py:254: in validate_diagnosis
+    "evidence_locator": validate_location(dict(issue.get("evidence") or {}), text),
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+location = {'quote': '她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过石板。'}
+text = '她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过石板。她停在门外，听见木轮碾过...hapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.'
+
+    def validate_location(location: dict[str, Any], text: str) -> dict[str, Any]:
+        start, end = location.get("start"), location.get("end")
+        quote = location.get("quote")
+        if start is None and end is None:
+            if not isinstance(quote, str) or not quote:
+                raise KernelError("REVIEW_EVIDENCE_INVALID", "evidence quote is required")
+            start = text.find(quote)
+            if start < 0:
+                raise KernelError("REVIEW_EVIDENCE_INVALID", "evidence quote is absent from its exact candidate")
+            if text.find(quote, start + 1) >= 0:
+>               raise KernelError("REVIEW_EVIDENCE_AMBIGUOUS", "evidence quote occurs more than once in its exact candidate")
+E               novel_forge.modules.command_kernel.errors.KernelError: REVIEW_EVIDENCE_AMBIGUOUS: evidence quote occurs more than once in its exact candidate
+
+src/novel_forge/modules/review/diagnostics.py:226: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_world_working_continuity_postgres.py::test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience
+1 failed in 39.75s

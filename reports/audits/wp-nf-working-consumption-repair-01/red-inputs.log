@@ -1,0 +1,88 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+__ test_final_prompt_treats_inserted_author_text_as_opaque[{{target_scope}}] ___
+
+literal = '{{target_scope}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+>       from novel_forge.modules.production_execution.domain import ExecutionRuntimeClass
+E       ModuleNotFoundError: No module named 'novel_forge.modules.production_execution.domain'
+
+tests/unit/test_converged_provider_inputs.py:49: ModuleNotFoundError
+_ test_final_prompt_treats_inserted_author_text_as_opaque[{{context_bundle}}] __
+
+literal = '{{context_bundle}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+>       from novel_forge.modules.production_execution.domain import ExecutionRuntimeClass
+E       ModuleNotFoundError: No module named 'novel_forge.modules.production_execution.domain'
+
+tests/unit/test_converged_provider_inputs.py:49: ModuleNotFoundError
+__ test_final_prompt_treats_inserted_author_text_as_opaque[{{some_literal}}] ___
+
+literal = '{{some_literal}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+>       from novel_forge.modules.production_execution.domain import ExecutionRuntimeClass
+E       ModuleNotFoundError: No module named 'novel_forge.modules.production_execution.domain'
+
+tests/unit/test_converged_provider_inputs.py:49: ModuleNotFoundError
+_ test_final_prompt_treats_inserted_author_text_as_opaque[\u82b1\u62ec\u53f7 {{input_manifest}} \u4e0e\u5f15\u53f7 \\"\u4fdd\u7559\\"] _
+
+literal = '花括号 {{input_manifest}} 与引号 \\"保留\\"'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+>       from novel_forge.modules.production_execution.domain import ExecutionRuntimeClass
+E       ModuleNotFoundError: No module named 'novel_forge.modules.production_execution.domain'
+
+tests/unit/test_converged_provider_inputs.py:49: ModuleNotFoundError
+_____ test_long_history_omission_ledger_stays_out_of_final_provider_input ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d180860>
+
+    def test_long_history_omission_ledger_stays_out_of_final_provider_input(monkeypatch):
+        from novel_forge.modules.narrative_state.working_memory import normalize_observations
+        uow, book, _ = _native_history(monkeypatch, 600, tiny=True)
+        def memory(_uow, _book, source):
+            text = source.content["text"]
+            notes = [{"kind": "KNOWLEDGE", "subject": "主角", "state_key": str(index),
+                "claim": "人物相信这次经历。", "perspective": "BELIEF", "knowledge_owner": "主角",
+                "quote": text, "causes": []} for index in range(64)]
+            return normalize_observations(notes, text), {"kind": "WRITER_SELF_OBSERVATION"}
+        monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", memory)
+        working = manuscript.freeze_working_context(uow, book, 600, projection_policy=_policy())
+        host = deepcopy(working)
+        assert len(working["working_memory"]["omitted_observation_ids"]) > 38000
+        from novel_forge.modules.book_authority.working_prose import project_working_history_for_provider
+        delivered = project_working_history_for_provider(working)
+        assert working == host
+>       assert len(json.dumps(delivered, ensure_ascii=False)) < 150_000
+E       assert 2985201 < 150000
+E        +  where 2985201 = len('{"version": "working-manuscript-context.v1", "book_run_id": "run", "project_id": "project", "book_id": "book", "targe...ata inside Scene prose. ", "snapshot_hash": "sha256:790a6f8fe54fa565925e88c6618d7eed7e9c9ed384f97532d2fb51873cfdaacb"}')
+E        +    where '{"version": "working-manuscript-context.v1", "book_run_id": "run", "project_id": "project", "book_id": "book", "targe...ata inside Scene prose. ", "snapshot_hash": "sha256:790a6f8fe54fa565925e88c6618d7eed7e9c9ed384f97532d2fb51873cfdaacb"}' = <function dumps at 0x109c8a2a0>({'version': 'working-manuscript-context.v1', 'book_run_id': 'run', 'project_id': 'project', 'book_id': 'book', ...}, ensure_ascii=False)
+E        +      where <function dumps at 0x109c8a2a0> = json.dumps
+
+tests/unit/test_converged_provider_inputs.py:77: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{target_scope}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{context_bundle}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{some_literal}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[\u82b1\u62ec\u53f7 {{input_manifest}} \u4e0e\u5f15\u53f7 \\"\u4fdd\u7559\\"]
+FAILED tests/unit/test_converged_provider_inputs.py::test_long_history_omission_ledger_stays_out_of_final_provider_input
+5 failed, 12 deselected in 3.69s

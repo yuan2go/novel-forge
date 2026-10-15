@@ -1,0 +1,98 @@
+{
+  "book_run_id": "book-run:86a75a74-c326-47cc-a857-d983484ed537",
+  "project_id": "project:author:a82e253a8edfe1294d71ff6e05cff8bad1c5871a5d15888a16617774ddcc9903",
+  "book_id": "book:author:a82e253a8edfe1294d71ff6e05cff8bad1c5871a5d15888a16617774ddcc9903",
+  "book_version": 21,
+  "accepted_through_chapter": 0,
+  "target_chapters": 100,
+  "manifest_digest": "sha256:c6eacbcdfc90e79185faaa14c492c3f457f71173cce90016d9db8e54e66d8c37",
+  "text_digest": "sha256:d22cae0c4242a6953292b7cb4e3389253ed0f9eae9d0ffc71f2a05d1f5d0cc43",
+  "units": [
+    {
+      "chapter": 1,
+      "asset_version_id": "authority-output:449a4ae8-ec71-4876-8d47-cf30eb0e200d:chapter.best_candidate:v1",
+      "content_hash": "sha256:9b3f6b036bbc6849802f0840b33b9e17bd5089241f25f7a6bcdbba34c8067f04",
+      "text_hash": "sha256:44449e87c3e6273694b43933c210666f20ce2493c2616f45c2daee4c3c3d4a28",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4390,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "review_status": "COMPLETED",
+      "author_selection": "NOT_GRANTED",
+      "working_selection": {
+        "status": "SELECTED",
+        "asset_version_id": "30d8806c-303d-4dda-a857-62635a544f00",
+        "content_hash": "sha256:5a6263ba94e417a2f2de041103cbed4385e132de6c7c735f7f682ea7d0f01704",
+        "selected_asset_version_id": "authority-output:449a4ae8-ec71-4876-8d47-cf30eb0e200d:chapter.best_candidate:v1",
+        "selected_content_hash": "sha256:9b3f6b036bbc6849802f0840b33b9e17bd5089241f25f7a6bcdbba34c8067f04",
+        "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+        "author_selection": "NOT_GRANTED",
+        "formal_acceptance": "NOT_GRANTED"
+      }
+    },
+    {
+      "chapter": 2,
+      "asset_version_id": "authority-output:60ef7e0a-dfdf-4fc9-a046-babf2c768625:chapter.draft:v1",
+      "content_hash": "sha256:07de8781b4367bd63a8c22451db6029ca86ce26b3c75d3346ad660d4f4c9e05e",
+      "text_hash": "sha256:f50dfa27f664ef1c73b094e6bb692ab5af2566401f60cc518982f0cb82b52527",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4174,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "review_status": "COMPLETED",
+      "author_selection": "GENERATED_CURRENT",
+      "working_selection": {
+        "status": "NOT_SELECTED"
+      }
+    },
+    {
+      "chapter": 3,
+      "asset_version_id": "authority-output:b7bb4cb4-ce78-41af-8605-8ee0b6542e41:chapter.draft:v1",
+      "content_hash": "sha256:60e5e073a3852c4e8261a964729027a5d26dc53bf51017d4e90c0ecb46fe0857",
+      "text_hash": "sha256:40663895ed506b02a599a231e9083bb33b25a0bc003a546f3d29b157b40ce6a2",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4342,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "review_status": "COMPLETED",
+      "author_selection": "GENERATED_CURRENT",
+      "working_selection": {
+        "status": "NOT_SELECTED"
+      }
+    },
+    {
+      "chapter": 4,
+      "asset_version_id": "authority-output:ff8f509b-a9ef-4f1d-ac02-3e4eb43421b8:chapter.draft:v1",
+      "content_hash": "sha256:3cd7738d73ca680ab68412281da156a58b030c969fdd33156435f3908473475a",
+      "text_hash": "sha256:5d73b88353196723984973e788ee28c6f670b65f94b7c980b9512d13af42d708",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4395,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "review_status": "COMPLETED",
+      "author_selection": "GENERATED_CURRENT",
+      "working_selection": {
+        "status": "NOT_SELECTED"
+      }
+    }
+  ],
+  "no_model_dispatch": "1",
+  "release": "f423b34ae5acddbed054af27f57dd54a1e4d4982",
+  "private_export": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/same-book-manuscript.private.md"
+}

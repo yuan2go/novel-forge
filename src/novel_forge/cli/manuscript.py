@@ -159,6 +159,10 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
                         stream.write(f"版本：{unit['asset_version_id']}\n\n"
                             f"状态：{unit['manuscript_status']}；审读 {unit['review_status']}；质量 {unit['quality_status']}；"
                             f"选稿 {unit['author_selection']}；正式接纳至第{exact['accepted_through_chapter']}章\n\n")
+                        selection = unit["working_selection"]
+                        if selection["status"] == "SELECTED":
+                            stream.write(f"工作稿选用回执：{selection['asset_version_id']}；{selection['content_hash']}；"
+                                f"作者认可 {selection['author_selection']}；正式接纳 {selection['formal_acceptance']}\n\n")
                 else:
                     stream.write(json.dumps(exact, ensure_ascii=False, indent=2))
         return exact

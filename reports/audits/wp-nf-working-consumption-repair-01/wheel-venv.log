@@ -1,0 +1,3 @@
+Using CPython 3.12.2 interpreter at: /opt/homebrew/opt/python@3.12/bin/python3.12
+Creating virtual environment at: /Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-venv
+Activate with: source /Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-venv/bin/activate

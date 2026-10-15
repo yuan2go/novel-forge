@@ -1,0 +1,291 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_native_author_first_cross_chapter_edit_and_export[working-memory-interruption] _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-2/test_native_author_first_cross0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b608b30>
+runtime_clock = <function runtime_clock.<locals>.advance at 0x10ba6fa60>
+completed_sibling = False, recoverable_result = False
+enhanced_working = 'memory'
+
+    @pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory"), (False, False, "progression")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption", "working-progression-interruption"])
+    def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working):
+        harness = CapabilityPackPostgresHarness("author-first")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        if enhanced_working in {"memory", "progression"}:
+            parent_transport = transport.chapter
+            class MemoryTransport:
+                def __getattr__(self, name):
+                    return getattr(parent_transport, name)
+                def __setattr__(self, name, value):
+                    setattr(parent_transport, name, value)
+                def __call__(self, stage, inputs):
+                    output = parent_transport(stage, inputs)
+                    if stage == "draft":
+                        number = inputs["plan"]["chapter"]
+                        quote = output["scene_artifacts"][0]["text"][:200]
+                        output["working_memory_json"] = (json.dumps([{"kind": "EVENT", "subject": "archivist",
+                            "state_key": "controlled-opening", "claim": "The selected opening is available for later source lookup.",
+                            "perspective": "OBSERVED", "knowledge_owner": "", "quote": quote, "causes": []}])
+                            if number == 1 else {"invalid": "optional metadata"} if number == 2 else "[]")
+                    return output
+            transport.chapter = MemoryTransport()
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
+        executable.write_text(executable.read_text().replace(
+            ' target.write_bytes(',
+            ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-interrupted-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        stream_failures = []
+        current_project = []
+        compression_calls = []
+        def interrupt_first_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            current_project[:] = [request.project_id]
+            if request.stage in {"context_compress", "context_fidelity"}:
+                compression_calls.append((request.operation_id, request.stage))
+            failure_stage = "context_fidelity" if completed_sibling else "memo"
+            if not recoverable_result and request.stage == failure_stage and not stream_failures:
+                layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+                layout.result_path("interrupt-stream").write_text("controlled fault")
+                stream_failures.append(request.operation_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+        from novel_forge.modules.command_kernel import generation_isolation
+        monkeypatch.setattr(generation_isolation, "sleep", lambda _: runtime_clock(current_project[0]))
+        if completed_sibling:
+            prepare_context_model_stages(transport, monkeypatch)
+        if recoverable_result:
+            from dataclasses import replace
+            from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+            execute = ProductionExecutionGatewayExternalEffectAdapter.execute
+            def lose_completed_response(adapter, **options):
+                result = execute(adapter, **options)
+                payload = options["request_payload"]
+                if payload.get("stage") == "memo" and not stream_failures:
+                    assert result.outcome == "success"
+                    stream_failures.append(payload["operation_id"])
+                    return replace(result, outcome="unknown")
+                return result
+            monkeypatch.setattr(ProductionExecutionGatewayExternalEffectAdapter, "execute", lose_completed_response)
+        if not completed_sibling and not recoverable_result:
+            from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
+            from concurrent.futures import ThreadPoolExecutor
+            native_recovery = generation_isolation.recover_chapter_generations
+            admission_checked = []
+            def verify_atomic_recovery(authority, **options):
+                if admission_checked:
+                    return native_recovery(authority, **options)
+                book = authority.require(options["book_run_id"])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+                        JOIN authority_external_effect e USING(operation_id)
+                        WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    original = uow.cursor.fetchone()
+                if original is None:
+                    return native_recovery(authority, **options)
+                def interrupt_admission(*args, **kwargs):
+                    raise RuntimeError("controlled successor admission interruption")
+                with monkeypatch.context() as fault:
+                    fault.setattr(step_successor_v2, "replace_failed_step", interrupt_admission)
+                    with pytest.raises(RuntimeError, match="controlled successor admission interruption"):
+                        native_recovery(authority, **options)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == original
+                    uow.cursor.execute("SELECT count(*) FROM authority_generation_isolation WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
+                assert sum(outcomes) == 1
+                admission_checked.append(True)
+                return True
+            monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
+        env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
+        env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
+        transport.database_url = DATABASE_URL
+        inputs = {"version": "creation-request.v1", "title": f"Author work {harness.project_id} sibling={completed_sibling} recoverable={recoverable_result} enhanced={enhanced_working}", "target_chapters": 8,
+            "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
+                "source_boundaries": ["Original work"]}}
+        source = tmp_path / "request.json"
+        source.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+            "--repository-root", str(root), "--maximum-ticks", "100",
+            "--foreground"])
+        template = json.loads((root / args.execution_template_file).read_text())
+        template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+        args.execution_template_file = tmp_path / "memo-enhanced-template.json"
+        args.execution_template_file.write_text(json.dumps(template))
+        if enhanced_working:
+            creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
+            creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
+                "version": "working-prose-projection.v4" if enhanced_working == "progression" else "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2", "history_chapters": 8,
+                "recent_complete_chapters": 2, "max_characters": 32000,
+                "queries": ["flood"], "guidance_mode": "COMBINED"}
+            if enhanced_working not in {"memory", "progression"}:
+                for key in ("working_schedule_policy", "working_craft_history_policy", "future_planning_feedback_policy"):
+                    creation_policy["profiles"]["production_profile"]["content"].pop(key, None)
+            args.creation_policy_file = tmp_path / "working-creation-policy.json"
+            args.creation_policy_file.write_text(json.dumps(creation_policy))
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+        from novel_forge.api import authority_dependencies
+        build_book = authority_dependencies.build_book_production_composition
+        interruptions = []
+        def fail_delivery_once(checkpoint):
+            if checkpoint == "after_manuscript_delivery" and not interruptions:
+                interruptions.append(checkpoint)
+                raise RuntimeError("controlled interruption after saved prose")
+        def with_interrupt(*values, **options):
+            composition = build_book(*values, **options)
+            composition.authority.failure_injector = fail_delivery_once
+            return composition
+        monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+            started = run_creation_command(settings, args)
+            raise AssertionError({key: started.get(key) for key in ("stop_reason", "reason_code", "reason")})
+        if not completed_sibling and not recoverable_result:
+            assert admission_checked == [True]
+        from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+        principal = build_trusted_principal_resolver().resolve_api_principal()
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE project_id=(SELECT project_id FROM authority_operation WHERE operation_id=%s)", [stream_failures[0]])
+            stopped = uow.cursor.fetchone()[0]
+            project = stopped["project_id"]
+            args.project_id, args.workspace_id, args.book_id = project, stopped["workspace_id"], stopped["book_id"]
+            uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s", [project])
+            formation = uow.cursor.fetchone()[0]
+        retained = current_manuscript(DATABASE_URL, book=stopped, principal=principal)
+        assert len(stream_failures) == 1
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("""SELECT original.status,effect.status,budget.status,child.status,
+                isolation.proof#>>'{observed_failure,error_code}' FROM authority_generation_isolation isolation
+                JOIN authority_operation original ON original.operation_id=isolation.operation_id
+                JOIN authority_external_effect effect USING(external_effect_id)
+                JOIN authority_budget_reservation budget USING(external_effect_id)
+                JOIN authority_saga_step_successor successor ON successor.predecessor_operation_id=original.operation_id
+                JOIN authority_operation child ON child.operation_id=successor.successor_operation_id
+                WHERE original.operation_id=%s""", [stream_failures[0]])
+            if recoverable_result:
+                assert uow.cursor.fetchone() is None
+                uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [stream_failures[0]])
+                assert uow.cursor.fetchone() == ("SUCCEEDED",)
+                uow.cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id IN (SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s)", [stream_failures[0]])
+                assert uow.cursor.fetchone() == (1,)
+                uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [stream_failures[0]])
+                assert uow.cursor.fetchone() == (0,)
+            else:
+                assert uow.cursor.fetchone() == ("FAILED_FINAL", "UNKNOWN", "HELD_UNKNOWN", "SUCCEEDED", "PROVIDER_STREAM_INTERRUPTED")
+        if completed_sibling:
+            assert [stage for operation, stage in compression_calls] == ["context_compress", "context_fidelity", "context_fidelity"]
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status", [stream_failures[0]])
+                assert dict(uow.cursor.fetchall()) == {"SUCCEEDED": 1, "UNKNOWN": 1}
+                uow.cursor.execute("""SELECT effect.request_payload->>'stage',effect.status FROM authority_external_effect effect
+                    JOIN authority_saga_step_successor journal ON journal.successor_operation_id=effect.operation_id
+                    WHERE journal.predecessor_operation_id=%s""", [stream_failures[0]])
+                assert uow.cursor.fetchall() == [("context_fidelity", "SUCCEEDED")]
+                uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [stream_failures[0]])
+                assert uow.cursor.fetchone()[0] == 1
+        assert len(retained["units"]) == 1
+        assert stopped["current_chapter"] == 0
+        runtime_clock(project)
+        args.action, args.formation_run_id = "continue", formation
+>       result = run_creation_command(settings, args)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:287: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:62: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:1268: in execute_creation_command
+    result = continue_creation(composition=composition, content=content, chapter=chapter, formation_run_id=formation_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:493: in continue_creation
+    stop = drive_book(composition=composition, chapter=chapter, book_run_id=existing[0], worker=book_worker,
+src/novel_forge/modules/book_authority/creation_runtime.py:67: in drive_book
+    return _drive_book(composition=composition, chapter=chapter, book_run_id=book_run_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:233: in _drive_book
+    result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:331: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1862: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:266: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:51: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:176: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:650: in execute
+    self._run_campaign(
+src/novel_forge/modules/chapter_authority/handlers.py:726: in _run_campaign
+    freeze_retrieval_round(
+src/novel_forge/modules/context_builder/retrieval_campaign_store.py:258: in freeze_retrieval_round
+    uow.cursor.execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [IDLE] (user=yuan database=nf_working_consumption_20261015_test) at 0x10bad0d10>
+query = '\n            INSERT INTO authority_retrieval_round(\n                round_id, campaign_id, project_id, book_id, ope...,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n            ) ON CONFLICT(campaign_id, round_number) DO NOTHING\n            '
+params = ['retrieval-round:926423f7f76dd8183e3cfe6b79d6610418fc21e873390afba97b56e4f8ac7631', 'retrieval-campaign:9c1b63ba85287...35be0b9ef01817bfee8c818c671d1b47', '8324f9c1-2f88-431e-abc6-0550d4723e27', 'ea673b25-8508-4748-9190-2a1200da9199', ...]
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.DeadlockDetected: deadlock detected
+E           DETAIL:  Process 52129 waits for ShareLock on transaction 2638134; blocked by process 52627.
+E           Process 52627 waits for ShareLock on transaction 2638133; blocked by process 52129.
+E           HINT:  See server log for query details.
+E           CONTEXT:  while locking tuple (86,2) in relation "authority_operation"
+E           SQL statement "SELECT 1 FROM ONLY "public"."authority_operation" x WHERE "operation_id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x"
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: DeadlockDetected
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[working-memory-interruption]
+1 failed, 9 deselected in 394.33s (0:06:34)

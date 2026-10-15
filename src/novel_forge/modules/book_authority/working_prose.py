@@ -317,7 +317,7 @@ def working_source_rows(snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
     return history["sources"]
 
 
-def project_working_history_for_provider(snapshot: Mapping[str, Any]) -> dict[str, Any]:
+def project_working_history_for_provider(snapshot: Mapping[str, Any], *, bounded_memory: bool = True) -> dict[str, Any]:
     if (snapshot.get("projection_policy") or {}).get("version") != LONGFORM_POLICY_VERSION:
         return deepcopy(dict(snapshot))
     validate_working_projection(snapshot, project_id=snapshot["project_id"], book_id=snapshot["book_id"])
@@ -334,9 +334,13 @@ def project_working_history_for_provider(snapshot: Mapping[str, Any]) -> dict[st
         "visible_sources_hash": canonical_hash([_source_identity(source) for source in result["sources"]]),
         "memory_source_coverage_hash": canonical_hash(coverage),
         "boundary": "OMITTED_PROSE_UNKNOWN_NO_ACCEPTED_FACTS"}
-    memory = result["working_memory"]
-    memory["source_coverage"] = [row for row in coverage if row["asset_version_id"] in visible]
-    memory["packet_hash"] = canonical_hash({key: value for key, value in memory.items() if key != "packet_hash"})
+    if bounded_memory:
+        from novel_forge.modules.narrative_state.working_memory import project_memory_for_provider
+        result["working_memory"] = project_memory_for_provider(result["working_memory"], visible)
+    else:
+        memory = result["working_memory"]
+        memory["source_coverage"] = [row for row in coverage if row["asset_version_id"] in visible]
+        memory["packet_hash"] = canonical_hash({key: value for key, value in memory.items() if key != "packet_hash"})
     result["snapshot_hash"] = canonical_hash({key: value for key, value in result.items() if key != "snapshot_hash"})
     validate_working_projection(result, project_id=snapshot["project_id"], book_id=snapshot["book_id"])
     return result
@@ -546,7 +550,12 @@ def validate_working_projection(
             raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Bounded long-form prose must retain every mandatory recent source")
         expected = numbers
     if policy["version"] in MEMORY_POLICY_VERSIONS or snapshot.get("working_memory") is not None:
-        from novel_forge.modules.narrative_state.working_memory import validate_memory_packet
+        from novel_forge.modules.narrative_state.working_memory import PROVIDER_MEMORY_VERSION, validate_memory_packet
+        if isinstance(snapshot["working_memory"], Mapping) and snapshot["working_memory"].get("version") == PROVIDER_MEMORY_VERSION and (
+                policy["version"] != LONGFORM_POLICY_VERSION
+                or snapshot.get("source_history", {}).get("contract_version") != "working-source-history-reference.v1"
+                or snapshot["working_memory"].get("source_coverage_hash") != snapshot["source_history"]["memory_source_coverage_hash"]):
+            raise KernelError("WORKING_MEMORY_PACKET_INVALID", "Provider memory requires the exact complete host history reference")
         validate_memory_packet(snapshot["working_memory"], snapshot["sources"])
         if policy["version"] not in MEMORY_POLICY_VERSIONS:
             raise KernelError("WORKING_MEMORY_POLICY_INVALID", "Frozen older projections cannot acquire observations")

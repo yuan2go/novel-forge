@@ -1,0 +1,26 @@
+{
+  "canonical_document_count": 5,
+  "capability_count": 26,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "54eda51172b8d915d172381914d73cba9c026328",
+    "base_source_comment_count": 515,
+    "base_source_docstring_count": 135,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [
+    "canonical document references missing path: docs/runtime-operations.md:share/novel-forge/config/execution_templates/author_first.json",
+    "current-system projection is stale for the implementation tree"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:9743c760a024cef472ec4f25a5b36dcb9db53f3e987817dcc4d26b130f4eefa9",
+  "module_docstring_count": 37,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 515,
+  "source_docstring_count": 135,
+  "status": "FAIL",
+  "tested_sha": "54eda51172b8d915d172381914d73cba9c026328",
+  "web_comment_count": 5
+}

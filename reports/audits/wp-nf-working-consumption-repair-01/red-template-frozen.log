@@ -1,0 +1,162 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+__ test_final_prompt_treats_inserted_author_text_as_opaque[{{target_scope}}] ___
+
+literal = '{{target_scope}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+        prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"plan": {"chapter": 1, "chapter_objective": literal}}, materialization=materialization)
+>       envelope = json.loads(prompt.split("<data>", 1)[1].split("</data>", 1)[0])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_converged_provider_inputs.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x105b39a30>
+s = '{"context_bundle":{"accepted_state_boundary":{"accepted_through_chapter":0},"context_correctness_receipt_hash":"","co...hority":"CREATIVE_SUGGESTION_ONLY","guidance":{},"scene_directives":[],"source_memo_fingerprint":""},"stage":"draft"}}'
+idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+>           obj, end = self.scan_once(s, idx)
+                       ^^^^^^^^^^^^^^^^^^^^^^
+E           json.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 574 (char 573)
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py:353: JSONDecodeError
+_ test_final_prompt_treats_inserted_author_text_as_opaque[{{context_bundle}}] __
+
+literal = '{{context_bundle}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+        prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"plan": {"chapter": 1, "chapter_objective": literal}}, materialization=materialization)
+>       envelope = json.loads(prompt.split("<data>", 1)[1].split("</data>", 1)[0])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_converged_provider_inputs.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x105b39a30>
+s = '{"context_bundle":{"accepted_state_boundary":{"accepted_through_chapter":0},"context_correctness_receipt_hash":"","co...hority":"CREATIVE_SUGGESTION_ONLY","guidance":{},"scene_directives":[],"source_memo_fingerprint":""},"stage":"draft"}}'
+idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+>           obj, end = self.scan_once(s, idx)
+                       ^^^^^^^^^^^^^^^^^^^^^^
+E           json.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 574 (char 573)
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py:353: JSONDecodeError
+__ test_final_prompt_treats_inserted_author_text_as_opaque[{{some_literal}}] ___
+
+literal = '{{some_literal}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+>       prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"plan": {"chapter": 1, "chapter_objective": literal}}, materialization=materialization)
+
+tests/unit/test_converged_provider_inputs.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ExecutionRequest(execution_id='execution:1', operation_id='operation:1', root_operation_id='operation:1', saga_id='sag..., correlation_id='correlation:1', external_effect_id='external-effect:1', budget_reservation_id='budget-reservation:1')
+target_scope = None, stage = 'draft'
+inputs = {'plan': {'chapter': 1, 'chapter_objective': '{{some_literal}}'}}
+materialization = {'materialization_hash': 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'pack_artifacts': ...sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'content': {'rules': ['causal cost']}}], ...}
+
+>   ???
+E   novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_CAPABILITY_TEMPLATE_INVALID: frozen Prompt Template contains unresolved placeholders
+
+<frozen-54eda511-materializer>:4713: KernelError
+_ test_final_prompt_treats_inserted_author_text_as_opaque[\u82b1\u62ec\u53f7 {{input_manifest}} \u4e0e\u5f15\u53f7 \\"\u4fdd\u7559\\"] _
+
+literal = '花括号 {{input_manifest}} 与引号 \\"保留\\"'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+>       prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"plan": {"chapter": 1, "chapter_objective": literal}}, materialization=materialization)
+
+tests/unit/test_converged_provider_inputs.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ExecutionRequest(execution_id='execution:1', operation_id='operation:1', root_operation_id='operation:1', saga_id='sag..., correlation_id='correlation:1', external_effect_id='external-effect:1', budget_reservation_id='budget-reservation:1')
+target_scope = None, stage = 'draft'
+inputs = {'plan': {'chapter': 1, 'chapter_objective': '花括号 {{input_manifest}} 与引号 \\"保留\\"'}}
+materialization = {'materialization_hash': 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'pack_artifacts': ...sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'content': {'rules': ['causal cost']}}], ...}
+
+>   ???
+E   novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_CAPABILITY_TEMPLATE_INVALID: frozen Prompt Template contains unresolved placeholders
+
+<frozen-54eda511-materializer>:4713: KernelError
+=========================== short test summary info ============================
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{target_scope}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{context_bundle}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{some_literal}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[\u82b1\u62ec\u53f7 {{input_manifest}} \u4e0e\u5f15\u53f7 \\"\u4fdd\u7559\\"]
+4 failed, 13 deselected in 0.42s

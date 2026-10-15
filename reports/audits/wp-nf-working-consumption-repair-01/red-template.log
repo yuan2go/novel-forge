@@ -1,0 +1,96 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+__ test_final_prompt_treats_inserted_author_text_as_opaque[{{target_scope}}] ___
+
+literal = '{{target_scope}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+        prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"chapter": 1, "nested": {"author_text": literal}}, materialization=materialization)
+        envelope = json.loads(prompt.split("<data>", 1)[1].split("</data>", 1)[0])
+>       assert envelope["input_manifest"]["nested"]["author_text"] == literal
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nested'
+
+tests/unit/test_converged_provider_inputs.py:57: KeyError
+_ test_final_prompt_treats_inserted_author_text_as_opaque[{{context_bundle}}] __
+
+literal = '{{context_bundle}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+        prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"chapter": 1, "nested": {"author_text": literal}}, materialization=materialization)
+        envelope = json.loads(prompt.split("<data>", 1)[1].split("</data>", 1)[0])
+>       assert envelope["input_manifest"]["nested"]["author_text"] == literal
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nested'
+
+tests/unit/test_converged_provider_inputs.py:57: KeyError
+__ test_final_prompt_treats_inserted_author_text_as_opaque[{{some_literal}}] ___
+
+literal = '{{some_literal}}'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+        prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"chapter": 1, "nested": {"author_text": literal}}, materialization=materialization)
+        envelope = json.loads(prompt.split("<data>", 1)[1].split("</data>", 1)[0])
+>       assert envelope["input_manifest"]["nested"]["author_text"] == literal
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nested'
+
+tests/unit/test_converged_provider_inputs.py:57: KeyError
+_ test_final_prompt_treats_inserted_author_text_as_opaque[\u82b1\u62ec\u53f7 {{input_manifest}} \u4e0e\u5f15\u53f7 \\"\u4fdd\u7559\\"] _
+
+literal = '花括号 {{input_manifest}} 与引号 \\"保留\\"'
+
+    @pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+    def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+        from hashlib import sha256
+        from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+        from tests.unit.test_production_execution_gateway import contracts
+        from novel_forge.modules.production_execution import ExecutionRuntimeClass
+        *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+        materialization = _prompt_materialization({"context_segments": []})
+        materialization["pack_artifacts"]["prompt_template"]["content"] = {
+            "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+        prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+            inputs={"chapter": 1, "nested": {"author_text": literal}}, materialization=materialization)
+        envelope = json.loads(prompt.split("<data>", 1)[1].split("</data>", 1)[0])
+>       assert envelope["input_manifest"]["nested"]["author_text"] == literal
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'nested'
+
+tests/unit/test_converged_provider_inputs.py:57: KeyError
+=========================== short test summary info ============================
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{target_scope}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{context_bundle}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[{{some_literal}}]
+FAILED tests/unit/test_converged_provider_inputs.py::test_final_prompt_treats_inserted_author_text_as_opaque[\u82b1\u62ec\u53f7 {{input_manifest}} \u4e0e\u5f15\u53f7 \\"\u4fdd\u7559\\"]
+4 failed, 13 deselected in 0.86s

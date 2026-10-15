@@ -1,0 +1,16 @@
+{
+  "scope": "TASK_OWNED_PHYSICAL_COPY",
+  "source_state_before_copy": "SHUT_DOWN",
+  "source_system_identifier": "7695026994287073315",
+  "source_checkpoint": "B/11462578",
+  "copy_start_initial": "2026-10-15T22:20:43+08:00",
+  "copy_stop_initial": "2026-10-15T22:20:59+08:00",
+  "deviation": "Initial physical copy briefly retained the original tablespace link. Stopped copy and cloned/rebound tablespace before querying or migrating business data.",
+  "original_tablespace_files_modified_in_window": 0,
+  "source_unchanged_claim_ceiling": "FILE_MTIME_CHECK_ONLY_NOT_FULL_SOURCE_HASH_PROOF",
+  "final_copy_all_symlinks_owned": true,
+  "original_database_restarted": false,
+  "original_books_rewritten": false,
+  "current_copy_migration_head": "20261015_0218_retained_working_convergence",
+  "qualified_cold_restore": false
+}
