@@ -191,6 +191,16 @@ def read_completed_operation_success(database_url: str, context: EffectCommandCo
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
+def _receipt_matches_dispatch(provider_evidence: dict[str, Any], dispatch_evidence: Any) -> bool:
+    if not isinstance(dispatch_evidence, dict):
+        return False
+    diagnostic_keys = set(dispatch_evidence) - set(provider_evidence)
+    return diagnostic_keys <= {"error_type", "message", "request_sent", "failure_kind"} and all(
+        key in dispatch_evidence and dispatch_evidence[key] == value
+        for key, value in provider_evidence.items()
+    )
+
+
 def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str, *, retained_generation_stage: bool = False) -> dict[str, Any] | None:
     from .generation_isolation import require_not_isolated
     if not retained_generation_stage:
@@ -254,7 +264,7 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
             receipt_status != "VERIFIED"
             or not isinstance(provider_evidence, dict)
             or not provider_evidence
-            or provider_evidence != dispatch_evidence
+            or not _receipt_matches_dispatch(provider_evidence, dispatch_evidence)
             or _hash(provider_evidence) != payload_hash
         ):
             raise KernelError(
@@ -556,10 +566,7 @@ def plan_external_effect(
                     "capability": capability,
                 },
             )
-        # WHY: Repository.plan intentionally returns only admission identity.  The
-        # caller must nevertheless settle and recover against the capability
-        # profile frozen on the authoritative Effect, especially on replay
-        # where the current Adapter declaration is not the source of truth.
+        # WHY: Settlement and recovery use the Effect's frozen capability, not the current Adapter declaration.
         planned_effect = repository.get_for_update(result["external_effect_id"])
         result = {
             **result,

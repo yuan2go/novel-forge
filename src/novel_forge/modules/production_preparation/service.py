@@ -41,6 +41,7 @@ from .foundation_context import (
     project_character_foundation_context,
     project_reader_promise_context,
 )
+from .book_scope import book_scope_issue
 from .policies import (
     COLLECTION_ASSET_TYPES,
     CONTEXT_VERSION_REF_KEYS,
@@ -92,6 +93,7 @@ class ProductionPreparationService:
                 request,
                 requirement.asset_type,
                 knowledge_access=knowledge_access,
+                rejections=rejections,
             )
             accepted: list[ResolvedProductionAsset] = []
             fit_issues: list[str] = []
@@ -184,7 +186,8 @@ class ProductionPreparationService:
         knowledge_projection: dict[str, dict[str, Any]] = {}
         plans = selected_by_type.get("chapter_plan") or []
         if plans and (
-            "knowledge_translations" in plans[0].content
+            knowledge_access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"
+            or "knowledge_translations" in plans[0].content
             or "craft_strategy" in plans[0].content
             or plans[0].content.get("knowledge_translation_policy_version") == "knowledge-grounded-selection-v2"
         ):
@@ -460,11 +463,19 @@ class ProductionPreparationService:
                 "translation": translation,
                 "chapter_plan_asset_version_id": plan.asset_version_id,
                 "chapter_plan_content_hash": plan.content_hash,
+                **({"activation_evidence": self._method_activation_view(item)}
+                    if knowledge_access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1" else {}),
                 **({"craft_uses": bound_uses, "craft_strategy_digest": strategy["strategy_digest"]} if bound_uses else {}),
                 **({"craft_metadata_boundary": "Affinity, family and selection labels describe a method; they do not impose author requirements or change its frozen intended effects."}
                     if bound_uses and any(scene["judgment_basis"].startswith("NEED_DRIVEN_") for scene in strategy["composition"]) else {}),
             }
         return result
+
+    @staticmethod
+    def _method_activation_view(item):
+        from novel_forge.modules.mkaos_authority.craft_context_projection import approved_method_activation_view
+        return approved_method_activation_view(item.content, asset_version_id=item.asset_version_id,
+            content_hash=item.content_hash)
 
     def _candidates(
         self,
@@ -472,6 +483,7 @@ class ProductionPreparationService:
         asset_type: str,
         *,
         knowledge_access: dict[str, Any],
+        rejections: list[ProductionInputRejection],
     ) -> tuple[ResolvedProductionAsset, ...]:
         override = request.explicit_asset_version_overrides.get(asset_type)
         if (
@@ -484,15 +496,19 @@ class ProductionPreparationService:
             and knowledge_access["mode"] == "ALLOW_ONLY"
             and not override
         ):
-            assets = tuple(
-                self.resolver.resolve_override(
-                    project_id=request.project_id,
-                    asset_version_id=asset_version_id,
-                )
-                for asset_version_id in knowledge_access[
-                    "allowed_knowledge_card_asset_version_ids"
-                ]
-            )
+            resolved = []
+            for asset_version_id in knowledge_access["allowed_knowledge_card_asset_version_ids"]:
+                try:
+                    resolved.append(self.resolver.resolve_override(
+                        project_id=request.project_id, asset_version_id=asset_version_id,
+                    ))
+                except KernelError as error:
+                    if (knowledge_access.get("craft_candidate_review_version") != "explicit-allowlist-craft-review.v1"
+                            or error.code not in {"PREPARATION_OVERRIDE_NOT_FOUND", "PREPARATION_OVERRIDE_NOT_ELIGIBLE"}):
+                        raise
+                    rejections.append(ProductionInputRejection(asset_version_id, asset_type, error.code,
+                        "optional candidate unavailable; any active adopted translation still requires its exact Card"))
+            assets = tuple(resolved)
         elif (
             asset_type == "knowledge_pack"
             and knowledge_access["mode"] == "ALLOW_ONLY"
@@ -529,6 +545,11 @@ class ProductionPreparationService:
                     accepted_chapter=request.accepted_through_chapter if request.accepted_through_chapter is not None else request.chapter - 1,
                 )
             )
+        elif request.book_id and hasattr(self.resolver, "resolve_all_for_book"):
+            assets = tuple(self.resolver.resolve_all_for_book(
+                project_id=request.project_id, book_id=request.book_id,
+                asset_type=asset_type,
+            ))
         elif hasattr(self.resolver, "resolve_all"):
             assets = tuple(
                 self.resolver.resolve_all(
@@ -540,6 +561,7 @@ class ProductionPreparationService:
                 project_id=request.project_id, asset_type=asset_type
             )
             assets = () if latest is None else (latest,)
+        scoped_assets = []
         for asset in assets:
             if asset.project_id != request.project_id:
                 raise KernelError(
@@ -551,7 +573,30 @@ class ProductionPreparationService:
                     "PREPARATION_OVERRIDE_TYPE_MISMATCH",
                     "production override has the wrong asset type",
                 )
-        return assets
+            issue = book_scope_issue(asset, request.book_id) if request.book_id else ""
+            if not issue and asset_type == "creative_brief" and request.book_id:
+                from novel_forge.modules.creative.input_selection import require_input_scope
+
+                if asset.content.get("creative_input_selection"):
+                    try:
+                        require_input_scope(asset.content, project_id=request.project_id,
+                            workspace_id=request.workspace_id, book_id=request.book_id)
+                        if hasattr(self.resolver, "require_current_brief"):
+                            self.resolver.require_current_brief(asset=asset,
+                                workspace_id=request.workspace_id, book_id=request.book_id)
+                    except KernelError as error:
+                        issue = error.code
+                else:
+                    issue = "CREATIVE_INPUT_SELECTION_REQUIRED"
+            if issue:
+                if override:
+                    raise KernelError(issue, "explicit production input has incompatible Book scope",
+                        details={"asset_version_id": asset.asset_version_id, "book_id": request.book_id})
+                rejections.append(ProductionInputRejection(asset.asset_version_id, asset.asset_type,
+                    issue, "fallback candidate does not belong to the requested Book input scope"))
+                continue
+            scoped_assets.append(asset)
+        return tuple(scoped_assets)
 
     @staticmethod
     def _knowledge_access_policy(
@@ -638,12 +683,11 @@ class ProductionPreparationService:
         accepted_boundary: dict[str, object],
         knowledge_projection: dict[str, Any] | None = None,
     ) -> dict[str, object]:
-        declared_scope = dict(item.content.get("scope") or {})
-        declared_book_id = str(item.content.get("book_id") or declared_scope.get("book_id") or "")
-        if declared_book_id and declared_book_id != book_id:
+        scope_issue = book_scope_issue(item, book_id)
+        if scope_issue:
             raise KernelError(
-                "PREPARATION_CROSS_BOOK_INPUT",
-                "production Context candidate belongs to another Book",
+                scope_issue, "production Context candidate has incompatible Book scope",
+                details={"asset_version_id": item.asset_version_id, "book_id": book_id},
             )
         evidence_only = item.asset_type in {
             "operator_checklist",

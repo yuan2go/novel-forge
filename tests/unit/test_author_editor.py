@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+import pytest
+
 from novel_forge.modules.chapter_authority.author_editor import edit_map, reconcile_author_scenes, text_hash
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.book_authority.author_revision import require_author_replacement_dispatch
@@ -53,7 +55,7 @@ class AuthorEditorTests(unittest.TestCase):
         source = {"text": "　剑😀未出。\n\n她留步。", "scene_artifacts": [
             {"slot_id": "a", "text": "　剑😀未出。", "used_fact_ids": []},
             {"slot_id": "b", "text": "她留步。", "used_fact_ids": []}]}
-        contract = {"contract_digest": "hash", "slots": [
+        contract = {"contract_version": "scene-realization-composition.v1", "contract_digest": "hash", "slots": [
             {"slot_id": "a", "scene_id": "first", "accessible_knowledge": []},
             {"slot_id": "b", "scene_id": "second", "accessible_knowledge": []}], "voices": []}
         source["realization_contract"] = contract
@@ -71,8 +73,13 @@ class AuthorEditorTests(unittest.TestCase):
         self.assertNotEqual(integrated["composition_digest"], revision["composition_digest"])
         with self.assertRaises(KernelError):
             reconcile_author_scenes(source, text, [{**mapped[0], "scene_id": "invented"}, mapped[1]], [""])
-        with self.assertRaises(KernelError):
-            reconcile_author_scenes(source, text, [{**mapped[0], "used_fact_ids": ["secret"]}, mapped[1]], [""])
+        declared = reconcile_author_scenes(source, text, [{**mapped[0], "used_fact_ids": ["secret"]}, mapped[1]], [""])
+        diagnostic = integrate_realization(contract=contract, artifacts=declared, text=text, separators=[""])
+        self.assertEqual(diagnostic["declaration_evidence"], {
+            "status": "DIAGNOSTIC_ONLY", "defects": [{"slot_id": "a", "defect": "OUTSIDE_SCENE_SCOPE"}],
+            "semantic_validation": "NOT_PROVEN_BY_MODEL_DECLARATIONS"})
+        self.assertEqual(diagnostic["scene_artifacts"][0]["used_fact_ids"], ["secret"])
+        self.assertEqual(contract["slots"][0]["accessible_knowledge"], [])
         with self.assertRaises(KernelError):
             reconcile_author_scenes(source, text, mapped, ["invented text"])
 
@@ -86,15 +93,46 @@ class AuthorEditorTests(unittest.TestCase):
 def test_repeated_candidate_requires_retained_realization_contract():
     from types import SimpleNamespace
     from novel_forge.modules.chapter_authority.author_editor import source_draft_content
-    contract = {"plan_version_id": "original-plan", "slots": [
+    from novel_forge.modules.chapter_authority.realization_composition import integrate_realization
+    contract = {"contract_version": "scene-realization-composition.v1", "plan_version_id": "original-plan", "slots": [
         {"slot_id": "one", "scene_id": "s", "accessible_knowledge": []}], "voices": [], "contract_digest": "digest"}
     draft = {"text": "守密。", "scene_artifacts": [{"slot_id": "one", "text": "守密。", "used_fact_ids": []}], "realization_contract": contract}
-    source = SimpleNamespace(asset_type="author_edit_candidate", content={**draft, "draft_content": draft})
+    source = SimpleNamespace(asset_type="author_edit_candidate", content={
+        "text": draft["text"], "scene_artifacts": draft["scene_artifacts"], "draft_content": draft})
     retained = source_draft_content(source)
     assert retained["realization_contract"]["plan_version_id"] == "original-plan"
-    try:
-        reconcile_author_scenes(retained, "泄密。", [{"slot_id": "one", "text": "泄密。", "used_fact_ids": ["unlearned-secret"]}])
-    except KernelError as error:
-        assert error.code == "REALIZATION_EPISTEMIC_SCOPE_VIOLATION"
-    else:
-        raise AssertionError("second author edit leaked an unavailable fact")
+    declared = reconcile_author_scenes(retained, "泄密。", [{"slot_id": "one", "text": "泄密。", "used_fact_ids": ["unlearned-secret"]}])
+    diagnostic = integrate_realization(contract=retained["realization_contract"], artifacts=declared, text="泄密。")
+    assert diagnostic["declaration_evidence"] == {
+        "status": "DIAGNOSTIC_ONLY", "defects": [{"slot_id": "one", "defect": "OUTSIDE_SCENE_SCOPE"}],
+        "semantic_validation": "NOT_PROVEN_BY_MODEL_DECLARATIONS"}
+    assert diagnostic["realization_contract"]["plan_version_id"] == "original-plan"
+    assert diagnostic["realization_contract"]["slots"][0]["accessible_knowledge"] == []
+    assert retained["text"] == "守密。" and retained["scene_artifacts"][0]["used_fact_ids"] == []
+
+
+def test_current_actor_source_editor_retains_diagnosis_without_expanding_scope_or_actor_declarations():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.realization_composition import integrate_realization
+    from tests.unit.test_actor_realization_sources import artifacts, contract
+
+    frozen = contract()
+    original = artifacts(frozen)
+    source = {"text": "\n\n".join(row["text"] for row in original), "scene_artifacts": original,
+              "realization_contract": frozen,
+              "author_workflow": {"version": "author-workflow.v1", "mode": "AUTHOR_FIRST", "deep_review": False}}
+    before = deepcopy(source)
+    supplied = deepcopy(original)
+    supplied[0].update(text="他提到尚未发生的事。", used_fact_ids=["local:future"])
+    text = "\n\n".join(row["text"] for row in supplied)
+    reconciled = reconcile_author_scenes(source, text, supplied)
+    candidate = integrate_realization(contract=frozen, artifacts=reconciled, text=text, enforce_voice_contract=False)
+    assert frozen["contract_version"] == "scene-realization-composition.v3"
+    assert candidate["declaration_evidence"]["status"] == "DIAGNOSTIC_ONLY"
+    assert {"slot_id": "one:skeleton", "defect": "OUTSIDE_SCENE_SCOPE", "invalid_refs": ["local:future"],
+            "allowed_refs": frozen["slots"][0]["accessible_knowledge"]} in candidate["declaration_evidence"]["defects"]
+    assert source == before
+    assert candidate["realization_contract"]["accepted_sources"] == before["realization_contract"]["accepted_sources"]
+    supplied[0]["character_source_uses"] = [{"character_id": "b", "used_fact_ids": ["local:private_note"]}]
+    with pytest.raises(KernelError, match="AUTHOR_SCENE_SCOPE_CONFLICT"):
+        reconcile_author_scenes(source, text, supplied)

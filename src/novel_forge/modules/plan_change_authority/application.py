@@ -1086,12 +1086,17 @@ class PostgresPlanChangeAuthority:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT asset_version_id
-                FROM authority_story_design_active_version
-                WHERE project_id=%s AND logical_key=%s
+                SELECT active.asset_version_id
+                FROM authority_story_design_active_version active
+                JOIN authority_story_design_version_state proposed
+                  ON proposed.project_id=active.project_id AND proposed.asset_version_id=%s
+                 AND proposed.scope_key=active.scope_key AND proposed.scope_layer=active.scope_layer
+                WHERE active.project_id=%s AND active.book_id=%s AND active.logical_key=%s
                 """,
                 [
+                    proposal["proposed_asset_version_id"],
                     proposal["project_id"],
+                    proposal["book_id"],
                     proposal["target_logical_key"],
                 ],
             )

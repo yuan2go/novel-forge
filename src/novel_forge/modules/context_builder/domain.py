@@ -1096,6 +1096,20 @@ def build_authority_context_bundle(
         authority_state_boundary=dict(authority_state_boundary or {}),
     )
     selection = replace(selection, policy_compilation=dict(compilation.receipt))
+    exact_accounting = (task_context_receipt or {}).get("protected_exact_accounting")
+    if exact_accounting is not None:
+        from .task_compression import _payload
+        from novel_forge.modules.narrative_state.reality import narrative_hash
+        members = exact_accounting.get("members") or []
+        by_id = {item.asset_version_id: item for item in selection.selected}
+        if (exact_accounting.get("contract_version") != "protected-context-exact-accounting.v1"
+                or exact_accounting.get("decoded_equal") is not True
+                or [row["asset_version_id"] for row in members] != exact_accounting.get("protected_asset_version_ids")
+                or any(row["asset_version_id"] not in by_id
+                    or by_id[row["asset_version_id"]].content_digest != row["content_hash"]
+                    or narrative_hash(_payload(by_id[row["asset_version_id"]])) != row["payload_hash"]
+                    or by_id[row["asset_version_id"]].estimated_tokens != row["allocated_bytes"] for row in members)):
+            raise ValueError("TASK_CONTEXT_ACCOUNTING_INVALID: protected exact reference closure or frozen allocation changed")
     refs = dict(version_refs or {})
     selected = [item.asset_version_id for item in selection.selected]
     segments = [_context_segment(item, profile) for item in selection.selected]

@@ -5,12 +5,13 @@ from __future__ import annotations
 import argparse
 import ast
 from dataclasses import dataclass
+import hashlib
 import importlib
 import json
 from pathlib import Path
 import re
 import subprocess
-from typing import Iterable
+from typing import Iterable, Mapping
 
 import yaml
 
@@ -77,6 +78,7 @@ def build_head_integrity_report(
     missing_imports: set[str] = set()
     untracked_dependencies: set[str] = set()
     missing_exports: set[str] = set()
+    migration_aliases = _retained_migration_aliases(source_root)
 
     for path in python_files:
         relative = path.relative_to(root).as_posix()
@@ -85,7 +87,7 @@ def build_head_integrity_report(
         except SyntaxError as exc:
             missing_imports.add(f"{relative}:syntax:{exc.lineno}")
             continue
-        dependencies, unresolved = _internal_dependencies(path, tree, source_root)
+        dependencies, unresolved = _internal_dependencies(path, tree, source_root, migration_aliases)
         missing_imports.update(unresolved)
         if relative in tracked:
             untracked_dependencies.update(
@@ -131,10 +133,13 @@ def _internal_dependencies(
     path: Path,
     tree: ast.AST,
     source_root: Path,
+    migration_aliases: Mapping[str, Path] | None = None,
 ) -> tuple[set[Path], set[str]]:
     dependencies: set[Path] = set()
     unresolved: set[str] = set()
     current_module = _module_name(path, source_root)
+    aliases = migration_aliases or {}
+    current_module = next((module for module, target in aliases.items() if target == path), current_module)
     current_package = (
         current_module
         if path.name == "__init__.py"
@@ -162,13 +167,43 @@ def _internal_dependencies(
             continue
         found_for_statement = False
         for module in modules:
-            target = _module_path(module, source_root)
+            target = _module_path(module, source_root) or aliases.get(module)
             if target is not None:
                 dependencies.add(target)
+                if target in aliases.values():
+                    dependencies.add(target.parent / "manifest.json")
                 found_for_statement = True
         if not found_for_statement and modules:
             unresolved.add(f"{path.relative_to(source_root)}:{modules[0]}")
     return dependencies, unresolved
+
+
+def _retained_migration_aliases(source_root: Path) -> dict[str, Path]:
+    root = source_root.parent
+    historical = source_root / "novel_forge/storage/migrations/historical"
+    aliases: dict[str, Path] = {}
+    for manifest in historical.glob("*/manifest.json"):
+        try:
+            declaration = json.loads(manifest.read_text())
+        except (OSError, ValueError):
+            continue
+        if (declaration.get("contract_version") != "published-craft-migration-retention.v1"
+                or declaration.get("registered_on_main") is not False):
+            continue
+        for item in declaration.get("modules", []):
+            original = Path(str(item.get("original_path", "")))
+            retained = (root / str(item.get("retained_path", ""))).resolve()
+            if (original.parent != Path("src/novel_forge/storage/migrations/versions")
+                    or not re.fullmatch(r"v[0-9]{8}_[0-9]{4}_[a-z0-9_]+\.py", original.name)
+                    or retained.parent != manifest.parent or retained.name != original.name
+                    or not retained.is_file()
+                    or hashlib.sha256(retained.read_bytes()).hexdigest() != item.get("sha256")):
+                continue
+            module = "novel_forge.storage.migrations.versions." + original.stem
+            if module in aliases:
+                raise ValueError("retained migration import origin is ambiguous: " + module)
+            aliases[module] = retained
+    return aliases
 
 
 def _absolute_import_module(*, current_package: str, module: str, level: int) -> str:

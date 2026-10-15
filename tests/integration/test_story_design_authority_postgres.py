@@ -143,6 +143,32 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 0)
 
+    def test_book_and_design_layer_namespaces_isolate_identical_logical_keys(self) -> None:
+        from tests.integration.authority_postgres_support import seed_authority_project_book
+        books = [identifier("design-book-a"), identifier("design-book-b")]
+        for index, book in enumerate(books):
+            seed_authority_project_book(project_id=self.project_id, workspace_id="workspace:"+book, book_id=book, seed_project=index == 0)
+        first = self._seed_candidate("scoped-a", generator_operation_name="theme.candidates.generate",
+            logical_key="shared:main", asset_type="theme_candidate_pool", planning_scope=PlanningScope.NOT_APPLICABLE, book_id=books[0])
+        other_book = self._seed_candidate("scoped-b", generator_operation_name="theme.candidates.generate",
+            logical_key="shared:main", asset_type="theme_candidate_pool", planning_scope=PlanningScope.NOT_APPLICABLE, book_id=books[1])
+        other_layer = self._seed_candidate("scoped-layer", generator_operation_name="ending.intent.generate",
+            logical_key="shared:main", asset_type="ending_intent_candidate", planning_scope=PlanningScope.NOT_APPLICABLE, book_id=books[0])
+        for candidate in (first, other_book, other_layer):
+            self._advance_to_active(candidate)
+        for candidate in (first, other_book, other_layer):
+            self.assertEqual(self.authority.require(project_id=self.project_id, asset_version_id=candidate["asset_version_id"])["lifecycle"], "ACTIVE")
+        replacement = self._seed_candidate("scoped-a-next", generator_operation_name="theme.candidates.generate",
+            logical_key="shared:main", asset_type="theme_candidate_pool", planning_scope=PlanningScope.NOT_APPLICABLE, book_id=books[0])
+        self._advance_to_active(replacement)
+        self.assertEqual(self.authority.require(project_id=self.project_id, asset_version_id=first["asset_version_id"])["lifecycle"], "SUPERSEDED")
+        for candidate in (other_book, other_layer):
+            self.assertEqual(self.authority.require(project_id=self.project_id, asset_version_id=candidate["asset_version_id"])["lifecycle"], "ACTIVE")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            with self.assertRaises(Exception):
+                uow.cursor.execute("UPDATE authority_story_design_version_state SET book_id=%s WHERE project_id=%s AND asset_version_id=%s",
+                    [books[1], self.project_id, replacement["asset_version_id"]])
+
     def test_legacy_import_cannot_use_boolean_pass_as_validation_authority(self) -> None:
         candidate = self._seed_candidate("legacy-boolean-pass")
         state = self._transition(
@@ -374,6 +400,7 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
         logical_key: str = "book-plan:main",
         asset_type: str = "book_plan_candidate",
         planning_scope: PlanningScope = PlanningScope.BOOK,
+        book_id: str = "",
     ) -> dict[str, str]:
         asset_id = f"{self.project_id}:{label}"
         version_id = f"{asset_id}:v1"
@@ -382,6 +409,8 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
             "project_id": self.project_id,
             "candidate_id": label,
         }
+        if book_id:
+            content["book_id"] = book_id
         content_hash = "sha256:" + hashlib.sha256(
             json.dumps(
                 content, sort_keys=True, separators=(",", ":")

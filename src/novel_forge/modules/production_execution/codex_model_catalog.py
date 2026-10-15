@@ -7,12 +7,20 @@ from .cost_routing import ModelCandidate, PricingSnapshot, TASK_TAXONOMY, snapsh
 
 
 CATALOG_VERSION = "codex-router-models.v1"
+HEADROOM_CATALOG_VERSION = "codex-router-models.v2"
+
+
+def require_uniform_headroom_catalog(entries: tuple[dict[str, Any], ...], *, context_limit: int) -> None:
+    if (not entries or context_limit <= 0 or any(
+            row.get("catalog_version") != HEADROOM_CATALOG_VERSION or row["output_limit"] is not None
+            or row["context_limit"] != context_limit for row in entries)):
+        raise ValueError("CODEX_OUTPUT_POLICY_ROUTING_SCOPE_INVALID")
 
 
 def parse_codex_model_catalog(raw: str) -> tuple[dict[str, Any], ...]:
     value = json.loads(raw)
     if (not isinstance(value, dict) or set(value) != {"contract_version", "models"}
-        or value["contract_version"] != CATALOG_VERSION
+        or value["contract_version"] not in {CATALOG_VERSION, HEADROOM_CATALOG_VERSION}
         or not isinstance(value["models"], list) or not value["models"]):
         raise ValueError("CODEX_MODEL_CATALOG_INVALID")
     entries = []
@@ -26,14 +34,17 @@ def parse_codex_model_catalog(raw: str) -> tuple[dict[str, Any], ...]:
             or not isinstance(entry["tasks"], list) or not entry["tasks"]
             or any(not isinstance(task, str) or task not in TASK_TAXONOMY for task in entry["tasks"])
             or len(set(entry["tasks"])) != len(entry["tasks"])
-            or any(type(entry[key]) is not int or entry[key] <= 0 for key in ("context_limit", "output_limit"))
-            or entry["output_limit"] > entry["context_limit"]):
+            or type(entry["context_limit"]) is not int or entry["context_limit"] <= 0
+            or (entry["output_limit"] is None and value["contract_version"] != HEADROOM_CATALOG_VERSION)
+            or (entry["output_limit"] is not None and (type(entry["output_limit"]) is not int
+                or entry["output_limit"] <= 0 or entry["output_limit"] > entry["context_limit"]))):
             raise ValueError("CODEX_MODEL_CATALOG_ENTRY_INVALID")
         identity = (entry["model"], entry["reasoning"])
         if identity in identities:
             raise ValueError("CODEX_MODEL_CATALOG_DUPLICATE")
         identities.add(identity)
-        entries.append({**entry, "tasks": sorted(entry["tasks"])})
+        entries.append({**entry, "tasks": sorted(entry["tasks"]),
+            **({"catalog_version": HEADROOM_CATALOG_VERSION} if value["contract_version"] == HEADROOM_CATALOG_VERSION else {})})
     return tuple(entries)
 
 
@@ -48,9 +59,9 @@ def codex_catalog_candidates(entries: tuple[dict[str, Any], ...], *,
         candidate_id=f"codex-cli:{entry['model']}:{entry['reasoning']}",
         provider="codex-cli", model=entry["model"], reasoning=entry["reasoning"],
         tier=entry["role"].lower(), capabilities=("structured_output", "text"),
-        context_limit=entry["context_limit"], output_limit=entry["output_limit"], pricing=price,
+        context_limit=entry["context_limit"], output_limit=entry["output_limit"] or entry["context_limit"], pricing=price,
         capability_version=entitlement["configuration_ref"],
-        model_revision=f"{entitlement['configuration_ref']}:{CATALOG_VERSION}:{snapshot_hash(entry)}",
+        model_revision=f"{entitlement['configuration_ref']}:{entry.get('catalog_version', CATALOG_VERSION)}:{snapshot_hash(entry)}",
         escalation_only=entry["role"] == "ESCALATION",
         entitlement_role=entry["role"] if entry["role"] != "ESCALATION" else "",
         authorized_tasks=tuple(entry["tasks"]), quota_remaining=quota,

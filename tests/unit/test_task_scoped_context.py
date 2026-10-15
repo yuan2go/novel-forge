@@ -532,3 +532,28 @@ def test_working_intent_budget_counts_the_structured_provider_value_without_esca
     for legacy in [replace(source, provenance={}), replace(source, asset_type="chapter_memo"),
                    replace(source, safe_summary="ordinary summary")]:
         assert _candidate_tokens(legacy) == (serialized_token_upper_bound(_payload(legacy)), "SERIALIZED_SUMMARY")
+
+
+def test_protected_envelope_accounting_keeps_exact_sources_and_optional_eviction_cannot_break_references():
+    import json
+    from novel_forge.modules.context_builder.task_compression import _candidate_tokens
+    repeated = {"method": "保留人物已有的选择依据、后果和例外。" * 100}
+    sources = [replace(candidate("chapter_memo", text=json.dumps({"strategy": repeated}, ensure_ascii=False, sort_keys=True, separators=(",", ":")), context_class="PROTECTED"), asset_version_id="memo"),
+               replace(candidate("knowledge_card", text=json.dumps({"strategy": repeated, "exception": "当前选择允许含糊"}, ensure_ascii=False, sort_keys=True, separators=(",", ":")), context_class="PROTECTED"), asset_version_id="method"),
+               replace(candidate(text="Irrelevant banquet. " * 200), asset_version_id="optional", relevance_score=0, retrieval_reasons=())]
+    sources = [replace(item, content_digest="hash:" + item.asset_version_id,
+                       source_identity=item.asset_version_id, source_revision="hash:" + item.asset_version_id,
+                       provenance={"authority_asset_version_id": item.asset_version_id}) for item in sources]
+    task = {**TASK, "writer_projection_version": "accepted-writer-history.v2", "protected_context_accounting_version": "protected-context-exact-accounting.v1"}
+    budget = _candidate_tokens(sources[0])[0] + 1400
+    output, receipt = compile_task_context(sources, task=task, token_budget=budget, required_asset_types=())
+    kept = {item.asset_version_id: item for item in output if not (item.provenance or {}).get("task_excluded")}
+    assert set(kept) == {"memo", "method"}
+    assert all(kept[item.asset_version_id].safe_summary == item.safe_summary for item in sources[:2])
+    proof = receipt["protected_exact_accounting"]
+    assert proof["contract_version"] == task["protected_context_accounting_version"]
+    assert proof["decoded_equal"] and proof["reference_count"] > 0
+    assert set(proof["protected_asset_version_ids"]) == set(kept)
+    assert sum(row["allocated_bytes"] for row in proof["members"]) == receipt["protected_estimated_tokens"]
+    with pytest.raises(KernelError, match="necessary exact task content"):
+        compile_task_context(sources[:2], task={**TASK, "writer_projection_version": "accepted-writer-history.v2"}, token_budget=budget, required_asset_types=())

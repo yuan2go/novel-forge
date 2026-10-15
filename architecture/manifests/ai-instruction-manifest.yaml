@@ -38,6 +38,8 @@
         "skills/mkaos-knowledge-asset-os/SKILL.md",
         "skills/multi-scale-pacing/SKILL.md",
         "skills/multidisciplinary-knowledge/SKILL.md",
+        "skills/multidisciplinary-knowledge/writing-theory-methods-v1.md",
+        "skills/multidisciplinary-knowledge/writing-theory-methods-v2.md",
         "skills/narrative-beat-design/SKILL.md",
         "skills/novel-os-engineering-audit/SKILL.md",
         "skills/platform-strategy-os/SKILL.md",
@@ -184,6 +186,26 @@
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
       "owner": "admin-runtime",
       "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "mkaos-selection-candidate-guidance",
+      "patterns": [
+        "src/novel_forge/modules/mkaos_authority/domain.py"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "mkaos-authority",
+      "consumer": "planning-provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "reader-manuscript-reading-instructions",
+      "patterns": [
+        "src/novel_forge/modules/reader_calibration/manuscript_blind.py"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "reader-calibration",
+      "consumer": "reader-and-provider-runtime",
       "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
     }
   ],

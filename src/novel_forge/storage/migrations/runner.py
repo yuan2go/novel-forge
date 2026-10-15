@@ -181,7 +181,13 @@ def _connect(database_url: str):
         import psycopg
     except ModuleNotFoundError as exc:  # pragma: no cover - dependency-gated path
         raise RuntimeError("PostgreSQL support requires the optional dependency: psycopg[binary]") from exc
-    return psycopg.connect(database_url, connect_timeout=1)
+    from psycopg.conninfo import conninfo_to_dict
+
+    value = conninfo_to_dict(database_url).get("connect_timeout", "5")
+    if not value.isascii() or not value.isdecimal() or int(value) <= 0:
+        raise ValueError("Migration connection timeout must be positive")
+    timeout = int(value)
+    return psycopg.connect(database_url, connect_timeout=timeout)
 
 
 def _run_preflight(cursor: Any, migration: Migration) -> None:

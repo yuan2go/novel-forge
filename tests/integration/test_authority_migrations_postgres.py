@@ -3551,3 +3551,44 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_planning_scope_point_reads_preserve_trigger_and_input_boundaries():
+    from psycopg.types.json import Jsonb
+    from novel_forge.storage.migrations.versions import v20261014_0209_planning_input_scope_point_reads as fix
+    from tests.integration.authority_postgres_support import insert_definition, insert_operation
+    with disposable_database_at_migration(DATABASE_URL, prefix='scope_point',
+            target_migration_id=fix.DOWN_REVISION) as url:
+        with psycopg.connect(url) as c:
+            before = c.execute("SELECT prosrc FROM pg_proc WHERE proname='novel_forge_validate_core_functional_scope'").fetchone()[0]
+        status = run_migrations(url)
+        assert status['ok'] and run_migrations(url) == status
+        with psycopg.connect(url) as c:
+            after = c.execute("SELECT prosrc FROM pg_proc WHERE proname='novel_forge_validate_core_functional_scope'").fetchone()[0]
+            assert before.count(fix._OLD) == 1
+            assert after == before.replace(fix._OLD, 'NOT authority_planning_input_scope_valid(NEW.input_snapshot,NEW.project_id,NEW.book_id)')
+            for aid, project, content in [('shared','project',{}), ('owned','project',{'book_id':'book'}),
+                    ('foreign-project','other',{}), ('foreign-book','project',{'book_id':'other'})]:
+                c.execute('INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES(%s,%s,%s)', [aid,project,'fixture'])
+                c.execute("""INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,
+                    lifecycle,eligibility,governance,content,content_hash,schema_version)
+                    VALUES(%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'fixture.v1')""", [aid,aid,Jsonb(content),'hash:'+aid])
+            def snapshot(ids):
+                return Jsonb([{'asset_version_id':aid} for aid in ids])
+            for ids, valid in [([],True), (['shared','owned'],True), (['missing'],False),
+                    (['foreign-project'],False), (['foreign-book'],False), (['shared','foreign-book'],False)]:
+                assert c.execute('SELECT authority_planning_input_scope_valid(%s,%s,%s)', [snapshot(ids),'project','book']).fetchone()[0] is valid
+            q = c.cursor()
+            insert_definition(q, 'scope-point-fixture')
+            insert_operation(q, operation_id='scope-operation', definition_name='scope-point-fixture',
+                project_id='project', status='EXECUTING', command_payload={'payload':{'book_id':'book'}})
+            c.execute("""CREATE TEMP TABLE authority_story_planning_generation(
+                operation_id TEXT,project_id TEXT,workspace_id TEXT,book_id TEXT,input_snapshot JSONB,
+                parent_version_id TEXT,candidate_asset_version_id TEXT,generation_id TEXT,repair_of_candidate_id TEXT)""")
+            c.execute('CREATE TRIGGER scope_probe BEFORE INSERT ON authority_story_planning_generation FOR EACH ROW EXECUTE FUNCTION novel_forge_validate_core_functional_scope()')
+            values = ['scope-operation','project','legacy-unknown','book',snapshot(['shared','owned'])]
+            c.execute('INSERT INTO authority_story_planning_generation(operation_id,project_id,workspace_id,book_id,input_snapshot) VALUES(%s,%s,%s,%s,%s)', values)
+            for ids in (['foreign-project'], ['foreign-book'], ['missing']):
+                with pytest.raises(psycopg.errors.CheckViolation, match='STORY_PLANNING_GENERATION_SCOPE_INVALID'):
+                    with c.transaction():
+                        c.execute('INSERT INTO authority_story_planning_generation(operation_id,project_id,workspace_id,book_id,input_snapshot) VALUES(%s,%s,%s,%s,%s)', values[:4]+[snapshot(ids)])

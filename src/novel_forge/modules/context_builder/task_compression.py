@@ -30,6 +30,22 @@ def _payload(candidate: ContextCandidate) -> dict[str, Any]:
     }
 
 
+def _history_accounting_payload(payload):
+    from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
+
+    summary = payload.get("safe_summary")
+    if isinstance(summary, str) and "working-prose-projection.v5" in summary:
+        try:
+            parsed = json.loads(summary)
+        except (ValueError, TypeError):
+            parsed = None
+        if isinstance(parsed, dict):
+            projected, proof = compile_working_history_transport({**payload, "safe_summary": parsed})
+            if proof["projections"]:
+                return projected
+    return compile_working_history_transport(payload)[0]
+
+
 def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
     payload = _payload(candidate)
     if candidate.asset_type == "chapter_execution_intent" and (candidate.provenance or {}).get("working_artifact"):
@@ -39,11 +55,34 @@ def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
             intent = None
         working = intent.get("working_manuscript") if isinstance(intent, dict) else None
         if (isinstance(working, dict) and isinstance(working.get("projection_policy"), dict)
-            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4"}):
+            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5"}):
             from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
-            encoded, _ = compile_exact_context_references({**payload, 'safe_summary': intent}, structured_transport=True)
+            encoded, _ = compile_exact_context_references(_history_accounting_payload({**payload, 'safe_summary': intent}), structured_transport=True)
             return max(1, serialized_token_upper_bound(encoded) + 64), "STRUCTURED_WORKING_INTENT"
     return max(1, serialized_token_upper_bound(payload)), "SERIALIZED_SUMMARY"
+
+
+def _protected_envelope_accounting(candidates, *, required_asset_types):
+    from .domain import context_candidate_class
+    from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
+
+    protected = [item for item in candidates if item.allowed_use != "evidence_only" and (
+        context_candidate_class(item) is ContextClass.PROTECTED or item.required
+        or item.asset_type in required_asset_types or item.asset_type in _EXACT)]
+    source = {"context_segments": [{"asset_version_id": item.asset_version_id, **_payload(item)} for item in protected]}
+    accounted = {"context_segments": [_history_accounting_payload(row) for row in source["context_segments"]]}
+    encoded, proof = compile_exact_context_references(accounted, structured_transport=True, short_literals=True)
+    amounts = {item.asset_version_id: serialized_token_upper_bound(row) + 256
+               for item, row in zip(protected, encoded["context_segments"])}
+    result = [replace(item, estimated_tokens=amounts[item.asset_version_id])
+              if item.asset_version_id in amounts else item for item in candidates]
+    return result, {**proof, "contract_version": "protected-context-exact-accounting.v1",
+                    "protected_asset_version_ids": [item.asset_version_id for item in protected],
+                    "members": [{"asset_version_id": item.asset_version_id, "content_hash": item.content_digest,
+                                 "payload_hash": narrative_hash(_payload(item)), "allocated_bytes": amounts[item.asset_version_id]}
+                                for item in protected],
+                    "framing_bytes_per_source": 256, "encoded_payload_bytes": serialized_token_upper_bound(encoded),
+                    "final_provider_capacity_check": "REQUIRED"}
 
 
 def _units(candidate: ContextCandidate, task: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -168,6 +207,17 @@ def compile_task_context(
             "storage_payload_bytes": serialized_token_upper_bound(_payload(candidate))})
         normalized.append(replace(candidate, estimated_tokens=amount, truncation_strategy=""))
     normalized, deduplications = deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("reference_analysis" if reference else "draft").required_asset_types)
+    exact_accounting = None
+    if task.get("protected_context_accounting_version") not in (None, "protected-context-exact-accounting.v1"):
+        raise KernelError("TASK_CONTEXT_ACCOUNTING_INVALID", "Unknown protected Context accounting version")
+    if task.get("protected_context_accounting_version") == "protected-context-exact-accounting.v1":
+        if reference or task.get("writer_projection_version") != "accepted-writer-history.v2":
+            raise KernelError("TASK_CONTEXT_ACCOUNTING_INVALID", "Protected exact accounting requires its Writer projection")
+        normalized, exact_accounting = _protected_envelope_accounting(normalized, required_asset_types=required_asset_types)
+        by_id = {item.asset_version_id: item for item in normalized}
+        for row in candidate_accounting:
+            if row["asset_version_id"] in exact_accounting["protected_asset_version_ids"]:
+                row.update(representation="STRUCTURED_PROTECTED_ENVELOPE", provider_data_upper_bound=by_id[row["asset_version_id"]].estimated_tokens)
     duplicated_ids = {receipt["asset_version_id"] for receipt in deduplications}
     excluded.extend(item for item in working if item.asset_version_id in duplicated_ids)
     protected = [item for item in normalized if context_candidate_class(item) is ContextClass.PROTECTED or item.required or item.asset_type in required_asset_types or item.asset_type in _EXACT]
@@ -315,4 +365,6 @@ def compile_task_context(
         normalized.sort(key=source_position)
     result = [*normalized, *denied] + [replace(item, provenance={**dict(item.provenance or {}), "task_excluded": True}) for item in excluded]
     receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": "utf8-byte-upper-bound.v1", "candidate_accounting": candidate_accounting, "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
+    if exact_accounting is not None:
+        receipt["protected_exact_accounting"] = exact_accounting
     return result, {**receipt, "receipt_hash": narrative_hash(receipt)}

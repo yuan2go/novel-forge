@@ -16,20 +16,76 @@
           "history_basis": "SELECTED_WORKING_PROSE"
         },
         "working_craft_history_policy": {
-          "version": "working-craft-delivery.v1",
-          "use": "SOFT_SELECTION_CAUTION"
+          "version": "working-craft-delivery.v2",
+          "use": "SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"
         },
         "future_planning_feedback_policy": {
           "version": "native-prose-plan-feedback.v1",
           "scope": "PLANNED_FUTURE_ONLY"
         },
         "working_prose_policy": {
-          "version": "working-prose-projection.v4",
+          "version": "working-prose-projection.v5",
           "history_chapters": 128,
           "recent_complete_chapters": 2,
           "max_characters": 24000,
           "queries": [],
           "guidance_mode": "COMBINED"
+        },
+        "craft_budget_policy": {
+          "schema_version": "narrative-craft-budget.v5",
+          "classification": "CONFIGURABLE_POLICY",
+          "max_craft_candidates": 6,
+          "max_uses_per_scene": 3,
+          "max_uses_per_chapter": 8,
+          "recent_chapter_window": 5,
+          "cooldown_chapters": 1,
+          "max_frequency_in_window": 3,
+          "repetition_penalty": 4,
+          "pattern_similarity_penalty": 2,
+          "pattern_similarity_threshold_percent": 60,
+          "salience_penalty": 2,
+          "variation_bonus": 1,
+          "usage_types": {
+            "event": {
+              "mode": "EVENT",
+              "scope": "SCENE",
+              "phases": [
+                "MANIFEST"
+              ],
+              "frequency_unit": "MANIFESTATION",
+              "transition_policy": "accepted-phase-transitions.v1"
+            },
+            "support": {
+              "mode": "PERSISTENT",
+              "scope": "ARC",
+              "phases": [
+                "SUSTAIN"
+              ],
+              "frequency_unit": "INSTANCE",
+              "transition_policy": "accepted-phase-transitions.v1"
+            },
+            "staged": {
+              "mode": "PHASED",
+              "scope": "ARC",
+              "phases": [
+                "SETUP",
+                "DEVELOPMENT",
+                "PAYOFF"
+              ],
+              "frequency_unit": "INSTANCE",
+              "transition_policy": "accepted-phase-transitions.v1"
+            }
+          },
+          "mechanism_usage_types": {},
+          "reselection_policy": {
+            "contract_version": "craft-reselection.v1",
+            "maximum_reselections": 2,
+            "optional_abstention": true
+          },
+          "working_craft_policy": {
+            "version": "working-craft-delivery.v2",
+            "use": "SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"
+          }
         }
       }
     },

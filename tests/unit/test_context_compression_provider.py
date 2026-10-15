@@ -110,6 +110,30 @@ def test_new_planning_policy_separates_task_target_from_system_support_and_retai
     assert current["planning_task_token_budget"] == 64_000
 
 
+def test_cli_output_headroom_follows_complete_input_and_preserves_legacy_reservations() -> None:
+    from novel_forge.modules.chapter_authority.context_compression_provider import (
+        CLI_CONTEXT_HEADROOM_POLICY, context_headroom_output_reserve, planning_input_capacity, require_task_output_reserve,
+    )
+    from novel_forge.modules.production_execution.contracts import ExecutionRuntimeClass
+    route = SimpleNamespace(model_context_limit=258400, model_output_limit=32000,
+        token_safety_margin=256, token_framing_overhead=16,
+        model_profile=SimpleNamespace(backend_id="codex-cli", model_provider="codex-cli",
+            runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE))
+    assert task_provider_output_reserve("draft", route) == 32000
+    route.output_reservation_policy = CLI_CONTEXT_HEADROOM_POLICY
+    assert task_provider_output_reserve("draft", route, input_tokens=20000) == 238400
+    assert task_provider_output_reserve("book_plan.generate", route, input_tokens=223484) == 34916
+    require_task_output_reserve("draft", route, 238400, capacity_error_code="OUTPUT_INVALID", input_tokens=20000)
+    with pytest.raises(KernelError, match="OUTPUT_POLICY_DRIFT"):
+        require_task_output_reserve("draft", route, 32000, capacity_error_code="OUTPUT_INVALID", input_tokens=20000)
+    with pytest.raises(KernelError, match="CONTEXT_CAPACITY_EXCEEDED"):
+        context_headroom_output_reserve(route, 258400)
+    assert planning_input_capacity(route) == 258127
+    route.model_profile.backend_id = "remote-provider-openai"
+    with pytest.raises(KernelError, match="OUTPUT_POLICY_INVALID"):
+        context_headroom_output_reserve(route, 100)
+
+
 def test_token_reservation_uses_actual_input_and_independent_output_without_expanding_scope(monkeypatch) -> None:
     class Uow:
         def __enter__(self): return self

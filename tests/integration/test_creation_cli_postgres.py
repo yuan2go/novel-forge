@@ -12,9 +12,9 @@ from tests.integration.capability_pack_postgres_support import CapabilityPackPos
 from tests.integration.creative_validation_production_support import controlled_member_environment
 
 
-@pytest.mark.parametrize("full_creation,generated_title", [(False, False), (True, False), (True, True)],
-    ids=["admission-boundaries", "controlled-process-main-chain", "native-generated-title"])
-def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_path, monkeypatch, full_creation, generated_title):
+@pytest.mark.parametrize("full_creation,generated_title,catalog_headroom", [(False, False, False), (True, False, False), (True, True, False), (False, False, True)],
+    ids=["admission-boundaries", "controlled-process-main-chain", "native-generated-title", "headroom-catalog-admission"])
+def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_path, monkeypatch, full_creation, generated_title, catalog_headroom):
     harness = CapabilityPackPostgresHarness("creation-cli-full" if full_creation else "creation-cli-admission")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
@@ -82,6 +82,15 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
             model["reasoning"] = "medium"
         env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
         env["NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT"] = "medium"
+    if catalog_headroom:
+        catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+        catalog["contract_version"] = "codex-router-models.v2"
+        for model in catalog["models"]:
+            model["output_limit"] = None
+        env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+        env["NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"] = "codex-cli-context-headroom.v1"
+        env.pop("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", None)
+        monkeypatch.delenv("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", raising=False)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
@@ -112,6 +121,14 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
     if transport is not None:
         transport.database_url = settings.database_url
     first = run_creation_command(settings, args)
+    if catalog_headroom:
+        with AuthorityUnitOfWork(settings.database_url) as uow:
+            profile = uow.cursor.execute("""SELECT frozen_stage_inputs #> '{generation_policy,creation_input_policy,profiles,production_profile,content}'
+                FROM authority_story_formation_run WHERE formation_run_id=%s AND project_id=%s""",
+                [first["formation_run_id"], project]).fetchone()[0]
+            assert profile["chapter_context_policy"]["draft_token_budget"] == 512000
+            assert profile["world_production_policy"]["context_token_budget"] == 512000
+            assert uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [project]).fetchone()[0] == 0
     if full_creation:
         if first["stop_reason"] != "FORMATION_FAILED":
             pytest.fail(json.dumps({"stop_reason": first.get("stop_reason"),

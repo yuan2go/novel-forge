@@ -2,6 +2,15 @@
   "schema_version": "architecture-manifest.v1",
   "entries": [
     {
+      "name": "story_design.scope.reconcile",
+      "source": "src/novel_forge/cli/authority.py",
+      "application_source": "src/novel_forge/modules/story_design_authority/scope_recovery.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "authority.reconcile_scope",
+      "definition_factory": "novel_forge.modules.story_design_authority.scope_recovery:scope_reconciliation_definition"
+    },
+    {
       "name": "book.opening.continue_unstarted",
       "source": "src/novel_forge/api/routers/book_authority.py",
       "application_source": "src/novel_forge/modules/book_authority/opening.py",
@@ -396,6 +405,51 @@
       "dispatch": "worker_claim",
       "api_call": "admit_market_refresh",
       "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "reader.manuscript.mapping.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.export_manuscript_pack",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.pack.export",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.export_manuscript_pack",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.feedback.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.record_manuscript_feedback",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.diagnosis.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.record_manuscript_model_diagnosis",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "book.authority.mutate",
+      "source": "src/novel_forge/cli/manuscript.py",
+      "application_source": "src/novel_forge/modules/book_authority/retained_working.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "continue_retained_working",
+      "definition_factory": "novel_forge.modules.book_authority.production:book_authority_mutation_definition"
     }
   ]
 }

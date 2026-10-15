@@ -77,7 +77,7 @@ def solve_candidates(
         allowances = []
         for i in craft:
             budget = ranked[i].get("craft_assessment", {}).get("budget_assessment", {})
-            if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"} and budget.get("temporal_budget_applied", True):
+            if policy["schema_version"] in {"narrative-craft-budget.v3", "narrative-craft-budget.v4", "narrative-craft-budget.v5"} and budget.get("temporal_budget_applied", True):
                 allowances.append(0 if budget.get("in_cooldown") else max(0, policy["max_frequency_in_window"] - budget.get("frequency", 0)))
             else:
                 allowances.append(policy["max_uses_per_chapter"])
@@ -174,7 +174,9 @@ def solve_candidates(
         if not item.get("craft_assessment", {}).get("matching_assessment"):
             continue
         item["craft_assessment"]["selection_reason"] = (
-            "AUTHOR_OR_PARENT_REQUIRED" if index in required else "REQUIRED_DEPENDENCY" if index in dependency_only else "NEED_MATCH_IN_FEASIBLE_COMBINATION")
+            "AUTHOR_OR_PARENT_REQUIRED" if index in required else "REQUIRED_DEPENDENCY" if index in dependency_only
+            else "BOUNDED_CANDIDATE_REVIEW" if item["craft_assessment"].get("candidate_review_policy_version")
+            else "NEED_MATCH_IN_FEASIBLE_COMBINATION")
     selected_names = {names[index] for index in solution if names[index]}
     rejected = []
     for index, item in enumerate(ranked):

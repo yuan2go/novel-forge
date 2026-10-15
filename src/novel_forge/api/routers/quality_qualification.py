@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
@@ -85,6 +86,45 @@ class BlindDecisionRequest(BaseModel):
     evidence_spans: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class ManuscriptChapterSourceRequest(BaseModel):
+    chapter_number: int = Field(ge=1)
+    parent_asset_version_id: str = Field(min_length=1)
+    parent_content_hash: str = Field(pattern="^sha256:[0-9a-f]{64}$")
+    selector: str = Field(pattern=r"^(/text|/payload/final_response/chapters/(0|[1-9][0-9]*)/body)$")
+
+
+class ManuscriptArmRequest(BaseModel):
+    manuscript_key: str = Field(min_length=1)
+    book_id: str = Field(min_length=1)
+    chapters: list[ManuscriptChapterSourceRequest] = Field(min_length=1)
+
+
+class ManuscriptPackExportRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    pack_key: str = Field(min_length=1)
+    blind_secret: str = Field(min_length=16, repr=False)
+    manuscripts: list[ManuscriptArmRequest] = Field(min_length=2)
+
+
+class ManuscriptFeedbackRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    pack_id: str = Field(min_length=1)
+    public_content_hash: str = Field(pattern="^sha256:[0-9a-f]{64}$")
+    feedback_id: str = Field(min_length=1)
+    response: dict[str, Any]
+
+
+class ManuscriptModelDiagnosisRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    pack_id: str = Field(min_length=1)
+    diagnosis_id: str = Field(min_length=1)
+    normalized_asset_version_id: str = Field(min_length=1)
+    normalized_content_hash: str = Field(pattern="^sha256:[0-9a-f]{64}$")
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(
         prefix="/api/quality-qualification",
@@ -107,6 +147,39 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             ) from exc
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @router.post("/manuscript-packs")
+    def export_manuscript_pack(request: ManuscriptPackExportRequest) -> dict[str, Any]:
+        return execute(lambda actor: authority.reader_calibration.export_manuscript_pack(
+            **request.model_dump(), principal=actor))
+
+    @router.get("/manuscript-packs/{pack_id}")
+    def manuscript_pack(pack_id: str, project_id: str = Query(..., min_length=1)) -> dict[str, Any]:
+        return execute(lambda actor: authority.reader_calibration.manuscript_pack(
+            project_id=project_id, pack_id=pack_id, principal=actor))
+
+    @router.get("/manuscript-packs/{pack_id}/feedback")
+    def manuscript_feedback_status(pack_id: str, project_id: str = Query(..., min_length=1)) -> dict[str, Any]:
+        return execute(lambda actor: authority.reader_calibration.manuscript_feedback_status(
+            project_id=project_id, pack_id=pack_id, principal=actor))
+
+    @router.get("/manuscript-packs/{pack_id}/reading", response_class=HTMLResponse)
+    def manuscript_reading(pack_id: str, project_id: str = Query(..., min_length=1)) -> HTMLResponse:
+        from novel_forge.api.manuscript_reading import manuscript_reading_page
+        view = execute(lambda actor: authority.reader_calibration.manuscript_reading_view(
+            project_id=project_id, pack_id=pack_id, principal=actor))
+        return HTMLResponse(manuscript_reading_page(**view, project_id=project_id, pack_id=pack_id),
+            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+    @router.post("/manuscript-feedback")
+    def record_manuscript_feedback(request: ManuscriptFeedbackRequest) -> dict[str, Any]:
+        return execute(lambda actor: authority.reader_calibration.record_manuscript_feedback(
+            **request.model_dump(), principal=actor))
+
+    @router.post("/manuscript-model-diagnoses")
+    def record_manuscript_model_diagnosis(request: ManuscriptModelDiagnosisRequest) -> dict[str, Any]:
+        return execute(lambda actor: authority.reader_calibration.record_manuscript_model_diagnosis(
+            **request.model_dump(), principal=actor))
 
     @router.post("/campaigns")
     def admit_campaign(request: CampaignAdmissionRequest) -> dict[str, Any]:

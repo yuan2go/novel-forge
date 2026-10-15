@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from . import (
+    _historical_paths as _historical_paths,
     v20260625_0001_initial_industrial_schema,
     v20260628_0002_query_and_release_indexes,
     v20260702_0003_mkaos_p0,
@@ -214,6 +215,12 @@ from . import (
     v20261014_0210_world_working_frontier_revalidation,
     v20261014_0211_world_input_delivery_recovery,
     v20261014_0212_prose_citation_revalidation,
+    v20261015_0213_source_method_isolation,
+    v20261015_0214_story_design_book_scope,
+    v20261015_0215_planning_input_scope_reads,
+    v20261015_0216_operation_evidence_indexes,
+    v20261015_0217_craft_context_convergence,
+    v20261015_0218_retained_working_convergence,
 )
 
 VERSION_MODULES = [
@@ -430,6 +437,12 @@ VERSION_MODULES = [
     v20261014_0210_world_working_frontier_revalidation,
     v20261014_0211_world_input_delivery_recovery,
     v20261014_0212_prose_citation_revalidation,
+    v20261015_0213_source_method_isolation,
+    v20261015_0214_story_design_book_scope,
+    v20261015_0215_planning_input_scope_reads,
+    v20261015_0216_operation_evidence_indexes,
+    v20261015_0217_craft_context_convergence,
+    v20261015_0218_retained_working_convergence,
 ]
 
 __all__ = ["VERSION_MODULES"]

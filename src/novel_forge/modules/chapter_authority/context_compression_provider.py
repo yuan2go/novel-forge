@@ -121,7 +121,26 @@ def requires_full_output_reserve(route: Any) -> bool:
     )
 
 
-def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pending: bool = False) -> int:
+CLI_CONTEXT_HEADROOM_POLICY = "codex-cli-context-headroom.v1"
+
+
+def context_headroom_output_reserve(route: Any, input_tokens: int) -> int:
+    if not requires_full_output_reserve(route) or input_tokens <= 0:
+        raise KernelError("PROVIDER_OUTPUT_POLICY_INVALID", "Context headroom requires a complete Codex CLI input reservation")
+    remaining = int(route.model_context_limit) - input_tokens
+    if remaining <= 0:
+        raise KernelError("CONTEXT_CAPACITY_EXCEEDED", "Complete input leaves no model context for generation")
+    return remaining
+
+
+def planning_input_capacity(route: Any) -> int:
+    output_floor = 1 if getattr(route, "output_reservation_policy", "") == CLI_CONTEXT_HEADROOM_POLICY else route.model_output_limit
+    return min(512_000, route.model_context_limit - output_floor - route.token_safety_margin - route.token_framing_overhead)
+
+
+def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pending: bool = False, input_tokens: int | None = None) -> int:
+    if getattr(route, "output_reservation_policy", "") == CLI_CONTEXT_HEADROOM_POLICY:
+        return context_headroom_output_reserve(route, input_tokens) if input_tokens is not None else int(route.model_context_limit)
     target = 4096 if stage == "context_compress" else 2048 if stage == "context_fidelity" else 16_384 if stage in {
         "draft", "revision", "review", "rereview", "screenplay_generate", "screenplay_revision",
     } else 8192
@@ -136,9 +155,13 @@ def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pendi
 
 
 def require_task_output_reserve(
-    stage: str, route: Any, output_reserve: int, *, capacity_error_code: str,
+    stage: str, route: Any, output_reserve: int, *, capacity_error_code: str, input_tokens: int | None = None,
 ) -> None:
-    required_reserve = task_provider_output_reserve(stage, route)
+    required_reserve = task_provider_output_reserve(stage, route, input_tokens=input_tokens)
+    if getattr(route, "output_reservation_policy", "") == CLI_CONTEXT_HEADROOM_POLICY:
+        if input_tokens is None or output_reserve != required_reserve:
+            raise KernelError("PROVIDER_OUTPUT_POLICY_DRIFT", "Output reservation must equal the frozen complete-input context headroom")
+        return
     if requires_full_output_reserve(route):
         if output_reserve < required_reserve:
             raise KernelError("TASK_CONTEXT_CLI_OUTPUT_RESERVATION_INSUFFICIENT", "Codex CLI requires the full selected model output and reasoning capacity to be reserved")

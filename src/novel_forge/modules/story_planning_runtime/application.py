@@ -274,10 +274,11 @@ class _PlanningGenerationHandler:
                         validate_concrete_selection(candidate.candidate_payload, selection)
                         craft_strategy = build_craft_strategy(candidate.candidate_payload, selection)
                 except KernelError as error:
-                    if selection.get("craft_policy", {}).get("schema_version") != "narrative-craft-budget.v4":
+                    if (selection.get("craft_policy", {}).get("schema_version") not in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}
+                            and selection.get("candidate_review", {}).get("contract_version") != "explicit-allowlist-craft-review.v1"):
                         raise
                     from .result_recovery import PlanningResultValidationError
-                    raise PlanningResultValidationError(error, raw_result=candidate.candidate_payload, execution_evidence=evidence) from error
+                    raise PlanningResultValidationError(error, raw_result=candidate.raw_provider_result or candidate.candidate_payload, execution_evidence=evidence) from error
             knowledge_refs = tuple(
                 item["knowledge_card_asset_version_id"] for item in selection.get("selected") or ()
             )
@@ -386,10 +387,7 @@ class _PlanningGenerationHandler:
             content["routing_eligibility"] = "BENCHMARK_ONLY"
             content["routing_bootstrap_authorization"] = dict(bootstrap)
         return AuthorityHandlerOutput(
-            # WHY: One generic worker Operation has one frozen output contract.
-            # The concrete candidate kind remains frozen in the Generator
-            # Definition and candidate content; it cannot change the admitted
-            # OperationDefinition output selector mid-Attempt.
+            # INVARIANT: A concrete Generator candidate kind cannot change the worker's frozen output selector mid-Attempt.
             asset_type="planning_generation_candidate",
             output_key="story_planning.candidate",
             role="primary",
@@ -587,6 +585,7 @@ class StoryPlanningGenerationApplication:
         )
         working = (command.arc_working_set or {}).get("working_manuscript")
         if working:
+            from novel_forge.modules.book_authority.working_prose import working_source_rows
             from novel_forge.modules.book_authority.manuscript import verify_working_context
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s AND project_id=%s AND book_id=%s", [working["book_run_id"], command.project_id, command.book_id])
@@ -594,7 +593,7 @@ class StoryPlanningGenerationApplication:
                 if owner is None:
                     raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Planning working sources require their exact Book owner")
                 verify_working_context(uow, owner[0], working)
-            input_assets.extend({"asset_version_id": source["asset_version_id"], "content_hash": source["content_hash"]} for source in working["sources"])
+            input_assets.extend({"asset_version_id": source["asset_version_id"], "content_hash": source["content_hash"]} for source in working_source_rows(working))
         if command.edition_execution:
             from novel_forge.modules.book_authority.edition_planning import require_edition_planning_request, validate_edition_plan_scope
             require_edition_planning_request(self.database_url, project_id=command.project_id, book_id=command.book_id,

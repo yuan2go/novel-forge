@@ -325,7 +325,9 @@ def curated_provider_gate(database_url: str, worker: Any) -> dict[str, Any]:
 def require_known_cli_outcomes(cursor: Any, project: str, *, operation_id: str = "") -> None:
     if operation_id:
         from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+        from novel_forge.modules.source_import.generation_recovery import require_versioned_source_successor
 
+        require_versioned_source_successor(cursor, project, operation_id)
         require_known_cli_lineage(cursor, project_id=project, operation_id=operation_id)
         return
     from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes

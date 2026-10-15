@@ -303,6 +303,8 @@ def _cases(boundary: int) -> tuple[BenchmarkCase, ...]:
     distance_300 = max(1, boundary - 350)
     middle = max(1, boundary // 2)
     third = max(1, boundary // 3)
+    # CONSTRAINT: Multi-hop benchmark evidence must span distinct chapters at every scale.
+    causal_middle = middle if middle != distance_20 else recent
     return (
         BenchmarkCase("recent", "recent_continuity", (recent,), False),
         BenchmarkCase("long-20", "20_plus_chapter_fact", (distance_20,), True, True),
@@ -367,7 +369,7 @@ def _cases(boundary: int) -> tuple[BenchmarkCase, ...]:
         BenchmarkCase(
             "causal-two",
             "multi_hop_2_step",
-            (distance_20, middle),
+            (distance_20, causal_middle),
             True,
             True,
             True,

@@ -1241,7 +1241,8 @@ class _ContextHandler:
                 candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents)
         host_quality_segments: list[dict[str, Any]] = []
         working = (request.command.get("preparation_report") or {}).get("working_manuscript")
-        working_ids = {row["asset_version_id"] for row in working["sources"]} if working else set()
+        from novel_forge.modules.book_authority.working_prose import working_source_rows
+        working_ids = {row["asset_version_id"] for row in working_source_rows(working)} if working else set()
         frozen_candidates = [
             item
             for item in request.inputs

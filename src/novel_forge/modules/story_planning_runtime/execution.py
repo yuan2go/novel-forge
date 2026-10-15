@@ -712,12 +712,12 @@ def _planning_narrative_intelligence_need(
             **({"usage_scope_context": {
                 "project_id": command.project_id, "book_id": command.book_id,
                 "chapter_number": int((command.narrative_realization or {}).get("chapter_number") or 0),
-                **({"scope_transitions": []} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") == "narrative-craft-budget.v4" else {}),
+                **({"scope_transitions": []} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"} else {}),
                 "arc_plan_version_ids": list(dict.fromkeys([
                     *([str(command.input_versions["arc_plans"])] if command.input_versions.get("arc_plans") else []),
                     *command.related_arc_plan_version_ids,
                 ])),
-            }} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"} else {}),
+            }} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") in {"narrative-craft-budget.v3", "narrative-craft-budget.v4", "narrative-craft-budget.v5"} else {}),
         },
         craft_policy=dict(production_profile.get("craft_budget_policy") or {}),
         recent_craft_usage=recent_craft_usage,
@@ -940,6 +940,7 @@ class PlanningExecutionRoute:
     release_sha: str
     model_context_limit: int = 0
     model_output_limit: int = 0
+    output_reservation_policy: str = ""
     token_accounting_method: str = ""
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
@@ -947,6 +948,8 @@ class PlanningExecutionRoute:
     task_reasoning_authorization: tuple[str, str] | None = None
 
     def __post_init__(self) -> None:
+        if self.output_reservation_policy not in {"", "codex-cli-context-headroom.v1"}:
+            raise ValueError("Planning output reservation policy is invalid")
         if (
             self.model_profile.profile_id
             not in self.route_policy.allowed_model_profile_ids
@@ -3769,7 +3772,7 @@ class _PlanningPepPort:
                 "PLANNING_PEP_CAPABILITY_DRIFT",
                 "Planning command differs from the frozen execution capability",
             )
-        if self.recovered_completion and self.recovered_completion.get("budget_usage_correction"):
+        if self.recovered_completion:
             self.recovered_completion = self._verified_reconciled_completion()
         try:
             dispatched = self.recovered_completion or dispatch_external_effect(
@@ -4002,7 +4005,7 @@ class _PlanningPepPort:
             candidate_kind=CandidateKind.GENERATION,
             raw_output=dict(raw),
             evidence=DomainExecutionEvidence(
-                execution_id=str(execution_result["execution_id"]) if dispatched.get("budget_usage_correction") else request.execution_id,
+                execution_id=str(execution_result["execution_id"]),
                 operation_id=request.operation_id,
                 attempt_id=request.attempt_id,
                 fencing_token=request.fencing_token,
@@ -4098,42 +4101,62 @@ class _PlanningPepPort:
     @execution_step("story_planning_runtime._PlanningPepPort._record_evidence")
     def _record_evidence(self, asset_type: str, content: dict[str, Any]) -> None:
         request = self.binding.request
+        receipt_consumption = asset_type == "model_call_log" and content.get("recovered_external_effect_success") is True
+        suffix = f":receipt-consumption:{request.fencing_token}" if receipt_consumption else ""
+        if receipt_consumption:
+            content = {
+                **content,
+                "evidence_kind": "ORIGINAL_RECEIPT_CONSUMPTION",
+                "consumer_attempt_id": request.attempt_id,
+                "consumer_fencing_token": request.fencing_token,
+                "source_external_effect_id": self.effect_id,
+            }
         logical_ref = (
             f"runs/{asset_type}s/{request.operation_id}-{request.attempt_id}-"
-            f"{request.stage}.json"
+            f"{request.stage}{suffix}.json"
         )
-        self.writer.materialize_output(
-            AuthorityAssetWriteCommand(
-                operation_id=request.operation_id,
-                project_id=request.project_id,
-                asset_id=(
-                    f"{asset_type}:{request.operation_id}:{request.attempt_id}"
-                    + (
-                        f":{request.stage}"
-                        if request.stage.startswith("world_candidates.")
-                        else ""
-                    )
-                ),
-                asset_type=asset_type,
-                schema_version=f"{asset_type}.v1",
-                logical_ref=logical_ref,
-                category="runs",
-                output_key=f"{asset_type}.{request.stage}",
-                role="model_evidence"
-                if asset_type == "model_call_log"
-                else "cost_evidence",
-                content={
-                    "type": asset_type,
-                    "operation_id": request.operation_id,
-                    "project_id": request.project_id,
-                    "stage": request.stage,
-                    **content,
-                },
-                qualification_policy=f"{asset_type}-evidence-v1",
-                trace_id=request.trace_id,
-                correlation_id=request.correlation_id,
+        command = AuthorityAssetWriteCommand(
+            operation_id=request.operation_id,
+            project_id=request.project_id,
+            asset_id=(
+                f"{asset_type}:{request.operation_id}:{request.attempt_id}"
+                + (
+                    f":{request.stage}"
+                    if request.stage.startswith("world_candidates.")
+                    else ""
+                )
+                + suffix
+            ),
+            asset_type=asset_type,
+            schema_version=f"{asset_type}.v1",
+            logical_ref=logical_ref,
+            category="runs",
+            output_key=f"{asset_type}.{request.stage}{suffix}",
+            role="model_evidence"
+            if asset_type == "model_call_log"
+            else "cost_evidence",
+            content={
+                "type": asset_type,
+                "operation_id": request.operation_id,
+                "project_id": request.project_id,
+                "stage": request.stage,
+                **content,
+            },
+            qualification_policy=f"{asset_type}-evidence-v1",
+            trace_id=request.trace_id,
+            correlation_id=request.correlation_id,
+        )
+        try:
+            self.writer.materialize_output(command)
+        except KernelError as error:
+            if not receipt_consumption or error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":
+                raise
+            existing = AuthorityAssetQuery(self.database_url).require(
+                project_id=request.project_id, logical_ref=logical_ref
             )
-        )
+            if (existing.asset_id != command.asset_id or existing.asset_type != asset_type
+                    or existing.content_hash != canonical_hash(command.content) or existing.content != command.content):
+                raise KernelError("PLANNING_RECEIPT_CONSUMPTION_CONFLICT", "Original receipt consumption changed within the same consumer fence") from error
 
 
 class PostgresPlanningExecutionPreparer:
@@ -4251,6 +4274,7 @@ class PostgresPlanningExecutionPreparer:
                 operation_id=operation_id, command=command, execute_stage=execute_stage,
                 knowledge_selection=knowledge_context.content.get("narrative_intelligence") or {},
                 execution_lease=WorkerLeaseCommand(attempt_id, command.project_id, worker_id, fencing_token, command.trace_id, command.correlation_id),
+                method_scope_projection=knowledge_context.content.get("world_method_scope_projection_version"),
             )
         return self._prepare_stage(**arguments, world_action=action)
 
@@ -4724,6 +4748,10 @@ class PostgresPlanningExecutionPreparer:
                 **({"working_continuity_projection_version": context_document.content["working_continuity_projection_version"]}
                     if context_document.content.get("working_continuity_projection_version") else {}),
                 **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
+                **({"planning_recall_query_projection_version": context_document.content["planning_recall_query_projection_version"]} if context_document.content.get("planning_recall_query_projection_version") else {}),
+                **({"planning_method_scope_projection_version": context_document.content["planning_method_scope_projection_version"]} if context_document.content.get("planning_method_scope_projection_version") else {}),
+                **({"planning_group_method_scope_projection_version": context_document.content["planning_group_method_scope_projection_version"]} if context_document.content.get("planning_group_method_scope_projection_version") else {}),
+                **({"planning_chapter_method_scope_projection_version": context_document.content["planning_chapter_method_scope_projection_version"]} if context_document.content.get("planning_chapter_method_scope_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -4776,6 +4804,8 @@ class PostgresPlanningExecutionPreparer:
             )
             output_modes = dict(dict(context_policy.get("provider_output_modes") or {}).get(stage_name) or {})
             transport_schema = json.dumps(output_schema, sort_keys=True, ensure_ascii=False) if output_modes.get("deepseek") else ""
+            if planning_route.output_reservation_policy == "codex-cli-context-headroom.v1":
+                transport_schema = ""
             components = provider_request_token_components(
                 complete_prompt, output_schema_json=transport_schema,
                 output_reserve=1, safety_margin=planning_route.token_safety_margin,
@@ -4788,6 +4818,7 @@ class PostgresPlanningExecutionPreparer:
 
             requested_output_token_ceiling = task_provider_output_reserve(
                 stage_name, planning_route, router_binding_pending=provider_router is not None,
+                input_tokens=frozen_request_token_ceiling,
             )
         if existing_intent is not None:
             provider_token_contract = dict(existing_intent["request_payload"].get("provider_token_contract") or {})
@@ -4821,6 +4852,9 @@ class PostgresPlanningExecutionPreparer:
         )
         stable_request_payload["max_output_tokens"] = provider_token_contract["max_output_tokens"]
         stable_request_payload["provider_token_contract"] = provider_token_contract
+        output_policy = str(existing_intent["request_payload"].get("output_reservation_policy") or "") if existing_intent is not None else planning_route.output_reservation_policy
+        if output_policy:
+            stable_request_payload["output_reservation_policy"] = output_policy
         if existing_intent is None:
             materialization_document = self._ensure_contract(
                 operation_id=operation_id,
@@ -4858,6 +4892,8 @@ class PostgresPlanningExecutionPreparer:
                 if deepseek_mode
                 else ""
             )
+            if planning_route.output_reservation_policy == "codex-cli-context-headroom.v1":
+                transport_schema_json = ""
             token_components = provider_request_token_components(
                 prompt,
                 output_schema_json=transport_schema_json,
@@ -4917,6 +4953,7 @@ class PostgresPlanningExecutionPreparer:
                 require_task_reasoning(planning_route, task_scoped=True)
                 require_task_output_reserve(
                     stage_name, planning_route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_EXCEEDED",
+                    input_tokens=sum(token_components.values()) - output_reserve,
                 )
             route_identity = ":".join(
                 (
@@ -5312,6 +5349,7 @@ class PostgresPlanningExecutionPreparer:
             validation_policy_ref=frozen.evaluation_policy_ref,
             commit_policy_ref=capability.commit_policy_ref,
             timeout_policy_ref=capability.timeout_policy_ref,
+            receipt_consumption_release_sha=binding.route_snapshot.release_sha if recovered_completion is not None else "",
         )
 
     def _recovered_planning_route(
@@ -5792,7 +5830,7 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") == "typed-volume-context-projection.v1"
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1"}
                     or (proof.get("contract_version") == "planning-exact-value-reference.v1" and proof.get("world_input_delivery", {}).get("contract_version") == "world-input-delivery-revalidation.v1")):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
@@ -5804,7 +5842,7 @@ class PostgresPlanningExecutionPreparer:
                         selected = sorted(selected,key=lambda item:original_order[item["role"]])
                     self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected, context_policy_ref=context_policy_ref)
                     self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
-                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id)
+                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"))
                     return self._materialize_planning_context(operation_id=operation_id, command=command, logical_ref=logical_ref, documents=documents, content=content), tuple(documents)
         else:
             self._validate_frozen_context_retry(
@@ -5838,7 +5876,7 @@ class PostgresPlanningExecutionPreparer:
             return frozen_context, tuple(documents)
         recent_craft_usage = []
         if hasattr(self.mkaos, "list_accepted_craft_usage"):
-            history_options = {"include_continuing": True} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") in {"narrative-craft-budget.v3", "narrative-craft-budget.v4"} else {}
+            history_options = {"include_continuing": True} if (production_profile.get("craft_budget_policy") or {}).get("schema_version") in {"narrative-craft-budget.v3", "narrative-craft-budget.v4", "narrative-craft-budget.v5"} else {}
             recent_craft_usage = self.mkaos.list_accepted_craft_usage(
                 project_id=command.project_id, book_id=command.book_id, limit=100,
                 **history_options,
@@ -5862,14 +5900,14 @@ class PostgresPlanningExecutionPreparer:
                 )
             ),
         )
-        if need.craft_policy.get("schema_version") == "narrative-craft-budget.v4":
+        if need.craft_policy.get("schema_version") in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
             from novel_forge.modules.mkaos_authority.craft_scope import approved_arc_scope_transitions
             scope_context = dict(need.craft_context["usage_scope_context"])
             scope_context["scope_transitions"] = approved_arc_scope_transitions(self.database_url,
                 project_id=command.project_id, book_id=command.book_id,
                 arc_plan_version_ids=scope_context["arc_plan_version_ids"])
             need = replace(need, craft_context={**need.craft_context, "usage_scope_context": scope_context})
-        if result_repair_source and result_repair_source["diagnostic"].get("provider_stage") != "world_candidates.generate" and need.craft_policy.get("schema_version") == "narrative-craft-budget.v4":
+        if result_repair_source and result_repair_source["diagnostic"].get("provider_stage") != "world_candidates.generate" and need.craft_policy.get("schema_version") in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}:
             from novel_forge.modules.mkaos_authority.craft_reselection import next_reselection_context
             context_version = result_repair_source["execution_evidence"].get("context_bundle_asset_version_id")
             original = self.query.require(project_id=command.project_id,
@@ -5945,6 +5983,10 @@ class PostgresPlanningExecutionPreparer:
             planning_task_token_budget = runtime.get("planning_capacity", {}).get(
                 "allocated_task_tokens", planning_task_token_budget
             )
+        from novel_forge.modules.mkaos_authority.craft_context_projection import experimental_chapter_method_scope
+        fresh_method_scope = experimental_chapter_method_scope(
+            generator=command.generator_operation_name, contract_version=command.execution_contract_version,
+            selection=narrative_intelligence, policy=knowledge_access_policy)
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             **({"foundation_input_projection_version": production_profile["foundation_input_projection_version"]}
@@ -5981,6 +6023,12 @@ class PostgresPlanningExecutionPreparer:
                 else {}
             ),
             "narrative_intelligence": narrative_intelligence,
+            **fresh_method_scope,
+            **({"planning_method_scope_projection_version": "book-method-scope-projection.v1"}
+                if command.generator_operation_name == "book_plan.generate" and narrative_intelligence.get("selected")
+                and knowledge_access_policy.get("mode") == "ALLOW_ONLY"
+                and knowledge_access_policy.get("usage_scope") == "EXPERIMENTAL_VALIDATION"
+                and knowledge_access_policy.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1" else {}),
             **(
                 {
                     "planning_input_projection_version": "planning-input-role-references.v1"
@@ -5994,7 +6042,7 @@ class PostgresPlanningExecutionPreparer:
                 }
                 if command.generator_operation_name not in FOUNDATION_GENERATORS
                 and narrative_intelligence.get("craft_policy", {}).get("schema_version")
-                == "narrative-craft-budget.v4"
+                in {"narrative-craft-budget.v4", "narrative-craft-budget.v5"}
                 else {}
             ),
             "knowledge_access_policy": knowledge_access_policy,
@@ -6107,15 +6155,46 @@ class PostgresPlanningExecutionPreparer:
 
 
 
-    def _reproject_frozen_context(self, source, *, command, task_tokens, operation_id=None):
+    def _reproject_frozen_context(self, source, *, command, task_tokens, operation_id=None, projection_contract=None):
         from copy import deepcopy
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if projection_contract == "chapter-method-scope-projection.v1":
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_chapter_method_scope
+            if command.generator_operation_name != "chapter_plan.generate":
+                raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Chapter method scope requires its frozen stage")
+            project_chapter_method_scope(content.get("narrative_intelligence", {}))
+            content["planning_chapter_method_scope_projection_version"] = projection_contract
+        if projection_contract == "world-method-scope-projection.v1":
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_world_method_scope
+            project_world_method_scope(content.get("narrative_intelligence", {}))
+            content["world_method_scope_projection_version"] = projection_contract
+        if (command.generator_operation_name == "book_plan.generate" and content.get("narrative_intelligence", {}).get("selected")
+                and content.get("knowledge_access_policy", {}).get("mode") == "ALLOW_ONLY"
+                and content.get("knowledge_access_policy", {}).get("usage_scope") == "EXPERIMENTAL_VALIDATION"
+                and content.get("knowledge_access_policy", {}).get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_book_method_scope
+            project_book_method_scope(content["narrative_intelligence"])
+            content["planning_method_scope_projection_version"] = "book-method-scope-projection.v1"
+        if (command.generator_operation_name == "character.cast.generate"
+                and content.get("knowledge_access_policy", {}).get("craft_candidate_review_version")
+                == "explicit-allowlist-craft-review.v1"
+                and content.get("narrative_intelligence", {}).get("selected")):
+            content["planning_recall_query_projection_version"] = "foundation-method-recall-projection.v1"
         if command.generator_operation_name == "arc_plan.generate":
             content["typed_volume_projection_version"] = "typed-volume-context-projection.v1"
         if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id:
             content["typed_window_projection_version"] = "typed-planning-window-projection.v1"
+        if (projection_contract == "group-method-scope-projection.v1"
+                and command.generator_operation_name == "chapter_group_plan.generate"
+                and content.get("knowledge_access_policy", {}).get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"
+                and content.get("narrative_intelligence", {}).get("selected")
+                and content.get("knowledge_access_policy", {}).get("mode") == "ALLOW_ONLY"
+                and content.get("knowledge_access_policy", {}).get("usage_scope") == "EXPERIMENTAL_VALIDATION"):
+            from novel_forge.modules.mkaos_authority.craft_context_projection import project_group_method_scope
+            project_group_method_scope(content["narrative_intelligence"])
+            content["planning_group_method_scope_projection_version"] = "group-method-scope-projection.v1"
         if command.execution_contract_version == "1.21.0":
             content["planning_contract_version"] = "1.21.0"
         if operation_id and "realization_reference_contract" in content:
@@ -6281,6 +6360,14 @@ class PostgresPlanningExecutionPreparer:
             if (frozen.get("provider_projection_version") != "world-role-delivery.v4"
                 or stage.task.get("working_manuscript") != delivery or stage.task.get("working_delivery_receipt") != receipt):
                 raise KernelError("WORLD_WORKING_DELIVERY_DRIFT", "World delivery must reconstruct its exact frozen source, including every selected passage")
+        if stage.task.get("world_method_scope_projection_version"):
+            from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+            expected = build_provider_task_view(stage.name, {"world_preparation": {
+                **stage.task, "planning_window": source.content["contract"]["planning_window"],
+                "narrative_intelligence": base.content["narrative_intelligence"],
+            }})["world_preparation"]
+            if expected != stage.task:
+                raise KernelError("WORLD_METHOD_SOURCE_DRIFT", "World prior audits must resolve by exact source index, asset and hash")
         content = {**base.content, "world_preparation": dict(stage.task)}
         content["token_budget"] = stage.task["policy"]["context_token_budget"]
         selected = [{"role": stage.task["role"], "asset_version_id": source.asset_version_id,
@@ -6501,18 +6588,22 @@ class PostgresPlanningExecutionPreparer:
             )
         allowed = tuple(sorted({item.logical_context_kind for item in candidates}))
         if provider_stage is not None:
+            from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
+            transported, history_transport = compile_working_history_transport({"world_preparation": provider_stage.task})
+            role_task = transported["world_preparation"]
             source_ref = provider_stage.task["source_ref"]
             append_candidate(
                 asset_version_id=source_ref["asset_version_id"],
                 logical_kind="world_role_task",
                 physical_asset_type="world_preparation_source",
-                value=provider_stage.task,
+                value=role_task,
                 source_revision=source_ref["content_hash"],
                 source_identity=f"world-task:{stage_name}:{source_ref['asset_version_id']}",
                 provenance={
                     "authority_asset_version_id": source_ref["asset_version_id"],
                     "source_content_hash": source_ref["content_hash"],
                     "projection_contract": provider_stage.task["contract_version"],
+                    **({"working_history_transport": history_transport} if history_transport["projections"] else {}),
                 },
                 section="WORLD_TASK",
                 bucket=provider_stage.task["role"],

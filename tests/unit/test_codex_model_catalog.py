@@ -28,6 +28,32 @@ def candidates(value=None):
         quota=80, valid_from="2026-09-01T00:00:00+00:00", valid_until="2027-01-01T00:00:00+00:00")
 
 
+def test_v2_unexposed_output_limit_uses_context_admission_bound_without_rewriting_v1():
+    value = catalog()
+    value["models"][0]["output_limit"] = None
+    with pytest.raises(ValueError, match="ENTRY_INVALID"):
+        candidates(value)
+    value["contract_version"] = "codex-router-models.v2"
+    writer, _ = candidates(value)
+    assert writer.output_limit == writer.context_limit == 200000
+    assert "codex-router-models.v2" in writer.model_revision
+    assert candidates()[0].output_limit == 32000
+
+
+def test_headroom_scope_rejects_mixed_capacities_before_route_selection():
+    from novel_forge.modules.production_execution.codex_model_catalog import require_uniform_headroom_catalog
+    value = catalog()
+    value["contract_version"] = "codex-router-models.v2"
+    for row in value["models"]:
+        row["output_limit"] = None
+    require_uniform_headroom_catalog(parse_codex_model_catalog(json.dumps(value)), context_limit=200000)
+    value["models"][1]["context_limit"] = 300000
+    with pytest.raises(ValueError, match="ROUTING_SCOPE_INVALID"):
+        require_uniform_headroom_catalog(parse_codex_model_catalog(json.dumps(value)), context_limit=200000)
+    with pytest.raises(ValueError, match="ROUTING_SCOPE_INVALID"):
+        require_uniform_headroom_catalog(parse_codex_model_catalog(json.dumps(catalog())), context_limit=200000)
+
+
 def test_primary_draft_requires_qualification_but_no_fabricated_escalation():
     writer, judge = candidates()
     context = task(task_type="draft")
