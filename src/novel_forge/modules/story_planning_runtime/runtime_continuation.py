@@ -1615,6 +1615,7 @@ def require_route_evidence(
         executable=account["executable"],
         entitlement=prior_entitlement,
         retry_policy=str(account.get("retry_policy") or ""),
+        input_only_policy=str(account.get("input_only_policy") or ""),
     )
     if not auth_profile.endswith(":codex:" + expected_suffix):
         raise KernelError(

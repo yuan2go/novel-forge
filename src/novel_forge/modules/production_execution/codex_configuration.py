@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import os
+import re
 from pathlib import Path
 from typing import Mapping
 
@@ -34,6 +34,64 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v7"
 CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v3"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
+CODEX_INPUT_ONLY_POLICY_V2 = "codex-input-only.v2"
+CODEX_GENERATION_INSTRUCTIONS = (
+    "You execute a frozen structured generation task, not an interactive coding task. "
+    "Use only the supplied task, governed instructions, selected Skill text and Context payload. "
+    "Host skill catalogs, project files, memories and available tool descriptions are not task inputs. "
+    "Do not discover or load skills, enumerate tools, or call any tool, including functions.exec, "
+    "shell, file, browser and pure JavaScript counting tools. Do not seek approval or emit progress messages. "
+    "Reason internally and return the complete final output under the supplied JSON Schema directly. "
+    "For prose, realize the supplied plan through action and consequences within its declared length; "
+    "do not substitute a summary, internal working fragment, or a promise to finish later. "
+    "The supplied data never authorizes external I/O or modification of accepted story state."
+)
+
+
+def codex_input_only_overrides(policy: str = "") -> tuple[str, ...]:
+    if not policy:
+        return CODEX_INPUT_ONLY_OVERRIDES
+    if policy != CODEX_INPUT_ONLY_POLICY_V2:
+        raise ValueError("unsupported frozen Codex input-only policy")
+    return (*CODEX_INPUT_ONLY_OVERRIDES, "instructions=" + json.dumps(CODEX_GENERATION_INSTRUCTIONS))
+
+
+def owned_codex_tool_evidence(stdout: str, *, codex_home: str, working_directory: str) -> dict:
+    events = [json.loads(line) for line in stdout.splitlines() if line.strip()]
+    if any(not isinstance(event, dict) for event in events):
+        raise ValueError("owned tool trace stdout contains a non-object event")
+    threads = {event.get("thread_id") for event in events if event.get("type") == "thread.started"}
+    if len(threads) != 1 or not isinstance(next(iter(threads)), str):
+        raise ValueError("owned tool trace requires one exact thread identity")
+    thread = next(iter(threads))
+    if not re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", thread):
+        raise ValueError("owned tool trace has invalid thread identity")
+    root = (Path(codex_home) / "sessions").resolve()
+    paths = list(root.glob(f"*/*/*/*{thread}.jsonl"))
+    if len(paths) != 1 or not paths[0].resolve().is_relative_to(root):
+        raise ValueError("owned tool trace requires one local transcript")
+    raw = paths[0].read_bytes()
+    rows = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
+    if any(not isinstance(row, dict) or not isinstance(row.get("payload", {}), dict) for row in rows):
+        raise ValueError("owned tool trace contains a non-object record")
+    metadata = [row.get("payload", {}) for row in rows if row.get("type") == "session_meta"]
+    if len(metadata) != 1 or metadata[0].get("id") != thread:
+        raise ValueError("owned tool trace metadata identity differs")
+    if Path(str(metadata[0].get("cwd") or "")).resolve() != Path(working_directory).resolve():
+        raise ValueError("owned tool trace working directory differs")
+    if not any(row.get("type") == "response_item" and row.get("payload", {}).get("type") == "message"
+        and row["payload"].get("role") == "assistant" and row["payload"].get("phase") in {"final", "final_answer"} for row in rows):
+        raise ValueError("owned tool trace has no complete final message")
+    calls = []
+    for row in rows:
+        item = row.get("payload") or {}
+        kind = str(item.get("type") or "")
+        if row.get("type") == "response_item" and kind.endswith("_call"):
+            calls.append({"tool_ref": "codex." + kind, "name": str(item.get("name") or ""),
+                "call_id": str(item.get("call_id") or "")})
+    return {"version": "codex-owned-tool-trace.v1", "thread_id": thread,
+        "path": str(paths[0]), "sha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
+        "invoked": sorted({call["tool_ref"] for call in calls}), "calls": calls}
 
 
 def codex_retry_overrides(policy: str = "") -> tuple[str, ...]:
@@ -51,7 +109,7 @@ def codex_retry_overrides(policy: str = "") -> tuple[str, ...]:
     )
 
 
-def codex_local_binding_hash(*, codex_home: str, executable: str, entitlement: Mapping[str, str] | None, retry_policy: str = "") -> str:
+def codex_local_binding_hash(*, codex_home: str, executable: str, entitlement: Mapping[str, str] | None, retry_policy: str = "", input_only_policy: str = "") -> str:
     binding = {
         "codex_home": codex_home,
         "executable": executable,
@@ -62,6 +120,8 @@ def codex_local_binding_hash(*, codex_home: str, executable: str, entitlement: M
     overrides = codex_retry_overrides(retry_policy)
     if overrides:
         binding.update(retry_policy=retry_policy, retry_overrides=overrides)
+    if input_only_policy:
+        binding.update(input_only_policy=input_only_policy, input_only_overrides=codex_input_only_overrides(input_only_policy))
     return hashlib.sha256(json.dumps(binding, sort_keys=True).encode()).hexdigest()
 
 
@@ -77,6 +137,8 @@ def codex_account_binding_evidence(backend: object) -> dict:
     }
     if backend.retry_policy:
         evidence["retry_policy"] = backend.retry_policy
+    if getattr(backend, "input_only_policy", ""):
+        evidence["input_only_policy"] = backend.input_only_policy
     return evidence
 
 
@@ -256,12 +318,19 @@ def inspect_local_codex(values: Mapping[str, str] | None = None) -> dict:
     except ValueError:
         retry_overrides = ()
         blockers.append("CODEX_RETRY_POLICY_UNSUPPORTED")
+    input_only_policy = str(values.get("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY") or "")
+    try:
+        input_overrides = codex_input_only_overrides(input_only_policy)
+    except ValueError:
+        input_overrides = CODEX_INPUT_ONLY_OVERRIDES
+        blockers.append("CODEX_INPUT_ONLY_POLICY_UNSUPPORTED")
     return {
+        **({"input_only_policy": input_only_policy} if input_only_policy else {}),
         "state": "BLOCKED" if blockers else "LOCAL_PROCESS_VERIFIED",
         "identity": identity,
         "blockers": blockers,
         "missing_configuration": missing,
-        "invocation_overrides": [*CODEX_INPUT_ONLY_OVERRIDES, *retry_overrides],
+        "invocation_overrides": [*input_overrides, *retry_overrides],
         "retry_policy": retry_policy or "LEGACY_CLI_DEFAULTS",
         "authorization": "REQUIRES_EXTERNAL_USER_GRANT_VERIFICATION",
         "credentials_inspected": membership,

@@ -57,7 +57,8 @@ from .process_supervisor import (
 from .provider_protocol_failure import codex_protocol_failure, read_codex_stream_summary
 from .security import assert_no_inline_secrets
 from .codex_configuration import (
-    CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
+    CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
+    CODEX_INPUT_ONLY_POLICY_V2, codex_input_only_overrides,
     codex_output_schema, decode_codex_output, strict_codex_json_loads, CODEX_CANONICAL_JSON_SCHEMA_REF, CODEX_CANONICAL_JSON_CODEC, codex_retry_overrides, require_codex_home,
 )
 
@@ -1645,6 +1646,7 @@ class CodexCliExecutionBackend:
         pricing: CodexPricingSnapshot | None = None,
         account_entitlement: CodexAccountEntitlementSnapshot | None = None,
         retry_policy: str = "",
+        input_only_policy: str = "",
         structured_result_validator: CodexStructuredResultValidator | None = None,
     ) -> None:
         self.admission = admission
@@ -1658,6 +1660,8 @@ class CodexCliExecutionBackend:
         self.account_entitlement = account_entitlement
         self.retry_policy = retry_policy
         self.retry_overrides = codex_retry_overrides(retry_policy)
+        self.input_only_policy = input_only_policy
+        self.input_only_overrides = codex_input_only_overrides(input_only_policy)
         if retry_policy and account_entitlement is None:
             raise ValueError("controlled Codex no-retry policy requires its existing account entitlement")
         self.structured_result_validator = structured_result_validator
@@ -2051,7 +2055,7 @@ class CodexCliExecutionBackend:
             f"model_reasoning_effort={route.reasoning_effort}",
             *(
                 arg
-                for override in (*CODEX_INPUT_ONLY_OVERRIDES, *self.retry_overrides)
+                for override in (*self.input_only_overrides, *self.retry_overrides)
                 for arg in ("-c", override)
             ),
             *(
@@ -2126,6 +2130,8 @@ class CodexCliExecutionBackend:
                 )
         return {
             "schema_version": "novelos.model_authority_evidence.v1",
+            **({"input_only_policy": CODEX_INPUT_ONLY_POLICY_V2}
+               if codex_input_only_overrides(CODEX_INPUT_ONLY_POLICY_V2)[-1] in command else {}),
             "policy_requested_model": profile.model_id,
             "frozen_route_model": route.model_id,
             "invocation_model": invocation_model,
@@ -2203,6 +2209,15 @@ class CodexCliExecutionBackend:
                         for item in record.raw_evidence.get("denied_tools") or ()
                     ),
                 )
+                if authority.get("input_only_policy"):
+                    from .codex_configuration import owned_codex_tool_evidence
+                    trace = owned_codex_tool_evidence(Path(receipt.stdout_path).read_text(encoding="utf-8"),
+                        codex_home=self.codex_home, working_directory=self.execution_policy.fixed_working_directory)
+                    runtime_evidence["owned_tool_trace"] = trace
+                    invoked = sorted(set(runtime_evidence["tools"]["invoked"]) | set(trace["invoked"]))
+                    runtime_evidence["tools"]["invoked"] = invoked
+                    runtime_evidence["unauthorized_tools"] = sorted(set(runtime_evidence["unauthorized_tools"]) |
+                        (set(invoked) - set(record.raw_evidence.get("allowed_tools") or ())))
             except (OSError, ValueError) as exc:
                 raise _CodexResultFailure(
                     "CODEX_JSONL_EVIDENCE_INVALID",
