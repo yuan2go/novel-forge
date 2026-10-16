@@ -3555,7 +3555,8 @@ if __name__ == "__main__":
 
 def test_planning_scope_point_reads_preserve_trigger_and_input_boundaries():
     from psycopg.types.json import Jsonb
-    from novel_forge.storage.migrations.versions import v20261014_0209_planning_input_scope_point_reads as fix
+    from novel_forge.storage.migrations.versions import v20261015_0215_planning_input_scope_reads as fix
+    from novel_forge.storage.migrations.versions import v20261014_0209_planning_input_scope_point_reads as published
     from tests.integration.authority_postgres_support import insert_definition, insert_operation
     with disposable_database_at_migration(DATABASE_URL, prefix='scope_point',
             target_migration_id=fix.DOWN_REVISION) as url:
@@ -3565,8 +3566,8 @@ def test_planning_scope_point_reads_preserve_trigger_and_input_boundaries():
         assert status['ok'] and run_migrations(url) == status
         with psycopg.connect(url) as c:
             after = c.execute("SELECT prosrc FROM pg_proc WHERE proname='novel_forge_validate_core_functional_scope'").fetchone()[0]
-            assert before.count(fix._OLD) == 1
-            assert after == before.replace(fix._OLD, 'NOT authority_planning_input_scope_valid(NEW.input_snapshot,NEW.project_id,NEW.book_id)')
+            assert before.count(published._OLD) == 1
+            assert after == before.replace(published._OLD, 'NOT authority_planning_input_scope_valid(NEW.input_snapshot,NEW.project_id,NEW.book_id)')
             for aid, project, content in [('shared','project',{}), ('owned','project',{'book_id':'book'}),
                     ('foreign-project','other',{}), ('foreign-book','project',{'book_id':'other'})]:
                 c.execute('INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES(%s,%s,%s)', [aid,project,'fixture'])

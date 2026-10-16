@@ -35,7 +35,9 @@
       "id": "craft-book-scope-migration",
       "patterns": [
         "tests/integration/test_craft_scope_migration_postgres.py",
-        "tests/unit/test_craft_migration_convergence.py"
+        "tests/unit/test_craft_migration_convergence.py",
+        "tests/integration/test_zero_send_context_guards_postgres.py",
+        "tests/integration/test_planning_public_dispatch_postgres.py"
       ],
       "classification": "MIGRATION_COMPATIBILITY",
       "owner": "migration-authority",

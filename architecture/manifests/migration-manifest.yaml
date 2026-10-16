@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261015_0220_chapter_prior_audit_convergence",
+  "head": "20261016_0222_planning_host_frozen_definition",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -223,6 +223,8 @@
     "20261015_0217_craft_context_convergence",
     "20261015_0218_retained_working_convergence",
     "20261015_0219_world_exact_context_convergence",
-    "20261015_0220_chapter_prior_audit_convergence"
+    "20261015_0220_chapter_prior_audit_convergence",
+    "20261016_0221_working_scope_fk_indexes",
+    "20261016_0222_planning_host_frozen_definition"
   ]
 }

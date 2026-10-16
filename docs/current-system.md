@@ -472,6 +472,11 @@ If a CLI host crash leaves the original dispatch unfinished after the Operation 
 the Kernel first checkpoints verified orphan-process evidence under the original
 execution identity and expired leases. It preserves unknown remote outcome and usage;
 complete results are recovered before isolation, and active writers cannot be isolated.
+The execution plane owns one process-liveness registry shared by invocation and Kernel
+recovery. Process probes preserve PID start identities and never infer a remote outcome.
+Raw-result retention uses the same exact text-slot serialization as Chapter composition;
+retaining bytes grants no selection or acceptance. Trusted Principal checks own cross-actor
+recovery permission after the project-scoped resolve permission is verified.
 Chapter recovery first reuses a complete trusted original API response or CLI result with
 its Gateway validation evidence. Isolated API receipts bind each original dispatch
 independently; missing measurements in any generation keep the original reservation held.
@@ -2739,6 +2744,11 @@ PostgreSQL owns production business and execution facts. `AuthorityUnitOfWork` r
 unless explicitly committed, and composed owner mutations use the declared transaction
 or savepoint boundary. The migration registry and migration manifest jointly determine
 the current head; canonical prose intentionally does not duplicate its identity.
+Migration execution serializes cooperative executors with a transaction advisory lock
+and enforces declared backups for upgrades of existing ledgers. Archive readability,
+ID equality, restored catalog/data integrity and installed recovery are separate checks;
+the status API does not turn a matching head into upgrade qualification. Commit response
+loss requires reconciliation of the original database rather than an automatic resend.
 
 Provider and MinIO-compatible object-store calls use durable ExternalEffect intent,
 dispatch generation and receipt records. A request that may have started is reconciled

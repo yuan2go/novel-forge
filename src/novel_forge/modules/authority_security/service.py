@@ -38,6 +38,10 @@ class Principal:
                 f"principal {self.principal_id} cannot {permission} in project {project_id}"
             )
 
+    def require_recovery_actor(self, source_actor_id: str) -> None:
+        if source_actor_id != self.principal_id and self.principal_type is not PrincipalType.LOCAL_OPERATOR:
+            raise PermissionError("Only a scoped trusted operator can recover another native actor's original result")
+
 
 class TrustedPrincipalResolver:
 

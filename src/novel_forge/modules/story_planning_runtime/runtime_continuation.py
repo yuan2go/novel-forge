@@ -218,7 +218,8 @@ def require_source(
         and str(dict(attempt[2] or {}).get("error_message") or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")):
         return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen,
             attempt=attempt, protected_world_failure=True)
-    if (row[0] == "FAILED_RETRYABLE" and failure_code == "CONTEXT_CAPACITY_EXCEEDED"
+    if (row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL"} and attempt and attempt[0] == "FAILED_RETRYABLE"
+            and failure_code == "CONTEXT_CAPACITY_EXCEEDED"
             and dict(attempt[2] or {}).get("error_message") == "CONTEXT_CAPACITY_EXCEEDED: Complete input leaves no model context for generation"
             and frozen.get("execution_contract_version") == "1.21.0"
             and frozen.get("generator_operation_name") == "chapter_plan.generate"
@@ -1131,6 +1132,8 @@ def _pre_send_capacity_source(
             inherited = {"contract_version": "generation-capacity-inheritance.v1", "generation_isolation": retained[0], "allocation": retained[1]}
     return {
         "mode": "PRE_SEND_CAPACITY",
+        "source_operation_status": str(row[0]),
+        "source_attempt_status": str(attempt[0]),
         "source_operation_id": source_operation_id,
         "command": frozen,
         "version": int(row[1]),
@@ -2005,7 +2008,7 @@ def register(
                 "PLANNING_RUNTIME_CONTINUATION_SOURCE_DRIFT",
                 "source changed before continuation registration",
             )
-        if (source.get("context_revalidation") or {}).get("source_operation_status") == "FAILED_RETRYABLE":
+        if (source.get("source_operation_status") or (source.get("context_revalidation") or {}).get("source_operation_status")) == "FAILED_RETRYABLE":
             from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
 
             transition_operation_in_uow(uow, OperationTransitionCommand(

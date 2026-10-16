@@ -48,9 +48,10 @@ class PostgresMigrationTests(unittest.TestCase):
                     execute=True,
                 )
         statements = [call.args[0].strip() for call in cursor.execute.call_args_list]
-        self.assertEqual(len(statements), 2)
-        self.assertTrue(statements[0].startswith("CREATE TABLE IF NOT EXISTS nf_schema_migrations"))
-        self.assertTrue(statements[1].startswith("SELECT migration_id, applied_at"))
+        self.assertEqual(len(statements), 3)
+        self.assertTrue(statements[0].startswith("SELECT pg_try_advisory_xact_lock"))
+        self.assertTrue(statements[1].startswith("CREATE TABLE IF NOT EXISTS nf_schema_migrations"))
+        self.assertTrue(statements[2].startswith("SELECT migration_id, applied_at"))
 
     def test_corpus_foreign_key_repair_indexes_every_missing_key_shape(self):
         expected = {

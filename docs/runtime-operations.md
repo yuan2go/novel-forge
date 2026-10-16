@@ -138,7 +138,7 @@ Inspect or apply the registered chain with:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-migrate --status
-PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-migrate
+PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-migrate --backup-directory "$PRIVATE_BACKUPS"
 ```
 
 The authoritative registry is `src/novel_forge/storage/migrations/versions/__init__.py`;
@@ -146,6 +146,31 @@ the head is also checked by `architecture/manifests/migration-manifest.yaml`. Ap
 live in `nf_schema_migrations`.
 Status runs in a read-only transaction and reports an absent migration ledger as missing
 migrations. Only the apply command initializes that ledger.
+`current` remains the code target for interface compatibility; `target_head` makes that
+meaning explicit. `applied_head` is the last identity of a valid registered prefix.
+`ok` compares IDs only, while `schema_qualification: NOT_CHECKED` explicitly leaves
+catalog, data, Blob and runtime qualification to the deployment checks. `applied_at`
+values are transaction timestamps, not a statement execution-order log.
+
+The apply entry acquires a database-scoped transaction advisory lock before ledger DDL;
+a competing executor returns `MIGRATION_EXECUTOR_BUSY`. The complete pending chain and
+ledger inserts commit in one transaction. SQL/preflight failure rolls that transaction
+back. A lost commit acknowledgement returns `MIGRATION_COMMIT_OUTCOME_UNKNOWN`: stop,
+read the same database's ledger and catalog, and reconcile before another invocation.
+Neither exception proves that a remote transaction rolled back.
+
+For an existing nonempty ledger, pending `BACKUP_REQUIRED` declarations are enforced by
+the shared runner. Set an absolute private `--backup-directory` or
+`NOVEL_FORGE_MIGRATION_BACKUP_DIR`, and install compatible `pg_dump`/`pg_restore` clients
+in the actual migration process. The current Python service image does not supply those
+clients; run an upgrade from an installed release environment that does. The runner
+preserves explicit libpq home/service configuration, exports its pre-DDL transaction
+snapshot, dumps that exact snapshot, checks archive
+readability, and retains a mode-0600 archive and JSON sidecar with its SHA-256 and frozen
+applied rows. Missing clients, backup failure or missing directory stop before pending
+DDL. Empty installations and no-op head replay need no backup. An archive listing is
+not a successful restore: the sidecar explicitly records restore qualification as
+`NOT_RUN`. Verify a restore, matching object files and execution directories separately.
 
 The Source convergence segment includes two distinct `0121` entries connected by
 declared parents. Use full identities and the registry's parent chain, not numeric
@@ -185,7 +210,18 @@ Verify request/receipt digests, successor journals and accepted cursor before re
 unknown paid exposure and original restored-snapshot provenance. Reverting code alone is
 unsupported: immutable isolation and forward schema facts survive a code rollback. Repair
 applied database behavior with a new forward migration. These are deployment/restore procedures,
-not a new backup qualification gate.
+and do not confer production rollout admission.
+
+Before starting a restore, inspect PGDATA and every symlink/tablespace, WAL location,
+configuration include and data/HBA/ident path, archive/recovery command, replication
+connection, socket and listener. Use an exclusive cluster and independently copied Blob
+and execution files; changing only the database name or port is insufficient. A logical
+restore may use `pg_restore --no-tablespaces` into a new cluster without altering the
+source archive or applied IDs. Preserve original ownership and ACLs and record any role
+attributes unavailable in the snapshot. Disable workers/scheduling and keep
+`NOVEL_FORGE_NO_MODEL_DISPATCH=1`, an empty credential home and blocked real transport.
+Hash original files before copying and after verification. An older incident without
+source hashes cannot be retroactively certified by a later isolated restore.
 
 For an unsent legacy World `PROGRAMMING_BUG` whose exact message begins with
 `PROTECTED_CONTEXT_BUDGET_EXCEEDED:`, ordinary Creation continuation uses the existing
@@ -349,8 +385,19 @@ Without original evidence this endpoint rejects resolution and never redispatche
 For the Craft convergence upgrade, active migrations 0213-0220 append Source generation
 isolation, proven Book namespaces, planning point reads, evidence indexes, combined method
 Context recovery, retained-working source schema, exact World accounting and Chapter
-prior-method-audit continuation. The final two migrations extend the existing common
+prior-method-audit continuation. Migration 0221 adds supporting indexes for retained
+working receipt Operations and the scoped active Story Design version foreign key.
+It leaves data, guards and earlier migration identities intact. The final two Craft
+convergence migrations extend the existing common
 guard without replacing main's combined capacity predicate or receipt contracts.
+The Planning Host forward repair reads `definition_snapshot.definition_hash` from the
+original Operation; there is no separate Operation `definition_hash` column. It preserves
+the original reference/Arc contracts and rejects absent or changed frozen definitions.
+Use `test_planning_public_dispatch_postgres.py` and
+`test_zero_send_context_guards_postgres.py` for positive, negative and replay checks of
+the installed public predicates, alongside the existing World/capacity/isolation suites.
+`test_migration_executor_safety_postgres.py` covers executor contention, pending-chain
+rollback, same-name object drift and commit-response-loss reconciliation.
 Consult the migration registry and
 manifest for their exact identities. Published fork modules remain byte-preserved in
 `src/novel_forge/storage/migrations/historical/craft_16291555/` and
@@ -2993,6 +3040,12 @@ its returned Project/Book/checkpoint through `continue`; changing a file is not 
 evidence. Existing Reader activation replay requires the exact active deployment release
 and manifest/catalog. A drifted activation is reconciled by its native owner; this does
 not impose a Reader or qualification requirement on author-first saved manuscript access.
+Keep dispatch braked while aligning Reader: register the actual release definitions,
+build its current Reader profile, and use the Capability Pack owner to register, compile,
+admit or approve, deploy and activate a new version with the observed activation CAS.
+Retain the previous deployment and activation receipts. Re-run the native Creation
+preflight with the truthful release SHA; do not relabel the old deployment or change the
+frozen Book request to pass replay.
 
 Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
 
@@ -3764,7 +3817,16 @@ planning audit projection. It retains each decision and exact source/hash/locati
 current selected methods, conditions, histories and narrative plan constraints remain
 in the request. Migration 0220 permits only the matching unsent main-call recovery
 with its original verified World results, without redispatching those stages.
+The Operation may already be `FAILED_FINAL` while its last Attempt remains
+`FAILED_RETRYABLE`; recovery checks both identities and retains the existing terminal
+Operation. The legacy `source_operation_status` proof marker in the published SQL
+retains its original Attempt-failure meaning; the Owner separately carries actual
+Operation and Attempt statuses when deciding whether a transition is needed.
 Unmarked Contexts retain the earlier rendering.
+0219 and 0220 have no downgrade. A pre-upgrade snapshot may restore a stopped scope only
+when no later manuscript or execution evidence would be lost. Preserve all newer working
+or accepted outputs and their ledgers; compatible code recovery or a forward repair is
+required once a snapshot restore would discard them.
 `authority-manuscript read|export --book-run-id <run> --candidate-version <version>`
 reads the original retained model candidate even when its Provider permission gate
 failed. The response and export retain the source Operation/Effect failure facts.

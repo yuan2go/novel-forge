@@ -111,7 +111,10 @@
       "tests/integration/test_migration_history_admission_postgres.py",
       "tests/integration/test_world_contract_migration_guards_postgres.py",
       "tests/integration/test_craft_scope_migration_postgres.py",
-      "tests/unit/test_craft_migration_convergence.py"
+      "tests/unit/test_craft_migration_convergence.py",
+      "tests/integration/test_migration_executor_safety_postgres.py",
+      "tests/integration/test_zero_send_context_guards_postgres.py",
+      "tests/integration/test_planning_public_dispatch_postgres.py"
     ],
     "provider_hard_stop_and_callback": [
       "tests/unit/test_provider_token_admission.py",

@@ -16,7 +16,8 @@ from novel_forge.tools.production_execution_inventory import (
 class ProductionExecutionInventoryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory()
-        self.root = Path(self.temporary_directory.name)
+        self.root = Path(self.temporary_directory.name) / "workspace-agent-provider"
+        self.root.mkdir()
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()

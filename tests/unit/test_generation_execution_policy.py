@@ -449,7 +449,8 @@ def test_expired_membership_price_observation_does_not_revoke_generation_authori
 def test_reused_process_id_does_not_create_a_historical_inflight_lock(monkeypatch):
     from types import SimpleNamespace
     from novel_forge.modules.production_execution import backends
-    monkeypatch.setattr(backends, '_provider_process_probe', SimpleNamespace(
+    from novel_forge.modules.production_execution import process_liveness
+    monkeypatch.setattr(process_liveness, '_provider_process_probe', SimpleNamespace(
         is_alive=lambda pid: True, process_start_token=lambda pid: 'new-process-identity'))
     record={'request':{'execution_id':'old-execution'},'raw_evidence':{
         'invocation_process_id':999999, 'invocation_process_start_identity':'old-process-identity'}}
@@ -508,3 +509,27 @@ def test_legacy_terminal_before_output_commit_replays_exact_frozen_result(monkey
             frozen_union=SimpleNamespace(query_embedding=(), query_embedding_evidence={}), discovery_rejections=())
         assert result == expected
     handler.provider.invoke.assert_not_called()
+
+
+@pytest.mark.parametrize("separators,expected", [(None, "甲\n\n乙"), (["\n \t\n"], "甲\n \t\n乙"), ([""], "甲乙"), (["transition"], None), ([], None)])
+def test_retained_scene_prose_preserves_exact_domain_serialization(separators, expected):
+    import json
+    from types import SimpleNamespace
+    from novel_forge.modules.production_execution.backends import InMemoryExecutionRecordStore
+    from novel_forge.modules.production_execution.result_retention import retain_model_result
+    from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+    from tests.unit.test_production_execution_gateway import contracts
+
+    slots = [{"text": "甲"}, {"text": "乙"}]
+    record = SimpleNamespace(request=contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)[5], raw_evidence={}, frozen_output_contract={}, result=None)
+    store = InMemoryExecutionRecordStore()
+    store.put_record(record)
+    raw = json.dumps({"scene_artifacts": slots, "scene_separators": separators}, ensure_ascii=False)
+    ref = retain_model_result(record, store, raw_text=raw, complete=True, source={})
+    assert store.read_evidence(ref)["raw_text"] == raw
+    if expected is None:
+        assert "retained_prose_candidate_ref" not in record.raw_evidence
+    else:
+        candidate = store.read_evidence(record.raw_evidence["retained_prose_candidate_ref"])
+        assert candidate["text"] == serialize_realization(slots, separators) == expected
+        assert candidate["acceptance_status"] == "NOT_ACCEPTED"

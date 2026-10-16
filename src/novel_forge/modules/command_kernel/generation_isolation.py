@@ -43,7 +43,7 @@ def require_native_api_isolation_record(content, *, project_id, book_id, operati
     from .external_effect_runtime import _hash
 
     record = content.get("record") or {}
-    from novel_forge.modules.production_execution.backends import provider_invocation_inflight
+    from novel_forge.modules.production_execution.process_liveness import provider_invocation_inflight
     if provider_invocation_inflight(record):
         raise KernelError("GENERATION_ISOLATION_PROCESS_LIVE", "The original local Provider invocation is still in flight")
     original = ExecutionRequest.from_dict(record.get("request") or {})
@@ -112,7 +112,7 @@ def require_reconciled_cli_isolation_record(content, execution, *, effect, proje
 
 
 def require_stopped_reconciled_cli_process(process):
-    from novel_forge.modules.production_execution.process_supervisor import PosixProcessIdentityProbe
+    from novel_forge.modules.production_execution.process_liveness import PosixProcessIdentityProbe
 
     group = process.get("process_group") or {}
     if not group.get("pid") or process.get("recovery_reason") == "START_INTERRUPTED_PROCESS_ID_UNKNOWN":

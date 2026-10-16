@@ -223,6 +223,8 @@ from . import (
     v20261015_0218_retained_working_convergence,
     v20261015_0219_world_exact_context_convergence,
     v20261015_0220_chapter_prior_audit_convergence,
+    v20261016_0221_working_scope_fk_indexes,
+    v20261016_0222_planning_host_frozen_definition,
 )
 
 VERSION_MODULES = [
@@ -447,6 +449,8 @@ VERSION_MODULES = [
     v20261015_0218_retained_working_convergence,
     v20261015_0219_world_exact_context_convergence,
     v20261015_0220_chapter_prior_audit_convergence,
+    v20261016_0221_working_scope_fk_indexes,
+    v20261016_0222_planning_host_frozen_definition,
 ]
 
 __all__ = ["VERSION_MODULES"]

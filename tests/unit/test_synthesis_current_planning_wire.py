@@ -122,7 +122,7 @@ def test_current_synthesis_hierarchical_wire_obeys_exact_provider_schema(scope, 
     from tests.unit.test_story_planning_runtime import _realization_slice, _chapter_schedule_row
     catalog = {"references_by_domain": {domain: [{"asset_version_id": domain.lower() + ":actual", "content_hash": "native-hash", "frozen_by_operation_id": "native-owner"}] for domain in ("WORLD_INVARIANT", "WORLD_STRUCTURE", "WORLD_STATE", "CHARACTER_IDENTITY", "CHARACTER_STATE", "CHARACTER_TRAJECTORY")}}
     inputs = {"planning_command": {"execution_contract_version": "1.21.0", "creative_requirements_contract": "work-requirements.v2", "logical_key": key, "parent_version_id": "parent:v1", "input_versions": {"arc_plans": "arc:v1"}}, "realization_reference_contract": catalog}
-    arguments = {"logical_key": key, "parent_version_id": "parent:v1", "arc_plan_version_id": "arc:v1", "work_requirements": True, "aligned_methods": True, "serialization_contract": True}
+    arguments = {"logical_key": key, "parent_version_id": "parent:v1", "arc_plan_version_id": "arc:v1", "work_requirements": True, "aligned_methods": True, "serialization_contract": True, "typed_volume_allocation": True}
     if scope == "CHAPTER":
         arguments.update(narrative_realization=_realization_slice(parent_version_id="parent:v1"), chapter_schedule_row=_chapter_schedule_row())
         inputs["narrative_realization"] = arguments["narrative_realization"]

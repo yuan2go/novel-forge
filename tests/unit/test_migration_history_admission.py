@@ -28,9 +28,10 @@ def test_run_migrations_never_applies_business_ddl_to_foreign_history():
         with pytest.raises(ValueError, match="MIGRATION_HISTORY"):
             run_migrations("unused-test-connection")
     statements = [call.args[0].strip() for call in cursor.execute.call_args_list]
-    assert len(statements) == 2
-    assert statements[0].startswith("CREATE TABLE IF NOT EXISTS nf_schema_migrations")
-    assert statements[1].startswith("SELECT migration_id, applied_at")
+    assert len(statements) == 3
+    assert statements[0].startswith("SELECT pg_try_advisory_xact_lock")
+    assert statements[1].startswith("CREATE TABLE IF NOT EXISTS nf_schema_migrations")
+    assert statements[2].startswith("SELECT migration_id, applied_at")
 
 
 def test_every_registered_history_prefix_can_continue_without_identity_rewrite():

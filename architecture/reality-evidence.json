@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261015_0220_chapter_prior_audit_convergence",
+  "migration_head": "20261016_0222_planning_host_frozen_definition",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9321,6 +9321,11 @@
           "locator": "MIGRATION_ID = \"20261015_0220_chapter_prior_audit_convergence\""
         },
         {
+          "path": "src/novel_forge/storage/migrations/versions/v20261016_0221_working_scope_fk_indexes.py",
+          "id": "20261016_0221_working_scope_fk_indexes",
+          "locator": "MIGRATION_ID = \"20261016_0221_working_scope_fk_indexes\""
+        },
+        {
           "path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0218_world_exact_context_accounting.py",
           "id": "20261015_0218_world_exact_context_accounting",
           "locator": "MIGRATION_ID = \"20261015_0218_world_exact_context_accounting\"",
@@ -9424,6 +9429,11 @@
           "locator": "20261015_0217_retained_working_continuation",
           "classification": "HISTORICAL_COMPATIBILITY",
           "source_commit": "2eb0e685e0e4dc3c84a931330f3fb3e97156d8d7"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261016_0222_planning_host_frozen_definition.py",
+          "id": "20261016_0222_planning_host_frozen_definition",
+          "locator": "MIGRATION_ID = \"20261016_0222_planning_host_frozen_definition\""
         }
       ],
       "external_effects": {
@@ -10423,7 +10433,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:ef5af5f265d6e7cdd078d482af53a8ebb10d04c14f12e007f52beaae16bc8729"
+    "implementation_tree_sha": "sha256:b9a921d0be5b128b54e2ab421ac6f748dbc4d698e3daf86b9cde84446da5def7"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

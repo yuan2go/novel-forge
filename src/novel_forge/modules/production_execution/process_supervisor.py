@@ -22,6 +22,7 @@ try:  # COMPATIBILITY: non-POSIX hosts must retain importability.
 except ImportError:  # pragma: no cover - non-POSIX fallback
     fcntl = None  # type: ignore[assignment]
 
+from .process_liveness import PosixProcessIdentityProbe
 from .contracts import ExecutionRuntimeClass
 from .security import assert_no_inline_secrets
 
@@ -604,33 +605,6 @@ class ProcessIdentityProbe(Protocol):
     def is_alive(self, pid: int) -> bool: ...
 
     def process_start_token(self, pid: int) -> str | None: ...
-
-
-class PosixProcessIdentityProbe:
-    def is_alive(self, pid: int) -> bool:
-        try:
-            os.kill(pid, 0)
-            return True
-        except ProcessLookupError:
-            return False
-        except PermissionError:
-            return True
-
-    def process_start_token(self, pid: int) -> str | None:
-        ps_path = "/bin/ps" if Path("/bin/ps").exists() else "ps"
-        try:
-            completed = subprocess.run(
-                [ps_path, "-o", "lstart=", "-p", str(pid)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                text=True,
-                timeout=2,
-                env={"PATH": "/usr/bin:/bin", "LANG": "C"},
-            )
-        except Exception:
-            return None
-        value = completed.stdout.strip()
-        return value or None
 
 
 class CodexProcessSupervisor:
