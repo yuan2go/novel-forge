@@ -5,7 +5,7 @@
   "baseline_capacity_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
   "reference_main_sha": "6b69b22b331191331292a51a905833871b17b283",
   "implementation_tree_sha": "sha256:72ac0541418ee3d6d5ecf83f09656b092efdc4e67df4978bdc79420a69253b03",
-  "recorded_at_utc": "2026-10-16T23:02:24.434231+00:00",
+  "recorded_at_utc": "2026-10-16T23:43:12.597299+00:00",
   "evidence_ceiling": "EXECUTABLE",
   "formal_qualification": "IN_PROGRESS",
   "runtime_identity_boundary": "Fixture Build/Release identities in native requests are controlled and separate from executing Git source SHA; no production deployment is inferred.",
@@ -37,6 +37,26 @@
       "size_bytes": 9100
     },
     {
+      "path": "custody/native-final-complete-cluster.json",
+      "sha256": "af38c624edff5663a8e7ff66131d6825f5057a8e131cefec6d14c4c63cd52cf4",
+      "size_bytes": 4869
+    },
+    {
+      "path": "custody/native-final-complete-cluster.sql.xz.part-000",
+      "sha256": "e3cd8e944f273f8f0fbf72466098e1c7cc030c6f593c5d4e8e825208c541b41d",
+      "size_bytes": 32000000
+    },
+    {
+      "path": "custody/native-final-complete-cluster.sql.xz.part-001",
+      "sha256": "d47c70e162d4ef1f63a3c43772a8167c18627e5fea6d8ef71c3f16567059e22d",
+      "size_bytes": 32000000
+    },
+    {
+      "path": "custody/native-final-complete-cluster.sql.xz.part-002",
+      "sha256": "17f31fd4cd51e9859348035ccf60c18d972ce2bb898a92640be5fecead06c555",
+      "size_bytes": 2275028
+    },
+    {
       "path": "custody/nf-context-512k-archive-old-semantic22.py.gz",
       "sha256": "2999637feaaea720d0fd86e46a30fd59b9f65f52d7778b7ddbd0bab8344d99f3",
       "size_bytes": 1451
@@ -52,24 +72,49 @@
       "size_bytes": 1573
     },
     {
+      "path": "custody/nf-context-512k-cluster-lossless-storage.log.gz",
+      "sha256": "4de9166b3bd698324392131c92c1874e8b1c3e9e6cdceb78e8e26366b51dce92",
+      "size_bytes": 644
+    },
+    {
+      "path": "custody/nf-context-512k-cluster-lossless-storage.py.gz",
+      "sha256": "3eebc487fcda725c102faf4ba20cb33653046301bcd0cd8e7057fb144aa8a6b2",
+      "size_bytes": 975
+    },
+    {
+      "path": "custody/nf-context-512k-final-cluster-archive.log.gz",
+      "sha256": "ba8558e85dee985b5a55d4ddd8266e6de9890dbab604a685e21f04372e42b061",
+      "size_bytes": 251
+    },
+    {
+      "path": "custody/nf-context-512k-final-cluster-archive.py.gz",
+      "sha256": "5e2902eeca0fd10a9376662245f3d358b75aeb51b9eebb01f271f526390ccc1a",
+      "size_bytes": 1764
+    },
+    {
       "path": "custody/nf-delivery-evidence-helpers.py.gz",
-      "sha256": "921c4476701e58ca9512c19543864c91e33e5de114d848996d5268e878e4c92a",
-      "size_bytes": 1923
+      "sha256": "f1029848362330c53c920c8ab9b18149a6ee0220334ff218cdf6c83e7db41139",
+      "size_bytes": 2381
     },
     {
       "path": "custody/nf-semantic-final70-evidence.py.gz",
-      "sha256": "e16eb0e9b7a863b70f10b58130a77166eec20da53d957944bca2b6b77a8e1544",
-      "size_bytes": 7044
+      "sha256": "a73b3d5f00965fe938204dff2915f4df3a2eea96c8a44545d6d443db4f66f286",
+      "size_bytes": 7949
     },
     {
       "path": "custody/owned-database-archive-receipts.jsonl.gz",
-      "sha256": "7e041a045873c608c200f7218e7a5f09dee9b891d682fa4c901f3e33c25834b4",
-      "size_bytes": 6527
+      "sha256": "e47dbc38ce0d4ead45510579f16fb109276c4b70ec22eb5649f9c0fcc31a99a0",
+      "size_bytes": 8091
     },
     {
       "path": "entry-coverage.json",
       "sha256": "252a1d787ba880cf1e1616e55261c722c35b741c383d26090c1d638dd676f453",
       "size_bytes": 46520
+    },
+    {
+      "path": "final-readonly-reviews.json",
+      "sha256": "934c3289d44aab7a58bb21dc47e23ee1fa1d10373141893a65fb32f225b99884",
+      "size_bytes": 1199
     },
     {
       "path": "formal-current/console.log.gz",
@@ -105,6 +150,21 @@
       "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/documentation-reality.json.gz",
       "sha256": "93b643d334215e602b227b2487ecfc8f501815871dd07057857bcdc29b57bf5f",
       "size_bytes": 408
+    },
+    {
+      "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/migration-compatibility-collection.json.gz",
+      "sha256": "9a4c024a530df2adf5749082af945590f5d796424bea19c11f4b31267d05e59b",
+      "size_bytes": 9226
+    },
+    {
+      "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/migration-compatibility-process.json.gz",
+      "sha256": "fe37e0f12faa63a5cb649fbff9781bddb6891f9f5ac1555296d5dc5b67a5dcb3",
+      "size_bytes": 202
+    },
+    {
+      "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/migration-compatibility-pytest.xml.gz",
+      "sha256": "1796ad83cc82c79355fd9e1315fee71a454222746efd99e7e29902b46c21f37c",
+      "size_bytes": 13087
     },
     {
       "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/migration-fresh-process.json.gz",
@@ -3940,6 +4000,11 @@
       "path": "historical/status-boundary.json",
       "sha256": "058e28b2a17a894e6043439dedc9a0dd008cf9f552d3f678cd034bb373b5b5dc",
       "size_bytes": 473
+    },
+    {
+      "path": "known-boundaries.json",
+      "sha256": "a398ed8d5ba47218d5ec430f0e137f9cf5547d06aa18fdb549f9e2b864f877e1",
+      "size_bytes": 2214
     },
     {
       "path": "measurements.json",
@@ -11090,6 +11155,16 @@
       "path": "nf-context-512k-environment-observation.json",
       "sha256": "b32af5e1ad01f2114e192ee1a6ba8a642350530ec5fee0de7869badf8d80502d",
       "size_bytes": 1768
+    },
+    {
+      "path": "nf-context-512k-frozen-runtime-policy-observation.json",
+      "sha256": "4734d0851841454255331141ace3f53a6055f8a55122bb24919bd0610325c1e2",
+      "size_bytes": 2344
+    },
+    {
+      "path": "nf-context-512k-frozen-runtime-policy-raw.json",
+      "sha256": "0695b0258be4e4e9f776da2b79d7ee8f4a9af1d573780b3927c28de5dc142dc1",
+      "size_bytes": 1554
     },
     {
       "path": "nf-context-512k-runtime-final-observation.json",
