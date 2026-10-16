@@ -1,0 +1,20 @@
+{
+  "book_run_id": "book-run:86a75a74-c326-47cc-a857-d983484ed537",
+  "external_effect_status_counts": {
+    "UNKNOWN": 15,
+    "SUCCEEDED": 89
+  },
+  "budget_status_counts": {
+    "SETTLED": 89,
+    "HELD_UNKNOWN": 15
+  },
+  "book_checkpoint": [
+    "CHAPTER_PLAN_REQUIRED",
+    4,
+    0,
+    21
+  ],
+  "new_real_provider_calls": 0,
+  "historical_usage_reconciled_this_run": false,
+  "unknown_costs_rewritten": false
+}

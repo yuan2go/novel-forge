@@ -99,6 +99,24 @@ def test_longform_bounds_source_rows_and_recalls_old_located_annotation(monkeypa
     validate_working_projection(project_working_history_for_provider(snapshot), project_id="project", book_id="book")
 
 
+def test_frozen_v1_transport_keeps_original_packet_while_v2_bounds_metadata(monkeypatch):
+    from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
+    uow, book, _ = _native_history(monkeypatch, 130, tiny=True)
+    snapshot = manuscript.freeze_working_context(uow, book, 130, projection_policy=_policy())
+    before = deepcopy(snapshot)
+    legacy, old_receipt = compile_working_history_transport({"working": snapshot}, contract_version="working-history-provider-transport.v1")
+    current, new_receipt = compile_working_history_transport({"working": snapshot})
+    assert old_receipt["contract_version"] == "working-history-provider-transport.v1"
+    assert new_receipt["contract_version"] == "working-history-provider-transport.v2"
+    assert legacy["working"]["working_memory"]["version"] == "working-observations.v1"
+    assert legacy["working"]["working_memory"]["omitted_observation_ids"] == snapshot["working_memory"]["omitted_observation_ids"]
+    assert current["working"]["working_memory"]["version"] == "working-observations-provider.v1"
+    assert snapshot == before
+    assert compile_working_history_transport(legacy, contract_version="working-history-provider-transport.v1")[0] == legacy
+    with pytest.raises(KernelError, match="WORKING_PROSE_HISTORY_INVALID"):
+        compile_working_history_transport({"working": snapshot}, contract_version="unknown")
+
+
 def test_v4_keeps_historical_130_rejection_and_rendering(monkeypatch):
     uow, book, _ = _native_history(monkeypatch, 130)
     with pytest.raises(KernelError, match="WORKING_PROSE_HISTORY_INCOMPLETE"):

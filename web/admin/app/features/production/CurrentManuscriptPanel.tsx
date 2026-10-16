@@ -6,7 +6,8 @@ import {fetchJson} from "../../shared/api";
 import {pauseBookProduction, resumeBookProduction} from "./api";
 
 type Unit = {chapter: number; title: string; text: string; asset_version_id: string; content_hash: string;
-  requirements_status: string; dependency_changes: unknown[]; review_status: string};
+  requirements_status: string; dependency_changes: unknown[]; review_status: string;
+  working_selection?: {status: string; asset_version_id?: string; content_hash?: string; author_selection?: string; formal_acceptance?: string}};
 export type Manuscript = {book_run_id: string; book_id: string; workspace_id: string; project_id: string;
   writing_state: string; target_chapters: number; units: Unit[]; text: string; manifest_digest: string; accepted_through_chapter: number};
 
@@ -40,7 +41,8 @@ export function CurrentManuscriptPanel({project, bookRun}: {project: string; boo
       const exact = await fetchJson<Manuscript>("/product/editor/manuscripts/export", {method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({project_id: project, book_run_id: bookRun, version_ids: manuscript.units.map(unit => unit.asset_version_id)})});
       const provenance = `当前稿件 · 审定至第 ${exact.accepted_through_chapter} 章\n稿件版本：${exact.manifest_digest}\n` +
-        exact.units.map(unit => `第 ${unit.chapter} 章：${unit.asset_version_id} · 审读 ${unit.review_status} · 要求 ${unit.requirements_status}`).join("\n");
+        exact.units.map(unit => `第 ${unit.chapter} 章：${unit.asset_version_id} · 审读 ${unit.review_status} · 要求 ${unit.requirements_status}` +
+          (unit.working_selection?.status === "SELECTED" ? ` · 工作稿选用回执 ${unit.working_selection.asset_version_id} · ${unit.working_selection.content_hash}` : "")).join("\n");
       const url = URL.createObjectURL(new Blob([provenance, "\n\n", exact.text], {type: "text/plain;charset=utf-8"}));
       const anchor = document.createElement("a"); anchor.href = url; anchor.download = `${exact.book_id}-current.txt`; anchor.click(); URL.revokeObjectURL(url);
     } catch (e) {setError(String(e));} finally {setBusy(false);}
@@ -52,6 +54,7 @@ export function CurrentManuscriptPanel({project, bookRun}: {project: string; boo
       <button disabled={busy || !manuscript || manuscript.writing_state === "PAUSED"} onClick={() => control("pause")}>暂停写作</button>
       <button disabled={busy || manuscript?.writing_state !== "PAUSED"} onClick={() => control("resume")}>继续写作</button></div>
     {manuscript?.units.map(unit => <details key={unit.asset_version_id}><summary>第 {unit.chapter} 章 {unit.title} · 已保存 · {unit.review_status === "NOT_RUN" ? "未审读" : unit.review_status}</summary>
+      {unit.working_selection?.status === "SELECTED" && <p>工作稿已选用 · 回执 {unit.working_selection.asset_version_id} · 作者认可 {unit.working_selection.author_selection} · 正式接纳 {unit.working_selection.formal_acceptance}</p>}
       {unit.dependency_changes.length > 0 && <p role="status">前文选定版本已变化；此章保留，需检查受影响的连续性。</p>}
       <Link href={`/editor?${new URLSearchParams({project_id: project, book_id: manuscript.book_id, book_run_id: bookRun, base_asset_version_id: unit.asset_version_id})}`}>修改本章、查看差异、按需审读</Link>
       <p style={{whiteSpace: "pre-wrap"}}>{unit.text}</p></details>)}

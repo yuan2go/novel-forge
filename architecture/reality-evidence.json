@@ -9321,14 +9321,14 @@
           "locator": "MIGRATION_ID = \"20261015_0220_chapter_prior_audit_convergence\""
         },
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20261015_0218_world_exact_context_accounting.py",
+          "path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0218_world_exact_context_accounting.py",
           "id": "20261015_0218_world_exact_context_accounting",
           "locator": "MIGRATION_ID = \"20261015_0218_world_exact_context_accounting\"",
           "classification": "HISTORICAL_COMPATIBILITY",
           "source_commit": "f06f4daccada314b25f7559733ad331d5c056da0"
         },
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20261015_0219_chapter_prior_method_audits.py",
+          "path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0219_chapter_prior_method_audits.py",
           "id": "20261015_0219_chapter_prior_method_audits",
           "locator": "MIGRATION_ID = \"20261015_0219_chapter_prior_method_audits\"",
           "classification": "HISTORICAL_COMPATIBILITY",
@@ -10423,7 +10423,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:185eccb7ab136124a83c07be318b0dbc8e1e2c75016b93260d3ee075d66fd6c8"
+    "implementation_tree_sha": "sha256:ef5af5f265d6e7cdd078d482af53a8ebb10d04c14f12e007f52beaae16bc8729"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -10922,7 +10922,7 @@
     {
       "id": "author-first-delivery-versus-formal-acceptance",
       "classification": "CONFIGURABLE_POLICY",
-      "statement": "The default v12 author policy saves complete native Drafts, advances writing progress and permits exact current manuscript export without optional Review, Canon extraction, grouped Quality or strict finalization. Formal accepted State/Canon and publication gates remain separate. Frozen v11 contracts retain their historical strict sequence.",
+      "statement": "The default v12 author policy saves complete native Drafts, advances writing progress and permits exact current manuscript export without optional Review, Canon extraction, grouped Quality or strict finalization. Formal accepted State/Canon and publication gates remain separate. Frozen v11 contracts retain their historical strict sequence. Manuscript reads finish their exact prose snapshot before optional review aggregation in a separate UoW; auxiliary errors project UNAVAILABLE. Native working selection receipts remain separate from author choice and formal acceptance.",
       "design_review_required": false,
       "evidence": [
         {
@@ -10942,7 +10942,7 @@
     {
       "id": "bounded-author-working-source-window",
       "classification": "CONFIGURABLE_POLICY",
-      "statement": "Historical default continuation retains four selected chapters as bounded tails. Opt-in v2 supplies located passages through 32 chapters; v3 permits a bounded configured long-history window with immutable unreviewed observations, exact sources and explicit missing/stale or omitted evidence. It grants no accepted facts and proves no literary quality. Fresh World source v5 separately binds the working target and exact selected packet; located attributed observations support only private candidate epistemic predicates, retain unverified semantics and do not advance accepted Reality. Missing memory remains unknown.",
+      "statement": "Historical default continuation retains four selected chapters as bounded tails. Opt-in v2 supplies located passages through 32 chapters; v3 permits a bounded configured long-history window with immutable unreviewed observations, exact sources and explicit missing/stale or omitted evidence. It grants no accepted facts and proves no literary quality. Fresh World source v5 separately binds the working target and exact selected packet; located attributed observations support only private candidate epistemic predicates, retain unverified semantics and do not advance accepted Reality. Missing memory remains unknown. New v5 transport separates the complete Host omission ledger from working-observations-provider.v1 counts, hashes, exact selected observations and visible coverage. The host packet and source history remain immutable. World author intent binds its validated working target independently of the accepted cursor; accepted-only contracts retain accepted-plus-one.",
       "design_review_required": false,
       "evidence": [
         {
@@ -10960,6 +10960,10 @@
         {
           "path": "src/novel_forge/modules/worldbuilding/working_state.py",
           "symbol": "project_working_observation_context"
+        },
+        {
+          "path": "src/novel_forge/modules/narrative_state/working_memory.py",
+          "symbol": "project_memory_for_provider"
         }
       ]
     }

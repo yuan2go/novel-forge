@@ -1,0 +1,22 @@
+{
+  "contract_version": "published-craft-migration-retention.v1",
+  "source_commit": "f06f4daccada314b25f7559733ad331d5c056da0",
+  "registered_on_main": false,
+  "modules": [
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261015_0217_retained_working_continuation.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0217_retained_working_continuation.py",
+      "sha256": "c7d6edf87979553c12d32679a42f8056c941f0ea0b9150a25f40b89ee1fa0718"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261015_0218_world_exact_context_accounting.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0218_world_exact_context_accounting.py",
+      "sha256": "4137f71f35eefda03064ed20fc5ee7207a8952d43bdd12add93d29eaa675990d"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261015_0219_chapter_prior_method_audits.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_f06f4dac/v20261015_0219_chapter_prior_method_audits.py",
+      "sha256": "7c4874edbcb948efee62fafd9963117839566b6e6e468d93b564bb3e6af6da77"
+    }
+  ]
+}

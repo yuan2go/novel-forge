@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "cwd": "/private/tmp",
+  "resource": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-final/share/novel-forge/config/execution_templates/author_first.json",
+  "resource_sha256": "55f6894fd75671e1d5fd1068319a1a37467f2203a541f048b9c09a58fc554252",
+  "wheel_sha256": "08c604fd9b78aab322a2cb8ef4fa7a965b7bae39f8bcc535d2fc54ca73f2b216",
+  "modules": [
+    {
+      "module": "novel_forge.runtime_resources",
+      "installed_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-final/lib/python3.12/site-packages/novel_forge/runtime_resources.py",
+      "sha256": "93dc74fadb633b7e5847a84ed65a497c4d1b6aeea151ad7443183667c80ae5b6"
+    },
+    {
+      "module": "novel_forge.modules.book_authority.manuscript",
+      "installed_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-final/lib/python3.12/site-packages/novel_forge/modules/book_authority/manuscript.py",
+      "sha256": "9312aad046acd276adb1ee2ee45bd20fa83b3e3776d7232d5f0bd36d87287510"
+    },
+    {
+      "module": "novel_forge.modules.narrative_state.working_memory",
+      "installed_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-final/lib/python3.12/site-packages/novel_forge/modules/narrative_state/working_memory.py",
+      "sha256": "3d214e855e8d1d1a583cd635aece74b9f01c787129015f9035e4c8965480f4ee"
+    },
+    {
+      "module": "novel_forge.modules.chapter_authority.execution_gateway",
+      "installed_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-final/lib/python3.12/site-packages/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "sha256": "1e752175e700c47eb4d39711a95a5b7472f4b67605fc40c0343d22723ac40b77"
+    }
+  ],
+  "native_cli_read": {
+    "book_run_id": "book-run:86a75a74-c326-47cc-a857-d983484ed537",
+    "units": 4,
+    "text_digest": "sha256:d22cae0c4242a6953292b7cb4e3389253ed0f9eae9d0ffc71f2a05d1f5d0cc43"
+  },
+  "provider_calls": 0,
+  "adoption_mutation": "NOT_RUN"
+}

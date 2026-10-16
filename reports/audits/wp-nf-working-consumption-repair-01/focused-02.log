@@ -1,0 +1,119 @@
+........................................................................ [ 25%]
+................................................................FF...... [ 51%]
+........................................................................ [ 76%]
+.................................................................        [100%]
+=================================== FAILURES ===================================
+__ test_partial_selection_resolves_contiguous_native_prose_with_provenance[4] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10de33c50>
+target = 4
+
+    @pytest.mark.parametrize("target", [4, 5])
+    def test_partial_selection_resolves_contiguous_native_prose_with_provenance(monkeypatch, target):
+        from novel_forge.modules.book_authority.working_prose import PROGRESSION_POLICY_VERSION
+        documents = {}
+        for number in (1, 2, 3, 4):
+            text = f"Trial {number} spent material and changed the next choice."
+            documents[f"native:{number}"] = SimpleNamespace(asset_version_id=f"native:{number}",
+                content_hash=f"hash:{number}", asset_type="draft_chapter", governance="CLEAR", eligibility="ELIGIBLE",
+                content={"chapter": number, "title": "", "text": text})
+        documents["chosen:1"] = SimpleNamespace(asset_version_id="chosen:1", content_hash="chosen-hash",
+            asset_type="best_draft_candidate", governance="CLEAR", eligibility="ELIGIBLE",
+            content={"chapter": 1, "title": "", "text": "The paid trial secured access, not acceptance."})
+        selection = SimpleNamespace(asset_version_id="selection:1", content_hash="selection-hash", content={
+            "book_run_id": "run", "native_source_asset_version_id": "native:1",
+            "selected_asset_version_id": "chosen:1", "selected_content_hash": "chosen-hash"})
+        uow = MagicMock()
+        def execute(query, args):
+            # This fixture exercises the real delivery -> acceptance -> native-output fallback.
+            number = args[-1]
+            if "authority_book_manuscript_delivery" in query or "authority_book_acceptance_lineage" in query:
+                uow.cursor.fetchone.return_value = None
+            else:
+                uow.cursor.fetchone.return_value = (f"native:{number}",)
+        uow.cursor.execute.side_effect = execute
+        uow.repositories.asset_documents.require.side_effect = lambda **kwargs: documents[kwargs["asset_version_id"]]
+        monkeypatch.setattr(manuscript, "_optional_document", lambda _uow, _project, ref: selection if ref.endswith("/1") else None)
+        monkeypatch.setattr(manuscript, "_session_ref", lambda scope: "session")
+        original_require = uow.repositories.asset_documents.require.side_effect
+        def require(**kwargs):
+            if kwargs.get("logical_ref") == "session":
+                raise KernelError("AUTHORITY_ASSET_NOT_FOUND", "No editor choice")
+            return original_require(**kwargs)
+        uow.repositories.asset_documents.require.side_effect = require
+        monkeypatch.setattr(manuscript, "working_dependency_changes", lambda *_: ([], {}))
+        monkeypatch.setattr(manuscript, "require_prose_propagation", lambda *_: None)
+        monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", lambda *_: ([], {"status": "NOT_REQUESTED"}))
+        book = {"project_id": "p", "workspace_id": "w", "book_id": "b", "book_run_id": "run", "accepted_through_chapter": 0}
+        chosen_policy = policy(version=PROGRESSION_POLICY_VERSION, history_chapters=128, recent_complete_chapters=3)
+        before = deepcopy(book)
+        value = manuscript.freeze_working_context(uow, book, target, projection_policy=chosen_policy)
+        validate_working_projection(value, project_id="p", book_id="b", target_chapter=target, accepted_through_chapter=0)
+        assert [row["asset_version_id"] for row in value["sources"]] == ["chosen:1", *[f"native:{n}" for n in range(2, target)]]
+        assert [row["chapter"] for row in value["sources"]] == list(range(1, target))
+        assert all(row["omitted_ranges"] == [] for row in value["sources"])
+        assert value["sources"][0]["source_resolution"]["overrides"] == [{"asset_version_id": "selection:1", "content_hash": "selection-hash"}]
+>       assert all(row["source_resolution"]["native_basis"] == "NATIVE_DRAFT_OUTPUT" for row in value["sources"])
+E       assert False
+E        +  where False = all(<generator object test_partial_selection_resolves_contiguous_native_prose_with_provenance.<locals>.<genexpr> at 0x10d942330>)
+
+tests/unit/test_working_prose_projection.py:556: AssertionError
+__ test_partial_selection_resolves_contiguous_native_prose_with_provenance[5] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d5aab70>
+target = 5
+
+    @pytest.mark.parametrize("target", [4, 5])
+    def test_partial_selection_resolves_contiguous_native_prose_with_provenance(monkeypatch, target):
+        from novel_forge.modules.book_authority.working_prose import PROGRESSION_POLICY_VERSION
+        documents = {}
+        for number in (1, 2, 3, 4):
+            text = f"Trial {number} spent material and changed the next choice."
+            documents[f"native:{number}"] = SimpleNamespace(asset_version_id=f"native:{number}",
+                content_hash=f"hash:{number}", asset_type="draft_chapter", governance="CLEAR", eligibility="ELIGIBLE",
+                content={"chapter": number, "title": "", "text": text})
+        documents["chosen:1"] = SimpleNamespace(asset_version_id="chosen:1", content_hash="chosen-hash",
+            asset_type="best_draft_candidate", governance="CLEAR", eligibility="ELIGIBLE",
+            content={"chapter": 1, "title": "", "text": "The paid trial secured access, not acceptance."})
+        selection = SimpleNamespace(asset_version_id="selection:1", content_hash="selection-hash", content={
+            "book_run_id": "run", "native_source_asset_version_id": "native:1",
+            "selected_asset_version_id": "chosen:1", "selected_content_hash": "chosen-hash"})
+        uow = MagicMock()
+        def execute(query, args):
+            # This fixture exercises the real delivery -> acceptance -> native-output fallback.
+            number = args[-1]
+            if "authority_book_manuscript_delivery" in query or "authority_book_acceptance_lineage" in query:
+                uow.cursor.fetchone.return_value = None
+            else:
+                uow.cursor.fetchone.return_value = (f"native:{number}",)
+        uow.cursor.execute.side_effect = execute
+        uow.repositories.asset_documents.require.side_effect = lambda **kwargs: documents[kwargs["asset_version_id"]]
+        monkeypatch.setattr(manuscript, "_optional_document", lambda _uow, _project, ref: selection if ref.endswith("/1") else None)
+        monkeypatch.setattr(manuscript, "_session_ref", lambda scope: "session")
+        original_require = uow.repositories.asset_documents.require.side_effect
+        def require(**kwargs):
+            if kwargs.get("logical_ref") == "session":
+                raise KernelError("AUTHORITY_ASSET_NOT_FOUND", "No editor choice")
+            return original_require(**kwargs)
+        uow.repositories.asset_documents.require.side_effect = require
+        monkeypatch.setattr(manuscript, "working_dependency_changes", lambda *_: ([], {}))
+        monkeypatch.setattr(manuscript, "require_prose_propagation", lambda *_: None)
+        monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", lambda *_: ([], {"status": "NOT_REQUESTED"}))
+        book = {"project_id": "p", "workspace_id": "w", "book_id": "b", "book_run_id": "run", "accepted_through_chapter": 0}
+        chosen_policy = policy(version=PROGRESSION_POLICY_VERSION, history_chapters=128, recent_complete_chapters=3)
+        before = deepcopy(book)
+        value = manuscript.freeze_working_context(uow, book, target, projection_policy=chosen_policy)
+        validate_working_projection(value, project_id="p", book_id="b", target_chapter=target, accepted_through_chapter=0)
+        assert [row["asset_version_id"] for row in value["sources"]] == ["chosen:1", *[f"native:{n}" for n in range(2, target)]]
+        assert [row["chapter"] for row in value["sources"]] == list(range(1, target))
+        assert all(row["omitted_ranges"] == [] for row in value["sources"])
+        assert value["sources"][0]["source_resolution"]["overrides"] == [{"asset_version_id": "selection:1", "content_hash": "selection-hash"}]
+>       assert all(row["source_resolution"]["native_basis"] == "NATIVE_DRAFT_OUTPUT" for row in value["sources"])
+E       assert False
+E        +  where False = all(<generator object test_partial_selection_resolves_contiguous_native_prose_with_provenance.<locals>.<genexpr> at 0x10df29630>)
+
+tests/unit/test_working_prose_projection.py:556: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_working_prose_projection.py::test_partial_selection_resolves_contiguous_native_prose_with_provenance[4]
+FAILED tests/unit/test_working_prose_projection.py::test_partial_selection_resolves_contiguous_native_prose_with_provenance[5]
+2 failed, 279 passed in 2.89s

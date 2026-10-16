@@ -1,0 +1,194 @@
+{
+  "work_package": "WP-NF-WORKING-CONSUMPTION-REPAIR-01",
+  "observed_at": "2026-10-15T17:30:57.082918+00:00",
+  "audit_sha": "54eda51172b8d915d172381914d73cba9c026328",
+  "latest_main": "a068382c69ca2f1363ff2e2cf0069843d4d22fa4",
+  "implementation_commit": "576a785ed4df179abaf696fd97ef1630fb4d2e68",
+  "implementation_tree_sha": "sha256:ef5af5f265d6e7cdd078d482af53a8ebb10d04c14f12e007f52beaae16bc8729",
+  "original_contract_implementation_commit": "e1cfffb6473e52981cae032248d4ba712eae3c5b",
+  "evidence_ceiling": "EXECUTABLE",
+  "overall_status": "BLOCKED",
+  "publication_qualification": "FAIL",
+  "implementation": {
+    "NF-A01": "EXECUTABLE",
+    "NF-A02": "EXECUTABLE",
+    "NF-A03": "EXECUTABLE",
+    "NF-A04": "EXECUTABLE",
+    "NF-A05_DEPENDENCY": "EXECUTABLE",
+    "NF-A06": "EXECUTABLE"
+  },
+  "archive": "resume-evidence-20261016.zip",
+  "archive_index": "resume-evidence-index-20261016.json",
+  "original_audit": {
+    "source_thread_id": "6ad0cebc-ef98-83ec-8543-f3886557f4ce",
+    "message_id": "b4e4a52c-1945-4dbe-a67b-331c7c2cff56",
+    "frozen_audit_sha": "54eda51172b8d915d172381914d73cba9c026328",
+    "report_text_sha256": "473631e35082044b11f0ad215474e28ce30edc0c35aa4c5af56871c7744c67ae",
+    "report_text_characters": 8446,
+    "report_retained": "LOCAL_AUTHORIZED_ENVIRONMENT_ONLY",
+    "coverage_jsonl": "NOT_RETRIEVED",
+    "reason": "Sandbox links in the audit chat have no accessible attachment on this local host; latest main has no NF-A01 report."
+  },
+  "focused_checks": {
+    "contracts": "PASS: 129 focused tests; frozen rendering and target guards retained",
+    "migration_provenance": "PASS: 13 checks; identical duplicate bytes admitted, differing bodies reject",
+    "native_postgres": "PASS: native target, revision, selection, read failure isolation, cancellation, duplicate and stale selection; separate migration scope check",
+    "native_eight_chapters": "PASS: current scripted regression through successor Groups; source generation callbacks are scripted, not a literary comparison",
+    "native_v5_memory": {
+      "scope": "SCRIPTED_NATIVE_V5_POSTGRES",
+      "book_run_id": "book-run:69630415-4ccb-4b15-bd23-7ae87fa1c927",
+      "candidate_observations": 64,
+      "host_omitted_count": 63,
+      "prompt_bytes": 69742,
+      "prompt_hash": "sha256:9a977699448b51a074858a00cc7550efe97609d56a6bcc69249be8c7e7e6d8a4"
+    },
+    "installed_wheel": {
+      "status": "PASS",
+      "cwd": "/private/tmp",
+      "loaded_module_hashes_verified": 691,
+      "wheel_sha256": "56cdbfd27905c3a8f4950aa1537d641a42645b19d907d4751a1cec67c51eb85e",
+      "resource_version": "creative-execution-template.v12",
+      "resource_sha256": "55f6894fd75671e1d5fd1068319a1a37467f2203a541f048b9c09a58fc554252",
+      "native_adoption": {
+        "status": "PASS",
+        "operation_id": "a0b1364d-72a0-4a92-95e6-a287cb090c7f",
+        "replay": true,
+        "synthetic_fixture": true
+      },
+      "same_book_read_export": {
+        "units": 4,
+        "text_digest": "sha256:d22cae0c4242a6953292b7cb4e3389253ed0f9eae9d0ffc71f2a05d1f5d0cc43"
+      }
+    }
+  },
+  "canonical_P0": {
+    "status": "FAIL",
+    "tested_commit": "576a785ed4df179abaf696fd97ef1630fb4d2e68",
+    "report_archive_path": "p0-source-final/p0-backend-qualification-576a785ed4df179abaf696fd97ef1630fb4d2e68.json",
+    "failed_tests": [
+      "test_execution_plane_imports_no_business_domain_module",
+      "test_repository_ast_execution_boundary_has_no_business_violation",
+      "test_current_synthesis_hierarchical_wire_obeys_exact_provider_schema[BOOK-book_plan.generate-book]"
+    ],
+    "baseline_reproduction": "The same three failures reproduce from a task-owned source archive of a068382c; 28 other focused baseline tests pass.",
+    "remaining_gates": [
+      {
+        "gate_id": "source-preflight",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "documentation-reality",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "static-and-manifests",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "pytest-backend",
+        "status": "FAIL"
+      },
+      {
+        "gate_id": "postgresql-start",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "migration-fresh",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "migration-compatibility",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "pytest-postgresql-integration",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "migration-head",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "query-plan-release",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "compose-runtime",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "resource-cleanup",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "evidence-finalization",
+        "status": "NOT_RUN"
+      }
+    ],
+    "backend_result": "3 failed, 6171 passed, 1522 subtests passed; 14 deprecation warnings",
+    "postgresql_and_compose": "NOT_RUN: backend dependency gate failed; Docker daemon is also unavailable"
+  },
+  "same_book": {
+    "book_run_id": "book-run:86a75a74-c326-47cc-a857-d983484ed537",
+    "book_version": 21,
+    "current_selected_chapters": 4,
+    "selected_han_characters": [
+      4390,
+      4174,
+      4342,
+      4395
+    ],
+    "selected_total_han_characters": 17301,
+    "formal_accepted": 0,
+    "new_real_prose_chapters": 0,
+    "new_real_provider_calls": 0,
+    "matching_frozen_provider_requests": 91,
+    "request_replay_scope": "RECONSTRUCTED_READ_ONLY_EXISTING_REQUESTS",
+    "text_digest": "sha256:d22cae0c4242a6953292b7cb4e3389253ed0f9eae9d0ffc71f2a05d1f5d0cc43",
+    "private_export": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/resume-20261016/same-book-installed-56cdbfd27905.md",
+    "effects_and_cost_ledger_unchanged": true,
+    "reservation_statuses": {
+      "SETTLED": 89,
+      "HELD_UNKNOWN": 15
+    },
+    "native_continue": "BLOCKED_BEFORE_SEND",
+    "native_continue_code": "READER_CURRENT_DEPLOYMENT_DRIFT",
+    "blocker_scope": "Task-owned restored copy; active Reader Pack remains bound to its older release. No activation or dispatch override.",
+    "last_historical_chapter_5_failure": "041a6c11-eff9-4daf-af15-48b63bd9a178 / PROVIDER_ROUTING_BLOCKED / zero Effects",
+    "NF_A02_is_last_historical_incident_root_cause": false
+  },
+  "retained_compatibility": {
+    "frozen_history_transport": "v1 retained; new v2 bounds v5 full-history memory; frozen earlier policy projections retain their original contract",
+    "frozen_template_renderer": "Original recorded renderer retained; new templates use opaque substitution",
+    "original_inputs_rewritten": false,
+    "published_migration_bodies_changed": false,
+    "new_migration_ids_added_by_task": [],
+    "copy_schema_head": "20261015_0220_chapter_prior_audit_convergence"
+  },
+  "literary_evidence": {
+    "source": "literary-source-binding.json",
+    "scope": "Four exact existing selected chapters read earlier in this same task; content hash reconfirmed",
+    "earliest_located_owner": "CHAPTER_PLANNING_AND_PARENT_CHAPTER_GROUP_REVIEW",
+    "new_literary_improvement": "NOT_RUN",
+    "human_acceptance": "NOT_RUN"
+  },
+  "remaining_goals": {
+    "full_book_chapters": 600,
+    "initial_delivery_chapters": 100,
+    "han_per_chapter": [
+      4000,
+      5000
+    ],
+    "initial_selected_chapters_remaining": 96,
+    "new_same_book_continuation_across_successor_planning": "NOT_RUN",
+    "full_599_source_native_postgres": "NOT_RUN; synthetic complete final-envelope measurement retained in reads-and-size.json",
+    "complete_repository_line_audit": false
+  },
+  "isolation": {
+    "current_run": "All cluster symlinks verified inside task root before starting; task-owned cluster stopped and retained",
+    "historical_deviation": "isolation-deviation.json: earlier first copy briefly retained original tablespace link; corrected before business queries/migration. No complete pre/post source cryptographic proof exists.",
+    "original_configured_server": "55577 unavailable; original server not started",
+    "other_workspaces": "Not reset, stashed, merged or overwritten"
+  },
+  "failed_attempts": "All P0 attempts, initial invalid optional metadata fixture, macOS path fixture failure and fixed routing-key fixture collision remain archived; no failed evidence is promoted to PASS."
+}

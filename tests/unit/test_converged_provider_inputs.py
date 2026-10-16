@@ -41,6 +41,88 @@ def _working(monkeypatch, target=130):
     return manuscript.freeze_working_context(uow, book, target, projection_policy=_policy())
 
 
+@pytest.mark.parametrize("literal", ["{{target_scope}}", "{{context_bundle}}", "{{some_literal}}", "花括号 {{input_manifest}} 与引号 \\\"保留\\\""])
+def test_final_prompt_treats_inserted_author_text_as_opaque(literal):
+    from hashlib import sha256
+    from tests.unit.test_capability_pack_artifact_materialization import _materialize_chapter_codex_prompt
+    from tests.unit.test_production_execution_gateway import contracts
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    materialization = _prompt_materialization({"context_segments": []})
+    materialization["pack_artifacts"]["prompt_template"]["content"] = {
+        "text": "<data>{{provider_data_envelope}}</data>{{target_scope}}{{context_bundle}}"}
+    prompt, evidence = _materialize_chapter_codex_prompt(request=request, stage="draft",
+        inputs={"plan": {"chapter": 1, "chapter_objective": literal}}, materialization=materialization)
+    envelope = json.loads(prompt.split("<data>", 1)[1].split("</data>", 1)[0])
+    assert envelope["input_manifest"]["chapter_plan"]["chapter_objective"] == literal
+    assert evidence["fully_rendered_prompt_hash"] == "sha256:" + sha256(prompt.encode()).hexdigest()
+    assert evidence["template_render_contract"] == "opaque-template-substitution.v1"
+
+
+def test_legacy_render_contract_reconstructs_frozen_template_semantics():
+    from tests.unit.test_production_execution_gateway import contracts
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+    *_, request = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    materialization = _prompt_materialization({"context_segments": []})
+    materialization["pack_artifacts"]["prompt_template"]["content"] = {"text": "{{provider_data_envelope}}"}
+    with pytest.raises(KernelError, match="CHAPTER_CAPABILITY_TEMPLATE_INVALID"):
+        _materialize_production_codex_prompt(request=request, stage="draft", inputs={"plan": {"chapter_objective": "{{literal}}"}},
+            materialization=materialization, template_render_contract="sequential-template-substitution.v1")
+
+
+def test_long_history_omission_ledger_stays_out_of_final_provider_input(monkeypatch):
+    from novel_forge.modules.narrative_state.working_memory import normalize_observations
+    uow, book, _ = _native_history(monkeypatch, 600, tiny=True)
+    def memory(_uow, _book, source):
+        text = source.content["text"]
+        notes = [{"kind": "KNOWLEDGE", "subject": "主角", "state_key": str(index),
+            "claim": "人物相信这次经历。", "perspective": "BELIEF", "knowledge_owner": "主角",
+            "quote": text, "causes": []} for index in range(64)]
+        return normalize_observations(notes, text), {"kind": "WRITER_SELF_OBSERVATION"}
+    monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", memory)
+    working = manuscript.freeze_working_context(uow, book, 600, projection_policy=_policy())
+    host = deepcopy(working)
+    assert len(working["working_memory"]["omitted_observation_ids"]) > 38000
+    from novel_forge.modules.book_authority.working_prose import project_working_history_for_provider
+    delivered = project_working_history_for_provider(working)
+    assert working == host
+    assert len(json.dumps(delivered, ensure_ascii=False)) < 150_000
+    assert delivered["sources"] == working["sources"]
+    packet = delivered["working_memory"]
+    assert "omitted_observation_ids" not in packet
+    assert packet["host_packet_hash"] == working["working_memory"]["packet_hash"]
+    assert packet["omitted_observation_count"] == len(working["working_memory"]["omitted_observation_ids"])
+    assert packet["entries"] == working["working_memory"]["entries"]
+    validate_working_projection(delivered, project_id="project", book_id="book", target_chapter=600, accepted_through_chapter=0)
+    context = length_context()
+    context.update(project_id="project", book_id="book", chapter=600,
+        accepted_boundary={"accepted_through_chapter": 0}, working_manuscript=working)
+    context["chapter_generation_length"] = generation_requirement(context)
+    prompt, evidence, envelope, _ = _materialize("draft", {"plan": {"chapter": 600, "target_word_count": 4500},
+        "style": {}, "chapter_memo": {}, "realization_contract": {}}, context, writer=True)
+    assert len(prompt.encode()) < 200_000
+    assert evidence["rendered_prompt_bytes"] == len(prompt.encode())
+    assert envelope["context_bundle"]["working_manuscript"]["working_memory"]["entries"] == packet["entries"]
+    for row in working["sources"][-2:]:
+        assert row["omitted_ranges"] == []
+        assert all(passage["text"] in prompt for passage in row["passages"])
+    from novel_forge.modules.production_execution.provider_admission import (
+        ProviderRequestEnvelope, build_route_token_accounting_contract, prepare_provider_admission, verify_provider_admission,
+    )
+    from tests.unit.test_provider_token_admission import COMPLETE_COVERAGE
+    envelope = ProviderRequestEnvelope(provider="codex-cli", model="gpt-6.1-sol",
+        protocol="codex-cli-application-stdin-v1", input_text=prompt, max_output_tokens=32000,
+        timeout_seconds=300, stable_idempotency_key="synthetic-history:600")
+    contract = build_route_token_accounting_contract(provider="codex-cli", model="gpt-6.1-sol",
+        route_identity="synthetic-history-route", accounting_method="CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        accounting_evidence_ref="synthetic-visible-stdin-accounting.v1",
+        model_context_limit=258400, execution_token_limit=258400, output_reserve=32000,
+        safety_margin=256, framing_overhead=16)
+    receipt = prepare_provider_admission(envelope, contract, complete_request_coverage=COMPLETE_COVERAGE)
+    assert receipt.status == "ADMITTED" and receipt.precision == "APPLICATION_VISIBLE_UPPER_BOUND"
+    verify_provider_admission(envelope, receipt)
+
+
 def _materialize(stage, inputs, context, *, writer=False):
     if writer:
         context.update(context_profile_version="draft-context-profile-v4", token_budget=131072)

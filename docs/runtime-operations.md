@@ -11,6 +11,12 @@ uv pip install -e '.[api,postgres,provider-openai,test,object,ingestion,industri
 npm --prefix web/admin ci
 ```
 
+Non-editable wheels install `config/execution_templates/author_first.json` under the
+installation's shared Novel Forge data directory. Workflow adoption
+resolves the source checkout or that installed resource through `runtime_resource`.
+Verify the installed template digest against the release source from outside the checkout;
+an editable import does not establish packaged-resource availability.
+
 `IndustrialSettings.from_env` reads its settings from the environment and local `.env`
 files. Provider composition separately reads process environment (or its explicit `env`
 mapping); settings-file parsing does not export Provider keys into that environment.
@@ -351,8 +357,10 @@ manifest for their exact identities. Published fork modules remain byte-preserve
 `src/novel_forge/storage/migrations/historical/craft_2eb0e685/` with
 separate source/hash manifests; their original IDs are historical evidence, not main IDs.
 The frozen fork modules `v20261015_0218_world_exact_context_accounting.py` and
-`v20261015_0219_chapter_prior_method_audits.py` remain unregistered SQL source evidence;
-only their new main successors 0219 and 0220 may be applied through the registry.
+`v20261015_0219_chapter_prior_method_audits.py` remain byte-preserved SQL source evidence
+under `src/novel_forge/storage/migrations/historical/craft_f06f4dac/`, with their source
+and hash manifest. Their original import paths resolve through the existing historical
+module search path; only their main successors 0219 and 0220 are registered for execution.
 Ordinary migration admission still requires the exact registered prefix. A fork restore
 needs an explicitly bounded reconstruction with preserved applied history, matching database,
 object storage and execution evidence; do not rewrite applied IDs, weaken foreign-history
@@ -3002,6 +3010,14 @@ and the final rendered-request admission remain authoritative; admitting a
 successor does not prove that its Context or Writer will fit.
 
 ## Evidence interpretation
+
+Provider template rendering scans placeholders only in the frozen template. Inserted
+author text, including literal `{{target_scope}}` or other brace markers, remains opaque.
+New materialization evidence records `opaque-template-substitution.v1` and the final
+rendered Prompt hash. Replay selects the history transport and renderer from the original
+admission. An older admission without the rendering field retains sequential v1 semantics.
+Existing admission hashes remain binding: a changed reconstruction
+must fail identity checks and use the owning recovery path, without rewriting old inputs.
 
 Local tests and Compose runs use fixtures unless a separately controlled route and live
 evidence say otherwise. Keep these claims distinct:

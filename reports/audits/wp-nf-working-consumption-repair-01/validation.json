@@ -1,0 +1,177 @@
+{
+  "work_package": "WP-NF-WORKING-CONSUMPTION-REPAIR-01",
+  "baseline_sha": "54eda51172b8d915d172381914d73cba9c026328",
+  "evidence_ceiling": "EXECUTABLE",
+  "publication_qualification": "NOT_RUN",
+  "new_real_provider_calls": 0,
+  "implementation": {
+    "NF-A01": "PASS",
+    "NF-A02": "PASS",
+    "NF-A03": "PASS",
+    "NF-A04": "PASS",
+    "NF-A05_DEPENDENCY": "PASS",
+    "NF-A06": "PASS"
+  },
+  "checks": {
+    "focused_contracts": {
+      "status": "PASS",
+      "tests": 349,
+      "log": "focused-final-03.log"
+    },
+    "applicable_unit_matrix": {
+      "status": "PASS",
+      "tests": 307,
+      "subtests": 5,
+      "log": "focused-matrix.log"
+    },
+    "native_postgres": {
+      "status": "PASS",
+      "log": "postgres-native-final-03.log",
+      "evidence": "native-postgres-proof.json",
+      "scope": "SCRIPTED_CURRENT_NATIVE_ENTRY"
+    },
+    "kernel_sql_guards": {
+      "status": "PASS",
+      "cases": 21,
+      "log": "postgres-guards-final.log",
+      "scope": "MIGRATION_GUARD_FIXTURES"
+    },
+    "web_types": {
+      "status": "PASS",
+      "log": "web-typecheck.log"
+    },
+    "web_focused": {
+      "status": "PASS",
+      "tests": 16,
+      "log": "web-tests.log",
+      "scope": "STATIC_UI_CONTRACTS"
+    },
+    "eight_chapter_regression": {
+      "status": "PASS",
+      "first_attempt": "FAIL",
+      "first_log": "postgres-author-first-01.log",
+      "owned_repeat_log": "postgres-eight-owned.log",
+      "first_failure": "DEADLOCK",
+      "scope": "CURRENT_SCRIPTED_NATIVE_8_CHAPTERS_AND_SUCCESSOR_GROUPS",
+      "seconds": 538.43,
+      "unresolved_first_failure_root_cause": true
+    },
+    "packaged_install": {
+      "status": "PASS",
+      "evidence": "installed-verification-versioned.json",
+      "native_entry": "authority-manuscript read/export outside checkout",
+      "adoption_mutation": "NOT_RUN",
+      "resource_version": "creative-execution-template.v12",
+      "resource_sha256": "55f6894fd75671e1d5fd1068319a1a37467f2203a541f048b9c09a58fc554252"
+    },
+    "complete_P0": {
+      "status": "NOT_RUN",
+      "reason": "Docker daemon unavailable; exact-SHA full backend/PostgreSQL/Compose chain not executed",
+      "evidence": "docker-preflight.log"
+    },
+    "new_same_book_continuation": {
+      "status": "NOT_RUN",
+      "reason": "Frozen runtime NOVEL_FORGE_NO_MODEL_DISPATCH=1; 15 historical UNKNOWN Effects and HELD_UNKNOWN reservations preserved"
+    },
+    "long_history": {
+      "status": "PASS",
+      "scope": "SYNTHETIC_599_SOURCE_FINAL_PROMPT_AND_TYPED_APPLICATION_VISIBLE_ENVELOPE",
+      "evidence": "reads-and-size.json",
+      "full_long_history_native_postgres": "NOT_RUN"
+    },
+    "human_literary_acceptance": {
+      "status": "NOT_RUN"
+    },
+    "original_audit_coverage_jsonl": {
+      "status": "NOT_RUN",
+      "reason": "Original sandbox attachment unavailable locally; accessible audit chat report read"
+    },
+    "documentation": {
+      "status": "PASS",
+      "evidence": "documentation-final-02.json"
+    },
+    "instruction_and_manifests": {
+      "status": "PASS",
+      "log": "diagnostic-evidence.zip#manifests-final.log"
+    }
+  },
+  "same_book": {
+    "book_run_id": "book-run:86a75a74-c326-47cc-a857-d983484ed537",
+    "book_version": 21,
+    "existing_selected_chapters": 4,
+    "new_selected_chapters_this_run": 0,
+    "existing_original_drafts": 4,
+    "existing_native_revision": 1,
+    "existing_explicit_work_selection": 1,
+    "formal_accepted": 0,
+    "selected_han_characters": [
+      4390,
+      4174,
+      4342,
+      4395
+    ],
+    "selected_total_han_characters": 17301,
+    "reconstructed_model_call_records": 65,
+    "matching_recorded_prompt_hashes": 65,
+    "existing_successor_group": [
+      5,
+      8
+    ],
+    "new_Provider_dispatch": false,
+    "private_export": "/Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/same-book-installed-final.md",
+    "historical_unknowns": 15
+  },
+  "remaining_goals": {
+    "first_delivery_chapters": 100,
+    "whole_book_chapters": 600,
+    "han_per_chapter": [
+      4000,
+      5000
+    ],
+    "new_continuous_prose_across_successor_boundary": "NOT_RUN",
+    "earliest_narrative_repair_owner": "CHAPTER_PLANNING_AND_PARENT_CHAPTER_GROUP_REVIEW",
+    "new_runtime_literary_improvement": "NOT_RUN"
+  },
+  "call_chain": [
+    {
+      "entry": "authority-manuscript read/export; /product/editor/manuscripts",
+      "application": "book_authority.manuscript.current_manuscript",
+      "owner": "Book Authority",
+      "mutation": "NONE",
+      "storage": "AuthorityUnitOfWork / asset_documents / existing manuscript delivery and work selection assets",
+      "migration": "20261008_0181_author_manuscript_delivery",
+      "gate": "scope, source integrity, exact export versions",
+      "optional_review": "separate UoW; UNAVAILABLE on auxiliary errors"
+    },
+    {
+      "entry": "Creation/Planning/Chapter preparation",
+      "application": "freeze_working_context -> ExecutionIntent/Memo/Context -> compile_working_history_transport -> _materialize_production_codex_prompt",
+      "owner": "Book source selection; Narrative State pure observations; Chapter Gateway materialization",
+      "mutation": "existing frozen assets and Kernel admission only",
+      "provider": "frozen ExternalEffect / materialization / ProviderRequestEnvelope / admission hash",
+      "gate": "working target, source hash, character knowledge, exact final capacity",
+      "recovery": "original admission chooses frozen v1 or v2 transport and original renderer; no terminal history rewritten"
+    },
+    {
+      "entry": "authority-manuscript use-working-candidate",
+      "application": "select_working_candidate -> resolve_working_source -> next freeze",
+      "owner": "Book Authority",
+      "mutation": "existing _execute_mutation UoW / book_working_manuscript_selection",
+      "gate": "source version, Book CAS, native revision frontier, cancellation, propagation",
+      "recovery": "same key replays original receipt; stale old revision rejected; author choice and formal acceptance remain NOT_GRANTED"
+    }
+  ],
+  "known_operation_deviation": "isolation-deviation.json",
+  "full_repository_audit_complete": false,
+  "production_proven": false,
+  "historical_input_compatibility": {
+    "history_transport": "frozen v1 retained; new admissions use v2",
+    "template_renderer": "original frozen renderer retained; new admissions use opaque-template-substitution.v1",
+    "stored_original_inputs_rewritten": false
+  },
+  "source_tree_identity": "sha256:47aa3ebb02c110cfe86e3dd019e8f2fc2a272cf14bc5a57f4e1615ebf1089ac6",
+  "overall_status": "BLOCKED",
+  "overall_reason": "Implementation and focused native checks delivered; new real same-Book continuation and complete publication qualification are not executed.",
+  "implementation_commit": "e1cfffb6473e52981cae032248d4ba712eae3c5b",
+  "diagnostic_archive": "diagnostic-archive-index.json"
+}

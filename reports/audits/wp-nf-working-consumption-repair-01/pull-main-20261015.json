@@ -1,0 +1,34 @@
+{
+  "schema_version": "working-consumption-main-sync.v1",
+  "observed_at": "2026-10-15T15:25:53.898284+00:00",
+  "repair_parent_sha": "f4aff7cf5d123d3ed8711ef1100c116e66e945e1",
+  "upstream_main_sha": "c1408f0e2478b42bedf8ee925703aaa01fa9713e",
+  "implementation_tree_sha": "sha256:5afe18974833199cd0673f671468a8a2890a97ec27b68afe3c9b7c48815791e0",
+  "conflict": {
+    "path": "architecture/reality-evidence.json",
+    "field": "projection_source.implementation_tree_sha",
+    "resolution": "Recomputed from combined implementation; preserved both branches changes.",
+    "raw_conflict_sha256": "f26d440c4e40486291652cffb32deed89057dfc65aa1eb6c92fbc7c019c0d530"
+  },
+  "checks": {
+    "focused_unit_tests": {
+      "status": "PASS",
+      "tests": 276,
+      "subtests": 8,
+      "log": "pull-main-20261015-tests.log",
+      "sha256": "3822e56553b01bb9c41e4503ae3d2924d9557e6344e70d5bde9e052b33421b75"
+    },
+    "documentation_reality": {
+      "status": "PASS",
+      "source_identity": null
+    },
+    "cached_diff_check": "PASS",
+    "native_postgres_rerun": "NOT_RUN",
+    "installed_wheel_rerun": "NOT_RUN",
+    "full_publication_qualification": "NOT_RUN",
+    "real_provider_generation": "NOT_RUN"
+  },
+  "prior_evidence": "All previous task evidence remains bound to its recorded source identities; this sync does not upgrade qualification.",
+  "original_dirty_workspace": "NOT_MODIFIED",
+  "model_dispatch": "NOT_STARTED"
+}

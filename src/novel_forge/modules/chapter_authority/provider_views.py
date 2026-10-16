@@ -1615,6 +1615,15 @@ def build_provider_context_view(
         author = context_bundle.get("author_design_projection") if task.get("role") != "ACTOR" else None
         if author is not None:
             chapter = _planning_chapter(context_bundle)
+            target_chapter = int(task["accepted_through_chapter"]) + 1
+            if task.get("working_manuscript") is not None:
+                from novel_forge.modules.book_authority.working_prose import validate_working_projection
+                target_chapter = task.get("target_chapter")
+                validate_working_projection(task["working_manuscript"], project_id=context_bundle["project_id"],
+                    book_id=context_bundle["book_id"], target_chapter=target_chapter,
+                    accepted_through_chapter=task["accepted_through_chapter"])
+                if type(target_chapter) is not int or task["working_manuscript"]["target_chapter"] != target_chapter:
+                    raise KernelError("WORLD_AUTHOR_CONTEXT_INVALID", "World author intent requires its frozen working target")
             fragments = author.get("fragments") if isinstance(author, Mapping) else None
             if (
                 not isinstance(author, Mapping)
@@ -1622,7 +1631,7 @@ def build_provider_context_view(
                 or author.get("contract_version") != "author-design-projection.v1"
                 or author.get("target") != "CHAPTER"
                 or author.get("authority") != "AUTHOR_INTENT_NOT_CANON"
-                or chapter != int(task["accepted_through_chapter"]) + 1
+                or chapter != target_chapter
                 or author.get("chapter_range") != [chapter, chapter]
                 or not isinstance(fragments, list)
                 or not all(
@@ -3787,14 +3796,16 @@ def _expand_text_fragments(value):
     return result
 
 
-def compile_working_history_transport(view):
+def compile_working_history_transport(view, *, contract_version="working-history-provider-transport.v2"):
     from novel_forge.modules.book_authority.working_prose import LONGFORM_POLICY_VERSION, project_working_history_for_provider
 
+    if contract_version not in {"working-history-provider-transport.v1", "working-history-provider-transport.v2"}:
+        raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Working history transport must retain its frozen version")
     receipts = []
     def project(value, path):
         if isinstance(value, Mapping):
             if (value.get("projection_policy") or {}).get("version") == LONGFORM_POLICY_VERSION and "source_history" in value:
-                result = project_working_history_for_provider(value)
+                result = project_working_history_for_provider(value, bounded_memory=contract_version == "working-history-provider-transport.v2")
                 if result != value:
                     receipts.append({"json_pointer": path, "source_snapshot_hash": value["snapshot_hash"],
                         "delivery_snapshot_hash": result["snapshot_hash"], "source_history_hash": value["source_history"]["content_hash"],
@@ -3814,7 +3825,7 @@ def compile_working_history_transport(view):
             return [project(item, path + "/" + str(index)) for index, item in enumerate(value)]
         return deepcopy(value)
     result = project(view, "")
-    return result, {"contract_version": "working-history-provider-transport.v1", "projections": receipts}
+    return result, {"contract_version": contract_version, "projections": receipts}
 
 
 def compile_exact_context_references(view, *, structured_transport=False, short_literals=False, nested_canonical_strings=False):

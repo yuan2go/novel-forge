@@ -6,13 +6,36 @@ import hashlib
 import json
 from pathlib import Path
 
-from novel_forge.tools.head_integrity import build_head_integrity_report, _pr_gate_delegates_to_p0
+from novel_forge.tools.head_integrity import build_head_integrity_report, _pr_gate_delegates_to_p0, _retained_migration_aliases
 
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class HeadIntegrityTests(unittest.TestCase):
+    def test_identical_retained_origins_are_compatible_but_divergent_origins_reject(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            source = root / "src"
+            filename = "v20261015_0217_retained_working_continuation.py"
+            original = "src/novel_forge/storage/migrations/versions/" + filename
+            def declare(lineage: str, content: bytes) -> None:
+                archive = source / "novel_forge/storage/migrations/historical" / lineage
+                archive.mkdir(parents=True, exist_ok=True)
+                retained = archive / filename
+                retained.write_bytes(content)
+                (archive / "manifest.json").write_text(json.dumps({
+                    "contract_version": "published-craft-migration-retention.v1",
+                    "registered_on_main": False, "modules": [{"original_path": original,
+                        "retained_path": str(retained.relative_to(root)),
+                        "sha256": hashlib.sha256(content).hexdigest()}]}))
+            declare("first", b"UPGRADE_STATEMENTS=[]\n")
+            declare("second", b"UPGRADE_STATEMENTS=[]\n")
+            self.assertEqual(len(_retained_migration_aliases(source)), 1)
+            declare("second", b"UPGRADE_STATEMENTS=['DIFFERENT']\n")
+            with self.assertRaisesRegex(ValueError, "ambiguous"):
+                _retained_migration_aliases(source)
+
     def test_retained_migration_imports_require_exact_tracked_manifest_and_body(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

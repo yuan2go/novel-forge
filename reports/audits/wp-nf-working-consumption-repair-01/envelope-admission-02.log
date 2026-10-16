@@ -1,0 +1,65 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_long_history_omission_ledger_stays_out_of_final_provider_input ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109d78200>
+
+    def test_long_history_omission_ledger_stays_out_of_final_provider_input(monkeypatch):
+        from novel_forge.modules.narrative_state.working_memory import normalize_observations
+        uow, book, _ = _native_history(monkeypatch, 600, tiny=True)
+        def memory(_uow, _book, source):
+            text = source.content["text"]
+            notes = [{"kind": "KNOWLEDGE", "subject": "主角", "state_key": str(index),
+                "claim": "人物相信这次经历。", "perspective": "BELIEF", "knowledge_owner": "主角",
+                "quote": text, "causes": []} for index in range(64)]
+            return normalize_observations(notes, text), {"kind": "WRITER_SELF_OBSERVATION"}
+        monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", memory)
+        working = manuscript.freeze_working_context(uow, book, 600, projection_policy=_policy())
+        host = deepcopy(working)
+        assert len(working["working_memory"]["omitted_observation_ids"]) > 38000
+        from novel_forge.modules.book_authority.working_prose import project_working_history_for_provider
+        delivered = project_working_history_for_provider(working)
+        assert working == host
+        assert len(json.dumps(delivered, ensure_ascii=False)) < 150_000
+        assert delivered["sources"] == working["sources"]
+        packet = delivered["working_memory"]
+        assert "omitted_observation_ids" not in packet
+        assert packet["host_packet_hash"] == working["working_memory"]["packet_hash"]
+        assert packet["omitted_observation_count"] == len(working["working_memory"]["omitted_observation_ids"])
+        assert packet["entries"] == working["working_memory"]["entries"]
+        validate_working_projection(delivered, project_id="project", book_id="book", target_chapter=600, accepted_through_chapter=0)
+        context = length_context()
+        context.update(project_id="project", book_id="book", chapter=600,
+            accepted_boundary={"accepted_through_chapter": 0}, working_manuscript=working)
+        context["chapter_generation_length"] = generation_requirement(context)
+        prompt, evidence, envelope, _ = _materialize("draft", {"plan": {"chapter": 600, "target_word_count": 4500},
+            "style": {}, "chapter_memo": {}, "realization_contract": {}}, context, writer=True)
+        assert len(prompt.encode()) < 200_000
+        assert evidence["rendered_prompt_bytes"] == len(prompt.encode())
+        assert envelope["context_bundle"]["working_manuscript"]["working_memory"]["entries"] == packet["entries"]
+        for row in working["sources"][-2:]:
+            assert row["omitted_ranges"] == []
+            assert all(passage["text"] in prompt for passage in row["passages"])
+        from novel_forge.modules.production_execution.provider_admission import (
+            ProviderRequestEnvelope, build_route_token_accounting_contract, prepare_provider_admission, verify_provider_admission,
+        )
+        from tests.unit.test_provider_token_admission import COMPLETE_COVERAGE
+        envelope = ProviderRequestEnvelope(provider="codex-cli", model="gpt-6.1-sol",
+            protocol="codex-cli-application-stdin-v1", input_text=prompt, max_output_tokens=32000,
+            timeout_seconds=300, stable_idempotency_key="synthetic-history:600")
+        contract = build_route_token_accounting_contract(provider="codex-cli", model="gpt-6.1-sol",
+            route_identity="synthetic-history-route", accounting_method="CODEX_CLI_APPLICATION_UTF8_BYTES",
+            accounting_evidence_ref="synthetic-visible-stdin-accounting.v1",
+            model_context_limit=258400, execution_token_limit=258400, output_reserve=32000,
+            safety_margin=256, framing_overhead=16)
+        receipt = prepare_provider_admission(envelope, contract, complete_request_coverage=COMPLETE_COVERAGE)
+>       assert receipt.status == "ADMITTED" and receipt.precision == "APPLICATION_VISIBLE_UPPER_BOUND"
+E       AssertionError: assert ('REJECTED' == 'ADMITTED'
+E         
+E         - ADMITTED
+E         + REJECTED)
+
+tests/unit/test_converged_provider_inputs.py:110: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_converged_provider_inputs.py::test_long_history_omission_ledger_stays_out_of_final_provider_input
+1 failed, 16 deselected in 2.85s

@@ -1,0 +1,41 @@
+{
+  "baseline_sha": "54eda51172b8d915d172381914d73cba9c026328",
+  "audit_sha": "54eda51172b8d915d172381914d73cba9c026328",
+  "document_conflicts": [
+    {
+      "file": "docs/current-system.md",
+      "claim": "Saved prose remains readable independently of optional review",
+      "implementation": "current_manuscript synchronously invokes _review_status -> review_progress in the prose UoW",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "status": "CONFIRMED_BOUNDARY_GAP"
+    },
+    {
+      "file": "docs/runtime-operations.md",
+      "claim": "known review failures do not block saved prose",
+      "implementation": "ordinary terminal failures project normally; malformed auxiliary receipts can still abort read/export",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "status": "CONDITIONAL_RECEIPT_FAILURE"
+    }
+  ],
+  "source_hashes": {
+    "docs/current-system.md": "sha256:89dd67cf9d26c4062028b568efb7771374a8c4474176e8f19acbcacc52b65c2b",
+    "docs/runtime-operations.md": "sha256:8f3152dfbd1b7dd4a0d16820a81cb8d41be80ab8164044f0eb7cd1b697e2da3a",
+    "docs/development.md": "sha256:0aaf85028d6fb33732347b2d36b67e6715fc2f60b1a34d6bb99f9eb8edeaf6dc",
+    "architecture/reality-evidence.json": "sha256:9743c760a024cef472ec4f25a5b36dcb9db53f3e987817dcc4d26b130f4eefa9",
+    "AGENTS.md": "sha256:70625877c9804584f1aa91e358c78ace073559d9aa1a91336bb22a6ea458ecfa"
+  },
+  "audit_source": "Read accessible chat 系统审计 task; original sandbox REPORT and coverage.jsonl not locally available",
+  "other_open_prs": [
+    133,
+    135
+  ],
+  "implementation_scope": [
+    "NF-A01",
+    "NF-A02",
+    "NF-A03",
+    "NF-A04",
+    "NF-A06",
+    "NF-A05 dependency only"
+  ],
+  "production_proven": false
+}

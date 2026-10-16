@@ -200,9 +200,9 @@ def _retained_migration_aliases(source_root: Path) -> dict[str, Path]:
                     or hashlib.sha256(retained.read_bytes()).hexdigest() != item.get("sha256")):
                 continue
             module = "novel_forge.storage.migrations.versions." + original.stem
-            if module in aliases:
+            if module in aliases and aliases[module].read_bytes() != retained.read_bytes():
                 raise ValueError("retained migration import origin is ambiguous: " + module)
-            aliases[module] = retained
+            aliases.setdefault(module, retained)
     return aliases
 
 

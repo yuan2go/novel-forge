@@ -214,6 +214,14 @@ separately from the bounded prose passages sent to Planning, Memo and Writer. Th
 128-chapter passage window does not reject chapter 130 or discard earlier source identities.
 Located observations and their causal passages can retrieve earlier material within the
 real character and complete-request capacity bounds. Omitted prose remains unknown.
+The complete omission-ID and source-coverage ledger stays in the frozen Host packet.
+New requests record `working-history-provider-transport.v2`; frozen v1 admission replays
+its original projection.
+Its `working-observations-provider.v1` view retains the selected, located observations,
+visible coverage, omission counts and hashes, and original packet hash. It does not send
+the complete omitted-ID arrays. Historical provider packets remain readable; transport
+does not rewrite the stored Host snapshot. World author scene intent binds the verified
+working target and its accepted boundary; accepted-only tasks retain accepted-plus-one.
 The current guidance follows this Book's goals, character choices, consequences and author
 length without requiring three turns, a reversal, a cost or a particular ending in every
 chapter. Source changes invalidate dependent observations and later frozen dependencies,
@@ -257,7 +265,12 @@ unavailable Provider or Source Import configuration. Failed assembly is not cach
 usable service. Readiness reports the unavailable route separately and does not qualify it.
 `/product/editor/manuscripts/export` binds an exact version list and optional chapter range;
 it requires neither whole-book completion nor Quality PASS nor strict Edition validation.
-The export records actual review, requirement and formal-progress status. The author UI
+The export records actual review, requirement and formal-progress status, with native
+working-selection receipt identity and hash separate from author choice and formal
+acceptance. Auxiliary review aggregation runs after the exact prose snapshot in its own
+UoW; malformed receipts or database errors report `UNAVAILABLE` with an error code.
+Prose identity, integrity and exact export-version failures still reject the read.
+The author UI
 exposes reading, editing, differences, adoption, pause/resume and current manuscript export.
 Strict Edition and deep-review panels load after the author opens their optional workflow.
 Unconfirmed review commands survive a browser refresh with their original idempotency keys.
@@ -2277,8 +2290,9 @@ The frozen packet distinguishes character state, attributed knowledge, relations
 event, consequence and promise observations. Subjective belief, hearsay and reader-only
 knowledge remain separate; latest observation is not proof of truth. Located historical
 paragraphs back every supplied observation. Source coverage, memory-budget omissions and
-retrieval omissions remain in the hashed packet through Intent, Memo, Context and Writer
-Provider projection. A selected source replacement or changed predecessor invalidates
+retrieval omissions remain in the hashed Host packet through Intent, Memo and Context.
+The v5 Provider history view uses the bounded reference contract described above; earlier
+frozen projection contracts retain their omission representation. A selected source replacement or changed predecessor invalidates
 its dependent observations; rebuilding creates new annotations. Frozen requests retain
 immutable annotation versions even when later notes change. v1/v2 frozen behavior remains
 unchanged. History depth, recent complete chapters and passage/annotation budgets are

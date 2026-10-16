@@ -1,0 +1,7 @@
+Using Python 3.12.2 environment at: /Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/installed-final
+Resolved 48 packages in 854ms
+Prepared 1 package in 78ms
+Uninstalled 1 package in 137ms
+Installed 1 package in 294ms
+ - novel-forge==6.0.0 (from file:///Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/wheels-final/novel_forge-6.0.0-py3-none-any.whl)
+ + novel-forge==6.0.0 (from file:///Volumes/DevSSD/Development/Workspace/evidence/wp-nf-working-consumption-repair-01/wheels-versioned/novel_forge-6.0.0-py3-none-any.whl)

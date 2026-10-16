@@ -1,0 +1,35 @@
+{
+  "database": [
+    "nf_gen_cap_repair_20261013",
+    55679
+  ],
+  "head": [
+    "20261014_0212_prose_citation_revalidation"
+  ],
+  "books": [
+    [
+      "book-run:86a75a74-c326-47cc-a857-d983484ed537",
+      "book:author:a82e253a8edfe1294d71ff6e05cff8bad1c5871a5d15888a16617774ddcc9903",
+      "project:author:a82e253a8edfe1294d71ff6e05cff8bad1c5871a5d15888a16617774ddcc9903",
+      "CHAPTER_PLAN_REQUIRED",
+      4,
+      0,
+      100,
+      21,
+      "authority-output:5d50b2c9-8028-45cb-8afa-a9742bdd6ac8:book.bootstrap.production_profile:v1"
+    ],
+    [
+      "book-run:0a78597f-0d54-4dcb-bc15-39895a0e2ce0",
+      "book:author:fb0de2a781cbf0293bc68f81760e6d1cbb004acffb24130e3c452526d3323674",
+      "project:author:fb0de2a781cbf0293bc68f81760e6d1cbb004acffb24130e3c452526d3323674",
+      "READY",
+      1,
+      0,
+      1,
+      6,
+      "authority-output:9ada6e37-2378-4bc5-9aae-e01ed55d5340:book.bootstrap.production_profile:v1"
+    ]
+  ],
+  "source_cluster": "STOPPED_RECOVERED_TASK_COPY",
+  "provider_calls": 0
+}

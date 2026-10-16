@@ -1,0 +1,30 @@
+
+> novel-forge-admin@0.1.0 test
+> node --test tests/feature-architecture.test.mjs tests/author-editor-text.test.mjs tests/editorial-learning.test.mjs
+
+✔ textarea single edits retain exact mixed source newlines and Unicode (1.109667ms)
+✔ only eligible knowledge in the current project is offered (1.710708ms)
+✔ edited or unavailable knowledge cannot be submitted as previously approved learning (0.217583ms)
+✔ native editorial request freezes deduplicated knowledge and legacy brief remains usable (0.1485ms)
+▶ Novel Forge admin feature architecture
+  ✔ does not expose retired score-only quality or unbounded campaign consoles (3.34325ms)
+  ✔ keeps V6/V7 navigation groups and local factory centers wired (0.363667ms)
+  ✔ has routed feature modules for P2 centers (0.164667ms)
+  ✔ has routed Novel OS runtime consoles wired to real runtime APIs (1.111959ms)
+  ✔ has routed Novel OS editable consoles for longform governance (0.42675ms)
+  ✔ exposes asset graph, publishing calendar, version registry, and impact visualization in source (0.80425ms)
+  ✔ keeps API client contracts for P2 endpoints explicit (0.422375ms)
+  ✔ upgrades the MKAOS console into a knowledge asset operations workbench (0.662584ms)
+  ✔ wires MKAOS ingestion and creative extraction workbench routes (0.4925ms)
+  ✔ wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control (0.425458ms)
+  ✔ keeps content intelligence artifact repairs review-only (0.179042ms)
+  ✔ contains an optional Playwright browser smoke test (0.247625ms)
+✔ Novel Forge admin feature architecture (10.518167ms)
+ℹ tests 16
+ℹ suites 1
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 335.294041
