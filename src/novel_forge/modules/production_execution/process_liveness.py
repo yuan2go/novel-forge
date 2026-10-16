@@ -67,4 +67,3 @@ def provider_invocation_inflight(record):
     expected_token = (record.get("raw_evidence") or {}).get("invocation_process_start_identity")
     current_token = _provider_process_probe.process_start_token(process_id)
     return not expected_token or not current_token or expected_token == current_token
-
