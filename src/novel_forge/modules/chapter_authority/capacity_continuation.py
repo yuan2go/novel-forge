@@ -14,6 +14,7 @@ CAPACITY_ERRORS = frozenset({
     "TASK_CONTEXT_FIDELITY_RESTORE_EXCEEDS_BUDGET", "PROVIDER_ROUTING_BLOCKED",
     "PROVIDER_CONTEXT_LIMIT_EXCEEDED", "CONTEXT_CAPACITY_EXCEEDED",
     "CHAPTER_PROVIDER_TOKEN_CEILING_INVALID",
+    "TASK_CONTEXT_COMPRESSION_NO_PROGRESS", "TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE",
 })
 _LOCAL_ERRORS = CAPACITY_ERRORS - {"PROVIDER_ROUTING_BLOCKED"}
 _NODES = frozenset({"chapter.context.build", "chapter.draft.generate", "chapter.revision.apply"})
@@ -38,12 +39,16 @@ def validate_capacity_pack_pair(original: Mapping[str, Any], target: Mapping[str
                 or canonical_hash(version["artifact_catalog"]) != version["artifact_catalog_hash"]):
             raise KernelError("CHAPTER_CAPACITY_UPGRADE_PACK_DRIFT", "Both immutable Pack manifests and catalogs must verify")
     context = new["context_sources"]
+    target_ref = context.get("policy_id")
+    methods = {"context-policy:chapter-generation-pack:v3": "shared-rules-and-native-context-contract.v1",
+        "context-policy:chapter-generation-pack:v4": "source-unit-dependency-and-final-composition.v2"}
     if (old["identity"]["pack_id"] != new["identity"]["pack_id"]
             or old["context_sources"]["policy_id"] not in {
                 "context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
-            or context.get("policy_id") != "context-policy:chapter-generation-pack:v3"
+            or target_ref not in methods
             or context.get("capacity_policy") != "complete-request-capacity.v1"
-            or context.get("context_substage_method") != "shared-rules-and-native-context-contract.v1"):
+            or context.get("context_substage_method") != methods[target_ref]
+            or old["context_sources"]["policy_id"] == target_ref == "context-policy:chapter-generation-pack:v4"):
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_TARGET_REQUIRED", "Activate the same owning Pack with its explicit complete-request policy")
     normalized = deepcopy(new)
     normalized["identity"]["version"] = old["identity"]["version"]
@@ -65,9 +70,11 @@ def validate_capacity_pack_pair(original: Mapping[str, Any], target: Mapping[str
     if any(target_artifacts.get(key) != value for key, value in original_artifacts.items()):
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_PACK_DRIFT", "Historical artifact bytes and source identities must be retained")
     additions = set(target_artifacts) - set(original_artifacts)
-    if additions - {("CONTEXT_POLICY", "context-policy:chapter-generation-pack:v3", "v3")}:
+    allowed_additions = {("CONTEXT_POLICY", ref, ref.rsplit(":", 1)[1]) for ref in methods
+        if ref <= target_ref}
+    if additions - allowed_additions:
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_PACK_DRIFT", "Only the complete Context policy may be added")
-    policy = target_artifacts.get(("CONTEXT_POLICY", context["policy_id"], "v3"))
+    policy = target_artifacts.get(("CONTEXT_POLICY", target_ref, target_ref.rsplit(":", 1)[1]))
     source_policy_ref = old["context_sources"]["policy_id"]
     source_policy = original_artifacts.get(("CONTEXT_POLICY", source_policy_ref, source_policy_ref.rsplit(":", 1)[1]))
     expected_policy = {**source_policy["content"], "policy_id": context["policy_id"],
@@ -77,6 +84,11 @@ def validate_capacity_pack_pair(original: Mapping[str, Any], target: Mapping[str
             or policy["content"].get("context_substage_method") != context["context_substage_method"]
             or policy["content"].get("max_tokens") != 512_000 or policy["content"] != expected_policy):
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_PACK_DRIFT", "The actual materialized Context policy must bind the supported request ceiling")
+    for kind, ref, version in additions:
+        expected_added = {**source_policy["content"], "policy_id": ref, "capacity_policy": "complete-request-capacity.v1",
+            "context_substage_method": methods[ref], "planning_task_token_budget": 512_000}
+        if target_artifacts[(kind, ref, version)]["content"] != expected_added:
+            raise KernelError("CHAPTER_CAPACITY_UPGRADE_PACK_DRIFT", "Each added Context artifact must retain the exact original source policy")
     if set(new["tool_permissions"].get("external_models", {}).get("context_substages") or ()) != {"context_compress", "context_fidelity"}:
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_TARGET_REQUIRED", "Both existing Context substages must be permitted")
     return {"source_manifest_hash": original["manifest_hash"], "target_manifest_hash": target["manifest_hash"],
@@ -186,10 +198,9 @@ def build_capacity_upgrade_policy(cursor, source, *, book_run_id, deployment_id,
     if (not failures or set(failures) - CAPACITY_ERRORS
             or source["definition_name"] == "chapter.context.build" and set(failures) - _LOCAL_ERRORS):
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNPROVEN", "Every failed Attempt must have the exact capacity cause")
-    cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
-        EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)""", [source["operation_id"]] * 2)
-    if any(cursor.fetchone()) or has_domain_outputs(cursor, source["operation_id"]):
-        raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNSAFE", "The failed step must have no external invocation, reservation or business output")
+    retained_effects = require_context_only_receipts(cursor, source)
+    if has_domain_outputs(cursor, source["operation_id"]):
+        raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNSAFE", "Capacity continuation cannot retain business output from its failed owner")
     for item in source["input_asset_snapshot"]:
         cursor.execute("SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s", [item["asset_version_id"]])
         if cursor.fetchone() != (item["content_hash"],):
@@ -215,6 +226,8 @@ def build_capacity_upgrade_policy(cursor, source, *, book_run_id, deployment_id,
     original, snapshot = _source_version(cursor, source)
     successor = CapabilityPackAuthorityRepository(cursor).require_version(*target, project_id=source["project_id"])
     pair = validate_capacity_pack_pair(original, successor)
+    if retained_effects and pair["target_context_policy_ref"] != "context-policy:chapter-generation-pack:v4":
+        raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNSAFE", "Prior Context calls require the explicit semantic continuation contract")
     context_source = _context_source(cursor, source)
     cursor.execute("SELECT count(*) FROM authority_external_effect effect JOIN authority_operation owner USING(operation_id) WHERE owner.root_operation_id=%s", [source["root_operation_id"]])
     return {"contract_version": CONTRACT, "transport_projection": PROJECTION, "book_run_id": book_run_id,
@@ -224,7 +237,25 @@ def build_capacity_upgrade_policy(cursor, source, *, book_run_id, deployment_id,
         "completion_checks": "UNCHANGED", "source_failure_code": failures[-1],
         "source_retry_disposition": "DETERMINISTIC_CAPACITY_REBUILD",
         **({"context_source": context_source} if context_source else {}),
-        "external_call_scope": "FAILED_STEP_ZERO_CALLS_ONLY", "root_external_effect_count": cursor.fetchone()[0]}
+        "external_call_scope": "MAIN_UNSENT_CONTEXT_EFFECTS_RECONCILED" if retained_effects else "FAILED_STEP_ZERO_CALLS_ONLY",
+        **({"retained_context_effects": retained_effects} if retained_effects else {}),
+        "root_external_effect_count": cursor.fetchone()[0]}
+
+
+def require_context_only_receipts(cursor, source):
+    from .receipt_recovery import _receipt
+    cursor.execute("SELECT external_effect_id,request_hash,request_payload,status,effect_type FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [source["operation_id"]])
+    retained = []
+    for identity, request_hash, payload, status, effect_type in cursor.fetchall():
+        if status != "SUCCEEDED" or effect_type != "model.invoke" or payload.get("stage") not in {"context_compress", "context_fidelity"}:
+            raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNSAFE", "Only verified completed Context calls may precede an unsent main step")
+        _receipt(cursor, identity, source["project_id"], source_operation_id=source["operation_id"], allow_retryable=True)
+        retained.append({"external_effect_id": identity, "request_hash": request_hash, "stage": payload["stage"]})
+    cursor.execute("SELECT external_effect_id,status FROM authority_budget_reservation WHERE operation_id=%s", [source["operation_id"]])
+    reservations = cursor.fetchall()
+    if {row[0] for row in reservations} != {row["external_effect_id"] for row in retained} or any(row[1] != "SETTLED" for row in reservations):
+        raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNSAFE", "Original Context spend must be reconciled without rewriting usage")
+    return retained
 
 
 def require_capacity_upgrade_source(cursor, source, policy, execution_sha):
@@ -306,7 +337,8 @@ def recover_capacity_continuation(authority, book, request, principal):
     replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.10.0",
         context=AdmissionContext(principal.principal_id, principal.permissions,
             authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
-        policy_evidence=policy, expected_failure_code=policy["source_failure_code"])
+        policy_evidence=policy, expected_failure_code=policy["source_failure_code"],
+        **({"known_receipt_effects": tuple((row["external_effect_id"], row["request_hash"]) for row in policy["retained_context_effects"])} if policy.get("retained_context_effects") else {}))
     return True
 
 

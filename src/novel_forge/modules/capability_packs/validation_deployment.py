@@ -158,6 +158,10 @@ def install_chapter_validation_pack(
                            and pack_version_override in {"3.0.2", "3.0.3", "3.0.4"})
     if historical_capacity:
         pack_path = "config/capability_packs/historical/chapter_generation_pack_3_0_2.json"
+    historical_semantic = ((root / pack_path).resolve() == (root / "config/capability_packs/chapter_generation_pack.json").resolve()
+                           and pack_version_override == "3.1.0")
+    if historical_semantic:
+        pack_path = "config/capability_packs/historical/chapter_generation_pack_3_1_0.json"
     source = (root / pack_path).resolve()
     if root not in source.parents or not source.is_file():
         raise ValueError("chapter Capability Pack path is outside the repository")
@@ -187,11 +191,11 @@ def install_chapter_validation_pack(
             reference=reference_sampling, reference_samples=reference_samples,
         )
     resolver = default_chapter_artifact_resolver(root)
-    if historical_capacity:
+    if historical_capacity or historical_semantic:
         from .artifacts import ExplicitArtifactResolver
 
         resolver = ExplicitArtifactResolver(item for item in resolver.artifacts()
-            if item.ref != "context-policy:chapter-generation-pack:v3")
+            if item.ref not in ({"context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"} if historical_capacity else {"context-policy:chapter-generation-pack:v4"}))
     if prose_skill_version:
         from .artifacts import ArtifactKind
 

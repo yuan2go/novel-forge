@@ -17,6 +17,7 @@ from .task_context import (
     task_references,
     fact_aliases,
 )
+from . import semantic_units
 
 _HISTORY = frozenset({"historical_expression_projection", "narrative_retrieval_document", "chapter_episodic_summary", "scene_episodic_summary", "character_timeline", "relationship_timeline", "source_chunk", "source_observation_excerpt"})
 _EXACT = frozenset({"draft_chapter", "draft_version", "best_draft_candidate", "review_report", "review_issue"})
@@ -34,7 +35,7 @@ def _history_accounting_payload(payload):
     from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
 
     summary = payload.get("safe_summary")
-    if isinstance(summary, str) and any(version in summary for version in ("working-prose-projection.v5", "working-prose-projection.v6")):
+    if isinstance(summary, str) and any(version in summary for version in ("working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7")):
         try:
             parsed = json.loads(summary)
         except (ValueError, TypeError):
@@ -55,7 +56,7 @@ def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
             intent = None
         working = intent.get("working_manuscript") if isinstance(intent, dict) else None
         if (isinstance(working, dict) and isinstance(working.get("projection_policy"), dict)
-            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6"}):
+            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}):
             from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
             encoded, _ = compile_exact_context_references(_history_accounting_payload({**payload, 'safe_summary': intent}), structured_transport=True)
             return max(1, serialized_token_upper_bound(encoded) + 64), "STRUCTURED_WORKING_INTENT"
@@ -87,6 +88,8 @@ def _protected_envelope_accounting(candidates, *, required_asset_types, version=
 
 
 def _units(candidate: ContextCandidate, task: Mapping[str, Any]) -> list[dict[str, Any]]:
+    if semantic_units.enabled(task):
+        return semantic_units.source_units(candidate, task)
     units = []
     try:
         document = json.loads(candidate.safe_summary)
@@ -249,7 +252,8 @@ def compile_task_context(
     excluded = []
     auxiliary = []
     denied = []
-    for candidate in sorted(candidates, key=source_position if reference else lambda item: item.asset_version_id):
+    ordered_candidates = list(candidates) if semantic_units.enabled(task) and not reference else sorted(candidates, key=source_position if reference else lambda item: item.asset_version_id)
+    for candidate in ordered_candidates:
         if admitted_source_ids is not None and candidate.asset_version_id not in admitted_source_ids:
             denied.append(candidate)
             continue
@@ -276,7 +280,17 @@ def compile_task_context(
             "representation": representation, "provider_data_upper_bound" if token_counter is serialized_token_upper_bound else "provider_data_token_estimate": amount,
             "storage_payload_bytes": serialized_token_upper_bound(_payload(candidate))})
         normalized.append(replace(candidate, estimated_tokens=amount, truncation_strategy=""))
-    normalized, deduplications = deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("reference_analysis" if reference else "draft").required_asset_types)
+    semantic = semantic_units.enabled(task)
+    normalized, deduplications = (semantic_units.exact_deduplicate(normalized) if semantic else
+        deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("reference_analysis" if reference else "draft").required_asset_types))
+    if semantic:
+        normalized = [replace(item, estimated_tokens=max(1, token_counter(_payload(item)))) if item.allowed_use != "evidence_only" else item for item in normalized]
+    catalogs = {item.asset_version_id: _units(item, task) for item in normalized} if semantic else {}
+    quote_locations = semantic_units.protect_quotes(normalized, catalogs, task.get("preserve_quotes") or ()) if semantic else []
+    external_refs = set().union(*(fact_aliases(fact) for item in normalized for fact in item.structured_facts)) if semantic else set()
+    if semantic:
+        external_refs = semantic_units.close_catalog_dependencies(catalogs,
+            external_refs=external_refs | set(task.get("external_dependency_refs") or ()))
     exact_accounting = None
     if task.get("protected_context_accounting_version") not in (None, "protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"):
         raise KernelError("TASK_CONTEXT_ACCOUNTING_INVALID", "Unknown protected Context accounting version")
@@ -320,14 +334,23 @@ def compile_task_context(
         untouched_tokens = sum(item.estimated_tokens for item in normalized if item not in eligible)
         if untouched_tokens >= token_budget and not allow_restored_overflow:
             raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "exact sources and non-recompressible evidence exceed the task target")
-        eligible_units = {item.asset_version_id: _units(item, task) for item in eligible}
+        eligible_units = {item.asset_version_id: catalogs[item.asset_version_id] if semantic else _units(item, task) for item in eligible}
+        mandatory_amounts = {}
         minimum_tokens = untouched_tokens
         for item in eligible:
             mandatory = [unit for unit in eligible_units[item.asset_version_id] if unit["required"]]
-            minimum_tokens += token_counter({
+            if semantic:
+                mandatory_ids = semantic_units.close_dependencies(eligible_units[item.asset_version_id], {unit["unit_id"] for unit in mandatory}, external_refs=external_refs)
+                for unit in eligible_units[item.asset_version_id]:
+                    unit["required"] = unit["unit_id"] in mandatory_ids
+                minimum = token_counter(semantic_units.reconstruct(item, eligible_units[item.asset_version_id], mandatory_ids))
+            else:
+                minimum = token_counter({
                 "safe_summary": "\n\n".join(unit["text"] for unit in mandatory if unit["field"] == "safe_summary"),
                 "structured_facts": [item.structured_facts[unit["index"]] for unit in mandatory if unit["field"] == "structured_facts"],
-            })
+                })
+            mandatory_amounts[item.asset_version_id] = minimum
+            minimum_tokens += minimum
         if allow_restored_overflow:
             token_budget = max(token_budget, minimum_tokens)
         if minimum_tokens > token_budget:
@@ -343,23 +366,25 @@ def compile_task_context(
 
             def chunk_payload(group, *, index=0, target=1):
                 return {
-                    "contract_version": "task-context-compression.v2" if stage_sources else "task-context-compression.v1",
+                    "contract_version": "task-context-compression.v3" if semantic and stage_sources else "task-context-compression.v2" if stage_sources else "task-context-compression.v1",
                     "policy_version": TASK_CONTEXT_POLICY_VERSION, boundary_key: boundary,
                     **({"task_fingerprint": task["source_projection_hash"]} if stage_sources else {"memo_fingerprint": str(task.get("memo_fingerprint") or "")}),
                     "task": {**dict(task), **({"source_expression": candidate.provenance["source_expression"]} if (candidate.provenance or {}).get("source_expression") else {})}, "units": group,
-                    "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
+                    "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"] and not unit.get("context_only")],
                     "target_tokens": target, "candidate_target_tokens": max(1, remaining),
                     "selection_policy": "source-attribution-and-shared-group-budget.v2",
                     "source_binding": source_binding, "chunk_index": index,
+                    **({"semantic_contract": semantic_units.SEMANTIC_CONTRACT} if semantic else {}),
                 }
 
             def fits(group):
                 return len(group) <= 256 and (chunk_fits(chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget))) if chunk_fits else token_counter(group) <= compression_input_tokens)
 
-            if chunk_fits:
+            if chunk_fits and not semantic:
                 units = _split_oversized_units(units, fits, preserve_quotes=tuple(task.get("preserve_quotes") or ()))
             groups = []
-            visible_units = [{key: unit[key] for key in ("unit_id", "text", "kind", "required")} for unit in units]
+            visible_units = ([dict(unit) for unit in units] if semantic else
+                [{key: unit[key] for key in ("unit_id", "text", "kind", "required")} for unit in units])
             position = 0
             while position < len(visible_units):
                 low, high, stop = position + 1, min(len(visible_units), position + 256), position
@@ -370,12 +395,31 @@ def compile_task_context(
                     else:
                         high = middle - 1
                 if stop == position:
+                    if semantic and chunk_fits:
+                        try:
+                            fragments = semantic_units.split_oversized_unit(visible_units[position], fits)
+                        except KernelError as error:
+                            if error.code != "TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE":
+                                raise
+                            raise KernelError(error.code, str(error), details={"source_asset_version_id": candidate.asset_version_id,
+                                "source_content_hash": candidate.content_digest, "disposition": "RETAIN_ORIGINAL_AND_EVALUATE_OTHER_HISTORY"}) from error
+                        visible_units[position:position + 1] = fragments
+                        continue
                     raise KernelError("TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE", "one source unit exceeds the complete compressor request capacity")
                 groups.append(visible_units[position:stop])
                 position = stop
+            if semantic:
+                units = [dict(unit, order=index) for index, unit in enumerate(visible_units)]
+                catalogs[candidate.asset_version_id] = units
+                sizes = [len(group) for group in groups]
+                groups, cursor = [], 0
+                for size in sizes:
+                    groups.append(units[cursor:cursor + size])
+                    cursor += size
             for index, original in enumerate(tuple(groups)):
                 neighbours = [*(groups[index - 1][-2:] if index else []), *(groups[index + 1][:2] if index + 1 < len(groups) else [])]
-                expanded = list({unit["unit_id"]: unit for unit in [*original, *neighbours]}.values())
+                expanded = (sorted([*original, *[{**unit, "context_only": True} for unit in neighbours]], key=lambda unit: unit["order"]) if semantic else
+                    list({unit["unit_id"]: unit for unit in [*original, *neighbours]}.values()))
                 if fits(expanded):
                     groups[index] = expanded
             keep = set()
@@ -383,9 +427,20 @@ def compile_task_context(
             evidence = []
             assessments = []
             candidate_target = max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible)))
+            if semantic:
+                current_others = sum(replacements.get(item.asset_version_id, item).estimated_tokens for item in normalized if item.asset_version_id != candidate.asset_version_id and item not in eligible)
+                pending = [item for item in eligible if item.asset_version_id not in replacements]
+                optional_space = max(0, token_budget - current_others - sum(item.estimated_tokens for item in replacements.values()) - sum(mandatory_amounts[item.asset_version_id] for item in pending))
+                weight_total = sum(max(1.0, item.relevance_score) for item in pending)
+                candidate_target = mandatory_amounts[candidate.asset_version_id] + int(optional_space * max(1.0, candidate.relevance_score) / max(1, weight_total))
             group_weights = [token_counter(group) for group in groups]
             weight_total = max(1, sum(group_weights))
             group_targets = [candidate_target * weight // weight_total for weight in group_weights]
+            if semantic:
+                floors = [token_counter({"units": [unit["text"] for unit in group if unit["required"] and not unit.get("context_only")]}) for group in groups]
+                values = [1 + sum(bool(unit.get("semantic_risk")) for unit in group if not unit.get("context_only")) for group in groups]
+                spare = max(0, candidate_target - sum(floors))
+                group_targets = [min(SYSTEM_CONTEXT_WINDOW_TOKENS, max(1, floor + spare * value // sum(values))) for floor, value in zip(floors, values)]
             if allow_restored_overflow:
                 group_targets = [min(SYSTEM_CONTEXT_WINDOW_TOKENS, max(1, target)) for target in group_targets]
             if any(target <= 0 for target in group_targets):
@@ -395,12 +450,18 @@ def compile_task_context(
                 selected_result = dict(model_call("context_compress", chunk))
                 selected = selected_result.get("selected_unit_ids")
                 allowed = {unit["unit_id"] for unit in group}
+                selectable = {unit["unit_id"] for unit in group if not unit.get("context_only")} if semantic else allowed
                 required = set(chunk["required_unit_ids"])
-                if not isinstance(selected, list) or any(not isinstance(value, str) for value in selected) or len(set(selected)) != len(selected) or not set(selected).issubset(allowed):
+                if not isinstance(selected, list) or any(not isinstance(value, str) for value in selected) or len(set(selected)) != len(selected) or not set(selected).issubset(selectable):
                     raise KernelError("TASK_CONTEXT_COMPRESSOR_IDENTITY_INVALID", "compressor may select only distinct host-bound source unit identities")
                 chosen = set(selected) | required
+                if semantic:
+                    chosen = semantic_units.close_dependencies(units, chosen, external_refs=external_refs)
+                    chosen_for_check = chosen & allowed
+                else:
+                    chosen_for_check = chosen
                 restored.update(required - set(selected))
-                verdict = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen)}))
+                verdict = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen_for_check)}))
                 missing = set(verdict.get("missing_unit_ids") or ())
                 distorted = set(verdict.get("distorted_unit_ids") or ())
                 if not (missing | distorted).issubset(allowed):
@@ -409,7 +470,7 @@ def compile_task_context(
                 elif missing or distorted or verdict.get("supported") is not True or verdict.get("coverage_complete") is not True:
                     if missing and not distorted and verdict.get("supported") is True:
                         chosen.update(missing)
-                        check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen)}))
+                        check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen & allowed)}))
                         assessments.append({
                             "task": chunk, "selected_unit_ids": selected,
                             "fidelity_selected_unit_ids": sorted(chosen),
@@ -436,14 +497,33 @@ def compile_task_context(
                 keep.update(chosen)
                 evidence.extend([dict(selected_result.get("_execution_evidence") or {}), dict(verdict.get("_execution_evidence") or {})])
                 call_count += 1
+            final_proof = None
+            if semantic:
+                keep = semantic_units.close_dependencies(units, keep, external_refs=external_refs)
+                required_ids = {unit["unit_id"] for unit in units if unit["required"]}
+                keep.update(required_ids)
+                local_keep = set(keep)
+                keep, final_proof, final_effects = semantic_units.verify_final_selection(candidate, units, keep,
+                    payload=lambda group: chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, max(1, candidate_target))),
+                    fits=lambda check: chunk_fits(check) if chunk_fits else token_counter(check) <= compression_input_tokens,
+                    model_call=model_call, external_refs=external_refs)
+                restored.update(keep - local_keep)
+                evidence.extend(final_effects)
             text = _join_source_text([unit for unit in units if unit["unit_id"] in keep and unit["field"] == "safe_summary"])
             facts = tuple(candidate.structured_facts[unit["index"]] for unit in units if unit["unit_id"] in keep and unit["field"] == "structured_facts") + tuple(fact for fact in candidate.structured_facts if fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY" and task.get("writer_projection_version") != "accepted-writer-history.v2")
             from .writer_projection import WRITER_PROJECTION_VERSION
             writer_projection = (candidate.provenance or {}).get("writer_projection_version") in {WRITER_PROJECTION_VERSION, "accepted-writer-history.v2"}
             payload = {"safe_summary": text.strip() if writer_projection else text, "structured_facts": list(facts)}
+            if semantic:
+                payload = semantic_units.reconstruct(candidate, units, keep)
+                facts = tuple(payload["structured_facts"])
             trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "source_binding": source_binding, "source_binding_role": "FROZEN_PROVIDER_CONTEXT_CUSTODY" if stage_sources else "ORIGINAL_ASSET", "original_expression_path": (candidate.provenance or {}).get("original_expression_path"), "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v2", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"], **({"source_offsets": unit["source_offsets"]} if "source_offsets" in unit else {})} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence, "routing_assessments": assessments}
             if writer_projection:
                 trace["writer_projection_version"] = candidate.provenance["writer_projection_version"]
+            if semantic:
+                trace.update(method="host-bound-extractive-semantic.v3", semantic_contract=semantic_units.SEMANTIC_CONTRACT,
+                    source_units=semantic_units.source_audit(units, keep), source_catalog=semantic_units.source_audit(units, {unit["unit_id"] for unit in units}),
+                    final_composition=final_proof, quote_locations=quote_locations)
             replacements[candidate.asset_version_id] = replace(candidate, safe_summary=payload["safe_summary"], structured_facts=facts, estimated_tokens=max(1, token_counter(payload)), context_class=ContextClass.COMPRESSIBLE, compression_method=trace["method"], compression_trace=(trace,))
             traces.append(trace)
         normalized = [replacements.get(item.asset_version_id, item) for item in normalized]
@@ -456,4 +536,6 @@ def compile_task_context(
     receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": requested_token_budget, **({"effective_material_target_tokens": token_budget, "target_is_final_capacity_gate": False} if allow_restored_overflow else {}), "token_accounting": token_accounting_method, "capacity_admission": "DEFERRED_COMPLETE_REQUEST" if defer_token_capacity or allow_restored_overflow else "MATERIAL_TARGET", "candidate_accounting": candidate_accounting, "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
     if exact_accounting is not None:
         receipt["protected_exact_accounting"] = exact_accounting
+    if semantic:
+        receipt.update(semantic_contract=semantic_units.SEMANTIC_CONTRACT, quote_locations=quote_locations)
     return result, {**receipt, "receipt_hash": narrative_hash(receipt)}

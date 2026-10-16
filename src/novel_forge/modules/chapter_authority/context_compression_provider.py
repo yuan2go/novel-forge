@@ -31,7 +31,11 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "frozen compression task is required")
     units = task.get("units")
     required = task.get("required_unit_ids")
-    stage_sources = task.get("contract_version") == "task-context-compression.v2"
+    stage_sources = task.get("contract_version") in {"task-context-compression.v2", "task-context-compression.v3"}
+    from novel_forge.modules.context_builder.semantic_units import SEMANTIC_CONTRACT
+    semantic = task.get("semantic_contract") == SEMANTIC_CONTRACT
+    if task.get("contract_version") == "task-context-compression.v3" and not semantic:
+        raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "The semantic source contract must be explicit")
     reference = (task.get("task") or {}).get("stage") == "reference_analysis"
     boundary_key = "frozen_input_boundary" if stage_sources else "observation_boundary" if reference else "accepted_boundary"
     boundary = task.get(boundary_key)
@@ -49,7 +53,7 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         if task.get("accepted_boundary"):
             raise KernelError("CONTEXT_COMPRESSION_BOUNDARY_TYPE", "reference cannot claim accepted Canon")
     if (
-        task.get("contract_version") not in {"task-context-compression.v1", "task-context-compression.v2"}
+        task.get("contract_version") not in {"task-context-compression.v1", "task-context-compression.v2", "task-context-compression.v3"}
         or not isinstance(boundary, Mapping)
         or not isinstance(units, list)
         or not units
@@ -73,6 +77,7 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         ids.append(unit_id)
         projected.append({key: deepcopy(unit[key]) for key in (
             "unit_id", "text", "required", "kind", "subject", "time", "epistemic_status",
+            *(("source_path", "source_span", "source_fields", "order", "attribution", "explicit_refs", "source_aliases", "context_only", "parent_unit_id") if semantic else ()),
         ) if key in unit})
     if len(required) != len(set(required)) or set(required) - set(ids):
         raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "required semantic units must belong to this exact chunk")
@@ -112,6 +117,11 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         if not isinstance(selected, list) or len(selected) != len(set(selected)) or set(selected) - set(ids):
             raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "fidelity requires exact proposed extract identities")
         result["selected_unit_ids"] = list(selected)
+    if semantic:
+        result["semantic_contract"] = SEMANTIC_CONTRACT
+        result["selection_scope"] = "Only units without context_only may be selected by the compressor. Neighbor units supply interpretation and may be requested for restoration by fidelity. Field paths and source order are original; attribution is source material, not verified Canon."
+        if task.get("composition_check"):
+            result["composition_check"] = deepcopy(task["composition_check"])
     return result
 
 

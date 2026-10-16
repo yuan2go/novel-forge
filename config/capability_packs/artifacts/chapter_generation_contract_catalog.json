@@ -1,8 +1,66 @@
 {
   "schema_version": "novelos.capability_pack.artifact_catalog.v1",
   "artifacts": [
-    {"kind": "SCHEMA", "ref": "schema:execution-input:planning-chapter-generate:v1", "version": "v1", "content": {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "novel-forge://schemas/execution-input/planning-chapter-generate/v1", "type": "object", "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"], "properties": {"input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "context_bundle_asset_version_id": {"type": "string", "minLength": 1}, "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}, "additionalProperties": false}},
-    {"kind": "SCHEMA", "ref": "schema:execution-output:planning-chapter-generate:v1", "version": "v1", "content": {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "novel-forge://schemas/execution-output/planning-chapter-generate/v1", "type": "object", "required": ["output_asset_version_id", "output_content_hash", "receipt_id"], "properties": {"output_asset_version_id": {"type": "string", "minLength": 1}, "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "receipt_id": {"type": "string", "minLength": 1}}, "additionalProperties": false}},
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-chapter-generate:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-input/planning-chapter-generate/v1",
+        "type": "object",
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
+        "properties": {
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-chapter-generate:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-output/planning-chapter-generate/v1",
+        "type": "object",
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
+        "properties": {
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     {
       "kind": "KNOWLEDGE",
       "ref": "knowledge:chapter-causal-cost:v1",
@@ -41,11 +99,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-plan-authority/v1",
         "type": "object",
-        "required": ["project_id", "chapter_id", "chapter_plan_asset_version_id"],
+        "required": [
+          "project_id",
+          "chapter_id",
+          "chapter_plan_asset_version_id"
+        ],
         "properties": {
-          "project_id": {"type": "string", "minLength": 1},
-          "chapter_id": {"type": "string", "minLength": 1},
-          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1}
+          "project_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapter_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapter_plan_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -58,37 +129,85 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/operation-saga-attempt-state/v1",
         "type": "object",
-        "required": ["operation_id", "operation_status", "saga_id", "saga_status", "attempt_id", "attempt_status", "fencing_token"],
+        "required": [
+          "operation_id",
+          "operation_status",
+          "saga_id",
+          "saga_status",
+          "attempt_id",
+          "attempt_status",
+          "fencing_token"
+        ],
         "properties": {
-          "operation_id": {"type": "string", "minLength": 1},
+          "operation_id": {
+            "type": "string",
+            "minLength": 1
+          },
           "operation_status": {
             "enum": [
-              "ADMITTED", "WAITING_APPROVAL", "READY", "EXECUTING",
-              "WAITING_CHILDREN", "WAITING_EXTERNAL_RESULT", "WAITING_GATE",
-              "FAILED_RETRYABLE", "FAILED_FINAL", "CANCELLATION_REQUESTED",
-              "RECONCILIATION_REQUIRED", "COMPENSATION_REQUIRED", "COMPENSATING",
-              "COMPENSATED", "COMPENSATION_FAILED", "SUCCEEDED", "CANCELLED",
+              "ADMITTED",
+              "WAITING_APPROVAL",
+              "READY",
+              "EXECUTING",
+              "WAITING_CHILDREN",
+              "WAITING_EXTERNAL_RESULT",
+              "WAITING_GATE",
+              "FAILED_RETRYABLE",
+              "FAILED_FINAL",
+              "CANCELLATION_REQUESTED",
+              "RECONCILIATION_REQUIRED",
+              "COMPENSATION_REQUIRED",
+              "COMPENSATING",
+              "COMPENSATED",
+              "COMPENSATION_FAILED",
+              "SUCCEEDED",
+              "CANCELLED",
               "DEAD_LETTER"
             ]
           },
-          "saga_id": {"type": "string", "minLength": 1},
+          "saga_id": {
+            "type": "string",
+            "minLength": 1
+          },
           "saga_status": {
             "enum": [
-              "RUNNING", "FORWARD_RECOVERY", "WAITING_GATE", "COMPENSATING",
-              "SUCCEEDED", "COMPENSATED", "COMPENSATION_FAILED",
-              "MANUAL_INTERVENTION", "CANCELLED"
-            ]
-          },
-          "attempt_id": {"type": "string", "minLength": 1},
-          "attempt_status": {
-            "enum": [
-              "CREATED", "QUEUED", "LEASED", "RUNNING", "CHECKPOINTED",
-              "RESULT_SUBMITTED", "SUCCEEDED", "FAILED_RETRYABLE", "FAILED_FINAL",
-              "TIMED_OUT", "LEASE_LOST", "SUPERSEDED", "LATE_RESULT_REJECTED",
+              "RUNNING",
+              "FORWARD_RECOVERY",
+              "WAITING_GATE",
+              "COMPENSATING",
+              "SUCCEEDED",
+              "COMPENSATED",
+              "COMPENSATION_FAILED",
+              "MANUAL_INTERVENTION",
               "CANCELLED"
             ]
           },
-          "fencing_token": {"type": "integer", "minimum": 1}
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attempt_status": {
+            "enum": [
+              "CREATED",
+              "QUEUED",
+              "LEASED",
+              "RUNNING",
+              "CHECKPOINTED",
+              "RESULT_SUBMITTED",
+              "SUCCEEDED",
+              "FAILED_RETRYABLE",
+              "FAILED_FINAL",
+              "TIMED_OUT",
+              "LEASE_LOST",
+              "SUPERSEDED",
+              "LATE_RESULT_REJECTED",
+              "CANCELLED"
+            ]
+          },
+          "fencing_token": {
+            "type": "integer",
+            "minimum": 1
+          }
         },
         "additionalProperties": false
       }
@@ -101,10 +220,19 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/canon-extraction-input/v1",
         "type": "object",
-        "required": ["draft_asset_version_id", "canon_snapshot_version_id"],
+        "required": [
+          "draft_asset_version_id",
+          "canon_snapshot_version_id"
+        ],
         "properties": {
-          "draft_asset_version_id": {"type": "string", "minLength": 1},
-          "canon_snapshot_version_id": {"type": "string", "minLength": 1}
+          "draft_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "canon_snapshot_version_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -117,11 +245,29 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/canon-patch/v1",
         "type": "object",
-        "required": ["base_canon_version_id", "claims", "evidence_refs"],
+        "required": [
+          "base_canon_version_id",
+          "claims",
+          "evidence_refs"
+        ],
         "properties": {
-          "base_canon_version_id": {"type": "string", "minLength": 1},
-          "claims": {"type": "array", "items": {"type": "object"}},
-          "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}}
+          "base_canon_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         },
         "additionalProperties": false
       }
@@ -134,11 +280,23 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-context-input/v1",
         "type": "object",
-        "required": ["project_id", "chapter_plan_asset_version_id", "source_isolation_policy_ref"],
+        "required": [
+          "project_id",
+          "chapter_plan_asset_version_id",
+          "source_isolation_policy_ref"
+        ],
         "properties": {
-          "project_id": {"type": "string", "minLength": 1},
-          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},
-          "source_isolation_policy_ref": {"const": "source:chapter-generation-pack:v1"}
+          "project_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapter_plan_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_isolation_policy_ref": {
+            "const": "source:chapter-generation-pack:v1"
+          }
         },
         "additionalProperties": false
       }
@@ -151,12 +309,29 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-generation-pack-input/v1",
         "type": "object",
-        "required": ["project_id", "chapter_id", "chapter_plan_asset_version_id", "canon_snapshot_version_id"],
+        "required": [
+          "project_id",
+          "chapter_id",
+          "chapter_plan_asset_version_id",
+          "canon_snapshot_version_id"
+        ],
         "properties": {
-          "project_id": {"type": "string", "minLength": 1},
-          "chapter_id": {"type": "string", "minLength": 1},
-          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},
-          "canon_snapshot_version_id": {"type": "string", "minLength": 1}
+          "project_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapter_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapter_plan_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "canon_snapshot_version_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -169,10 +344,19 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-generation-pack-output/v1",
         "type": "object",
-        "required": ["release_package_asset_version_id", "final_release_gate_report_asset_version_id"],
+        "required": [
+          "release_package_asset_version_id",
+          "final_release_gate_report_asset_version_id"
+        ],
         "properties": {
-          "release_package_asset_version_id": {"type": "string", "minLength": 1},
-          "final_release_gate_report_asset_version_id": {"type": "string", "minLength": 1}
+          "release_package_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "final_release_gate_report_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -185,11 +369,26 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-plan-version/v1",
         "type": "object",
-        "required": ["asset_version_id", "content_hash", "status"],
+        "required": [
+          "asset_version_id",
+          "content_hash",
+          "status"
+        ],
         "properties": {
-          "asset_version_id": {"type": "string", "minLength": 1},
-          "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "status": {"enum": ["FROZEN", "ACTIVE"]}
+          "asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "status": {
+            "enum": [
+              "FROZEN",
+              "ACTIVE"
+            ]
+          }
         },
         "additionalProperties": false
       }
@@ -202,12 +401,29 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-plan/v1",
         "type": "object",
-        "required": ["chapter_goal", "conflicts", "scenes", "ending_hook"],
+        "required": [
+          "chapter_goal",
+          "conflicts",
+          "scenes",
+          "ending_hook"
+        ],
         "properties": {
-          "chapter_goal": {"type": "string", "minLength": 1},
-          "conflicts": {"type": "array", "minItems": 1},
-          "scenes": {"type": "array", "minItems": 1},
-          "ending_hook": {"type": "string", "minLength": 1}
+          "chapter_goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "conflicts": {
+            "type": "array",
+            "minItems": 1
+          },
+          "scenes": {
+            "type": "array",
+            "minItems": 1
+          },
+          "ending_hook": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": true
       }
@@ -220,11 +436,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-review-input/v1",
         "type": "object",
-        "required": ["draft_asset_version_id", "chapter_plan_asset_version_id", "canon_snapshot_version_id"],
+        "required": [
+          "draft_asset_version_id",
+          "chapter_plan_asset_version_id",
+          "canon_snapshot_version_id"
+        ],
         "properties": {
-          "draft_asset_version_id": {"type": "string", "minLength": 1},
-          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},
-          "canon_snapshot_version_id": {"type": "string", "minLength": 1}
+          "draft_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapter_plan_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "canon_snapshot_version_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -237,11 +466,32 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/chapter-review-output/v1",
         "type": "object",
-        "required": ["decision", "issues", "evidence_refs"],
+        "required": [
+          "decision",
+          "issues",
+          "evidence_refs"
+        ],
         "properties": {
-          "decision": {"enum": ["PASS", "REVISE", "BLOCK"]},
-          "issues": {"type": "array", "items": {"type": "object"}},
-          "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}}
+          "decision": {
+            "enum": [
+              "PASS",
+              "REVISE",
+              "BLOCK"
+            ]
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         },
         "additionalProperties": false
       }
@@ -254,12 +504,32 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/context-bundle/v1",
         "type": "object",
-        "required": ["project_id", "asset_version_refs", "source_isolation", "token_count"],
+        "required": [
+          "project_id",
+          "asset_version_refs",
+          "source_isolation",
+          "token_count"
+        ],
         "properties": {
-          "project_id": {"type": "string", "minLength": 1},
-          "asset_version_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
-          "source_isolation": {"const": "ABSTRACT_ASSETS_ONLY"},
-          "token_count": {"type": "integer", "minimum": 0, "maximum": 16000}
+          "project_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_version_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "source_isolation": {
+            "const": "ABSTRACT_ASSETS_ONLY"
+          },
+          "token_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 16000
+          }
         },
         "additionalProperties": false
       }
@@ -272,11 +542,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/prose-chapter-draft/v1",
         "type": "object",
-        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
         "properties": {
-          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
-          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -289,11 +572,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/prose-chapter-draft/v1",
         "type": "object",
-        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
         "properties": {
-          "output_asset_version_id": {"type": "string", "minLength": 1},
-          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "receipt_id": {"type": "string", "minLength": 1}
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -306,11 +602,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/review-chapter-evaluate/v1",
         "type": "object",
-        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
         "properties": {
-          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
-          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -323,11 +632,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/review-chapter-evaluate/v1",
         "type": "object",
-        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
         "properties": {
-          "output_asset_version_id": {"type": "string", "minLength": 1},
-          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "receipt_id": {"type": "string", "minLength": 1}
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -340,11 +662,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/revision-chapter-revise/v1",
         "type": "object",
-        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
         "properties": {
-          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
-          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -357,11 +692,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/revision-chapter-revise/v1",
         "type": "object",
-        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
         "properties": {
-          "output_asset_version_id": {"type": "string", "minLength": 1},
-          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "receipt_id": {"type": "string", "minLength": 1}
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -374,11 +722,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/canon-extract/v1",
         "type": "object",
-        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
         "properties": {
-          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
-          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -391,11 +752,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/canon-extract/v1",
         "type": "object",
-        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
         "properties": {
-          "output_asset_version_id": {"type": "string", "minLength": 1},
-          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "receipt_id": {"type": "string", "minLength": 1}
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -408,11 +782,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/quality-intrinsic-judge/v1",
         "type": "object",
-        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
         "properties": {
-          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
-          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -425,11 +812,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/quality-intrinsic-judge/v1",
         "type": "object",
-        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
         "properties": {
-          "output_asset_version_id": {"type": "string", "minLength": 1},
-          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "receipt_id": {"type": "string", "minLength": 1}
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -442,11 +842,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/quality-originality-judge/v1",
         "type": "object",
-        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
         "properties": {
-          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
-          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -459,11 +872,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/quality-originality-judge/v1",
         "type": "object",
-        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
         "properties": {
-          "output_asset_version_id": {"type": "string", "minLength": 1},
-          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "receipt_id": {"type": "string", "minLength": 1}
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -476,11 +902,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/quality-platform-judge/v1",
         "type": "object",
-        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
         "properties": {
-          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
-          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         },
         "additionalProperties": false
       }
@@ -493,11 +932,24 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/quality-platform-judge/v1",
         "type": "object",
-        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
         "properties": {
-          "output_asset_version_id": {"type": "string", "minLength": 1},
-          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-          "receipt_id": {"type": "string", "minLength": 1}
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
@@ -510,17 +962,32 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-input/retrieval-embed/v1",
         "type": "object",
-        "required": ["texts", "purpose", "query_plan_fingerprint"],
+        "required": [
+          "texts",
+          "purpose",
+          "query_plan_fingerprint"
+        ],
         "properties": {
           "texts": {
             "type": "array",
             "minItems": 1,
             "maxItems": 32,
-            "items": {"type": "string", "minLength": 1}
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           },
-          "purpose": {"type": "string", "minLength": 1},
-          "query_plan_fingerprint": {"type": "string", "minLength": 1},
-          "candidate_projection_cutoff": {"type": "string"}
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "query_plan_fingerprint": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_projection_cutoff": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }
@@ -533,7 +1000,11 @@
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "novel-forge://schemas/execution-output/retrieval-embed/v1",
         "type": "object",
-        "required": ["vectors", "embedding_model", "embedding_dimensions"],
+        "required": [
+          "vectors",
+          "embedding_model",
+          "embedding_dimensions"
+        ],
         "properties": {
           "vectors": {
             "type": "array",
@@ -543,30 +1014,167 @@
               "type": "array",
               "minItems": 1,
               "maxItems": 8192,
-              "items": {"type": "number"}
+              "items": {
+                "type": "number"
+              }
             }
           },
-          "embedding_model": {"type": "string", "minLength": 1},
-          "embedding_dimensions": {"type": "integer", "minimum": 1, "maximum": 8192}
+          "embedding_model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "embedding_dimensions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8192
+          }
         },
         "additionalProperties": false
       }
     },
-
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:canon-extract:v1", "version": "v1", "content": {"policy_id": "timeout:canon-extract:v1", "operation_timeout_seconds": 600, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:planning-chapter-generate:v1", "version": "v1", "content": {"policy_id": "timeout:planning-chapter-generate:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:prose-chapter-draft:v1", "version": "v1", "content": {"policy_id": "timeout:prose-chapter-draft:v1", "operation_timeout_seconds": 600, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:publishing-release-query:v1", "version": "v1", "content": {"policy_id": "timeout:publishing-release-query:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:quality-aggregate:v1", "version": "v1", "content": {"policy_id": "timeout:quality-aggregate:v1", "operation_timeout_seconds": 600, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:quality-intrinsic-judge:v1", "version": "v1", "content": {"policy_id": "timeout:quality-intrinsic-judge:v1", "operation_timeout_seconds": 3000, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:quality-originality-judge:v1", "version": "v1", "content": {"policy_id": "timeout:quality-originality-judge:v1", "operation_timeout_seconds": 3000, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:quality-platform-judge:v1", "version": "v1", "content": {"policy_id": "timeout:quality-platform-judge:v1", "operation_timeout_seconds": 3000, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:retrieval-embed:v1", "version": "v1", "content": {"policy_id": "timeout:retrieval-embed:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.3.1"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:retrieval-index-query:v1", "version": "v1", "content": {"policy_id": "timeout:retrieval-index-query:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:review-chapter-evaluate:v1", "version": "v1", "content": {"policy_id": "timeout:review-chapter-evaluate:v1", "operation_timeout_seconds": 600, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:revision-chapter-revise:v1", "version": "v1", "content": {"policy_id": "timeout:revision-chapter-revise:v1", "operation_timeout_seconds": 600, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:storage-object-put:v1", "version": "v1", "content": {"policy_id": "timeout:storage-object-put:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
-
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:canon-extract:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:canon-extract:v1",
+        "operation_timeout_seconds": 600,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-chapter-generate:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:planning-chapter-generate:v1",
+        "operation_timeout_seconds": 60,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:prose-chapter-draft:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:prose-chapter-draft:v1",
+        "operation_timeout_seconds": 600,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:publishing-release-query:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:publishing-release-query:v1",
+        "operation_timeout_seconds": 60,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-aggregate:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:quality-aggregate:v1",
+        "operation_timeout_seconds": 600,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-intrinsic-judge:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:quality-intrinsic-judge:v1",
+        "operation_timeout_seconds": 3000,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-originality-judge:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:quality-originality-judge:v1",
+        "operation_timeout_seconds": 3000,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:quality-platform-judge:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:quality-platform-judge:v1",
+        "operation_timeout_seconds": 3000,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:retrieval-embed:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:retrieval-embed:v1",
+        "operation_timeout_seconds": 60,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.3.1"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:retrieval-index-query:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:retrieval-index-query:v1",
+        "operation_timeout_seconds": 60,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:review-chapter-evaluate:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:review-chapter-evaluate:v1",
+        "operation_timeout_seconds": 600,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:revision-chapter-revise:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:revision-chapter-revise:v1",
+        "operation_timeout_seconds": 600,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:storage-object-put:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:storage-object-put:v1",
+        "operation_timeout_seconds": 60,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.0.0"
+      }
+    },
     {
       "kind": "APPROVAL_POLICY",
       "ref": "chapter-operation-admission:v1",
@@ -633,9 +1241,24 @@
         "max_tokens": 16000,
         "source_isolation": "ABSTRACT_ASSETS_ONLY",
         "reject_cross_project": true,
-        "required_version_refs": ["canon_snapshot_version_id", "chapter_plan_asset_version_id"],
-        "allowed_asset_types": ["book_design", "canon_snapshot", "chapter_execution_intent", "chapter_plan", "chapter_plan_version", "context_bundle", "knowledge_pack", "story_state"],
-        "forbidden_asset_types": ["raw_source_chunk", "raw_source_document"]
+        "required_version_refs": [
+          "canon_snapshot_version_id",
+          "chapter_plan_asset_version_id"
+        ],
+        "allowed_asset_types": [
+          "book_design",
+          "canon_snapshot",
+          "chapter_execution_intent",
+          "chapter_plan",
+          "chapter_plan_version",
+          "context_bundle",
+          "knowledge_pack",
+          "story_state"
+        ],
+        "forbidden_asset_types": [
+          "raw_source_chunk",
+          "raw_source_document"
+        ]
       }
     },
     {
@@ -644,7 +1267,10 @@
       "version": "v1",
       "content": {
         "policy_id": "source:chapter-generation-pack:v1",
-        "allowed_eligibility": ["NOT_SOURCE_DERIVED", "PRODUCTION_ELIGIBLE"],
+        "allowed_eligibility": [
+          "NOT_SOURCE_DERIVED",
+          "PRODUCTION_ELIGIBLE"
+        ],
         "raw_source_expression_allowed": false,
         "requires_lineage": true,
         "cross_project_reads_allowed": false,
@@ -662,7 +1288,10 @@
         "audit_high_and_critical": true,
         "critical_requires_approval": true,
         "inline_auth_material_allowed": false,
-        "explicit_tool_refs": ["model.provider.invoke", "storage.object.put"]
+        "explicit_tool_refs": [
+          "model.provider.invoke",
+          "storage.object.put"
+        ]
       }
     },
     {
@@ -672,7 +1301,13 @@
       "content": {
         "policy_id": "validation:chapter-generation-pack:v1",
         "failure_mode": "FAIL_CLOSED",
-        "required_validators": ["schema", "structural", "semantic", "source_isolation", "authority_completion"],
+        "required_validators": [
+          "schema",
+          "structural",
+          "semantic",
+          "source_isolation",
+          "authority_completion"
+        ],
         "validation_evidence_required": true,
         "client_asserted_pass_allowed": false
       }
@@ -714,14 +1349,18 @@
         "requires_lineage": true
       }
     },
-
     {
       "kind": "PROTOCOL",
       "ref": "append-only-supersede.v1",
       "version": "v1",
       "content": {
         "protocol_id": "append-only-supersede.v1",
-        "required_fields": ["superseded_asset_version_id", "replacement_asset_version_id", "reason", "actor_id"],
+        "required_fields": [
+          "superseded_asset_version_id",
+          "replacement_asset_version_id",
+          "reason",
+          "actor_id"
+        ],
         "prior_record_mutation_allowed": false,
         "rollback_creates_new_version": true
       }
@@ -732,7 +1371,14 @@
       "version": "v1",
       "content": {
         "protocol_id": "authority-audit.v1",
-        "required_fields": ["audit_id", "operation_id", "actor_id", "action", "input_hash", "result_hash"],
+        "required_fields": [
+          "audit_id",
+          "operation_id",
+          "actor_id",
+          "action",
+          "input_hash",
+          "result_hash"
+        ],
         "append_only": true,
         "pack_manifest_hash_required": true
       }
@@ -743,7 +1389,13 @@
       "version": "v1",
       "content": {
         "protocol_id": "authority-error.v1",
-        "required_fields": ["code", "message", "retryable", "operation_id", "attempt_id"],
+        "required_fields": [
+          "code",
+          "message",
+          "retryable",
+          "operation_id",
+          "attempt_id"
+        ],
         "unknown_errors_retryable": false,
         "inline_auth_material_allowed": false
       }
@@ -754,7 +1406,13 @@
       "version": "v1",
       "content": {
         "protocol_id": "authority-event.v1",
-        "required_fields": ["event_id", "operation_id", "event_type", "payload_hash", "occurred_at"],
+        "required_fields": [
+          "event_id",
+          "operation_id",
+          "event_type",
+          "payload_hash",
+          "occurred_at"
+        ],
         "append_only": true,
         "ordered_by_authority_sequence": true
       }
@@ -802,7 +1460,10 @@
       "content": {
         "$id": "schema:execution-input:agent-workspace-execute:v1",
         "type": "object",
-        "required": ["instruction", "accepted_boundary"],
+        "required": [
+          "instruction",
+          "accepted_boundary"
+        ],
         "additionalProperties": true
       }
     },
@@ -813,7 +1474,9 @@
       "content": {
         "$id": "schema:execution-output:agent-workspace-execute:v1",
         "type": "object",
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "additionalProperties": true
       }
     },
@@ -856,14 +1519,19 @@
         "max_tokens": 16000,
         "source_isolation": "ABSTRACT_ASSETS_ONLY",
         "reject_cross_project": true,
-        "required_version_refs": ["accepted_boundary"],
+        "required_version_refs": [
+          "accepted_boundary"
+        ],
         "allowed_asset_types": [
           "context_bundle",
           "canon_snapshot",
           "story_state",
           "chapter_outcome"
         ],
-        "forbidden_asset_types": ["raw_source_chunk", "raw_source_document"]
+        "forbidden_asset_types": [
+          "raw_source_chunk",
+          "raw_source_document"
+        ]
       }
     },
     {
@@ -874,7 +1542,9 @@
         "policy_id": "chapter.agent_session.route",
         "policy_version": 1,
         "default_model_profile_id": "chapter.agent_session.default",
-        "allowed_model_profile_ids": ["chapter.agent_session.default"],
+        "allowed_model_profile_ids": [
+          "chapter.agent_session.default"
+        ],
         "rule_set_ref": "route-rules:chapter:agent_session:v1",
         "fallback_policy": "FAIL_CLOSED",
         "fallback_policy_ref": "chapter.agent_session.fail-closed",
@@ -1063,9 +1733,77 @@
         "additionalProperties": true
       }
     },
-    {"kind": "TIMEOUT_POLICY", "ref": "timeout:planning-chapter-memo:v1", "version": "v1", "content": {"policy_id": "timeout:planning-chapter-memo:v1", "operation_timeout_seconds": 600, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.9.0"}},
-    {"kind": "SCHEMA", "ref": "schema:execution-input:planning-chapter-memo:v1", "version": "v1", "content": {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "novel-forge://schemas/execution-input/planning-chapter-memo/v1", "type": "object", "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"], "properties": {"input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "context_bundle_asset_version_id": {"type": "string", "minLength": 1}, "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}, "additionalProperties": false}},
-    {"kind": "SCHEMA", "ref": "schema:execution-output:planning-chapter-memo:v1", "version": "v1", "content": {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "novel-forge://schemas/execution-output/planning-chapter-memo/v1", "type": "object", "required": ["output_asset_version_id", "output_content_hash", "receipt_id"], "properties": {"output_asset_version_id": {"type": "string", "minLength": 1}, "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "receipt_id": {"type": "string", "minLength": 1}}, "additionalProperties": false}},
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:planning-chapter-memo:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:planning-chapter-memo:v1",
+        "operation_timeout_seconds": 600,
+        "timeout_action": "FAIL_ATTEMPT",
+        "authority_binding": "chapter_operation_definition@3.9.0"
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:planning-chapter-memo:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-input/planning-chapter-memo/v1",
+        "type": "object",
+        "required": [
+          "input_manifest_hash",
+          "context_bundle_asset_version_id",
+          "route_snapshot_hash"
+        ],
+        "properties": {
+          "input_manifest_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "context_bundle_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_snapshot_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:planning-chapter-memo:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-output/planning-chapter-memo/v1",
+        "type": "object",
+        "required": [
+          "output_asset_version_id",
+          "output_content_hash",
+          "receipt_id"
+        ],
+        "properties": {
+          "output_asset_version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "output_content_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "receipt_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     {
       "kind": "CONTEXT_POLICY",
       "ref": "context-policy:chapter-generation-pack:v3",
@@ -1097,6 +1835,39 @@
         ],
         "capacity_policy": "complete-request-capacity.v1",
         "context_substage_method": "shared-rules-and-native-context-contract.v1"
+      }
+    },
+    {
+      "kind": "CONTEXT_POLICY",
+      "ref": "context-policy:chapter-generation-pack:v4",
+      "version": "v4",
+      "content": {
+        "policy_id": "context-policy:chapter-generation-pack:v4",
+        "max_tokens": 512000,
+        "planning_task_token_budget": 512000,
+        "source_isolation": "ABSTRACT_ASSETS_ONLY",
+        "reject_cross_project": true,
+        "required_version_refs": [
+          "canon_snapshot_version_id",
+          "chapter_plan_asset_version_id"
+        ],
+        "allowed_asset_types": [
+          "book_design",
+          "canon_snapshot",
+          "chapter_execution_intent",
+          "chapter_memo",
+          "chapter_plan",
+          "chapter_plan_version",
+          "context_bundle",
+          "knowledge_pack",
+          "story_state"
+        ],
+        "forbidden_asset_types": [
+          "raw_source_chunk",
+          "raw_source_document"
+        ],
+        "capacity_policy": "complete-request-capacity.v1",
+        "context_substage_method": "source-unit-dependency-and-final-composition.v2"
       }
     }
   ]

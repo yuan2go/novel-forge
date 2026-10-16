@@ -518,12 +518,12 @@ Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy t
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
-New Creation profiles enable `working-prose-projection.v6`,
+New Creation profiles enable `working-prose-projection.v7`,
 `working-story-schedule.v1`, `working-craft-delivery.v2`, `narrative-craft-budget.v5`
 and `native-prose-plan-feedback.v1`. The exact working Craft policy is
 `{"version":"working-craft-delivery.v2","use":"SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}`;
 its frozen strategy is `narrative-craft-strategy.v4`. Historical profiles retain their
-existing versions. The v5/v6 source-history manifest contains every predecessor, while
+existing versions. The v5/v6/v7 source-history manifest contains every predecessor, while
 passages and located observations remain bounded by real request capacity. Check the
 host manifest separately from the shorter Provider projection; no omitted prose or
 receipt may be treated as realized experience or method success. Verify the selected working sources through Book,
@@ -708,13 +708,28 @@ For future Chapter work, author `book-chapter-context.v1` with
 `world-production-policy.v5`; its role selection is followed by full request admission. The v4
 Context profile was introduced in Chapter Generation Pack `2.7.0`; new work must
 deploy and select the current `config/capability_packs/chapter_generation_pack.json`
-(candidate Pack `3.1.0`, Chapter workflow `3.10.0`) through the existing Pack Authority;
+(candidate Pack `3.2.0`, Chapter workflow `3.10.0`) through the existing Pack Authority;
 then verify its compiled snapshot and the Chapter preparation report's
-`stage_context_profile_versions.draft`. Its v3 Context policy defers lossy capacity decisions until the full request is
+`stage_context_profile_versions.draft`. Its v4 Context policy defers lossy capacity decisions until the full request is
 rendered and sets the Planning support target to 512,000 tokens. This does not
 grant paid spending authorization or change the selected model's physical capacity. Changing process defaults does not update
 an old Book, Pack, preparation report or sent request. Old frozen contracts recover
 with their original hashes and semantics.
+
+For semantic compression inspect the frozen Context policy's
+`source-unit-dependency-and-final-composition.v2`, each chunk's source ranges and attribution,
+and `_context_capacity_projection.final_composition` on the main Effect. Its supplied
+projection hash must match the final rendered admission and `capacity_extract` evidence.
+The proof records targeted semantic windows and their existing fidelity Effects, not a
+literary score or absolute semantic-losslessness certificate. An omitted range remains
+retrievable through Book's original manuscript/working-history source version; use the
+existing manuscript source and memory preparation entries before changing the task.
+Native `authority-creation continue` can register a v3-to-v4 capacity successor under the
+same Pack scope. Completed compression/fidelity calls must have verified settled receipts;
+the main generation must be unsent. This is main-unsent recovery, not zero-call recovery.
+Retain original failures, calls and cost facts; unresolved outcomes require reconciliation.
+Fresh Creation selects v4. To replay a frozen Creation v3 use its original input policy;
+the installer retains Chapter 3.1 and Planning 2.17 without the v4 artifact catalog.
 
 Configure each actual route with its confirmed model Context and output limits,
 accounting method/evidence, and supported high reasoning. The system supports a

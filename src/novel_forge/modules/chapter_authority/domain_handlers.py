@@ -127,6 +127,7 @@ def build_context_bundle(
     context_model_call: Any = None,
     compression_input_tokens: int = 0,
     defer_token_capacity: bool = False,
+    semantic_context_compression: bool = False,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     if context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"}:
@@ -420,6 +421,9 @@ def build_context_bundle(
             "memo_fingerprint": str((chapter_memo or {}).get("memo_fingerprint") or ""),
             "preserve_quotes": list(plan.get("preserve_quotes") or ()),
         }
+        if semantic_context_compression:
+            from novel_forge.modules.context_builder.semantic_units import SEMANTIC_CONTRACT
+            task["semantic_contract"] = SEMANTIC_CONTRACT
         if (clean_history and access.get("mode") == "ALLOW_ONLY"
                 and access.get("usage_scope") == "EXPERIMENTAL_VALIDATION"
                 and access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"):
@@ -663,7 +667,7 @@ def normalize_draft_result(
     )
     memory = None
     working = (context_content or {}).get("working_manuscript") or {}
-    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6"}:
+    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}:
         from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
         memory = optional_draft_memory(result.get("working_memory_json"), text,
             available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})

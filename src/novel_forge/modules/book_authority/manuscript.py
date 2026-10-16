@@ -556,7 +556,8 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     if memory_enabled:
         from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
         memory_packet = compile_working_memory(rows, queries=projection_policy["queries"],
-                                               max_characters=projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)))
+                                               max_characters=projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)),
+                                               dependency_closed=projection_policy["version"] == "working-prose-projection.v7")
     source_history = None
     if projection_policy:
         rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)

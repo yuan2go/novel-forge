@@ -1497,7 +1497,7 @@ def build_provider_context_view(
     if stage in {"context_compress", "context_fidelity"}:
         from .context_compression_provider import compression_boundary_identity
 
-        if task_view.get("contract_version") == "task-context-compression.v2":
+        if task_view.get("contract_version") in {"task-context-compression.v2", "task-context-compression.v3"}:
             return {"contract_version": "provider-context-view-v4", "stage": stage,
                     "frozen_input_boundary": deepcopy(task_view["frozen_input_boundary"]),
                     "task_fingerprint": task_view["task_fingerprint"],
@@ -2451,10 +2451,10 @@ def _build_planning_context_view(
             "Planning Provider Context requires the canonical Planning ContextBundle",
         )
     capacity_policy = context_bundle.get("planning_context_policy_version")
-    complete_capacity = capacity_policy == "context-policy:chapter-generation-pack:v3"
-    if capacity_policy is not None and capacity_policy not in {_PLANNING_TASK_CAPACITY_POLICY, "context-policy:chapter-generation-pack:v3"}:
+    complete_capacity = capacity_policy in {"context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}
+    if capacity_policy is not None and capacity_policy not in {_PLANNING_TASK_CAPACITY_POLICY, "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}:
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning capacity requires a supported frozen policy version")
-    task_capacity = capacity_policy in {_PLANNING_TASK_CAPACITY_POLICY, "context-policy:chapter-generation-pack:v3"}
+    task_capacity = capacity_policy in {_PLANNING_TASK_CAPACITY_POLICY, "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}
     foundation_projection = context_bundle.get("foundation_input_projection_version")
     if foundation_projection not in (None, "foundation-stage-input.v1"):
         raise KernelError("FOUNDATION_PROVIDER_CONTEXT_INVALID", "Unsupported frozen Foundation input projection")
@@ -2744,7 +2744,7 @@ def project_planning_narrative_intent(
     narrative_command: dict[str, Any] = {}
     if isinstance(command, dict):
         working = (projected_task.get("arc_working_set") or {}).get("working_manuscript") or {}
-        if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6"} and command.get("repair_reason"):
+        if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"} and command.get("repair_reason"):
             projected_task["planning_correction"] = {
                 "source_pointer": "/planning_command/repair_reason",
                 "instruction": command["repair_reason"],

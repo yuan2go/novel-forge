@@ -62,7 +62,7 @@ def validate_observations(memory: Mapping[str, Any], text: str, *, available_cau
         raise KernelError("WORKING_MEMORY_INVALID", "Observation identity or located evidence changed")
 
 
-def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str], max_characters: int) -> dict[str, Any]:
+def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str], max_characters: int, dependency_closed: bool = False) -> dict[str, Any]:
     entries, coverage, known = [], [], set()
     for source in sources:
         memory = source.get("observations")
@@ -97,6 +97,22 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
             remaining -= size + 80
         else:
             omitted.append(entry["observation_id"])
+    if dependency_closed:
+        originals = {entry["observation_id"]: entry for entry in entries}
+        included = {entry["observation_id"] for entry in selected}
+        pending = list(selected)
+        while pending:
+            entry = pending.pop()
+            for cause in entry["causes"]:
+                if cause not in originals:
+                    raise KernelError("WORKING_MEMORY_CAUSE_UNAVAILABLE", "A selected observation needs its original source-bound cause")
+                if cause not in included:
+                    source = originals[cause]
+                    restored = {**source, "state_role": "LATEST_OBSERVATION" if cause in current else "HISTORICAL_OBSERVATION"}
+                    selected.append(restored)
+                    pending.append(restored)
+                    included.add(cause)
+        omitted = [identity for identity in omitted if identity not in included]
     selected.sort(key=lambda row: (row["source"]["chapter"], row["location"]["start"]))
     packet = {"version": MEMORY_VERSION, "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
               "semantic_support": "NOT_VERIFIED", "entries": selected, "omitted_observation_ids": omitted,

@@ -24,7 +24,7 @@
           "scope": "PLANNED_FUTURE_ONLY"
         },
         "working_prose_policy": {
-          "version": "working-prose-projection.v6",
+          "version": "working-prose-projection.v7",
           "history_chapters": 128,
           "recent_complete_chapters": 2,
           "max_characters": null,
@@ -87,7 +87,8 @@
             "use": "SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"
           }
         },
-        "context_capacity_policy": "complete-request-capacity.v1"
+        "context_capacity_policy": "complete-request-capacity.v1",
+        "context_semantic_contract": "source-unit-dependency-and-final-composition.v2"
       }
     },
     "previous_volume_outcome": {
@@ -313,5 +314,5 @@
       }
     }
   },
-  "narrative_execution_contract": "native-narrative-execution.v3"
+  "narrative_execution_contract": "native-narrative-execution.v4"
 }

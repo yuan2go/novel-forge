@@ -1382,6 +1382,7 @@ class _ContextHandler:
             context_model_call=context_model_call,
             compression_input_tokens=compression_allocation,
             defer_token_capacity=request.capacity_upgrade is not None or (request.command.get("preparation_report") or {}).get("context_capacity_policy") == "complete-request-capacity.v1",
+            semantic_context_compression=(request.capacity_upgrade or {}).get("target_context_policy_ref") == "context-policy:chapter-generation-pack:v4" or bool((request.command.get("preparation_report") or {}).get("context_semantic_contract")),
             book_id=_book_identity(request, plan.content),
             target_capability_id="prose.chapter.draft",
             capability_pack_snapshot_ref=str(

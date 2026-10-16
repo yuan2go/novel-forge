@@ -915,8 +915,9 @@ def _validate_context(
 ) -> None:
     context = manifest.context_sources
     if context.capacity_policy and (context.capacity_policy != "complete-request-capacity.v1"
-            or context.policy_id != "context-policy:chapter-generation-pack:v3"
-            or context.context_substage_method != "shared-rules-and-native-context-contract.v1"):
+            or (context.policy_id, context.context_substage_method) not in {
+                ("context-policy:chapter-generation-pack:v3", "shared-rules-and-native-context-contract.v1"),
+                ("context-policy:chapter-generation-pack:v4", "source-unit-dependency-and-final-composition.v2")}):
         issues.error("CAPABILITY_PACK_CONTEXT_TARGET_INVALID", "$.context_sources.capacity_policy", "complete request capacity requires its explicit current policy and governed substage method")
     if not isinstance(context.policy_id, str) or not context.policy_id.strip():
         issues.error(

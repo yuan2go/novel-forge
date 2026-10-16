@@ -309,6 +309,10 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
 
     harness = CapabilityPackPostgresHarness("upstream-capacity")
     root = Path(__file__).resolve().parents[2]
+    gold_path = root / "tests/fixtures/semantic_compression_gold.json"
+    gold = json.loads(gold_path.read_text())
+    gold_text = "\n\n".join(paragraph for source in gold["sources"] for paragraph in source["paragraphs"])
+    actual_prompt_qa = []
     transport = SynthesisTransport()
     class HistoryTransport(AdviceOnlySynthesisChapterTransport):
         def __call__(self, stage, inputs):
@@ -318,9 +322,27 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
             if stage == "draft":
                 chapter = inputs["plan"]["chapter"]
                 text = "\n\n".join(f"第{chapter}章记录第{index}次查验。" + "她停在门外，听见木轮碾过石板，仍不敢替证人确认消息。" * 3 for index in range(600))
+                if chapter == 1:
+                    text = gold_text + "\n\n" + text
                 from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
                 output["scene_artifacts"][0]["text"] = text + "\n\n" + output["scene_artifacts"][0]["text"]
                 output["text"] = serialize_realization(output["scene_artifacts"])
+                if chapter == 1:
+                    observations = []
+                    for source in gold["sources"]:
+                        for index, paragraph in enumerate(source["paragraphs"]):
+                            perspective, owner = "OBSERVED", ""
+                            if source["id"] == "selected-working:harbor:7" and index == 4:
+                                perspective, owner = "HEARSAY", "阿岚"
+                            elif source["id"] == "selected-working:harbor:7" and index == 5 or source["id"] == "selected-working:unicode:3" and index == 2:
+                                perspective = "READER_ONLY"
+                            elif source["id"].startswith("witness:"):
+                                perspective, owner = "HEARSAY", "账房甲" if source["id"].endswith(":a") else "搬夫乙"
+                            observations.append({"kind": "KNOWLEDGE" if perspective == "HEARSAY" else "EVENT",
+                                "subject": owner or "工作稿叙述", "state_key": source["id"] + ":" + str(index),
+                                "claim": paragraph, "perspective": perspective, "knowledge_owner": owner,
+                                "quote": paragraph, "causes": []})
+                    output["working_memory_json"] = json.dumps(observations, ensure_ascii=False)
             return output
     transport.chapter = HistoryTransport()
     transport.database_url = DATABASE_URL
@@ -342,6 +364,22 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
     def capture_sent_request(resolver, request, admission):
         payload = original_resolve(resolver, request, admission)
         sent_requests[request.external_effect_id] = payload.input_text
+        if request.stage == "draft":
+            from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+            from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+            layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+            response_path = layout.result_path("fixture-response.json")
+            response = json.loads(response_path.read_text())
+            if response.get("chapter") == 4 or any(scene.get("chapter") == 4 for scene in response.get("scene_artifacts", [])):
+                assert "阿岚" in payload.input_text
+            support = [paragraph for source in gold["sources"] for paragraph in source["paragraphs"] if paragraph in payload.input_text]
+            if support:
+                actual_prompt_qa.append({"effect_id": request.external_effect_id, "sent_input_hash": hashlib.sha256(payload.input_text.encode()).hexdigest(),
+                    "support_paragraphs": support, "scope": "Exact original support in actual serialized prompt; not model semantic comprehension"})
+                if "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。" in support:
+                    response["scene_artifacts"][0]["text"] += "\n\n钥匙已经归还，闸门仍旧未开；阿岚没有把那条未经核实的传闻递给林砚。"
+                    response["text"] = serialize_realization(response["scene_artifacts"])
+                    response_path.write_text(json.dumps(response, ensure_ascii=False))
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_sent_request)
     tokenizer = Tokenizer(models.WordLevel({"[UNK]": 0}, unk_token="[UNK]"))
@@ -371,6 +409,15 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         effects = uow.cursor.fetchall()
         failures = uow.cursor.execute("SELECT definition_name,status FROM authority_operation WHERE project_id=%s AND status IN ('FAILED_FINAL','FAILED_RETRYABLE')", [result["project_id"]]).fetchall()
     assert result["stop_reason"] == "MANUSCRIPT_READY", (result, failures)
+    from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+    from novel_forge.modules.book_authority.manuscript import require_manuscript
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        book_run_id = uow.cursor.execute("SELECT book_run_id FROM authority_book_production WHERE project_id=%s", [result["project_id"]]).fetchone()[0]
+    readback = require_manuscript(DATABASE_URL, project_id=result["project_id"], book_run_id=book_run_id,
+        principal=build_trusted_principal_resolver().resolve_api_principal())
+    readback_text = "\n\n".join(unit["text"] for unit in readback["units"])
+    assert "钥匙已经归还，闸门仍旧未开" in readback_text
+    assert actual_prompt_qa and any(len(row["support_paragraphs"]) == sum(len(source["paragraphs"]) for source in gold["sources"]) for row in actual_prompt_qa)
     compression = [row for row in effects if row[2].get("stage") in {"context_compress", "context_fidelity"}]
     assert compression and all(row[1] == "SUCCEEDED" for row in compression)
     compression_proofs = []
@@ -394,6 +441,8 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         admission = admission.get("contract", admission)
         assert admission["provider_request_identity"]["input_text_hash"] == "sha256:" + hashlib.sha256(sent_requests[effect_id].encode()).hexdigest()
         projection = payload["input"]["_context_capacity_projection"]
+        assert projection["semantic_contract"] == "source-unit-dependency-and-final-composition.v2"
+        assert projection["final_composition"]["provider_combination"]["phase"] == "FINAL_PROVIDER_COMPOSITION"
         assert projection["original_hash"] != projection["result_hash"]
         assert projection["measurement"]["after_reserved"] <= projection["measurement"]["limit"]
         proofs.append({"effect_id": effect_id, "capability": capability, "projection": projection,
@@ -404,7 +453,11 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
     if evidence_root:
         destination = Path(evidence_root) / "upstream-complete-request"
         destination.mkdir(parents=True, exist_ok=True)
-        (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_SYNTHETIC_CHARACTER_METER_ONLY",
+        (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_GOLD_WITH_SYNTHETIC_CAPACITY_LOAD",
+            "gold_sha256": hashlib.sha256(gold_path.read_bytes()).hexdigest(), "gold_questions_fixed_before_compression": True,
+            "actual_prompt_support": actual_prompt_qa, "semantic_comprehension": "NOT_VERIFIED",
             "result": result, "proofs": proofs, "compression_effects": compression_proofs}, ensure_ascii=False, indent=2))
+        (destination / "native-manuscript-readback.txt.gz").write_bytes(gzip.compress(readback_text.encode(), mtime=0))
+        (destination / "manuscript-readback.json").write_text(json.dumps({key: value for key, value in readback.items() if key != "units"}, ensure_ascii=False, default=str))
         for effect_id in {proof["effect_id"] for proof in proofs + compression_proofs}:
             (destination / (effect_id + "-sent.txt.gz")).write_bytes(gzip.compress(sent_requests[effect_id].encode(), mtime=0))

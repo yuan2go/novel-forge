@@ -33,8 +33,8 @@ def test_event_first_pack_is_explicit_and_freezes_only_the_planning_method():
     legacy = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
     current = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64,
                                               event_first_planning=True)
-    assert legacy.manifest["identity"]["version"] == "2.16.0"
-    assert current.manifest["identity"]["version"] == "2.17.0"
+    assert legacy.manifest["identity"]["version"] == "2.18.0"
+    assert current.manifest["identity"]["version"] == "2.19.0"
     old = next(row for row in legacy.artifact_catalog["artifacts"] if row["kind"] == "SKILL" and row["ref"] == "long-outline")
     new = next(row for row in current.artifact_catalog["artifacts"] if row["kind"] == "SKILL" and row["ref"] == "long-outline")
     assert old["version"] == "long-outline-v4"
