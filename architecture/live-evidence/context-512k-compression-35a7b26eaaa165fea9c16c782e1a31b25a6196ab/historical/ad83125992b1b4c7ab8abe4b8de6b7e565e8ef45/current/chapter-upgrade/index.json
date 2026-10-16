@@ -1,0 +1,193 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "case": "chapter-capacity-upgrade-memo-False",
+      "tested_source_sha": "ad83125992b1b4c7ab8abe4b8de6b7e565e8ef45",
+      "declared_fixture_runtime_release": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "evidence_class": "NATIVE_CONTROLLED_PROVIDER_ENGINEERING_ONLY",
+      "original_operation_id": "730934d8-8ef9-4c5e-9ce8-bd40fb2a0576",
+      "successor_operation_id": "988fee8c-59dd-4d97-87a6-8c86ed244a64",
+      "original_material_target": 6000,
+      "prior_root_external_effects": 0,
+      "source_pack_evidence": {
+        "source_kind": "PRIOR_SAME_BOOK_ACTIVATION_WITHOUT_MODEL_ATTEMPT",
+        "deployment_id": "deployment:quality:chapter_generation_pack.creative.fff53cce6b6dae32cbb16f47:78dadc1616e8e8936add",
+        "activation_command_hash": "sha256:adbbce86479268826e5976bb174d36f92cd90ee6dbaa61812217a84529fb1f16",
+        "activation_operation_id": "2bd5f57b-35ef-41d8-8c0c-ff0ba998e29a"
+      },
+      "old_attempt_command_inputs_preserved": true,
+      "repeated_continue_no_second_draft": true,
+      "original_sources_to_new_context_policy_hash": "sha256:f2f77c686e9393f49c25a532b330c59b65f0d3a1361e8bcc1863f3e0c4b7ac04",
+      "final_complete_request_admission": {
+        "measurement": {
+          "model": "gpt-test",
+          "method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+          "precision": "BYTE_UPPER_BOUND",
+          "utf8_bytes": 62873,
+          "input_tokens": 62873,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": 62873,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "contract_version": "provider-token-admission-v1",
+        "status": "ADMITTED",
+        "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "envelope_hash": "sha256:03957e432c99f8443f53f06a4024b8e88c0caba0f82d1bee5095386a813f374e",
+        "accounting_contract": {
+          "model": "gpt-test",
+          "provider": "codex-cli",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "evidence_ref": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+          "output_reserve": 32000,
+          "route_identity": "routing-decision:b3fc2456a3add571a76d2b279a9f515e538fcc8eb5369e405700ead95e154751",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+          "model_context_limit": 512000,
+          "execution_token_limit": 512000,
+          "serialization_contract": "codex-cli-application-stdin-v1"
+        },
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 32000,
+          "provider_input": 62873,
+          "request_framing": 16,
+          "application_protocol_schema": 2376
+        },
+        "total_reserved": 97521,
+        "applicable_limit": 512000,
+        "context_bundle_tokens": 48266,
+        "context_bundle_status": "VALID",
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:762ecf078f1efa69044bbec8bdd0902dc03e6e76982c16bbc7c46fb3c0e0f066",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:28b3575bf463eed530aa50e7612b566db3f81b64319bbe164812e768a4b0eab7",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:9027601b18e035713e2427ce9f77c8354ec0d2f5e8d9487e962f786cc4c1f9e8",
+          "provider_context_view": "sha256:482a5259eb96d878efaba97f41aca4df8f82b96fdc81680e1a07567ccd02f716",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "sent_input_sha256": "sha256:9027601b18e035713e2427ce9f77c8354ec0d2f5e8d9487e962f786cc4c1f9e8",
+      "actual_provider_tokens": null,
+      "prose_readback_characters": 119,
+      "prose_sha256": "27b9e13342061632696c970ec0b7e10288c2d8624bbf491cba8516914a59919c",
+      "scope": "Short controlled prose verifies transport/persistence only; it does not establish the requested chapter length, literary acceptance or whole-book completion."
+    },
+    {
+      "case": "chapter-capacity-upgrade-memo-True",
+      "tested_source_sha": "ad83125992b1b4c7ab8abe4b8de6b7e565e8ef45",
+      "declared_fixture_runtime_release": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "evidence_class": "NATIVE_CONTROLLED_PROVIDER_ENGINEERING_ONLY",
+      "original_operation_id": "70b57f76-cedd-47fc-82f6-765c2ce361b3",
+      "successor_operation_id": "98b9ca59-d82e-4798-b5ef-e2daf476b693",
+      "original_material_target": 6000,
+      "prior_root_external_effects": 1,
+      "source_pack_evidence": {
+        "snapshot_id": "sha256:49bb9847de7f3e721336afd42192db6719fa0330ad5592f0395f0bd5e0ad324f",
+        "snapshot_hash": "sha256:989edfd0f264133d084a8e1046b599bf5abb4fa225b34d148fcd27c3805a509c"
+      },
+      "old_attempt_command_inputs_preserved": true,
+      "repeated_continue_no_second_draft": true,
+      "original_sources_to_new_context_policy_hash": "sha256:c64e745b44680897a80136825c28cbdea869b4c1d4cdb8fb7d320616300028e1",
+      "final_complete_request_admission": {
+        "measurement": {
+          "model": "gpt-test",
+          "method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+          "precision": "BYTE_UPPER_BOUND",
+          "utf8_bytes": 54716,
+          "input_tokens": 54716,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": 54716,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "contract_version": "provider-token-admission-v1",
+        "status": "ADMITTED",
+        "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "envelope_hash": "sha256:300a79a6c2e6c9454569c94e7c64c7834cebf1b03b38d41cf713c2e7957153a8",
+        "accounting_contract": {
+          "model": "gpt-test",
+          "provider": "codex-cli",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "evidence_ref": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+          "output_reserve": 32000,
+          "route_identity": "routing-decision:ef6790282cde64a6b6e84f9062e49bba809c22c873204b5f2c37cdb0a0bd18b5",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+          "model_context_limit": 512000,
+          "execution_token_limit": 512000,
+          "serialization_contract": "codex-cli-application-stdin-v1"
+        },
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 32000,
+          "provider_input": 54716,
+          "request_framing": 16,
+          "application_protocol_schema": 2376
+        },
+        "total_reserved": 89364,
+        "applicable_limit": 512000,
+        "context_bundle_tokens": 39951,
+        "context_bundle_status": "VALID",
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:762ecf078f1efa69044bbec8bdd0902dc03e6e76982c16bbc7c46fb3c0e0f066",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:100c871e7c3000347967a075ed179f1aa9cda277ec07f76c17fb5e883261bebb",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:f3eb7f240d3f16cbbfa49f2fb2b662d613101634e4b699231d8016b831f05a57",
+          "provider_context_view": "sha256:48b36198163d41642a54523bae7269f29a9a6805f1562651f6479674f3969466",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "sent_input_sha256": "sha256:f3eb7f240d3f16cbbfa49f2fb2b662d613101634e4b699231d8016b831f05a57",
+      "actual_provider_tokens": null,
+      "prose_readback_characters": 119,
+      "prose_sha256": "27b9e13342061632696c970ec0b7e10288c2d8624bbf491cba8516914a59919c",
+      "scope": "Short controlled prose verifies transport/persistence only; it does not establish the requested chapter length, literary acceptance or whole-book completion."
+    }
+  ],
+  "draft_revision_rebuild_scope": "WIRED_AND_FOCUSED_UNIT_ONLY",
+  "real_provider": "NOT_RUN"
+}

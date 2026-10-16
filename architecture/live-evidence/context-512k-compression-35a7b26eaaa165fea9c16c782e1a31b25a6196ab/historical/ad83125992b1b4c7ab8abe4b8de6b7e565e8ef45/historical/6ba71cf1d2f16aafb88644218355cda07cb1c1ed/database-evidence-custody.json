@@ -1,0 +1,6 @@
+{
+  "source_identity": "Chapter retained ledger and source guards ran at a1c30020. Effects-only run started from clean 8df12391; final Creation run uses clean 6ba71cf1. Native test source and replay source are reported separately.",
+  "module_fixture_behavior": "Integration conftest truncates business tables on module changes. Mixed-module snapshots retain only the final module; their earlier module artifacts and logs are preserved separately.",
+  "chapter_retained_ledger": "chapter/retained-ledger-database-evidence.json.gz captures a fresh single Chapter module: four successful native tests including cancellation and durable substage reuse.",
+  "unknown_and_accounting": "Mixed-module core log retains test outcomes; raw rows from earlier modules cannot be inferred from its final database snapshot. The independent effects-only snapshot retains UNKNOWN/reconciliation history and deliberate receipt-tampering negatives; those corrupted fixture rows are not trusted success receipts."
+}

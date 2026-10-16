@@ -1,0 +1,65 @@
+{
+  "system_context_maximum": {
+    "value": 512000,
+    "classification": "CONFIGURABLE_POLICY"
+  },
+  "confirmed_route_capacity": {
+    "classification": "CURRENT_RUNTIME_FACT",
+    "effective_limit": "min(system ceiling, actual route context, frozen execution limit); reserve output/reasoning/framing once"
+  },
+  "invariants": {
+    "classification": "CURRENT_PROVEN_INVARIANT",
+    "items": [
+      "Unknown outcomes require original-ID reconciliation",
+      "External I/O outside business transaction",
+      "Current Fence/cancellation/source identity guards domain commit",
+      "Accepted Canon is not mutated by compression"
+    ]
+  },
+  "historical": {
+    "classification": "HISTORICAL_COMPATIBILITY",
+    "retained": [
+      "Published migrations unchanged; no new schema required",
+      "Old Pack/context/manuscript freezes remain immutable",
+      "Original terminal failures, UNKNOWN and usage preserved"
+    ]
+  },
+  "changes": [
+    {
+      "before": "64K Planning/24K-character history and material estimates can veto before complete assembly",
+      "after": "New Context v3 and working prose v6 defer lossy capacity decisions to full request; relevance/deduplication/source eligibility retained"
+    },
+    {
+      "before": "Raw request can be eliminated by all routes before compression",
+      "after": "Authorized preparation route selected before capacity transformation; final exact candidate reruns authorization/spend/full-capacity admission"
+    },
+    {
+      "before": "Compressed report may not represent actual sent materials",
+      "after": "Derived original-source ranges are applied during actual request materialization; final hash is checked against consumed native payload"
+    },
+    {
+      "before": "Fixed chunk count and large paragraph can permanently fail",
+      "after": "Full compressor+fidelity request-sized chunks, Unicode fragments, resumable multiple batches and no eight-chunk lifetime veto"
+    },
+    {
+      "before": "Protected history wrappers freeze compressible expression; restore can crowd out other history",
+      "after": "Required facts/current/recent prose remain exact; eligible historical expression extracted; restoration reallocates other eligible history from original frozen input"
+    },
+    {
+      "before": "Upstream Context calls collide on per-Attempt log identity or miss ledger after receipt checkpoint",
+      "after": "Per-Effect log/cost identity and idempotent restoration of missing original accounting; consumer remains a non-call record"
+    }
+  ],
+  "not_added": [
+    "Cumulative membership token/call veto",
+    "Local elapsed generation deadline",
+    "Draft literary approval gate",
+    "Parallel Agent/state machine"
+  ],
+  "preserved": [
+    "Paid channel spend authorization",
+    "Physical model/interface limits",
+    "Native cancel/Lease/Fence/Effect identities",
+    "Author work and long-form target"
+  ]
+}

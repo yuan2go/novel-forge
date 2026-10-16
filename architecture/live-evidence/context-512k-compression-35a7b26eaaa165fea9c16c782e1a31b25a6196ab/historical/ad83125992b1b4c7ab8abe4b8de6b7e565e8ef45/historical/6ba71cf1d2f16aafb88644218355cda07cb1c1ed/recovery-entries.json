@@ -1,0 +1,29 @@
+{
+  "planning_capacity_upgrade": {
+    "method": "POST",
+    "path": "/product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation",
+    "body_fields": [
+      "project_id",
+      "expected_source_version",
+      "decision_evidence.authorization_ref",
+      "decision_evidence.authorized_reasoning_effort",
+      "decision_evidence.reason",
+      "trace_id",
+      "correlation_id"
+    ],
+    "conditions": "Native terminal pre-send capacity failure, zero Effects/reservations, no live lease or cancellation; exact same-Pack v2-to-v3 context-policy change only. Original frozen Context retained; new Context projection verified at materialization. Broader historical contracts require their domain-owned upgrade, not default replacement."
+  },
+  "creation_continue": "novel-forge authority-creation continue --formation-run-id <original-id> --foreground",
+  "chapter_reconcile": {
+    "method": "POST",
+    "path": "/product/production/book-authority/chapter-requests/{chapter_request_id}/reconcile"
+  },
+  "diagnosis": [
+    "Original Operation/Attempt/Pack/Context identity",
+    "_context_capacity_projection original/result/source hashes",
+    "Context task capacity_bindings and each substage Effect receipt",
+    "Main full request admission/component hashes/actual sent hash",
+    "model_call_log + cost_ledger + original reservation and UNKNOWN reconciliation"
+  ],
+  "partial_compression": "Resume original Attempt/Operation and reuse only matching trusted chunks. A main Writer not sent does not imply the task made zero external calls."
+}

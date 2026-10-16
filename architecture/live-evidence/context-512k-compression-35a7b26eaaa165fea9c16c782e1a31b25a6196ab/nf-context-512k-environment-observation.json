@@ -1,0 +1,36 @@
+{
+  "schema_version": "novel-forge.context-capacity-environment.v1",
+  "evidence_class": "READ_ONLY_ENVIRONMENT_OBSERVATION",
+  "source": "local Codex model cache; not Provider qualification",
+  "model_cache_sha256": "ad68a811e707b97938804a26227f206d577922d8c041a1c9445da7c67665fbb9",
+  "model_cache_mtime_ns": 1792173362072380037,
+  "selected_model": "gpt-6.1-sol",
+  "selected_reasoning": "xhigh",
+  "cache_advertised_context_window": 500000,
+  "effective_context_window_percent": 95,
+  "output_limit_in_cache": null,
+  "account_auth_mode": "chatgpt",
+  "membership_credential_present": true,
+  "matched_tokenizer_verified": false,
+  "real_provider_execution": "NOT_RUN",
+  "real_512k_boundary": "NOT_RUN",
+  "reason": "No currently qualified native route binds matching tokenizer, complete protocol accounting, current capacity evidence and actual authorization together. The local CLI cache is below 512000; historical pilot DeepSeek calls do not qualify this new implementation or grant a new paid run.",
+  "observed_at_utc": "2026-10-16T17:56:33.681545+00:00",
+  "native_pilot_database_latest_observed_model": "deepseek-flash",
+  "native_pilot_database_model_source_time": "2026-09-28T02:28:58.464007+00:00",
+  "running_native_application_version": "UNVERIFIED",
+  "official_capacity_sources": [
+    {
+      "url": "https://api-docs.deepseek.com/api/list-models/",
+      "observed_at_utc": "2026-10-16T18:10:05.721325+00:00",
+      "model": "deepseek-flash",
+      "context_window": 1048576,
+      "max_output_tokens": 393216,
+      "authority": "CURRENT_OFFICIAL_DOCUMENTATION_NOT_RUNTIME_QUALIFICATION"
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/token-counting",
+      "authority": "TOKEN_COUNTING_PROTOCOL_REFERENCE"
+    }
+  ]
+}
