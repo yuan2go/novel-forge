@@ -212,7 +212,8 @@ realized beats as premises, compresses incidental daily transitions, and asks ex
 scene goals, conflicts, beats and exit states to carry immediate friction, costly action
 and an irreversible ending that demands a next action. Missing source coverage or exceeded
 history/allocation closes input admission; literary interpretation remains a review concern.
-New Creation profiles select `working-prose-projection.v5`. Book freezes every predecessor's
+New Creation profiles select `working-prose-projection.v6`; frozen v5 profiles retain
+their historical character allocation. Book freezes every predecessor's
 exact effective source, source hash and selection lineage in `working-source-history.v1`,
 separately from the bounded prose passages sent to Planning, Memo and Writer. The configured
 128-chapter passage window does not reject chapter 130 or discard earlier source identities.
@@ -1330,6 +1331,14 @@ semantic check assesses missing or changed meaning; uncertain results restore th
 local original units. Historical material-target contracts retain their target gate;
 the complete-request policy admits only after rebuilding and measuring the full request. A
 compressed derivative never mutates Canon and is not unconditionally recompressed.
+
+The current extractive contract proves source-unit identity, not unrestricted semantic
+equivalence. Its paragraph quotation matching, metadata projection, overlapping chunk
+selection and local fidelity checks do not establish cross-paragraph quote coverage,
+dependency-closed selection or fidelity of the final combined Provider view. Those
+semantic guarantees remain unresolved implementation requirements; a positive local
+model verdict or legal source-unit ID cannot establish them. Original source versions
+remain the recovery authority, including material omitted from this request.
 
 The author capacity policy is one complete request of at most 512,000 tokens,
 further bounded by the selected route's confirmed capacity. Material selection

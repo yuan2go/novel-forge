@@ -518,12 +518,12 @@ Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy t
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
-New Creation profiles enable `working-prose-projection.v5`,
+New Creation profiles enable `working-prose-projection.v6`,
 `working-story-schedule.v1`, `working-craft-delivery.v2`, `narrative-craft-budget.v5`
 and `native-prose-plan-feedback.v1`. The exact working Craft policy is
 `{"version":"working-craft-delivery.v2","use":"SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}`;
 its frozen strategy is `narrative-craft-strategy.v4`. Historical profiles retain their
-existing versions. The v5 source-history manifest contains every predecessor, while
+existing versions. The v5/v6 source-history manifest contains every predecessor, while
 passages and located observations remain bounded by real request capacity. Check the
 host manifest separately from the shorter Provider projection; no omitted prose or
 receipt may be treated as realized experience or method success. Verify the selected working sources through Book,
