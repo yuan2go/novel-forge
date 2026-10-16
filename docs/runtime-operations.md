@@ -729,6 +729,15 @@ preparation. Missing fields retain historical protection. The renderer rejects a
 policy mismatch instead of substituting repository defaults. An omitted range remains
 retrievable through Book's original manuscript/working-history source version; use the
 existing manuscript source and memory preparation entries before changing the task.
+For original JSON string quantities, inspect the semantic query plan's
+`source_json_projection`, each selected document's source/field binding and the actual
+Provider summary. `CONTEXT_SOURCE_JSON_AMBIGUOUS` or `CONTEXT_SOURCE_JSON_NONFINITE`
+requires recovering the original source representation; `CONTEXT_SOURCE_JSON_SCOPE_CHANGED`
+requires rebuilding the original scoped projection instead of copying an entire asset.
+The existing writer-index dry-run/apply/resume/rollback commands retain before/after
+rows and unchanged original source hashes. Run `test_source_json_projection.py` and
+`test_writer_index_rebuild_postgres.py` together with the native capacity/continuation
+checks when modifying this projection. Retain the failed Effect and old RetrievalResult.
 For a restart rehearsal, reconstruct the execution composition, Gateway, Context binder
 and application with the same frozen configuration. Check that settled Effects are
 read from durable receipts and that only one main Writer Effect exists. Reusing the

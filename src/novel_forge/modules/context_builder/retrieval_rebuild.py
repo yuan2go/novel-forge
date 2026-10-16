@@ -11,7 +11,7 @@ from psycopg.types.json import Jsonb
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-from .story_projection import STORY_PROJECTION_VERSION, story_history, visible_business_data
+from .story_projection import STORY_PROJECTION_VERSION, SOURCE_JSON_PROJECTION, restore_source_json_fields, story_history, visible_business_data
 from .writer_projection import WRITER_PROSE_TYPES
 
 _FIELDS = ("retrieval_document_id", "project_id", "book_id", "source_asset_version_id", "source_artifact_type",
@@ -27,7 +27,10 @@ def writer_index_document(document: Mapping[str, Any], source: Mapping[str, Any]
     from novel_forge.storage.book_authority_repositories import _retrieval_graph_metadata, _historical_reference_ids, _structured_fact_ids
 
     clean = deepcopy(dict(document))
-    text = story_history(json.dumps(source, ensure_ascii=False) if document["source_artifact_type"] in WRITER_PROSE_TYPES else str(document["content_text"]), physical_type=str(document["source_artifact_type"]))
+    original_text = json.dumps(source, ensure_ascii=False) if document["source_artifact_type"] in WRITER_PROSE_TYPES else str(document["content_text"])
+    text = story_history(original_text, physical_type=str(document["source_artifact_type"]), preserve_json=True)
+    if document["source_artifact_type"] not in WRITER_PROSE_TYPES:
+        text, _ = restore_source_json_fields(text, source)
     clean["content_text"] = text
     try:
         semantic_content = json.loads(text)
@@ -36,8 +39,8 @@ def writer_index_document(document: Mapping[str, Any], source: Mapping[str, Any]
     graph = _retrieval_graph_metadata(semantic_content)
     for key in ("entity_ids", "relationship_ids", "character_ids"):
         clean[key] = graph[key]
-    clean["metadata"] = {**visible_business_data(dict(clean.get("metadata") or {}), stage="draft", history=True),
-                         "writer_projection_version": STORY_PROJECTION_VERSION}
+    clean["metadata"] = {**visible_business_data(dict(clean.get("metadata") or {}), stage="draft", history=True, preserve_json=True),
+                         "writer_projection_version": STORY_PROJECTION_VERSION, "source_json_projection": SOURCE_JSON_PROJECTION}
     clean["metadata"]["historical_reference_ids"] = _historical_reference_ids(semantic_content)
     clean["metadata"]["fact_ids"] = _structured_fact_ids(list(clean["metadata"].get("structured_facts") or ()))
     clean["projection_hash"] = projection_hash({key: clean.get(key) for key in _FIELDS})

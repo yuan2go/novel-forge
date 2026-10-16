@@ -222,7 +222,7 @@ def compile_task_context(
         raise KernelError("TASK_CONTEXT_BUDGET_INVALID", "task target must fit the system context support ceiling")
     if task.get("writer_projection_version") == "accepted-writer-history.v2":
         from .story_projection import clean_context_candidates
-        candidates = clean_context_candidates(list(candidates), stage=str(task.get("stage") or "draft"))
+        candidates = clean_context_candidates(list(candidates), stage=str(task.get("stage") or "draft"), preserve_json=semantic_units.enabled(task))
     reference = task.get("stage") == "reference_analysis"
     stage_sources = task.get("frozen_input_boundary")
     boundary_key = "frozen_input_boundary" if stage_sources else "observation_boundary" if reference else "accepted_boundary"

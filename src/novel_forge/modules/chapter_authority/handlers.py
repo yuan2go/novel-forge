@@ -1023,14 +1023,14 @@ class _RetrievalHandler:
         return result
 
 
-def merge_task_retrieval_projections(metadata: dict[str, Any], documents: list[dict[str, Any]]) -> dict[str, Any]:
+def merge_task_retrieval_projections(metadata: dict[str, Any], documents: list[dict[str, Any]], *, preserve_json: bool = False) -> dict[str, Any]:
     from novel_forge.modules.context_builder.writer_projection import WRITER_PROJECTION_VERSION, project_writer_history, provider_visible_data
 
     clean_history = any((item.get("compression_provenance") or {}).get("writer_projection_version") in {WRITER_PROJECTION_VERSION, "accepted-writer-history.v2"} for item in documents)
     source_type = str((documents[0].get("source_artifact_type") if documents else "") or metadata.get("physical_asset_type") or "")
     summary = str(metadata.get("safe_summary") or "")
     if clean_history and summary:
-        summary = project_writer_history(summary, source_artifact_type=source_type)
+        summary = project_writer_history(summary, source_artifact_type=source_type, preserve_json=preserve_json)
     facts = list(metadata.get("structured_facts") or ())
     summaries = [summary]
     refs = set(metadata.get("task_dependency_matched_refs") or ())
@@ -1040,7 +1040,7 @@ def merge_task_retrieval_projections(metadata: dict[str, Any], documents: list[d
             raise KernelError("CONTEXT_RETRIEVAL_SOURCE_DRIFT", "same-source task projections must bind the exact frozen content hash")
         facts.extend(fact for fact in (document.get("metadata") or {}).get("structured_facts", ()) if isinstance(fact, dict))
         summary = str(document.get("safe_summary") or "")
-        summaries.append(project_writer_history(summary, source_artifact_type=source_type) if clean_history and summary else summary)
+        summaries.append(project_writer_history(summary, source_artifact_type=source_type, preserve_json=preserve_json) if clean_history and summary else summary)
         refs.update(document.get("task_dependency_matched_refs") or ())
         reasons.update(document.get("retrieval_reasons") or ())
     if clean_history:
@@ -1185,6 +1185,7 @@ class _ContextHandler:
             )
         stage_context_profile = str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft") or ("draft-context-profile-v4" if request.work_requirements_enabled else "draft-context-profile-v2"))
         task_scoped_context = stage_context_profile == "draft-context-profile-v4"
+        semantic_context = (request.capacity_upgrade or {}).get("target_context_policy_ref") == "context-policy:chapter-generation-pack:v4" or bool((request.command.get("preparation_report") or {}).get("context_semantic_contract"))
         task_dependency_refs = sorted(set((retrieval.content.get("query_plan") or {}).get("task_dependency_discovery", {}).get("required_refs") or ()))
         selected_documents: dict[str, list[dict[str, Any]]] = {}
         for document in retrieval.content.get("selected_documents") or ():
@@ -1194,8 +1195,8 @@ class _ContextHandler:
                 ).append(dict(document))
         for source_id, documents in selected_documents.items():
             if source_id in candidate_metadata:
-                if task_scoped_context:
-                    candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents)
+                if task_scoped_context and not semantic_context:
+                    candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents, preserve_json=semantic_context)
                 continue
             best = max(
                 documents,
@@ -1265,9 +1266,27 @@ class _ContextHandler:
                     else []
                 ),
             }
+        if semantic_context:
+            from novel_forge.modules.context_builder.story_projection import restore_source_json_fields, visible_business_data
+            from novel_forge.modules.context_builder.writer_projection import WRITER_PROSE_TYPES
+            sources = {item.asset_version_id: item.content for item in request.inputs}
+            prose_ids = {item.asset_version_id for item in request.inputs if item.asset_type in WRITER_PROSE_TYPES}
+            for source_id, metadata in candidate_metadata.items():
+                if source_id in prose_ids:
+                    continue
+                source = sources[source_id]
+                summary = visible_business_data(str(metadata.get("safe_summary") or ""), stage="draft", history=True, preserve_json=True)
+                summary, bindings = restore_source_json_fields(summary or "", source)
+                metadata["safe_summary"] = summary
+                metadata["provenance"] = {**dict(metadata.get("provenance") or {}), "source_json_field_bindings": bindings}
+                for document in selected_documents.get(source_id, ()):
+                    summary = visible_business_data(str(document.get("safe_summary") or ""), stage="draft", history=True, preserve_json=True)
+                    summary, bindings = restore_source_json_fields(summary or "", source)
+                    document["safe_summary"] = summary
+                    document["compression_provenance"] = {**dict(document.get("compression_provenance") or {}), "source_json_field_bindings": bindings}
         if task_scoped_context:
             for source_id, documents in selected_documents.items():
-                candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents)
+                candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents, preserve_json=semantic_context)
         host_quality_segments: list[dict[str, Any]] = []
         working = (request.command.get("preparation_report") or {}).get("working_manuscript")
         from novel_forge.modules.book_authority.working_prose import working_source_rows
@@ -1291,7 +1310,6 @@ class _ContextHandler:
                 "CONTEXT_FROZEN_INPUT_MISMATCH",
                 "governed context candidates must equal frozen AssetVersion inputs",
             )
-        semantic_context = (request.capacity_upgrade or {}).get("target_context_policy_ref") == "context-policy:chapter-generation-pack:v4" or bool((request.command.get("preparation_report") or {}).get("context_semantic_contract"))
         if semantic_context:
             from novel_forge.modules.context_builder.semantic_units import frozen_plan_dependencies
             planned_dependencies = frozen_plan_dependencies(frozen_candidates, intent.content.get("chapter_mission") or {})

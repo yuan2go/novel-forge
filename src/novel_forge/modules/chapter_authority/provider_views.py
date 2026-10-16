@@ -1866,6 +1866,8 @@ def build_provider_context_view(
         if type(budget) is not int or not 0 < budget <= (512_000 if task_scoped_context else 24_000):
             raise KernelError("CHAPTER_PROVIDER_CONTEXT_BUDGET_INVALID", "Draft Context v3 requires its exact bounded frozen token budget")
         maximum_characters = 8_192_000 if task_scoped_context else budget * 4
+    from novel_forge.modules.context_builder.semantic_units import SEMANTIC_CONTRACT
+    preserve_json = (context_bundle.get("context_manifest") or {}).get("task_context_receipt", {}).get("semantic_contract") == SEMANTIC_CONTRACT
     rendered: list[dict[str, Any]] = []
     omitted_facts = 0
     omitted_segments = 0
@@ -1903,7 +1905,7 @@ def build_provider_context_view(
         consumption_stage = "review" if stage == "revision" and asset_type in {"review_report", "review_issue"} else stage
         if writer_projection_version == "accepted-writer-history.v2":
             from novel_forge.modules.context_builder.story_projection import visible_business_data
-            facts = visible_business_data(facts, stage=consumption_stage, history=True)
+            facts = visible_business_data(facts, stage=consumption_stage, history=True, preserve_json=preserve_json)
         if clean_writer_context:
             from novel_forge.modules.context_builder.writer_projection import provider_visible_data
             visible = provider_visible_data(facts)
@@ -1957,12 +1959,12 @@ def build_provider_context_view(
                 physical_type = "best_draft_candidate"
             if raw.get("compression_method") == "host-bound-extractive-semantic.v2":
                 from novel_forge.modules.context_builder.writer_projection import project_writer_context_summary
-                summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {}, projection_version=writer_projection_version)
+                summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {}, projection_version=writer_projection_version, preserve_json=preserve_json)
             else:
-                summary = story_history(summary, physical_type=physical_type, stage=consumption_stage)
+                summary = story_history(summary, physical_type=physical_type, stage=consumption_stage, preserve_json=preserve_json)
         if clean_writer_context:
             from novel_forge.modules.context_builder.writer_projection import project_writer_context_summary
-            summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {})
+            summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {}, preserve_json=preserve_json)
         if (stage in {"draft", "revision"} and asset_type == "chapter_execution_intent"
             and (context_bundle.get("working_manuscript") or {}).get("projection_policy") is not None):
             try:

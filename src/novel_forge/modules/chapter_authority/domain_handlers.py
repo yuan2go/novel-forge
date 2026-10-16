@@ -413,7 +413,7 @@ def build_context_bundle(
     clean_history = (retrieval_result or {}).get("query_plan", {}).get("writer_projection_version") == "accepted-writer-history.v2"
     if clean_history:
         from novel_forge.modules.context_builder.story_projection import clean_context_candidates
-        candidates = clean_context_candidates(candidates, stage="draft")
+        candidates = clean_context_candidates(candidates, stage="draft", preserve_json=semantic_context_compression)
     task_receipt = None
     if context_profile_version == "draft-context-profile-v4":
         from novel_forge.modules.context_builder.task_compression import compile_task_context, validate_task_dependencies

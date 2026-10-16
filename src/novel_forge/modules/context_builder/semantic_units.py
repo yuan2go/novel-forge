@@ -51,6 +51,14 @@ def decode_json_values(text):
         return None, reason if reason in {"DUPLICATE_JSON_FIELD", "JSON_NUMERIC_VALUE_NOT_PRESERVED", "JSON_NONFINITE_VALUE"} else "PLAIN_TEXT"
 
 
+def _located_json_document(text):
+    document, reason = decode_json_values(text)
+    if reason == "JSON_NUMERIC_VALUE_NOT_PRESERVED":
+        from .source_json import loads
+        document = loads(text)
+    return document
+
+
 def sentence_spans(text):
     stack, result, start = [], [], 0
     pairs = {"“": "”", "‘": "’", "「": "」", "『": "』", "（": "）", "(": ")", "[": "]", "【": "】"}
@@ -163,7 +171,8 @@ def source_units(candidate, task):
             append(json.dumps(value, ensure_ascii=False), path, kind="SOURCE_FIELD", attribution=attribution, required=True, value=value)
 
     if source_parse not in {"PLAIN_TEXT", "JSON_VALUES_PRESERVED"}:
-        append(candidate.safe_summary, (), kind="OPAQUE_ORIGINAL_JSON", span=[0, len(candidate.safe_summary)], required=True)
+        append(candidate.safe_summary, (), kind="OPAQUE_ORIGINAL_JSON", span=[0, len(candidate.safe_summary)], required=True,
+            value=_located_json_document(candidate.safe_summary) if source_parse == "JSON_NUMERIC_VALUE_NOT_PRESERVED" else None)
         result[-1]["source_parse_assessment"] = source_parse
     elif isinstance(document, (dict, list)):
         visit(document)
@@ -225,7 +234,7 @@ def frozen_plan_dependencies(sources, intent):
 
 
 def _text_fields(candidate, *, all_fields=False):
-    document, _ = decode_json_values(candidate.safe_summary)
+    document = _located_json_document(candidate.safe_summary)
     if not isinstance(document, (dict, list)):
         return [((), candidate.safe_summary)]
     result = []
@@ -255,7 +264,7 @@ def protect_quotes(candidates, catalogs, quotes):
         paths = {path for path, _ in narrative}
         field_groups = [narrative, *[[item] for item in _text_fields(candidate, all_fields=True) if item[0] not in paths]]
         for fields in field_groups:
-            document, _ = decode_json_values(candidate.safe_summary)
+            document = _located_json_document(candidate.safe_summary)
             text, intervals = join_original_fields(document, fields)
             normalized, coordinates = [], []
             index = 0
@@ -278,6 +287,10 @@ def protect_quotes(candidates, catalogs, quotes):
                     for path, start, end in intervals if low < end and high > start]
                 hits = []
                 for unit in catalogs[candidate.asset_version_id]:
+                    if unit["kind"] == "OPAQUE_ORIGINAL_JSON":
+                        unit["required"] = True
+                        hits.append(unit["unit_id"])
+                        continue
                     span = unit.get("source_span")
                     if any(tuple(unit["source_path"]) == path and (span is None or span[0] < stop and start < span[1]) for path, start, stop in positions):
                         unit["required"] = True
@@ -399,25 +412,29 @@ def close_selected_catalog_dependencies(catalogs, selections, *, external_refs=(
 
 def protected_dependency_bindings(document, *, excluded_scopes):
     result = []
-    def visit(value, path=()):
+    def visit(value, path=(), numeric_json=False):
         if path in excluded_scopes:
             return
         if isinstance(value, dict):
             aliases = {child for key, child in value.items() if key in _ALIASES and isinstance(child, str) and child}
             semantic_keys = set(value) & (_TEXT_FIELDS | {"state", "state_deltas", "action", "decision", "resistance", "consequence", "motivation", "condition", "conditions", "preconditions", "exceptions", "predicate", "value", "mutation", "payload", "quantity", "negated", "knowledge_boundary", "from_state", "to_state"})
             if aliases and any(value[key] not in (None, "", [], {}) for key in semantic_keys):
-                result.extend({"alias": alias, "original_projection_path": list(path), "record_hash": narrative_hash(value),
+                from .source_json import dumps
+                record_hash = narrative_hash(dumps(value)) if numeric_json else narrative_hash(value)
+                result.extend({"alias": alias, "original_projection_path": list(path), "record_hash": record_hash,
                     "status": "EXACT_UNCHANGED_PROVIDER_RECORD"} for alias in sorted(aliases))
             for key, child in value.items():
                 if key == "safe_summary" and isinstance(child, str):
-                    parsed, _ = decode_json_values(child)
+                    parsed, reason = decode_json_values(child)
+                    if reason == "JSON_NUMERIC_VALUE_NOT_PRESERVED":
+                        parsed = _located_json_document(child)
                     if isinstance(parsed, (dict, list)):
-                        visit(parsed, (*path, key, "$decoded_json"))
+                        visit(parsed, (*path, key, "$decoded_json"), reason == "JSON_NUMERIC_VALUE_NOT_PRESERVED")
                         continue
-                visit(child, (*path, key))
+                visit(child, (*path, key), numeric_json)
         elif isinstance(value, list):
             for index, child in enumerate(value):
-                visit(child, (*path, index))
+                visit(child, (*path, index), numeric_json)
     visit(document)
     return result
 

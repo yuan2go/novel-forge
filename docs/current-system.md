@@ -1334,11 +1334,23 @@ local original units. Historical material-target contracts retain their target g
 the complete-request policy admits only after rebuilding and measuring the full request. A
 compressed derivative never mutates Canon and is not unconditionally recompressed.
 
-Context v4 currently has an unresolved projection constraint: ordinary JSON decoding
-before source-unit protection can round numeric literals or collapse duplicate fields
-in original JSON strings. Value-preserving filtering from the first business projection
-through Provider rendering is required before claiming this path preserves those sources.
-Raw sources and historical frozen projection contracts remain unchanged.
+Context v4 filters original JSON strings with exact numeric lexemes before source-unit
+protection and through Provider rendering. Duplicate fields and nonfinite numbers stop
+with an explicit source error; filtering still removes internal Quality and execution
+history. JSON-looking novel prose retains its original literal text. Numeric objects
+that cannot be represented exactly by the unit decoder remain mandatory original objects;
+their decoded text fields still locate quotations and explicit dependencies.
+New semantic retrieval freezes `source-json-values.v1` in its query plan. Discovery binds
+the exact eligible original AssetVersion ID/hash/type, selected index hash, field scopes
+and derived text. Old rounded JSON string fields can be restored only from the same
+original field and a known exact or historical filtered representation. Filtered or
+reordered list elements require a unique whole-record match and one-to-one source use;
+ambiguous, changed or repeated scopes stop with `CONTEXT_SOURCE_JSON_SCOPE_CHANGED`.
+Unselected source fields are not imported. Context continuation can derive these fields
+from its original frozen inputs before merging old RetrievalResults. New indexes and
+explicit scoped index rebuilds use the same filtering; existing sources, old indexes,
+RetrievalResults and frozen requests are not rewritten by a Context rebuild. Typed
+PostgreSQL numeric values cannot recover precision absent from the stored source.
 
 Context v4 binds `source-unit-dependency-and-final-composition.v2`. Its immutable source
 catalog retains original Unicode ranges, field paths, order and source attribution.
