@@ -69,3 +69,27 @@ def test_backup_uses_exact_private_connection_and_retains_consistent_snapshot(tm
     metadata = next(tmp_path.glob("*.json"))
     assert metadata.stat().st_mode & 0o777 == 0o600
     assert json.loads(metadata.read_text())["snapshot"] == "snapshot-id"
+
+
+def test_backup_preserves_explicit_libpq_configuration_home(tmp_path, monkeypatch):
+    from novel_forge.storage.migrations import backup
+
+    context = {"HOME": str(tmp_path / "private-home"), "PGSERVICEFILE": str(tmp_path / "services.conf"),
+               "PGSYSCONFDIR": str(tmp_path / "system-config")}
+    for key, value in context.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("UNRELATED_SECRET", "must-not-be-forwarded")
+    cursor = MagicMock()
+    cursor.fetchone.return_value = ("owned", "16.15", "snapshot-id")
+
+    def execute(arguments, **kwargs):
+        assert {key: kwargs["env"].get(key) for key in context} == context
+        assert "UNRELATED_SECRET" not in kwargs["env"]
+        assert kwargs["env"]["PGSERVICE"] == "owned"
+        for argument in arguments:
+            if argument.startswith("--file="):
+                from pathlib import Path
+                Path(argument[7:]).write_bytes(b"private-archive")
+
+    with patch.object(backup.shutil, "which", side_effect=lambda name: "/bin/" + name), patch.object(backup.subprocess, "run", side_effect=execute):
+        create_migration_backup("service=owned", cursor, applied=[], directory=str(tmp_path))

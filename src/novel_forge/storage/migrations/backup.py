@@ -31,6 +31,9 @@ def create_migration_backup(database_url: str, cursor: Any, *, applied: list[dic
     parameters.update(conninfo_to_dict(database_url))
     parameters["dbname"] = database
     environment = {"PATH": os.environ.get("PATH", os.defpath)}
+    for key in ("HOME", "PGSERVICEFILE", "PGSYSCONFDIR"):
+        if key in os.environ:
+            environment[key] = os.environ[key]
     for option in options:
         key = option.keyword.decode()
         if key in parameters:

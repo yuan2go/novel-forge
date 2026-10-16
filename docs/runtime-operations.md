@@ -164,7 +164,8 @@ the shared runner. Set an absolute private `--backup-directory` or
 `NOVEL_FORGE_MIGRATION_BACKUP_DIR`, and install compatible `pg_dump`/`pg_restore` clients
 in the actual migration process. The current Python service image does not supply those
 clients; run an upgrade from an installed release environment that does. The runner
-exports its pre-DDL transaction snapshot, dumps that exact snapshot, checks archive
+preserves explicit libpq home/service configuration, exports its pre-DDL transaction
+snapshot, dumps that exact snapshot, checks archive
 readability, and retains a mode-0600 archive and JSON sidecar with its SHA-256 and frozen
 applied rows. Missing clients, backup failure or missing directory stop before pending
 DDL. Empty installations and no-op head replay need no backup. An archive listing is
