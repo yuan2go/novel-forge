@@ -1334,6 +1334,12 @@ local original units. Historical material-target contracts retain their target g
 the complete-request policy admits only after rebuilding and measuring the full request. A
 compressed derivative never mutates Canon and is not unconditionally recompressed.
 
+Context v4 currently has an unresolved projection constraint: ordinary JSON decoding
+before source-unit protection can round numeric literals or collapse duplicate fields
+in original JSON strings. Value-preserving filtering from the first business projection
+through Provider rendering is required before claiming this path preserves those sources.
+Raw sources and historical frozen projection contracts remain unchanged.
+
 Context v4 binds `source-unit-dependency-and-final-composition.v2`. Its immutable source
 catalog retains original Unicode ranges, field paths, order and source attribution.
 Preserved quotes are located before splitting, across paragraph or declared narrative
