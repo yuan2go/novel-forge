@@ -378,6 +378,8 @@ def test_frozen_semantic_policy_separates_complete_preparation_from_exact_recent
     ('{"quantity":0.123456789012345678901,"summary":"original"}', 'JSON_NUMERIC_VALUE_NOT_PRESERVED'),
     ('{"subject":"A","subject":"B","summary":"original"}', 'DUPLICATE_JSON_FIELD'),
     ('{"quantity":NaN,"summary":"original"}', 'JSON_NONFINITE_VALUE'),
+    ('{"quantity":1e99999999999999999999999999,"summary":"original"}', 'JSON_NUMERIC_VALUE_NOT_PRESERVED'),
+    ('{"quantity":0e99999999999999999999999999,"summary":"original"}', 'JSON_NUMERIC_VALUE_NOT_PRESERVED'),
 ])
 def test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason(raw, reason):
     from novel_forge.modules.context_builder.request_capacity import expand_semantic_history

@@ -516,7 +516,7 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
     import gzip
     evidence_root = os.environ.get("NOVEL_FORGE_POSTGRES_EVIDENCE_DIR")
     if evidence_root:
-        destination = Path(evidence_root) / "upstream-complete-request"
+        destination = Path(evidence_root) / ("upstream-main-unsent-upgrade" if upgrade_context_effects else "upstream-complete-request")
         destination.mkdir(parents=True, exist_ok=True)
         (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_MAIN_UNSENT_UPGRADE_WITH_SYNTHETIC_LOAD" if upgrade_context_effects else "NATIVE_CONTROLLED_GOLD_WITH_SYNTHETIC_CAPACITY_LOAD",
             "gold_applied": not upgrade_context_effects, "gold_sha256": hashlib.sha256(gold_path.read_bytes()).hexdigest(), "gold_questions_fixed_before_compression": True,

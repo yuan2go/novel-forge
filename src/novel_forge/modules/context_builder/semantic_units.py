@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 import hashlib
 import json
 import re
@@ -35,7 +35,11 @@ def decode_json_values(text):
         return value
     def exact_float(value):
         result = float(value)
-        if Decimal(str(result)) != Decimal(value):
+        try:
+            preserved = Decimal(str(result)) == Decimal(value)
+        except DecimalException:
+            preserved = False
+        if not preserved:
             raise ValueError("JSON_NUMERIC_VALUE_NOT_PRESERVED")
         return result
     def finite(value):

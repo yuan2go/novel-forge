@@ -1380,7 +1380,8 @@ Context v2, including its original manifest and artifact catalog identities.
 Creation continuation also reaches Chapter's capacity-specific use of the existing
 failed-step successor. It requires an exact old capacity failure, a failed step with
 no main model Effect, reconciled sibling calls and the approved same-Book v3/v4
-Pack. Only the three Context capacity fields and the explicit capacity artifact
+Pack. Only the registered Context capacity fields (including the semantic history
+protection count) and the explicit capacity artifact
 delta may change; source rules, workflow, Skills, Prompt, Schema and routes remain
 exact. Original commands, source versions and terminal history are retained. A local
 Context without a model Snapshot requires its earlier successful same-Book activation
