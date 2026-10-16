@@ -1049,6 +1049,33 @@ def merge_task_retrieval_projections(metadata: dict[str, Any], documents: list[d
     return {**metadata, "structured_facts": list({json.dumps(fact, ensure_ascii=False, sort_keys=True): fact for fact in facts}.values()), "safe_summary": "\n\n".join(dict.fromkeys(text for text in summaries if text)), "task_dependency_matched_refs": sorted(refs), "retrieval_reasons": sorted(reasons)}
 
 
+def _semantic_plan_predecessors(request: ChapterHandlerRequest, plan: ChapterInputAsset) -> list[dict[str, Any]]:
+    from novel_forge.modules.context_builder.semantic_units import frozen_plan_dependencies
+    from novel_forge.storage.narrative_realization_repositories import NarrativeRealizationRepository
+    from novel_forge.modules.capability_pack_authority.domain import canonical_hash
+    realization = plan.content.get("narrative_realization_slice") or {}
+    if not any(event.get("causes") for event in realization.get("events") or ()):
+        return []
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        binding = NarrativeRealizationRepository(uow.cursor).require(realization["realization_id"])
+        if (binding["project_id"] != request.project_id or binding["book_id"] != plan.content["book_id"]
+                or binding["contract_digest"] != realization["contract_digest"]
+                or binding["chapter_group_plan_version_id"] != realization["chapter_group_plan_version_id"]):
+            raise KernelError("TASK_CONTEXT_PLAN_SOURCE_DRIFT", "Planned predecessors require the original qualified realization binding")
+        uow.cursor.execute("""SELECT version.content_hash,version.content FROM authority_asset_version version
+            JOIN authority_asset asset USING(asset_id) WHERE version.asset_version_id=%s AND asset.project_id=%s
+              AND asset.asset_type='planning_generation_candidate'""",
+            [realization["chapter_group_plan_version_id"], request.project_id])
+        row = uow.cursor.fetchone()
+    if (not row or row[0] != realization["chapter_group_content_hash"] or canonical_hash(row[1]) != row[0]
+            or row[1].get("book_id") != plan.content["book_id"]):
+        raise KernelError("TASK_CONTEXT_PLAN_SOURCE_DRIFT", "Original planned predecessor source is unavailable or changed")
+    source = ChapterInputAsset(realization["chapter_group_plan_version_id"], "planning_generation_candidate", row[0], row[1])
+    dependencies = frozen_plan_dependencies([source], {"events": realization["events"]}).get(source.asset_version_id, [])
+    return [{"source_asset_version_id": source.asset_version_id, "source_content_hash": source.content_hash,
+        "realization_id": realization["realization_id"], "status": "FROZEN_PLAN_NOT_EVENT_ACCEPTANCE", "dependencies": dependencies}]
+
+
 @dataclass(frozen=True, slots=True)
 class _ContextHandler:
     provider: ChapterModelPort
@@ -1264,6 +1291,14 @@ class _ContextHandler:
                 "CONTEXT_FROZEN_INPUT_MISMATCH",
                 "governed context candidates must equal frozen AssetVersion inputs",
             )
+        semantic_context = (request.capacity_upgrade or {}).get("target_context_policy_ref") == "context-policy:chapter-generation-pack:v4" or bool((request.command.get("preparation_report") or {}).get("context_semantic_contract"))
+        if semantic_context:
+            from novel_forge.modules.context_builder.semantic_units import frozen_plan_dependencies
+            planned_dependencies = frozen_plan_dependencies(frozen_candidates, intent.content.get("chapter_mission") or {})
+            plan_dependency_sources = _semantic_plan_predecessors(request, plan)
+        else:
+            planned_dependencies = {}
+            plan_dependency_sources = []
         for item in frozen_candidates:
             metadata = candidate_metadata[item.asset_version_id]
             # WHY: Accepted quality history is host evidence, excluded from Writer projections.
@@ -1301,17 +1336,16 @@ class _ContextHandler:
                 source_content = metadata
             else:
                 source_content = item.content
+            summary = str(source_content.get("safe_summary") or metadata.get("safe_summary") or "")
+            if item.asset_version_id in planned_dependencies:
+                summary = json.dumps({"safe_summary": summary, "planned_dependencies": planned_dependencies[item.asset_version_id]}, ensure_ascii=False)
             governed_candidates.append(
                 {
                     **metadata,
                     "asset_type": str(metadata.get("asset_type") or item.asset_type),
                     "physical_asset_type": item.asset_type,
                     "content_digest": item.content_hash,
-                    "safe_summary": str(
-                        source_content.get("safe_summary")
-                        or metadata.get("safe_summary")
-                        or ""
-                    ),
+                    "safe_summary": summary,
                     "structured_facts": list(
                         source_content.get("structured_facts")
                         or metadata.get("structured_facts")
@@ -1383,6 +1417,7 @@ class _ContextHandler:
             compression_input_tokens=compression_allocation,
             defer_token_capacity=request.capacity_upgrade is not None or (request.command.get("preparation_report") or {}).get("context_capacity_policy") == "complete-request-capacity.v1",
             semantic_context_compression=(request.capacity_upgrade or {}).get("target_context_policy_ref") == "context-policy:chapter-generation-pack:v4" or bool((request.command.get("preparation_report") or {}).get("context_semantic_contract")),
+            plan_dependency_sources=plan_dependency_sources,
             book_id=_book_identity(request, plan.content),
             target_capability_id="prose.chapter.draft",
             capability_pack_snapshot_ref=str(

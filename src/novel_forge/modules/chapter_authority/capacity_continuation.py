@@ -113,7 +113,7 @@ def _source_version(cursor, source):
     if not snapshots or len({row[:3] for row in snapshots}) != 1:
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNPROVEN", "The failed step requires one exact original Pack, never repository defaults")
     row = snapshots[0]
-    if row[5] != "context-policy:chapter-generation-pack:v2" and source["definition_name"] != "chapter.context.build":
+    if row[5] not in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"} and source["definition_name"] != "chapter.context.build":
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNPROVEN", "A complete-request failure cannot borrow a legacy capacity continuation")
     version = CapabilityPackAuthorityRepository(cursor).require_version(row[0], row[1], project_id=source["project_id"])
     if version["manifest_hash"] != row[2]:
@@ -187,9 +187,7 @@ def build_capacity_upgrade_policy(cursor, source, *, book_run_id, deployment_id,
 
     command = source["command_payload"]
     if (source["definition_name"] not in _NODES or source["definition_version"] != "3.10.0"
-            or (command.get("preparation_report") or {}).get(MARKER)
-            or source["definition_name"] == "chapter.context.build" and (
-                command.get("preparation_report") or {}).get("context_capacity_policy") == "complete-request-capacity.v1"):
+            or (command.get("preparation_report") or {}).get(MARKER)):
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNPROVEN", "Only an original legacy capacity failure may receive this continuation")
     if source["status"] not in {"FAILED_FINAL", "DEAD_LETTER", "FAILED_RETRYABLE"}:
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNSAFE", "The original step must retain its recorded capacity failure")
@@ -226,6 +224,8 @@ def build_capacity_upgrade_policy(cursor, source, *, book_run_id, deployment_id,
     original, snapshot = _source_version(cursor, source)
     successor = CapabilityPackAuthorityRepository(cursor).require_version(*target, project_id=source["project_id"])
     pair = validate_capacity_pack_pair(original, successor)
+    if pair["source_context_policy_ref"].endswith(":v3") and not pair["target_context_policy_ref"].endswith(":v4"):
+        raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNPROVEN", "A complete-request source requires the explicit semantic successor")
     if retained_effects and pair["target_context_policy_ref"] != "context-policy:chapter-generation-pack:v4":
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_UNSAFE", "Prior Context calls require the explicit semantic continuation contract")
     context_source = _context_source(cursor, source)
@@ -307,9 +307,6 @@ def recover_capacity_continuation(authority, book, request, principal):
         if not row:
             return False
         source = row[0]
-        if source["definition_name"] == "chapter.context.build" and (
-                source["command_payload"].get("preparation_report") or {}).get("context_capacity_policy"):
-            return False
         cursor.execute("""SELECT deployment.deployment_id FROM authority_capability_pack_activation activation
             JOIN authority_capability_pack_deployment deployment ON deployment.deployment_id=activation.active_deployment_id
             JOIN authority_capability_pack_compilation compilation USING(compilation_id)

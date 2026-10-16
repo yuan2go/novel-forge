@@ -303,6 +303,14 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
 
 
 def test_native_upstream_complete_request_overflow_consumes_checked_history_extract(tmp_path, monkeypatch):
+    _run_native_semantic_capacity(tmp_path, monkeypatch, upgrade_context_effects=False)
+
+
+def test_native_semantic_upgrade_retains_settled_compression_before_unsent_writer(tmp_path, monkeypatch):
+    _run_native_semantic_capacity(tmp_path, monkeypatch, upgrade_context_effects=True)
+
+
+def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effects):
     import hashlib
     from tokenizers import Tokenizer, models, pre_tokenizers
     from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
@@ -403,7 +411,59 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
             "genre": "social mystery", "audience": "adult readers", "constraints": ["Keep the witness's limited viewpoint"], "source_boundaries": ["Original work"]}}))
     args = _authority_parser().parse_args(["authority-creation", "start", "--input-file", str(request),
         "--repository-root", str(root), "--maximum-ticks", "250", "--foreground"])
-    result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
+    settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+    upgrade_proof = None
+    if upgrade_context_effects:
+        from novel_forge.modules.chapter_authority import capacity_continuation
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+        from novel_forge.modules.capability_packs.validation_deployment import install_chapter_validation_pack
+        from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+        from novel_forge.modules.command_kernel.errors import KernelError
+        policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
+        policy["narrative_execution_contract"] = "native-narrative-execution.v3"
+        policy["profiles"]["production_profile"]["content"]["working_prose_policy"]["version"] = "working-prose-projection.v6"
+        policy_file = tmp_path / "frozen-complete-capacity-v3.json"
+        policy_file.write_text(json.dumps(policy))
+        args.creation_policy_file = str(policy_file)
+        freeze = PostgresChapterExecutionContractBinder.freeze_before_external_effect
+        interrupted = []
+        def fail_after_context(binder, **arguments):
+            result = freeze(binder, **arguments)
+            payload = arguments["request_payload"]
+            if payload.get("stage") == "draft" and payload.get("input", {}).get("_context_capacity_projection") and not interrupted:
+                interrupted.append(payload["_production_execution"]["operation_id"])
+                raise KernelError("PROVIDER_CONTEXT_LIMIT_EXCEEDED", "Controlled failure after settled Context calls and before Writer Effect intent")
+            return result
+        with monkeypatch.context() as old_worker:
+            old_worker.setattr(capacity_continuation, "recover_capacity_continuation", lambda *unused: False)
+            old_worker.setattr(PostgresChapterExecutionContractBinder, "freeze_before_external_effect", fail_after_context)
+            stopped = run_creation_command(settings, args)
+        assert interrupted, stopped
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            failed = uow.cursor.execute("SELECT to_jsonb(owner) FROM authority_operation owner WHERE operation_id=%s", [interrupted[0]]).fetchone()[0]
+            retained = uow.cursor.execute("SELECT external_effect_id,request_hash,status,request_payload->>'stage' FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [interrupted[0]]).fetchall()
+            assert retained and all(row[2] == "SUCCEEDED" and row[3] in {"context_compress", "context_fidelity"} for row in retained)
+            book = uow.cursor.execute("SELECT to_jsonb(book) FROM authority_book_production book WHERE project_id=%s", [stopped["project_id"]]).fetchone()[0]
+            pack = uow.cursor.execute("SELECT pack_id,active_deployment_id FROM authority_capability_pack_activation WHERE project_id=%s AND book_id=%s AND workflow_definition_ref='chapter_authority_slice@3.10.0'", [book["project_id"], book["book_id"]]).fetchone()
+        principal = build_trusted_principal_resolver().resolve_api_principal()
+        install_chapter_validation_pack(DATABASE_URL, repository_root=root, project_id=book["project_id"],
+            workspace_id=book["workspace_id"], book_id=book["book_id"], application_build_id=harness.application_build_id,
+            commit_sha=harness.release_sha, compiler=principal, approver=principal, agent_admin=principal,
+            pack_id_override=pack[0], pack_version_override="3.2.0", expected_activation_version=1,
+            runtime_environment="production", prose_skill_version="prose-generation-v5", prompt_template_version="v15")
+        resume = _authority_parser().parse_args(["authority-creation", "continue", "--project-id", book["project_id"],
+            "--formation-run-id", stopped["formation_run_id"], "--repository-root", str(root), "--maximum-ticks", "250", "--foreground"])
+        result = run_creation_command(settings, resume)
+        assert run_creation_command(settings, resume)["stop_reason"] == "MANUSCRIPT_READY"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            edge = uow.cursor.execute("SELECT policy_evidence,successor_operation_id FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [interrupted[0]]).fetchone()
+            assert edge and edge[0]["external_call_scope"] == "MAIN_UNSENT_CONTEXT_EFFECTS_RECONCILED"
+            after = uow.cursor.execute("SELECT external_effect_id,request_hash,status,request_payload->>'stage' FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [interrupted[0]]).fetchall()
+            assert after == retained
+            assert uow.cursor.execute("SELECT command_payload,input_asset_snapshot FROM authority_operation WHERE operation_id=%s", [interrupted[0]]).fetchone() == (failed["command_payload"], failed["input_asset_snapshot"])
+        upgrade_proof = {"source": failed, "retained_context_effects": retained, "policy": edge[0], "successor_operation_id": edge[1]}
+    else:
+        result = run_creation_command(settings, args)
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT capability,status,request_payload,external_effect_id FROM authority_external_effect WHERE project_id=%s ORDER BY created_at", [result["project_id"]])
         effects = uow.cursor.fetchall()
@@ -441,8 +501,9 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         admission = admission.get("contract", admission)
         assert admission["provider_request_identity"]["input_text_hash"] == "sha256:" + hashlib.sha256(sent_requests[effect_id].encode()).hexdigest()
         projection = payload["input"]["_context_capacity_projection"]
-        assert projection["semantic_contract"] == "source-unit-dependency-and-final-composition.v2"
-        assert projection["final_composition"]["provider_combination"]["phase"] == "FINAL_PROVIDER_COMPOSITION"
+        if not upgrade_context_effects or projection.get("semantic_contract"):
+            assert projection["semantic_contract"] == "source-unit-dependency-and-final-composition.v2"
+            assert projection["final_composition"]["provider_combination"]["phase"] == "FINAL_PROVIDER_COMPOSITION"
         assert projection["original_hash"] != projection["result_hash"]
         assert projection["measurement"]["after_reserved"] <= projection["measurement"]["limit"]
         proofs.append({"effect_id": effect_id, "capability": capability, "projection": projection,
@@ -456,7 +517,7 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_GOLD_WITH_SYNTHETIC_CAPACITY_LOAD",
             "gold_sha256": hashlib.sha256(gold_path.read_bytes()).hexdigest(), "gold_questions_fixed_before_compression": True,
             "actual_prompt_support": actual_prompt_qa, "semantic_comprehension": "NOT_VERIFIED",
-            "result": result, "proofs": proofs, "compression_effects": compression_proofs}, ensure_ascii=False, indent=2))
+            "result": result, "proofs": proofs, "compression_effects": compression_proofs, "upgrade": upgrade_proof}, ensure_ascii=False, indent=2))
         (destination / "native-manuscript-readback.txt.gz").write_bytes(gzip.compress(readback_text.encode(), mtime=0))
         (destination / "manuscript-readback.json").write_text(json.dumps({key: value for key, value in readback.items() if key != "units"}, ensure_ascii=False, default=str))
         for effect_id in {proof["effect_id"] for proof in proofs + compression_proofs}:

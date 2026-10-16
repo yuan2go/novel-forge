@@ -244,3 +244,48 @@ def test_final_request_restore_reallocates_from_original_sources_and_checks_the_
     checks = projection["final_composition"]["provider_combination"]
     assert checks["supplied_projection_hash"] == projection["final_composition"]["supplied_projection_hash"]
     assert len({call["composition_check"].get("supplied_projection_hash") for call in calls if call.get("composition_check", {}).get("phase") == "FINAL_PROVIDER_COMPOSITION"}) >= 2
+
+
+def test_real_structured_record_dependencies_include_the_original_condition_text():
+    source = candidate(json.dumps({'events': [
+        {'event_id': 'cause:a', 'summary': '只有潮尺低于二尺，许可方才生效。'},
+        {'event_id': 'effect:b', 'depends_on': ['cause:a'], 'summary': '于是她开闸。'}]}, ensure_ascii=False))
+    units = semantic.source_units(source, {})
+    semantic.close_catalog_dependencies({source.asset_version_id: units})
+    keep = semantic.close_dependencies(units, {unit['unit_id'] for unit in units if unit['required'] or unit['text'] == '于是她开闸。'})
+    result = json.loads(semantic.reconstruct(source, units, keep)['safe_summary'])
+    assert result['events'][0]['summary'] == '只有潮尺低于二尺，许可方才生效。'
+    assert result['events'][1]['summary'] == '于是她开闸。'
+
+
+def test_contiguous_working_passages_use_original_unicode_newline_coordinates():
+    from novel_forge.modules.context_builder.request_capacity import validate_projection_quotes
+    source = {'asset_version_id': 'original', 'passages': [
+        {'start': 0, 'end': 5, 'text': '🜁甲。\n\n'}, {'start': 5, 'end': 7, 'text': '乙。'}]}
+    assert validate_projection_quotes({'working_prose': source}, ('🜁甲。\n\n乙。',))
+    source['passages'][1].update(start=6, end=8)
+    with pytest.raises(KernelError, match='PRESERVE_QUOTE_UNAVAILABLE'):
+        validate_projection_quotes({'working_prose': source}, ('🜁甲。\n\n乙。',))
+
+
+def test_exact_indivisible_source_does_not_require_a_second_full_checker_request():
+    big = 'if ' + 'x' * 19000 + '.'
+    small = '\n\n'.join('ordinary ' + str(i) + ' ' + 'y' * 500 + '.' for i in range(70))
+    data = {'context_bundle': {'segments': [{'asset_type': 'chapter_episodic_summary', 'asset_version_id': identity,
+        'content_hash': identity, 'safe_summary': text} for identity, text in [('big', big), ('small', small)]]}}
+    _, projection, _ = semantic_preparation(data, limit=22000)
+    assert projection['measurement']['after_reserved'] <= 22000
+    assert projection['final_composition']['provider_combination']['exact_original_sources']
+
+
+@pytest.mark.parametrize('order', [(0, 1, 2), (2, 1, 0), (1, 0, 2)])
+def test_bridging_original_ranges_merge_the_entire_connected_component(order):
+    import hashlib
+    ranges = [(0, 4), (6, 10), (3, 7)]
+    original = 'abcdefghij'
+    sources = [replace(candidate(original[start:end], source_identity='source', source_revision='v1', content_digest='whole'),
+        asset_version_id=str(index), provenance={'source_range': {'field_path': ['text'], 'start': start, 'end': end,
+        'text_hash': 'sha256:' + hashlib.sha256(original[start:end].encode()).hexdigest()}}) for index, (start, end) in enumerate(ranges)]
+    result, _ = semantic.exact_deduplicate([sources[index] for index in order])
+    assert len(result) == 1 and result[0].safe_summary == original
+    assert len(result[0].provenance['lossless_range_union']['members']) == 3

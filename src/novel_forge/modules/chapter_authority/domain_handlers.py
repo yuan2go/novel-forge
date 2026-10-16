@@ -128,6 +128,7 @@ def build_context_bundle(
     compression_input_tokens: int = 0,
     defer_token_capacity: bool = False,
     semantic_context_compression: bool = False,
+    plan_dependency_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     if context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"}:
@@ -288,6 +289,8 @@ def build_context_bundle(
         f"Chapter {plan['chapter']} objective: {objective}. "
         f"Premise: {plan['premise']}. Scene sequence: {scene_sequence}."
     )
+    if semantic_context_compression and plan_dependency_sources:
+        plan_safe_summary = json.dumps({"safe_summary": plan_safe_summary, "planned_dependency_sources": plan_dependency_sources}, ensure_ascii=False)
     plan_structured_facts = (
         {"kind": "chapter", "value": plan["chapter"]},
         {"kind": "objective", "value": objective},

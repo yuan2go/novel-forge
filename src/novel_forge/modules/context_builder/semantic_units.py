@@ -12,6 +12,7 @@ from novel_forge.modules.narrative_state.reality import narrative_hash
 
 SEMANTIC_CONTRACT = "source-unit-dependency-and-final-composition.v2"
 ATTRIBUTION_FIELDS = frozenset({"subject", "speaker", "subject_id", "actor_id", "event_id", "observation_id", "time", "event_time", "perspective", "knowledge_owner", "epistemic_status", "status", "acceptance_status", "conditions", "exceptions", "negated", "cause_refs", "causes", "depends_on", "units", "quantity"})
+ATTRIBUTION_FIELDS |= frozenset({"fact_id", "state_id", "unit_ref", "required_fact_ids", "predecessor_event_ids"})
 _TEXT_FIELDS = frozenset({"text", "summary", "safe_summary", "claim", "description", "prose"})
 _RELATIONS = frozenset({"cause_refs", "causes", "depends_on", "required_fact_ids", "predecessor_event_ids"})
 _ALIASES = frozenset({"fact_id", "event_id", "observation_id", "state_id", "unit_ref"})
@@ -70,6 +71,25 @@ def _references(value, keys):
     return result
 
 
+def join_original_fields(document, fields):
+    text, positions, previous = "", [], None
+    for path, value in fields:
+        separator = "\n\n" if previous is not None else ""
+        if previous is not None and len(path) >= 3 and path[-3] == "passages" and path[-1] == "text" and previous[:-2] == path[:-2]:
+            parent = document
+            for part in path[:-2]:
+                parent = parent[part]
+            before, current = parent[previous[-2]], parent[path[-2]]
+            valid = all(type(item.get("start")) is int and type(item.get("end")) is int and
+                item["end"] - item["start"] == len(item["text"]) for item in (before, current))
+            separator = "" if valid and before["end"] == current["start"] else _GAP
+        text += separator
+        positions.append((path, len(text), len(text) + len(value)))
+        text += value
+        previous = path
+    return text, positions
+
+
 def source_units(candidate, task):
     result = []
     try:
@@ -94,15 +114,15 @@ def source_units(candidate, task):
         for match in re.finditer(r"(?:\r?\n)[ \t]*(?:\r?\n)", text):
             if start < match.start():
                 append(text[start:match.start()], path, kind="SOURCE_PARAGRAPH", index=index,
-                    span=[start, match.start()], attribution=attribution)
+                    span=[start, match.start()], attribution=attribution, value=attribution)
                 index += 1
             start = match.end()
         if start < len(text):
-            append(text[start:], path, kind="SOURCE_PARAGRAPH", index=index, span=[start, len(text)], attribution=attribution)
+            append(text[start:], path, kind="SOURCE_PARAGRAPH", index=index, span=[start, len(text)], attribution=attribution, value=attribution)
 
     def visit(value, path=(), attribution=None):
         if isinstance(value, dict):
-            attributed = {**(attribution or {}), **{key: deepcopy(child) for key, child in value.items() if key in ATTRIBUTION_FIELDS}}
+            attributed = {**(attribution or {}), **{key: deepcopy(child) for key, child in value.items() if key in ATTRIBUTION_FIELDS or key in _ALIASES or key in _RELATIONS}}
             for key, child in value.items():
                 if key == "preserve_quotes":
                     append(json.dumps({key: child}, ensure_ascii=False), (*path, key), kind="SOURCE_FIELD", required=True, value=child)
@@ -135,6 +155,8 @@ def source_units(candidate, task):
             unit["source_fields"] = deepcopy(matches)
             if matches and len({narrative_hash(row.get("attribution") or {}) for row in matches}) == 1:
                 unit["attribution"].update(deepcopy(matches[0].get("attribution") or {}))
+                unit["source_aliases"] = sorted(set(unit["source_aliases"]) | _references(unit["attribution"], _ALIASES))
+                unit["explicit_refs"] = sorted(set(unit["explicit_refs"]) | _references(unit["attribution"], _RELATIONS))
             observations = {row["observation_id"]: row for field in matches for row in field.get("located_observations", ())
                 if row["range"][0] < end and row["range"][1] > start}
             if observations:
@@ -143,6 +165,35 @@ def source_units(candidate, task):
                 unit["explicit_refs"] = sorted(set(unit["explicit_refs"]) | {cause for row in observations.values() for cause in row["causes"]})
         if task.get("stage") == "reference_analysis" and re.match(r"^第[0-9一二三四五六七八九十百千万零〇两]+[章回节卷](?:\s|$)", unit["text"].strip()):
             unit.update(required=True, required_without_quotes=True)
+    return result
+
+
+def frozen_plan_dependencies(sources, intent):
+    indexed, records = {}, []
+    for source in sources:
+        for path, content in [((), source.content), (("candidate_payload",), source.content.get("candidate_payload") or {})]:
+            for index, event in enumerate(content.get("narrative_event_chain") or ()):
+                if not isinstance(event, dict) or not event.get("event_id"):
+                    continue
+                identity = (source.asset_version_id, path, index)
+                records.append((identity, source, event, [*path, "narrative_event_chain", index]))
+                indexed.setdefault(event["event_id"], []).append(identity)
+    requested = _references(intent, _RELATIONS)
+    chosen, pending = set(), list(requested)
+    by_identity = {record[0]: record for record in records}
+    while pending:
+        for identity in indexed.get(pending.pop(), ()):
+            if identity not in chosen:
+                chosen.add(identity)
+                pending.extend(_references(by_identity[identity][2], _RELATIONS))
+    result = {}
+    seen = set()
+    for identity, source, event, path in records:
+        event_hash = narrative_hash(event)
+        if identity in chosen and (source.asset_version_id, event_hash) not in seen:
+            result.setdefault(source.asset_version_id, []).append({"status": "FROZEN_PLAN_NOT_EVENT_ACCEPTANCE",
+                "source_field_path": path, "planned_event": deepcopy(event)})
+            seen.add((source.asset_version_id, event_hash))
     return result
 
 
@@ -180,11 +231,11 @@ def protect_quotes(candidates, catalogs, quotes):
         paths = {path for path, _ in narrative}
         field_groups = [narrative, *[[item] for item in _text_fields(candidate, all_fields=True) if item[0] not in paths]]
         for fields in field_groups:
-            text = "\n\n".join(value for _, value in fields)
-            intervals, offset = [], 0
-            for path, value in fields:
-                intervals.append((path, offset, offset + len(value)))
-                offset += len(value) + 2
+            try:
+                document = json.loads(candidate.safe_summary)
+            except (ValueError, TypeError):
+                document = None
+            text, intervals = join_original_fields(document, fields)
             normalized, coordinates = [], []
             index = 0
             while index < len(text):
@@ -390,35 +441,43 @@ def merge_source_ranges(candidates):
             "observation_boundary": candidate.observation_boundary, "required": candidate.required,
             "allowed_use": candidate.allowed_use, "source_use_mode": candidate.source_use_mode,
             "context_class": candidate.context_class, "provenance": {key: value for key, value in provenance.items() if key not in {"source_range", "lossless_range_union"}}}
-        merged = False
-        for index, previous in enumerate(result):
+        scope_hash = narrative_hash(scope)
+        members = [{"asset_version_id": candidate.asset_version_id, **span}]
+        combined = replace(candidate, provenance={**provenance, "lossless_range_union": {
+            "scope_hash": scope_hash, "members": members, "reversibility": "ORIGINAL_UNCHANGED"}})
+        insertion = len(result)
+        index = 0
+        while index < len(result):
+            previous = result[index]
             prior_provenance = dict(previous.provenance or {})
             prior = prior_provenance.get("source_range")
-            if not prior or prior_provenance.get("lossless_range_union", {}).get("scope_hash") != narrative_hash(scope):
+            current = combined.provenance["source_range"]
+            if not prior or prior_provenance.get("lossless_range_union", {}).get("scope_hash") != scope_hash:
+                index += 1
                 continue
-            low, high = max(prior["start"], span["start"]), min(prior["end"], span["end"])
+            low, high = max(prior["start"], current["start"]), min(prior["end"], current["end"])
             if low > high:
+                index += 1
                 continue
-            if previous.safe_summary[low - prior["start"]:high - prior["start"]] != candidate.safe_summary[low - span["start"]:high - span["start"]]:
+            if previous.safe_summary[low - prior["start"]:high - prior["start"]] != combined.safe_summary[low - current["start"]:high - current["start"]]:
                 raise KernelError("TASK_CONTEXT_SOURCE_RANGE_AMBIGUOUS", "The same source version and field claim conflicting original overlap")
-            start, end = min(prior["start"], span["start"]), max(prior["end"], span["end"])
-            first, second = (previous, candidate) if prior["start"] <= span["start"] else (candidate, previous)
-            first_span, second_span = ((prior, span) if first is previous else (span, prior))
+            start, end = min(prior["start"], current["start"]), max(prior["end"], current["end"])
+            first, second = (previous, combined) if prior["start"] <= current["start"] else (combined, previous)
+            first_span, second_span = ((prior, current) if first is previous else (current, prior))
             text = first.safe_summary + second.safe_summary[max(0, first_span["end"] - second_span["start"]):]
             if (text[prior["start"] - start:prior["end"] - start] != previous.safe_summary
-                    or text[span["start"] - start:span["end"] - start] != candidate.safe_summary):
+                    or text[current["start"] - start:current["end"] - start] != combined.safe_summary):
                 raise KernelError("TASK_CONTEXT_SOURCE_RANGE_AMBIGUOUS", "Source range union must reconstruct every original member exactly")
-            members = [*prior_provenance["lossless_range_union"]["members"], {"asset_version_id": candidate.asset_version_id, **span}]
-            result[index] = replace(previous, safe_summary=text, estimated_tokens=len(text.encode()), provenance={**prior_provenance,
+            members = [*prior_provenance["lossless_range_union"]["members"], *combined.provenance["lossless_range_union"]["members"]]
+            combined = replace(previous, safe_summary=text, estimated_tokens=len(text.encode()), provenance={**prior_provenance,
                 "source_range": {"field_path": span["field_path"], "start": start, "end": end, "text_hash": "sha256:" + hashlib.sha256(text.encode()).hexdigest()},
-                "lossless_range_union": {"scope_hash": narrative_hash(scope), "members": members, "reversibility": "EVERY_ORIGINAL_MEMBER_EXACT"}})
+                "lossless_range_union": {"scope_hash": scope_hash, "members": members, "reversibility": "EVERY_ORIGINAL_MEMBER_EXACT"}})
             receipts.append({"asset_version_id": candidate.asset_version_id, "retained_asset_version_id": previous.asset_version_id,
-                "reason": "VERIFIED_ORIGINAL_RANGE_UNION", "members": members})
-            merged = True
-            break
-        if not merged:
-            result.append(replace(candidate, provenance={**provenance,
-                "lossless_range_union": {"scope_hash": narrative_hash(scope), "members": [{"asset_version_id": candidate.asset_version_id, **span}], "reversibility": "ORIGINAL_UNCHANGED"}}))
+                "reason": "VERIFIED_ORIGINAL_RANGE_UNION", "members": deepcopy(members)})
+            insertion = min(insertion, index)
+            result.pop(index)
+            index = 0
+        result.insert(insertion, combined)
     return result, receipts
 
 

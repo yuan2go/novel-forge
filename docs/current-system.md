@@ -1407,6 +1407,12 @@ rendered substage requests and have no eight-chunk lifetime limit. Oversized tex
 uses original Unicode coordinates and preserves quoted spans. Verified restoration
 can reallocate other compressible history. Each completed chunk retains its original
 ExternalEffect; retry reuses matching source, task, Pack and route bindings.
+The semantic contract prepares the largest authorized effective Context window (capped
+at 512,000), with cost breaking capacity ties; final serialization still undergoes
+route-specific admission. Original frozen plan predecessor records are retrieved through
+the ChapterPlan realization identity and exact parent-version hash, labelled as planned
+rather than occurred or accepted. Completely unchanged sources have exact-original
+proofs; bounded semantic checks target changed extracts and their located dependencies.
 Working passages batch within their original Chapter source, retaining per-passage
 coordinates. Identical wrappers of the same source version share one extract; another
 Chapter or changed source hash cannot borrow that identity.
@@ -2235,7 +2241,7 @@ assessment separately from the Chapter's selected methods. Book serial potential
 does not require a hook or serial function in every chapter, and a finite work's
 next-chapter continuity does not contradict its lack of long-serial potential.
 Quality recompiles the candidate's declared baseline version from the same exact inputs.
-New Creation v3 uses Chapter Pack 3.1.0 and the scoped Style compiler. Frozen v2
+New Creation v4 uses Chapter Pack 3.2.0 and the scoped Style compiler. Frozen v3 retains Pack 3.1.0; v2
 retains Pack 3.0.4 and v1 retains Pack 3.0.3. At a native Creation checkpoint without an active Chapter
 request or unresolved unisolated generation, the original Creator may derive v5
 from the same Foundation inputs through Content Authority. Normal preparation then

@@ -306,9 +306,12 @@ def _extract_ranges(original: str, candidate: ContextCandidate) -> list[list[int
 
 def verify_request_composition(candidates, compressed, *, supplied, task, source_boundary, chunk_fits, model_call):
     units, selected, originals, origins = [], set(), {}, {}
+    unchanged = set()
     by_id = {item.asset_version_id: item for item in compressed}
     for original in candidates:
         result = by_id[original.asset_version_id]
+        if result.safe_summary == original.safe_summary and result.structured_facts == original.structured_facts:
+            unchanged.add(original.asset_version_id)
         trace = result.compression_trace[0] if result.compression_trace else None
         if trace:
             catalog = trace["source_catalog"]
@@ -331,9 +334,12 @@ def verify_request_composition(candidates, compressed, *, supplied, task, source
                 selected.add(identity)
     proof = {"contract_version": semantic_units.SEMANTIC_CONTRACT, "phase": "FINAL_PROVIDER_COMPOSITION",
         "supplied_projection_hash": narrative_hash(supplied), "selection_hash": narrative_hash(sorted(selected)),
-        "catalog_hash": narrative_hash(semantic_units.source_audit(units, {unit["unit_id"] for unit in units})), "checks": []}
+        "catalog_hash": narrative_hash(semantic_units.source_audit(units, {unit["unit_id"] for unit in units})), "checks": [],
+        "exact_original_sources": sorted(unchanged)}
     additions = set()
-    for window in semantic_units.final_windows(units, selected, external_refs=task.get("external_dependency_refs") or ()):
+    transformed = [unit for unit in units if origins[unit["unit_id"]] not in unchanged]
+    external = set(task.get("external_dependency_refs") or ()) | {alias for unit in units if origins[unit["unit_id"]] in unchanged for alias in unit.get("source_aliases", ())}
+    for window in semantic_units.final_windows(transformed, selected, external_refs=external):
         pending = [window]
         while pending:
             group = pending.pop(0)
@@ -411,7 +417,7 @@ def prepare_request_capacity(
     locations = {}
     observations_by_source = working_observation_index(original) if semantic else {}
     for parent, expressions in grouped.items():
-        combined = "\n\n".join(text for _, text in expressions)
+        combined, expression_positions = semantic_units.join_original_fields(original, expressions) if semantic else ("\n\n".join(text for _, text in expressions), [])
         origin = original
         for part in parent:
             origin = origin[part]
@@ -438,6 +444,8 @@ def prepare_request_capacity(
             candidates_by_hash[digest] = candidate
         position = 0
         for expression_index, (path, text) in enumerate(expressions):
+            if semantic:
+                position = expression_positions[expression_index][1]
             candidate.provenance["original_expression_paths"].append(list(path))
             locations[path] = (candidate.asset_version_id, position, position + len(text))
             if semantic:

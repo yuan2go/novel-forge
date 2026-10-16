@@ -273,3 +273,23 @@ def test_native_receipt_request_constructor_restores_the_original_verified_conte
         assert request.require_input("context_bundle").content == context.content
         assert request.capacity_context_derivation == derivation
     assert verified == ["effect"]
+
+
+@pytest.mark.parametrize('policy,allowed', [('v2', True), ('v3', True), ('v4', False)])
+def test_original_draft_snapshot_accepts_only_the_supported_capacity_predecessors(monkeypatch, policy, allowed):
+    from novel_forge.modules.chapter_authority.capacity_continuation import _source_version
+    from novel_forge.storage.capability_pack_authority_repositories import CapabilityPackAuthorityRepository
+    version = {'manifest_hash': 'manifest'}
+    monkeypatch.setattr(CapabilityPackAuthorityRepository, 'require_version', lambda *args, **kwargs: version)
+    class Cursor:
+        def execute(self, *args):
+            pass
+        def fetchall(self):
+            return [('pack', '3.1.0', 'manifest', 'snapshot', 'snapshot-hash', 'context-policy:chapter-generation-pack:' + policy)]
+    source = {'root_operation_id': 'root', 'project_id': 'p', 'operation_id': 'draft',
+        'definition_name': 'chapter.draft.generate', 'created_at': 'frozen'}
+    if allowed:
+        assert _source_version(Cursor(), source)[0] == version
+    else:
+        with pytest.raises(KernelError, match='SOURCE_UNPROVEN'):
+            _source_version(Cursor(), source)

@@ -455,8 +455,17 @@ def compile_task_context(
                 if not isinstance(selected, list) or any(not isinstance(value, str) for value in selected) or len(set(selected)) != len(selected) or not set(selected).issubset(selectable):
                     raise KernelError("TASK_CONTEXT_COMPRESSOR_IDENTITY_INVALID", "compressor may select only distinct host-bound source unit identities")
                 chosen = set(selected) | required
+                budget_removed = []
                 if semantic:
                     chosen = semantic_units.close_dependencies(units, chosen, external_refs=external_refs)
+                    mandatory_chosen = semantic_units.close_dependencies(units, required | keep, external_refs=external_refs)
+                    optional = sorted((unit for unit in group if unit["unit_id"] in chosen - mandatory_chosen),
+                        key=lambda unit: (not bool(unit.get("semantic_risk")), unit["order"]))
+                    suggested = set(chosen)
+                    while optional and token_counter(semantic_units.reconstruct(candidate, units, keep | chosen)) > candidate_target:
+                        optional = optional[:len(optional) // 2]
+                        chosen = semantic_units.close_dependencies(units, required | {unit["unit_id"] for unit in optional}, external_refs=external_refs)
+                    budget_removed = sorted(suggested - chosen)
                     chosen_for_check = chosen & allowed
                 else:
                     chosen_for_check = chosen
@@ -488,6 +497,7 @@ def compile_task_context(
                 assessments.append({
                     "task": chunk, "selected_unit_ids": selected,
                     "fidelity_selected_unit_ids": sorted(set(selected) | required),
+                    **({"host_budget_removed_unit_ids": budget_removed} if semantic else {}),
                     "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"},
                     "compressor_evidence": dict(selected_result.get("_execution_evidence") or {}),
                     "fidelity_evidence": dict(verdict.get("_execution_evidence") or {}),

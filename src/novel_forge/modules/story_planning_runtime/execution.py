@@ -4876,7 +4876,7 @@ class PostgresPlanningExecutionPreparer:
                     request_input=stable_request_payload["input"], input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
                     producer_contract=producer_contract_identity(preparation_prompt_evidence, materialization,
                         schema_identity=stage_schema_evidence_identity(stage_name, output_schema, output_schema_ref, world_stage=provider_stage is not None)),
-                    dry_run=True, prepare_capacity=True, capacity_binding=capacity_binding)
+                    dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=capacity_binding)
                 if not preparation.get("selected"):
                     from novel_forge.modules.production_execution.routing_runtime import routing_failure_details
                     raise KernelError("PROVIDER_ROUTING_BLOCKED", str(preparation.get("decision_id")), details=routing_failure_details(preparation))
@@ -4927,7 +4927,7 @@ class PostgresPlanningExecutionPreparer:
                                     producer_contract=producer_contract_identity(sub_evidence, sub_contract,
                                         schema_identity=stage_schema_evidence_identity(substage, schema, chapter_provider_output_schema_ref(substage))),
                                     request_input={"context_compression_task": chunk}, input_hash="sha256:" + hashlib.sha256(rendered.encode()).hexdigest(),
-                                    dry_run=True, prepare_capacity=True, capacity_binding=sub_binding)
+                                    dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=sub_binding)
                                 if not decision.get("selected"):
                                     raise KernelError("PROVIDER_ROUTING_BLOCKED", "No authorized Planning compression route is available")
                             else:

@@ -1119,7 +1119,7 @@ class PostgresChapterExecutionContractBinder:
                     trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                     producer_contract=chapter_producer_contract_identity(prompt_evidence, contract), request_input=provider_inputs,
                     input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0),
-                    dry_run=True, prepare_capacity=True, capacity_binding=capacity_binding)
+                    dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=capacity_binding)
             elif capacity_binding["route"] != capacity_route_contract(route):
                 raise KernelError("ROUTING_CAPACITY_BINDING_DRIFT", "Retained compression must retain its prepared static route")
         if capacity_probe:
@@ -1146,7 +1146,7 @@ class PostgresChapterExecutionContractBinder:
                     trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                     producer_contract=chapter_producer_contract_identity(prompt_evidence, contract),
                     request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
-                    chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_binding=capacity_binding)
+                    chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=capacity_binding)
                 if not preparation.get("selected"):
                     from novel_forge.modules.production_execution.routing_runtime import routing_failure_details
                     raise KernelError("PROVIDER_ROUTING_BLOCKED", str(preparation.get("decision_id")), details=routing_failure_details(preparation))
@@ -1185,7 +1185,7 @@ class PostgresChapterExecutionContractBinder:
                                 trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                                 producer_contract=chapter_producer_contract_identity(sub_evidence, sub_contract),
                                 request_input=subpayload["input"], input_hash="sha256:" + hashlib.sha256(rendered.encode()).hexdigest(),
-                                chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_binding=sub_binding)
+                                chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=sub_binding)
                             if not decision.get("selected"):
                                 raise KernelError("PROVIDER_ROUTING_BLOCKED", "No authorized compression route is available")
                         else:
