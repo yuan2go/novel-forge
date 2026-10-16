@@ -468,7 +468,7 @@ def _starts_with(value: str, prefixes: Iterable[str]) -> bool:
 
 
 def _classify_direct(function: _Function, call: _Call) -> _DirectClassification | None:
-    relative = str(function.path).replace("\\", "/").lower()
+    relative = "/" + function.module.replace(".", "/").lower() + ".py"
     resolved = call.resolved
     lowered = resolved.lower()
     method = _method_name(call)

@@ -29,6 +29,7 @@ def test_main_upgrade_appends_convergence_and_rejects_both_foreign_and_discontin
         "20261015_0219_world_exact_context_convergence",
         "20261015_0220_chapter_prior_audit_convergence",
         "20261016_0221_working_scope_fk_indexes",
+        "20261016_0222_planning_host_frozen_definition",
     ]
     with pytest.raises(ValueError, match="MIGRATION_HISTORY_FOREIGN"):
         pending_migrations(applied | {"20261014_0205_source_observation_generation_isolation"})
@@ -89,7 +90,7 @@ def test_latest_published_fork_sources_remain_importable_without_becoming_active
         assert hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest() == row["sha256"]
         assert module.MIGRATION_ID not in active
     from novel_forge.tools.architecture_manifest import check_migrations
-    assert check_migrations(root)["head"] == "20261016_0221_working_scope_fk_indexes"
+    assert check_migrations(root)["head"] == "20261016_0222_planning_host_frozen_definition"
 
 
 def test_capacity_composition_retains_latest_world_delivery_and_inheritance_verbatim():

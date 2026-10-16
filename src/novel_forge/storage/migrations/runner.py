@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from typing import Any
 
 from .versions import VERSION_MODULES
@@ -76,34 +77,59 @@ def downgrade_plan(target_revision: str | None, applied_ids: set[str], migration
     return list(reversed(candidates))
 
 
-def run_migrations(database_url: str) -> dict[str, Any]:
+def run_migrations(database_url: str, *, backup_directory: str | None = None) -> dict[str, Any]:
     validate_migration_chain()
-    with _connect(database_url) as connection:
-        with connection.cursor() as cursor:
-            _ensure_migration_table(cursor)
-            applied = _applied_migration_rows(cursor)
-            applied_ids = {str(row["migration_id"]) for row in applied}
-            for migration in pending_migrations(applied_ids):
-                _run_preflight(cursor, migration)
-                for statement in migration.upgrade_statements:
-                    cursor.execute(statement)
-                cursor.execute(
-                    "INSERT INTO nf_schema_migrations (migration_id) VALUES (%s) ON CONFLICT (migration_id) DO NOTHING",
-                    [migration.migration_id],
-                )
-            cursor.execute("SELECT migration_id, applied_at FROM nf_schema_migrations ORDER BY applied_at ASC")
-            rows = cursor.fetchall()
-    applied_after = [{"migration_id": row[0], "applied_at": str(row[1])} for row in rows]
-    return _status_from_rows(applied_after)
+    commit_pending = False
+    try:
+        with _connect(database_url) as connection:
+            with connection.cursor() as cursor:
+                _lock_executor(cursor)
+                _ensure_migration_table(cursor)
+                applied = _applied_migration_rows(cursor)
+                applied_ids = {str(row["migration_id"]) for row in applied}
+                pending = pending_migrations(applied_ids)
+                if applied_ids and any(migration.backup_required for migration in pending):
+                    from .backup import create_migration_backup
+
+                    create_migration_backup(
+                        database_url, cursor, applied=applied,
+                        directory=backup_directory or os.environ.get("NOVEL_FORGE_MIGRATION_BACKUP_DIR"),
+                    )
+                for migration in pending:
+                    _run_preflight(cursor, migration)
+                    for statement in migration.upgrade_statements:
+                        cursor.execute(statement)
+                    cursor.execute(
+                        "INSERT INTO nf_schema_migrations (migration_id) VALUES (%s)",
+                        [migration.migration_id],
+                    )
+                rows = _applied_migration_rows(cursor)
+            commit_pending = True
+    except Exception as error:
+        if commit_pending:
+            raise RuntimeError(
+                "MIGRATION_COMMIT_OUTCOME_UNKNOWN: reconcile the original database ledger and catalog; "
+                "do not assume rollback or retry automatically"
+            ) from error
+        raise
+    return _status_from_rows(rows)
+
+
+def _lock_executor(cursor: Any) -> None:
+    cursor.execute("SELECT pg_try_advisory_xact_lock(6847392016511401)")
+    if not cursor.fetchone()[0]:
+        raise RuntimeError("MIGRATION_EXECUTOR_BUSY: another migration transaction owns this database")
 
 
 def downgrade_migrations(database_url: str, *, target_revision: str | None, execute: bool = False) -> dict[str, Any]:
     validate_migration_chain()
     with _connect(database_url) as connection:
         with connection.cursor() as cursor:
+            _lock_executor(cursor)
             _ensure_migration_table(cursor)
             applied = _applied_migration_rows(cursor)
             applied_ids = {str(row["migration_id"]) for row in applied}
+            pending_migrations(applied_ids)
             plan = downgrade_plan(target_revision, applied_ids)
             statements = [statement for migration in plan for statement in migration.downgrade_statements]
             missing_downgrade = [migration.migration_id for migration in plan if not migration.downgrade_statements]
@@ -149,8 +175,19 @@ def _status_from_rows(applied: list[dict[str, str]]) -> dict[str, Any]:
     applied_ids = {row["migration_id"] for row in applied}
     missing = [migration.migration_id for migration in MIGRATIONS if migration.migration_id not in applied_ids]
     extra = sorted(applied_ids - {migration.migration_id for migration in MIGRATIONS})
+    history_error = None
+    try:
+        pending_migrations(applied_ids)
+    except ValueError as error:
+        history_error = str(error)
     return {
         "current": LATEST_MIGRATION_ID,
+        "target_head": LATEST_MIGRATION_ID,
+        "applied_head": MIGRATIONS[len(applied_ids) - 1].migration_id if applied_ids and not history_error else None,
+        "history_valid": history_error is None,
+        "history_error": history_error,
+        "schema_qualification": "NOT_CHECKED",
+        "applied_at_semantics": "transaction timestamps; not per-statement execution order",
         "applied": applied,
         "available": [migration.migration_id for migration in MIGRATIONS],
         "missing": missing,

@@ -2744,6 +2744,11 @@ PostgreSQL owns production business and execution facts. `AuthorityUnitOfWork` r
 unless explicitly committed, and composed owner mutations use the declared transaction
 or savepoint boundary. The migration registry and migration manifest jointly determine
 the current head; canonical prose intentionally does not duplicate its identity.
+Migration execution serializes cooperative executors with a transaction advisory lock
+and enforces declared backups for upgrades of existing ledgers. Archive readability,
+ID equality, restored catalog/data integrity and installed recovery are separate checks;
+the status API does not turn a matching head into upgrade qualification. Commit response
+loss requires reconciliation of the original database rather than an automatic resend.
 
 Provider and MinIO-compatible object-store calls use durable ExternalEffect intent,
 dispatch generation and receipt records. A request that may have started is reconciled

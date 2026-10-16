@@ -34,6 +34,7 @@ def _authority_parser() -> argparse.ArgumentParser:
 
     migrate = subparsers.add_parser("authority-migrate", help="apply authority migrations")
     migrate.add_argument("--status", action="store_true")
+    migrate.add_argument("--backup-directory", default=None, help="private absolute directory for required pre-upgrade logical backups")
 
     run = subparsers.add_parser("authority-chapter-run", help="run one authoritative chapter")
     run.add_argument("--project-id", required=True)
@@ -201,7 +202,7 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
             result = (
                 get_migration_status(settings.database_url)
                 if args.status
-                else run_migrations(settings.database_url)
+                else run_migrations(settings.database_url, backup_directory=args.backup_directory)
             )
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0
