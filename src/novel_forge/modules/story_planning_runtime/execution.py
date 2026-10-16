@@ -4074,22 +4074,15 @@ class _PlanningPepPort:
         recovered_completion: bool,
         failure: Mapping[str, Any] | None = None,
     ) -> None:
-        self._record_evidence(
-            "model_call_log",
-            {
+        model_content = {
                 **dict(evidence),
                 "candidate_accepted": accepted_candidate,
                 "provider_invoked_this_attempt": not recovered_completion,
                 "recovered_external_effect_success": recovered_completion,
                 "post_provider_failure": dict(failure or {}),
                 "candidate_validation_status": "FAILED" if failure else "PENDING_DOMAIN_VALIDATION",
-            },
-        )
-        if recovered_completion:
-            return
-        self._record_evidence(
-            "cost_ledger",
-            {
+            }
+        cost_content = {
                 "availability": "UNAVAILABLE" if amount is None else "AVAILABLE",
                 "measurement": "UNKNOWN" if amount is None else "MEASURED",
                 "amount": amount,
@@ -4107,12 +4100,25 @@ class _PlanningPepPort:
                 "provider_invoked_this_attempt": True,
                 "recovered_external_effect_success": False,
                 "post_provider_failure": dict(failure or {}),
-            },
-        )
+            }
+        if recovered_completion and self.binding.request.stage in {"context_compress", "context_fidelity"}:
+            request = self.binding.request
+            original = dict(evidence["production_execution"]["execution_request"])
+            if (original.get("operation_id") != request.operation_id or original.get("project_id") != request.project_id
+                    or original.get("stage") != request.stage or original.get("external_effect_id") != self.effect_id
+                    or not original.get("attempt_id") or not isinstance(original.get("fencing_token"), int)):
+                raise KernelError("PLANNING_RECOVERY_RECEIPT_DRIFT", "Original Context accounting requires its verified Effect execution identity")
+            self._record_evidence("model_call_log", {**model_content, "provider_invoked_this_attempt": True,
+                "recovered_external_effect_success": False}, original_identity=original)
+            self._record_evidence("cost_ledger", cost_content, original_identity=original)
+        self._record_evidence("model_call_log", model_content)
+        if not recovered_completion:
+            self._record_evidence("cost_ledger", cost_content)
 
     @execution_step("story_planning_runtime._PlanningPepPort._record_evidence")
-    def _record_evidence(self, asset_type: str, content: dict[str, Any]) -> None:
+    def _record_evidence(self, asset_type: str, content: dict[str, Any], *, original_identity: dict | None = None) -> None:
         request = self.binding.request
+        attempt_id = original_identity["attempt_id"] if original_identity else request.attempt_id
         receipt_consumption = asset_type == "model_call_log" and content.get("recovered_external_effect_success") is True
         suffix = f":receipt-consumption:{request.fencing_token}" if receipt_consumption else ""
         if request.stage in {"context_compress", "context_fidelity"}:
@@ -4127,14 +4133,14 @@ class _PlanningPepPort:
                 "source_external_effect_id": self.effect_id,
             }
         logical_ref = (
-            f"runs/{asset_type}s/{request.operation_id}-{request.attempt_id}-"
+            f"runs/{asset_type}s/{request.operation_id}-{attempt_id}-"
             f"{request.stage}{suffix}.json"
         )
         command = AuthorityAssetWriteCommand(
             operation_id=request.operation_id,
             project_id=request.project_id,
             asset_id=(
-                f"{asset_type}:{request.operation_id}:{request.attempt_id}"
+                f"{asset_type}:{request.operation_id}:{attempt_id}"
                 + (
                     f":{request.stage}"
                     if request.stage.startswith("world_candidates.")
@@ -4164,11 +4170,18 @@ class _PlanningPepPort:
         try:
             self.writer.materialize_output(command)
         except KernelError as error:
-            if not receipt_consumption or error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":
+            if not (receipt_consumption or original_identity) or error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":
                 raise
             existing = AuthorityAssetQuery(self.database_url).require(
                 project_id=request.project_id, logical_ref=logical_ref
             )
+            if original_identity:
+                if (existing.asset_id != command.asset_id or existing.asset_type != asset_type
+                        or existing.content_hash != canonical_hash(existing.content)
+                        or any(existing.content.get(key) != command.content[key] for key in
+                               ("operation_id", "project_id", "stage", "source_external_effect_id"))):
+                    raise KernelError("PLANNING_ORIGINAL_ACCOUNTING_CONFLICT", "Original Context accounting belongs to a different Effect") from error
+                return
             if (existing.asset_id != command.asset_id or existing.asset_type != asset_type
                     or existing.content_hash != canonical_hash(command.content) or existing.content != command.content):
                 raise KernelError("PLANNING_RECEIPT_CONSUMPTION_CONFLICT", "Original receipt consumption changed within the same consumer fence") from error

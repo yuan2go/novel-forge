@@ -3688,12 +3688,16 @@ cancellation; missing remote identifiers or receipts can require external eviden
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 `RESUME`; pausing does not clear the unresolved outcome or its budget reservation.
 
-New Book requests needing more than the legacy draft Context ceiling must explicitly set
+For historical or explicitly selected legacy Book policies, an upgrade from the v2
+draft Context profile can explicitly set
 `NOVEL_FORGE_BOOK_DRAFT_CONTEXT_PROFILE_VERSION=draft-context-profile-v3` before
 Supervisor preparation, together with the bounded Book token budget and a compatible
 approved Pack policy. The request freezes that profile; replay without this field stays
 on v2. Increasing an environment budget alone does not upgrade an old frozen request.
 The v3 owner maximum is 24,000 tokens, and effective Pack/request limits still apply.
+Ordinary new creation instead uses the current v4 Draft profile, v3 Context capacity
+policy and v6 working-prose projection described above. Do not choose this legacy
+24,000-token profile to enable the current complete-request capacity chain.
 
 ## Public work discovery
 

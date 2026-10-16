@@ -8,7 +8,7 @@ from novel_forge.modules.command_kernel.manual_effect_resolution import External
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier, insert_definition, insert_operation, transaction
 
 
-def seed(production=False, held=False):
+def seed(production=False, held=False, stage="world.design.generate"):
     ensure_migrated()
     project, operation, definition = (identifier(x) for x in ("project", "operation", "definition"))
     with transaction() as c, c.cursor() as q:
@@ -17,7 +17,7 @@ def seed(production=False, held=False):
     context = EffectCommandContext(operation, project, "operator", "trace", "correlation")
     adapter = FakeDeterministicProvider("success")
     effect = plan_external_effect(DATABASE_URL, context, effect_type="model.invoke", provider=adapter.provider,
-        capability="model.test", stable_idempotency_key=identifier("key"), request_payload={"stage": "world.design.generate", **({"_production_execution": {"attempt_id": "original-attempt"}} if production else {})},
+        capability="model.test", stable_idempotency_key=identifier("key"), request_payload={"stage": stage, **({"_production_execution": {"attempt_id": "original-attempt"}} if production else {})},
         max_attempts=2, reversible=False, provider_capability_profile=adapter.capability_profile)["external_effect_id"]
     reservation = reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(operation_id=operation, project_id=project,
         external_effect_id=effect, stable_idempotency_key=identifier("budget"), provider=adapter.provider,
@@ -35,10 +35,11 @@ def seed(production=False, held=False):
     if production:
         schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "properties": {"objective": {"type": "string"}}, "required": ["objective"], "additionalProperties": False}
         evidence["production_execution"].update(
-            execution_request={"execution_id": "original-execution", "operation_id": operation, "attempt_id": "original-attempt", "fencing_token": 1, "capability": "model.test", "validation_policy_ref": "policy:original"},
+            execution_request={"execution_id": "original-execution", "operation_id": operation, "attempt_id": "original-attempt", "fencing_token": 1, "capability": "model.test", "validation_policy_ref": "policy:original",
+                **({"stage": stage, "project_id": project, "external_effect_id": effect} if stage.startswith("context_") else {})},
             route_snapshot={"route_snapshot_id": "original-route", "route_decision_id": "original-decision", "operation_id": operation, "attempt_id": "original-attempt", "model_id": "frozen-model"},
             input_manifest={"manifest_id": "original-input", "operation_id": operation, "attempt_id": "original-attempt", "fencing_token": 1, "project_id": project, "book_id": "synthetic-book", "input_artifacts": [{"artifact_ref": "frozen-input", "sha256": "a" * 64}]})
-        evidence["production_execution"]["process_evidence"].update(output_schema=schema, output_schema_version="synthetic-output.v1", stage="world.design.generate")
+        evidence["production_execution"]["process_evidence"].update(output_schema=schema, output_schema_version="synthetic-output.v1", stage=stage)
     submit_effect_dispatch_result(DATABASE_URL, context, dispatch_id=dispatch["dispatch_id"], worker_id="fixture",
         fencing_token=lease["fencing_token"], outcome="unknown" if held else "retryable_failure", evidence=evidence)
     if held:
@@ -267,7 +268,7 @@ def recovered_port(seeded, completion, *, stale=False, changed_input=False):
     current_route.update(route_snapshot_id='current-route', route_decision_id='current-decision', attempt_id=attempt)
     request = SimpleNamespace(operation_id=context.operation_id, project_id=context.project_id, attempt_id=attempt,
         fencing_token=lease['fencing_token'] + int(stale), capability='model.test', execution_id='current-consumer',
-        stage='world.design.generate', trace_id='trace', correlation_id='correlation', route_snapshot_id='current-route', input_manifest_ref='current-input')
+        stage=production['execution_request'].get('stage', 'world.design.generate'), trace_id='trace', correlation_id='correlation', route_snapshot_id='current-route', input_manifest_ref='current-input')
     binding = SimpleNamespace(request=request, input_manifest=SimpleNamespace(to_dict=lambda: current_input), route_snapshot=SimpleNamespace(to_dict=lambda: current_route))
     return _PlanningPepPort(database_url=DATABASE_URL, worker_id='recovery-worker', lease_seconds=60,
         context=context, effect_id=effect, stable_key='unused', reservation_id=completion['budget_reservation_id'],
@@ -328,6 +329,37 @@ def test_same_attempt_receipt_consumption_preserves_first_call_log_and_cost():
         port._record_evidence('model_call_log', {**consumed[0][0], 'candidate_accepted': True})
     with pytest.raises(KernelError, match='PLANNING_RECEIPT_CONSUMPTION_CONFLICT'):
         port._record_evidence('model_call_log', {**consumed[0][0], 'candidate_accepted': 0})
+
+
+@pytest.mark.parametrize('stage', ['context_compress', 'context_fidelity'])
+def test_context_receipt_restart_fills_missing_original_accounting_once(stage):
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.errors import KernelError
+    seeded = seed(production=True, stage=stage)
+    context, effect, *_ = seeded
+    command, _ = production_confirmation(seeded)
+    resolve_external_effect_manually(DATABASE_URL, command)
+    completion = read_succeeded_external_effect(DATABASE_URL, context, effect_id=effect)
+    port = recovered_port(seeded, completion)
+    def fail_before_accounting(checkpoint):
+        if checkpoint == 'after_provider_receipt_before_budget_settlement':
+            raise KernelError('CONTROLLED_RECEIPT_CHECKPOINT', 'worker stopped after its durable receipt')
+    port.post_provider_fault_injector = fail_before_accounting
+    with pytest.raises(KernelError, match='CONTROLLED_RECEIPT_CHECKPOINT'):
+        port.execute(SimpleNamespace(capability='model.test'))
+    with transaction() as c:
+        assert c.execute("SELECT count(*) FROM authority_asset WHERE project_id=%s AND asset_type IN ('model_call_log','cost_ledger')", [context.project_id]).fetchone()[0] == 0
+    port.post_provider_fault_injector = lambda _: None
+    for _ in range(2):
+        assert port.execute(SimpleNamespace(capability='model.test')).raw_output == {'objective': 'synthetic original result'}
+    with transaction() as c:
+        rows = c.execute("SELECT a.asset_type,a.asset_id,v.content FROM authority_asset a JOIN authority_asset_version v USING(asset_id) WHERE a.project_id=%s AND a.asset_type IN ('model_call_log','cost_ledger')", [context.project_id]).fetchall()
+        assert len(rows) == 3
+        assert all(row[2]['source_external_effect_id'] == effect for row in rows)
+        original = [row for row in rows if row[2].get('evidence_kind') != 'ORIGINAL_RECEIPT_CONSUMPTION']
+        assert len(original) == 2 and all('original-attempt' in row[1] for row in original)
+        assert sum(row[0] == 'cost_ledger' for row in rows) == 1
+        assert c.execute('SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s', [effect]).fetchone()[0] == 1
 
 
 @pytest.mark.parametrize('stale,changed_input', [(True, False), (False, True)])
