@@ -5570,6 +5570,7 @@ class PostgresPlanningExecutionPreparer:
     ) -> tuple[_PlanningExecutionBinding, dict[str, AuthorityAssetDocument]]:
         graph = self._operation_graph(operation_id, command.project_id)
         suffix = (
+            stage_name if stage_name in {"context_compress", "context_fidelity"} else
             FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()
             if command.generator_operation_name in FOUNDATION_GENERATORS
             else command.planning_scope.value.lower()
