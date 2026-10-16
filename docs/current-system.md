@@ -1370,7 +1370,8 @@ Skill, Schema, protocol, output reserve and safety margin pass Provider admissio
 The new accounting contract caps the window at the minimum of 512,000, the confirmed
 model window and authorized execution limit. Unknown capacity blocks. UTF-8 byte
 upper bounds are explicitly conservative token estimates, not exact tokenization;
-the independent 8 MiB serialization guard is a byte limit. Provider-specific output
+historical serialization guards remain separate byte limits and do not veto new
+complete-request preparation before token admission. Provider-specific output
 and reasoning accounting avoid treating the Context target as output reserve or
 charging the same reasoning reservation twice. API stage output targets are
 enforced in the sent request. Since Codex CLI does not enforce a per-request output

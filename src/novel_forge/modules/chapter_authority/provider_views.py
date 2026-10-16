@@ -1674,9 +1674,9 @@ def build_provider_context_view(
                 raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_INVALID", "World task capacity requires its exact frozen token budget")
             view["contract_version"] = "provider-context-view-v4"
             view["capacity_policy"] = {"version": task["policy"]["version"], "task_target_tokens": token_budget,
-                                       "token_accounting": "utf8-byte-upper-bound.v1", "maximum_serialized_bytes": _TASK_PROVIDER_SERIALIZATION_BYTES}
+                                       "token_accounting": "utf8-byte-upper-bound.v1", "maximum_serialized_bytes": None if complete_capacity else _TASK_PROVIDER_SERIALIZATION_BYTES}
             measured = _serialized_byte_count(view)
-            if measured > _TASK_PROVIDER_SERIALIZATION_BYTES or (not complete_capacity and measured > token_budget):
+            if not complete_capacity and (measured > _TASK_PROVIDER_SERIALIZATION_BYTES or measured > token_budget):
                 raise KernelError("WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "Required World Provider view exceeds its serialized byte guard or conservative task token budget")
         frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
         if isinstance(frozen, Mapping) and isinstance(frozen.get("compiled_view"), Mapping) and frozen["compiled_view"].get("stage") == stage:
@@ -2048,7 +2048,7 @@ def build_provider_context_view(
             "omitted_fact_count": omitted_facts,
             "maximum_segments": None if task_scoped_context else _MAX_SEGMENTS,
             "maximum_facts_per_segment": None if task_scoped_context else _MAX_FACTS_PER_SEGMENT,
-            **({"maximum_serialized_bytes": 8_388_608} if task_scoped_context else {"maximum_serialized_characters": maximum_characters}),
+            **({"maximum_serialized_bytes": None if complete_request_capacity else 8_388_608} if task_scoped_context else {"maximum_serialized_characters": maximum_characters}),
             **({"context_profile_version": context_bundle["context_profile_version"],
                 "frozen_context_token_budget": context_bundle["token_budget"],
                 "duplicate_state_summary_count": duplicate_state_summaries} if extended_context else {}),
@@ -2076,7 +2076,7 @@ def build_provider_context_view(
         view["frozen_intent"] = working_intent
     serialized_size = len(json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")) if task_scoped_context else _serialized_character_count(view)
     serialization_limit = 8_388_608 if task_scoped_context else maximum_characters
-    if serialized_size > serialization_limit:
+    if not complete_request_capacity and serialized_size > serialization_limit:
         raise KernelError(
             "CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "projected Provider Context exceeds its deterministic size boundary; "
@@ -2245,7 +2245,7 @@ def _build_narrative_evaluation_context_view(
         if isolation == "EXACT_CANDIDATE_AND_CANONICAL_DEPENDENCIES"
         else _MAX_PROVIDER_CONTEXT_CHARACTERS
     )
-    if (_serialized_byte_count(view) > _TASK_PROVIDER_SERIALIZATION_BYTES if complete_request_capacity else _serialized_character_count(view) > maximum_characters):
+    if not complete_request_capacity and _serialized_character_count(view) > maximum_characters:
         raise KernelError(
             "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "Semantic Evaluation context exceeds the bounded Provider projection",
@@ -2424,10 +2424,10 @@ def _build_reader_outcome_context_view(
             "omitted_segment_count": omitted,
             "maximum_segments": _MAX_SEGMENTS,
             "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
-            "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
+            "maximum_serialized_characters": None if complete_request_capacity else _MAX_PROVIDER_CONTEXT_CHARACTERS,
         },
     }
-    if (_serialized_byte_count(view) > _TASK_PROVIDER_SERIALIZATION_BYTES if complete_request_capacity else _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS):
+    if not complete_request_capacity and _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
         raise KernelError(
             "READER_OUTCOME_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "Reader Outcome Provider Context exceeds its deterministic size boundary",
@@ -2590,7 +2590,7 @@ def _build_planning_context_view(
             "loss_records": losses,
             "maximum_segments": _MAX_SEGMENTS,
             "maximum_facts_per_segment": None if task_capacity else _MAX_FACTS_PER_SEGMENT,
-            **({"capacity_policy_version": capacity_policy, "maximum_serialized_bytes": _TASK_PROVIDER_SERIALIZATION_BYTES,
+            **({"capacity_policy_version": capacity_policy, "maximum_serialized_bytes": None if complete_capacity else _TASK_PROVIDER_SERIALIZATION_BYTES,
                 "token_accounting": "utf8-byte-upper-bound.v1"} if task_capacity else {"maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS}),
         },
     }
@@ -2715,7 +2715,7 @@ def _build_planning_context_view(
         projection_audit.update(audit)
     if task_capacity:
         measured = _serialized_byte_count(view)
-        if measured > _TASK_PROVIDER_SERIALIZATION_BYTES or (not complete_capacity and measured > token_budget):
+        if not complete_capacity and (measured > _TASK_PROVIDER_SERIALIZATION_BYTES or measured > token_budget):
             raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "required Planning Provider Context exceeds its conservative task token budget or serialized byte guard",
                 details={"required_serialized_bytes":measured,"task_token_upper_bound":token_budget,
                     "serialization_byte_limit":_TASK_PROVIDER_SERIALIZATION_BYTES})
@@ -3501,7 +3501,7 @@ def build_provider_knowledge_view(
                 "content": _compact(content),
             }
         )
-        if (_serialized_byte_count(selected) > _TASK_PROVIDER_SERIALIZATION_BYTES if complete_request_capacity else _serialized_character_count(selected) > _MAX_PROVIDER_KNOWLEDGE_CHARACTERS):
+        if not complete_request_capacity and _serialized_character_count(selected) > _MAX_PROVIDER_KNOWLEDGE_CHARACTERS:
             raise KernelError(
                 "CHAPTER_PROVIDER_KNOWLEDGE_BUDGET_EXCEEDED",
                 "task-selected Knowledge exceeds its deterministic size boundary; "

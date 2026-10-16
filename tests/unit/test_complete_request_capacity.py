@@ -68,6 +68,20 @@ def test_upper_bound_overflow_does_not_claim_proven_token_overflow():
     assert result.measurement["tokenized_text_tokens"] is None
 
 
+def test_new_complete_policy_defers_large_byte_material_to_full_request_meter():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_knowledge_view
+    content = " " * (9 * 1024 * 1024)
+    source = {"ref": "owned:fixture", "version": "v1", "content_hash": "sha256:fixture", "content": content}
+    with pytest.raises(KernelError, match="CHAPTER_PROVIDER_KNOWLEDGE_BUDGET_EXCEEDED"):
+        build_provider_knowledge_view([source])
+    prepared = build_provider_knowledge_view([source], complete_request_capacity=True)
+    assert prepared[0]["content"] == content
+    projection = prepare_request_capacity(original={"knowledge": prepared}, stage="draft", source_boundary={},
+        route=route(), measure=lambda _: (500_000, 512_000),
+        model_call=lambda *_: pytest.fail("fitting complete requests must not be compressed"), chunk_fits=lambda _: True)
+    assert projection is None
+
+
 def source_data(paragraphs=24, width=300):
     return {"input_manifest": {"exact_current_draft": "Current draft remains exact."},
         "context_bundle": {"segments": [{"asset_type": "chapter_episodic_summary",
