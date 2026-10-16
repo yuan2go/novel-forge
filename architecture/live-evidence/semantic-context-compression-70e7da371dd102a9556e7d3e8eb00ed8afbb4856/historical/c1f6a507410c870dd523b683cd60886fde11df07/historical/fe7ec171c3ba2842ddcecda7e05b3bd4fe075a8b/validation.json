@@ -1,0 +1,84 @@
+{
+  "source_sha": "fe7ec171c3ba2842ddcecda7e05b3bd4fe075a8b",
+  "focused_production_regressions": {
+    "status": "PASS",
+    "passed": 183,
+    "subtests": 1317,
+    "log": "checks/history-json-final.log.gz"
+  },
+  "earlier_broader_focused_checks": {
+    "status": "PASS",
+    "passed": 366,
+    "subtests": 1317,
+    "log": "checks/history-policy-regression.log.gz"
+  },
+  "formal_pr_qualification": {
+    "source_sha": "fe7ec171c3ba2842ddcecda7e05b3bd4fe075a8b",
+    "status": "FAIL_INTERRUPTED",
+    "exit_code": 130,
+    "reason": "Stopped before P0 backend to correct reviewed extreme numeric parsing and sample evidence-directory isolation.",
+    "observed_at": "2026-10-16T21:40:40.091573+00:00"
+  },
+  "native_runs": [
+    {
+      "source_sha": "fe7ec171c3ba2842ddcecda7e05b3bd4fe075a8b",
+      "purpose": "native Chapter complete request, synthetic byte-meter 512000 boundary, reconstructed application restart, cancellation",
+      "label": "semantic-core-fe7ec171",
+      "status": "PASS",
+      "summary": "....                                                                     [100%]\n4 passed in 113.10s (0:01:53)",
+      "database": "nf_p0_8fc74352031348b1bc0fe46ea4dd90c3_test",
+      "project_ids": [
+        "project-2fd0dd161ede48668f015d71d73a70a5",
+        "project-6778f0de3e4b4dc69e31c959b5342b37",
+        "project-ab525848791d4e3ba12309be7a62dbd3",
+        "project-b520f0ddbc6f45c2970ce3a67d063734"
+      ]
+    },
+    {
+      "source_sha": "fe7ec171c3ba2842ddcecda7e05b3bd4fe075a8b",
+      "purpose": "native Creation, selected unaccepted history, actual upstream compression and manuscript readback",
+      "label": "semantic-upstream-fe7ec171",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 852.19s (0:14:12)",
+      "database": "nf_p0_e05a3d5fe13b43d1862dc6a4bf3eff84_test",
+      "project_ids": [
+        "project-41c9c7696f444e8cbc9031c854c3cec9",
+        "project:author:307c3b2dec334822a20741712fdb14d315811740aba1ac980c81abbd22fa07fb"
+      ]
+    },
+    {
+      "source_sha": "fe7ec171c3ba2842ddcecda7e05b3bd4fe075a8b",
+      "purpose": "native frozen v3 main-unsent continuation with completed Context Effects",
+      "label": "semantic-retained-upgrade-fe7ec171",
+      "status": "PASS",
+      "summary": "",
+      "database": "nf_p0_42841fdd82d449a3850dc4034306e567_test",
+      "project_ids": [
+        "project-a63e4e330f25466a8eb4decf38b09a62",
+        "project:author:6c1dc4c5986f46ae209856d6a38f4923e75afc9f54f424e4139a384c6dff6362"
+      ]
+    },
+    {
+      "source_sha": "0948b9f823f1eda7e280763444f71807649731f4",
+      "purpose": "historical Context v2-to-v4 native continuation; not relabelled current source",
+      "label": "semantic-upgrade-0948b9f8",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 188.05s (0:03:08)",
+      "database": "nf_p0_71310a596d404aa6bb351d2391f730af_test",
+      "project_ids": [
+        "project-9a4d6b0add324dac9bb260a408833de3",
+        "project:author:24a1d19a8d7d65a42bda735ab269829178066f3223bf9bba3251b2418b22346a"
+      ]
+    }
+  ],
+  "reviews": {
+    "standards": "Known findings closed by readonly code review at 3fc993c3; no real Provider/DB writes",
+    "spec": "Known findings closed; independent seven-unit replay and original nested ChapterPlan counterexample passed"
+  },
+  "actual_worker_OS_kill": "NOT_RUN; durable failure and application reconstruction exercised separately",
+  "real_provider_compression_fidelity_prose": "NOT_RUN",
+  "real_512k_tokens": "NOT_RUN",
+  "long_form_memory_quality": "NOT_RUN",
+  "literary_quality": "NOT_RUN",
+  "deployment": "UNVERIFIED_NOT_PERFORMED"
+}

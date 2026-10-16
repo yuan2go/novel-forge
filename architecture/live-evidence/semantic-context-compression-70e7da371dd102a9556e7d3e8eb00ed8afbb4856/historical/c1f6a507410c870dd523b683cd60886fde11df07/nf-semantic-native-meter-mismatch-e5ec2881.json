@@ -1,0 +1,95 @@
+{
+  "source_sha": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+  "database": "nf_p0_3e9c6c9801cf4e2e8d5214610a206ce8_test",
+  "evidence_class": "NATIVE_NEGATIVE_ROUTE_TOKENIZER_MODEL_MISMATCH",
+  "failures": [
+    {
+      "result": {
+        "error_code": "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN",
+        "error_message": "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN: a byte upper bound exceeds capacity; configure a matched tokenizer before lossy compression",
+        "failure_class": "retryable",
+        "failure_details": {
+          "limit": 260000,
+          "upper_bound": 263463,
+          "actual_tokens": null
+        }
+      },
+      "attempt_id": "1a088c26-03d8-4361-9e11-d4eb75e1395c",
+      "operation_id": "6bdb8c66-243a-4546-afeb-92b73c4ffc1d",
+      "definition_name": "chapter.draft.generate"
+    }
+  ],
+  "effects": [
+    [
+      "arc_plan.generate",
+      "SUCCEEDED",
+      6
+    ],
+    [
+      "book_plan.generate",
+      "SUCCEEDED",
+      3
+    ],
+    [
+      "chapter_group_plan.generate",
+      "SUCCEEDED",
+      3
+    ],
+    [
+      "chapter_plan.generate",
+      "SUCCEEDED",
+      2
+    ],
+    [
+      "character.cast.generate",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "creative.candidates.generate",
+      "SUCCEEDED",
+      2
+    ],
+    [
+      "draft",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "ending.intent.generate",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "reader.promise.generate",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "theme.candidates.generate",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "volume_plan.generate",
+      "SUCCEEDED",
+      6
+    ],
+    [
+      "world_candidates.evaluate",
+      "SUCCEEDED",
+      2
+    ],
+    [
+      "world_candidates.generate",
+      "SUCCEEDED",
+      2
+    ],
+    [
+      "world.design.generate",
+      "SUCCEEDED",
+      1
+    ]
+  ],
+  "interpretation": "Different Writer model loses the matched pinned tokenizer. Its byte upper-bound overflow correctly does not trigger lossy compression or Writer send. Existing earlier calls remain persisted. Final recovery fixture selects the same model at authorized xhigh, with unchanged 260000 Writer window."
+}

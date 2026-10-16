@@ -1,0 +1,162 @@
+{
+  "source_sha": "3fc993c31acbbbceeb49751873b6f4316ade0a9d",
+  "focused_production_regressions": {
+    "status": "PASS",
+    "passed": 287,
+    "log": "checks/global-final-focused.log.gz"
+  },
+  "formal_changed_contract_checks": {
+    "status": "PASS",
+    "passed": 276
+  },
+  "formal_pr_qualification": {
+    "base_implementation_tree_sha": "sha256:5bb5a55fe0ede4008ce37241fc73efc54f6bd4b78127de6aa549c1757b4aca2a",
+    "base_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "changed_implementation_paths": [
+      "architecture/manifests/test-manifest.yaml",
+      "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
+      "config/capability_packs/chapter_generation_pack.json",
+      "config/capability_packs/historical/chapter_generation_pack_3_1_0.json",
+      "config/execution_templates/creation_inputs.json",
+      "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "src/novel_forge/modules/book_authority/manuscript.py",
+      "src/novel_forge/modules/book_authority/supervisor.py",
+      "src/novel_forge/modules/book_authority/working_prose.py",
+      "src/novel_forge/modules/capability_packs/longform_profiles.py",
+      "src/novel_forge/modules/capability_packs/validation_deployment.py",
+      "src/novel_forge/modules/capability_packs/validator.py",
+      "src/novel_forge/modules/chapter_authority/capacity_continuation.py",
+      "src/novel_forge/modules/chapter_authority/context_compression_provider.py",
+      "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+      "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "src/novel_forge/modules/chapter_authority/handlers.py",
+      "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+      "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "src/novel_forge/modules/context_builder/domain.py",
+      "src/novel_forge/modules/context_builder/request_capacity.py",
+      "src/novel_forge/modules/context_builder/semantic_units.py",
+      "src/novel_forge/modules/context_builder/task_compression.py",
+      "src/novel_forge/modules/longform_narrative/scheduling.py",
+      "src/novel_forge/modules/narrative_state/working_memory.py",
+      "src/novel_forge/modules/production_execution/cost_routing.py",
+      "src/novel_forge/modules/production_execution/routing_runtime.py",
+      "src/novel_forge/modules/story_planning_runtime/execution.py",
+      "src/novel_forge/modules/story_planning_runtime/preflight_continuation.py",
+      "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "tests/fixtures/creation_capacity_v3_contract_hashes.json",
+      "tests/fixtures/semantic_compression_gold.json",
+      "tests/integration/test_chapter_capacity_continuation_postgres.py",
+      "tests/integration/test_world_working_continuity_postgres.py",
+      "tests/unit/test_chapter_capacity_continuation.py",
+      "tests/unit/test_cost_aware_routing.py",
+      "tests/unit/test_creation_coordination.py",
+      "tests/unit/test_longform_capability_pack_profiles.py",
+      "tests/unit/test_longform_working_history.py",
+      "tests/unit/test_prompt_skill_calibration.py",
+      "tests/unit/test_semantic_context_units.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 0,
+        "gate": "repository-governance"
+      },
+      {
+        "exit_code": 0,
+        "gate": "focused-tests"
+      },
+      {
+        "exit_code": 2,
+        "gate": "canonical-exact-sha-p0"
+      }
+    ],
+    "error": "canonical exact-SHA P0 failed",
+    "focused_test_paths": [
+      "tests/integration/test_chapter_capacity_continuation_postgres.py",
+      "tests/integration/test_world_working_continuity_postgres.py",
+      "tests/unit/test_chapter_capacity_continuation.py",
+      "tests/unit/test_cost_aware_routing.py",
+      "tests/unit/test_creation_coordination.py",
+      "tests/unit/test_longform_capability_pack_profiles.py",
+      "tests/unit/test_longform_working_history.py",
+      "tests/unit/test_prompt_skill_calibration.py",
+      "tests/unit/test_semantic_context_units.py"
+    ],
+    "head_sha": "3fc993c31acbbbceeb49751873b6f4316ade0a9d",
+    "implementation_changed": true,
+    "implementation_tree_sha": "sha256:599fd9b63834a5b28aeab5217f0f7e098972a893a9329c0f568690594f3d5113",
+    "provider_evidence": [
+      {
+        "identity_status": "STALE",
+        "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+        "qualification_authority": "GOVERNED_PROVIDER_QUALIFICATION"
+      }
+    ],
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "qualification": "REQUIRED_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "FAIL"
+  },
+  "native_runs": [
+    {
+      "source_sha": "3fc993c31acbbbceeb49751873b6f4316ade0a9d",
+      "purpose": "native Chapter complete request, synthetic byte-meter 512000 boundary, reconstructed application restart, cancellation",
+      "label": "semantic-core-latest",
+      "status": "PASS",
+      "summary": "....                                                                     [100%]\n4 passed in 171.21s (0:02:51)",
+      "database": "nf_p0_cefc7b99c84f4592b21134ac6decc6ee_test",
+      "project_ids": [
+        "project-3fce65b5d0d645dca57f8ae08b83d62a",
+        "project-4a4a9a4815674254aed38afbcde3cf54",
+        "project-8b17ef8a416b4e90bd78f39fa605534c",
+        "project-a79b1b0a2e494a86a2bcc9b80fc8f46c"
+      ]
+    },
+    {
+      "source_sha": "3fc993c31acbbbceeb49751873b6f4316ade0a9d",
+      "purpose": "native Creation, selected unaccepted history, actual upstream compression and manuscript readback",
+      "label": "semantic-upstream-3fc993c3",
+      "status": "PASS",
+      "summary": "",
+      "database": "nf_p0_1886b8cbdd37468e8ff0921d392fa626_test",
+      "project_ids": [
+        "project-7f5050fcbe154d2887631705aaa5f017",
+        "project:author:f0daed0cd5b3d61fd98bb4c7bb5629eaa932c4b2115ab8673a16268c224298f9"
+      ]
+    },
+    {
+      "source_sha": "3fc993c31acbbbceeb49751873b6f4316ade0a9d",
+      "purpose": "native frozen v3 main-unsent continuation with completed Context Effects",
+      "label": "semantic-retained-upgrade-3fc993c3",
+      "status": "PASS",
+      "summary": "",
+      "database": "nf_p0_4077da85aeba491b9b0165707203bd08_test",
+      "project_ids": [
+        "project:author:6cc59dadb996138663669f93411878258c4732b3172079fa66fb34bfaf140cdc",
+        "project-f4edbd45ff2d4fbdbdeb4a6842834409"
+      ]
+    },
+    {
+      "source_sha": "0948b9f823f1eda7e280763444f71807649731f4",
+      "purpose": "historical Context v2-to-v4 native continuation; not relabelled current source",
+      "label": "semantic-upgrade-0948b9f8",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 188.05s (0:03:08)",
+      "database": "nf_p0_71310a596d404aa6bb351d2391f730af_test",
+      "project_ids": [
+        "project-9a4d6b0add324dac9bb260a408833de3",
+        "project:author:24a1d19a8d7d65a42bda735ab269829178066f3223bf9bba3251b2418b22346a"
+      ]
+    }
+  ],
+  "reviews": {
+    "standards": "Known findings closed by readonly code review at 3fc993c3; no real Provider/DB writes",
+    "spec": "Known findings closed; independent seven-unit replay and original nested ChapterPlan counterexample passed"
+  },
+  "actual_worker_OS_kill": "NOT_RUN; durable failure and application reconstruction exercised separately",
+  "real_provider_compression_fidelity_prose": "NOT_RUN",
+  "real_512k_tokens": "NOT_RUN",
+  "long_form_memory_quality": "NOT_RUN",
+  "literary_quality": "NOT_RUN",
+  "deployment": "UNVERIFIED_NOT_PERFORMED"
+}

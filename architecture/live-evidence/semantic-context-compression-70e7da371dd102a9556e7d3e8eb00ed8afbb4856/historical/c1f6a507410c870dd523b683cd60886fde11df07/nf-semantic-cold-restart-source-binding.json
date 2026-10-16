@@ -1,0 +1,8 @@
+{
+  "base_sha": "4ef982aaa859f4d6b33b9d0f29c40adaa0a6e41c",
+  "test_path": "tests/integration/test_chapter_model_effects_postgres.py",
+  "test_file_sha256": "d07a760ceaed3095b3931ded9c28cfb96fd7d0f32a6257aa5ddeb0edfd7014aa",
+  "test_patch_sha256": "6b4d527bfb8bb52cff1142f354b5630b9877d98101db8f32ee9e4085bc1fcd0e",
+  "production_source_changed": false,
+  "evidence_class": "PRECOMMIT_EXACT_FILE_BINDING_COLD_APPLICATION_GATEWAY_AND_BINDER_REBUILD"
+}

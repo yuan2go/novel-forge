@@ -1,0 +1,126 @@
+{
+  "schema_version": "novel-forge.context-capacity-runtime-observation.v1",
+  "observed_at_utc": "2026-10-16T22:39:54.222440+00:00",
+  "access": "READ_ONLY",
+  "database_cluster_container": "novel-forge-first-novel-pilot-data",
+  "database": "novel_forge_first_novel_pilot_test",
+  "deployment_proof": "UNVERIFIED; historical selected/frozen records are not an observed running application version",
+  "production_deployment_changed": false,
+  "migration_head": [
+    {
+      "migration_id": "20260928_0148_author_supervised_design",
+      "applied_at": "2026-09-28T07:48:16.32336+00:00"
+    }
+  ],
+  "recent_activations": [
+    {
+      "pack_id": "wp02-author-supervised-prose-review",
+      "pack_version": "1.1.0",
+      "environment": "validation",
+      "scope": "BOOK",
+      "project_id": "narrative-closure-02-admission-20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01",
+      "active_deployment_id": "deployment:wp02-author:88f2a4fbf9df:wp02-author-supervised-prose-review",
+      "activation_version": 3,
+      "activated_at": "2026-09-28T09:00:43.997654+00:00"
+    },
+    {
+      "pack_id": "wp02-author-supervised-chapter",
+      "pack_version": "2.3.3",
+      "environment": "validation",
+      "scope": "BOOK",
+      "project_id": "narrative-closure-02-admission-20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01",
+      "active_deployment_id": "deployment:wp02-author:88f2a4fbf9df:wp02-author-supervised-chapter",
+      "activation_version": 3,
+      "activated_at": "2026-09-28T09:00:43.839781+00:00"
+    },
+    {
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "pack_version": "2.3.15",
+      "environment": "validation",
+      "scope": "BOOK",
+      "project_id": "narrative-closure-02-admission-20260927",
+      "book_id": "duanchao-guan-zheng-deng-reference-01",
+      "active_deployment_id": "deployment:wp02-author:88f2a4fbf9df:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "activation_version": 14,
+      "activated_at": "2026-09-28T09:00:43.630571+00:00"
+    },
+    {
+      "pack_id": "chapter_generation_pack",
+      "pack_version": "2.3.3",
+      "environment": "validation",
+      "scope": "BOOK",
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "guofeng-xuanhuan-01",
+      "active_deployment_id": "deployment:guofeng-xuanhuan-01:chapter_generation_pack:production-09",
+      "activation_version": 9,
+      "activated_at": "2026-09-13T20:57:00.823156+00:00"
+    },
+    {
+      "pack_id": "narrative_semantic_evaluation_pack",
+      "pack_version": "2.3.3",
+      "environment": "validation",
+      "scope": "BOOK",
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "guofeng-xuanhuan-01",
+      "active_deployment_id": "deployment:guofeng-xuanhuan-01:narrative_semantic_evaluation_pack:production-09",
+      "activation_version": 9,
+      "activated_at": "2026-09-13T20:57:00.412265+00:00"
+    }
+  ],
+  "recent_frozen_snapshots": [
+    {
+      "snapshot_id": "sha256:5ab5e22824cc1b69ccb8761708e3698695660fc667dbe14292d61d2698cd6ab3",
+      "operation_id": "d4e81f81-d074-4795-b133-7e871ee59362",
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "pack_version": "2.3.13",
+      "release_sha": "1f3da4eeca7b0da6a19fea453ad09ad9380ee6cb",
+      "manifest_hash": "sha256:a2ff960a30562afa64f97d0b2bbb172655caee798b7dfff96e6444c4addf81f3",
+      "snapshot_hash": "sha256:03d2ef3c8f2b03360818398e05bac1e0f3d2ad2cbba1ec6f6d8cc5e51f326637",
+      "created_at": "2026-09-28T02:28:36.469582+00:00"
+    },
+    {
+      "snapshot_id": "sha256:885d4cb7b8bd7b78857c8e6af405143882263cadc89e9e519b599bc24a79fd9a",
+      "operation_id": "0b0e9fd0-0d4e-4b78-89ff-c3f46515a4fa",
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "pack_version": "2.3.12",
+      "release_sha": "84a32635a8e77951855ae94562e28e9396809204",
+      "manifest_hash": "sha256:97129a46a8b0899dc62d2f12741e60dc7e613c1979aeab96759ffde745bbd95b",
+      "snapshot_hash": "sha256:3d3474e0ede5287447b45122e747eaa60f5e54d79d62f67bed84a460e17378ae",
+      "created_at": "2026-09-28T02:23:07.085088+00:00"
+    },
+    {
+      "snapshot_id": "sha256:5c82c7018144bcbff0fb63efc9a8890499da8f9a93e31cbe489aaf86888c2f1a",
+      "operation_id": "c20f0f1f-3f7b-44ce-b771-937ca9d9601c",
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "pack_version": "2.3.11",
+      "release_sha": "9605c212d95aa51f2e1c2643cff4d6a8fa51eefe",
+      "manifest_hash": "sha256:c4ac01da81dc6701a8fe6149812db1cf10776a25addf3d1001bba719ac74a957",
+      "snapshot_hash": "sha256:745da6e114e11a682a5a01ee665a3347dbf4ed093af3ad99df58c878557bc7a1",
+      "created_at": "2026-09-28T01:45:53.357824+00:00"
+    },
+    {
+      "snapshot_id": "sha256:69426c6341849b75195b6b913362ac27f95be8d995a0fc8ffea12ae90e2eb4db",
+      "operation_id": "84d5ae6b-f456-4cc8-9823-1088b31f89b0",
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "pack_version": "2.3.10",
+      "release_sha": "fb360dfc6d94b4458eed990e606911bf74d9f39d",
+      "manifest_hash": "sha256:e5e15c833e5f1af7fc89c674cbc3374decb64795fee0677337fb146bcfe05ab7",
+      "snapshot_hash": "sha256:b75aee4719447bca5d10c113098d7003698fc7dd4941447c9547e3c7f6b5f2ce",
+      "created_at": "2026-09-28T01:30:55.803947+00:00"
+    },
+    {
+      "snapshot_id": "sha256:5756f34e5a822ddfe4b73aa90a5d7b324c837cc314b6af415f5dfa335fa8d1a7",
+      "operation_id": "3ef303f6-8871-49ef-92dc-10ae3901da53",
+      "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+      "pack_version": "2.3.9",
+      "release_sha": "90e7b0bde82c4ca7c4332ff757a5b20b14825ad2",
+      "manifest_hash": "sha256:8418b127287328911b5fddd5ee42e7f6a43c0cf46eca3fac06281eb262d3f0e6",
+      "snapshot_hash": "sha256:59a7bc9405bd57d55cb28f7aaf371d9bb4fd718de657a39d24269be244a1d354",
+      "created_at": "2026-09-28T00:45:31.694615+00:00"
+    }
+  ],
+  "recent_frozen_context_budgets": [],
+  "matching_native_app_or_worker_processes": []
+}

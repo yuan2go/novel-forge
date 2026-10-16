@@ -1,0 +1,172 @@
+[
+  {
+    "case": "complete-request-512000",
+    "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+    "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+    "material_measurement": {
+      "limit": 512000,
+      "token_method": "",
+      "after_reserved": 57242,
+      "before_reserved": 690871,
+      "actual_provider_tokens": null
+    },
+    "final_request_admission": {
+      "reason": "ADMITTED",
+      "status": "ADMITTED",
+      "precision": "EXACT",
+      "measurement": {
+        "model": "scripted_provider_v2-draft",
+        "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "precision": "FIXTURE_BYTES_EXACT",
+        "utf8_bytes": 40586,
+        "input_tokens": 40586,
+        "system_context_limit": 512000,
+        "tokenized_text_tokens": null,
+        "input_token_upper_bound": null,
+        "actual_provider_input_tokens": null,
+        "protocol_framing_tokens_estimate": 16
+      },
+      "envelope_hash": "sha256:d716c2c01a2b983766a64f097435413e3e27ff1d0790ab0d452ccb54b8417e9e",
+      "total_reserved": 57242,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40586,
+        "request_framing": 16
+      },
+      "applicable_limit": 512000,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "scripted_provider_v2-draft",
+        "provider": "scripted_provider_v2",
+        "precision": "EXACT",
+        "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "scripted-byte-token-meter",
+        "output_reserve": 16384,
+        "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:a2d08454a571eeee4c85c37dc4fc09d8d4ebc81e495409155046c974532057fb",
+        "contract_version": "provider-token-accounting-v4",
+        "framing_overhead": 16,
+        "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "model_context_limit": 512000,
+        "execution_token_limit": 512000,
+        "serialization_contract": "scripted-responses-text-envelope-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 665322,
+      "input_component_hashes": {
+        "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+        "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:fc4d7b04af107c2c6af32274bc606790db5293f4b2d1a701383d37f6154c3a4f",
+        "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+        "fully_rendered_prompt": "sha256:a0420f0e4dab626404ed494810e48b308849b03eb44042c29baf914eb6b6bcde",
+        "provider_context_view": "sha256:869dfb2f4f72fa7955bdce172642bf95a1ddb7551729ab34f868f260b233bfbf",
+        "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "source_projection_hash": "sha256:e2f0919a51557c13684a3010ee1dbd5027dbfff2071e8ccf6e791de9f4827c48",
+    "derived_projection_hash": "sha256:276cd1d8ae2d6c1685b7e5d89bdcdf861da01f49568aadc143f6378c3ca91d82",
+    "final_supplied_projection_hash": "sha256:276cd1d8ae2d6c1685b7e5d89bdcdf861da01f49568aadc143f6378c3ca91d82",
+    "interpretation": "SCRIPTED_UTF8_BYTES_EXACT_V1 engineering fixture; exact bytes are not actual model tokens, no real 512K or memory quality claim."
+  },
+  {
+    "case": "complete-request-262144",
+    "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+    "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+    "material_measurement": {
+      "limit": 262144,
+      "token_method": "",
+      "after_reserved": 57242,
+      "before_reserved": 466771,
+      "actual_provider_tokens": null
+    },
+    "final_request_admission": {
+      "reason": "ADMITTED",
+      "status": "ADMITTED",
+      "precision": "EXACT",
+      "measurement": {
+        "model": "scripted_provider_v2-draft",
+        "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "precision": "FIXTURE_BYTES_EXACT",
+        "utf8_bytes": 40586,
+        "input_tokens": 40586,
+        "system_context_limit": 512000,
+        "tokenized_text_tokens": null,
+        "input_token_upper_bound": null,
+        "actual_provider_input_tokens": null,
+        "protocol_framing_tokens_estimate": 16
+      },
+      "envelope_hash": "sha256:6a4f18ae4bfdf48ac0cf12c99ffaed03dd73b5df61a51c547443dcdf823eb5fa",
+      "total_reserved": 57242,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40586,
+        "request_framing": 16
+      },
+      "applicable_limit": 262144,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "scripted_provider_v2-draft",
+        "provider": "scripted_provider_v2",
+        "precision": "EXACT",
+        "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "scripted-byte-token-meter",
+        "output_reserve": 16384,
+        "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:4864f32b432ba24b01401cf2c5f621871a7739c6be9cad3d7646fd8d4e739327",
+        "contract_version": "provider-token-accounting-v4",
+        "framing_overhead": 16,
+        "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "model_context_limit": 262144,
+        "execution_token_limit": 262144,
+        "serialization_contract": "scripted-responses-text-envelope-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 441222,
+      "input_component_hashes": {
+        "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+        "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:5a476f8341cdfcbf644f91c49aedceb6a8b509ab549c054aafc2ee4981973cdb",
+        "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+        "fully_rendered_prompt": "sha256:546faa3f76b03a922416eac9e49c95bdce948c16526f381b0165fa8794968462",
+        "provider_context_view": "sha256:9908f71fc4a5a4bbc1f67b3af76367823ae7f42758be6580d0c4f088ecc285f7",
+        "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "source_projection_hash": "sha256:5c6e1c0bd6105293e04e1bbc1f92faa36608114895c7875d22ca99be8b12c16b",
+    "derived_projection_hash": "sha256:4dbd75230d62b514ce6d3e42096be81e3e650257fd34f607fed593718ee9e491",
+    "final_supplied_projection_hash": "sha256:4dbd75230d62b514ce6d3e42096be81e3e650257fd34f607fed593718ee9e491",
+    "interpretation": "SCRIPTED_UTF8_BYTES_EXACT_V1 engineering fixture; exact bytes are not actual model tokens, no real 512K or memory quality claim."
+  }
+]

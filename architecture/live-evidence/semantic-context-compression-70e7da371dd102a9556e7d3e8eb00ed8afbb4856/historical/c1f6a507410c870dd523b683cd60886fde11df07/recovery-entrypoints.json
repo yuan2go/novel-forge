@@ -1,0 +1,11 @@
+{
+  "capacity_continuation": "Activate the approved same-Book semantic Pack for the executable release through existing Pack Authority, then novel-forge authority-creation continue --project-id PROJECT --formation-run-id RUN --repository-root ACTUAL_CHECKOUT --foreground",
+  "history_retrieval": "novel-forge authority-manuscript read --project-id PROJECT --book-run-id BOOK_RUN --candidate-version ORIGINAL_VERSION",
+  "history_export": "novel-forge authority-manuscript export --project-id PROJECT --book-run-id BOOK_RUN --candidate-version ORIGINAL_VERSION --output NEW_OUTPUT_PATH",
+  "diagnostics": [
+    "Original Operation/Attempt and authority_saga_step_successor policy evidence",
+    "Per-context-stage ExternalEffect request hash, trusted receipt, reservation settlement and retained capacity bindings",
+    "Main Effect input _context_capacity_projection.final_composition and _context_capacity_rebuild; admission prompt hash and saved manuscript source version"
+  ],
+  "unknown_outcome": "Reconcile original Effect outcome before continuation. Never substitute a new ID or infer zero calls from an unsent Writer."
+}

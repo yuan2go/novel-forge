@@ -1,0 +1,7 @@
+{
+  "documentation": "Only existing canonical docs updated; pending recent-history protection wording replaced after implementation, old v2-to-v3 zero-effect paragraph explicitly historical. No parallel architecture source.",
+  "defaults": "Context v4, Chapter 3.2, Planning 2.18/2.19, Creation v4 and working projection v7; no cumulative token/call/local timer veto.",
+  "historical": "Exact original v3 and older catalogs and failed/UNKNOWN spend retained; old frozen policy never reads repository defaults.",
+  "persistence": "Existing durable ExternalEffect, receipts and Kernel successors; no published migration edited or new schema required.",
+  "ambiguity": "High precision numeric and duplicate-field JSON remains opaque original with explicit source_parse_assessment; numeric value preservation is not a claim about model understanding."
+}

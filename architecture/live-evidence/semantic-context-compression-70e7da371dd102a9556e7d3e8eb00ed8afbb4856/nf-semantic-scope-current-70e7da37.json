@@ -1,0 +1,57 @@
+{
+  "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+  "evidence_class": "PRODUCTION_ADMISSION_COMPILATION_AND_FINAL_BUNDLE_SCOPE_REGRESSION",
+  "admitted": [
+    "A",
+    "B",
+    "plan"
+  ],
+  "selected_roles": [
+    {
+      "asset_version_id": "A",
+      "narrative_function": "character_belief",
+      "semantic_representation_identity": "hearsay:A"
+    },
+    {
+      "asset_version_id": "B",
+      "narrative_function": "reader_knowledge",
+      "semantic_representation_identity": "reader-only:B"
+    }
+  ],
+  "deduplications": [],
+  "model_calls": 0,
+  "system_context_limit": 512000,
+  "range_members_retained": [
+    {
+      "id": "A",
+      "text": "甲乙丙丁",
+      "representation": "hearsay:A",
+      "policy": "",
+      "section": "NARRATIVE",
+      "bucket": "GENERAL"
+    },
+    {
+      "id": "B",
+      "text": "丙丁戊己",
+      "representation": "other-role",
+      "policy": "other-policy",
+      "section": "KNOWLEDGE",
+      "bucket": "reader-only"
+    }
+  ],
+  "range_union_receipts": [],
+  "real_provider": "NOT_RUN",
+  "semantic_comprehension": "NOT_VERIFIED",
+  "provider_visible_roles": [
+    {
+      "asset_version_id": "A",
+      "narrative_function": "character_belief",
+      "text": "门仍未开。"
+    },
+    {
+      "asset_version_id": "B",
+      "narrative_function": "reader_knowledge",
+      "text": "门仍未开。"
+    }
+  ]
+}

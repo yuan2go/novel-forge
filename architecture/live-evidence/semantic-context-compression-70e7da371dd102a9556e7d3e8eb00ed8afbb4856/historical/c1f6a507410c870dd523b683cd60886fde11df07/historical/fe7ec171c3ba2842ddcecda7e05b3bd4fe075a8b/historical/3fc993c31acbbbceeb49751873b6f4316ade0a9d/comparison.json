@@ -1,0 +1,29 @@
+{
+  "evidence_class": "FIXED_ORIGINAL_GOLD_EXACT_SUPPORT_NOT_MODEL_COMPREHENSION",
+  "input_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+  "task_hash": "sha256:34c09124b0c1384e5b528c7d60d5b759b49f140d1feeccf5b2259a41bca49093",
+  "gold_sha256": "76e54664a68db8076685b3590e354c950bc3b350499a9a091c654a28fa3b4fde",
+  "gold_fixed_before_compression": true,
+  "capacity_unit": "CONTROLLED_SERIALIZED_UTF8_BYTES_NOT_REAL_MODEL_TOKENS",
+  "capacity_limit": 11000,
+  "baseline": {
+    "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "question_support_complete": 12,
+    "explicit_quotes_preserved": 1,
+    "before_bytes": 25925,
+    "after_bytes": 7890,
+    "controlled_calls": 12
+  },
+  "current": {
+    "source_sha": "3fc993c31acbbbceeb49751873b6f4316ade0a9d",
+    "question_support_complete": 13,
+    "explicit_quotes_preserved": 2,
+    "before_bytes": 25925,
+    "after_bytes": 8269,
+    "controlled_calls": 21
+  },
+  "question_denominator": 13,
+  "quote_denominator": 2,
+  "free_text_semantic_equivalence": "NOT_VERIFIED",
+  "literary_quality": "NOT_RUN"
+}
