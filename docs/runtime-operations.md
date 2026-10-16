@@ -729,6 +729,11 @@ preparation. Missing fields retain historical protection. The renderer rejects a
 policy mismatch instead of substituting repository defaults. An omitted range remains
 retrievable through Book's original manuscript/working-history source version; use the
 existing manuscript source and memory preparation entries before changing the task.
+For a restart rehearsal, reconstruct the execution composition, Gateway, Context binder
+and application with the same frozen configuration. Check that settled Effects are
+read from durable receipts and that only one main Writer Effect exists. Reusing the
+old Gateway leaves its process caches alive. OS process termination and unknown-outcome
+reconciliation require separate evidence.
 Native `authority-creation continue` can register a v3-to-v4 capacity successor under the
 same Pack scope. Completed compression/fidelity calls must have verified settled receipts;
 the main generation must be unsent. This is main-unsent recovery, not zero-call recovery.
