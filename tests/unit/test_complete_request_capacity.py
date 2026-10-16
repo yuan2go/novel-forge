@@ -183,20 +183,28 @@ def test_necessary_content_cannot_be_dropped_to_fit():
 
 def test_rendered_extract_keeps_large_host_mapping_out_of_prompt_and_stays_frozen(monkeypatch):
     from novel_forge.modules.chapter_authority import execution_gateway as gateway
-    working = {"projection_policy": {"recent_complete_chapters": 2}, "target_chapter": 4,
+    passages = []
+    position = 0
+    for index in range(600):
+        text = f"Original paragraph {index}: " + "a" * 100
+        passages.append({"text": text, "start": position, "end": position + len(text),
+            "text_hash": "sha256:" + hashlib.sha256(text.encode()).hexdigest()})
+        position += len(text)
+    working = {"projection_policy": {"version": "working-prose-projection.v6", "recent_complete_chapters": 2}, "target_chapter": 4,
         "sources": [{"chapter": 1, "asset_version_id": "chapter:one", "content_hash": "sha256:original",
-            "passages": [{"text": f"Original paragraph {i}: " + "a" * 100, "source_start": i * 130} for i in range(600)]}]}
-    monkeypatch.setattr(gateway, "build_provider_task_view", lambda *_args, **_kw: {"contract_version": "fixture:task", "working_manuscript": deepcopy(working)})
-    monkeypatch.setattr(gateway, "build_provider_context_view", lambda *_args, **_kw: {"contract_version": "fixture:context", "working_manuscript": deepcopy(working)})
+            "source_characters": position, "passages": passages}]}
+    monkeypatch.setattr(gateway, "build_provider_task_view", lambda *_args, **_kw: {"contract_version": "fixture:task", "task_working_manuscript": deepcopy(working)})
+    monkeypatch.setattr(gateway, "build_provider_context_view", lambda *_args, **_kw: {"contract_version": "fixture:context", "context_working_manuscript": deepcopy(working)})
     materialization = {"materialization_hash": "sha256:fixture", "pack_artifacts": {
         key: {"ref": key, "version": "v1", "content": {"text": text}}
         for key, text in {"system_instruction": "Keep source boundaries.", "skill": "Use exact supplied text.",
             "prompt_template": "{{input_manifest}} {{context_bundle}}"}.items()},
-        "context_selection": [{"content": {}}], "knowledge_selection": [],
+        "context_selection": [{"content": {"working_manuscript": working}}], "knowledge_selection": [{"ref": "knowledge:fixture", "content": {"rule": "Keep source attribution."}}],
         "tool_permissions": {"allowed": ["model.provider.invoke"]},
         "output_schema": {"ref": "schema:fixture", "content": {"type": "object"}}}
+    materialization["pack_artifacts"]["prompt_template"].update(ref="prompt-template:chapter-generation-pack", version="v13")
     def render(projection=None, capture=None):
-        return gateway._materialize_production_codex_prompt(stage="agent_session",
+        return gateway._materialize_production_codex_prompt(stage="draft",
             target_scope={"scope_kind": "book", "scope_id": "b", "project_id": "p", "book_id": "b"},
             inputs={"_context_capacity_projection": projection} if projection else {},
             materialization=materialization, provider_data_capture=capture)[0]
@@ -206,18 +214,27 @@ def test_rendered_extract_keeps_large_host_mapping_out_of_prompt_and_stays_froze
     def measure(projection):
         text = render(projection)
         measured.append(text)
-        return len(text.encode()), 100000
-    projection = prepare_request_capacity(original=original, stage="agent_session", route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture"),
+        return len(text.encode()), 30000
+    projection = prepare_request_capacity(original=original, stage="draft", route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture"),
         source_boundary={"kind": "FROZEN_STAGE_INPUTS", "project_id": "p", "book_id": "b", "sources": [{"asset_version_id": "context:one", "content_hash": "sha256:fixture"}]},
         measure=measure, chunk_fits=lambda _: True,
         model_call=lambda stage, task: {"selected_unit_ids": [task["units"][0]["unit_id"]]} if stage == "context_compress" else
             {"supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []})
     final = render(projection)
     assert final == measured[-1]
-    assert len(final.encode()) < 100000 < len(before.encode())
+    assert len(final.encode()) < 30000 < len(before.encode())
     assert len(projection["replacements"]) == 1200
     assert '"historical_expressions"' not in final and '"derivation_hash"' in final
-    assert "chapter:one" in final and "sha256:original" in final and '"source_start":' in final
+    assert "chapter:one" in final and "sha256:original" in final and '"historical_extract":' in final
+    from novel_forge.modules.context_builder.request_capacity import project_capacity_passages
+    supplied = project_capacity_passages(original, apply_capacity_projection(original, projection), projection)
+    source = supplied["context_bundle"]["context_working_manuscript"]["sources"][0]
+    full = "".join(passage["text"] for passage in passages)
+    assert source["omitted_ranges"] and len(source["passages"]) == 3
+    assert len(working["sources"][0]["passages"]) == 600
+    for passage in source["passages"]:
+        assert full[passage["start"]:passage["end"]] == passage["text"]
+        assert passage["text_hash"] == "sha256:" + hashlib.sha256(passage["text"].encode()).hexdigest()
 
 
 def test_preserved_quote_survives_oversized_unit_boundaries_without_new_separators():
@@ -228,6 +245,35 @@ def test_preserved_quote_survives_oversized_unit_boundaries_without_new_separato
         "field": "safe_summary", "index": 0}], lambda group: len(group[0]["text"]) <= 20, preserve_quotes=(quote,))
     restored = _join_source_text(units)
     assert restored == text and quote in restored
+
+
+@pytest.mark.parametrize("rich_row", [False, True])
+def test_sparse_passages_keep_source_ownership_unicode_ranges_and_rich_fields(rich_row):
+    from novel_forge.modules.context_builder.request_capacity import project_capacity_passages
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    text = "甲🙂\r\n乙\n\n丙仍不知道证人已离开。"
+    passage = {"start": 0, "end": len(text), "text": text, "text_hash": "sha256:" + hashlib.sha256(text.encode()).hexdigest()}
+    if rich_row:
+        passage["required_condition"] = "The witness must first consent."
+    source = {"chapter": 1, "asset_version_id": "draft:one", "content_hash": "sha256:original",
+        "status": "UNREVIEWED_WORKING_PROSE", "character_knowledge": "NOT_VERIFIED", "source_characters": len(text), "passages": [passage]}
+    original = {"working_manuscript": {"projection_policy": {"recent_complete_chapters": 2}, "target_chapter": 4, "sources": [source]}}
+    frozen = deepcopy(original)
+    projection = {"contract_version": "complete-request-capacity.v1", "original_hash": narrative_hash(original),
+        "replacements": [{"path": ["working_manuscript", "sources", 0, "passages", 0, "text"],
+            "source_text_hash": narrative_hash(text), "ranges": [[0, 2], [7, len(text)]]}]}
+    raw = deepcopy(original)
+    raw["working_manuscript"]["sources"][0]["passages"][0]["text"] = text[:2] + "\n\n" + text[7:]
+    projection["result_hash"] = narrative_hash(raw)
+    supplied = project_capacity_passages(original, apply_capacity_projection(original, projection), projection)["working_manuscript"]["sources"][0]
+    assert original == frozen
+    assert {key: supplied[key] for key in ("asset_version_id", "content_hash", "status", "character_knowledge")} == {key: source[key] for key in ("asset_version_id", "content_hash", "status", "character_knowledge")}
+    if rich_row:
+        assert supplied["passages"][0]["required_condition"] == passage["required_condition"]
+        assert "historical_extract" not in supplied
+    else:
+        assert supplied["omitted_ranges"] == [[2, 7]]
+        assert [(row["start"], row["end"], row["text"]) for row in supplied["passages"]] == [(0, 2, text[:2]), (7, len(text), text[7:])]
 
 
 @pytest.mark.parametrize("limit", [1300, 1500, 1700])

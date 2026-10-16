@@ -752,6 +752,13 @@ extract. Initial targets use the full rendered removable contribution, rather th
 subtracting repeated request overhead from one deduplicated source. The host-only empty
 expression probe is never sent or accepted; fidelity and final full-request admission
 still decide whether an actual extract can be used.
+Canonical working passages are rebuilt as explicitly attributed sparse source ranges;
+empty original wrappers are not sent. Whole-source identity and working/knowledge
+status remain unchanged; each supplied fragment has its exact original Unicode bounds
+and actual text hash. `omitted_ranges` includes earlier selection gaps as well as new
+capacity omissions. Their original reasons and the detailed mapping remain in the
+frozen Context and Effect projection. Rich semantic passage fields retain their
+original representation. Compare raw derivation and supplied-view hashes separately.
 Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
 new ordinary creation uses v3 Context and v6 working prose. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.

@@ -4810,16 +4810,18 @@ def _materialize_production_codex_prompt(
         provider_data_capture.update(deepcopy(original_data))
     capacity_projection = inputs.get("_context_capacity_projection")
     if capacity_projection is not None:
-        from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection
+        from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, project_capacity_passages
         derived_data = apply_capacity_projection(original_data, capacity_projection)
+        derived_data = project_capacity_passages(original_data, derived_data, capacity_projection)
         task_view, context_view = derived_data["input_manifest"], derived_data["context_bundle"]
         context_view["capacity_extract"] = {"contract_version": "complete-request-capacity.v1",
             "source_projection_hash": capacity_projection["original_hash"],
             "result_projection_hash": capacity_projection["result_hash"],
+            "supplied_projection_hash": canonical_hash(derived_data),
             "derivation_hash": canonical_hash({key: capacity_projection[key] for key in
                 ("contract_version", "original_hash", "result_hash", "source_boundary", "stage", "replacements", "compression_receipt", "retained_fidelity_traces") if key in capacity_projection}),
             "mapping_custody": "FROZEN_EXTERNAL_EFFECT_REQUEST_CONTEXT_CAPACITY_PROJECTION",
-            "meaning": "Historical text contains fidelity-checked original extracts. Source hashes and passage bounds in source wrappers identify the complete original source, not the supplied extract's hash or length. Exact selected ranges and fidelity receipts are retained in the frozen derivation. Empty or omitted expression is not evidence of absence."}
+            "meaning": "Historical text contains fidelity-checked original extracts. Whole-source identity remains unchanged. Explicit historical_extract passages use original Unicode ranges and hashes of supplied text; other source bounds describe the complete original source. Exact derivation and fidelity receipts remain frozen in host custody. Empty or omitted expression is not evidence of absence."}
     exact_reference_proof = None
     protected_accounting_version = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version")
     protected_exact_accounting = protected_accounting_version in {"protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"}

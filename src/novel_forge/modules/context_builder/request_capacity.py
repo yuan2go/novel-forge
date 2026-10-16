@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
+import hashlib
 import json
 from typing import Any, Callable, Mapping
 
@@ -77,6 +78,57 @@ def apply_capacity_projection(data: dict, projection: Mapping[str, Any]) -> dict
     if projection.get("result_hash") != narrative_hash(result):
         raise KernelError("CONTEXT_CAPACITY_EXTRACT_INVALID", "derived Provider projection hash changed")
     return result
+
+
+def project_capacity_passages(original: dict, derived: dict, projection: Mapping[str, Any]) -> dict:
+    grouped = {}
+    for row in projection["replacements"]:
+        path = tuple(row["path"])
+        if len(path) >= 3 and path[-3] == "passages" and path[-1] == "text":
+            grouped.setdefault(path[:-3], {})[path[-2]] = row["ranges"]
+    for path, selections in grouped.items():
+        source, target = original, derived
+        for part in path:
+            source, target = source[part], target[part]
+        passages = source["passages"]
+        if set(selections) != set(range(len(passages))) or not source.get("asset_version_id") or not source.get("content_hash"):
+            continue
+        previous = 0
+        valid = True
+        for passage in passages:
+            if (set(passage) != {"start", "end", "text", "text_hash"} or type(passage["start"]) is not int
+                    or type(passage["end"]) is not int or not isinstance(passage["text"], str)
+                    or not previous <= passage["start"] < passage["end"]
+                    or passage["end"] - passage["start"] != len(passage["text"])
+                    or passage["text_hash"] != "sha256:" + hashlib.sha256(passage["text"].encode()).hexdigest()):
+                valid = False
+                break
+            previous = passage["end"]
+        if not valid or type(source.get("source_characters")) is not int or source["source_characters"] < previous:
+            continue
+        if all(selections[index] == [[0, len(passage["text"])]] for index, passage in enumerate(passages)):
+            continue
+        supplied = []
+        for index, passage in enumerate(passages):
+            for low, high in selections[index]:
+                text = passage["text"][low:high]
+                supplied.append({"start": passage["start"] + low, "end": passage["start"] + high,
+                    "text": text, "text_hash": "sha256:" + hashlib.sha256(text.encode()).hexdigest()})
+        omitted = []
+        cursor = 0
+        for passage in supplied:
+            if cursor < passage["start"]:
+                omitted.append([cursor, passage["start"]])
+            cursor = passage["end"]
+        if cursor < source["source_characters"]:
+            omitted.append([cursor, source["source_characters"]])
+        target["passages"] = supplied
+        target["omitted_ranges"] = omitted
+        target["historical_extract"] = {"contract_version": "capacity-historical-passages.v1",
+            "original_passage_count": len(passages), "supplied_passage_count": len(supplied),
+            "additional_omission_reason": "COMPLETE_REQUEST_CAPACITY",
+            "meaning": "Each passage is an exact original Unicode range. Omitted ranges include prior selection gaps and new capacity omissions; their original reasons remain in the frozen source projection. Gaps are not consecutive events or evidence of absence. Source version and whole-source hashes remain unchanged; passage hashes bind supplied text. Omitted text remains retrievable from that source."}
+    return derived
 
 
 def _extract_ranges(original: str, candidate: ContextCandidate) -> list[list[int]]:

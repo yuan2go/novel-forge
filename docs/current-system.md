@@ -1357,6 +1357,14 @@ Detailed path/range mappings and fidelity receipts remain in the frozen Effect
 request. The sent view carries stable derivation hashes and an omission explanation;
 it does not repeat the potentially larger audit mapping in the Prompt. Source hashes
 and original passage bounds continue to identify the complete source, not the extract.
+Canonical working passages use `capacity-historical-passages.v1` after extraction:
+only supplied original Unicode ranges become passages, with hashes of their actual
+text and explicit omitted ranges. Whole-source version, hash and working/knowledge
+status stay intact; rich semantic passage fields cannot enter this compact form.
+This prevents empty original wrappers from disabling lossless packing and consuming
+more capacity than the original text. Host derivation and supplied-view hashes remain
+separate and both bind the final request. Upstream overflow execution still requires
+its native evidence.
 
 The preparation Router selects an authorized physical route without rejecting the
 uncompressed input first. Its final decision narrows to that prepared candidate and
