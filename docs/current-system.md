@@ -1341,7 +1341,9 @@ field boundaries; original CRLF coordinates remain distinct from normalized matc
 Missing quotes stop explicitly; repeated matches are all protected and reported.
 Explicit located dependencies close deterministically without choosing between attributed
 contradictions. Optional history stays distinct from required facts and current experience.
-Only identical version, scope, content and attribution qualify for candidate deduplication.
+Candidate deduplication currently compares a partial metadata scope. Distinct narrative
+roles or representation identities can collapse; preserving all source metadata in
+exact identity and overlap union remains pending correction.
 Working projection v7 retains v6's capacity-derived prose allocation and closes selected
 working observation causes over their original located records. Their quotes protect the
 intersecting history units, and their subject, perspective and knowledge owner travel with
