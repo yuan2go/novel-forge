@@ -1394,19 +1394,21 @@ and records `MAIN_UNSENT_CONTEXT_EFFECTS_RECONCILED`; it does not claim zero ext
 Unknown outcomes, main Writer calls, changed source contracts and unsettled spend stop it.
 The Context owner retains relevance, deduplication and source eligibility while
 deferring capacity eviction to the fully rendered request. Book's
-`working-prose-projection.v6` retains the selected historical passages without the
+`working-prose-projection.v6` and v7 retain the selected historical passages without the
 legacy 24,000-character allocation; source identity and lossless history references
 remain separate from delivered expression. Older frozen policies retain their limits.
 
 Chapter's binder and Planning's preparer coordinate capacity within their existing
 Owners before planning the main Effect. Eligible older historical expression is
 extracted from the original frozen projection, independently checked, restored as
-needed, rebuilt and measured again. Current prose, facts and source boundaries remain exact. The current recent-complete
-selection also protects all selected recent history expressions, which can leave no
-compressible source after full-request overhead is added. A frozen Context-v4
-`capacity_history_exact_chapters` policy separating preparation completeness from
-capacity protection is pending implementation; it must retain the immediate predecessor
-and protected facts while allowing older selected expression to enter the existing loop. Compressor chunks are sized against both fully
+needed, rebuilt and measured again. Current prose, facts and source boundaries remain exact. Preparation completeness
+and capacity protection are separate policies: the frozen Context-v4
+`capacity_history_exact_chapters` field keeps the configured immediate predecessors
+exact while allowing older selected history expression to enter the existing loop
+only after complete-request overflow. New Packs select one exact predecessor; source
+facts, quotations and dependency closure remain protected. An older frozen policy
+without this field retains its original recent-complete protection. The extracted
+version retains the original preparation policy and source hashes as provenance. Compressor chunks are sized against both fully
 rendered substage requests and have no eight-chunk lifetime limit. Oversized text
 uses original Unicode coordinates and preserves quoted spans. Verified restoration
 can reallocate other compressible history. Each completed chunk retains its original

@@ -120,6 +120,8 @@ def build_story_planning_pack_profile(
         manifest["context_sources"].update(policy_id="context-policy:chapter-generation-pack:v4" if semantic else "context-policy:chapter-generation-pack:v3",
             planning_task_token_budget=512_000, capacity_policy="complete-request-capacity.v1",
             context_substage_method="source-unit-dependency-and-final-composition.v2" if semantic else "shared-rules-and-native-context-contract.v1")
+        if semantic:
+            manifest["context_sources"]["capacity_history_exact_chapters"] = 1
     if version != "1.21.0":
         artifacts = [item for item in artifacts if not (
             item["kind"] == ArtifactKind.SKILL.value and item["ref"] == "quality-review"
@@ -660,6 +662,8 @@ def _base(
         manifest["context_sources"].update(policy_id="context-policy:chapter-generation-pack:v4" if semantic_context_compression else "context-policy:chapter-generation-pack:v3",
             planning_task_token_budget=512_000, capacity_policy="complete-request-capacity.v1",
             context_substage_method="source-unit-dependency-and-final-composition.v2" if semantic_context_compression else "shared-rules-and-native-context-contract.v1")
+        if semantic_context_compression:
+            manifest["context_sources"]["capacity_history_exact_chapters"] = 1
     else:
         manifest["context_sources"]["policy_id"] = "context-policy:chapter-generation-pack:v2"
         manifest["context_sources"].pop("planning_task_token_budget", None)
@@ -854,6 +858,8 @@ def _update_policy_artifacts(
 ) -> None:
     for artifact in artifacts:
         if artifact["ref"] == manifest["context_sources"]["policy_id"]:
+            if "capacity_history_exact_chapters" in manifest["context_sources"]:
+                artifact["content"]["capacity_history_exact_chapters"] = manifest["context_sources"]["capacity_history_exact_chapters"]
             if "planning_task_token_budget" in manifest["context_sources"]:
                 artifact["content"]["planning_task_token_budget"] = manifest["context_sources"]["planning_task_token_budget"]
             artifact["content"]["allowed_asset_types"] = list(

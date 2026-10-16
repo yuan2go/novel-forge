@@ -721,7 +721,12 @@ For semantic compression inspect the frozen Context policy's
 and `_context_capacity_projection.final_composition` on the main Effect. Its supplied
 projection hash must match the final rendered admission and `capacity_extract` evidence.
 The proof records targeted semantic windows and their existing fidelity Effects, not a
-literary score or absolute semantic-losslessness certificate. An omitted range remains
+literary score or absolute semantic-losslessness certificate.
+Inspect frozen `capacity_history_exact_chapters` in both the selected Manifest and
+Context artifact, and the same field in the extraction. New v4 Packs retain one exact
+predecessor at capacity time; `recent_complete_chapters` still describes material
+preparation. Missing fields retain historical protection. The renderer rejects a
+policy mismatch instead of substituting repository defaults. An omitted range remains
 retrievable through Book's original manuscript/working-history source version; use the
 existing manuscript source and memory preparation entries before changing the task.
 Native `authority-creation continue` can register a v3-to-v4 capacity successor under the

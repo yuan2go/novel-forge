@@ -4956,7 +4956,8 @@ class PostgresPlanningExecutionPreparer:
                 projection = prepare_request_capacity(original=capture, stage=stage_name, route=planning_route,
                     source_boundary=source_boundary, capacity_bindings=capacity_bindings,
                     preserve_quotes=protected_expression_quotes(capture, include_working_observations=context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4"), measure=measure, model_call=model_call, chunk_fits=chunk_fits,
-                    semantic_contract=context_policy.get("context_substage_method", "") if context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "")
+                    semantic_contract=context_policy.get("context_substage_method", "") if context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "",
+                history_exact_chapters=context_policy.get("capacity_history_exact_chapters"))
                 if projection:
                     stable_request_payload["input"]["_context_capacity_projection"] = projection
         if existing_intent is not None:

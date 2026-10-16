@@ -1867,7 +1867,8 @@
           "raw_source_document"
         ],
         "capacity_policy": "complete-request-capacity.v1",
-        "context_substage_method": "source-unit-dependency-and-final-composition.v2"
+        "context_substage_method": "source-unit-dependency-and-final-composition.v2",
+        "capacity_history_exact_chapters": 1
       }
     }
   ]

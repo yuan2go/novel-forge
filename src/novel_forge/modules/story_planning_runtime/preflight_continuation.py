@@ -108,6 +108,10 @@ def require_capacity_target(source, target):
         and new.get("context_substage_method") == ("source-unit-dependency-and-final-composition.v2" if new.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "shared-rules-and-native-context-contract.v1"))
     comparison = {**old, "policy_id": new["policy_id"], "capacity_policy": new["capacity_policy"],
                   "context_substage_method": new["context_substage_method"]} if policy_upgrade else old
+    if policy_upgrade and "capacity_history_exact_chapters" in new:
+        if new["policy_id"] != "context-policy:chapter-generation-pack:v4" or type(new["capacity_history_exact_chapters"]) is not int or new["capacity_history_exact_chapters"] < 1:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "History protection requires the frozen semantic policy")
+        comparison["capacity_history_exact_chapters"] = new["capacity_history_exact_chapters"]
     if comparison != new or type(original) is not int or type(successor) is not int or not original <= successor <= old["max_tokens"] <= 512000 or (not policy_upgrade and original == successor):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Only the bounded Planning task Context target may increase")
     return {"original_target":original,"successor_target":successor,

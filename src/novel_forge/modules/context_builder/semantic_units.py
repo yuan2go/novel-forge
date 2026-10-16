@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
+from decimal import Decimal
 import hashlib
 import json
 import re
@@ -22,6 +23,28 @@ _GAP = "\n\n[此处省略原来源片段；相邻摘录不代表连续事件，�
 
 def enabled(task):
     return task.get("semantic_contract") == SEMANTIC_CONTRACT
+
+
+def decode_json_values(text):
+    def unique(pairs):
+        value = {}
+        for key, child in pairs:
+            if key in value:
+                raise ValueError("DUPLICATE_JSON_FIELD")
+            value[key] = child
+        return value
+    def exact_float(value):
+        result = float(value)
+        if Decimal(str(result)) != Decimal(value):
+            raise ValueError("JSON_NUMERIC_VALUE_NOT_PRESERVED")
+        return result
+    def finite(value):
+        raise ValueError("JSON_NONFINITE_VALUE")
+    try:
+        return json.loads(text, object_pairs_hook=unique, parse_float=exact_float, parse_constant=finite), "JSON_VALUES_PRESERVED"
+    except (ValueError, TypeError) as error:
+        reason = str(error)
+        return None, reason if reason in {"DUPLICATE_JSON_FIELD", "JSON_NUMERIC_VALUE_NOT_PRESERVED", "JSON_NONFINITE_VALUE"} else "PLAIN_TEXT"
 
 
 def sentence_spans(text):
@@ -92,10 +115,7 @@ def join_original_fields(document, fields):
 
 def source_units(candidate, task):
     result = []
-    try:
-        document = json.loads(candidate.safe_summary)
-    except (ValueError, TypeError):
-        document = None
+    document, source_parse = decode_json_values(candidate.safe_summary)
 
     def append(text, path, *, kind, field="safe_summary", index=None, span=None, attribution=None, required=False, value=None):
         identity = f"text:{index}" if document is None and field == "safe_summary" else "field:" + narrative_hash([field, path, span, index]).split(":")[-1][:24]
@@ -138,7 +158,10 @@ def source_units(candidate, task):
         else:
             append(json.dumps(value, ensure_ascii=False), path, kind="SOURCE_FIELD", attribution=attribution, required=True, value=value)
 
-    if isinstance(document, (dict, list)):
+    if source_parse not in {"PLAIN_TEXT", "JSON_VALUES_PRESERVED"}:
+        append(candidate.safe_summary, (), kind="OPAQUE_ORIGINAL_JSON", span=[0, len(candidate.safe_summary)], required=True)
+        result[-1]["source_parse_assessment"] = source_parse
+    elif isinstance(document, (dict, list)):
         visit(document)
     else:
         paragraphs(candidate.safe_summary, (), {})
@@ -198,10 +221,7 @@ def frozen_plan_dependencies(sources, intent):
 
 
 def _text_fields(candidate, *, all_fields=False):
-    try:
-        document = json.loads(candidate.safe_summary)
-    except (ValueError, TypeError):
-        return [((), candidate.safe_summary)]
+    document, _ = decode_json_values(candidate.safe_summary)
     if not isinstance(document, (dict, list)):
         return [((), candidate.safe_summary)]
     result = []
@@ -231,10 +251,7 @@ def protect_quotes(candidates, catalogs, quotes):
         paths = {path for path, _ in narrative}
         field_groups = [narrative, *[[item] for item in _text_fields(candidate, all_fields=True) if item[0] not in paths]]
         for fields in field_groups:
-            try:
-                document = json.loads(candidate.safe_summary)
-            except (ValueError, TypeError):
-                document = None
+            document, _ = decode_json_values(candidate.safe_summary)
             text, intervals = join_original_fields(document, fields)
             normalized, coordinates = [], []
             index = 0
@@ -389,10 +406,7 @@ def protected_dependency_bindings(document, *, excluded_scopes):
                     "status": "EXACT_UNCHANGED_PROVIDER_RECORD"} for alias in sorted(aliases))
             for key, child in value.items():
                 if key == "safe_summary" and isinstance(child, str):
-                    try:
-                        parsed = json.loads(child)
-                    except ValueError:
-                        parsed = None
+                    parsed, _ = decode_json_values(child)
                     if isinstance(parsed, (dict, list)):
                         visit(parsed, (*path, key, "$decoded_json"))
                         continue
@@ -429,10 +443,7 @@ def reconstruct(candidate, units, keep):
     facts = tuple(candidate.structured_facts[unit["index"]] for unit in units if unit["field"] == "structured_facts" and unit["unit_id"] in keep)
     if set(keep) == all_ids:
         return {"safe_summary": candidate.safe_summary, "structured_facts": list(facts)}
-    try:
-        document = json.loads(candidate.safe_summary)
-    except (ValueError, TypeError):
-        document = None
+    document, _ = decode_json_values(candidate.safe_summary)
     if not isinstance(document, (dict, list)):
         text = excerpt_text(candidate.safe_summary, selected_ranges(units, keep, ()))
     else:
@@ -532,7 +543,7 @@ def merge_source_ranges(candidates):
 
 
 def source_audit(units, keep):
-    return [{key: deepcopy(unit[key]) for key in ("unit_id", "source_path", "source_span", "order", "index", "field", "kind", "attribution", "source_fields", "explicit_refs", "source_aliases", "required", "semantic_risk") if key in unit} | {"unit_hash": narrative_hash(unit["text"])} for unit in units if unit["unit_id"] in keep]
+    return [{key: deepcopy(unit[key]) for key in ("unit_id", "source_path", "source_span", "order", "index", "field", "kind", "attribution", "source_fields", "explicit_refs", "source_aliases", "required", "semantic_risk", "source_parse_assessment") if key in unit} | {"unit_hash": narrative_hash(unit["text"])} for unit in units if unit["unit_id"] in keep]
 
 
 def final_windows(units, keep, *, external_refs=()):

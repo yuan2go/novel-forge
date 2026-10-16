@@ -1205,7 +1205,8 @@ class PostgresChapterExecutionContractBinder:
             projection = prepare_request_capacity(original=provider_data, stage=stage, source_boundary=source_boundary,
                 route=route, measure=measure, model_call=context_model_call, chunk_fits=chunk_fits,
                 capacity_bindings=capacity_bindings, preserve_quotes=protected_expression_quotes(provider_data, include_working_observations=frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4"),
-                semantic_contract=frozen_context_policy_payload.get("context_substage_method", "") if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "")
+                semantic_contract=frozen_context_policy_payload.get("context_substage_method", "") if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "",
+                history_exact_chapters=frozen_context_policy_payload.get("capacity_history_exact_chapters"))
             if projection:
                 provider_inputs = {**provider_inputs, "_context_capacity_projection": projection}
                 request_payload["input"] = provider_inputs
@@ -4835,6 +4836,8 @@ def _materialize_production_codex_prompt(
     capacity_projection = inputs.get("_context_capacity_projection")
     if capacity_projection is not None:
         from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, project_capacity_passages
+        if capacity_projection.get("capacity_history_exact_chapters") != (pack_artifacts.get("context_policy", {}).get("content") or {}).get("capacity_history_exact_chapters"):
+            raise KernelError("CONTEXT_HISTORY_PROTECTION_POLICY_DRIFT", "Extract protection must match the actual frozen Context policy")
         derived_data = apply_capacity_projection(original_data, capacity_projection)
         derived_data = project_capacity_passages(original_data, derived_data, capacity_projection)
         if capacity_projection.get("semantic_contract") and capacity_projection.get("final_composition"):

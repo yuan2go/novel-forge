@@ -330,12 +330,12 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
             if stage == "draft":
                 chapter = inputs["plan"]["chapter"]
                 text = "\n\n".join(f"第{chapter}章记录第{index}次查验。" + "她停在门外，听见木轮碾过石板，仍不敢替证人确认消息。" * 3 for index in range(600))
-                if chapter == 1:
+                if chapter == 1 and not upgrade_context_effects:
                     text = gold_text + "\n\n" + text
                 from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
                 output["scene_artifacts"][0]["text"] = text + "\n\n" + output["scene_artifacts"][0]["text"]
                 output["text"] = serialize_realization(output["scene_artifacts"])
-                if chapter == 1:
+                if chapter == 1 and not upgrade_context_effects:
                     observations = []
                     for source in gold["sources"]:
                         for index, paragraph in enumerate(source["paragraphs"]):
@@ -477,8 +477,11 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
     readback = require_manuscript(DATABASE_URL, project_id=result["project_id"], book_run_id=book_run_id,
         principal=build_trusted_principal_resolver().resolve_api_principal())
     readback_text = "\n\n".join(unit["text"] for unit in readback["units"])
-    assert "钥匙已经归还，闸门仍旧未开" in readback_text
-    assert actual_prompt_qa and any(len(row["support_paragraphs"]) == sum(len(source["paragraphs"]) for source in gold["sources"]) for row in actual_prompt_qa)
+    if not upgrade_context_effects:
+        assert "钥匙已经归还，闸门仍旧未开" in readback_text
+        assert actual_prompt_qa and any(len(row["support_paragraphs"]) == sum(len(source["paragraphs"]) for source in gold["sources"]) for row in actual_prompt_qa)
+    else:
+        assert len(readback["units"]) == 4 and readback_text
     compression = [row for row in effects if row[2].get("stage") in {"context_compress", "context_fidelity"}]
     assert compression and all(row[1] == "SUCCEEDED" for row in compression)
     compression_proofs = []
@@ -515,8 +518,8 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
     if evidence_root:
         destination = Path(evidence_root) / "upstream-complete-request"
         destination.mkdir(parents=True, exist_ok=True)
-        (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_GOLD_WITH_SYNTHETIC_CAPACITY_LOAD",
-            "gold_sha256": hashlib.sha256(gold_path.read_bytes()).hexdigest(), "gold_questions_fixed_before_compression": True,
+        (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_MAIN_UNSENT_UPGRADE_WITH_SYNTHETIC_LOAD" if upgrade_context_effects else "NATIVE_CONTROLLED_GOLD_WITH_SYNTHETIC_CAPACITY_LOAD",
+            "gold_applied": not upgrade_context_effects, "gold_sha256": hashlib.sha256(gold_path.read_bytes()).hexdigest(), "gold_questions_fixed_before_compression": True,
             "actual_prompt_support": actual_prompt_qa, "semantic_comprehension": "NOT_VERIFIED",
             "result": result, "proofs": proofs, "compression_effects": compression_proofs, "upgrade": upgrade_proof}, ensure_ascii=False, indent=2))
         (destination / "native-manuscript-readback.txt.gz").write_bytes(gzip.compress(readback_text.encode(), mtime=0))

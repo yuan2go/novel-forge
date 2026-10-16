@@ -48,11 +48,12 @@ def validate_capacity_pack_pair(original: Mapping[str, Any], target: Mapping[str
             or target_ref not in methods
             or context.get("capacity_policy") != "complete-request-capacity.v1"
             or context.get("context_substage_method") != methods[target_ref]
+            or target_ref.endswith(":v4") and (type(context.get("capacity_history_exact_chapters")) is not int or context["capacity_history_exact_chapters"] < 1)
             or old["context_sources"]["policy_id"] == target_ref == "context-policy:chapter-generation-pack:v4"):
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_TARGET_REQUIRED", "Activate the same owning Pack with its explicit complete-request policy")
     normalized = deepcopy(new)
     normalized["identity"]["version"] = old["identity"]["version"]
-    for key in ("policy_id", "capacity_policy", "context_substage_method"):
+    for key in ("policy_id", "capacity_policy", "context_substage_method", "capacity_history_exact_chapters"):
         if key in old["context_sources"]:
             normalized["context_sources"][key] = old["context_sources"][key]
         else:
@@ -80,6 +81,8 @@ def validate_capacity_pack_pair(original: Mapping[str, Any], target: Mapping[str
     expected_policy = {**source_policy["content"], "policy_id": context["policy_id"],
         "capacity_policy": "complete-request-capacity.v1",
         "context_substage_method": context["context_substage_method"], "planning_task_token_budget": 512_000} if source_policy else None
+    if expected_policy is not None and target_ref.endswith(":v4"):
+        expected_policy["capacity_history_exact_chapters"] = context["capacity_history_exact_chapters"]
     if (not policy or policy["content"].get("capacity_policy") != "complete-request-capacity.v1"
             or policy["content"].get("context_substage_method") != context["context_substage_method"]
             or policy["content"].get("max_tokens") != 512_000 or policy["content"] != expected_policy):
@@ -87,6 +90,8 @@ def validate_capacity_pack_pair(original: Mapping[str, Any], target: Mapping[str
     for kind, ref, version in additions:
         expected_added = {**source_policy["content"], "policy_id": ref, "capacity_policy": "complete-request-capacity.v1",
             "context_substage_method": methods[ref], "planning_task_token_budget": 512_000}
+        if ref.endswith(":v4"):
+            expected_added["capacity_history_exact_chapters"] = context["capacity_history_exact_chapters"]
         if target_artifacts[(kind, ref, version)]["content"] != expected_added:
             raise KernelError("CHAPTER_CAPACITY_UPGRADE_PACK_DRIFT", "Each added Context artifact must retain the exact original source policy")
     if set(new["tool_permissions"].get("external_models", {}).get("context_substages") or ()) != {"context_compress", "context_fidelity"}:

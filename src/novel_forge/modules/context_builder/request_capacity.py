@@ -32,10 +32,7 @@ def validate_projection_quotes(data: dict, quotes: tuple[str, ...]) -> list[dict
                 if key == "preserve_quotes":
                     continue
                 if key == "safe_summary" and isinstance(child, str):
-                    try:
-                        parsed = json.loads(child)
-                    except ValueError:
-                        parsed = None
+                    parsed, _ = semantic_units.decode_json_values(child)
                     if isinstance(parsed, (dict, list)):
                         child = parsed
                 result[key] = source_view(child)
@@ -101,20 +98,10 @@ def recompose_capacity_context(original: dict, upgrade: Mapping[str, Any]) -> tu
 
 def expand_semantic_history(data: dict) -> dict:
     result = deepcopy(data)
-    def unique(pairs):
-        value = {}
-        for key, child in pairs:
-            if key in value:
-                raise ValueError("duplicate JSON field")
-            value[key] = child
-        return value
     def visit(value):
         if isinstance(value, dict):
             if (value.get("asset_type") or value.get("logical_context_kind")) in _HISTORY_TYPES and isinstance(value.get("safe_summary"), str):
-                try:
-                    parsed = json.loads(value["safe_summary"], object_pairs_hook=unique)
-                except (ValueError, TypeError):
-                    parsed = None
+                parsed, _ = semantic_units.decode_json_values(value["safe_summary"])
                 if isinstance(parsed, (dict, list)):
                     value["safe_summary"] = parsed
             for child in value.values():
@@ -126,14 +113,16 @@ def expand_semantic_history(data: dict) -> dict:
     return result
 
 
-def historical_expression_paths(data: Any, *, semantic: bool = False) -> dict[tuple, str]:
+def historical_expression_paths(data: Any, *, semantic: bool = False, history_exact_chapters: int | None = None) -> dict[tuple, str]:
     result = {}
 
     def visit(value, path=()):
         if isinstance(value, dict):
             if isinstance(value.get("projection_policy"), dict) and isinstance(value.get("sources"), list):
                 policy = value["projection_policy"]
-                recent = int(value.get("target_chapter") or 0) - int(policy.get("recent_complete_chapters") or 0)
+                prepared_complete = int(policy.get("recent_complete_chapters") or 0)
+                protected_complete = min(prepared_complete, history_exact_chapters) if semantic and history_exact_chapters is not None else prepared_complete
+                recent = int(value.get("target_chapter") or 0) - protected_complete
                 for index, source in enumerate(value["sources"]):
                     if int(source.get("chapter") or 0) >= recent:
                         continue
@@ -176,7 +165,10 @@ def apply_capacity_projection(data: dict, projection: Mapping[str, Any]) -> dict
     if projection.get("contract_version") != CAPACITY_POLICY or projection.get("original_hash") != narrative_hash(data):
         raise KernelError("CONTEXT_CAPACITY_SOURCE_DRIFT", "capacity derivation must match the original frozen Provider projection")
     semantic = projection.get("semantic_contract") == semantic_units.SEMANTIC_CONTRACT
-    allowed = historical_expression_paths(data, semantic=semantic)
+    exact = projection.get("capacity_history_exact_chapters")
+    if exact is not None and (not semantic or type(exact) is not int or exact < 1):
+        raise KernelError("CONTEXT_CAPACITY_SOURCE_DRIFT", "Historical expression protection is not a valid frozen semantic policy")
+    allowed = historical_expression_paths(data, semantic=semantic, history_exact_chapters=projection.get("capacity_history_exact_chapters"))
     result = deepcopy(data)
     seen = set()
     for row in projection.get("replacements") or []:
@@ -385,10 +377,13 @@ def prepare_request_capacity(
     preserve_quotes: tuple[str, ...] = (),
     capacity_bindings: dict | None = None,
     semantic_contract: str = "",
+    history_exact_chapters: int | None = None,
 ) -> dict | None:
     if semantic_contract not in {"", semantic_units.SEMANTIC_CONTRACT}:
         raise KernelError("CONTEXT_SEMANTIC_POLICY_INVALID", "Unknown frozen semantic Context method")
     semantic = bool(semantic_contract)
+    if history_exact_chapters is not None and (not semantic or type(history_exact_chapters) is not int or history_exact_chapters < 1):
+        raise KernelError("CONTEXT_HISTORY_PROTECTION_POLICY_INVALID", "History expression protection requires its frozen semantic policy")
     quote_locations = validate_projection_quotes(original, preserve_quotes) if semantic else []
     before, limit = measure(None)
     if before <= limit:
@@ -397,7 +392,7 @@ def prepare_request_capacity(
     if method not in TOKENIZER_METHODS and route.model_profile.model_provider != "scripted_provider_v2":
         raise KernelError("PROVIDER_CONTEXT_CAPACITY_UNCERTAIN", "a byte upper bound exceeds capacity; configure a matched tokenizer before lossy compression",
                           details={"upper_bound": before, "limit": limit, "actual_tokens": None})
-    paths = dict(sorted(historical_expression_paths(original, semantic=semantic).items(),
+    paths = dict(sorted(historical_expression_paths(original, semantic=semantic, history_exact_chapters=history_exact_chapters).items(),
                         key=lambda row: tuple((isinstance(part, int), part) for part in row[0])))
     if not paths:
         raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "the complete request exceeds capacity and contains no eligible historical expression",
@@ -478,6 +473,7 @@ def prepare_request_capacity(
             "preserve_quotes": eligible_quotes, "task_context": compression_task_context(original.get("input_manifest") or {}), "capacity_policy": CAPACITY_POLICY,
             **({"capacity_bindings": capacity_bindings} if capacity_bindings else {}),
             **({"semantic_contract": semantic_contract} if semantic else {}),
+            **({"capacity_history_exact_chapters": history_exact_chapters} if history_exact_chapters is not None else {}),
             **({"external_dependency_refs": sorted({row["alias"] for row in dependency_bindings})} if semantic else {}),
             "route_contract": {"provider": route.model_profile.model_provider, "model": route.model_profile.model_id,
                                "method": method, "evidence": route.token_accounting_evidence_ref,
@@ -488,6 +484,8 @@ def prepare_request_capacity(
         "source_boundary": source_boundary, "stage": stage, "compression_receipt": {}, "replacements": []}
     if semantic:
         empty_projection["semantic_contract"] = semantic_contract
+        if history_exact_chapters is not None:
+            empty_projection["capacity_history_exact_chapters"] = history_exact_chapters
     for path, text in paths.items():
         owner = empty
         for part in path[:-1]:
@@ -521,6 +519,8 @@ def prepare_request_capacity(
                       "retained_fidelity_traces": [trace for item in compressed for trace in item.compression_trace if trace not in receipt["compression_trace"]]}
         if semantic:
             projection["semantic_contract"] = semantic_contract
+            if history_exact_chapters is not None:
+                projection["capacity_history_exact_chapters"] = history_exact_chapters
         derived = deepcopy(original)
         by_id = {candidate.asset_version_id: candidate for candidate in compressed}
         selected_ranges = {item.asset_version_id: _extract_ranges(item.safe_summary, by_id[item.asset_version_id]) for item in candidates}

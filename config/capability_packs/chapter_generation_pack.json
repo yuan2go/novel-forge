@@ -1024,7 +1024,8 @@
       "reader_feedback": "optional"
     },
     "capacity_policy": "complete-request-capacity.v1",
-    "context_substage_method": "source-unit-dependency-and-final-composition.v2"
+    "context_substage_method": "source-unit-dependency-and-final-composition.v2",
+    "capacity_history_exact_chapters": 1
   },
   "tool_permissions": {
     "policy_id": "tools:chapter-generation-pack:v2",

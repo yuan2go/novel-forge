@@ -178,7 +178,7 @@ def test_capacity_fast_path_preserves_original_and_runs_no_model_but_validates_q
     assert receipt["quote_locations"]
 
 
-def semantic_preparation(data, *, limit=6000, callback=None):
+def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapters=None):
     from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, expand_semantic_history, prepare_request_capacity, project_capacity_passages
     from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
     from tests.unit.test_complete_request_capacity import route
@@ -202,7 +202,7 @@ def semantic_preparation(data, *, limit=6000, callback=None):
     projection = prepare_request_capacity(original=original, stage="draft", source_boundary=boundary,
         route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=limit), measure=measure,
         model_call=call, chunk_fits=lambda chunk: len(json.dumps(chunk, ensure_ascii=False).encode()) < 18000,
-        semantic_contract=semantic.SEMANTIC_CONTRACT)
+        semantic_contract=semantic.SEMANTIC_CONTRACT, history_exact_chapters=history_exact_chapters)
     return original, projection, calls
 
 
@@ -348,3 +348,58 @@ def test_final_global_dependency_closure_uses_original_cause_and_actual_unchange
     else:
         assert condition in final['context_bundle']['segments'][0]['safe_summary']['summary']
     assert projection['measurement']['after_reserved'] <= projection['measurement']['limit']
+
+
+def test_frozen_semantic_policy_separates_complete_preparation_from_exact_recent_expression():
+    from copy import deepcopy
+    from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, historical_expression_paths
+    import hashlib
+    paragraphs, position = [], 0
+    for i in range(12):
+        text = 'Paragraph ' + str(i) + ' ' + 'x' * 180 + '.\n\n'
+        paragraphs.append({'text': text, 'start': position, 'end': position + len(text),
+            'text_hash': 'sha256:' + hashlib.sha256(text.encode()).hexdigest()})
+        position += len(text)
+    data = {'working_manuscript': {'projection_policy': {'version': 'working-prose-projection.v6', 'recent_complete_chapters': 2},
+        'target_chapter': 3, 'sources': [{'chapter': chapter, 'asset_version_id': str(chapter), 'content_hash': 'original-' + str(chapter),
+            'source_characters': position, 'passages': deepcopy(paragraphs)} for chapter in (1, 2)]}}
+    frozen = deepcopy(data)
+    assert not historical_expression_paths(data, semantic=True)
+    original, projection, _ = semantic_preparation(data, limit=7500, history_exact_chapters=1)
+    final = apply_capacity_projection(original, projection)
+    assert data == frozen
+    assert final['working_manuscript']['projection_policy'] == frozen['working_manuscript']['projection_policy']
+    assert final['working_manuscript']['sources'][1] == frozen['working_manuscript']['sources'][1]
+    assert final['working_manuscript']['sources'][0] != frozen['working_manuscript']['sources'][0]
+    assert projection['capacity_history_exact_chapters'] == 1 and projection['measurement']['after_reserved'] <= 7500
+
+
+@pytest.mark.parametrize('raw,reason', [
+    ('{"quantity":0.123456789012345678901,"summary":"original"}', 'JSON_NUMERIC_VALUE_NOT_PRESERVED'),
+    ('{"subject":"A","subject":"B","summary":"original"}', 'DUPLICATE_JSON_FIELD'),
+    ('{"quantity":NaN,"summary":"original"}', 'JSON_NONFINITE_VALUE'),
+])
+def test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason(raw, reason):
+    from novel_forge.modules.context_builder.request_capacity import expand_semantic_history
+    data = {'asset_type': 'chapter_episodic_summary', 'safe_summary': raw}
+    assert expand_semantic_history(data) == data
+    original = candidate(raw)
+    units = semantic.source_units(original, {})
+    assert len(units) == 1 and units[0]['required']
+    assert units[0]['source_parse_assessment'] == reason
+    assert semantic.reconstruct(original, units, {units[0]['unit_id']})['safe_summary'] == raw
+    assert semantic.source_audit(units, {units[0]['unit_id']})[0]['source_parse_assessment'] == reason
+    with pytest.raises(KernelError, match='REQUIRED_UNIT_MISSING'):
+        semantic.reconstruct(original, units, set())
+
+
+def test_partial_structured_reconstruction_preserves_numeric_values_and_original_version():
+    raw = '{"quantity":0.1,"units":"尺","summary":"necessary.\\n\\noptional."}'
+    original = candidate(raw)
+    units = semantic.source_units(original, {})
+    keep = {unit['unit_id'] for unit in units if unit['required'] or unit['text'] == 'necessary.'}
+    result = semantic.reconstruct(original, units, keep)
+    parsed = json.loads(result['safe_summary'])
+    assert parsed['quantity'] == 0.1 and parsed['units'] == '尺'
+    assert 'necessary.' in parsed['summary'] and 'optional.' not in parsed['summary']
+    assert semantic.reconstruct(original, units, {unit['unit_id'] for unit in units})['safe_summary'] == raw

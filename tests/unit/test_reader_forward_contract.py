@@ -126,7 +126,7 @@ def test_reader_factory_preserves_legacy_default_and_adds_explicit_pack():
     assert legacy.workflow_ref == "book_followup_reader_outcome@1.1.0"
     assert legacy.manifest["identity"]["version"] == "1.2.0"
     assert current.workflow_ref == "book_followup_reader_outcome@1.4.0"
-    assert current.manifest["identity"]["version"] == "1.7.0"
+    assert current.manifest["identity"]["version"] == "1.8.0"
     assert (
         current.manifest["workflow_template"]["nodes"][0]["input_asset_types"][0]
         == "best_draft_candidate"
