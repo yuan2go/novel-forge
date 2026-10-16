@@ -1,5 +1,3 @@
-"""INVARIANT: ordered text slots preserve their exact text and whitespace separators."""
-
 from typing import Any, Mapping, Sequence
 
 

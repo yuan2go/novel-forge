@@ -1,5 +1,3 @@
-"""INVARIANT: process liveness never proves a Provider outcome or revokes commit rights."""
-
 import os
 from pathlib import Path
 import subprocess
