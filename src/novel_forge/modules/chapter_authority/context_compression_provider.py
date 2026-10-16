@@ -139,9 +139,7 @@ def context_headroom_output_reserve(route: Any, input_tokens: int, *, system_lim
     remaining = min(int(route.model_context_limit), system_limit or int(route.model_context_limit)) - input_tokens
     if remaining <= 0:
         raise KernelError("CONTEXT_CAPACITY_EXCEEDED", "Complete input leaves no model context for generation")
-    if system_limit is not None:
-        if int(route.model_output_limit) <= 0:
-            raise KernelError("TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "system-capped CLI headroom requires confirmed output capacity")
+    if system_limit is not None and int(route.model_output_limit) > 0:
         remaining = min(remaining, int(route.model_output_limit))
     return remaining
 

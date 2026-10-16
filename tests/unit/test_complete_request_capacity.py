@@ -227,3 +227,39 @@ def test_codex_separate_protocol_schema_is_frozen_and_included_in_capacity():
     assert receipt.total_reserved == route_input_tokens(configured, envelope.input_text, protocol_schema_json=protocol_schema) + 100
     assert ProviderRequestEnvelope.from_identity_dict(envelope.to_identity_dict(), input_text=envelope.input_text) == envelope
     assert replace(envelope, protocol_schema_json="{}").envelope_hash != envelope.envelope_hash
+
+
+def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp_path):
+    import sys
+    from novel_forge.modules.production_execution import (
+        CodexCliExecutionBackend, CodexProcessSupervisor, ExecutionRuntimeClass,
+        InMemoryExecutionRecordStore, LocalProcessExecutionPolicy, PersistentExecutionDirectory,
+        ResolvedExecutionPayload, StaticExecutionPayloadResolver,
+    )
+    from novel_forge.modules.production_execution.backends import CodexPricingSnapshot
+    from novel_forge.modules.production_execution.token_meter import route_protocol_schema
+    from tests.unit.test_execution_backend_conformance import QualifiedBackendConformanceTests
+    from tests.unit.test_production_execution_gateway import contracts
+    _, admission, request = QualifiedBackendConformanceTests._model_admission(contracts(
+        backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE))
+    directory = PersistentExecutionDirectory(tmp_path / "executions")
+    backend = CodexCliExecutionBackend(admission=admission, payload_resolver=StaticExecutionPayloadResolver({}),
+        record_store=InMemoryExecutionRecordStore(), supervisor=CodexProcessSupervisor(directory),
+        execution_policy=LocalProcessExecutionPolicy(fixed_working_directory=str(tmp_path),
+            allowed_command_prefixes=((sys.executable,),), maximum_result_bytes=1_000_000),
+        codex_executable=sys.executable, codex_home=str(tmp_path),
+        pricing=CodexPricingSnapshot("fixture", "fixture:price", "USD", "0", "0", "0"),
+        structured_result_validator=lambda *_: None)
+    selected = admission.admit(request, backend.capability_profile)
+    schema = {"type": "object", "properties": {"result": {"type": "string"}}, "required": ["result"], "additionalProperties": False}
+    configured = route(model="fixture-codex")
+    configured.model_profile.model_provider = "codex-cli"
+    frozen = route_protocol_schema(configured, schema, "fixture:v1")
+    payload = ResolvedExecutionPayload(request_payload={"protocol_schema_json": frozen}, input_text="task",
+        working_directory=str(tmp_path), timeout_seconds=60, output_schema_version="fixture:v1", output_schema=schema)
+    prepared = backend._prepare_payload(request, payload, selected)
+    schema_path = prepared.command[prepared.command.index("--output-schema") + 1]
+    from pathlib import Path
+    assert Path(schema_path).read_bytes() == frozen.encode()
+    with pytest.raises(ValueError, match="PROVIDER_PROTOCOL_SCHEMA_DRIFT"):
+        backend._prepare_payload(request, replace(payload, output_schema={**schema, "description": "changed"}), selected)

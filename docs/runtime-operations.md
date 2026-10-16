@@ -725,7 +725,7 @@ use their stage output target, bounded by confirmed model capacity and enforced
 in the sent request. OpenAI reasoning shares that output reserve; DeepSeek uses
 its supported reasoning budget semantics. Codex CLI has no enforced per-request
 output ceiling, so new task contracts reserve the full confirmed model output
-capacity, including reasoning once. Unknown CLI output capacity, insufficient
+capacity, including reasoning once. Unknown CLI output capacity without a frozen headroom policy, insufficient
 authorization or a final route whose output capacity exceeds the frozen reserve
 blocks before dispatch. CLI admission labels application-visible coverage.
 A static Planning model may inherit capacity evidence only when it uses the
