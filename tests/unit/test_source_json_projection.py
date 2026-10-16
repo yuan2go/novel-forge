@@ -197,3 +197,21 @@ def test_numeric_looking_plain_identifiers_are_not_misclassified_as_json_values(
     units = semantic_units.source_units(source, {})
     assert units[0]['kind'] == 'SOURCE_PARAGRAPH' and units[0]['text'] == text
     assert semantic_units.protect_quotes([source], {'source': units}, [text])
+
+
+@pytest.mark.parametrize('text', ['NaN is a name.', 'Infinity River', '{"subject":"A","subject":"B"} then a story.', '{"quantity":NaN} then a story.'])
+def test_json_looking_prefixes_require_complete_json_syntax_before_source_rejection(text):
+    from novel_forge.modules.context_builder.story_projection import visible_business_data
+    assert visible_business_data(text, stage='draft', preserve_json=True) == text
+    assert semantic_units.decode_json_values(text) == (None, 'PLAIN_TEXT')
+    assert projected_context(text) == text
+
+
+def test_valid_large_json_integer_is_required_original_not_optional_plain_text():
+    raw = '{"quantity":' + '7' * 5000 + ',"summary":"只有低于这个值才可开闸。"}'
+    original = ContextCandidate(asset_version_id='source', asset_type='chapter_episodic_summary', project_id='p', estimated_tokens=1, safe_summary=raw)
+    assert semantic_units.decode_json_values(raw) == (None, 'JSON_NUMERIC_VALUE_NOT_PRESERVED')
+    units = semantic_units.source_units(original, {})
+    assert len(units) == 1 and units[0]['required'] and units[0]['kind'] == 'OPAQUE_ORIGINAL_JSON'
+    assert semantic_units.protect_quotes([original], {'source': units}, ['只有低于这个值才可开闸。'])
+    assert semantic_units.reconstruct(original, units, {units[0]['unit_id']})['safe_summary'] == raw

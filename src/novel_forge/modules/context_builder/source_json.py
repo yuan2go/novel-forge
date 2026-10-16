@@ -13,18 +13,27 @@ class _Number:
 
 
 def loads(text: str) -> Any:
+    problem = None
+
     def unique(pairs):
+        nonlocal problem
         result = {}
         for key, value in pairs:
-            if key in result:
-                raise KernelError("CONTEXT_SOURCE_JSON_AMBIGUOUS", "original JSON contains duplicate fields; recover the exact source and resolve its representation before rebuilding")
+            if key in result and problem is None:
+                problem = ("CONTEXT_SOURCE_JSON_AMBIGUOUS", "original JSON contains duplicate fields; recover the exact source and resolve its representation before rebuilding")
             result[key] = value
         return result
 
     def finite(value):
-        raise KernelError("CONTEXT_SOURCE_JSON_NONFINITE", "original JSON contains a nonfinite number; recover its source instead of changing the value")
+        nonlocal problem
+        if problem is None:
+            problem = ("CONTEXT_SOURCE_JSON_NONFINITE", "original JSON contains a nonfinite number; recover its source instead of changing the value")
+        return None
 
-    return json.loads(text, object_pairs_hook=unique, parse_int=_Number, parse_float=_Number, parse_constant=finite)
+    result = json.loads(text, object_pairs_hook=unique, parse_int=_Number, parse_float=_Number, parse_constant=finite)
+    if problem is not None:
+        raise KernelError(*problem)
+    return result
 
 
 def dumps(value: Any) -> str:

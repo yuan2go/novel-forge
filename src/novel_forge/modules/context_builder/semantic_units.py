@@ -47,17 +47,17 @@ def decode_json_values(text):
     try:
         return json.loads(text, object_pairs_hook=unique, parse_float=exact_float, parse_constant=finite), "JSON_VALUES_PRESERVED"
     except (ValueError, TypeError) as error:
+        if isinstance(error, (json.JSONDecodeError, TypeError)):
+            return None, "PLAIN_TEXT"
         reason = str(error)
-        if reason in {"DUPLICATE_JSON_FIELD", "JSON_NUMERIC_VALUE_NOT_PRESERVED", "JSON_NONFINITE_VALUE"}:
-            from .source_json import loads
-            try:
-                loads(text)
-            except KernelError:
-                return None, reason
-            except (ValueError, TypeError):
-                return None, "PLAIN_TEXT"
-            return None, reason
-        return None, "PLAIN_TEXT"
+        from .source_json import loads
+        try:
+            loads(text)
+        except KernelError as invalid:
+            return None, "DUPLICATE_JSON_FIELD" if invalid.code == "CONTEXT_SOURCE_JSON_AMBIGUOUS" else "JSON_NONFINITE_VALUE"
+        except (ValueError, TypeError):
+            return None, "PLAIN_TEXT"
+        return None, reason if reason in {"DUPLICATE_JSON_FIELD", "JSON_NUMERIC_VALUE_NOT_PRESERVED", "JSON_NONFINITE_VALUE"} else "JSON_NUMERIC_VALUE_NOT_PRESERVED"
 
 
 def _located_json_document(text):
