@@ -5,7 +5,7 @@
     "name": "Chapter Generation Pack",
     "domain": "chapter_production",
     "capability_type": "production_workflow",
-    "version": "3.0.2",
+    "version": "3.1.0",
     "owner": "novel-os-core",
     "status": "CANDIDATE",
     "lifecycle": "VALIDATION",
@@ -980,7 +980,7 @@
     }
   },
   "context_sources": {
-    "policy_id": "context-policy:chapter-generation-pack:v2",
+    "policy_id": "context-policy:chapter-generation-pack:v3",
     "max_tokens": 512000,
     "source_isolation": "ABSTRACT_ASSETS_ONLY",
     "allowed_asset_types": [
@@ -1022,7 +1022,9 @@
       "canon": "required",
       "story_bible": "required",
       "reader_feedback": "optional"
-    }
+    },
+    "capacity_policy": "complete-request-capacity.v1",
+    "context_substage_method": "shared-rules-and-native-context-contract.v1"
   },
   "tool_permissions": {
     "policy_id": "tools:chapter-generation-pack:v2",

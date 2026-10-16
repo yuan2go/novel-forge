@@ -79,3 +79,30 @@ def test_unknown_dispatch_result_requires_reconciliation_without_new_generation(
             [effect_id],
         )
         assert cursor.fetchone() == (1, 1)
+
+
+@pytest.mark.parametrize("status", ["EXECUTING", "CANCELLATION_REQUESTED"])
+def test_dispatch_receipt_retains_database_owner_with_valid_fence(status):
+    from dataclasses import replace
+
+    context = _context()
+    effect = _plan(context, identifier("receipt-owner"), {"input_hash": "frozen"})
+    dispatch = prepare_effect_dispatch(DATABASE_URL, context, effect_id=effect["external_effect_id"])
+    lease = acquire_effect_dispatch(DATABASE_URL, context, dispatch_id=dispatch["dispatch_id"],
+        worker_id="owner-worker", lease_seconds=30)
+    other_id = identifier("wrong-owner")
+    with transaction() as connection, connection.cursor() as cursor:
+        definition = identifier("other-owner-definition")
+        insert_definition(cursor, definition)
+        insert_operation(cursor, operation_id=other_id, definition_name=definition,
+            project_id=context.project_id, status=status)
+    args = dict(dispatch_id=dispatch["dispatch_id"], worker_id="owner-worker",
+        fencing_token=int(lease["fencing_token"]), outcome="success", evidence={"result": "retained"})
+    with pytest.raises(KernelError, match="EFFECT_OPERATION_MISMATCH"):
+        submit_effect_dispatch_result(DATABASE_URL, replace(context, operation_id=other_id), **args)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s", [effect["external_effect_id"]])
+        assert cursor.fetchone() == ("DISPATCHING",)
+        cursor.execute("SELECT count(*) FROM authority_external_receipt WHERE dispatch_id=%s", [dispatch["dispatch_id"]])
+        assert cursor.fetchone() == (0,)
+    submit_effect_dispatch_result(DATABASE_URL, context, **args)

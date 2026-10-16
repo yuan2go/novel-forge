@@ -1317,7 +1317,8 @@ and accepted boundary, select relevant inputs with bounded auxiliary history, cl
 explicit dependencies, deduplicate, and compare that workset with the task target.
 A fitting workset follows a deterministic path without semantic calls. Overflow may
 use host-bound extractive semantic compression of original historical projections.
-Complete paragraphs and causal/state units remain whole. The host binds source
+Causal/state units remain whole; oversized historical paragraphs can be split at
+verified source coordinates without changing protected quotations. The host binds source
 version/hash, unit positions, task and policy; the compressor selects units rather
 than inventing prose facts or computing source offsets. Exact drafts, Review/Revision
 objects, required facts and preserved voice quotes remain intact. A separate bounded
@@ -1331,10 +1332,32 @@ targets, historical character allocations and byte upper bounds are not evidence
 that the complete request exceeds that capacity. Ordinary writing has no additional
 cumulative token/call or local generation time veto. Paid spend authorization,
 physical interface limits, cancellation and execution identity still apply.
-At this implementation baseline, complete-request overflow recovery across model
-entries, capacity-derived history allocation and resumable compression beyond the
-old chunk allowance remain pending implementation. Existing material-stage
-compression alone does not establish that end-to-end capability.
+New Chapter Pack `3.1.0` and current Planning profiles freeze
+`context-policy:chapter-generation-pack:v3` and `complete-request-capacity.v1`.
+The Context owner retains relevance, deduplication and source eligibility while
+deferring capacity eviction to the fully rendered request. Book's
+`working-prose-projection.v6` retains the selected historical passages without the
+legacy 24,000-character allocation; source identity and lossless history references
+remain separate from delivered expression. Older frozen policies retain their limits.
+
+Chapter's binder and Planning's preparer coordinate capacity within their existing
+Owners before planning the main Effect. Eligible older historical expression is
+extracted from the original frozen projection, independently checked, restored as
+needed, rebuilt and measured again. Current prose, facts, recent complete chapters
+and source boundaries remain exact. Compressor chunks are sized against both fully
+rendered substage requests and have no eight-chunk lifetime limit. Oversized text
+uses original Unicode coordinates and preserves quoted spans. Verified restoration
+can reallocate other compressible history. Each completed chunk retains its original
+ExternalEffect; retry reuses matching source, task, Pack and route bindings.
+
+The preparation Router selects an authorized physical route without rejecting the
+uncompressed input first. Its final decision narrows to that prepared candidate and
+rechecks authorization, cost and capacity. Compression and fidelity each bind their
+own selected route and meter. A changed binding requires a versioned native request;
+it cannot silently change an already executed chunk's identity. Native scripted
+Chapter tests establish executable engineering control flow and saved Draft readback.
+Real Provider 512K capacity, upstream overflow execution, literary fidelity and
+long-form stability require their own evidence and are not implied by these tests.
 
 Compression and fidelity calls use existing Chapter Provider Runtime, Pack/PEP,
 Kernel ExternalEffect, cost reservation, Lease/Fence and durable result reconciliation.
@@ -1362,7 +1385,7 @@ Persistent Actor intentions use `world-actor-experiment.v2` and
 complete World role projection at up to 24,000 estimated tokens; v1/v2 retain their
 16,000-token ceiling. This is a versioned configuration policy, not a change to the
 number of actors, simulation rounds, actions, or accepted facts. The normal Pack,
-Router and cumulative native budget gates still apply, and qualification must cover
+Router, paid spending authorization and physical request gates still apply, and qualification must cover
 the frozen input policy actually used.
 
 The canonical consumer chain is:

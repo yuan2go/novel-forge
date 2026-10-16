@@ -908,6 +908,10 @@ class CostAwareRouter:
                 observations.get(candidate.candidate_id, ()), now=now, policy=policy, input_tokens=task.input_tokens
             )
             reasons: list[str] = []
+            capacity_binding = task.declared_requirements.get("capacity_route_binding")
+            if capacity_binding and capacity_binding.get("candidate") != {key: asdict(candidate)[key] for key in
+                    ("candidate_id", "provider", "model", "model_revision", "reasoning", "context_limit", "output_limit")}:
+                reasons.append("REQUEST_CAPACITY_ROUTE_BOUND")
             provider_scope = task.declared_requirements.get("provider_task_scope")
             if provider_scope is not None and task.task_type not in provider_scope.get(candidate.provider, ()):
                 reasons.append("PROVIDER_TASK_NOT_AUTHORIZED")
@@ -931,7 +935,7 @@ class CostAwareRouter:
             if not set(task.required_capabilities).issubset(candidate.capabilities):
                 reasons.append("CAPABILITY_UNSUPPORTED")
             if (
-                task.input_tokens + task.output_tokens > candidate.context_limit
+                (not task.declared_requirements.get("capacity_preparation") and task.input_tokens + task.output_tokens > candidate.context_limit)
                 or task.output_tokens > candidate.output_limit
             ):
                 reasons.append("CONTEXT_CAPACITY_EXCEEDED")
@@ -1067,6 +1071,9 @@ class CostAwareRouter:
             if soft_pressure:
                 effective += worst_case - Decimal(task.soft_money_limit)
             diagnostics = []
+            if task.declared_requirements.get("capacity_preparation") and "BUDGET_HARD_LIMIT" in reasons and remaining_money > 0:
+                diagnostics.append("BUDGET_HARD_LIMIT")
+                reasons.remove("BUDGET_HARD_LIMIT")
             if task.declared_requirements.get("pure_generation"):
                 diagnostic_rules = {
                     "CHAIN_ATTEMPTS_EXHAUSTED", "RECONCILIATION_OR_POLICY_RESOLUTION_REQUIRED",
@@ -1075,7 +1082,7 @@ class CostAwareRouter:
                     "ROUTE_RETRY_LIMIT_REACHED", "LATENCY_SLA_UNPROVEN",
                     "QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT",
                 }
-                diagnostics = [reason for reason in reasons if reason in diagnostic_rules]
+                diagnostics.extend(reason for reason in reasons if reason in diagnostic_rules)
                 reasons = [reason for reason in reasons if reason not in diagnostic_rules]
                 if price.accounting_basis == "ACCOUNT_ENTITLEMENT" and "PRICING_NOT_EFFECTIVE" in reasons:
                     diagnostics.append("PRICING_NOT_EFFECTIVE")

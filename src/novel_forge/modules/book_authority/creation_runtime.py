@@ -1082,8 +1082,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 raise ValueError("AUTHOR_WORKFLOW_INVALID")
             profile_content["author_workflow"] = dict(AUTHOR_WORKFLOW)
         profile_content.setdefault("chapter_context_policy", {"version": "book-chapter-context.v1",
-            "draft_profile": "draft-context-profile-v4", "draft_token_budget": max(windows), "quality_token_budget": max(windows)})
-        profile_content.setdefault("world_production_policy", {"version": "world-production-policy.v4",
+            "draft_profile": "draft-context-profile-v4", "draft_token_budget": min(512000, max(windows)), "quality_token_budget": min(512000, max(windows))})
+        profile_content.setdefault("world_production_policy", {"version": "world-production-policy.v5",
             "max_provider_stages": 2, "context_token_budget": min(512000, max(windows))})
         profiles["profiles"]["production_profile"]["content"].update(
             target_chapter_count=inputs["target_chapters"], language_contract=inputs["language_contract"])

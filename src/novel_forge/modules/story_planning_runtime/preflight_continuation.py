@@ -95,16 +95,24 @@ def require_capacity_source(uow, *, source_operation_id, project_id, frozen, ver
 def require_capacity_target(source, target):
     old = json.loads(source["snapshot"]["context_policy_payload_json"])
     new = json.loads(target["pack_snapshot"]["context_policy_payload_json"])
-    if (source.get("preflight_failure") or {}).get("contract_version") in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"}:
+    if (source.get("preflight_failure") or {}).get("contract_version") in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"} and new.get("capacity_policy") != "complete-request-capacity.v1":
         if old != new:
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT","Routing recovery retains the exact Context policy")
         return {"context_policy":"UNCHANGED","recovery_kind":"NATIVE_BOUNDED_REPAIR_ROUTE","book_usage_budget":False}
     original = old.pop("planning_task_token_budget", source.get("original_context_target"))
     successor = new.pop("planning_task_token_budget",None)
-    if old != new or type(original) is not int or type(successor) is not int or not original < successor <= old["max_tokens"] <= 512000:
+    policy_upgrade = (old.get("policy_id") == "context-policy:chapter-generation-pack:v2"
+        and new.get("policy_id") == "context-policy:chapter-generation-pack:v3"
+        and new.get("capacity_policy") == "complete-request-capacity.v1"
+        and new.get("context_substage_method") == "shared-rules-and-native-context-contract.v1"
+        and "capacity_policy" not in old and "context_substage_method" not in old)
+    comparison = {**old, "policy_id": new["policy_id"], "capacity_policy": new["capacity_policy"],
+                  "context_substage_method": new["context_substage_method"]} if policy_upgrade else old
+    if comparison != new or type(original) is not int or type(successor) is not int or not original <= successor <= old["max_tokens"] <= 512000 or (not policy_upgrade and original == successor):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Only the bounded Planning task Context target may increase")
     return {"original_target":original,"successor_target":successor,
         "system_ceiling":old["max_tokens"],"unchanged_context_policy_hash":canonical_hash(old),
+        **({"capacity_policy_upgrade": "complete-request-capacity.v1"} if policy_upgrade else {}),
         "book_usage_budget":False}
 
 

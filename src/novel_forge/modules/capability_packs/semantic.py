@@ -382,6 +382,10 @@ def validate_capability_pack_semantics(
             ),
         }
         target = manifest.context_sources.planning_task_token_budget
+        for field in ("capacity_policy", "context_substage_method"):
+            value = getattr(manifest.context_sources, field)
+            if value:
+                context_expectations[field] = value
         if target is not None:
             if type(target) is not int or type(manifest.context_sources.max_tokens) is not int or not 0 < target <= min(512000, manifest.context_sources.max_tokens):
                 issues.error("CAPABILITY_PACK_CONTEXT_TARGET_INVALID", "$.context_sources.planning_task_token_budget", "Planning Context target must be bounded by the system ceiling")

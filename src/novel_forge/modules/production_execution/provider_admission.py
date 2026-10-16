@@ -5,6 +5,8 @@ import hashlib
 import json
 from typing import Any, Mapping
 
+from .token_meter import SYSTEM_CONTEXT_LIMIT, TOKENIZER_METHODS, count_text, measure_input
+
 
 PROVIDER_ADMISSION_CONTRACT_VERSION = "provider-token-admission-v1"
 SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT = (
@@ -282,6 +284,7 @@ class TokenAccountingContract:
             "provider-token-accounting-v1",
             "provider-token-accounting-v2",
             "provider-token-accounting-v3",
+            "provider-token-accounting-v4",
         }:
             raise ValueError("TokenAccountingContract version is unsupported")
         if (
@@ -290,7 +293,7 @@ class TokenAccountingContract:
         ):
             object.__setattr__(self, "execution_token_limit", self.model_context_limit)
         if (
-            self.contract_version in {"provider-token-accounting-v2", "provider-token-accounting-v3"}
+            self.contract_version in {"provider-token-accounting-v2", "provider-token-accounting-v3", "provider-token-accounting-v4"}
             and self.execution_token_limit <= 0
         ):
             raise ValueError(
@@ -364,9 +367,11 @@ class ProviderAdmissionReceipt:
     input_component_hashes: Mapping[str, str] = field(default_factory=dict)
     complete_request_coverage: tuple[str, ...] = ()
     contract_version: str = PROVIDER_ADMISSION_CONTRACT_VERSION
+    measurement: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            **({"measurement": dict(self.measurement)} if self.measurement else {}),
             "contract_version": self.contract_version,
             "status": self.status,
             "reason": self.reason,
@@ -385,6 +390,7 @@ class ProviderAdmissionReceipt:
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "ProviderAdmissionReceipt":
         return cls(
+            measurement=dict(payload.get("measurement") or {}),
             status=str(payload.get("status") or ""),
             reason=str(payload.get("reason") or ""),
             precision=str(payload.get("precision") or ""),
@@ -426,12 +432,18 @@ def build_route_token_accounting_contract(
     safety_margin: int,
     framing_overhead: int,
     serialization_contract: str = "",
+    contract_version: str = "provider-token-accounting-v3",
 ) -> TokenAccountingContract:
-    if provider == "scripted_provider_v2" and not accounting_method:
+    if accounting_method in TOKENIZER_METHODS and provider in {"openai", "deepseek", "codex-cli"} and accounting_evidence_ref and model_context_limit > 0:
+        method = accounting_method
+        precision = "APPLICATION_VISIBLE_ESTIMATE" if provider == "codex-cli" else "TOKENIZER_ESTIMATE"
+        evidence_ref = accounting_evidence_ref
+        context_limit = model_context_limit
+    elif provider == "scripted_provider_v2" and not accounting_method:
         method = "SCRIPTED_UTF8_BYTES_EXACT_V1"
         precision = "EXACT"
         evidence_ref = "fixture-protocol:scripted-byte-meter:v1"
-        context_limit = model_context_limit or _SCRIPTED_PROVIDER_CONTEXT_BYTES
+        context_limit = model_context_limit or (512_000 if contract_version == "provider-token-accounting-v4" else _SCRIPTED_PROVIDER_CONTEXT_BYTES)
     elif (
         (
             (
@@ -491,6 +503,7 @@ def build_route_token_accounting_contract(
         output_reserve=output_reserve,
         safety_margin=safety_margin,
         framing_overhead=framing_overhead,
+        contract_version=contract_version,
     )
 
 
@@ -501,6 +514,9 @@ def provider_request_token_components(
     safety_margin: int,
     framing_overhead: int,
     output_schema_json: str = "",
+    accounting_method: str = "",
+    model: str = "",
+    accounting_evidence_ref: str = "",
 ) -> dict[str, int]:
     if (
         any(
@@ -511,15 +527,15 @@ def provider_request_token_components(
     ):
         raise ValueError("PROVIDER_TOKEN_COMPONENT_LIMIT_INVALID")
     return {
-        "provider_input": len(input_text.encode("utf-8")),
+        "provider_input": count_text(input_text, method=accounting_method, model=model, evidence_ref=accounting_evidence_ref),
         **(
             {
-                "structured_output_transport": len(
+                "structured_output_transport": count_text(
                     _canonical(
                         {
                             "tools": deepseek_strict_tools(output_schema_json),
                         }
-                    ).encode("utf-8")
+                    ), method=accounting_method, model=model, evidence_ref=accounting_evidence_ref,
                 )
             }
             if output_schema_json
@@ -545,7 +561,9 @@ def prepare_provider_admission(
         else "ADMITTED"
     )
     status = "ADMITTED"
-    supported = _SUPPORTED_METHODS.get(contract.accounting_method)
+    current = contract.contract_version == "provider-token-accounting-v4"
+    tokenizer = current and contract.accounting_method in TOKENIZER_METHODS
+    supported = (contract.provider, "APPLICATION_VISIBLE_ESTIMATE" if contract.provider == "codex-cli" else "TOKENIZER_ESTIMATE") if tokenizer else _SUPPORTED_METHODS.get(contract.accounting_method)
     coverage = frozenset(complete_request_coverage)
     if (
         contract.provider != envelope.provider
@@ -560,11 +578,13 @@ def prepare_provider_admission(
         "EXACT",
         "PROVEN_UPPER_BOUND",
         "APPLICATION_VISIBLE_UPPER_BOUND",
+        "APPLICATION_VISIBLE_ESTIMATE",
+        "TOKENIZER_ESTIMATE",
     }:
         status, reason = "REJECTED", "TOKEN_ACCOUNTING_UNPROVEN"
     elif envelope.max_output_tokens != contract.output_reserve:
         status, reason = "REJECTED", "OUTPUT_RESERVE_MISMATCH"
-    elif contract.contract_version in {"provider-token-accounting-v2", "provider-token-accounting-v3"} and (
+    elif contract.contract_version in {"provider-token-accounting-v2", "provider-token-accounting-v3", "provider-token-accounting-v4"} and (
         not _REQUIRED_COMPLETE_COVERAGE.issubset(coverage)
         or not coverage.intersection({"context_bundle", "source_analysis_input"})
     ):
@@ -575,13 +595,16 @@ def prepare_provider_admission(
         output_schema_json=envelope.output_schema_json,
         safety_margin=contract.safety_margin,
         framing_overhead=contract.framing_overhead,
+        accounting_method=contract.accounting_method if current else "",
+        model=contract.model,
+        accounting_evidence_ref=contract.evidence_ref,
     )
     total = sum(components.values())
-    applicable_limit = contract.model_context_limit
+    applicable_limit = min(SYSTEM_CONTEXT_LIMIT, contract.model_context_limit, contract.execution_token_limit) if current else contract.model_context_limit
     if status == "ADMITTED" and total > applicable_limit:
         status, reason = (
             "REJECTED",
-            "PROVIDER_CONTEXT_LIMIT_EXCEEDED",
+            "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN" if current and "UPPER_BOUND" in contract.accounting_method else "PROVIDER_CONTEXT_LIMIT_EXCEEDED",
         )
     return ProviderAdmissionReceipt(
         status=status,
@@ -596,6 +619,10 @@ def prepare_provider_admission(
         context_bundle_status=("VALID" if context_bundle_tokens >= 0 else "INVALID"),
         input_component_hashes=dict(input_component_hashes or {}),
         complete_request_coverage=tuple(complete_request_coverage),
+        measurement={**measure_input(envelope.input_text, method=contract.accounting_method,
+                     model=contract.model, evidence_ref=contract.evidence_ref),
+                     "protocol_framing_tokens_estimate": contract.framing_overhead,
+                     "system_context_limit": SYSTEM_CONTEXT_LIMIT} if current else {},
     )
 
 

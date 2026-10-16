@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -426,8 +426,34 @@ class ExternalEffectChapterModelPort:
             from .receipt_recovery import consume_completed_generation_result
             retained = consume_completed_generation_result(request, stage=stage, payload=payload)
             if retained is not None:
+                from novel_forge.modules.production_execution.postgres import PostgresAttemptFenceVerifier
+                from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+                try:
+                    PostgresAttemptFenceVerifier(self.database_url).assert_recovery_current(request.operation_id,
+                        request.attempt_id, request.fencing_token, request.worker_id or self.worker_id)
+                except ValueError as error:
+                    raise KernelError("MODEL_EFFECT_EXECUTION_IDENTITY_INVALID", "Receipt consumption requires the current native Attempt lease") from error
+                probe_operation_execution(self.database_url, operation_id=request.operation_id, project_id=request.project_id)
                 if pre_send_assertion is not None:
                     pre_send_assertion()
+                reuse = dict((retained.execution_evidence or {}).get("completed_attempt_reuse") or {})
+                pending = reuse.get("pending_settlement")
+                if pending:
+                    amount, tokens, basis = _model_budget_settlement(retained,
+                        reserved_amount=pending["budget_reserved_amount"], reserved_tokens=pending["budget_estimated_tokens"],
+                        frozen_capability_profile=pending["provider_capability_profile"])
+                    settle_provider_budget(self.database_url, reservation_id=pending["budget_reservation_id"],
+                        project_id=request.project_id, actual_amount=amount, actual_tokens=tokens, evidence={**basis, "retained_success": True})
+                    reuse.pop("pending_settlement")
+                    retained = replace(retained, execution_evidence={**retained.execution_evidence,
+                        "completed_attempt_reuse": {**reuse, "accounting_status": "SETTLED"}})
+                if reuse.get("source_attempt_id"):
+                    original_request = replace(request, attempt_id=reuse["source_attempt_id"])
+                    original_result = replace(retained, execution_evidence={key: value for key, value in (retained.execution_evidence or {}).items() if key != "completed_attempt_reuse"})
+                    self._record_model_call(original_request, stage, original_result,
+                        _model_log_ref(request.operation_id, original_request.attempt_id, stage, reuse["source_effect_id"]),
+                        external_effect_id=reuse["source_effect_id"])
+                    self._ensure_cost_evidence(original_request, stage, original_result, external_effect_id=reuse["source_effect_id"])
                 return retained
         context = EffectCommandContext(
             operation_id=request.operation_id,
@@ -673,6 +699,9 @@ class ExternalEffectChapterModelPort:
                 for key, value in frozen_payload.items()
                 if key != "_production_execution"
             }
+            projection = dict(frozen_payload.get("input") or {}).get("_context_capacity_projection")
+            if projection is not None and "_context_capacity_projection" not in dict(expected_outer.get("input") or {}):
+                expected_outer["input"] = {**expected_outer["input"], "_context_capacity_projection": projection}
             frozen_metadata = frozen_payload.get("_production_execution")
             if (
                 json.dumps(
@@ -719,11 +748,26 @@ class ExternalEffectChapterModelPort:
                     "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",
                     "Chapter contract binder cannot freeze Capability before effect",
                 )
+            def require_context_execution():
+                from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+                probe_operation_execution(self.database_url, operation_id=request.operation_id, project_id=request.project_id)
+                if pre_send_assertion is not None:
+                    pre_send_assertion()
+
+            def context_model_call(substage, task):
+                require_context_execution()
+                nested = replace(request, command={**request.command,
+                    "_effect_instance": hashlib.sha256(json.dumps({"stage": substage, "task": task}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()})
+                result = self.invoke(nested, stage=substage, payload={"context_compression_task": task},
+                                     pre_send_assertion=require_context_execution)
+                return {**result.output, "_execution_evidence": dict(result.execution_evidence or {})}
+
             preflight = freeze_capability(
                 capability=f"model.{stage}",
                 request_payload=effect_request_payload,
                 snapshot_fencing_token=request.fencing_token,
                 snapshot_worker_id=request.worker_id or self.worker_id,
+                **({"context_model_call": context_model_call} if getattr(binder, "supports_request_capacity", False) else {}),
             )
             if provider_admission_required and (
                 preflight is None or preflight.provider_admission_artifact is None

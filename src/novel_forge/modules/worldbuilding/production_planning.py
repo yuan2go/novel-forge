@@ -72,7 +72,7 @@ class WorldProductionPolicy:
             (
                 self.context_token_budget,
                 512000
-                if self.version == "world-production-policy.v4"
+                if self.version in {"world-production-policy.v4", "world-production-policy.v5"}
                 else 24000
                 if self.version == "world-production-policy.v3"
                 else 16000,
@@ -86,6 +86,7 @@ class WorldProductionPolicy:
                 "world-production-policy.v2",
                 "world-production-policy.v3",
                 "world-production-policy.v4",
+                "world-production-policy.v5",
             }
             or (
                 self.version == "world-production-policy.v1"
@@ -100,7 +101,7 @@ class WorldProductionPolicy:
                 )
             )
             or (
-                self.version == "world-production-policy.v4"
+                self.version in {"world-production-policy.v4", "world-production-policy.v5"}
                 and (
                     type(self.max_provider_stages) is not int
                     or not 2 <= self.max_provider_stages <= 5

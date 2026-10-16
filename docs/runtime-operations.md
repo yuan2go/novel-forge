@@ -705,14 +705,14 @@ recovery results; global backend qualification and literary proof remain separat
 For future Chapter work, author `book-chapter-context.v1` with
 `draft_profile: draft-context-profile-v4`, a positive `draft_token_budget` at most
 512,000, and the desired quality task budget. World/Director roles may use
-`world-production-policy.v4` with independently chosen Context allocation. The v4
+`world-production-policy.v5`; its role selection is followed by full request admission. The v4
 Context profile was introduced in Chapter Generation Pack `2.7.0`; new work must
 deploy and select the current `config/capability_packs/chapter_generation_pack.json`
-(candidate Pack `3.0.2`, Chapter workflow `3.10.0`) through the existing Pack Authority;
+(candidate Pack `3.1.0`, Chapter workflow `3.10.0`) through the existing Pack Authority;
 then verify its compiled snapshot and the Chapter preparation report's
-`stage_context_profile_versions.draft`. Its frozen Context policy explicitly sets
-the Planning task target to 64,000 tokens; this does not increase the authorized
-Provider token or money ledger. Changing process defaults does not update
+`stage_context_profile_versions.draft`. Its v3 Context policy defers lossy capacity decisions until the full request is
+rendered and sets the Planning support target to 512,000 tokens. This does not
+grant paid spending authorization or change the selected model's physical capacity. Changing process defaults does not update
 an old Book, Pack, preparation report or sent request. Old frozen contracts recover
 with their original hashes and semantics.
 
@@ -738,13 +738,41 @@ ExternalEffect ledger. Membership token/call observations do not impose cumulati
 writing limits; paid spend authorization remains binding. Compression does not
 silently change models or grant a paid spending authorization.
 
-The current author requirement is to assemble and meter the complete request before
-capacity-driven lossy compression, rebuild after fidelity restoration, then freeze
-the actual admitted input. The 64,000-token Planning target and 24,000-character
-working-history allocation below describe frozen legacy policies, not physical
-model limits. Their replacement for new ordinary work and complete-request overflow
-recovery are pending implementation at this baseline. Preserve old requests and
-receipts; changing a default is not an upgrade of a frozen task.
+New `complete-request-capacity.v1` requests render and meter the full Prompt, System,
+Skill, materials and output schema before capacity-driven extraction. DeepSeek strict
+tool transport is counted in addition to the visible schema once. Protocol framing,
+safety, output and reasoning reservations are recorded separately. After independent
+fidelity checking and necessary restoration, the owner renders again and freezes the
+derived request actually dispatched. A fitting full request makes no compression call.
+Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
+new ordinary creation uses v3 Context and v6 working prose. Relevant history selection
+is still bounded by its Book/task policy, independently of physical capacity.
+
+Use `MODEL_TOKENIZER_V1` only for an exact model supported by the installed tiktoken
+mapping; preinstall its official hash-checked cache at `TIKTOKEN_CACHE_DIR` on every
+worker. Use `PINNED_TOKENIZER_JSON_V1` with evidence
+`tokenizer-json:<sha256>:<absolute-path>` for an independently verified matching
+model tokenizer (including DeepSeek). Install the `provider-tokenization` extra for
+standalone deployments; `industrial` and `test` include these dependencies. Tokenizer
+files are local immutable dependencies, never downloaded in a business transaction.
+The meter records UTF-8 bytes, tokenized text and estimated framing separately; only
+Provider receipts establish actual usage. Codex CLI coverage is application-visible.
+An overflowing byte upper bound reports `PROVIDER_CONTEXT_CAPACITY_UNCERTAIN`; supply
+a matched tokenizer rather than treating bytes as proven token overflow. Official
+references: [OpenAI token counting](https://developers.openai.com/api/docs/guides/token-counting)
+and [DeepSeek tokenizer](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/).
+
+Inspect `_context_capacity_projection` in the main Effect input, its original/result
+hashes, source ranges, restored/retained fidelity traces and complete measurement.
+Compression tasks retain all stage bindings in `task.capacity_bindings`; retry must
+reuse those exact model, reasoning, tokenizer, window and output policies. Successful
+chunks and original accounting survive worker restart. An unresolved earlier Effect
+requires native reconciliation before another identical call; the presence of a
+compression Effect is never zero-send evidence. Cancellation is rechecked between
+calls and before committing the Draft. Old frozen requests remain immutable; use the
+existing Planning runtime-continuation preflight for the explicitly validated v2→v3
+Pack upgrade, retaining unchanged workflow, Skills, schemas, account and route policy.
+A different creative contract or unresolved outcome cannot borrow that upgrade.
 
 A derived World Context uses its own frozen World policy for the selection budget
 and accounting method. A newer base Planning Pack does not reinterpret the legacy

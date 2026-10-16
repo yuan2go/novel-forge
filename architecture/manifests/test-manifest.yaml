@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "complete-request-capacity",
+      "patterns": [
+        "tests/unit/test_complete_request_capacity.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "production-execution",
+      "capability": "complete-request-capacity",
+      "production_target": "src/novel_forge/modules/context_builder/request_capacity.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
       "id": "craft-working-continuation-v2",
       "patterns": [
         "tests/unit/test_working_craft_continuation.py"

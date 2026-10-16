@@ -103,7 +103,11 @@ def build_story_planning_pack_profile(
     if event_first_planning and not intent_boundary:
         raise ValueError("Event-first methods require the current narrative intent contract")
     operation_ref = f"story_planning.generate@{version}"
-    root, manifest, artifacts = _base(repository_root, pack_id)
+    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=version == "1.21.0")
+    if version == "1.21.0":
+        manifest["context_sources"].update(policy_id="context-policy:chapter-generation-pack:v3",
+            planning_task_token_budget=512_000, capacity_policy="complete-request-capacity.v1",
+            context_substage_method="shared-rules-and-native-context-contract.v1")
     if version != "1.21.0":
         artifacts = [item for item in artifacts if not (
             item["kind"] == ArtifactKind.SKILL.value and item["ref"] == "quality-review"
@@ -159,7 +163,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.15.0" if event_first_planning else "2.14.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
+        version="2.17.0" if event_first_planning else "2.16.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -190,6 +194,8 @@ def build_story_planning_pack_profile(
             "allowed_operations": [item[0] for item in capabilities],
         }
     ]
+    if version == "1.21.0":
+        manifest["tool_permissions"].setdefault("external_models", {})["context_substages"] = ["context_compress", "context_fidelity"]
     manifest["evaluation"]["required_gates"] = [
         {
             "gate_id": "planning_source_isolation",
@@ -265,9 +271,9 @@ def build_reader_outcome_pack_profile(
     from novel_forge.modules.book_followup_authority.contracts import READER_OUTCOME_DEFINITION_VERSION
 
     version = READER_OUTCOME_DEFINITION_VERSION if coordinated_contract else BOOK_FOLLOWUP_DEFINITION_VERSION
-    root, manifest, artifacts = _base(repository_root, pack_id)
+    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=coordinated_contract)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.6.0" if coordinated_contract else "1.2.0"
+    manifest["identity"]["version"] = "1.7.0" if coordinated_contract else "1.2.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -382,9 +388,9 @@ def build_longform_prose_review_pack_profile(
     pack_id: str = "longform_prose_review_pack",
     literal_citations: bool = True,
 ) -> LongformCapabilityPackProfile:
-    root, manifest, artifacts = _base(repository_root, pack_id)
+    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=literal_citations)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.5.0" if literal_citations else "1.4.0"
+    manifest["identity"]["version"] = "1.6.0" if literal_citations else "1.4.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -524,7 +530,7 @@ def build_narrative_evaluation_pack_profile(
     pack_id: str = "narrative_semantic_evaluation_pack",
 ) -> LongformCapabilityPackProfile:
 
-    root, manifest, artifacts = _base(repository_root, pack_id)
+    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=True)
     _require_hash(operation_definition_hash)
     template = next(
         item
@@ -558,7 +564,7 @@ def build_narrative_evaluation_pack_profile(
         timeout_policy_ref="timeout:quality-intrinsic-judge:v1",
     )
     manifest["identity"].update(
-        version="2.27.0",
+        version="2.28.0",
         name="Narrative Semantic Evaluation Pack",
         domain="story_design",
         description=(
@@ -632,14 +638,21 @@ def build_narrative_evaluation_pack_profile(
 
 
 def _base(
-    repository_root: str | Path, pack_id: str
+    repository_root: str | Path, pack_id: str, *, complete_request_capacity: bool = False
 ) -> tuple[Path, dict[str, Any], list[dict[str, Any]]]:
     root = Path(repository_root).resolve()
     manifest = json.loads((root / _BASE_PACK).read_text(encoding="utf-8"))
     manifest["identity"]["pack_id"] = pack_id
+    if not complete_request_capacity:
+        manifest["context_sources"]["policy_id"] = "context-policy:chapter-generation-pack:v2"
+        manifest["context_sources"].pop("planning_task_token_budget", None)
+        manifest["context_sources"].pop("capacity_policy", None)
+        manifest["context_sources"].pop("context_substage_method", None)
     artifacts = [
         item.to_dict() for item in default_chapter_artifact_resolver(root, include_current_contracts=False).artifacts()
     ]
+    if not complete_request_capacity:
+        artifacts = [item for item in artifacts if item["ref"] != "context-policy:chapter-generation-pack:v3"]
     return root, manifest, artifacts
 
 

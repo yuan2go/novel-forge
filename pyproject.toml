@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = ["pydantic>=2.13.5,<3"]
 
 [project.optional-dependencies]
+provider-tokenization = ["tiktoken==0.12.0", "tokenizers==0.22.1"]
 api = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
@@ -22,6 +23,8 @@ provider-openai = [
     "openai>=1.99.0,<2",
 ]
 test = [
+    "tiktoken==0.12.0",
+    "tokenizers==0.22.1",
     "fastapi>=0.115",
     "httpx>=0.28,<1",
     "httpx2>=0.1",
@@ -45,6 +48,8 @@ ingestion = [
     "pyarrow>=18,<26",
 ]
 industrial = [
+    "tiktoken==0.12.0",
+    "tokenizers==0.22.1",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "psycopg[binary]>=3.2",

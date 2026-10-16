@@ -478,8 +478,10 @@ def build_production_execution_composition(
         templates["NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(context_limit)
         templates.setdefault("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", str(output_limit))
-        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = accounting_method
-        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = accounting_evidence
+        configured_method = str(values.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD") or "")
+        from novel_forge.modules.production_execution.token_meter import TOKENIZER_METHODS
+        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = configured_method if configured_method in TOKENIZER_METHODS else accounting_method
+        templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = str(values.get("NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF") or "") if configured_method in TOKENIZER_METHODS else accounting_evidence
         values = templates
     registry = provider_registry or build_provider_adapter_registry(
         environment=runtime_environment,

@@ -843,6 +843,8 @@ class PostgresBookProductionSupervisor:
             )
             context_policy = chapter_context_policy(profile.content)
         report = dict(prepared.preparation_report)
+        if book is not None and profile.content.get("context_capacity_policy") == "complete-request-capacity.v1":
+            report["context_capacity_policy"] = profile.content["context_capacity_policy"]
         stage_budgets = dict(report.get("stage_context_token_budgets") or {})
         report["stage_context_token_budgets"] = {
             **stage_budgets,

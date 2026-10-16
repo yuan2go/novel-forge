@@ -1379,6 +1379,7 @@ class _ContextHandler:
             context_profile_version=stage_context_profile,
             context_model_call=context_model_call,
             compression_input_tokens=compression_allocation,
+            defer_token_capacity=(request.command.get("preparation_report") or {}).get("context_capacity_policy") == "complete-request-capacity.v1",
             book_id=_book_identity(request, plan.content),
             target_capability_id="prose.chapter.draft",
             capability_pack_snapshot_ref=str(

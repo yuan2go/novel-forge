@@ -800,6 +800,7 @@ def dispatch_external_effect(
             "EFFECT_BUDGET_EXECUTION_ASSERTION_FAILED",
             "Provider budget execution assertion failed before send",
         ) from exc
+    provider_result = None
     provider_send_started = False
     final_gate_started = False
     try:
@@ -871,57 +872,66 @@ def dispatch_external_effect(
             f"adapter exception was recorded as {recorded}",
         ) from exc
     except Exception as exc:
-        if not provider_send_started:
-            error_code = str(getattr(exc, "code", ""))
-            permanent_denial = (
-                final_gate_started
-                and error_code in _PERMANENT_PRE_SEND_AUTHORIZATION_DENIALS
+        if provider_result is not None and (
+            isinstance(exc, KernelError) and (
+                exc.code == "OPERATION_CANCELLATION_REQUESTED"
+                or (exc.code == "AUTHORITY_LEASE_HEARTBEAT_FAILED"
+                    and isinstance(exc.__cause__, KernelError)
+                    and exc.__cause__.code == "OPERATION_CANCELLATION_REQUESTED")
             )
+        ):
+            pass
+        else:
+            if not provider_send_started:
+                error_code = str(getattr(exc, "code", ""))
+                permanent_denial = (
+                    final_gate_started
+                    and error_code in _PERMANENT_PRE_SEND_AUTHORIZATION_DENIALS
+                )
+                submit_effect_dispatch_result(
+                    database_url,
+                    context,
+                    dispatch_id=dispatch["dispatch_id"],
+                    worker_id=worker_id,
+                    fencing_token=lease["fencing_token"],
+                    outcome="final_failure" if permanent_denial else "retryable_failure",
+                    evidence={
+                        "error_type": type(exc).__name__,
+                        "error_code": error_code,
+                        **({"dispatch_pause_contract": "runtime-dispatch-control.v1"} if error_code == "RUNTIME_DISPATCH_PAUSED" else {}),
+                        "message": redact_secret_text(exc),
+                        "request_sent": False,
+                        "failure_phase": (
+                            "pre_send_assertion"
+                            if final_gate_started
+                            else "dispatch_lease_guard"
+                        ),
+                        "authorization_denial_permanent": permanent_denial,
+                    },
+                )
+                if isinstance(exc, KernelError):
+                    raise
+                raise KernelError(
+                    "EFFECT_PRE_SEND_ASSERTION_FAILED",
+                    "Provider pre-send assertion failed before any request was sent",
+                ) from exc
             submit_effect_dispatch_result(
                 database_url,
                 context,
                 dispatch_id=dispatch["dispatch_id"],
                 worker_id=worker_id,
                 fencing_token=lease["fencing_token"],
-                outcome="final_failure" if permanent_denial else "retryable_failure",
+                outcome="unknown",
                 evidence={
                     "error_type": type(exc).__name__,
-                    "error_code": error_code,
-                    **({"dispatch_pause_contract": "runtime-dispatch-control.v1"} if error_code == "RUNTIME_DISPATCH_PAUSED" else {}),
                     "message": redact_secret_text(exc),
-                    "request_sent": False,
-                    "failure_phase": (
-                        "pre_send_assertion"
-                        if final_gate_started
-                        else "dispatch_lease_guard"
-                    ),
-                    "authorization_denial_permanent": permanent_denial,
+                    "request_sent": "not_established",
                 },
             )
-            if isinstance(exc, KernelError):
-                raise
             raise KernelError(
-                "EFFECT_PRE_SEND_ASSERTION_FAILED",
-                "Provider pre-send assertion failed before any request was sent",
+                "EFFECT_EXTERNAL_STATE_UNKNOWN",
+                "untyped adapter exception was conservatively recorded as UNKNOWN",
             ) from exc
-        submit_effect_dispatch_result(
-            database_url,
-            context,
-            dispatch_id=dispatch["dispatch_id"],
-            worker_id=worker_id,
-            fencing_token=lease["fencing_token"],
-            outcome="unknown",
-            evidence={
-                "error_type": type(exc).__name__,
-                "message": redact_secret_text(exc),
-                "request_sent": "not_established",
-            },
-        )
-        raise KernelError(
-            "EFFECT_EXTERNAL_STATE_UNKNOWN",
-            "untyped adapter exception was conservatively recorded as UNKNOWN",
-        ) from exc
-
     outcome = submit_effect_dispatch_result(
         database_url,
         context,
@@ -1064,9 +1074,11 @@ def submit_effect_dispatch_result(
     accepted = ""
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
-        _require_context(repository, context)
+        _require_context(repository, context, receipt_only=True)
         dispatch = repository.dispatch_for_update(dispatch_id)
         _require_project(dispatch, context.project_id)
+        if dispatch["operation_id"] != context.operation_id:
+            raise KernelError("EFFECT_OPERATION_MISMATCH", "Dispatch receipt must retain its actual owning Operation")
         valid, current_token = repository.current_fence(
             dispatch_id,
             worker_id,
@@ -2097,9 +2109,9 @@ def _read_effect(database_url: str, effect_id: str, project_id: str) -> dict[str
         return effect
 
 
-def _require_context(repository: Any, context: EffectCommandContext) -> None:
+def _require_context(repository: Any, context: EffectCommandContext, *, receipt_only: bool = False) -> None:
     _validate_effect_context(context)
-    repository.require_operation(context.operation_id, context.project_id)
+    repository.require_operation(context.operation_id, context.project_id, **({"receipt_only": True} if receipt_only else {}))
     from .generation_isolation import require_not_isolated
     require_not_isolated(repository.cursor, context.operation_id)
 

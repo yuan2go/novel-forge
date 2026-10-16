@@ -320,6 +320,28 @@ class AuthorityAssetDocumentRepository:
                 LIMIT 1""", [operation_id, project_id, recovery_fact.content.get("execution_id"), operation_id,
                     project_id, recovery_fact.asset_type, recovery_fact.content.get("request_contract_hash")])
             retained_execution_fact = self.cursor.fetchone() is not None
+        if row[0] == "CANCELLATION_REQUESTED" and recovery_fact is not None and recovery_fact.role != "primary":
+            content = recovery_fact.content
+            identity = (recovery_fact.asset_type, recovery_fact.schema_version, recovery_fact.category)
+            if identity == ("execution_recovery_session", "authority-execution-recovery.v1", "production_execution_recovery"):
+                request = (content.get("record") or {}).get("request") or {}
+                self.cursor.execute("""SELECT 1 FROM authority_external_effect effect
+                    JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
+                    WHERE effect.external_effect_id=%s AND effect.operation_id=%s AND effect.project_id=%s
+                      AND effect.status='DISPATCHING' AND dispatch.status='DISPATCHING'
+                      AND %s=%s AND %s=%s AND %s='chapter-execution:'||effect.external_effect_id
+                      AND effect.request_payload#>>'{_production_execution,attempt_id}'=%s""",
+                    [request.get("external_effect_id"), operation_id, project_id, request.get("operation_id"), operation_id,
+                     request.get("project_id"), project_id, content.get("execution_id"), request.get("attempt_id")])
+                retained_execution_fact = retained_execution_fact or self.cursor.fetchone() is not None
+            elif identity in {("model_call_log", "model-call-log.v1", "runs"), ("cost_ledger", "model-cost-ledger.v1", "runs")}:
+                self.cursor.execute("""SELECT 1 FROM authority_external_effect effect
+                    WHERE effect.external_effect_id=%s AND effect.operation_id=%s AND effect.project_id=%s
+                      AND effect.status='SUCCEEDED' AND effect.effect_type='model.invoke'
+                      AND effect.request_payload->>'stage'=%s
+                      AND effect.request_payload#>>'{_production_execution,attempt_id}'=%s""",
+                    [content.get("external_effect_id"), operation_id, project_id, content.get("stage"), content.get("attempt_id")])
+                retained_execution_fact = self.cursor.fetchone() is not None
         if row[0] != "EXECUTING" and not transaction_admitted and not retained_execution_fact:
             raise KernelError(
                 "OPERATION_STATUS_CONFLICT",

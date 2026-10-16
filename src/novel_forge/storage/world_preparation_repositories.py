@@ -597,7 +597,7 @@ class WorldPreparationRepository:
         if actor_experiment is not None:
             from novel_forge.modules.worldbuilding.actor_isolation import validate_actor_policy
             actor_experiment = validate_actor_policy(actor_experiment, character_ids=character_ids, policy=policy)
-        elif policy.version not in {"world-production-policy.v1", "world-production-policy.v4"}:
+        elif policy.version not in {"world-production-policy.v1", "world-production-policy.v4", "world-production-policy.v5"}:
             raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "v2 World policy requires an explicit actor experiment")
         planning_refs = request.get("planning_input_refs") or []
         if not isinstance(planning_refs, list) or not planning_refs:

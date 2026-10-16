@@ -1533,7 +1533,20 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
     def test_task_scoped_fast_path_freezes_replayable_context_without_semantic_io(self) -> None:
         self._assert_full_chapter_slice_uses_unified_execution_gateway(task_scoped=True)
 
-    def _assert_full_chapter_slice_uses_unified_execution_gateway(self, *, task_scoped: bool) -> None:
+    def test_complete_request_overflow_compresses_before_native_draft_and_reads_saved_prose(self) -> None:
+        self._assert_full_chapter_slice_uses_unified_execution_gateway(task_scoped=True, capacity_overflow=True)
+
+    def test_512k_native_fixture_defers_material_overflow_then_sends_admitted_extract(self) -> None:
+        self._assert_full_chapter_slice_uses_unified_execution_gateway(task_scoped=True, capacity_overflow=True, request_limit=512_000)
+
+    def test_routed_overflow_prepares_before_router_rejection_and_restarts_from_completed_chunk(self) -> None:
+        self._assert_full_chapter_slice_uses_unified_execution_gateway(task_scoped=True, capacity_overflow=True, routed=True, restart=True)
+
+    def test_cancel_during_compression_preserves_usage_without_sending_draft(self) -> None:
+        self._assert_full_chapter_slice_uses_unified_execution_gateway(task_scoped=True, capacity_overflow=True, cancel=True)
+
+    def _assert_full_chapter_slice_uses_unified_execution_gateway(self, *, task_scoped: bool, capacity_overflow: bool = False,
+            request_limit: int = 262144, routed: bool = False, restart: bool = False, cancel: bool = False) -> None:
         from tests.integration.capability_pack_postgres_support import CapabilityPackPostgresHarness
         from novel_forge.modules.context_builder.domain import replay_context_bundle
 
@@ -1551,11 +1564,39 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
         project_id = harness.project_id
         recovery_execution_id = ""
+        last_stage = ""
+        interrupted = False
+        cancelled = False
 
         def pack_review_fixture(stage, inputs):
+            nonlocal last_stage, cancelled
+            last_stage = stage
+            if cancel and stage == "context_compress" and not cancelled:
+                from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute("SELECT operation_id,version FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate' AND status='EXECUTING'", [project_id])
+                    operation_id, version = cursor.fetchone()
+                request_cancellation(DATABASE_URL, CancelCommand(operation_id, project_id, "chapter-gateway-worker",
+                    "Explicit fixture cancellation during compression", version, "capacity-cancel", "capacity-cancel", "capacity-cancel"))
+                cancelled = True
+                from novel_forge.modules.command_kernel.lease_heartbeat import _active_guards
+                import time
+                effect_guards = [guard for guard in _active_guards.get() if guard._label.startswith("effect:")]
+                self.assertEqual(len(effect_guards), 1)
+                effect_guard = effect_guards[0]
+                effect_guard._interval = 0.05
+                deadline = time.monotonic() + 12
+                while effect_guard._failure is None and time.monotonic() < deadline:
+                    time.sleep(0.02)
+                self.assertIsNotNone(effect_guard._failure)
             from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
 
             output = default_chapter_fixture_response(stage, inputs)
+            if capacity_overflow and stage in {"draft", "revision"}:
+                for scene in output.get("scene_artifacts", []):
+                    scene["text"] += "承诺已经当众立下，归家的退路就此断绝。"
+                if isinstance(output.get("text"), str):
+                    output["text"] += "承诺已经当众立下，归家的退路就此断绝。"
             if stage not in {"review", "rereview"}:
                 return output
             text = inputs["draft" if stage == "review" else "revision"]["text"]
@@ -1588,11 +1629,36 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
                 "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "262144",
             }
+            if capacity_overflow:
+                env.update(NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT="512000", NOVEL_FORGE_DRAFT_MODEL_CONTEXT_LIMIT=str(request_limit))
             execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=pack_review_fixture)
+            if routed:
+                from tests.integration.quality_context_routed_support import attach_mock_qualified_router
+                from dataclasses import replace
+                router = attach_mock_qualified_router(execution, DATABASE_URL)
+                router.candidates = tuple(replace(item, context_limit=request_limit) for item in router.candidates)
             application = build_chapter_authority_application(
                 settings, execution=execution, env=env
             )
-            context_candidates = self._release_evidence(project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id)
+            history = {"asset_version_id": f"{project_id}:episodic-context-source-v1",
+                "asset_type": "chapter_episodic_summary", "project_id": project_id,
+                "safe_summary": "\n\n".join(f"Scene {index}: " + "The market crowd debates which route may remain open after the public oath; distant vendors argue over coins and weather. " * 6 for index in range(850 if request_limit == 512000 else 550)),
+                "structured_facts": [], "estimated_tokens": 100000,
+                "narrative_function": "related_episodic_history", "context_class": "RETRIEVABLE",
+                "compression_method": "none", "source_use_mode": "generation", "allowed_use": "generation",
+                "retrieval_reasons": ["task_related_episodic_history"]}
+            context_candidates = self._release_evidence(project_id, with_mkaos=True, scope_preseeded=True,
+                workspace_id=harness.workspace_id, current_contract_inputs=capacity_overflow,
+                extra_context_candidates=(history, *(
+                    {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
+                     "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
+                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary",
+                     "content": {"project_id": project_id, "book_id": f"book:{project_id}",
+                                 "contract_version": "story-state-snapshot-v2" if kind == "story_state_snapshot" else "canon-snapshot-v2",
+                                 "accepted_state_only": True, "accepted_through_chapter": 0,
+                                 "current_state": {}, "structured_facts": [],
+                                 "safe_summary": "Explicit fixture genesis boundary"}}
+                    for kind in ("story_state_snapshot", "canon_snapshot"))) if capacity_overflow else ())
             self._seed_intrinsic_semantic_commit_policy(project_id)
             chapter_request = SingleChapterRequest(
                 project_id=project_id,
@@ -1606,21 +1672,140 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 application_build_id="chapter-gateway-test",
                 commit_sha="e" * 40,
                 context_candidates=context_candidates,
-                context_token_budget=64_000,
-                **({"preparation_report": {"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}}}
+                context_token_budget=512_000 if capacity_overflow else 64_000,
+                **({"context_version_refs": {"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
+                    "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"}} if capacity_overflow else {}),
+                **({"preparation_report": {"stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
+                    **({"context_capacity_policy": "complete-request-capacity.v1"} if capacity_overflow else {})}}
                    if task_scoped else {}),
             )
-            result = application.run(chapter_request)
+            if capacity_overflow:
+                from unittest.mock import patch
+                from novel_forge.modules.chapter_authority import execution_gateway
+                materialize = execution_gateway._materialize_production_codex_prompt
+                rendered_prompts = {}
+                original_provider_data = {}
 
-            self.assertEqual(result.root_status, "SUCCEEDED")
-            self.assertEqual(result.saga_status, "SUCCEEDED")
-            self.assertTrue(execution.gateway.production_execution_gateway_backed)
-            export_version = result.outputs[ChapterNode.EXPORT].asset_version_id
-            exported = (
-                Path(directory) / "objects"
-                / f"chapters/{project_id}/1/versions/{export_version}/chapter.txt"
-            )
-            self.assertIn("only safe route home", exported.read_text())
+                def record_prompt(**arguments):
+                    prompt, evidence = materialize(**arguments)
+                    if arguments.get("stage") == "draft":
+                        rendered_prompts[evidence["fully_rendered_prompt_hash"]] = prompt
+                        if arguments.get("provider_data_capture"):
+                            original_provider_data.update(arguments["provider_data_capture"])
+                    return prompt, evidence
+
+                principal = Principal(chapter_request.actor_id, PrincipalType.WORKER,
+                    frozenset({"chapter.authority.execute"}), frozenset({project_id}), "configured-test-worker")
+                admitted = application.admit(chapter_request, principal=principal)
+                scheduler = application.scheduler(principal=principal)
+                def interrupt_once(checkpoint):
+                    nonlocal interrupted
+                    if restart and checkpoint == "after_provider_success" and last_stage == "context_compress" and not interrupted:
+                        interrupted = True
+                        raise KernelError("MODEL_EFFECT_RETRYABLE_CAPACITY_PROOF", "Restart after durable compression success")
+                application._model_port.fault_injector = interrupt_once
+                with patch.object(execution_gateway, "_materialize_production_codex_prompt", side_effect=record_prompt):
+                    for _ in range(len(ChapterNode) + 1):
+                        try:
+                            tick = scheduler.tick(project_id=project_id, root_operation_id=admitted.root_operation_id)
+                        except KernelError as error:
+                            if cancel:
+                                self.assertIn("CANCEL", error.code)
+                                break
+                            if error.code != "MODEL_EFFECT_RETRYABLE_CAPACITY_PROOF":
+                                raise
+                            from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
+                            previous = application
+                            application = ChapterAuthorityApplication(DATABASE_URL, model_adapter=execution.gateway,
+                                object_store_adapter=previous._object_store_adapter, worker_id=previous.worker_id,
+                                capability_binder=previous._model_port.capability_binder,
+                                agent_binding_recorder=previous.agent_binding_recorder,
+                                agent_binding_required=previous._model_port.agent_binding_required,
+                                allow_synchronous_fixture=previous.allow_synchronous_fixture,
+                                application_build_id=previous.application_build_id, commit_sha=previous.commit_sha)
+                            scheduler = application.scheduler(principal=principal)
+                            continue
+                        self.assertEqual(tick.operation_status, "SUCCEEDED")
+                        if tick.node == ChapterNode.DRAFT.value:
+                            break
+                if cancel:
+                    with transaction() as connection, connection.cursor() as cursor:
+                        cursor.execute("SELECT capability,status FROM authority_external_effect WHERE project_id=%s", [project_id])
+                        self.assertCountEqual(cursor.fetchall(), [("model.memo", "SUCCEEDED"), ("model.context_compress", "SUCCEEDED")])
+                        cursor.execute("SELECT status FROM authority_budget_reservation WHERE project_id=%s", [project_id])
+                        self.assertEqual(cursor.fetchall(), [("SETTLED",), ("SETTLED",)])
+                        cursor.execute("SELECT count(*) FROM authority_operation_output_asset output JOIN authority_operation operation USING(operation_id) WHERE operation.project_id=%s AND output.output_key='chapter.draft'", [project_id])
+                        self.assertEqual(cursor.fetchone(), (0,))
+                    return
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
+                        JOIN authority_asset_version version USING(asset_version_id)
+                        JOIN authority_operation operation USING(operation_id)
+                        WHERE operation.project_id=%s AND output.output_key='chapter.draft'""", [project_id])
+                    saved_prose = cursor.fetchone()[0]["text"]
+                self.assertIn("承诺", saved_prose)
+            else:
+                result = application.run(chapter_request)
+                self.assertEqual(result.root_status, "SUCCEEDED")
+                self.assertEqual(result.saga_status, "SUCCEEDED")
+                self.assertTrue(execution.gateway.production_execution_gateway_backed)
+                export_version = result.outputs[ChapterNode.EXPORT].asset_version_id
+                exported = Path(directory) / "objects" / f"chapters/{project_id}/1/versions/{export_version}/chapter.txt"
+                self.assertIn("only safe route home", exported.read_text())
+
+        if capacity_overflow:
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute("SELECT capability,status,request_payload FROM authority_external_effect WHERE project_id=%s ORDER BY created_at", [project_id])
+                effects = cursor.fetchall()
+                self.assertTrue(all(row[1] == "SUCCEEDED" for row in effects))
+                if restart:
+                    self.assertTrue(interrupted)
+                    cursor.execute("""SELECT effect.external_effect_id FROM authority_external_effect effect
+                        WHERE effect.project_id=%s AND NOT EXISTS(SELECT 1 FROM authority_asset_version version
+                            JOIN authority_asset asset USING(asset_id) WHERE asset.project_id=effect.project_id
+                              AND asset.asset_type='model_call_log' AND version.content->>'external_effect_id'=effect.external_effect_id)""", [project_id])
+                    self.assertEqual(cursor.fetchall(), [])
+                    cursor.execute("""SELECT effect.external_effect_id FROM authority_external_effect effect
+                        WHERE effect.project_id=%s AND NOT EXISTS(SELECT 1 FROM authority_asset_version version
+                            JOIN authority_asset asset USING(asset_id) WHERE asset.project_id=effect.project_id
+                              AND asset.asset_type='cost_ledger' AND version.content->>'external_effect_id'=effect.external_effect_id)""", [project_id])
+                    self.assertEqual(cursor.fetchall(), [])
+                    cursor.execute("SELECT request_payload->'input',count(*) FROM authority_external_effect WHERE project_id=%s GROUP BY request_payload->'input' HAVING count(*)>1", [project_id])
+                    self.assertEqual(cursor.fetchall(), [])
+                self.assertTrue(any(row[0] == "model.context_compress" for row in effects))
+                self.assertTrue(any(row[0] == "model.context_fidelity" for row in effects))
+                drafts = [row[2] for row in effects if row[0] == "model.draft"]
+                self.assertEqual(len(drafts), 1)
+                projection = drafts[0]["input"]["_context_capacity_projection"]
+                size = projection["measurement"]
+                self.assertGreater(size["before_reserved"], size["limit"])
+                self.assertLessEqual(size["after_reserved"], size["limit"])
+                self.assertEqual(projection["stage"], "draft")
+                receipt = drafts[0]["_production_execution"]["capability_runtime"]["provider_admission"]
+                self.assertEqual(receipt["accounting_contract"]["contract_version"], "provider-token-accounting-v4")
+                self.assertLessEqual(receipt["total_reserved"], receipt["applicable_limit"])
+                identity = drafts[0]["_production_execution"]["capability_runtime"]
+                cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [identity["provider_admission_asset_version_id"]])
+                admission = cursor.fetchone()[0]
+                admission = admission.get("contract", admission)
+                prompt_hash = admission["provider_request_identity"]["input_text_hash"]
+                self.assertIn(prompt_hash, rendered_prompts)
+                self.assertEqual(receipt["component_usage"]["provider_input"], len(rendered_prompts[prompt_hash].encode()))
+                import os
+                evidence_root = os.environ.get("NOVEL_FORGE_POSTGRES_EVIDENCE_DIR")
+                if evidence_root:
+                    destination = Path(evidence_root) / ("complete-request-" + str(request_limit) + ("-routed-restart" if restart else ""))
+                    destination.mkdir(parents=True, exist_ok=True)
+                    (destination / "original-materials.json").write_text(json.dumps(original_provider_data, ensure_ascii=False, indent=2))
+                    (destination / "compression-projection.json").write_text(json.dumps(projection, ensure_ascii=False, indent=2))
+                    (destination / "final-request.txt").write_text(rendered_prompts[prompt_hash])
+                    (destination / "native-prose.txt").write_text(saved_prose)
+                    (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+                        "project_id": project_id, "root_operation_id": admitted.root_operation_id, "provider_admission": admission,
+                        "effects": [{"capability": row[0], "status": row[1], "stage": row[2]["stage"],
+                            "stable_idempotency_key": row[2]["stable_idempotency_key"],
+                            "execution_identity": row[2]["_production_execution"]} for row in effects]}, ensure_ascii=False, indent=2))
+            return
 
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute("""

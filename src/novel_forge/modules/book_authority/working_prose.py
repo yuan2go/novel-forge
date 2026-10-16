@@ -10,8 +10,10 @@ POLICY_VERSION = "working-prose-projection.v2"
 MEMORY_POLICY_VERSION = "working-prose-projection.v3"
 PROGRESSION_POLICY_VERSION = "working-prose-projection.v4"
 LONGFORM_POLICY_VERSION = "working-prose-projection.v5"
-MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION, LONGFORM_POLICY_VERSION}
-RESOLVED_POLICY_VERSIONS = {PROGRESSION_POLICY_VERSION, LONGFORM_POLICY_VERSION}
+CAPACITY_POLICY_VERSION = "working-prose-projection.v6"
+LONGFORM_POLICY_VERSIONS = {LONGFORM_POLICY_VERSION, CAPACITY_POLICY_VERSION}
+MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
+RESOLVED_POLICY_VERSIONS = {PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
 POLICY_VERSIONS = {POLICY_VERSION, *MEMORY_POLICY_VERSIONS}
 WORKING_SCHEDULE_POLICY = {"version": "working-story-schedule.v1", "history_basis": "SELECTED_WORKING_PROSE"}
 WORKING_SCHEDULE_INSTRUCTION = (
@@ -124,7 +126,7 @@ def working_instruction(policy: Mapping[str, Any]) -> str:
         + (REACTION_INSTRUCTION if focus in {"CHARACTER_REACTION", "COMBINED"} else "")
         + (
             (PROGRESSION_INSTRUCTION if policy["version"] == PROGRESSION_POLICY_VERSION
-                else CONSEQUENCE_INSTRUCTION + LONGFORM_INSTRUCTION if policy["version"] == LONGFORM_POLICY_VERSION
+                else CONSEQUENCE_INSTRUCTION + LONGFORM_INSTRUCTION if policy["version"] in LONGFORM_POLICY_VERSIONS
                 else CONSEQUENCE_INSTRUCTION)
             if focus in {"ACTION_CONSEQUENCES", "COMBINED"}
             else ""
@@ -163,8 +165,8 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
         or not 1 <= value["history_chapters"] <= (10000 if value["version"] in MEMORY_POLICY_VERSIONS else 32)
         or type(value.get("recent_complete_chapters")) is not int
         or not 1 <= value["recent_complete_chapters"] <= value["history_chapters"]
-        or type(value.get("max_characters")) is not int
-        or not 1 <= value["max_characters"] <= 200_000
+        or (value.get("max_characters") is not None if value.get("version") == CAPACITY_POLICY_VERSION
+            else type(value.get("max_characters")) is not int or not 1 <= value["max_characters"] <= 200_000)
         or not isinstance(value.get("queries"), list)
         or len(value["queries"]) > 16
         or any(
@@ -196,7 +198,8 @@ def project_working_sources(
     ]
     recent_start = max(1, target_chapter - policy["recent_complete_chapters"])
     mandatory = [unit for unit in units if unit[0] >= recent_start]
-    remaining = policy["max_characters"] - sum(len(unit[3]) for unit in mandatory)
+    allocation = sum(len(unit[3]) for unit in units) if policy["version"] == CAPACITY_POLICY_VERSION else policy["max_characters"]
+    remaining = allocation - sum(len(unit[3]) for unit in mandatory)
     if remaining < 0:
         raise KernelError(
             "WORKING_PROSE_REQUIRED_INPUT_OVERFLOW",
@@ -223,7 +226,7 @@ def project_working_sources(
     for score, number, start, end, text in sorted(
         scored, key=lambda row: (-evidence_priority(row), -row[0], -row[1], row[2])
     ):
-        if len(text) <= remaining and (policy["version"] != LONGFORM_POLICY_VERSION
+        if len(text) <= remaining and (policy["version"] not in LONGFORM_POLICY_VERSIONS
                 or number in chosen_numbers or len(chosen_numbers) < policy["history_chapters"]):
             chosen.add((number, start, end))
             chosen_numbers.add(number)
@@ -290,7 +293,7 @@ def _validate_source_resolution(row: Mapping[str, Any]) -> None:
 
 
 def working_source_rows(snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
-    if (snapshot.get("projection_policy") or {}).get("version") != LONGFORM_POLICY_VERSION:
+    if (snapshot.get("projection_policy") or {}).get("version") not in LONGFORM_POLICY_VERSIONS:
         return snapshot["sources"]
     history = snapshot.get("source_history")
     expected = {"contract_version", "project_id", "book_id", "book_run_id", "target_chapter", "source_count", "sources", "content_hash"}
@@ -318,7 +321,7 @@ def working_source_rows(snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
 
 
 def project_working_history_for_provider(snapshot: Mapping[str, Any], *, bounded_memory: bool = True) -> dict[str, Any]:
-    if (snapshot.get("projection_policy") or {}).get("version") != LONGFORM_POLICY_VERSION:
+    if (snapshot.get("projection_policy") or {}).get("version") not in LONGFORM_POLICY_VERSIONS:
         return deepcopy(dict(snapshot))
     validate_working_projection(snapshot, project_id=snapshot["project_id"], book_id=snapshot["book_id"])
     if snapshot["source_history"]["contract_version"] == "working-source-history-reference.v1":
@@ -429,7 +432,7 @@ def validate_working_projection(
             "Working projection requires its policy and sources",
         )
     history_sources = None
-    if policy["version"] == LONGFORM_POLICY_VERSION:
+    if policy["version"] in LONGFORM_POLICY_VERSIONS:
         history = snapshot.get("source_history")
         if isinstance(history, Mapping) and history.get("contract_version") == "working-source-history-reference.v1":
             _validate_history_reference(snapshot)
@@ -456,7 +459,7 @@ def validate_working_projection(
                 "source_resolution",
             }
             or type(row.get("chapter")) is not int
-            or not (1 if policy["version"] == LONGFORM_POLICY_VERSION else max(1, snapshot["target_chapter"] - policy["history_chapters"]))
+            or not (1 if policy["version"] in LONGFORM_POLICY_VERSIONS else max(1, snapshot["target_chapter"] - policy["history_chapters"]))
             <= row["chapter"]
             < snapshot["target_chapter"]
             or row.get("status") != "UNREVIEWED_WORKING_PROSE"
@@ -544,7 +547,7 @@ def validate_working_projection(
             snapshot["target_chapter"],
         )
     )
-    if policy["version"] == LONGFORM_POLICY_VERSION:
+    if policy["version"] in LONGFORM_POLICY_VERSIONS:
         if (numbers != sorted(set(numbers)) or len(numbers) > policy["history_chapters"]
                 or not set(range(max(1, snapshot["target_chapter"] - policy["recent_complete_chapters"]), snapshot["target_chapter"])).issubset(numbers)):
             raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Bounded long-form prose must retain every mandatory recent source")
@@ -552,14 +555,14 @@ def validate_working_projection(
     if policy["version"] in MEMORY_POLICY_VERSIONS or snapshot.get("working_memory") is not None:
         from novel_forge.modules.narrative_state.working_memory import PROVIDER_MEMORY_VERSION, validate_memory_packet
         if isinstance(snapshot["working_memory"], Mapping) and snapshot["working_memory"].get("version") == PROVIDER_MEMORY_VERSION and (
-                policy["version"] != LONGFORM_POLICY_VERSION
+                policy["version"] not in LONGFORM_POLICY_VERSIONS
                 or snapshot.get("source_history", {}).get("contract_version") != "working-source-history-reference.v1"
                 or snapshot["working_memory"].get("source_coverage_hash") != snapshot["source_history"]["memory_source_coverage_hash"]):
             raise KernelError("WORKING_MEMORY_PACKET_INVALID", "Provider memory requires the exact complete host history reference")
         validate_memory_packet(snapshot["working_memory"], snapshot["sources"])
         if policy["version"] not in MEMORY_POLICY_VERSIONS:
             raise KernelError("WORKING_MEMORY_POLICY_INVALID", "Frozen older projections cannot acquire observations")
-    if numbers != expected or characters > policy["max_characters"]:
+    if numbers != expected or (policy["max_characters"] is not None and characters > policy["max_characters"]):
         raise KernelError(
             "WORKING_PROSE_PROJECTION_INVALID",
             "Working sources require complete ordered version coverage within allocation",

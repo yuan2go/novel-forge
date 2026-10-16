@@ -340,6 +340,8 @@ class ContextSources:
     freshness: Mapping[str, Any]
     longform_bindings: Mapping[str, Any]
     planning_task_token_budget: Any = None
+    capacity_policy: str = ""
+    context_substage_method: str = ""
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "ContextSources":
@@ -354,6 +356,8 @@ class ContextSources:
             _object(payload.get("freshness")),
             _object(payload.get("longform_bindings")),
             payload.get("planning_task_token_budget"),
+            str(payload.get("capacity_policy") or ""),
+            str(payload.get("context_substage_method") or ""),
         )
 
 
