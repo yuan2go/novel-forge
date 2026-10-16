@@ -1341,6 +1341,17 @@ New Chapter Pack `3.1.0` and current intent-boundary Planning profiles freeze
 `context-policy:chapter-generation-pack:v3` and `complete-request-capacity.v1`.
 Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and
 Context v2, including its original manifest and artifact catalog identities.
+Creation continuation also reaches Chapter's capacity-specific use of the existing
+failed-step successor. It requires an exact old capacity failure, a failed step with
+no Effect or reservation, reconciled sibling calls and the approved same-Book v3
+Pack. Only the three Context capacity fields and the explicit capacity artifact
+delta may change; source rules, workflow, Skills, Prompt, Schema and routes remain
+exact. Original commands, source versions and terminal history are retained. A local
+Context without a model Snapshot requires its earlier successful same-Book activation
+evidence; repository defaults cannot prove that identity. Draft/Revision continuation
+rebuilds Context through its original producer's frozen inputs before further
+compression, rather than extracting an old summary again. The derived content and
+its original source proof are frozen in the existing Effect and checked at rendering.
 The Context owner retains relevance, deduplication and source eligibility while
 deferring capacity eviction to the fully rendered request. Book's
 `working-prose-projection.v6` retains the selected historical passages without the

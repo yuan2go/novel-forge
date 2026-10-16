@@ -18,6 +18,23 @@ CAPACITY_POLICY = "complete-request-capacity.v1"
 _HISTORY_TYPES = frozenset({"narrative_retrieval_document", "chapter_episodic_summary", "scene_episodic_summary", "character_timeline", "relationship_timeline"})
 
 
+def recompose_capacity_context(original: dict, upgrade: Mapping[str, Any]) -> tuple[dict, dict]:
+    if (upgrade.get("transport_projection") != "chapter-complete-request-capacity.v1"
+            or upgrade.get("target_context_policy_ref") != "context-policy:chapter-generation-pack:v3"
+            or not upgrade.get("policy_hash") or not upgrade.get("source_operation_id")):
+        raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_DRIFT", "Context derivation requires its registered exact source and target policy")
+    result = deepcopy(original)
+    result.pop("capacity_policy_upgrade", None)
+    rebuilt = bool(upgrade.get("context_source"))
+    result["request_context_derivation"] = {
+        "contract_version": "capacity-context-projection.v1", "source_projection_hash": narrative_hash(original),
+        "policy_hash": upgrade["policy_hash"], "source_selection": "ORIGINAL_FROZEN_INPUTS_REBUILT" if rebuilt else "ORIGINAL_FROZEN_SELECTION",
+        "meaning": "The original source versions and attribution are unchanged. Context is rebuilt from the original producer's frozen inputs before complete request admission." if rebuilt else "The original frozen sources and their attribution are unchanged. Complete request admission replaces only the old material capacity veto. Earlier selection gaps remain retrievable source evidence and never establish absence."}
+    return result, {"contract_version": "capacity-context-projection.v1", "source_projection_hash": narrative_hash(original),
+        "derived_projection_hash": narrative_hash(result), "policy_hash": upgrade["policy_hash"],
+        "source_operation_id": upgrade["source_operation_id"], "source_selection": "ORIGINAL_FROZEN_INPUTS_REBUILT" if rebuilt else "UNCHANGED"}
+
+
 def historical_expression_paths(data: Any) -> dict[tuple, str]:
     result = {}
 

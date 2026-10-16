@@ -7736,6 +7736,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/author_editor.py",
           "symbol": "ChapterAuthorEditingApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/capacity_continuation.py",
+          "symbol": "recover_capacity_continuation"
         }
       ],
       "domain_symbols": [
@@ -7750,6 +7754,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/author_draft.py",
           "symbol": "adopted_author_draft"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/capacity_continuation.py",
+          "symbol": "rebuild_frozen_capacity_context"
         }
       ],
       "commands_operations": [
@@ -7855,6 +7863,14 @@
         {
           "path": "tests/unit/test_author_editor.py",
           "symbol": "AuthorEditorTests.test_explicit_cross_scene_mapping_preserves_scope_and_revises_exact_unicode"
+        },
+        {
+          "path": "tests/unit/test_chapter_capacity_continuation.py",
+          "symbol": "test_actual_historical_and_new_installers_prove_only_capacity_changed"
+        },
+        {
+          "path": "tests/integration/test_chapter_capacity_continuation_postgres.py",
+          "symbol": "test_native_creation_continues_a_frozen_legacy_chapter_context_capacity_failure"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -10461,7 +10477,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:7995264130f05ae3e680f2dcf4c84d1c6df6ebb01958a987df4b44a7d7d86cf4"
+    "implementation_tree_sha": "sha256:74ae8e028a4f6e39deda23d6dc40075309c506d7772c13806d9fe48b1dc5bc6c"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

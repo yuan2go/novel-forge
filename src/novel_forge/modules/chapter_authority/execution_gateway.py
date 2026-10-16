@@ -873,6 +873,8 @@ class PostgresChapterExecutionContractBinder:
                     "Capability Pack resolution did not produce an Attempt Snapshot",
                 )
             return None
+        from .capacity_continuation import require_capacity_upgrade_binding
+        require_capacity_upgrade_binding(metadata.get("context_capacity_upgrade"), attempt_snapshot.execution_snapshot)
         materialization = self.pack_resolver.materialize_attempt_artifacts(
             attempt_snapshot
         )
@@ -4707,6 +4709,9 @@ def _materialize_production_codex_prompt(
             "Capability Context, Knowledge, Tool, or Schema selection is incomplete",
         )
     context_content = context[0].get("content")
+    if inputs.get("_context_capacity_rebuild") is not None and stage not in CONTEXT_MODEL_STAGES:
+        from .capacity_continuation import capacity_rebuilt_content
+        context_content = capacity_rebuilt_content(inputs["_context_capacity_rebuild"], inputs.get("_context_capacity_upgrade"), context[0])
     if not isinstance(context_content, Mapping):
         raise KernelError(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
@@ -4805,6 +4810,10 @@ def _materialize_production_codex_prompt(
     history_envelope, history_transport = compile_working_history_transport(
         {"input_manifest": task_view, "context_bundle": context_view}, contract_version=history_transport_version)
     task_view, context_view = history_envelope["input_manifest"], history_envelope["context_bundle"]
+    capacity_upgrade_receipt = None
+    if inputs.get("_context_capacity_upgrade") is not None and stage not in CONTEXT_MODEL_STAGES:
+        from novel_forge.modules.context_builder.request_capacity import recompose_capacity_context
+        context_view, capacity_upgrade_receipt = recompose_capacity_context(context_view, inputs["_context_capacity_upgrade"])
     original_data = {"input_manifest": task_view, "context_bundle": context_view}
     if provider_data_capture is not None:
         provider_data_capture.update(deepcopy(original_data))
@@ -5138,6 +5147,7 @@ def _materialize_production_codex_prompt(
             else None
         ),
         "provider_view": {
+            **({"capacity_policy_upgrade": capacity_upgrade_receipt} if capacity_upgrade_receipt else {}),
             **({"capacity_projection": {"contract_version": capacity_projection["contract_version"],
                 "original_hash": capacity_projection["original_hash"], "result_hash": capacity_projection["result_hash"],
                 "receipt_hash": canonical_hash(capacity_projection)}} if capacity_projection else {}),

@@ -412,6 +412,14 @@ class ExternalEffectChapterModelPort:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
+        capacity_upgrade = getattr(request, "capacity_upgrade", None)
+        if capacity_upgrade and stage not in CONTEXT_MODEL_STAGES:
+            if payload.get("_context_capacity_upgrade") not in (None, capacity_upgrade):
+                raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_DRIFT", "Provider input cannot replace its registered capacity derivation")
+            payload = {**payload, "_context_capacity_upgrade": capacity_upgrade}
+            derivation = getattr(request, "capacity_context_derivation", None)
+            if derivation:
+                payload = {**payload, "_context_capacity_rebuild": derivation}
         business_payload = (
             request.command.get("payload")
             if isinstance(request.command.get("payload"), dict)
@@ -587,6 +595,7 @@ class ExternalEffectChapterModelPort:
             "correlation_id": request.correlation_id,
             "workspace_id": request.workspace_id,
             "_production_execution": {
+                **({"context_capacity_upgrade": capacity_upgrade} if capacity_upgrade else {}),
                 **({"creative_requirements_contract": "work-requirements.v1"}
                    if isinstance(request, ChapterHandlerRequest) and request.work_requirements_enabled else {}),
                 "operation_id": request.operation_id,

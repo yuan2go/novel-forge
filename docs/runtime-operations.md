@@ -794,6 +794,22 @@ calls and before committing the Draft. Old frozen requests remain immutable; use
 existing Planning runtime-continuation preflight for the explicitly validated v2→v3
 Pack upgrade, retaining unchanged workflow, Skills, schemas, account and route policy.
 A different creative contract or unresolved outcome cannot borrow that upgrade.
+For an older Chapter Context/Draft/Revision capacity failure, activate the approved
+same-Book v3 Pack for the executable release through the existing Pack Authority,
+then use `authority-creation continue --project-id <project> --formation-run-id <id>
+--repository-root <repository> --foreground`. The native Chapter preflight appends a
+`chapter-complete-request-capacity.v1` failed-step successor only after proving the
+original failure, inputs, source Pack and unchanged non-capacity contracts. The failed
+step must have zero Effects/reservations; earlier Memo or other sibling calls may
+exist and must be reconciled. A legacy Draft/Revision Context is rebuilt from its
+original producer's frozen inputs and recorded as a separate hashed derivation.
+Old 24,000-character preparation selections remain historical source selections;
+this upgrade does not invent omitted history. Inspect `authority_saga_step_successor`
+policy evidence, the original Context source, the Effect's `_context_capacity_rebuild`
+when present, and `prompt_materialization.provider_view.capacity_policy_upgrade`.
+Missing or ambiguous historical Pack/source evidence, a changed creative contract,
+UNKNOWN, cancellation, a live lease or an obsolete Book frontier cannot borrow this
+continuation. Preserve the original root, Attempt, Context and all sibling Effects.
 
 For a retained task, read its original Attempt snapshot and current failure first.
 After the approved same-contract v3 Pack is active for the actual release, the original

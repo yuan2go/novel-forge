@@ -307,6 +307,8 @@ class ChapterHandlerRequest:
     database_url: str = ""
     definition_version: str = ""
     source_definition_version: str = ""
+    capacity_upgrade: dict[str, Any] | None = None
+    capacity_context_derivation: dict[str, Any] | None = None
 
     @property
     def effective_definition_version(self) -> str:

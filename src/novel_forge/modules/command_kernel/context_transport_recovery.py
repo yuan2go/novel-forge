@@ -8,6 +8,9 @@ CONTRACT = "chapter-unsent-context-transport.v1"
 def require_unsent_context_transport(cursor, source, policy, *, execution_sha=None):
     if policy.get('contract_version') != CONTRACT:
         return False
+    from novel_forge.modules.chapter_authority.capacity_continuation import require_capacity_upgrade_source
+    if require_capacity_upgrade_source(cursor, source, policy, execution_sha):
+        return True
     if policy.get('transport_projection') == 'selected-prose-input-role.v1':
         _require_changed_input_role_source(cursor, source, policy, execution_sha)
         return True

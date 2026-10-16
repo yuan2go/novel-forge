@@ -356,6 +356,7 @@ def replace_failed_step(
         lease = repo.acquire_coordinator(
             saga, owner=context.actor_id, lease_id=str(uuid4()), lease_seconds=30
         )
+        from novel_forge.modules.chapter_authority.capacity_continuation import capacity_upgrade_command
         command = {
             "definition_name": source["definition_name"],
             "definition_version": target_version,
@@ -370,7 +371,7 @@ def replace_failed_step(
             "span_id": str(uuid4()),
             "correlation_id": source["correlation_id"],
             "causation_id": predecessor_id,
-            "input": source["command_payload"],
+            "input": capacity_upgrade_command(source["command_payload"], policy_evidence),
             "input_assets": source["input_asset_snapshot"],
             "root_operation_id": source["root_operation_id"],
             "parent_operation_id": source["parent_operation_id"],
