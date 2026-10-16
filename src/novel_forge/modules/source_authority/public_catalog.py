@@ -160,7 +160,7 @@ def parse_page(html: bytes, url: str, acquired_at: str) -> dict[str, Any]:
     board = urlsplit(url).path.split("/")[2]
     if board not in BOARDS:
         raise ValueError("PUBLIC_CATALOG_BOARD_UNSUPPORTED")
-    rows = soup.select("li:has(.book-mid-info h2 a)")
+    rows = [row for row in soup.select("li") if row.select_one(".book-mid-info h2 a")]
     if not rows:
         raise ValueError("PUBLIC_CATALOG_LIST_SCHEMA_CHANGED")
     seen: dict[str, dict[str, Any]] = {}
