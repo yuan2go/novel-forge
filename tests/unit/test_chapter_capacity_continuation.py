@@ -124,6 +124,12 @@ def test_actual_attempt_must_match_the_approved_capacity_binding(field):
         require_capacity_upgrade_binding(proof, SimpleNamespace(**values))
 
 
+def test_absent_upgrade_does_not_read_a_snapshot_but_empty_declared_upgrade_fails_closed():
+    require_capacity_upgrade_binding(None, object())
+    with pytest.raises(KernelError, match="CHAPTER_CAPACITY_UPGRADE_TARGET_REQUIRED"):
+        require_capacity_upgrade_binding({}, object())
+
+
 def test_context_owner_recomposes_exact_frozen_selection_with_a_separate_derivation():
     original = {"context_bundle_id": "original", "segments": [
         {"asset_version_id": "working", "safe_summary": "她以为钥匙已失；读者知道它仍在袖中。", "status": "UNREVIEWED_WORKING_PROSE"}],

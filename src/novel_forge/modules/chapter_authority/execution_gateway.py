@@ -874,7 +874,8 @@ class PostgresChapterExecutionContractBinder:
                 )
             return None
         from .capacity_continuation import require_capacity_upgrade_binding
-        require_capacity_upgrade_binding(metadata.get("context_capacity_upgrade"), attempt_snapshot.execution_snapshot)
+        if metadata.get("context_capacity_upgrade") is not None:
+            require_capacity_upgrade_binding(metadata["context_capacity_upgrade"], attempt_snapshot.execution_snapshot)
         materialization = self.pack_resolver.materialize_attempt_artifacts(
             attempt_snapshot
         )

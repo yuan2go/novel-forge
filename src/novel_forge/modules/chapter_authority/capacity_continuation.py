@@ -425,8 +425,11 @@ def rebuild_frozen_capacity_context(request, registry):
 
 
 def require_capacity_upgrade_binding(upgrade, snapshot):
-    if not upgrade:
+    if upgrade is None:
         return
+    if not isinstance(upgrade, Mapping) or not all(upgrade.get(key) for key in (
+            "target_deployment_id", "target_manifest_hash", "target_context_policy_ref", "target_context_policy_hash")):
+        raise KernelError("CHAPTER_CAPACITY_UPGRADE_TARGET_REQUIRED", "A declared upgrade requires its complete original target binding")
     if (snapshot.deployment_id != upgrade["target_deployment_id"]
             or snapshot.manifest_hash != upgrade["target_manifest_hash"]
             or snapshot.context_policy_ref != upgrade["target_context_policy_ref"]
