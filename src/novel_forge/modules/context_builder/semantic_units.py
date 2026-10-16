@@ -48,7 +48,16 @@ def decode_json_values(text):
         return json.loads(text, object_pairs_hook=unique, parse_float=exact_float, parse_constant=finite), "JSON_VALUES_PRESERVED"
     except (ValueError, TypeError) as error:
         reason = str(error)
-        return None, reason if reason in {"DUPLICATE_JSON_FIELD", "JSON_NUMERIC_VALUE_NOT_PRESERVED", "JSON_NONFINITE_VALUE"} else "PLAIN_TEXT"
+        if reason in {"DUPLICATE_JSON_FIELD", "JSON_NUMERIC_VALUE_NOT_PRESERVED", "JSON_NONFINITE_VALUE"}:
+            from .source_json import loads
+            try:
+                loads(text)
+            except KernelError:
+                return None, reason
+            except (ValueError, TypeError):
+                return None, "PLAIN_TEXT"
+            return None, reason
+        return None, "PLAIN_TEXT"
 
 
 def _located_json_document(text):

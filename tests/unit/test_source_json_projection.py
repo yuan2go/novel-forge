@@ -188,3 +188,12 @@ def test_unchanged_precise_json_record_can_satisfy_a_located_protected_dependenc
     assert bindings == semantic_units.protected_dependency_bindings(json.loads(json.dumps(source)), excluded_scopes=set())
     changed = {'safe_summary': source['safe_summary'].replace('901', '902')}
     assert bindings[0]['record_hash'] != semantic_units.protected_dependency_bindings(changed, excluded_scopes=set())[0]['record_hash']
+
+
+@pytest.mark.parametrize('text', ['858e3085-14c0-42a5-8f7f-ed4e259d8a28:NARRATOR', '123e9999:角色', '1e999999 invalid tail'])
+def test_numeric_looking_plain_identifiers_are_not_misclassified_as_json_values(text):
+    assert semantic_units.decode_json_values(text) == (None, 'PLAIN_TEXT')
+    source = ContextCandidate(asset_version_id='source', asset_type='chapter_episodic_summary', project_id='p', estimated_tokens=1, safe_summary=text)
+    units = semantic_units.source_units(source, {})
+    assert units[0]['kind'] == 'SOURCE_PARAGRAPH' and units[0]['text'] == text
+    assert semantic_units.protect_quotes([source], {'source': units}, [text])
