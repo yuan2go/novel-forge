@@ -1325,6 +1325,17 @@ semantic check assesses missing or changed meaning; uncertain results restore th
 local original units. A faithful result that still exceeds its target blocks. A
 compressed derivative never mutates Canon and is not unconditionally recompressed.
 
+The author capacity policy is one complete request of at most 512,000 tokens,
+further bounded by the selected route's confirmed capacity. Material selection
+targets, historical character allocations and byte upper bounds are not evidence
+that the complete request exceeds that capacity. Ordinary writing has no additional
+cumulative token/call or local generation time veto. Paid spend authorization,
+physical interface limits, cancellation and execution identity still apply.
+At this implementation baseline, complete-request overflow recovery across model
+entries, capacity-derived history allocation and resumable compression beyond the
+old chunk allowance remain pending implementation. Existing material-stage
+compression alone does not establish that end-to-end capability.
+
 Compression and fidelity calls use existing Chapter Provider Runtime, Pack/PEP,
 Kernel ExternalEffect, cost reservation, Lease/Fence and durable result reconciliation.
 They create no new Authority or acceptance path. Task source eligibility gates run

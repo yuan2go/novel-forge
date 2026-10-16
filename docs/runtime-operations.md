@@ -734,7 +734,17 @@ the existing router with that candidate's own verified capacity and permission;
 changing only its model identifier leaves capacity unknown and blocks new work.
 Missing capacity, unsupported reasoning or an unqualified route blocks before
 external dispatch. Context compression uses the same authorized Provider and
-cumulative cost/token ledger; it does not grant extra calls or silently change models.
+ExternalEffect ledger. Membership token/call observations do not impose cumulative
+writing limits; paid spend authorization remains binding. Compression does not
+silently change models or grant a paid spending authorization.
+
+The current author requirement is to assemble and meter the complete request before
+capacity-driven lossy compression, rebuild after fidelity restoration, then freeze
+the actual admitted input. The 64,000-token Planning target and 24,000-character
+working-history allocation below describe frozen legacy policies, not physical
+model limits. Their replacement for new ordinary work and complete-request overflow
+recovery are pending implementation at this baseline. Preserve old requests and
+receipts; changing a default is not an upgrade of a frozen task.
 
 A derived World Context uses its own frozen World policy for the selection budget
 and accounting method. A newer base Planning Pack does not reinterpret the legacy
