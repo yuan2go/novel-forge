@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "archive_sha256": "a7b6b778ea4fdd6768f0d430e78287c9ee780c808618f4ed6beb8c54bc1c6b40",
+  "archive_entries": 98,
+  "duplicate_names": false,
+  "database_dump_or_absolute_traversal_entry": false,
+  "actual_task_secret_found": false,
+  "private_manuscript_segments_checked": 169,
+  "private_manuscript_segments_found": 0,
+  "scope": "Exact task object-store secret and long private prose segments; explicit archive scope review; raw dumps/PGDATA/execution outputs excluded. No claim of an all-secrets scanner."
+}

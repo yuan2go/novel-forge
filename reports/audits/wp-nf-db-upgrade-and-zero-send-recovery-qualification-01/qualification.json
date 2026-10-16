@@ -1,0 +1,568 @@
+{
+  "schema_version": "novel-forge.db-upgrade-zero-send-qualification.v1",
+  "work_package": "WP-NF-DB-UPGRADE-AND-ZERO-SEND-RECOVERY-QUALIFICATION-01",
+  "observed_at": "2026-10-16T12:13:33.485055+00:00",
+  "frozen_main_sha": "c9987b86f761de755e5d53191999793415304e61",
+  "tested_code_sha": "f96c377884c1d25674656893141ef941915928f5",
+  "pull_request": "https://github.com/yuan2go/novel-forge/pull/177",
+  "candidate_migration_head": "20261016_0222_planning_host_frozen_definition",
+  "evidence_ceiling": "EXECUTABLE",
+  "authority": "FROZEN_QUALIFICATION_EVIDENCE_NOT_RUNTIME_AUTHORITY",
+  "qualifications": {
+    "STATIC_COMPATIBILITY": {
+      "status": "FAIL",
+      "scope": "Installed registry/provenance/resources, 91 strict frozen prompt/envelope/Schema reconstructions, focused contracts and backend/static gates PASS. Overall compatibility signoff fails: complete PostgreSQL integration has 242 failures and 11 errors with zero skips. These failures are not waived as fixtures or replaced by pending changes in another workspace.",
+      "evidence": [
+        "static-provenance.json",
+        "installed-registry.json",
+        "artifact-identity.json",
+        "input-replay-schema-verified.json",
+        "canonical-p0.json"
+      ]
+    },
+    "ISOLATED_DB_UPGRADE": {
+      "status": "PASS",
+      "scope": "Exact main fresh/0218 DDL, candidate fresh/0218, actual legal 0211 and 0220 snapshots plus a final installed service-only 0211-to-head upgrade and exact backup restore, non-superuser surrogate-role upgrade, original-row/hash preservation, actual runner backup restore, catalog/dependency comparison and guarded negative cases. Source global role attributes and pre-existing isolation incident remain unproven.",
+      "evidence": [
+        "exact-main-db.json",
+        "installed-db-upgrade.json",
+        "installed-service-upgrade.json",
+        "runner-backup-restore.json",
+        "role-upgrade.json",
+        "catalog-comparison-final.json",
+        "constraint-equivalence-final.json",
+        "same-name-drift.json",
+        "immutable-diff-final.json",
+        "native-scope-diff-final.json"
+      ]
+    },
+    "ZERO_CALL_RUNTIME_RECOVERY": {
+      "status": "BLOCKED",
+      "scope": "Installed same-Book read/export, Reader drift reproduction and normal release binding PASS; 91 frozen requests reconstructed exactly; synthetic SQL/Kernel recovery boundaries PASS. No eligible actual 0219/0220 source in the supplied snapshot; full installed continue refuses missing membership authorization. No live Provider transport or new prose executed.",
+      "evidence": [
+        "native-read-report.json",
+        "native-align-report.json",
+        "native-reader-check-final-before-report.json",
+        "native-reader-check-final-after-report.json",
+        "native-preflight-final-release-report.json",
+        "source-owner-preflight.json",
+        "source-owner-diagnosis.json",
+        "actual-upgrade-backfill-verified.json",
+        "installed-service-upgrade.json",
+        "input-replay-schema-verified.json"
+      ]
+    },
+    "PRODUCTION_ROLLOUT_ADMISSION": {
+      "status": "BLOCKED",
+      "scope": "Independent admission: actual native recovery not qualified; source global role attributes unavailable; historical tablespace incident lacks complete source-before/source-after proof. All canonical P0 failures/NOT_RUN gates also remain blocking when present. Formal production upgrade and real continuation were not authorized and were not executed.",
+      "evidence": [
+        "canonical-p0.json",
+        "qualification.json"
+      ]
+    }
+  },
+  "constraint_classification": {
+    "CURRENT_PROVEN_INVARIANT": [
+      "Registered prefix admission rejects foreign/discontinuous applied identities in covered executable tests.",
+      "Source terminal history and frozen source bytes are retained in the checked scope."
+    ],
+    "CURRENT_RUNTIME_FACT": [
+      "The exclusive restored project remains PAUSED; no eligible actual 0219/0220 source was found.",
+      "Installed native continue rejects the empty membership credential home."
+    ],
+    "CONFIGURABLE_POLICY": [
+      "Task dispatch brake, provider transport guard, migration backup directory and PostgreSQL lock capacity are scoped settings; observed constants are not declared final architecture."
+    ],
+    "HISTORICAL_COMPATIBILITY": [
+      "Published migration bodies, full historical identities and production_execution asset/receipt namespace compatibility remain preserved."
+    ],
+    "UNRESOLVED_DESIGN_CONSTRAINT": []
+  },
+  "canonical_p0": {
+    "status": "FAIL",
+    "failure_reason": "pytest-postgresql-integration failed",
+    "tested_sha": "f96c377884c1d25674656893141ef941915928f5",
+    "run_id": null,
+    "gates": [
+      {
+        "gate_id": "source-preflight",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "documentation-reality",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "static-and-manifests",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "pytest-backend",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "postgresql-start",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "migration-fresh",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "migration-compatibility",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "pytest-postgresql-integration",
+        "status": "FAIL"
+      },
+      {
+        "gate_id": "migration-head",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "query-plan-release",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "compose-runtime",
+        "status": "NOT_RUN"
+      },
+      {
+        "gate_id": "resource-cleanup",
+        "status": "PASS"
+      },
+      {
+        "gate_id": "evidence-finalization",
+        "status": "NOT_RUN"
+      }
+    ]
+  },
+  "frozen_main_assessment": {
+    "static": "FAIL: reproduced both execution-boundary failures and BOOK Schema fixture mismatch; wheel missing historical JSON manifests; no runner backup enforcement/mutex; Planning Host function referenced absent Operation column.",
+    "ddl": "PASS only for exact main fresh/0218-to-0220 DDL and head replay; matching head does not qualify its guard execution."
+  },
+  "artifact": {
+    "code_sha": "f96c377884c1d25674656893141ef941915928f5",
+    "wheel_sha256": "051544b80b22deadb41c40b1060768b3db75aee14444a08ea7e6f3800880940e",
+    "wheel_bytes": 4170794,
+    "resource_bundle_sha256": "a7f579e38f34f5442aeab33438351c0bb4005138f4dedc70338b52a3984f15b9",
+    "dependencies": [
+      [
+        "EbookLib",
+        "0.20"
+      ],
+      [
+        "PyYAML",
+        "6.0.3"
+      ],
+      [
+        "Pygments",
+        "2.21.0"
+      ],
+      [
+        "annotated-doc",
+        "0.0.5"
+      ],
+      [
+        "annotated-types",
+        "0.8.0"
+      ],
+      [
+        "anyio",
+        "4.15.1"
+      ],
+      [
+        "argon2-cffi",
+        "25.1.0"
+      ],
+      [
+        "argon2-cffi-bindings",
+        "26.1.0"
+      ],
+      [
+        "beautifulsoup4",
+        "4.15.0"
+      ],
+      [
+        "certifi",
+        "2026.7.22"
+      ],
+      [
+        "cffi",
+        "2.1.1"
+      ],
+      [
+        "click",
+        "8.5.0"
+      ],
+      [
+        "defusedxml",
+        "0.7.1"
+      ],
+      [
+        "distro",
+        "1.9.0"
+      ],
+      [
+        "fastapi",
+        "0.143.2"
+      ],
+      [
+        "h11",
+        "0.16.0"
+      ],
+      [
+        "httpcore",
+        "1.0.9"
+      ],
+      [
+        "httpcore2",
+        "2.13.1"
+      ],
+      [
+        "httptools",
+        "0.9.0"
+      ],
+      [
+        "httpx",
+        "0.28.1"
+      ],
+      [
+        "httpx2",
+        "2.13.1"
+      ],
+      [
+        "idna",
+        "3.20"
+      ],
+      [
+        "ijson",
+        "3.6.0"
+      ],
+      [
+        "iniconfig",
+        "2.3.1"
+      ],
+      [
+        "jiter",
+        "0.17.0"
+      ],
+      [
+        "lxml",
+        "6.1.3"
+      ],
+      [
+        "minio",
+        "7.2.20"
+      ],
+      [
+        "novel-forge",
+        "6.0.0"
+      ],
+      [
+        "openai",
+        "1.109.1"
+      ],
+      [
+        "opencc-python-reimplemented",
+        "0.1.7"
+      ],
+      [
+        "opentelemetry-api",
+        "1.45.1"
+      ],
+      [
+        "packaging",
+        "26.3"
+      ],
+      [
+        "pglast",
+        "8.6"
+      ],
+      [
+        "pluggy",
+        "1.7.0"
+      ],
+      [
+        "psycopg",
+        "3.3.6"
+      ],
+      [
+        "psycopg-binary",
+        "3.3.6"
+      ],
+      [
+        "psycopg-pool",
+        "3.3.3"
+      ],
+      [
+        "pyarrow",
+        "25.0.1"
+      ],
+      [
+        "pycparser",
+        "3.11"
+      ],
+      [
+        "pycryptodome",
+        "4.0.0"
+      ],
+      [
+        "pydantic",
+        "2.14.1"
+      ],
+      [
+        "pydantic_core",
+        "2.50.1"
+      ],
+      [
+        "pypdf",
+        "6.20.1"
+      ],
+      [
+        "pytest",
+        "9.1.1"
+      ],
+      [
+        "python-docx",
+        "1.2.0"
+      ],
+      [
+        "python-dotenv",
+        "1.2.4"
+      ],
+      [
+        "ruff",
+        "0.15.20"
+      ],
+      [
+        "setuptools",
+        "84.0.0"
+      ],
+      [
+        "six",
+        "1.17.0"
+      ],
+      [
+        "sniffio",
+        "1.3.1"
+      ],
+      [
+        "soupsieve",
+        "3.0.3"
+      ],
+      [
+        "starlette",
+        "1.8.0"
+      ],
+      [
+        "tqdm",
+        "4.70.1"
+      ],
+      [
+        "truststore",
+        "0.10.5"
+      ],
+      [
+        "typing-inspection",
+        "0.4.4"
+      ],
+      [
+        "typing_extensions",
+        "4.16.0"
+      ],
+      [
+        "urllib3",
+        "2.8.0"
+      ],
+      [
+        "uvicorn",
+        "0.54.0"
+      ],
+      [
+        "uvloop",
+        "0.23.0"
+      ],
+      [
+        "watchfiles",
+        "1.3.0"
+      ],
+      [
+        "websockets",
+        "17.2"
+      ],
+      [
+        "wheel",
+        "0.48.0"
+      ]
+    ],
+    "dependencies_sha256": "a2c3d05bcf1f6f9f4a9e9c4a90812d39e43c0414b0e979f3d9abe6e5d8bb3cd4"
+  },
+  "full_integration_result": {
+    "records_including_subtests": 2281,
+    "failures": 242,
+    "errors": 11,
+    "skipped": 0,
+    "timed_out": false,
+    "classification": "canonical-failure-classification.json",
+    "remaining_query_plan_compose_and_finalization_gates": "NOT_RUN following canonical integration failure"
+  },
+  "source_snapshots": [
+    {
+      "label": "pre-0212-prose-citation-installed-8599b6c7",
+      "sha256": "eb3e335bf37aed7452cfc13bcd9d48999ea69bbb899538e9ecc8ed5b4a9ea82b",
+      "bytes": 125039954,
+      "applied_count": 212,
+      "last_in_copy": [
+        "20261014_0207_world_revalidation_capacity",
+        "20261014_0208_world_isolated_source_correction",
+        "20261014_0209_world_foundation_background",
+        "20261014_0210_world_working_frontier_revalidation",
+        "20261014_0211_world_input_delivery_recovery"
+      ],
+      "source_hash_after_matches": true
+    },
+    {
+      "label": "continue-20261016",
+      "sha256": "6c463577149bf633638da30987db782f5e76e388704cf117795b28c1f67b34e6",
+      "bytes": 128298047,
+      "applied_count": 221,
+      "last_in_copy": [
+        "20261015_0216_operation_evidence_indexes",
+        "20261015_0217_craft_context_convergence",
+        "20261015_0218_retained_working_convergence",
+        "20261015_0219_world_exact_context_convergence",
+        "20261015_0220_chapter_prior_audit_convergence"
+      ],
+      "source_hash_after_matches": true
+    }
+  ],
+  "preservation": {
+    "same_book_text_digest": "sha256:d22cae0c4242a6953292b7cb4e3389253ed0f9eae9d0ffc71f2a05d1f5d0cc43",
+    "working_chapters": 4,
+    "formal_accepted_chapters": 0,
+    "book_version": 21,
+    "new_real_provider_calls": 0,
+    "new_real_prose_chapters": 0,
+    "unknown_scope": {
+      "authority_external_effect": {
+        "before": [
+          [
+            "SUCCEEDED",
+            126
+          ],
+          [
+            "UNKNOWN",
+            19
+          ]
+        ],
+        "after": [
+          [
+            "SUCCEEDED",
+            126
+          ],
+          [
+            "UNKNOWN",
+            19
+          ]
+        ],
+        "identical": true
+      },
+      "authority_budget_reservation": {
+        "before": [
+          [
+            "HELD_UNKNOWN",
+            19
+          ],
+          [
+            "SETTLED",
+            126
+          ]
+        ],
+        "after": [
+          [
+            "HELD_UNKNOWN",
+            19
+          ],
+          [
+            "SETTLED",
+            126
+          ]
+        ],
+        "identical": true
+      }
+    },
+    "book_cursor_before_after": [
+      [
+        4,
+        0,
+        21,
+        "CHAPTER_PLAN_REQUIRED"
+      ],
+      [
+        4,
+        0,
+        21,
+        "CHAPTER_PLAN_REQUIRED"
+      ]
+    ],
+    "same_project_effects": {
+      "before": [
+        [
+          "SUCCEEDED",
+          89
+        ],
+        [
+          "UNKNOWN",
+          15
+        ]
+      ],
+      "after": [
+        [
+          "SUCCEEDED",
+          89
+        ],
+        [
+          "UNKNOWN",
+          15
+        ]
+      ]
+    },
+    "body_candidate_selection_context_source_world_operation_attempt_effect_receipt_recovery_rows": "unchanged; only exact Reader Pack lifecycle/activation changes and new release evidence allowed",
+    "external_files": "996 execution files copied and before/after/source/copy hashes match; no Blob rows or Blob references in supplied snapshot"
+  },
+  "retained_limits": [
+    "No original production cluster was started or migrated.",
+    "First diagnostic lacked the intended DSN and attempted the default test endpoint 127.0.0.1:55432; every connection was refused and no query/write reached that endpoint; all completed database writes used owned clusters.",
+    "Initial socket path too long: no server started; exclusive short socket used afterward.",
+    "Initial max_locks_per_transaction=64 exhausted during concurrent fixture DDL and backup; failed backup/preflight evidence retained, cluster restarted at 512 and scoped checks rerun.",
+    "Initial private test environment omitted ingestion dependencies and later resolved SoupSieve 3; failures retained and strict-selector compatibility repaired.",
+    "Fixture receipt tests require scripted dispatch enabled in their separate disposable databases; recovery-copy process and project controls remain paused.",
+    "Historical isolation deviation from the prior work package cannot be retroactively certified.",
+    "Logical dumps do not include original global role attributes; non-superuser NOLOGIN role was a declared surrogate.",
+    "No fork ledger was rewritten or converted. Fork reconstruction NOT_RUN: actual legal main-prefix snapshots were available.",
+    "Separate worktree now has uncommitted Chapter fixture/Canon/cast P0 changes; paths/hashes observed, not adopted or counted as qualified. Current canonical failures retain their status.",
+    "Real Provider continuation, human literary evaluation, author acceptance, 100/600 chapter goals NOT_RUN by this package."
+  ],
+  "reused_prior_work": {
+    "748ff3eedae6669fc1a1ec5e841f105085b7dcb1": "9af76106",
+    "f2f04e39c67820d5542f2c3611f97d1f642355f4": "858ff98b",
+    "c839b7ee0e2fa8ea88692d540b1caebf43b2d8cb": "fcc0e7c3",
+    "ea64a6e7090194c713b74874e650f817443d5b00": "285df1d4"
+  },
+  "task_code_commits": [
+    "1b70949c54172ffa85a338cfe62d96cdfd3fc3fc",
+    "30db8e2e62b972ca46a1aab7b2042e013529e46a",
+    "f96c377884c1d25674656893141ef941915928f5"
+  ],
+  "candidate_commit_chain": [
+    "9af761064abe87223f59630c9e5f10a27f9baf56",
+    "858ff98b4214fec7e24ce3850d73a99daf25b1ab",
+    "fcc0e7c3db0400583285d5e10c72edbb00cbb400",
+    "285df1d4e7ec9706907861405f12f330e33d821d",
+    "1b70949c54172ffa85a338cfe62d96cdfd3fc3fc",
+    "30db8e2e62b972ca46a1aab7b2042e013529e46a",
+    "f96c377884c1d25674656893141ef941915928f5"
+  ]
+}

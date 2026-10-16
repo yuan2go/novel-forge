@@ -1,0 +1,178 @@
+{
+  "schema_version": "novel-forge.qualification-evidence-index.v1",
+  "tested_code_sha": "f96c377884c1d25674656893141ef941915928f5",
+  "public_archive_sha256": "a7b6b778ea4fdd6768f0d430e78287c9ee780c808618f4ed6beb8c54bc1c6b40",
+  "qualification_sha256": "317071e69b3fe3e7a90252ed10dfd33e3c9aaa53d427dde82ebddb8a30c345ca",
+  "private_evidence_retained": true,
+  "private_files_excluded": [
+    "database dumps",
+    "PGDATA",
+    "credentials",
+    "raw model receipts/prompts",
+    "manuscript text",
+    "execution request/result files"
+  ],
+  "files": [
+    {
+      "path": "static-provenance.json",
+      "private_original_sha256": "ca3b52e3354a0564a4fc7e7e091d77977b12bdadbbea1543aeb73750d5ad5dd7"
+    },
+    {
+      "path": "installed-registry.json",
+      "private_original_sha256": "d16b776618ea26b51e1c49ebbbb9750b2f0e9e1e795b444ab90d4254ae380ef4"
+    },
+    {
+      "path": "artifact-identity.json",
+      "private_original_sha256": "ab1532d503e592102278eb4cd83932c3e8f069ce20060d91459cd29ed56a6c55"
+    },
+    {
+      "path": "dependencies-final-installed.json",
+      "private_original_sha256": "85b7e7eeb53b87cbeee8bb2345d5645260f02a0764700e929e2995409c1c618f"
+    },
+    {
+      "path": "artifacts/resource-manifest.json",
+      "private_original_sha256": "d3d172b67c813a7cf17f5d22d18780781ce19b060594ba86f77619b5d5d4fab5"
+    },
+    {
+      "path": "snapshot-sources.json",
+      "private_original_sha256": "92cfc801507ed49be2bb1653173bf4990f1f3e492569e6f63a2bdb78c0c37f0a"
+    },
+    {
+      "path": "exact-main-db.json",
+      "private_original_sha256": "1ee11d00c41f00c15bb7efb01856628892f8ed4b1d50a820aaed22e004f5326e"
+    },
+    {
+      "path": "installed-db-upgrade.json",
+      "private_original_sha256": "6870f838f68d746e70fcc593082a7636435942bb893eb35749050573653008a8"
+    },
+    {
+      "path": "installed-service-upgrade.json",
+      "private_original_sha256": "61fe417c6ffbec5fe6f5aef32d2733bdd039d8a5c068089ec8bcb447606052e2"
+    },
+    {
+      "path": "runner-backup-restore.json",
+      "private_original_sha256": "6166e113c73f7fba85f7b34991dbcce33ae22b36f3e4131ca7964aa788d24d91"
+    },
+    {
+      "path": "role-upgrade.json",
+      "private_original_sha256": "98debcc29cb03dd102a83a3982155a83bc46aa41290b712348df7e4c17240ec6"
+    },
+    {
+      "path": "catalog-comparison-final.json",
+      "private_original_sha256": "b08d9ee2a96761d63d26a9c60e48cb744155665d13e51a85ca3f2b3972046fad"
+    },
+    {
+      "path": "constraint-equivalence-final.json",
+      "private_original_sha256": "77c1e929eba3caa4c589a2fe7f27b6d690c3c23ef14e7e2238be10d4e8f95c1b"
+    },
+    {
+      "path": "same-name-drift.json",
+      "private_original_sha256": "6c5deff8ce217d557f155b8ce7e33a0d67476353c281073bf062334787dfff55"
+    },
+    {
+      "path": "immutable-diff-final.json",
+      "private_original_sha256": "3094a77ba4d492115aa4937775eb342490dec440efac3be1aff724ab592f6c1f"
+    },
+    {
+      "path": "native-scope-diff-final.json",
+      "private_original_sha256": "7250faba2ffe2c676c3c9b27cb19744e1bb2f4632608ce7aa9abb57881bfb1d1"
+    },
+    {
+      "path": "native-read-report.json",
+      "private_original_sha256": "a35eb13bd4aeaf025b5d80e4d80ba35134bf33e916939be37a0b4cf9bd3e7345"
+    },
+    {
+      "path": "native-align-report.json",
+      "private_original_sha256": "0fa3c3c3fd21a5302f0439c4eee65219a932e816f2651fe1e40aee305411af15"
+    },
+    {
+      "path": "native-reader-check-final-before-report.json",
+      "private_original_sha256": "5a9ed191ed4aa2e5f932526af4abdd11f3b3d7bf95f5a7a42d4340f43f30c8d8"
+    },
+    {
+      "path": "native-reader-check-final-after-report.json",
+      "private_original_sha256": "127fe60a1f297798285380c1b2a180a40be2a019b3434f26a46ce22ec534e33a"
+    },
+    {
+      "path": "native-preflight-final-release-report.json",
+      "private_original_sha256": "561613900c1738a50e2987851cb5c2982c8553b950be62126352b03e096ebe52"
+    },
+    {
+      "path": "source-owner-preflight.json",
+      "private_original_sha256": "dc621dff2e7e1299b588afa78b26e5f7e96dd4e877f47d020f8f7f855d21af16"
+    },
+    {
+      "path": "source-owner-diagnosis.json",
+      "private_original_sha256": "5baff99bcfae3d3b2589cc05223f1c18bc07e4cfeaf5fa3b040c07739136845f"
+    },
+    {
+      "path": "actual-upgrade-backfill-verified.json",
+      "private_original_sha256": "d564c805ca694f08ca68b4c90d24a7665c52b68f5c12aab282d8b19ea6936799"
+    },
+    {
+      "path": "input-replay-schema-verified.json",
+      "private_original_sha256": "df4ce587d18d63210c5009f511529f2eecc2c06b1fd54a058213fe8edd54350d"
+    },
+    {
+      "path": "isolation-prestart.json",
+      "private_original_sha256": "1961c81a936163b5a01dc7be52d09767790e520ddd1d14ead43819e6e9e74ee9"
+    },
+    {
+      "path": "isolation-restart.json",
+      "private_original_sha256": "9c1ffd0b67e18a46096c4f6f4f080b69ddab8c825ab91bf51634f16804d64cac"
+    },
+    {
+      "path": "isolation-libpq-final-restart.json",
+      "private_original_sha256": "16580aa6ee2ffdea803b59b94dd95ab407164c2c65825b6c11ec19102fb1b319"
+    },
+    {
+      "path": "final-resource-check.json",
+      "private_original_sha256": "87c0d013ba5b705d34d589a74c961aa6636dad40c3314e89298b14898a1ad39e"
+    },
+    {
+      "path": "isolation-read-export-restart.json",
+      "private_original_sha256": "2828aaa82b047586beb2d284cc997e03da2b853b65098527b8d6e7b75787f717"
+    },
+    {
+      "path": "native-read-existing-file-failure-report.json",
+      "private_original_sha256": "62ff44dd2a8b1fc614ece4a50022e7de22f0e315377c4d28c6f9d1c683b7bdd6"
+    },
+    {
+      "path": "owned-resource-shutdown.json",
+      "private_original_sha256": "93c75747d7394c35aec782e3ad7b65f8f511f944c187aded409197d032a0941b"
+    },
+    {
+      "path": "manual-native-command-index.json",
+      "private_original_sha256": "2959824d82eb59ba28579b4ed052c235709367c54076d1ffd72788544b916fed"
+    },
+    {
+      "path": "diagnostic-corrections.json",
+      "private_original_sha256": "db587bd5eea6756eea99039536d47c122c69ca9d79f89a724b17923ed70ae37a"
+    },
+    {
+      "path": "guard-coverage.json",
+      "private_original_sha256": "7473066e1e4aeb63ea9c9ddf5ef951449ea8c80d78b7219edc8cbf9bafc376ed"
+    },
+    {
+      "path": "canonical-failure-classification.json",
+      "private_original_sha256": "2e4913e6295f8de7c2b9bff8b1e09b75ca15953c60e0aada9aee7accec16b015"
+    },
+    {
+      "path": "release-operation-scope.json",
+      "private_original_sha256": "7c5657d00214adc5c7d613d75a9c4facd18a2efa138b99ed10e1e5d3bc7f6979"
+    },
+    {
+      "path": "pending-other-workspace-p0.json",
+      "private_original_sha256": "1066aa22d9778ecc5753c5db433e3718d9cf5e79643583d77b166fce48091b18"
+    },
+    {
+      "path": "workspace-refresh-before-final.json",
+      "private_original_sha256": "67705590c0842602c816f35e392d2d59febe66544cf6578dc5434791c2c51ba8"
+    },
+    {
+      "path": "commands.jsonl",
+      "private_original_sha256": "c191d6a5d33ce146df140eca8b281c389c6acaa7f61a7ec85847d5025d575a36"
+    }
+  ],
+  "privacy_check_sha256": "78208edb0b24949427c95abf0717e75a6aea2e8a4105698743bf719e8c6da11c"
+}
