@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Mapping
 
+from novel_forge.text_slots import serialize_text_slots, text_slot_separators
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.reality import narrative_hash
 
@@ -227,19 +228,14 @@ def compile_realization_contract(
 
 
 def realization_separators(artifacts: list[dict[str, Any]], separators: Any = None) -> list[str]:
-    count = max(0, len(artifacts) - 1)
-    if separators is None:
-        return ["\n\n"] * count
-    if (not isinstance(separators, list) or len(separators) != count
-        or any(not isinstance(value, str) or (value != "" and not value.isspace()) for value in separators)):
-        raise KernelError("REALIZATION_SEPARATOR_INVALID", "explicit Scene separators must be whitespace in frozen slot order")
-    return list(separators)
+    try:
+        return text_slot_separators(artifacts, separators)
+    except ValueError as error:
+        raise KernelError("REALIZATION_SEPARATOR_INVALID", str(error)) from error
 
 
 def serialize_realization(artifacts: list[dict[str, Any]], separators: Any = None) -> str:
-    joins = realization_separators(artifacts, separators)
-    return "".join((joins[index - 1] if index else "") + item["text"]
-                   for index, item in enumerate(artifacts))
+    return serialize_text_slots(artifacts, realization_separators(artifacts, separators))
 
 
 def prose_from_output(result: Mapping[str, Any], *, separators: Any = None) -> str:

@@ -146,3 +146,20 @@ def test_completed_result_or_live_process_requires_reuse_instead_of_successor(re
     content["record_state_hash"] = _hash(content["record"]).removeprefix("sha256:")
     with pytest.raises(KernelError, match="GENERATION_ISOLATION_RESULT_RECOVERABLE"):
         generation_isolation.require_reconciled_cli_isolation_record(content,execution,**scope)
+
+
+@pytest.mark.parametrize("principal_type,source_actor,scope,denied", [
+    ("local_operator", "original-worker", "project", False),
+    ("worker", "operator", "project", False),
+    ("worker", "original-worker", "project", True),
+    ("local_operator", "original-worker", "other-project", True),
+])
+def test_saved_result_recovery_retains_actor_and_project_authorization(monkeypatch, principal_type, source_actor, scope, denied):
+    from novel_forge.modules.authority_security import Principal, PrincipalType
+
+    principal = Principal("operator", PrincipalType(principal_type), frozenset({"external_effect.resolve"}), frozenset({scope}), "trusted-test")
+    def enter_owner(*args):
+        raise RuntimeError("recovery-owner-reached")
+    monkeypatch.setattr(recovery, "AuthorityUnitOfWork", enter_owner)
+    with pytest.raises(PermissionError if denied else RuntimeError):
+        recovery.recover_saved_local_results(None, database_url="unused", project_id="project", book_id="book", principal=principal, source_actor_id=source_actor)

@@ -2993,6 +2993,12 @@ its returned Project/Book/checkpoint through `continue`; changing a file is not 
 evidence. Existing Reader activation replay requires the exact active deployment release
 and manifest/catalog. A drifted activation is reconciled by its native owner; this does
 not impose a Reader or qualification requirement on author-first saved manuscript access.
+Keep dispatch braked while aligning Reader: register the actual release definitions,
+build its current Reader profile, and use the Capability Pack owner to register, compile,
+admit or approve, deploy and activate a new version with the observed activation CAS.
+Retain the previous deployment and activation receipts. Re-run the native Creation
+preflight with the truthful release SHA; do not relabel the old deployment or change the
+frozen Book request to pass replay.
 
 Current continuous Scene composition derives the Scene evidence union from already declared, unique actor references that are legal in both the frozen actor scope and Scene scope. `scene-evidence-union.v1` records every added union reference without changing prose, accepted knowledge or fact state. Invalid identities, duplicate declarations, foreign/private/future references and changed Scene order still fail the existing validator. An exhausted, unmaterialized current Draft with only this declaration defect may receive one `3.10.1` native StepSuccessor after all original raw results and measured accounting are verified and revalidated. Its original attempts and receipts stay immutable; the successor consumes the exact selected receipt and cannot invoke a fresh Provider. Cancellation, live Book frontier, actor, input hashes, leases and completion contracts remain enforced. This recovery runs on the author-first continuation path as well as the coordinated path.
 

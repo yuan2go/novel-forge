@@ -51,8 +51,11 @@ from .process_supervisor import (
     ProcessLaunchRequest,
     ProcessReceiptStatus,
     ProcessTimeout,
-    PosixProcessIdentityProbe,
     ResultIntegrity,
+)
+from .process_liveness import (
+    begin_provider_invocation, finish_provider_invocation,
+    current_process_start_token, provider_invocation_inflight as provider_invocation_inflight,
 )
 from .provider_protocol_failure import codex_protocol_failure, read_codex_stream_summary
 from .security import assert_no_inline_secrets
@@ -62,25 +65,6 @@ from .codex_configuration import (
     codex_output_schema, decode_codex_output, strict_codex_json_loads, CODEX_CANONICAL_JSON_SCHEMA_REF, CODEX_CANONICAL_JSON_CODEC, codex_retry_overrides, require_codex_home,
 )
 
-
-_active_provider_invocations = set()
-_provider_invocation_lock = Lock()
-_provider_process_probe = PosixProcessIdentityProbe()
-
-
-def provider_invocation_inflight(record):
-    process_id = (record.get("raw_evidence") or {}).get("invocation_process_id")
-    execution_id = (record.get("request") or {}).get("execution_id")
-    if process_id == os.getpid():
-        with _provider_invocation_lock:
-            return execution_id in _active_provider_invocations
-    if type(process_id) is not int or (record.get("raw_evidence") or {}).get("invocation_finished"):
-        return False
-    if not _provider_process_probe.is_alive(process_id):
-        return False
-    expected_token = (record.get("raw_evidence") or {}).get("invocation_process_start_identity")
-    current_token = _provider_process_probe.process_start_token(process_id)
-    return not expected_token or not current_token or expected_token == current_token
 
 
 def _utc_now() -> str:
@@ -1060,13 +1044,10 @@ class RemoteProviderExecutionBackend:
         done, abandoned, lock = Event(), Event(), Lock()
         observed = {}
         record.raw_evidence["invocation_process_id"] = os.getpid()
-        record.raw_evidence["invocation_process_start_identity"] = _provider_process_probe.process_start_token(os.getpid())
+        record.raw_evidence["invocation_process_start_identity"] = current_process_start_token()
         record.raw_evidence["invocation_finished"] = False
         self.record_store.save_record(record)
-        with _provider_invocation_lock:
-            if record.request.execution_id in _active_provider_invocations:
-                raise ValueError("PROVIDER_INVOCATION_ALREADY_INFLIGHT")
-            _active_provider_invocations.add(record.request.execution_id)
+        begin_provider_invocation(record.request.execution_id)
         def invoke():
             try:
                 assert_active_leases_healthy()
@@ -1087,8 +1068,7 @@ class RemoteProviderExecutionBackend:
                 else:
                     observed["error"] = error
             finally:
-                with _provider_invocation_lock:
-                    _active_provider_invocations.discard(record.request.execution_id)
+                finish_provider_invocation(record.request.execution_id)
                 try:
                     with lock:
                         record.raw_evidence["invocation_finished"] = True

@@ -49,11 +49,10 @@ def retain_model_result(record, store, *, raw_text: str, complete: bool, source:
                     or any(not isinstance(item, dict) or not isinstance(item.get("text"), str)
                            or not item["text"].strip() for item in artifacts)):
                 return ref
-            from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
-            from novel_forge.modules.command_kernel.errors import KernelError
+            from novel_forge.text_slots import serialize_text_slots
             try:
-                text = serialize_realization(artifacts, parsed.get("scene_separators"))
-            except KernelError:
+                text = serialize_text_slots(artifacts, parsed.get("scene_separators"))
+            except ValueError:
                 return ref
         candidate = {**payload, "raw_result_ref": ref, "text": text,
                      "text_sha256": "sha256:" + hashlib.sha256(text.encode()).hexdigest(),

@@ -472,6 +472,11 @@ If a CLI host crash leaves the original dispatch unfinished after the Operation 
 the Kernel first checkpoints verified orphan-process evidence under the original
 execution identity and expired leases. It preserves unknown remote outcome and usage;
 complete results are recovered before isolation, and active writers cannot be isolated.
+The execution plane owns one process-liveness registry shared by invocation and Kernel
+recovery. Process probes preserve PID start identities and never infer a remote outcome.
+Raw-result retention uses the same exact text-slot serialization as Chapter composition;
+retaining bytes grants no selection or acceptance. Trusted Principal checks own cross-actor
+recovery permission after the project-scoped resolve permission is verified.
 Chapter recovery first reuses a complete trusted original API response or CLI result with
 its Gateway validation evidence. Isolated API receipts bind each original dispatch
 independently; missing measurements in any generation keep the original reservation held.

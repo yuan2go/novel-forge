@@ -13,9 +13,7 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
     principal.require("external_effect.resolve", project_id)
     source_actor_id = source_actor_id or principal.principal_id
     if source_actor_id != principal.principal_id:
-        from novel_forge.modules.authority_security.service import PrincipalType
-        if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
-            raise PermissionError("Only a scoped trusted operator can recover another native actor's original result")
+        principal.require_recovery_actor(source_actor_id)
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("""SELECT effect.external_effect_id,operation.operation_id,operation.trace_id,operation.correlation_id
             FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
