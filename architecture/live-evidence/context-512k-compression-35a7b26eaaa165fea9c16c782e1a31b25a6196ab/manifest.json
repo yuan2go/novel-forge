@@ -4,7 +4,7 @@
   "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
   "reference_main_sha": "6b69b22b331191331292a51a905833871b17b283",
   "implementation_tree_sha": "sha256:5bb5a55fe0ede4008ce37241fc73efc54f6bd4b78127de6aa549c1757b4aca2a",
-  "recorded_at_utc": "2026-10-16T22:56:14.383214+00:00",
+  "recorded_at_utc": "2026-10-16T23:43:06.767524+00:00",
   "evidence_ceiling": "EXECUTABLE",
   "formal_qualification": "IN_PROGRESS",
   "deployment": "UNVERIFIED_NOT_PERFORMED",
@@ -111,6 +111,11 @@
       "path": "checks/current/postgresql-live-stack-command.log.gz",
       "sha256": "4162bb6c064fc3b1d7dd83ffea40be5f77987d68cf05eaca9412c4af008e1b77",
       "size_bytes": 165
+    },
+    {
+      "path": "checks/current/postgresql-live-stack-native-command.log.gz",
+      "sha256": "83e88f83e5d03e2bb1e56b51e199d82089098d9325c96cfa8c93b667938db7fa",
+      "size_bytes": 188
     },
     {
       "path": "checks/current/readonly-rebuild-probe.json.gz",
@@ -293,14 +298,54 @@
       "size_bytes": 1610
     },
     {
+      "path": "custody/native-final-complete-cluster.json",
+      "sha256": "af38c624edff5663a8e7ff66131d6825f5057a8e131cefec6d14c4c63cd52cf4",
+      "size_bytes": 4869
+    },
+    {
+      "path": "custody/native-final-complete-cluster.sql.xz.part-000",
+      "sha256": "e3cd8e944f273f8f0fbf72466098e1c7cc030c6f593c5d4e8e825208c541b41d",
+      "size_bytes": 32000000
+    },
+    {
+      "path": "custody/native-final-complete-cluster.sql.xz.part-001",
+      "sha256": "d47c70e162d4ef1f63a3c43772a8167c18627e5fea6d8ef71c3f16567059e22d",
+      "size_bytes": 32000000
+    },
+    {
+      "path": "custody/native-final-complete-cluster.sql.xz.part-002",
+      "sha256": "17f31fd4cd51e9859348035ccf60c18d972ce2bb898a92640be5fecead06c555",
+      "size_bytes": 2275028
+    },
+    {
+      "path": "custody/nf-context-512k-cluster-lossless-storage.log.gz",
+      "sha256": "4de9166b3bd698324392131c92c1874e8b1c3e9e6cdceb78e8e26366b51dce92",
+      "size_bytes": 644
+    },
+    {
+      "path": "custody/nf-context-512k-cluster-lossless-storage.py.gz",
+      "sha256": "3eebc487fcda725c102faf4ba20cb33653046301bcd0cd8e7057fb144aa8a6b2",
+      "size_bytes": 975
+    },
+    {
+      "path": "custody/nf-context-512k-final-cluster-archive.log.gz",
+      "sha256": "ba8558e85dee985b5a55d4ddd8266e6de9890dbab604a685e21f04372e42b061",
+      "size_bytes": 251
+    },
+    {
+      "path": "custody/nf-context-512k-final-cluster-archive.py.gz",
+      "sha256": "5e2902eeca0fd10a9376662245f3d358b75aeb51b9eebb01f271f526390ccc1a",
+      "size_bytes": 1764
+    },
+    {
       "path": "custody/owned-resource-cleanup.json",
       "sha256": "7dd0bc89546c6b1935c45891ff66aeffd55b4412b9ccd067a07de519875743c5",
       "size_bytes": 909
     },
     {
       "path": "custody/verified-owned-database-archives.jsonl.gz",
-      "sha256": "e8cf376f9ce69e657510e5836a9cf846e929d82eb793efbae48e9f16d3da13bc",
-      "size_bytes": 6489
+      "sha256": "83ced77aa113b163dee71f5dbf5c7fd0713c2ca1abf5a5fbdd57b9e2228e0cb3",
+      "size_bytes": 8053
     },
     {
       "path": "entry-coverage.json",
@@ -6101,6 +6146,16 @@
       "path": "nf-context-512k-environment-observation.json",
       "sha256": "b32af5e1ad01f2114e192ee1a6ba8a642350530ec5fee0de7869badf8d80502d",
       "size_bytes": 1768
+    },
+    {
+      "path": "nf-context-512k-frozen-runtime-policy-observation.json",
+      "sha256": "4734d0851841454255331141ace3f53a6055f8a55122bb24919bd0610325c1e2",
+      "size_bytes": 2344
+    },
+    {
+      "path": "nf-context-512k-frozen-runtime-policy-raw.json",
+      "sha256": "0695b0258be4e4e9f776da2b79d7ee8f4a9af1d573780b3927c28de5dc142dc1",
+      "size_bytes": 1554
     },
     {
       "path": "nf-context-512k-runtime-final-observation.json",
