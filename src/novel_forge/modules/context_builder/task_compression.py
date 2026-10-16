@@ -387,7 +387,7 @@ def compile_task_context(
             weight_total = max(1, sum(group_weights))
             group_targets = [candidate_target * weight // weight_total for weight in group_weights]
             if allow_restored_overflow:
-                group_targets = [max(1, target) for target in group_targets]
+                group_targets = [min(SYSTEM_CONTEXT_WINDOW_TOKENS, max(1, target)) for target in group_targets]
             if any(target <= 0 for target in group_targets):
                 raise KernelError("TASK_CONTEXT_COMPRESSION_BUDGET_INFEASIBLE", "candidate target cannot allocate every complete source group")
             for group_index, group in enumerate(groups):

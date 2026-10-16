@@ -259,6 +259,31 @@ def test_unavailable_tokenizer_is_an_actionable_admission_failure():
         count_text("An original source", method="MODEL_TOKENIZER_V1", model="unverified-model-alias")
 
 
+def test_restored_material_floor_cannot_inflate_substage_target_above_its_schema():
+    from novel_forge.modules.context_contracts import ContextCandidate
+    from novel_forge.modules.context_builder.task_compression import compile_task_context
+    from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
+    quote = "Necessary condition: " + "a" * 20000
+    boundary = {"kind": "FROZEN_STAGE_INPUTS", "project_id": "p", "book_id": "b",
+        "sources": [{"asset_version_id": "context:one", "content_hash": "sha256:fixture"}]}
+    candidate = ContextCandidate(asset_version_id="history:one", asset_type="historical_expression_projection", project_id="p",
+        estimated_tokens=1, relevance_score=1, safe_summary="\n\n".join([quote] * 32 + ["optional " * 25000]),
+        provenance={"frozen_input_boundary": boundary, "source_binding": boundary["sources"][0]})
+    targets = []
+    def call(stage, task):
+        view = context_compression_task_view(stage, {"context_compression_task": task})
+        targets.append(view["target_tokens"])
+        return {"selected_unit_ids": task["required_unit_ids"]} if stage == "context_compress" else {
+            "supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []}
+    _, receipt = compile_task_context([candidate], task={"stage": "draft", "frozen_input_boundary": boundary,
+        "source_projection_hash": "sha256:fixture", "preserve_quotes": [quote]}, token_budget=200000,
+        required_asset_types=(), model_call=call, compression_input_tokens=512000,
+        token_counter=lambda value: len(json.dumps(value, ensure_ascii=False)), chunk_fits=lambda _: True,
+        allow_restored_overflow=True)
+    assert receipt["effective_material_target_tokens"] > 512000
+    assert targets and all(0 < target <= 512000 for target in targets)
+
+
 def test_capacity_preparation_only_narrows_the_final_router_without_authorizing_it():
     from dataclasses import asdict
     from novel_forge.modules.production_execution.cost_routing import CostAwareRouter
