@@ -138,6 +138,35 @@ def test_generated_title_request_is_explicit_and_preserves_author_title():
         creation_title({"version": "creation-request.v2", "title": ""})
 
 
+@pytest.mark.parametrize("version,chapter_version", [("v1", "3.0.3"), ("v2", "3.0.4"), ("v3", "3.1.0")])
+def test_creation_installer_uses_actual_versioned_capacity_contract(monkeypatch, version, chapter_version):
+    import hashlib
+    from novel_forge.modules.capability_packs import validation_deployment as installer
+    from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+    from novel_forge.modules.book_authority.creation_runtime import creation_narrative_execution
+
+    root = Path(__file__).resolve().parents[2]
+    frozen = json.loads((root / "tests/fixtures/creation_capacity_legacy_contract_hashes.json").read_text())["contracts"]
+    def digest(value):
+        return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    monkeypatch.setattr(installer, "_install_validation_manifest", lambda *args, **kwargs: kwargs)
+    bindings = creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution." + version})
+    installed = installer.install_chapter_validation_pack("not-connected", repository_root=root,
+        project_id="p", workspace_id="w", book_id="b", application_build_id="fixture", commit_sha="a" * 40,
+        compiler=None, approver=None, agent_admin=None, pack_id_override="legacy-probe", **bindings["chapter"])
+    manifest, catalog = installed["manifest"], installed["artifact_catalog"]
+    assert manifest["identity"]["version"] == chapter_version
+    context_version = "v3" if version == "v3" else "v2"
+    assert manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:" + context_version
+    assert (manifest["context_sources"].get("capacity_policy") == "complete-request-capacity.v1") == (version == "v3")
+    planning = build_story_planning_pack_profile(root, operation_definition_hash="sha256:" + "a" * 64, **bindings["planning"])
+    if version != "v3":
+        assert {"manifest": digest(manifest), "catalog": digest(catalog)} == frozen[chapter_version]
+        assert {"manifest": digest(planning.manifest), "catalog": digest(planning.artifact_catalog)} == frozen["planning_2.15"]
+    else:
+        assert planning.manifest["identity"]["version"] == "2.17.0"
+
+
 def test_creation_job_is_an_operational_envelope_with_stable_takeover_identity():
     spec = RuntimeJobSpec(job_kind="BOOK_CREATION_ADVANCE", runtime_group="book_creation",
         subject_kind="STORY_FORMATION_RUN", subject_id="frozen-formation", project_id="project",

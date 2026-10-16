@@ -95,6 +95,7 @@ def build_story_planning_pack_profile(
     planning_task_token_budget: int | None = None,
     narrative_intent_boundary: bool = True,
     event_first_planning: bool = False,
+    complete_request_capacity: bool | None = None,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
     if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"}:
@@ -102,9 +103,14 @@ def build_story_planning_pack_profile(
     intent_boundary = narrative_intent_boundary and version == "1.21.0"
     if event_first_planning and not intent_boundary:
         raise ValueError("Event-first methods require the current narrative intent contract")
+    if complete_request_capacity is not None and type(complete_request_capacity) is not bool:
+        raise ValueError("Complete request capacity selection must be explicit boolean")
+    complete_capacity = intent_boundary if complete_request_capacity is None else complete_request_capacity
+    if complete_capacity and not intent_boundary:
+        raise ValueError("Complete request capacity requires the current narrative intent contract")
     operation_ref = f"story_planning.generate@{version}"
-    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=intent_boundary)
-    if intent_boundary:
+    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=complete_capacity)
+    if complete_capacity:
         manifest["context_sources"].update(policy_id="context-policy:chapter-generation-pack:v3",
             planning_task_token_budget=512_000, capacity_policy="complete-request-capacity.v1",
             context_substage_method="shared-rules-and-native-context-contract.v1")
@@ -163,7 +169,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.17.0" if event_first_planning else "2.16.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
+        version=("2.17.0" if event_first_planning else "2.16.0") if complete_capacity else "2.15.0" if event_first_planning else "2.14.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -194,7 +200,7 @@ def build_story_planning_pack_profile(
             "allowed_operations": [item[0] for item in capabilities],
         }
     ]
-    if intent_boundary:
+    if complete_capacity:
         manifest["tool_permissions"].setdefault("external_models", {})["context_substages"] = ["context_compress", "context_fidelity"]
     manifest["evaluation"]["required_gates"] = [
         {

@@ -27,6 +27,10 @@ The default creation-input policy freezes `native-narrative-execution.v3`: Chapt
 working-prose projection v6, Craft budget v5 and selected-working delivery v2.
 The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
+Creation v1/v2 installation uses the preserved Chapter 3.0.2 base manifest and Context
+v2 catalog, then its original Skill/template bindings. Its event-first Planning
+profile remains Pack 2.15 with Context v2. Replaying a version name never relabels
+the current capacity contract as an older Pack.
 These native bindings do not establish literary effectiveness.
 Fresh work-requirements Contexts derive `chapter-generation-length.v1` from the exact
 visible frozen Platform profile. Writer receives its Han bounds, unit and source hashes;

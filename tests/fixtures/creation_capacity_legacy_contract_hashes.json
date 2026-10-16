@@ -1,0 +1,17 @@
+{
+  "source_sha": "6b69b22b331191331292a51a905833871b17b283",
+  "contracts": {
+    "3.0.3": {
+      "manifest": "722652831c271f29c6cab8b3c3206974331fbff0ccd32b9c47f2bfcc503393f2",
+      "catalog": "86df53d5d54cb80e381373dcb916ac7e11f3b8400b70f7692608e3f0bac227f8"
+    },
+    "3.0.4": {
+      "manifest": "5d8b924a6eaf6d8be976ac2b8b47d607360f8d940473c9d522e5b2fedbacd639",
+      "catalog": "86df53d5d54cb80e381373dcb916ac7e11f3b8400b70f7692608e3f0bac227f8"
+    },
+    "planning_2.15": {
+      "manifest": "88375347e702947f3c4e4c0851dd6cdd96fade182db2917384df25e04af57ac5",
+      "catalog": "199b03f637a7ee07075dad08e8487a9d46bf835021887ecf9b885bfb313b3b37"
+    }
+  }
+}

@@ -764,6 +764,10 @@ new ordinary creation uses v3 Context and v6 working prose. Explicit legacy Plan
 without the narrative intent boundary retains Pack 2.13.0 and Context v2; selecting
 that contract does not opt into the new capacity policy. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.
+Explicit Creation v1/v2 installers read the preserved Chapter 3.0.2 base and omit
+the later Context v3 catalog entry; their Planning profile explicitly retains the
+pre-capacity Pack 2.15 binding. An existing Formation continues from its frozen
+deployment without reinstalling either Pack.
 
 Use `MODEL_TOKENIZER_V1` only for an exact model supported by the installed tiktoken
 mapping; preinstall its official hash-checked cache at `TIKTOKEN_CACHE_DIR` on every

@@ -640,7 +640,7 @@ def creation_narrative_execution(policy: dict[str, Any]) -> dict[str, dict[str, 
         raise KernelError("CREATION_NARRATIVE_EXECUTION_INVALID", "Unknown frozen narrative execution contract")
     return {"chapter": {"pack_version_override": "3.1.0" if version == "native-narrative-execution.v3" else "3.0.4" if version == "native-narrative-execution.v2" else "3.0.3", "prose_skill_version": "prose-generation-v5",
                         "prompt_template_version": "v15"},
-            "planning": {"event_first_planning": True}}
+            "planning": {"event_first_planning": True, "complete_request_capacity": version == "native-narrative-execution.v3"}}
 
 
 def creation_title(inputs: dict[str, Any]) -> tuple[str, bool]:
