@@ -291,7 +291,7 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
         ROOT, operation_definition_hash="sha256:" + "a" * 64,
         execution_contract_version="1.19.0",
     )
-    assert current.manifest["identity"]["version"] == "2.14.0"
+    assert current.manifest["identity"]["version"] == "2.16.0"
     assert frozen_main.manifest["identity"]["version"] == "2.11.0"
     assert old.manifest["identity"]["version"] == "2.9.0"
     assert {node["operation_definition_ref"] for node in current.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.21.0"}

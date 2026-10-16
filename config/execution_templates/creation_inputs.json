@@ -313,5 +313,5 @@
       }
     }
   },
-  "narrative_execution_contract": "native-narrative-execution.v2"
+  "narrative_execution_contract": "native-narrative-execution.v3"
 }

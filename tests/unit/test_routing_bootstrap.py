@@ -801,9 +801,12 @@ def test_exact_high_risk_diagnostic_grant_binds_reason_without_changing_producti
 
 
 def test_native_router_binds_admitted_diagnostic_before_explaining(monkeypatch):
+    from dataclasses import make_dataclass
     from unittest.mock import MagicMock
     from novel_forge.modules.production_execution import routing_runtime
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
     from novel_forge.modules.command_kernel import routing_bootstrap
+    from tests.unit.test_production_execution_gateway import contracts
 
     task, candidate, authorization = diagnostic_escalation_fixture()
     router = routing_runtime.ProductionProviderRouter("unused", candidates=[candidate],
@@ -819,7 +822,9 @@ def test_native_router_binds_admitted_diagnostic_before_explaining(monkeypatch):
     monkeypatch.setattr(router.registry, "observations", lambda **kwargs: [])
     monkeypatch.setattr(router.registry, "available_candidates", lambda **kwargs: kwargs["candidates"])
     monkeypatch.setattr(router, "_candidate_budgets", lambda **kwargs: {})
-    _, result = router.select(object(), task_type=task.task_type, project_id=task.project_id,
+    _, profile, policy, *_ = contracts(backend_id="codex-cli", runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+    base = make_dataclass("Route", [("model_profile", object), ("route_policy", object)], frozen=True)(profile, policy)
+    selected, result = router.select(base, task_type=task.task_type, project_id=task.project_id,
         work_id=task.work_id, operation_id=task.operation_id, attempt_id=task.attempt_id,
         stable_key="operation:attempt:sample", input_tokens=1000, output_tokens=100,
         trace_id="trace", correlation_id="correlation", dry_run=True,
@@ -828,6 +833,8 @@ def test_native_router_binds_admitted_diagnostic_before_explaining(monkeypatch):
     assert result["task"]["escalation_reason"] == authorization["authorization"]["reason"]
     assert result["task"]["history"] == []
     assert result["bootstrap_authorization"] == authorization
+    assert selected.model_profile.model_id == candidate.model
+    assert selected.model_profile.profile_id in selected.route_policy.allowed_model_profile_ids
 
 
 @pytest.mark.parametrize("limiting_scope", ["grant", "task", "provider"])

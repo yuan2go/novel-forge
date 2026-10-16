@@ -22,9 +22,9 @@ identity changes without a corresponding projection update.
 ## Ordinary author writing
 
 New Creation requests select `config/execution_templates/author_first.json` (v12).
-The default creation-input policy freezes `native-narrative-execution.v2`: Chapter Pack
-3.0.4 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
-working-prose projection v5, Craft budget v5 and selected-working delivery v2.
+The default creation-input policy freezes `native-narrative-execution.v3`: Chapter Pack
+3.1.0 with prose Skill v5 and Template v15, event-first Planning Pack 2.17.0, and
+working-prose projection v6, Craft budget v5 and selected-working delivery v2.
 The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 These native bindings do not establish literary effectiveness.
@@ -314,7 +314,7 @@ execution controls and selection metadata remain host evidence. Legacy frozen Fo
 and Content replay retain their original inputs and identities. These executable input
 boundaries do not establish literary conformity or longform quality.
 
-New Story Planning Pack 2.14 binds System v12, template v3 and stage-specific Skill
+New Story Planning Packs 2.16/2.17 bind System v12, template v3 and stage-specific Skill
 versions to `planning-narrative-intent-projection.v1`. The existing generation
 preparer versions the sent output Schema instructions without changing the domain
 JSON shape or storage contract. The gateway first verifies the frozen Task/Context
@@ -1333,8 +1333,10 @@ targets, historical character allocations and byte upper bounds are not evidence
 that the complete request exceeds that capacity. Ordinary writing has no additional
 cumulative token/call or local generation time veto. Paid spend authorization,
 physical interface limits, cancellation and execution identity still apply.
-New Chapter Pack `3.1.0` and current Planning profiles freeze
+New Chapter Pack `3.1.0` and current intent-boundary Planning profiles freeze
 `context-policy:chapter-generation-pack:v3` and `complete-request-capacity.v1`.
+Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and
+Context v2, including its original manifest and artifact catalog identities.
 The Context owner retains relevance, deduplication and source eligibility while
 deferring capacity eviction to the fully rendered request. Book's
 `working-prose-projection.v6` retains the selected historical passages without the
@@ -2178,8 +2180,8 @@ assessment separately from the Chapter's selected methods. Book serial potential
 does not require a hook or serial function in every chapter, and a finite work's
 next-chapter continuity does not contradict its lack of long-serial potential.
 Quality recompiles the candidate's declared baseline version from the same exact inputs.
-Normal Creation v2 uses Chapter Pack 3.0.4 and the scoped Style compiler; v1 retains
-its Pack 3.0.3 binding. At a native Creation checkpoint without an active Chapter
+New Creation v3 uses Chapter Pack 3.1.0 and the scoped Style compiler. Frozen v2
+retains Pack 3.0.4 and v1 retains Pack 3.0.3. At a native Creation checkpoint without an active Chapter
 request or unresolved unisolated generation, the original Creator may derive v5
 from the same Foundation inputs through Content Authority. Normal preparation then
 freezes that eligible Style for future Chapter work. Existing Chapter inputs remain frozen.

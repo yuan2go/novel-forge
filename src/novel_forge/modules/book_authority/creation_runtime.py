@@ -636,9 +636,9 @@ def creation_narrative_execution(policy: dict[str, Any]) -> dict[str, dict[str, 
     version = policy.get("narrative_execution_contract")
     if version is None:
         return {"chapter": {}, "planning": {}}
-    if version not in {"native-narrative-execution.v1", "native-narrative-execution.v2"}:
+    if version not in {"native-narrative-execution.v1", "native-narrative-execution.v2", "native-narrative-execution.v3"}:
         raise KernelError("CREATION_NARRATIVE_EXECUTION_INVALID", "Unknown frozen narrative execution contract")
-    return {"chapter": {"pack_version_override": "3.0.4" if version == "native-narrative-execution.v2" else "3.0.3", "prose_skill_version": "prose-generation-v5",
+    return {"chapter": {"pack_version_override": "3.1.0" if version == "native-narrative-execution.v3" else "3.0.4" if version == "native-narrative-execution.v2" else "3.0.3", "prose_skill_version": "prose-generation-v5",
                         "prompt_template_version": "v15"},
             "planning": {"event_first_planning": True}}
 

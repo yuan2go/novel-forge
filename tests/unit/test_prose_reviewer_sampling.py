@@ -62,7 +62,7 @@ def test_sample_pack_keeps_formal_producer_artifacts_and_ineligible_output():
     formal = build_longform_prose_review_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=definition_hash(formal_definition))
     sample = build_longform_prose_review_sample_pack_profile(formal, operation_definition_hash=definition_hash(definition))
     assert sample.artifact_catalog == formal.artifact_catalog
-    assert sample.manifest["identity"]["version"] == formal.manifest["identity"]["version"] == "1.5.0"
+    assert sample.manifest["identity"]["version"] == formal.manifest["identity"]["version"] == "1.6.0"
     legacy = build_longform_prose_review_pack_profile(Path(__file__).resolve().parents[2],
         operation_definition_hash=definition_hash(formal_definition), literal_citations=False)
     assert legacy.manifest["identity"]["version"] == "1.4.0"

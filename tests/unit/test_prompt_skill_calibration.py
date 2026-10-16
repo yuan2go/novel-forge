@@ -324,7 +324,7 @@ def test_narrative_intent_pack_reaches_real_prompt_assembly_and_keeps_work_speci
     from tests.unit.test_production_execution_gateway import contracts
 
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash=HASH)
-    assert profile.manifest["identity"]["version"] == "2.14.0"
+    assert profile.manifest["identity"]["version"] == "2.16.0"
     assert profile.manifest["prompt_binding"]["template_version"] == "v3"
     artifacts = profile.artifact_catalog["artifacts"]
     def artifact(kind, ref, version):

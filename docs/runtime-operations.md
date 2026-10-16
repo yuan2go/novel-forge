@@ -760,7 +760,9 @@ capacity omissions. Their original reasons and the detailed mapping remain in th
 frozen Context and Effect projection. Rich semantic passage fields retain their
 original representation. Compare raw derivation and supplied-view hashes separately.
 Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
-new ordinary creation uses v3 Context and v6 working prose. Relevant history selection
+new ordinary creation uses v3 Context and v6 working prose. Explicit legacy Planning
+without the narrative intent boundary retains Pack 2.13.0 and Context v2; selecting
+that contract does not opt into the new capacity policy. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.
 
 Use `MODEL_TOKENIZER_V1` only for an exact model supported by the installed tiktoken
@@ -3028,7 +3030,7 @@ freezes its template hash and compiler version. Its Provider prompt projects onl
 active stage method; existing v13 schemas, exact reference transport and defaults remain.
 Verify the actual Attempt materialization before attributing a result to this selection.
 
-Current Planning Pack 2.14.0 binds Operation 1.21.0, System v12 and Template v3
+Current Planning Packs 2.16.0/2.17.0 bind Operation 1.21.0, System v12 and Template v3
 with the narrative-intent boundary. Historical Planning Pack 2.13.0 retains
 Operation 1.21.0, System v11 and Template v2,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
@@ -3843,7 +3845,7 @@ add accepted support or relax a causal predicate. The owning Planning result bec
 terminal with `WORLD_PREPARATION_RESULT_INVALID` and can create its diagnosed repair;
 older `WORLD_PREPARATION_BLOCKED` retry checkpoints retain their history and replay
 the original receipt before this classification, without another Provider request.
-Current Planning template v2 compiles input manifest and context together into one
+Planning templates v2/v3 compile input manifest and context together into one
 lossless exact-reference envelope, with reconstruction equality and source/encoded
 hashes retained. Repeated task/context content is serialized once; no constraint or
 repair evidence is omitted and no budget is enlarged. Capacity continuation examines
