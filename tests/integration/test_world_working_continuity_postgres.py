@@ -352,9 +352,9 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF="tokenizer-json:" + hashlib.sha256(path.read_bytes()).hexdigest() + ":" + str(path))
     candidates = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
     for model in candidates["models"]:
-        model["context_limit"] = 260000
+        model["context_limit"] = 310000
     env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(candidates)
-    env["NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT"] = "260000"
+    env["NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT"] = "310000"
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     request = tmp_path / "capacity-request.json"

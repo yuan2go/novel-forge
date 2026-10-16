@@ -2409,7 +2409,7 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
 def test_native_undispatched_result_repair_capacity_successor_preserves_raw_task(tmp_path,monkeypatch):
     test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,author_guided=True,
         result_repair=False,runtime_recovery=False,evaluation_recovery=False,manual_review=False,advice_only=False,
-        target_chapters=1,creative_validation=True,author_result_repair=True,capacity_continuation=True)
+        target_chapters=1,creative_validation=True,author_result_repair=True,capacity_continuation=True,capacity_policy_upgrade=True)
 
 
 def test_native_bounded_semantic_repair_reaches_review_acceptance_and_replays_without_calls(tmp_path, monkeypatch):
@@ -2506,9 +2506,3 @@ def test_native_started_memo_timeout_blocks_exhaustion_and_successor(tmp_path, m
         manual_review=False,advice_only=False,target_chapters=1,complete_after_result_repair=True,
         creative_validation=True,world_disabled=True,memo_timeout_prefix_recovery=True)
 
-
-def test_native_v2_capacity_policy_upgrade_derives_frozen_context_and_generates(tmp_path, monkeypatch):
-    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided=True,
-        result_repair=False, runtime_recovery=False, evaluation_recovery=False, manual_review=False, advice_only=False,
-        target_chapters=1, creative_validation=True, author_result_repair=True,
-        capacity_continuation=True, capacity_policy_upgrade=True)
