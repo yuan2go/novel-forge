@@ -774,6 +774,18 @@ existing Planning runtime-continuation preflight for the explicitly validated v2
 Pack upgrade, retaining unchanged workflow, Skills, schemas, account and route policy.
 A different creative contract or unresolved outcome cannot borrow that upgrade.
 
+For a retained task, read its original Attempt snapshot and current failure first.
+After the approved same-contract v3 Pack is active for the actual release, the original
+operator registers `POST /product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation`
+with `project_id`, `expected_source_version`, `decision_evidence` (`authorization_ref`,
+`authorized_reasoning_effort`, `reason`), `trace_id` and `correlation_id`. Ordinary
+`authority-creation continue --formation-run-id <id> --foreground` follows the saved
+successor. Chapter Attempt restart follows its original Root and can reuse completed
+compression receipts; `POST /product/production/book-authority/chapters/{chapter_request_id}/reconcile`
+uses the existing Chapter reconciliation owner. Inspect the original Context, projection,
+substage Effects, admission, model-call and cost records together. Unknown external
+results retain their original IDs and native reconciliation path before further calls.
+
 A derived World Context uses its own frozen World policy for the selection budget
 and accounting method. A newer base Planning Pack does not reinterpret the legacy
 World estimate or replace its allocation with the Planning target. World v4 uses
@@ -2564,8 +2576,12 @@ stolen. Confirmed generation/evaluation receipts are reused, including evaluatio
 candidate has subsequently been approved. New generation under a changed source uses a
 new run; old terminal tasks and accepted history are not reopened.
 For native v5 membership creation, a terminal `PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED`
-with no external intent, reservation or frozen Context uses the existing Planning continuation
-Authority automatically. The retained source remains terminal; a linked successor keeps its exact
+with no external intent or reservation uses the existing Planning continuation Authority.
+An already frozen v2 Context is eligible only for the validated same-Pack v3 upgrade;
+its original version is retained and the successor derives and checks a new Context.
+The allocation distinguishes the preflight identity hash from its versioned semantic
+hash, which ignores only the host `frozen_by_operation_id` value. Final Context and
+request identity hashes still bind the actual successor. The retained source remains terminal; a linked successor keeps its exact
 story inputs and Pack while increasing only the single-task allocation within the configured
 model capacity. Preflight must succeed before registration; no more than two successors are
 allowed. An external intent of any status, including UNKNOWN, excludes this capacity path. Migration 0158 permits reconciliation of a previously admitted capacity successor with its verified candidate-repair cause; it requires the exact registered command and terminal zero-intent source. New successors use the failed capacity Operation as their causal source. Neither path rewrites terminal Operations or candidate provenance.
