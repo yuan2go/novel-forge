@@ -130,7 +130,8 @@ def prepare_request_capacity(
     if method not in TOKENIZER_METHODS and route.model_profile.model_provider != "scripted_provider_v2":
         raise KernelError("PROVIDER_CONTEXT_CAPACITY_UNCERTAIN", "a byte upper bound exceeds capacity; configure a matched tokenizer before lossy compression",
                           details={"upper_bound": before, "limit": limit, "actual_tokens": None})
-    paths = historical_expression_paths(original)
+    paths = dict(sorted(historical_expression_paths(original).items(),
+                        key=lambda row: tuple((isinstance(part, int), part) for part in row[0])))
     if not paths:
         raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "the complete request exceeds capacity and contains no eligible historical expression",
                           details={"reserved": before, "limit": limit, "source_boundary": source_boundary})
@@ -140,14 +141,34 @@ def prepare_request_capacity(
     def counter(value):
         return serialized_tokens(value, method=method, model=route.model_profile.model_id,
                                  evidence_ref=route.token_accounting_evidence_ref)
-    candidates = [ContextCandidate(
-        asset_version_id="historical-expression:" + narrative_hash(list(path)).split(":")[-1],
-        asset_type="historical_expression_projection", project_id=source_boundary["project_id"],
-        book_id=source_boundary["book_id"], estimated_tokens=1, relevance_score=1,
-        safe_summary=text, content_digest=narrative_hash(text), compression_method="none",
-        provenance={"frozen_input_boundary": source_boundary, "source_binding": source,
-                    "original_expression_path": list(path), "original_expression_hash": narrative_hash(text)},
-    ) for path, text in paths.items()]
+    grouped = {}
+    for path, text in paths.items():
+        parent = path[:-3] if len(path) >= 3 and path[-3] == "passages" else path
+        grouped.setdefault(parent, []).append((path, text))
+    candidates_by_hash = {}
+    locations = {}
+    for parent, expressions in grouped.items():
+        combined = "\n\n".join(text for _, text in expressions)
+        origin = original
+        for part in parent:
+            origin = origin[part]
+        identity = {key: origin[key] for key in ("asset_version_id", "content_hash", "chapter") if isinstance(origin, dict) and key in origin}
+        digest = narrative_hash({"text": combined, "source": identity if identity.get("asset_version_id") and identity.get("content_hash") else list(parent)})
+        candidate = candidates_by_hash.get(digest)
+        if candidate is None:
+            candidate = ContextCandidate(asset_version_id="historical-expression:" + digest.split(":")[-1],
+                asset_type="historical_expression_projection", project_id=source_boundary["project_id"],
+                book_id=source_boundary["book_id"], estimated_tokens=1, relevance_score=1,
+                safe_summary=combined, content_digest=narrative_hash(combined), compression_method="none",
+                provenance={"frozen_input_boundary": source_boundary, "source_binding": source,
+                    "original_expression_paths": [], "source_expression": identity})
+            candidates_by_hash[digest] = candidate
+        position = 0
+        for path, text in expressions:
+            candidate.provenance["original_expression_paths"].append(list(path))
+            locations[path] = (candidate.asset_version_id, position, position + len(text))
+            position += len(text) + 2
+    candidates = list(candidates_by_hash.values())
     task = {"stage": stage, "frozen_input_boundary": source_boundary, "source_projection_hash": narrative_hash(original),
             "preserve_quotes": list(preserve_quotes), "task_context": compression_task_context(original.get("input_manifest") or {}), "capacity_policy": CAPACITY_POLICY,
             **({"capacity_bindings": capacity_bindings} if capacity_bindings else {}),
@@ -155,7 +176,8 @@ def prepare_request_capacity(
                                "method": method, "evidence": route.token_accounting_evidence_ref,
                                "context_limit": route.model_context_limit, "output_limit": route.model_output_limit}}
     original_amount = sum(counter({"safe_summary": item.safe_summary, "structured_facts": []}) for item in candidates)
-    target = min(SYSTEM_CONTEXT_LIMIT, original_amount - max(1, before - limit))
+    target = min(SYSTEM_CONTEXT_LIMIT, max(sum(counter({"safe_summary": "", "structured_facts": []}) for _ in candidates) + 1,
+                                         original_amount - max(1, before - limit)))
     working = list(candidates)
     while target > 0:
         compressed, receipt = compile_task_context(working, task=task, token_budget=target,
@@ -166,9 +188,11 @@ def prepare_request_capacity(
                       "retained_fidelity_traces": [trace for item in compressed for trace in item.compression_trace if trace not in receipt["compression_trace"]]}
         derived = deepcopy(original)
         by_id = {candidate.asset_version_id: candidate for candidate in compressed}
-        for (path, text), original_candidate in zip(paths.items(), candidates, strict=True):
-            candidate = by_id[original_candidate.asset_version_id]
-            ranges = _extract_ranges(text, candidate)
+        selected_ranges = {item.asset_version_id: _extract_ranges(item.safe_summary, by_id[item.asset_version_id]) for item in candidates}
+        for path, text in paths.items():
+            identity, start, stop = locations[path]
+            ranges = [[max(low, start) - start, min(high, stop) - start]
+                      for low, high in selected_ranges[identity] if low < stop and high > start]
             projection["replacements"].append({"path": list(path), "source_text_hash": narrative_hash(text), "ranges": ranges})
             owner = derived
             for part in path[:-1]:

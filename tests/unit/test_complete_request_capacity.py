@@ -154,6 +154,23 @@ def test_deterministic_restart_reuses_successful_chunk_inputs():
     assert calls and not replay_calls and first == second
 
 
+def test_working_passages_batch_by_original_source_and_duplicate_wrappers_share_extract():
+    working = {"projection_policy": {"recent_complete_chapters": 2}, "target_chapter": 4,
+        "sources": [{"chapter": 1, "asset_version_id": "chapter:one", "content_hash": "sha256:original",
+            "passages": [{"text": f"Original paragraph {i}: " + "a" * 100} for i in range(600)]}]}
+    data = {"context_bundle": {"working_manuscript": deepcopy(working)}, "input_manifest": {"working_manuscript": deepcopy(working)}}
+    cache = {}
+    projection, calls = run_preparation(data, limit=30000, fits=lambda _: True, cache=cache)
+    final = apply_capacity_projection(data, projection)
+    assert final["context_bundle"]["working_manuscript"] == final["input_manifest"]["working_manuscript"]
+    assert len(projection["replacements"]) == 1200
+    assert sum(stage == "context_compress" for stage, _ in calls) == 3
+    assert all(task["task"]["source_expression"]["asset_version_id"] == "chapter:one" for _, task in calls)
+    assert len(json.dumps(final).encode()) + 100 <= 30000
+    replay, additional_calls = run_preparation(dict(reversed(list(data.items()))), limit=30000, fits=lambda _: True, cache=cache)
+    assert replay == projection and not additional_calls
+
+
 def test_necessary_content_cannot_be_dropped_to_fit():
     with pytest.raises(KernelError, match="REQUIRED_BUDGET_EXCEEDED"):
         run_preparation({"input_manifest": {"exact_draft": "x" * 3000}, "context_bundle": {}}, limit=100)

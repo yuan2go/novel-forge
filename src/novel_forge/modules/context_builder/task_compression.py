@@ -340,7 +340,8 @@ def compile_task_context(
                 return {
                     "contract_version": "task-context-compression.v2" if stage_sources else "task-context-compression.v1",
                     "policy_version": TASK_CONTEXT_POLICY_VERSION, boundary_key: boundary,
-                    **({"task_fingerprint": task["source_projection_hash"]} if stage_sources else {"memo_fingerprint": str(task.get("memo_fingerprint") or "")}), "task": dict(task), "units": group,
+                    **({"task_fingerprint": task["source_projection_hash"]} if stage_sources else {"memo_fingerprint": str(task.get("memo_fingerprint") or "")}),
+                    "task": {**dict(task), **({"source_expression": candidate.provenance["source_expression"]} if (candidate.provenance or {}).get("source_expression") else {})}, "units": group,
                     "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
                     "target_tokens": target, "candidate_target_tokens": max(1, remaining),
                     "selection_policy": "source-attribution-and-shared-group-budget.v2",

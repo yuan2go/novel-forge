@@ -1349,6 +1349,9 @@ rendered substage requests and have no eight-chunk lifetime limit. Oversized tex
 uses original Unicode coordinates and preserves quoted spans. Verified restoration
 can reallocate other compressible history. Each completed chunk retains its original
 ExternalEffect; retry reuses matching source, task, Pack and route bindings.
+Working passages batch within their original Chapter source, retaining per-passage
+coordinates. Identical wrappers of the same source version share one extract; another
+Chapter or changed source hash cannot borrow that identity.
 
 The preparation Router selects an authorized physical route without rejecting the
 uncompressed input first. Its final decision narrows to that prepared candidate and
