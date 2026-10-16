@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import asdict, replace
 from decimal import Decimal, DecimalException
 import hashlib
 import json
@@ -461,26 +461,26 @@ def reconstruct(candidate, units, keep):
     return {"safe_summary": text, "structured_facts": list(facts)}
 
 
+def _source_metadata(candidate):
+    return {key: value for key, value in asdict(candidate).items()
+            if key not in {"asset_version_id", "estimated_tokens", "relevance_score"}}
+
+
 def exact_deduplicate(candidates):
     candidates, union_receipts = merge_source_ranges(candidates)
     accepted, receipts, owners = [], [], {}
     for candidate in candidates:
-        identity = narrative_hash({"source_identity": candidate.source_identity, "source_revision": candidate.source_revision,
-            "project_id": candidate.project_id, "book_id": candidate.book_id, "qualification": candidate.qualification,
-            "governance_status": candidate.governance_status, "authority_freshness": candidate.authority_freshness,
-            "content_digest": candidate.content_digest, "asset_type": candidate.asset_type,
-            "logical_context_kind": candidate.logical_context_kind, "summary": candidate.safe_summary,
-            "facts": candidate.structured_facts, "accepted_boundary": candidate.accepted_boundary,
-            "observation_boundary": candidate.observation_boundary, "source_use_mode": candidate.source_use_mode,
-            "allowed_use": candidate.allowed_use, "provenance": candidate.provenance,
-            "required": candidate.required, "context_class": candidate.context_class})
-        previous = owners.get(identity)
-        if previous is None:
-            owners[identity] = candidate
+        identity = narrative_hash(_source_metadata(candidate))
+        index = owners.get(identity)
+        if index is None:
+            owners[identity] = len(accepted)
             accepted.append(candidate)
         else:
+            previous = accepted[index]
+            accepted[index] = replace(previous, relevance_score=max(previous.relevance_score, candidate.relevance_score))
             receipts.append({"asset_version_id": candidate.asset_version_id, "retained_asset_version_id": previous.asset_version_id,
-                "reason": "IDENTICAL_VERSION_SCOPE_CONTENT_AND_ATTRIBUTION", "identity_hash": identity})
+                "reason": "IDENTICAL_VERSION_SCOPE_CONTENT_AND_ATTRIBUTION", "identity_hash": identity,
+                "relevance_policy": "MAX_IDENTICAL_SCOPE", "retained_relevance_score": accepted[index].relevance_score})
     return accepted, [*union_receipts, *receipts]
 
 
@@ -496,16 +496,10 @@ def merge_source_ranges(candidates):
                 or span["text_hash"] != "sha256:" + hashlib.sha256(candidate.safe_summary.encode()).hexdigest()):
             result.append(candidate)
             continue
-        scope = {"source": candidate.source_identity, "revision": candidate.source_revision,
-            "project_id": candidate.project_id, "book_id": candidate.book_id,
-            "qualification": candidate.qualification, "governance_status": candidate.governance_status,
-            "authority_freshness": candidate.authority_freshness, "narrative_function": candidate.narrative_function,
-            "whole_source_hash": candidate.content_digest, "field_path": span["field_path"],
-            "asset_type": candidate.asset_type, "logical_context_kind": candidate.logical_context_kind,
-            "facts": candidate.structured_facts, "boundary": candidate.accepted_boundary,
-            "observation_boundary": candidate.observation_boundary, "required": candidate.required,
-            "allowed_use": candidate.allowed_use, "source_use_mode": candidate.source_use_mode,
-            "context_class": candidate.context_class, "provenance": {key: value for key, value in provenance.items() if key not in {"source_range", "lossless_range_union"}}}
+        scope = _source_metadata(candidate)
+        scope.pop("safe_summary")
+        scope["field_path"] = span["field_path"]
+        scope["provenance"] = {key: value for key, value in provenance.items() if key not in {"source_range", "lossless_range_union"}}
         scope_hash = narrative_hash(scope)
         members = [{"asset_version_id": candidate.asset_version_id, **span}]
         combined = replace(candidate, provenance={**provenance, "lossless_range_union": {
@@ -534,7 +528,8 @@ def merge_source_ranges(candidates):
                     or text[current["start"] - start:current["end"] - start] != combined.safe_summary):
                 raise KernelError("TASK_CONTEXT_SOURCE_RANGE_AMBIGUOUS", "Source range union must reconstruct every original member exactly")
             members = [*prior_provenance["lossless_range_union"]["members"], *combined.provenance["lossless_range_union"]["members"]]
-            combined = replace(previous, safe_summary=text, estimated_tokens=len(text.encode()), provenance={**prior_provenance,
+            combined = replace(previous, safe_summary=text, estimated_tokens=len(text.encode()),
+                relevance_score=max(previous.relevance_score, combined.relevance_score), provenance={**prior_provenance,
                 "source_range": {"field_path": span["field_path"], "start": start, "end": end, "text_hash": "sha256:" + hashlib.sha256(text.encode()).hexdigest()},
                 "lossless_range_union": {"scope_hash": scope_hash, "members": members, "reversibility": "EVERY_ORIGINAL_MEMBER_EXACT"}})
             receipts.append({"asset_version_id": candidate.asset_version_id, "retained_asset_version_id": previous.asset_version_id,

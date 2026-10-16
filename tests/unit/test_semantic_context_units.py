@@ -405,3 +405,76 @@ def test_partial_structured_reconstruction_preserves_numeric_values_and_original
     assert parsed['quantity'] == 0.1 and parsed['units'] == '尺'
     assert 'necessary.' in parsed['summary'] and 'optional.' not in parsed['summary']
     assert semantic.reconstruct(original, units, {unit['unit_id'] for unit in units})['safe_summary'] == raw
+
+
+@pytest.mark.parametrize('field,value', [
+    ('narrative_function', 'reader_knowledge'), ('semantic_representation_identity', 'reader-only:B'),
+    ('logical_narrative_identity', 'reader-scope'), ('physical_asset_type', 'draft_version'),
+    ('policy_version', 'different-source-policy'), ('section', 'KNOWLEDGE'), ('bucket', 'reader-only'),
+    ('raw_source', True), ('source_risk', 1), ('active_read_generation_id', 'other-generation'),
+])
+def test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata(field, value):
+    original = candidate('门仍未开。', source_identity='original:v1', source_revision='v1', content_digest='whole')
+    other = replace(original, asset_version_id='history:b', **{field: value})
+    result, receipts = semantic.exact_deduplicate([original, other])
+    assert len(result) == 2 and not receipts
+    assert [getattr(item, field) for item in result] == [getattr(original, field), value]
+
+
+def test_exact_duplicate_retains_member_mapping_and_highest_task_relevance():
+    original = replace(candidate('门仍未开。', source_identity='original:v1', source_revision='v1', content_digest='whole'), relevance_score=0.1)
+    other = replace(original, asset_version_id='history:b', relevance_score=0.9, estimated_tokens=10)
+    result, receipts = semantic.exact_deduplicate([original, other])
+    assert len(result) == 1 and result[0].asset_version_id == original.asset_version_id
+    assert result[0].relevance_score == 0.9
+    assert receipts[0]['asset_version_id'] == other.asset_version_id
+    assert receipts[0]['retained_asset_version_id'] == original.asset_version_id
+
+
+@pytest.mark.parametrize('field,value', [
+    ('semantic_representation_identity', 'reader-only:B'), ('narrative_function', 'reader_knowledge'),
+    ('policy_version', 'other-policy'), ('section', 'KNOWLEDGE'), ('bucket', 'reader-only'),
+])
+def test_overlapping_original_ranges_require_the_entire_remaining_metadata_scope(field, value):
+    import hashlib
+    original = candidate('甲乙丙丁', source_identity='original:v1', source_revision='v1', content_digest='whole',
+        provenance={'source_range': {'field_path': ['text'], 'start': 0, 'end': 4,
+            'text_hash': 'sha256:' + hashlib.sha256('甲乙丙丁'.encode()).hexdigest()}})
+    other = replace(original, asset_version_id='history:b', safe_summary='丙丁戊己', **{field: value},
+        provenance={'source_range': {'field_path': ['text'], 'start': 2, 'end': 6,
+            'text_hash': 'sha256:' + hashlib.sha256('丙丁戊己'.encode()).hexdigest()}})
+    result, receipts = semantic.exact_deduplicate([original, other])
+    assert len(result) == 2 and not receipts
+    assert [getattr(item, field) for item in result] == [getattr(original, field), value]
+
+
+def test_admitted_belief_and_reader_only_sources_keep_both_roles_in_actual_bundle():
+    from novel_forge.modules.context_builder.domain import build_authority_context_bundle, validate_task_context_sources
+    from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
+    boundary = {'accepted_through_chapter': 0}
+    access = resolve_book_knowledge_access_policy(production_profile={}, project_id='p', book_id='b')
+    first = ContextCandidate(asset_version_id='A', asset_type='chapter_episodic_summary', project_id='p', book_id='b',
+        estimated_tokens=10, relevance_score=1, source_identity='original:v1', source_revision='v1', content_digest='hash',
+        safe_summary='门仍未开。', narrative_function='character_belief', semantic_representation_identity='hearsay:A',
+        accepted_boundary=boundary, provenance={'authority': 'Book'})
+    second = replace(first, asset_version_id='B', narrative_function='reader_knowledge', semantic_representation_identity='reader-only:B')
+    plan = ContextCandidate(asset_version_id='plan', asset_type='chapter_plan', project_id='p', book_id='b',
+        estimated_tokens=10, safe_summary='继续查验。', context_class='PROTECTED', accepted_boundary=boundary,
+        provenance={'authority': 'Planning'})
+    inputs = [plan, first, second]
+    admitted = validate_task_context_sources(project_id='p', book_id='b', candidates=inputs, token_budget=512000,
+        required_asset_types=(), accepted_boundary=boundary, knowledge_access_policy=access)
+    assert admitted == frozenset({'plan', 'A', 'B'})
+    selected, receipt = compile_task_context(inputs, task={'stage': 'draft', 'accepted_boundary': boundary,
+        'semantic_contract': semantic.SEMANTIC_CONTRACT}, token_budget=512000, required_asset_types=(),
+        admitted_source_ids=admitted, defer_token_capacity=True, model_call=lambda *args: pytest.fail('Capacity fast path called a model'))
+    bundle = build_authority_context_bundle(project_id='p', book_id='b', stage='draft', created_by_operation_id='op',
+        context_profile_version='draft-context-profile-v4', candidates=selected, token_budget=512000,
+        authority_state_boundary=boundary, knowledge_access_policy=access, task_context_receipt=receipt, defer_token_capacity=True)
+    manifest = {row['asset_version_id']: row for row in bundle['context_manifest']['selected_inputs']}
+    segments = {row['asset_version_id']: row for row in bundle['stage_context_view']['segments']}
+    assert manifest['A']['semantic_representation_identity'] == 'hearsay:A'
+    assert manifest['B']['semantic_representation_identity'] == 'reader-only:B'
+    assert segments['A']['narrative_function'] == 'character_belief'
+    assert segments['B']['narrative_function'] == 'reader_knowledge'
+    assert not receipt['deduplications']

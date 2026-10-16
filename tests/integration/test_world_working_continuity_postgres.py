@@ -378,7 +378,7 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
             layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
             response_path = layout.result_path("fixture-response.json")
             response = json.loads(response_path.read_text())
-            if response.get("chapter") == 4 or any(scene.get("chapter") == 4 for scene in response.get("scene_artifacts", [])):
+            if not upgrade_context_effects and (response.get("chapter") == 4 or any(scene.get("chapter") == 4 for scene in response.get("scene_artifacts", []))):
                 assert "阿岚" in payload.input_text
             support = [paragraph for source in gold["sources"] for paragraph in source["paragraphs"] if paragraph in payload.input_text]
             if support:
@@ -400,6 +400,11 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
     candidates = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
     for model in candidates["models"]:
         model["context_limit"] = 310000
+    if upgrade_context_effects:
+        writer = {**candidates["models"][0], "model": "gpt-test-writer", "tasks": ["draft"], "context_limit": 260000}
+        for model in candidates["models"]:
+            model["tasks"] = [task for task in model["tasks"] if task != "draft"]
+        candidates["models"].append(writer)
     env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(candidates)
     env["NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT"] = "310000"
     for key, value in env.items():
@@ -520,6 +525,8 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
         destination.mkdir(parents=True, exist_ok=True)
         (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_MAIN_UNSENT_UPGRADE_WITH_SYNTHETIC_LOAD" if upgrade_context_effects else "NATIVE_CONTROLLED_GOLD_WITH_SYNTHETIC_CAPACITY_LOAD",
             "gold_applied": not upgrade_context_effects, "gold_sha256": hashlib.sha256(gold_path.read_bytes()).hexdigest(), "gold_questions_fixed_before_compression": True,
+            "route_windows": {"planning": 310000, "writer": 260000 if upgrade_context_effects else 310000,
+                "unit": "SYNTHETIC_CHARACTER_METER_NOT_REAL_TOKENS", "purpose": "A narrower authorized Writer fixture exercises actual compression before its unsent checkpoint" if upgrade_context_effects else "Complete upstream request overflow with fixed original Gold"},
             "actual_prompt_support": actual_prompt_qa, "semantic_comprehension": "NOT_VERIFIED",
             "result": result, "proofs": proofs, "compression_effects": compression_proofs, "upgrade": upgrade_proof}, ensure_ascii=False, indent=2))
         (destination / "native-manuscript-readback.txt.gz").write_bytes(gzip.compress(readback_text.encode(), mtime=0))
