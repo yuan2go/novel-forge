@@ -401,7 +401,7 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
     for model in candidates["models"]:
         model["context_limit"] = 310000
     if upgrade_context_effects:
-        writer = {**candidates["models"][0], "model": "gpt-test-writer", "tasks": ["draft"], "context_limit": 260000}
+        writer = {**candidates["models"][0], "reasoning": "xhigh", "tasks": ["draft"], "context_limit": 260000}
         for model in candidates["models"]:
             model["tasks"] = [task for task in model["tasks"] if task != "draft"]
         candidates["models"].append(writer)
