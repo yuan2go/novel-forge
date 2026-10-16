@@ -809,7 +809,7 @@ calls and before committing the Draft. Old frozen requests remain immutable; use
 existing Planning runtime-continuation preflight for the explicitly validated v2→v3
 Pack upgrade, retaining unchanged workflow, Skills, schemas, account and route policy.
 A different creative contract or unresolved outcome cannot borrow that upgrade.
-For an older Chapter Context/Draft/Revision capacity failure, activate the approved
+For the historical v2-to-v3 Chapter Context/Draft/Revision capacity continuation, activate the approved
 same-Book v3 Pack for the executable release through the existing Pack Authority,
 then use `authority-creation continue --project-id <project> --formation-run-id <id>
 --repository-root <repository> --foreground`. The native Chapter preflight appends a

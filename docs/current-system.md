@@ -1401,8 +1401,12 @@ remain separate from delivered expression. Older frozen policies retain their li
 Chapter's binder and Planning's preparer coordinate capacity within their existing
 Owners before planning the main Effect. Eligible older historical expression is
 extracted from the original frozen projection, independently checked, restored as
-needed, rebuilt and measured again. Current prose, facts, recent complete chapters
-and source boundaries remain exact. Compressor chunks are sized against both fully
+needed, rebuilt and measured again. Current prose, facts and source boundaries remain exact. The current recent-complete
+selection also protects all selected recent history expressions, which can leave no
+compressible source after full-request overhead is added. A frozen Context-v4
+`capacity_history_exact_chapters` policy separating preparation completeness from
+capacity protection is pending implementation; it must retain the immediate predecessor
+and protected facts while allowing older selected expression to enter the existing loop. Compressor chunks are sized against both fully
 rendered substage requests and have no eight-chunk lifetime limit. Oversized text
 uses original Unicode coordinates and preserves quoted spans. Verified restoration
 can reallocate other compressible history. Each completed chunk retains its original
