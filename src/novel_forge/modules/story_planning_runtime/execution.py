@@ -4115,6 +4115,9 @@ class _PlanningPepPort:
         request = self.binding.request
         receipt_consumption = asset_type == "model_call_log" and content.get("recovered_external_effect_success") is True
         suffix = f":receipt-consumption:{request.fencing_token}" if receipt_consumption else ""
+        if request.stage in {"context_compress", "context_fidelity"}:
+            suffix = f":effect:{self.effect_id}" + suffix
+            content = {**content, "source_external_effect_id": self.effect_id}
         if receipt_consumption:
             content = {
                 **content,

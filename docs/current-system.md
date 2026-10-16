@@ -1268,7 +1268,7 @@ selection with an explicit evidence-budget error, never a claim of no legal cont
 Only the matching mechanism history is copied into each candidate's phase evidence.
 Plan/Intent/Memo retain complete immutable strategies. A typed Memo's Context projection
 may replace an identical strategy with its exact protected ExecutionIntent reference; it
-cannot omit the only copy or change the existing Context maximum. A new request can
+cannot omit the only copy or change the existing Context maximum. Historical requests can
 explicitly freeze `draft-context-profile-v3`, whose Context owner ceiling is 24,000 tokens;
 the approved Pack and request may impose smaller limits. The profile is frozen in the
 Chapter preparation report. The author production page writes an explicit
@@ -1280,7 +1280,7 @@ Book Design's exact Character Cast binding; World preparation still verifies eac
 approved identity and private knowledge. Saving a configuration neither grants model
 calls nor changes a previously frozen Chapter command. Project editorial ControlMode
 is a separate native versioned policy: the UI identifies its project-wide future scope
-and shows the current selection separately from an existing chapter's frozen binding. Requests without the field retain v2 and its 16,000-token
+and shows the current selection separately from an existing chapter's frozen binding. Historical requests without the field retain v2 and its 16,000-token
 ceiling, even if they previously requested a larger budget. The corresponding v3 Provider
 view enforces the frozen token budget times four as its serialized-character bound,
 retains all selected facts, and omits their duplicate generated JSON summary. Legacy
@@ -1375,7 +1375,9 @@ and reasoning accounting avoid treating the Context target as output reserve or
 charging the same reasoning reservation twice. API stage output targets are
 enforced in the sent request. Since Codex CLI does not enforce a per-request output
 ceiling, new task contracts reserve its full confirmed model output capacity,
-including reasoning once; unknown capacity or insufficient frozen reservation blocks.
+including reasoning once. An explicitly frozen CLI headroom policy can instead reserve
+the entire remaining confirmed window when the output maximum is unknown; unknown
+context capacity or insufficient frozen reservation blocks.
 Successful frozen requests recover under their original contract without new I/O.
 These are engineering contracts;
 fixture execution does not establish real Provider capacity or literary improvement.

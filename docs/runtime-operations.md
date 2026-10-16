@@ -3647,12 +3647,15 @@ This opt-in policy uses the existing ChatGPT account and Codex backend with zero
 and stream retries. Pair it with a one-call native grant per diagnostic sample and stop
 the runner on failure; never change a frozen request to acquire this policy afterward.
 
-For multiple corrected requests under one grant, retain the same project and absolute
+Historical bounded diagnostic grants retain the same project and absolute
 `NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT` / `NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT`.
 The existing budget ledger conservatively includes unknown reservations, and Source uses
 the stricter of those absolute caps and the request ceiling. A new run key does not reset
 those project caps. Supply only the remaining authorized allowance to a corrected request;
 do not increase the project caps to compensate for consumed calls.
+These historical diagnostic caps do not apply to ordinary native writing under
+`billing-channel-resources.v1`; membership usage is observed without an additional
+cumulative call/token veto. Explicit paid spend authorization remains binding.
 
 Codex structured output uses a versioned wire-schema projection: `uniqueItems` remains
 in the frozen local validation Schema and is omitted only from the Provider Schema.
@@ -4125,12 +4128,12 @@ that Book; creating another Workspace does not create another allowance. Initial
 checks the existing project's active status and workspace ownership and preserves all
 source assets and ledger history. It never reassigns an already bound workspace.
 
-Partition the one authorized total into explicit project sublimits whose sum stays within
-that total. Include Source and A's design/reviews/repairs in A's sublimit, and B's
-corresponding work in B's sublimit. Freeze `NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT` and
-`NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT` for every process in its project. Do not give
-each project the full shared allowance, transfer unused budget automatically, or create a
-replacement project to reset usage. Book-specific ALLOW_ONLY/DENY_ALL separates external
+Historical bounded A/B experiments partition their explicitly authorized total into
+project sublimits, including Source, design, reviews and repairs. Their frozen call/token
+limits remain historical evidence. Ordinary writing under `billing-channel-resources.v1`
+has no additional cumulative call/token limit; paid-channel spending still requires its
+actual authorization. Creating a replacement Project never clears unresolved reservations
+or external outcomes. Book-specific ALLOW_ONLY/DENY_ALL separates external
 knowledge; both Books retain only their own Canon and independently generated upper plans.
 
 For a small real-material catalogue, save original files and individual license evidence,
@@ -4461,10 +4464,12 @@ resume. Historical v1-v3 Formation runs without a frozen creation-input profile 
 `--creation-policy-file "$ORIGINAL_CREATION_POLICY"` on continuation. The current shipped
 default cannot silently replace that historical profile.
 
-Absent an explicit context policy, creation derives its context plan from the authorized
-PRIMARY Codex catalog windows, subtracting each output allowance. World execution uses
-`world-production-policy.v4` within its existing 512000 configurable ceiling. Explicit
-policies remain frozen. These estimates never override complete rendered-request admission.
+Absent an explicit context policy, new creation uses Context policy v3 and World policy
+v5 within the 512000 system ceiling and the selected route's confirmed smaller window.
+The complete rendered request includes its output/reasoning and protocol reservations.
+Historical profiles retain their frozen policies and allocations; ordinary continuation
+does not replace them with current defaults. Selection estimates never override complete
+rendered-request admission.
 
 Native `blob.upload` export uses the Command Kernel's Authority-bound storage admission,
 not a model route or a model budget. The exact built-in MinIO adapter must match the frozen
