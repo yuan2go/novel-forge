@@ -319,6 +319,7 @@ def verify_request_composition(candidates, compressed, *, supplied, task, source
             original_units = semantic_units.source_units(original, task)
             catalog = semantic_units.source_audit(original_units, {unit["unit_id"] for unit in original_units})
         keep = set(trace["selected_unit_ids"]) if trace else {unit["unit_id"] for unit in catalog}
+        local_ids = {record["unit_id"] for record in catalog}
         for record in catalog:
             start, end = record["source_span"]
             text = original.safe_summary[start:end]
@@ -326,6 +327,7 @@ def verify_request_composition(candidates, compressed, *, supplied, task, source
                 raise KernelError("CONTEXT_FINAL_COMPOSITION_DRIFT", "Final checker source no longer matches the original catalog")
             identity = "source:" + narrative_hash([original.asset_version_id, record["unit_id"]]).split(":")[-1][:32]
             unit = {**record, "unit_id": identity, "text": text, "order": len(units),
+                "explicit_refs": ["source:" + narrative_hash([original.asset_version_id, ref]).split(":")[-1][:32] if ref in local_ids else ref for ref in record.get("explicit_refs", ())],
                 "attribution": {**record.get("attribution", {}), "source_expression": (original.provenance or {}).get("source_expression", {})}}
             units.append(unit)
             originals[identity] = text
@@ -337,6 +339,10 @@ def verify_request_composition(candidates, compressed, *, supplied, task, source
         "catalog_hash": narrative_hash(semantic_units.source_audit(units, {unit["unit_id"] for unit in units})), "checks": [],
         "exact_original_sources": sorted(unchanged)}
     additions = set()
+    closed = semantic_units.close_dependencies(units, selected, external_refs=task.get("external_dependency_refs") or ())
+    if closed - selected:
+        proof["deterministic_dependency_additions"] = sorted(closed - selected)
+        return proof, [originals[identity] for identity in sorted(closed - selected)]
     transformed = [unit for unit in units if origins[unit["unit_id"]] not in unchanged]
     external = set(task.get("external_dependency_refs") or ()) | {alias for unit in units if origins[unit["unit_id"]] in unchanged for alias in unit.get("source_aliases", ())}
     for window in semantic_units.final_windows(transformed, selected, external_refs=external):
@@ -422,6 +428,8 @@ def prepare_request_capacity(
         for part in parent:
             origin = origin[part]
         identity = {key: origin[key] for key in ("asset_version_id", "content_hash", "chapter") if isinstance(origin, dict) and key in origin}
+        if not identity.get("asset_version_id") or not identity.get("content_hash"):
+            identity = {}
         field_attributions = []
         for path, _ in expressions:
             attributed, value = {}, original
@@ -464,12 +472,13 @@ def prepare_request_capacity(
                     **({"located_observations": located} if located else {})})
             position += len(text) + 2
     candidates = list(candidates_by_hash.values())
+    dependency_bindings = semantic_units.protected_dependency_bindings(original, excluded_scopes=set(grouped)) if semantic else []
     eligible_quotes = [quote for quote in preserve_quotes if any(quote.replace("\r\n", "\n") in item.safe_summary.replace("\r\n", "\n") for item in candidates)] if semantic else list(preserve_quotes)
     task = {"stage": stage, "frozen_input_boundary": source_boundary, "source_projection_hash": narrative_hash(original),
             "preserve_quotes": eligible_quotes, "task_context": compression_task_context(original.get("input_manifest") or {}), "capacity_policy": CAPACITY_POLICY,
             **({"capacity_bindings": capacity_bindings} if capacity_bindings else {}),
             **({"semantic_contract": semantic_contract} if semantic else {}),
-            **({"external_dependency_refs": sorted({entry["observation_id"] for entries in observations_by_source.values() for entry in entries})} if semantic else {}),
+            **({"external_dependency_refs": sorted({row["alias"] for row in dependency_bindings})} if semantic else {}),
             "route_contract": {"provider": route.model_profile.model_provider, "model": route.model_profile.model_id,
                                "method": method, "evidence": route.token_accounting_evidence_ref,
                                "context_limit": route.model_context_limit, "output_limit": route.model_output_limit}}
@@ -541,6 +550,7 @@ def prepare_request_capacity(
                 "indivisible_original_sources_retained": sorted(raw_required_ids),
                 "candidate_fidelity_hashes": [narrative_hash(trace["final_composition"]) for trace in receipt["compression_trace"] if trace.get("final_composition")],
                 "provider_combination": combined_proof,
+                "unchanged_dependency_bindings": dependency_bindings,
                 "deterministic_source_fields_ranges_attribution_and_dependencies": "VERIFIED",
                 "semantic_scope": "FINAL_EXTRACTS_WITH_BOUNDED_ORIGINAL_RISK_WINDOWS; NOT_AN_ABSOLUTE_FREE_TEXT_EQUIVALENCE_PROOF"}
         after, current_limit = measure(projection)

@@ -289,3 +289,62 @@ def test_bridging_original_ranges_merge_the_entire_connected_component(order):
     result, _ = semantic.exact_deduplicate([sources[index] for index in order])
     assert len(result) == 1 and result[0].safe_summary == original
     assert len(result[0].provenance['lossless_range_union']['members']) == 3
+
+
+def test_budget_allocation_reserves_required_quotes_in_later_chunks():
+    import json
+    boundary = {'kind': 'FROZEN_STAGE_INPUTS', 'project_id': 'p', 'book_id': 'b',
+        'sources': [{'asset_version_id': 'context', 'content_hash': 'frozen'}]}
+    original = candidate('\n\n'.join(['ordinary ' + 'x' * 80 for _ in range(5)] + ['must keep last.']),
+        provenance={'frozen_input_boundary': boundary})
+    task = {'stage': 'draft', 'semantic_contract': semantic.SEMANTIC_CONTRACT, 'frozen_input_boundary': boundary,
+        'source_projection_hash': 'frozen', 'preserve_quotes': ['must keep last.']}
+    def call(stage, chunk):
+        if stage == 'context_compress':
+            return {'selected_unit_ids': [unit['unit_id'] for unit in chunk['units'] if not unit.get('context_only')]}
+        return {'supported': True, 'coverage_complete': True, 'missing_unit_ids': [], 'distorted_unit_ids': []}
+    result, _ = compile_task_context([original], task=task, token_budget=300, required_asset_types=(),
+        model_call=call, compression_input_tokens=16000, chunk_fits=lambda chunk: len(chunk['units']) <= 2,
+        token_counter=lambda value: len(json.dumps(value)))
+    assert 'must keep last.' in result[0].safe_summary
+
+
+def test_unversioned_history_fields_keep_the_actual_custodian_without_fabricated_source_identity():
+    from tests.unit.test_complete_request_capacity import source_data
+    data = source_data(40, 180)
+    segment = data['context_bundle']['segments'][0]
+    segment.pop('asset_version_id', None)
+    segment.pop('content_hash', None)
+    segment['chapter'] = 1
+    _, projection, calls = semantic_preparation(data)
+    assert projection and all('source_expression' not in call['task'] for call in calls)
+    assert all(call['frozen_input_boundary']['sources'] == [{'asset_version_id': 'context', 'content_hash': 'frozen'}] for call in calls)
+
+
+@pytest.mark.parametrize('protected_cause', [False, True])
+def test_final_global_dependency_closure_uses_original_cause_and_actual_unchanged_plan(protected_cause):
+    from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection
+    condition = '只有潮尺低于二尺才可开闸。'
+    side = '\n\n'.join('side ' + str(i) + ' ' + 'x' * 180 for i in range(18))
+    data = {'context_bundle': {'segments': [
+        {'asset_type': 'chapter_episodic_summary', 'asset_version_id': 'a', 'content_hash': 'original-a',
+            'safe_summary': json.dumps({'event_id': 'cause:a', 'summary': condition + '\n\n' + side}, ensure_ascii=False)},
+        {'asset_type': 'chapter_episodic_summary', 'asset_version_id': 'b', 'content_hash': 'original-b',
+            'safe_summary': json.dumps({'event_id': 'effect:b', 'depends_on': ['cause:a'], 'summary': '因此她开闸。\n\n' + side}, ensure_ascii=False)}]}}
+    if protected_cause:
+        data['context_bundle']['segments'].pop(0)
+        data['chapter_plan'] = {'planned_dependency_sources': [{'status': 'FROZEN_PLAN_NOT_EVENT_ACCEPTANCE',
+            'source_asset_version_id': 'original-plan', 'dependencies': [{'planned_event': {'event_id': 'cause:a', 'summary': condition}}]}]}
+    def select(stage, chunk):
+        if stage == 'context_compress':
+            return {'selected_unit_ids': [unit['unit_id'] for unit in chunk['units'] if not unit.get('context_only') and unit['text'].startswith('因此')]}
+    original, projection, _ = semantic_preparation(data, limit=3000 if protected_cause else 6500, callback=select)
+    assert projection
+    final = apply_capacity_projection(original, projection)
+    assert '因此她开闸。' in final['context_bundle']['segments'][-1]['safe_summary']['summary']
+    if protected_cause:
+        assert final['chapter_plan'] == original['chapter_plan']
+        assert any(row['alias'] == 'cause:a' for row in projection['final_composition']['unchanged_dependency_bindings'])
+    else:
+        assert condition in final['context_bundle']['segments'][0]['safe_summary']['summary']
+    assert projection['measurement']['after_reserved'] <= projection['measurement']['limit']

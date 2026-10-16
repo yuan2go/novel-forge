@@ -1119,6 +1119,7 @@ class CostAwareRouter:
             min(
                 eligible,
                 key=lambda row: (
+                    "BUDGET_HARD_LIMIT" in row["diagnostic_reasons"] if task.declared_requirements.get("capacity_preparation_policy") == "max-authorized-effective-context.v1" else False,
                     -min(512_000, row["candidate"]["context_limit"]) if task.declared_requirements.get("capacity_preparation_policy") == "max-authorized-effective-context.v1" else 0,
                     row["expected_effective_cost"] is None,
                     Decimal(row["expected_effective_cost"] or "0"),

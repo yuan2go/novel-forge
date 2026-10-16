@@ -285,7 +285,7 @@ def compile_task_context(
         deduplicate_context_candidates(normalized, required_logical_kinds=set(required_asset_types) | resolve_context_profile("reference_analysis" if reference else "draft").required_asset_types))
     if semantic:
         normalized = [replace(item, estimated_tokens=max(1, token_counter(_payload(item)))) if item.allowed_use != "evidence_only" else item for item in normalized]
-    catalogs = {item.asset_version_id: _units(item, task) for item in normalized} if semantic else {}
+    catalogs = {item.asset_version_id: _units(item, task) if item.allowed_use != "evidence_only" else [] for item in normalized} if semantic else {}
     quote_locations = semantic_units.protect_quotes(normalized, catalogs, task.get("preserve_quotes") or ()) if semantic else []
     external_refs = set().union(*(fact_aliases(fact) for item in normalized for fact in item.structured_facts)) if semantic else set()
     if semantic:
@@ -326,6 +326,7 @@ def compile_task_context(
         raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", f"necessary exact task content requires conservative {protected_tokens} tokens; target={token_budget}")
     before = sum(item.estimated_tokens for item in normalized)
     traces = []
+    original_candidates = {item.asset_version_id: item for item in normalized}
     if before > token_budget and not defer_token_capacity:
         eligible = [item for item in normalized if item not in protected and item.asset_type in _HISTORY and not item.compression_trace]
         if not eligible or model_call is None or compression_input_tokens <= 0:
@@ -458,11 +459,12 @@ def compile_task_context(
                 budget_removed = []
                 if semantic:
                     chosen = semantic_units.close_dependencies(units, chosen, external_refs=external_refs)
-                    mandatory_chosen = semantic_units.close_dependencies(units, required | keep, external_refs=external_refs)
+                    all_required = {unit["unit_id"] for unit in units if unit["required"]}
+                    mandatory_chosen = semantic_units.close_dependencies(units, all_required | keep, external_refs=external_refs)
                     optional = sorted((unit for unit in group if unit["unit_id"] in chosen - mandatory_chosen),
                         key=lambda unit: (not bool(unit.get("semantic_risk")), unit["order"]))
                     suggested = set(chosen)
-                    while optional and token_counter(semantic_units.reconstruct(candidate, units, keep | chosen)) > candidate_target:
+                    while optional and token_counter(semantic_units.reconstruct(candidate, units, mandatory_chosen | chosen)) > candidate_target:
                         optional = optional[:len(optional) // 2]
                         chosen = semantic_units.close_dependencies(units, required | {unit["unit_id"] for unit in optional}, external_refs=external_refs)
                     budget_removed = sorted(suggested - chosen)
@@ -537,6 +539,37 @@ def compile_task_context(
             replacements[candidate.asset_version_id] = replace(candidate, safe_summary=payload["safe_summary"], structured_facts=facts, estimated_tokens=max(1, token_counter(payload)), context_class=ContextClass.COMPRESSIBLE, compression_method=trace["method"], compression_trace=(trace,))
             traces.append(trace)
         normalized = [replacements.get(item.asset_version_id, item) for item in normalized]
+        if semantic:
+            while True:
+                selections = {item.asset_version_id: set(item.compression_trace[0]["selected_unit_ids"]) if item.asset_version_id in replacements else
+                    {unit["unit_id"] for unit in catalogs[item.asset_version_id]} for item in normalized}
+                closed = semantic_units.close_selected_catalog_dependencies(catalogs, selections,
+                    external_refs=task.get("external_dependency_refs") or ())
+                changed = [item for item in normalized if closed[item.asset_version_id] != selections[item.asset_version_id]]
+                if not changed:
+                    break
+                updated = {}
+                for item in changed:
+                    identity = item.asset_version_id
+                    original = original_candidates[identity]
+                    source_units = catalogs[identity]
+                    trace = dict(item.compression_trace[0])
+                    template = trace["routing_assessments"][0]["task"]
+                    def restored_payload(group):
+                        return {**template, "units": group, "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]]}
+                    keep, proof, effects = semantic_units.verify_final_selection(original, source_units, closed[identity],
+                        payload=restored_payload, fits=lambda chunk: chunk_fits(chunk) if chunk_fits else token_counter(chunk) <= compression_input_tokens,
+                        model_call=model_call, external_refs=external_refs)
+                    payload = semantic_units.reconstruct(original, source_units, keep)
+                    trace.update(selected_unit_ids=sorted(keep), source_units=semantic_units.source_audit(source_units, keep),
+                        restored_unit_ids=sorted(set(trace["restored_unit_ids"]) | (keep - selections[identity])),
+                        result_content_hash=narrative_hash(payload), final_composition=proof,
+                        global_dependency_closure="ORIGINAL_CATALOG_SELECTED_FIXED_POINT",
+                        model_execution_evidence=[*trace["model_execution_evidence"], *effects])
+                    updated[identity] = replace(item, safe_summary=payload["safe_summary"], structured_facts=tuple(payload["structured_facts"]),
+                        estimated_tokens=max(1, token_counter(payload)), compression_trace=(trace,))
+                    traces = [trace if row["source_asset_version_id"] == identity else row for row in traces]
+                normalized = [updated.get(item.asset_version_id, item) for item in normalized]
         if sum(item.estimated_tokens for item in normalized) > token_budget and not allow_restored_overflow:
             raise KernelError("TASK_CONTEXT_FIDELITY_RESTORE_EXCEEDS_BUDGET", "faithful restored Context exceeds its authorized task target; no required source was silently discarded")
         assert not protected_ids.intersection(replacements)

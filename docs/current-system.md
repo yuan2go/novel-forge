@@ -1407,7 +1407,7 @@ rendered substage requests and have no eight-chunk lifetime limit. Oversized tex
 uses original Unicode coordinates and preserves quoted spans. Verified restoration
 can reallocate other compressible history. Each completed chunk retains its original
 ExternalEffect; retry reuses matching source, task, Pack and route bindings.
-The semantic contract prepares the largest authorized effective Context window (capped
+The semantic contract prepares the largest currently spend-admissible authorized Context window (capped
 at 512,000), with cost breaking capacity ties; final serialization still undergoes
 route-specific admission. Original frozen plan predecessor records are retrieved through
 the ChapterPlan realization identity and exact parent-version hash, labelled as planned

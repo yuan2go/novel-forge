@@ -354,6 +354,56 @@ def close_catalog_dependencies(catalogs, *, external_refs=()):
     return set(aliases) | set(external_refs)
 
 
+def close_selected_catalog_dependencies(catalogs, selections, *, external_refs=()):
+    local = {source: {unit["unit_id"]: unit for unit in units} for source, units in catalogs.items()}
+    aliases = {}
+    for source, units in catalogs.items():
+        for unit in units:
+            for alias in unit.get("source_aliases", ()):
+                aliases.setdefault(alias, []).append((source, unit["unit_id"]))
+    result = {source: set(values) for source, values in selections.items()}
+    pending = [(source, identity) for source, values in result.items() for identity in values]
+    while pending:
+        source, identity = pending.pop()
+        for reference in local[source][identity].get("explicit_refs", ()):
+            required = [(source, reference)] if reference in local[source] else aliases.get(reference, ())
+            if not required and reference not in external_refs:
+                raise KernelError("TASK_CONTEXT_DEPENDENCY_UNAVAILABLE", "Final selected dependency has no located source", details={"source": source, "reference": reference})
+            for owner, dependency in required:
+                if dependency not in result[owner]:
+                    result[owner].add(dependency)
+                    pending.append((owner, dependency))
+    return result
+
+
+def protected_dependency_bindings(document, *, excluded_scopes):
+    result = []
+    def visit(value, path=()):
+        if path in excluded_scopes:
+            return
+        if isinstance(value, dict):
+            aliases = {child for key, child in value.items() if key in _ALIASES and isinstance(child, str) and child}
+            semantic_keys = set(value) & (_TEXT_FIELDS | {"state", "state_deltas", "action", "decision", "resistance", "consequence", "motivation", "condition", "conditions", "preconditions", "exceptions", "predicate", "value", "mutation", "payload", "quantity", "negated", "knowledge_boundary", "from_state", "to_state"})
+            if aliases and any(value[key] not in (None, "", [], {}) for key in semantic_keys):
+                result.extend({"alias": alias, "original_projection_path": list(path), "record_hash": narrative_hash(value),
+                    "status": "EXACT_UNCHANGED_PROVIDER_RECORD"} for alias in sorted(aliases))
+            for key, child in value.items():
+                if key == "safe_summary" and isinstance(child, str):
+                    try:
+                        parsed = json.loads(child)
+                    except ValueError:
+                        parsed = None
+                    if isinstance(parsed, (dict, list)):
+                        visit(parsed, (*path, key, "$decoded_json"))
+                        continue
+                visit(child, (*path, key))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, (*path, index))
+    visit(document)
+    return result
+
+
 def selected_ranges(units, keep, path):
     ranges = []
     previous_order = None

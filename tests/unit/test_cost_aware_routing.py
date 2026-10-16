@@ -1053,3 +1053,13 @@ def test_semantic_preparation_uses_the_largest_authorized_window_and_preserves_l
     assert route(semantic, [small, big], observations)['selected']['candidate']['candidate_id'] == 'pro'
     forbidden = replace(big, authorized_tasks=('draft',))
     assert route(semantic, [small, forbidden], observations)['selected']['candidate']['candidate_id'] == 'flash'
+
+
+def test_semantic_capacity_preparation_does_not_lock_an_unaffordable_larger_route():
+    small = replace(candidate(), context_limit=8000)
+    big = replace(candidate('pro', '1000'), context_limit=12000)
+    preparing = task(input_tokens=6000, output_tokens=100, remaining_money='1', declared_requirements={
+        'pure_generation': True, 'capacity_preparation': True,
+        'capacity_preparation_policy': 'max-authorized-effective-context.v1'})
+    result = route(preparing, [small, big], {'flash': samples(), 'pro': samples()})
+    assert result['selected']['candidate']['candidate_id'] == 'flash'

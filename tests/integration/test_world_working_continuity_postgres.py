@@ -386,7 +386,8 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
                     "support_paragraphs": support, "scope": "Exact original support in actual serialized prompt; not model semantic comprehension"})
                 if "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。" in support:
                     response["scene_artifacts"][0]["text"] += "\n\n钥匙已经归还，闸门仍旧未开；阿岚没有把那条未经核实的传闻递给林砚。"
-                    response["text"] = serialize_realization(response["scene_artifacts"])
+                    if "text" in response:
+                        response["text"] = serialize_realization(response["scene_artifacts"])
                     response_path.write_text(json.dumps(response, ensure_ascii=False))
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_sent_request)
@@ -424,7 +425,7 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
         policy["profiles"]["production_profile"]["content"]["working_prose_policy"]["version"] = "working-prose-projection.v6"
         policy_file = tmp_path / "frozen-complete-capacity-v3.json"
         policy_file.write_text(json.dumps(policy))
-        args.creation_policy_file = str(policy_file)
+        args.creation_policy_file = policy_file
         freeze = PostgresChapterExecutionContractBinder.freeze_before_external_effect
         interrupted = []
         def fail_after_context(binder, **arguments):
