@@ -154,20 +154,25 @@ def test_deterministic_restart_reuses_successful_chunk_inputs():
     assert calls and not replay_calls and first == second
 
 
-def test_working_passages_batch_by_original_source_and_duplicate_wrappers_share_extract():
+@pytest.mark.parametrize("paragraphs,limit", [(600, 30000), (14000, 500000)])
+def test_working_passages_batch_by_original_source_and_duplicate_wrappers_share_extract(paragraphs, limit):
     working = {"projection_policy": {"recent_complete_chapters": 2}, "target_chapter": 4,
         "sources": [{"chapter": 1, "asset_version_id": "chapter:one", "content_hash": "sha256:original",
-            "passages": [{"text": f"Original paragraph {i}: " + "a" * 100} for i in range(600)]}]}
+            "passages": [{"text": f"Original paragraph {i}: " + "a" * 100} for i in range(paragraphs)]}]}
     data = {"context_bundle": {"working_manuscript": deepcopy(working)}, "input_manifest": {"working_manuscript": deepcopy(working)}}
     cache = {}
-    projection, calls = run_preparation(data, limit=30000, fits=lambda _: True, cache=cache)
+    projection, calls = run_preparation(data, limit=limit, fits=lambda _: True, cache=cache)
     final = apply_capacity_projection(data, projection)
     assert final["context_bundle"]["working_manuscript"] == final["input_manifest"]["working_manuscript"]
-    assert len(projection["replacements"]) == 1200
-    assert sum(stage == "context_compress" for stage, _ in calls) == 3
+    assert len(projection["replacements"]) == paragraphs * 2
+    assert sum(stage == "context_compress" for stage, _ in calls) == (paragraphs + 255) // 256
     assert all(task["task"]["source_expression"]["asset_version_id"] == "chapter:one" for _, task in calls)
-    assert len(json.dumps(final).encode()) + 100 <= 30000
-    replay, additional_calls = run_preparation(dict(reversed(list(data.items()))), limit=30000, fits=lambda _: True, cache=cache)
+    from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
+    for stage, task in calls:
+        view = context_compression_task_view(stage, {"context_compression_task": task})
+        assert view["task"]["source_expression"] == {"asset_version_id": "chapter:one", "content_hash": "sha256:original", "chapter": 1}
+    assert len(json.dumps(final).encode()) + 100 <= limit
+    replay, additional_calls = run_preparation(dict(reversed(list(data.items()))), limit=limit, fits=lambda _: True, cache=cache)
     assert replay == projection and not additional_calls
 
 

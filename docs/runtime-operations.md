@@ -746,6 +746,12 @@ it does not stand in for the schema already present in the Prompt. Protocol fram
 safety, output and reasoning reservations are recorded separately. After independent
 fidelity checking and necessary restoration, the owner renders again and freezes the
 derived request actually dispatched. A fitting full request makes no compression call.
+Source batches retain each original passage coordinate and expose the original Chapter
+version/hash to both model stages. Duplicate wrappers of that same source share the
+extract. Initial targets use the full rendered removable contribution, rather than
+subtracting repeated request overhead from one deduplicated source. The host-only empty
+expression probe is never sent or accepted; fidelity and final full-request admission
+still decide whether an actual extract can be used.
 Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
 new ordinary creation uses v3 Context and v6 working prose. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.

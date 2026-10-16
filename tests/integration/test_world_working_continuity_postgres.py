@@ -373,6 +373,15 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
     assert result["stop_reason"] == "MANUSCRIPT_READY", (result, failures)
     compression = [row for row in effects if row[2].get("stage") in {"context_compress", "context_fidelity"}]
     assert compression and all(row[1] == "SUCCEEDED" for row in compression)
+    compression_proofs = []
+    for _, status, payload, effect_id in compression:
+        expression = payload["input"]["context_compression_task"]["task"].get("source_expression")
+        if expression:
+            assert '"source_expression"' in sent_requests[effect_id]
+            assert expression["asset_version_id"] in sent_requests[effect_id]
+            assert expression["content_hash"] in sent_requests[effect_id]
+        compression_proofs.append({"effect_id": effect_id, "stage": payload["stage"], "status": status,
+            "source_expression": expression, "sent_request_sha256": hashlib.sha256(sent_requests[effect_id].encode()).hexdigest()})
     derived = [row for row in effects if row[2].get("input", {}).get("_context_capacity_projection")]
     assert derived
     assert any(row[0].startswith("planning.") for row in derived), [row[0] for row in derived]
@@ -396,6 +405,6 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         destination = Path(evidence_root) / "upstream-complete-request"
         destination.mkdir(parents=True, exist_ok=True)
         (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_SYNTHETIC_CHARACTER_METER_ONLY",
-            "result": result, "proofs": proofs}, ensure_ascii=False, indent=2))
-        for proof in proofs:
-            (destination / (proof["effect_id"] + "-sent.txt.gz")).write_bytes(gzip.compress(sent_requests[proof["effect_id"]].encode(), mtime=0))
+            "result": result, "proofs": proofs, "compression_effects": compression_proofs}, ensure_ascii=False, indent=2))
+        for effect_id in {proof["effect_id"] for proof in proofs + compression_proofs}:
+            (destination / (effect_id + "-sent.txt.gz")).write_bytes(gzip.compress(sent_requests[effect_id].encode(), mtime=0))

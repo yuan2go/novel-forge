@@ -80,6 +80,14 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     host_task = dict(task.get("task") or {})
     semantic_task = {key: deepcopy(value) for key, value in host_task.items() if key in {"stage", "chapter", "goal", "preserve_quotes", "task_context"}}
+    expression = host_task.get("source_expression")
+    if stage_sources and expression is not None:
+        if (not isinstance(expression, Mapping) or set(expression) - {"asset_version_id", "content_hash", "chapter"}
+                or not isinstance(expression.get("asset_version_id"), str) or not expression["asset_version_id"]
+                or not isinstance(expression.get("content_hash"), str) or not expression["content_hash"]
+                or ("chapter" in expression and (type(expression["chapter"]) is not int or expression["chapter"] <= 0))):
+            raise KernelError("CONTEXT_COMPRESSION_SOURCE_EXPRESSION_INVALID", "Source expression identity must retain its original version, hash and Chapter")
+        semantic_task["source_expression"] = dict(expression)
     if isinstance(host_task.get("plan"), dict):
         from .chapter_plan_views import build_draft_plan_view
         plan = dict(host_task["plan"])

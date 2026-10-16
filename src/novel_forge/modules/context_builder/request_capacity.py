@@ -176,8 +176,21 @@ def prepare_request_capacity(
                                "method": method, "evidence": route.token_accounting_evidence_ref,
                                "context_limit": route.model_context_limit, "output_limit": route.model_output_limit}}
     original_amount = sum(counter({"safe_summary": item.safe_summary, "structured_facts": []}) for item in candidates)
-    target = min(SYSTEM_CONTEXT_LIMIT, max(sum(counter({"safe_summary": "", "structured_facts": []}) for _ in candidates) + 1,
-                                         original_amount - max(1, before - limit)))
+    empty = deepcopy(original)
+    empty_projection = {"contract_version": CAPACITY_POLICY, "original_hash": narrative_hash(original),
+        "source_boundary": source_boundary, "stage": stage, "compression_receipt": {}, "replacements": []}
+    for path, text in paths.items():
+        owner = empty
+        for part in path[:-1]:
+            owner = owner[part]
+        owner[path[-1]] = ""
+        empty_projection["replacements"].append({"path": list(path), "source_text_hash": narrative_hash(text), "ranges": []})
+    empty_projection["result_hash"] = narrative_hash(empty)
+    empty_reserved, _ = measure(empty_projection)
+    target = (original_amount * max(1, limit - empty_reserved) // max(1, before - empty_reserved)
+              if empty_reserved < limit else original_amount * 3 // 4)
+    target = min(SYSTEM_CONTEXT_LIMIT, original_amount - 1,
+                 max(sum(counter({"safe_summary": "", "structured_facts": []}) for _ in candidates) + 1, target))
     working = list(candidates)
     while target > 0:
         compressed, receipt = compile_task_context(working, task=task, token_budget=target,
@@ -185,6 +198,8 @@ def prepare_request_capacity(
             token_counter=counter, chunk_fits=chunk_fits, allow_restored_overflow=True, token_accounting_method=method)
         projection = {"contract_version": CAPACITY_POLICY, "original_hash": narrative_hash(original),
                       "source_boundary": source_boundary, "stage": stage, "replacements": [], "compression_receipt": receipt,
+                      "target_basis": {"policy": "FULL_RENDERED_REMOVABLE_EXPRESSION", "empty_reserved": empty_reserved,
+                          "expression_paths": len(paths), "unique_expression_sources": len(candidates)},
                       "retained_fidelity_traces": [trace for item in compressed for trace in item.compression_trace if trace not in receipt["compression_trace"]]}
         derived = deepcopy(original)
         by_id = {candidate.asset_version_id: candidate for candidate in compressed}
