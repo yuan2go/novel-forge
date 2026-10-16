@@ -349,7 +349,10 @@ Without original evidence this endpoint rejects resolution and never redispatche
 For the Craft convergence upgrade, active migrations 0213-0220 append Source generation
 isolation, proven Book namespaces, planning point reads, evidence indexes, combined method
 Context recovery, retained-working source schema, exact World accounting and Chapter
-prior-method-audit continuation. The final two migrations extend the existing common
+prior-method-audit continuation. Migration 0221 adds supporting indexes for retained
+working receipt Operations and the scoped active Story Design version foreign key.
+It leaves data, guards and earlier migration identities intact. The final two Craft
+convergence migrations extend the existing common
 guard without replacing main's combined capacity predicate or receipt contracts.
 Consult the migration registry and
 manifest for their exact identities. Published fork modules remain byte-preserved in
