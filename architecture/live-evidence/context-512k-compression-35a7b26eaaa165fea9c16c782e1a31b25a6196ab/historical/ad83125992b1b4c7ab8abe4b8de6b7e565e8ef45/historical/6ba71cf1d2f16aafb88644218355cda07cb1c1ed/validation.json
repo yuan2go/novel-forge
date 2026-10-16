@@ -1,0 +1,38 @@
+{
+  "source_sha": "6ba71cf1d2f16aafb88644218355cda07cb1c1ed",
+  "focused_capacity_unit": {
+    "status": "PASS",
+    "passed": 230,
+    "subtests_passed": 5,
+    "source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+    "log": "checks/a1c30020-unit.log.gz"
+  },
+  "native_core": {
+    "status": "PASS",
+    "passed": 12,
+    "source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+    "log": "checks/core-sparse-final.log.gz"
+  },
+  "native_upstream": {
+    "status": "PASS",
+    "passed": 1,
+    "log": "checks/upstream-final-6ba71cf1.log.gz"
+  },
+  "native_source_and_concurrency_guards": {
+    "status": "PASS",
+    "passed": 2,
+    "source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+    "log": "checks/source-guards-a1c30020.log.gz"
+  },
+  "fixture_runtime_identity": "CapabilityPackPostgresHarness declares synthetic release eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee; tested code SHA above is externally frozen by clean Git tree. This is not a deployed-release qualification.",
+  "actual_provider": "NOT_RUN",
+  "actual_512k": "NOT_RUN",
+  "longform_memory_quality": "NOT_RUN",
+  "superseded_runs": {
+    "status": "NOT_QUALIFIED",
+    "reason": "Source changes or explicit cancellation before final qualification. Retained development negatives are not counted as PASS."
+  },
+  "pr_governance": {
+    "status": "NOT_RUN"
+  }
+}

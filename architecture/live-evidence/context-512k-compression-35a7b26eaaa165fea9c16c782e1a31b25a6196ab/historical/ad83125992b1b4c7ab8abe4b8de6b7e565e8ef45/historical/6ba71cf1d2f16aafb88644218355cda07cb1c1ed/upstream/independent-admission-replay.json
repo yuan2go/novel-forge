@@ -1,0 +1,43 @@
+{
+  "source_sha": "6ba71cf1d2f16aafb88644218355cda07cb1c1ed",
+  "evidence_class": "ENGINEERING_SYNTHETIC_TOKENIZER_REPLAY_ONLY",
+  "cases": [
+    {
+      "effect_id": "d3d70481-6f3e-4dbf-b006-025a864dfd6c",
+      "stage": "chapter_plan.generate",
+      "status": "PASS",
+      "projection_chain": {
+        "status": "PASS",
+        "original_projection_hash": "sha256:09c689b0751f985fd78653db37c361455524b1ec4fc2ef6d1a07320c6935b5b2",
+        "raw_derivation_hash": "sha256:344189afe0699535d4886e8b9fa6c1d6c6a54467f28bf0f871ebf5dd8645121b",
+        "supplied_projection_hash": "sha256:0969a961b5d725093204af824d1c0ea8905d0653b67d69d05690c93a41aa2dc1",
+        "frozen_derivation_hash": "sha256:e88bfc243781bb4bf6e10d0ef4f082f513ecb7e57eba7e24b1f37cab612858bb",
+        "sent_input_sha256": "sha256:f88a3ee869438c9a87cb72e7f3087a32a6fcc23385e765a9cf1c8a7d94b220d6"
+      },
+      "input_sha256": "sha256:f88a3ee869438c9a87cb72e7f3087a32a6fcc23385e765a9cf1c8a7d94b220d6",
+      "meter": "PINNED_TOKENIZER_JSON_V1",
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 32000,
+        "provider_input": 209475,
+        "request_framing": 16,
+        "application_protocol_schema": 61342
+      },
+      "measurement": {
+        "model": "gpt-test",
+        "method": "PINNED_TOKENIZER_JSON_V1",
+        "precision": "TOKENIZED_TEXT_WITH_PROTOCOL_ESTIMATE",
+        "utf8_bytes": 418275,
+        "input_tokens": 209475,
+        "system_context_limit": 512000,
+        "tokenized_text_tokens": 209475,
+        "input_token_upper_bound": null,
+        "actual_provider_input_tokens": null,
+        "protocol_framing_tokens_estimate": 16
+      },
+      "total_reserved": 303089,
+      "applicable_limit": 310000,
+      "actual_provider_tokens": null
+    }
+  ]
+}

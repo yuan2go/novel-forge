@@ -1,0 +1,19 @@
+{
+  "source_sha": "ad83125992b1b4c7ab8abe4b8de6b7e565e8ef45",
+  "focused": {
+    "status": "PASS",
+    "passed": 639
+  },
+  "native_chapter_upgrade": {
+    "status": "PASS",
+    "passed": 2
+  },
+  "formal": {
+    "status": "IN_PROGRESS",
+    "evidence_ceiling": "NOT_QUALIFIED"
+  },
+  "historical_formal_source_sha": "6ba71cf1d2f16aafb88644218355cda07cb1c1ed",
+  "real_provider": "NOT_RUN",
+  "real_provider_512k": "NOT_RUN",
+  "semantic_quality": "NOT_RUN"
+}

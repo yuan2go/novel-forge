@@ -1,0 +1,62 @@
+{
+  "implementation_source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+  "focused": {
+    "status": "PASS",
+    "passed": 640
+  },
+  "compatibility_regression": {
+    "status": "PASS",
+    "passed": 95,
+    "subtests": 8
+  },
+  "actual_native_snapshot_binding_replay": {
+    "status": "PASS",
+    "cases": 2,
+    "verifier_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "native_execution_sha": "ad83125992b1b4c7ab8abe4b8de6b7e565e8ef45"
+  },
+  "owner_rebuild_diagnostic": {
+    "status": "PASS",
+    "cases": 2,
+    "model_calls": 0,
+    "native_admission": "NOT_RUN"
+  },
+  "native_core": {
+    "status": "PASS",
+    "passed": 4,
+    "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "seconds": 333.95
+  },
+  "native_old_context_continuation": {
+    "status": "PASS",
+    "passed": 2,
+    "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "seconds": 387.39
+  },
+  "formal_current_source": {
+    "status": "IN_PROGRESS"
+  },
+  "configured_backend": {
+    "status": "PASS",
+    "passed": 6258,
+    "subtests": 1532
+  },
+  "migration_configuration_negative": {
+    "older_6ba": "FAIL after missing backup configuration and 3600-second gate timeout",
+    "current_unconfigured": "FAIL_INTERRUPTED_AFTER_MISSING_BACKUP_DIAGNOSIS",
+    "diagnostic_reproduction": "MIGRATION_BACKUP_REQUIRED",
+    "configured_diagnostic": "1 PASS with documented private backup directory and PG16 clients; complete configured matrix still reported independently"
+  },
+  "negative_backend_ad": {
+    "status": "FAIL",
+    "failed": 3,
+    "passed": 6254,
+    "subtests": 1532,
+    "fixed_in": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab"
+  },
+  "real_provider": "NOT_RUN",
+  "real_512k": "NOT_RUN",
+  "draft_revision_native_upgrade": "NOT_RUN",
+  "long_form_memory_quality": "NOT_RUN",
+  "literary_quality": "NOT_RUN"
+}

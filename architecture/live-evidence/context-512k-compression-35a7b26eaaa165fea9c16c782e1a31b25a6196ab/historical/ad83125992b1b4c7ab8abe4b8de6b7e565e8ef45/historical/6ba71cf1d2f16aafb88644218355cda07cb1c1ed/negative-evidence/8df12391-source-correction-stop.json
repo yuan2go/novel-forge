@@ -1,0 +1,10 @@
+{
+  "source_sha": "8df123912e7d400202af0624f3c2615fa89e3b09",
+  "status": "NOT_QUALIFIED",
+  "reason": "Read-only review identified historical Creation installer content drift; stopped before source correction. No PASS claimed.",
+  "stopped_owned_pids": [
+    76313,
+    76405
+  ],
+  "recorded_at": "2026-10-16T18:58:46.761556+00:00"
+}

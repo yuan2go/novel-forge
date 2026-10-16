@@ -1,0 +1,467 @@
+{
+  "tested_source_sha": "6ba71cf1d2f16aafb88644218355cda07cb1c1ed",
+  "evidence_states": [
+    "CODE_EXISTS",
+    "WIRED",
+    "EXECUTABLE",
+    "QUALIFIED",
+    "PRODUCTION_PROVEN"
+  ],
+  "entries": [
+    {
+      "stage": "memo",
+      "capability": "planning.chapter.memo",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "draft",
+      "capability": "prose.chapter.draft",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "EXECUTABLE",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "review",
+      "capability": "review.chapter.evaluate",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "revision",
+      "capability": "revision.chapter.revise",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "rereview",
+      "capability": "review.chapter.evaluate",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "canon_extraction",
+      "capability": "canon.extract",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "canon_support",
+      "capability": "canon.extract",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "quality_structural",
+      "capability": "quality.intrinsic.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "quality_commercial",
+      "capability": "quality.intrinsic.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "quality_source_originality",
+      "capability": "quality.originality.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "quality_longform",
+      "capability": "quality.intrinsic.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "quality_platform",
+      "capability": "quality.platform.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "reader_outcome",
+      "capability": "quality.reader_outcome.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "longform_prose_review",
+      "capability": "review.chapter.evaluate",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "screenplay_generate",
+      "capability": "prose.chapter.draft",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "screenplay_review",
+      "capability": "review.chapter.evaluate",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "screenplay_revision",
+      "capability": "revision.chapter.revise",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "narrative_semantic_evaluation",
+      "capability": "quality.intrinsic.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "model_reference_evaluate",
+      "capability": "quality.intrinsic.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "model_reference_adjudicate",
+      "capability": "quality.intrinsic.judge",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "agent_session",
+      "capability": "agent.workspace.execute",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Shared Chapter binder full-request policy applies when frozen Pack selects complete-request-capacity.v1; exact facts/current prose preserved. Overflow execution evidence is separate from ordinary stage execution.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "retrieval",
+      "capability": "retrieval.embed",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "NOT_APPLICABLE",
+      "applicability": "Embedding/vector protocol: no text extraction or schema-bound compressor.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "retrieval_query_expansion",
+      "capability": "retrieval.query.expand",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "NOT_APPLICABLE",
+      "applicability": "Bounded literal query input has no eligible historical prose; final Provider admission remains required.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "context_compress",
+      "capability": "review.chapter.evaluate",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "EXECUTABLE",
+      "applicability": "Existing independent substages, exact full-request chunk probes, durable Effect; no recursive compression.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "context_fidelity",
+      "capability": "review.chapter.evaluate",
+      "owner": "ChapterAuthority / stage domain owner",
+      "entry": "src/novel_forge/modules/chapter_authority/execution_gateway.py:PostgresChapterExecutionContractBinder.bind",
+      "policy_source": "Attempt CapabilityPack snapshot + actual route binding",
+      "meter": "provider-token-accounting-v4; selected model/protocol; application-visible CLI coverage",
+      "overflow_evidence_state": "EXECUTABLE",
+      "applicability": "Existing independent substages, exact full-request chunk probes, durable Effect; no recursive compression.",
+      "native_execution_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "recovery": "Original Chapter Attempt + native Effect reconciliation; never zero-send after compression Effect"
+    },
+    {
+      "stage": "creative.candidates.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "theme.candidates.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "ending.intent.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "reader.promise.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "world.design.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "character.cast.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "book_plan.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "volume_plan.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "arc_plan.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "EXECUTABLE",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "world_candidates.generate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "world_candidates.evaluate",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "world_candidates.actor_0",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "world_candidates.actor_1",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    },
+    {
+      "stage": "world_candidates.actor_2",
+      "owner": "StoryDesign / HierarchicalPlanning / World; shared Planning execution preparer",
+      "entry": "src/novel_forge/modules/story_planning_runtime/execution.py:PostgresPlanningExecutionPreparer._prepare_stage",
+      "policy_source": "Frozen Context/Pack and World source policy; new profiles Context v3 / World v5",
+      "overflow_evidence_state": "WIRED",
+      "applicability": "Uses own frozen Context custodian; no invented accepted Canon, Memo or private character knowledge. Eligible older expression only; no eligible history gives explicit necessary-content capacity failure.",
+      "recovery": "Existing Planning Runtime continuation and original Effect receipt reuse; same-Pack v2-to-v3 upgrade only under exact preflight"
+    }
+  ],
+  "other_contracts": [
+    {
+      "entry": "Source/reference analysis",
+      "reason": "Separate governed raw-source contract; not relabeled ordinary accepted-history or draft input. Existing final Provider admission remains; no blanket capacity or source-policy rewrite."
+    },
+    {
+      "entry": "Generic Agent Runtime packs",
+      "reason": "Retain frozen Pack policy. Sharing binder does not automatically upgrade old sessions; Agent Runtime provenance and domain mutation gates remain."
+    }
+  ],
+  "execution_evidence_limit": "Only observed stages may be upgraded from WIRED using upstream/receipts and database evidence. No blanket QUALIFIED or PRODUCTION_PROVEN claim."
+}

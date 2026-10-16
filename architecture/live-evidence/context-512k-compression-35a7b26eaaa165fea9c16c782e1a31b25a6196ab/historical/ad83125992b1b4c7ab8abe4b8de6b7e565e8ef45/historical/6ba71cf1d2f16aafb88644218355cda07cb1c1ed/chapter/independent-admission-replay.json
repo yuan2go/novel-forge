@@ -1,0 +1,76 @@
+{
+  "native_test_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+  "replay_source_sha": "6ba71cf1d2f16aafb88644218355cda07cb1c1ed",
+  "evidence_class": "ENGINEERING_FIXTURE_REPLAY_ONLY",
+  "cases": [
+    {
+      "case": "complete-request-262144",
+      "status": "PASS",
+      "projection_chain": {
+        "status": "PASS",
+        "original_projection_hash": "sha256:547bc8ac77a0d33307b1e3f458ba0a8c36b8a98b7e99050505870b97967c1610",
+        "raw_derivation_hash": "sha256:9752b0b0f7f67b157f5cb359c7003d893b15b95a65accef523969cf2b6192be4",
+        "supplied_projection_hash": "sha256:9752b0b0f7f67b157f5cb359c7003d893b15b95a65accef523969cf2b6192be4",
+        "frozen_derivation_hash": "sha256:2d4130fd94844e8e87c16c8ab46fe367ee16a7c5524a627707d26b00b370311d",
+        "sent_input_sha256": "sha256:57d06a4af257b7dd0ec62f1f8edb00616be5f821b6f01ca39494d659a28d91fa"
+      },
+      "input_sha256": "sha256:57d06a4af257b7dd0ec62f1f8edb00616be5f821b6f01ca39494d659a28d91fa",
+      "meter": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40314,
+        "request_framing": 16
+      },
+      "total_reserved": 56970,
+      "applicable_limit": 262144,
+      "actual_provider_tokens": null
+    },
+    {
+      "case": "complete-request-262144-routed-restart",
+      "status": "PASS",
+      "projection_chain": {
+        "status": "PASS",
+        "original_projection_hash": "sha256:0398992e0acfe82896176c51707e461417f90eed9cb0fba5515fab5bdac42bd9",
+        "raw_derivation_hash": "sha256:817d7cc64c937a32fef94edd45d1a50ad03449b2078f8f21c4b0fbabf3319a66",
+        "supplied_projection_hash": "sha256:817d7cc64c937a32fef94edd45d1a50ad03449b2078f8f21c4b0fbabf3319a66",
+        "frozen_derivation_hash": "sha256:9872535b8e1abf4d0df611c1070af6e6dc60cbc3fb622e5e15f116babf640d55",
+        "sent_input_sha256": "sha256:90ce94203c7a8eabd8f4296c6ae67b79b26185bbcaed203ce403b83b3daabf6b"
+      },
+      "input_sha256": "sha256:90ce94203c7a8eabd8f4296c6ae67b79b26185bbcaed203ce403b83b3daabf6b",
+      "meter": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40314,
+        "request_framing": 16
+      },
+      "total_reserved": 56970,
+      "applicable_limit": 262144,
+      "actual_provider_tokens": null
+    },
+    {
+      "case": "complete-request-512000",
+      "status": "PASS",
+      "projection_chain": {
+        "status": "PASS",
+        "original_projection_hash": "sha256:0062881de7a3519dbc06931d6851c4bf51f4f5e92c4fff2c4f95e2a36ba7c708",
+        "raw_derivation_hash": "sha256:11c8b917b7730efce9bc0dd63053babc2c1e05ca272c3994ce13dfde0b611dcf",
+        "supplied_projection_hash": "sha256:11c8b917b7730efce9bc0dd63053babc2c1e05ca272c3994ce13dfde0b611dcf",
+        "frozen_derivation_hash": "sha256:6cebb337c62d11d49c56de0f8aee38113bc472e0995d2cb66139e9d304197e14",
+        "sent_input_sha256": "sha256:b9529799e70219584ccecc2e435257b88c8de7110c17607839a40298341a34e9"
+      },
+      "input_sha256": "sha256:b9529799e70219584ccecc2e435257b88c8de7110c17607839a40298341a34e9",
+      "meter": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40314,
+        "request_framing": 16
+      },
+      "total_reserved": 56970,
+      "applicable_limit": 512000,
+      "actual_provider_tokens": null
+    }
+  ]
+}
