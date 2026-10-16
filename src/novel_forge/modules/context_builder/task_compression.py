@@ -305,6 +305,9 @@ def compile_task_context(
                 break
     dependencies = validate_task_dependencies(normalized, task=task)
     protected_tokens = sum(item.estimated_tokens for item in protected)
+    requested_token_budget = token_budget
+    if allow_restored_overflow:
+        token_budget = max(token_budget, protected_tokens)
     if protected_tokens > token_budget and not defer_token_capacity:
         raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", f"necessary exact task content requires conservative {protected_tokens} tokens; target={token_budget}")
     before = sum(item.estimated_tokens for item in normalized)
@@ -315,7 +318,7 @@ def compile_task_context(
             raise KernelError("TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED", "overflow requires a qualified controlled compressor route or a revised authorized task budget")
         protected_ids = {item.asset_version_id for item in protected}
         untouched_tokens = sum(item.estimated_tokens for item in normalized if item not in eligible)
-        if untouched_tokens >= token_budget:
+        if untouched_tokens >= token_budget and not allow_restored_overflow:
             raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "exact sources and non-recompressible evidence exceed the task target")
         eligible_units = {item.asset_version_id: _units(item, task) for item in eligible}
         minimum_tokens = untouched_tokens
@@ -325,6 +328,8 @@ def compile_task_context(
                 "safe_summary": "\n\n".join(unit["text"] for unit in mandatory if unit["field"] == "safe_summary"),
                 "structured_facts": [item.structured_facts[unit["index"]] for unit in mandatory if unit["field"] == "structured_facts"],
             })
+        if allow_restored_overflow:
+            token_budget = max(token_budget, minimum_tokens)
         if minimum_tokens > token_budget:
             raise KernelError("TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED", "mandatory source units exceed the task target before compression")
         remaining = token_budget - untouched_tokens
@@ -349,7 +354,7 @@ def compile_task_context(
                 }
 
             def fits(group):
-                return len(group) <= 256 and (chunk_fits(chunk_payload(group, target=token_budget)) if chunk_fits else token_counter(group) <= compression_input_tokens)
+                return len(group) <= 256 and (chunk_fits(chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget))) if chunk_fits else token_counter(group) <= compression_input_tokens)
 
             if chunk_fits:
                 units = _split_oversized_units(units, fits, preserve_quotes=tuple(task.get("preserve_quotes") or ()))
@@ -381,6 +386,8 @@ def compile_task_context(
             group_weights = [token_counter(group) for group in groups]
             weight_total = max(1, sum(group_weights))
             group_targets = [candidate_target * weight // weight_total for weight in group_weights]
+            if allow_restored_overflow:
+                group_targets = [max(1, target) for target in group_targets]
             if any(target <= 0 for target in group_targets):
                 raise KernelError("TASK_CONTEXT_COMPRESSION_BUDGET_INFEASIBLE", "candidate target cannot allocate every complete source group")
             for group_index, group in enumerate(groups):
@@ -446,7 +453,7 @@ def compile_task_context(
     if reference:
         normalized.sort(key=source_position)
     result = [*normalized, *denied] + [replace(item, provenance={**dict(item.provenance or {}), "task_excluded": True}) for item in excluded]
-    receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": token_budget, "token_accounting": token_accounting_method, "capacity_admission": "DEFERRED_COMPLETE_REQUEST" if defer_token_capacity or allow_restored_overflow else "MATERIAL_TARGET", "candidate_accounting": candidate_accounting, "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
+    receipt = {"policy_version": TASK_CONTEXT_POLICY_VERSION, "task_hash": narrative_hash(task), boundary_key: boundary, "source_bindings": [{"asset_version_id": item.asset_version_id, "source_revision": item.source_revision, "content_hash": item.content_digest} for item in candidates], "system_context_window_tokens": SYSTEM_CONTEXT_WINDOW_TOKENS, "task_target_tokens": requested_token_budget, **({"effective_material_target_tokens": token_budget, "target_is_final_capacity_gate": False} if allow_restored_overflow else {}), "token_accounting": token_accounting_method, "capacity_admission": "DEFERRED_COMPLETE_REQUEST" if defer_token_capacity or allow_restored_overflow else "MATERIAL_TARGET", "candidate_accounting": candidate_accounting, "before_estimated_tokens": before, "after_estimated_tokens": sum(item.estimated_tokens for item in normalized), "protected_estimated_tokens": protected_tokens, "dependency_coverage": dependencies, "deduplications": deduplications, "excluded_asset_version_ids": [item.asset_version_id for item in excluded], "compression_trace": traces, "fast_path": not traces, "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY", "fact_mutation_allowed": False}
     if exact_accounting is not None:
         receipt["protected_exact_accounting"] = exact_accounting
     return result, {**receipt, "receipt_hash": narrative_hash(receipt)}

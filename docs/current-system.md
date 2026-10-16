@@ -1323,7 +1323,8 @@ version/hash, unit positions, task and policy; the compressor selects units rath
 than inventing prose facts or computing source offsets. Exact drafts, Review/Revision
 objects, required facts and preserved voice quotes remain intact. A separate bounded
 semantic check assesses missing or changed meaning; uncertain results restore the
-local original units. A faithful result that still exceeds its target blocks. A
+local original units. Historical material-target contracts retain their target gate;
+the complete-request policy admits only after rebuilding and measuring the full request. A
 compressed derivative never mutates Canon and is not unconditionally recompressed.
 
 The author capacity policy is one complete request of at most 512,000 tokens,
@@ -1352,6 +1353,10 @@ ExternalEffect; retry reuses matching source, task, Pack and route bindings.
 Working passages batch within their original Chapter source, retaining per-passage
 coordinates. Identical wrappers of the same source version share one extract; another
 Chapter or changed source hash cannot borrow that identity.
+Detailed path/range mappings and fidelity receipts remain in the frozen Effect
+request. The sent view carries stable derivation hashes and an omission explanation;
+it does not repeat the potentially larger audit mapping in the Prompt. Source hashes
+and original passage bounds continue to identify the complete source, not the extract.
 
 The preparation Router selects an authorized physical route without rejecting the
 uncompressed input first. Its final decision narrows to that prepared candidate and

@@ -181,6 +181,45 @@ def test_necessary_content_cannot_be_dropped_to_fit():
         run_preparation({"input_manifest": {"exact_draft": "x" * 3000}, "context_bundle": {}}, limit=100)
 
 
+def test_rendered_extract_keeps_large_host_mapping_out_of_prompt_and_stays_frozen(monkeypatch):
+    from novel_forge.modules.chapter_authority import execution_gateway as gateway
+    working = {"projection_policy": {"recent_complete_chapters": 2}, "target_chapter": 4,
+        "sources": [{"chapter": 1, "asset_version_id": "chapter:one", "content_hash": "sha256:original",
+            "passages": [{"text": f"Original paragraph {i}: " + "a" * 100, "source_start": i * 130} for i in range(600)]}]}
+    monkeypatch.setattr(gateway, "build_provider_task_view", lambda *_args, **_kw: {"contract_version": "fixture:task", "working_manuscript": deepcopy(working)})
+    monkeypatch.setattr(gateway, "build_provider_context_view", lambda *_args, **_kw: {"contract_version": "fixture:context", "working_manuscript": deepcopy(working)})
+    materialization = {"materialization_hash": "sha256:fixture", "pack_artifacts": {
+        key: {"ref": key, "version": "v1", "content": {"text": text}}
+        for key, text in {"system_instruction": "Keep source boundaries.", "skill": "Use exact supplied text.",
+            "prompt_template": "{{input_manifest}} {{context_bundle}}"}.items()},
+        "context_selection": [{"content": {}}], "knowledge_selection": [],
+        "tool_permissions": {"allowed": ["model.provider.invoke"]},
+        "output_schema": {"ref": "schema:fixture", "content": {"type": "object"}}}
+    def render(projection=None, capture=None):
+        return gateway._materialize_production_codex_prompt(stage="agent_session",
+            target_scope={"scope_kind": "book", "scope_id": "b", "project_id": "p", "book_id": "b"},
+            inputs={"_context_capacity_projection": projection} if projection else {},
+            materialization=materialization, provider_data_capture=capture)[0]
+    original = {}
+    before = render(capture=original)
+    measured = []
+    def measure(projection):
+        text = render(projection)
+        measured.append(text)
+        return len(text.encode()), 100000
+    projection = prepare_request_capacity(original=original, stage="agent_session", route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture"),
+        source_boundary={"kind": "FROZEN_STAGE_INPUTS", "project_id": "p", "book_id": "b", "sources": [{"asset_version_id": "context:one", "content_hash": "sha256:fixture"}]},
+        measure=measure, chunk_fits=lambda _: True,
+        model_call=lambda stage, task: {"selected_unit_ids": [task["units"][0]["unit_id"]]} if stage == "context_compress" else
+            {"supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []})
+    final = render(projection)
+    assert final == measured[-1]
+    assert len(final.encode()) < 100000 < len(before.encode())
+    assert len(projection["replacements"]) == 1200
+    assert '"historical_expressions"' not in final and '"derivation_hash"' in final
+    assert "chapter:one" in final and "sha256:original" in final and '"source_start":' in final
+
+
 def test_preserved_quote_survives_oversized_unit_boundaries_without_new_separators():
     from novel_forge.modules.context_builder.task_compression import _split_oversized_units, _join_source_text
     quote = "abcdefghijklmno.pqr"
@@ -191,7 +230,8 @@ def test_preserved_quote_survives_oversized_unit_boundaries_without_new_separato
     assert restored == text and quote in restored
 
 
-def test_fidelity_restore_reallocates_other_history_after_a_plateau():
+@pytest.mark.parametrize("limit", [1300, 1500, 1700])
+def test_fidelity_restore_reallocates_other_history_after_a_plateau(limit):
     data = {"context_bundle": {"segments": [
         {"asset_type": "chapter_episodic_summary", "safe_summary": "A" * 900},
         {"asset_type": "chapter_episodic_summary", "safe_summary": "\n\n".join("B" * 700 + str(i) for i in range(4))}]}}
@@ -205,12 +245,12 @@ def test_fidelity_restore_reallocates_other_history_after_a_plateau():
             return {"selected_unit_ids": [task["units"][0]["unit_id"]] if task["target_tokens"] >= 701 else []}
         return {"supported": not is_a, "coverage_complete": not is_a, "missing_unit_ids": [], "distorted_unit_ids": []}
     projection = prepare_request_capacity(original=data, stage="draft", source_boundary=boundary,
-        route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=1700),
-        measure=lambda p: (len(json.dumps(apply_capacity_projection(data,p) if p else data).encode()) + 100,1700),
+        route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=limit),
+        measure=lambda p: (len(json.dumps(apply_capacity_projection(data,p) if p else data).encode()) + 100,limit),
         model_call=call, chunk_fits=lambda _: True)
     derived = apply_capacity_projection(data, projection)
     assert derived["context_bundle"]["segments"][0]["safe_summary"] == "A" * 900
-    assert projection["measurement"]["after_reserved"] <= 1700
+    assert projection["measurement"]["after_reserved"] <= limit
     assert sum(stage == "context_compress" and task["units"][0]["text"].startswith("A") for stage, task in calls) == 1
 
 

@@ -4815,9 +4815,11 @@ def _materialize_production_codex_prompt(
         task_view, context_view = derived_data["input_manifest"], derived_data["context_bundle"]
         context_view["capacity_extract"] = {"contract_version": "complete-request-capacity.v1",
             "source_projection_hash": capacity_projection["original_hash"],
-            "historical_expressions": [{key: row[key] for key in ("path", "source_text_hash", "ranges")}
-                                       for row in capacity_projection["replacements"]],
-            "meaning": "Attributed original historical extracts; original hashes and passage bounds identify the source, selected ranges identify supplied expression. Omitted expression is not evidence of absence."}
+            "result_projection_hash": capacity_projection["result_hash"],
+            "derivation_hash": canonical_hash({key: capacity_projection[key] for key in
+                ("contract_version", "original_hash", "result_hash", "source_boundary", "stage", "replacements", "compression_receipt", "retained_fidelity_traces") if key in capacity_projection}),
+            "mapping_custody": "FROZEN_EXTERNAL_EFFECT_REQUEST_CONTEXT_CAPACITY_PROJECTION",
+            "meaning": "Historical text contains fidelity-checked original extracts. Source hashes and passage bounds in source wrappers identify the complete original source, not the supplied extract's hash or length. Exact selected ranges and fidelity receipts are retained in the frozen derivation. Empty or omitted expression is not evidence of absence."}
     exact_reference_proof = None
     protected_accounting_version = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version")
     protected_exact_accounting = protected_accounting_version in {"protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"}

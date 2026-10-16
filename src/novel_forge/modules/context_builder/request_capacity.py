@@ -219,6 +219,9 @@ def prepare_request_capacity(
                                      "token_method": method, "actual_provider_tokens": None}
         if after <= current_limit:
             return projection
+        if receipt["fast_path"]:
+            raise KernelError("TASK_CONTEXT_COMPRESSION_NO_PROGRESS", "All remaining source expression is required or already verified; the complete request still exceeds capacity",
+                              details={"projection": projection})
         working = [replace(by_id[item.asset_version_id], context_class=ContextClass.PROTECTED)
                    if by_id[item.asset_version_id].safe_summary == item.safe_summary and by_id[item.asset_version_id].compression_trace
                    else item for item in candidates]
