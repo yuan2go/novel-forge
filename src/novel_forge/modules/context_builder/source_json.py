@@ -28,7 +28,6 @@ def loads(text: str) -> Any:
 
 
 def dumps(value: Any) -> str:
-    # WHY: Numeric lexemes survive visibility filtering without a float round trip or string coercion.
     if isinstance(value, _Number):
         return value.lexeme
     if isinstance(value, dict):
