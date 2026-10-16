@@ -371,7 +371,7 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         effects = uow.cursor.fetchall()
         failures = uow.cursor.execute("SELECT definition_name,status FROM authority_operation WHERE project_id=%s AND status IN ('FAILED_FINAL','FAILED_RETRYABLE')", [result["project_id"]]).fetchall()
     assert result["stop_reason"] == "MANUSCRIPT_READY", (result, failures)
-    compression = [row for row in effects if row[0] in {"model.context_compress", "model.context_fidelity"}]
+    compression = [row for row in effects if row[2].get("stage") in {"context_compress", "context_fidelity"}]
     assert compression and all(row[1] == "SUCCEEDED" for row in compression)
     derived = [row for row in effects if row[2].get("input", {}).get("_context_capacity_projection")]
     assert derived

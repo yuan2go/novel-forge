@@ -143,6 +143,7 @@ class ProviderRequestEnvelope:
     reasoning_effort: str = ""
     pricing_policy_json: str = ""
     output_schema_json: str = ""
+    protocol_schema_json: str = ""
 
     def __post_init__(self) -> None:
         if not all(
@@ -159,6 +160,9 @@ class ProviderRequestEnvelope:
         if self.max_output_tokens <= 0 or self.timeout_seconds <= 0:
             raise ValueError("Provider request envelope limits must be positive")
 
+        if self.protocol_schema_json:
+            if self.provider != "codex-cli" or not isinstance(json.loads(self.protocol_schema_json), dict):
+                raise ValueError("PROVIDER_PROTOCOL_SCHEMA_MISMATCH")
         if self.protocol == DEEPSEEK_STRICT_PROTOCOL:
             if self.provider != "deepseek" or not self.output_schema_json:
                 raise ValueError("DEEPSEEK_STRICT_SCHEMA_REQUIRED")
@@ -174,6 +178,8 @@ class ProviderRequestEnvelope:
             payload.pop("pricing_policy_json")
         if not self.output_schema_json:
             payload.pop("output_schema_json")
+        if not self.protocol_schema_json:
+            payload.pop("protocol_schema_json")
         return payload
 
     @property
@@ -197,6 +203,7 @@ class ProviderRequestEnvelope:
                 if self.output_schema_json
                 else {}
             ),
+            **({"protocol_schema_json": self.protocol_schema_json} if self.protocol_schema_json else {}),
             "provider": self.provider,
             "model": self.model,
             "protocol": self.protocol,
@@ -215,6 +222,7 @@ class ProviderRequestEnvelope:
         return cls(
             pricing_policy_json=str(payload.get("pricing_policy_json") or ""),
             output_schema_json=str(payload.get("output_schema_json") or ""),
+            protocol_schema_json=str(payload.get("protocol_schema_json") or ""),
             reasoning_effort=str(payload.get("reasoning_effort") or ""),
             provider=str(payload.get("provider") or ""),
             model=str(payload.get("model") or ""),
@@ -232,6 +240,7 @@ class ProviderRequestEnvelope:
         envelope = cls(
             pricing_policy_json=str(payload.get("pricing_policy_json") or ""),
             output_schema_json=str(payload.get("output_schema_json") or ""),
+            protocol_schema_json=str(payload.get("protocol_schema_json") or ""),
             reasoning_effort=str(payload.get("reasoning_effort") or ""),
             provider=str(payload.get("provider") or ""),
             model=str(payload.get("model") or ""),
@@ -514,6 +523,7 @@ def provider_request_token_components(
     safety_margin: int,
     framing_overhead: int,
     output_schema_json: str = "",
+    protocol_schema_json: str = "",
     accounting_method: str = "",
     model: str = "",
     accounting_evidence_ref: str = "",
@@ -541,6 +551,8 @@ def provider_request_token_components(
             if output_schema_json
             else {}
         ),
+        **({"application_protocol_schema": count_text(protocol_schema_json, method=accounting_method,
+            model=model, evidence_ref=accounting_evidence_ref)} if protocol_schema_json else {}),
         "request_framing": framing_overhead,
         "output_reserve": output_reserve,
         "safety_margin": safety_margin,
@@ -593,6 +605,7 @@ def prepare_provider_admission(
         envelope.input_text,
         output_reserve=contract.output_reserve,
         output_schema_json=envelope.output_schema_json,
+        protocol_schema_json=envelope.protocol_schema_json,
         safety_margin=contract.safety_margin,
         framing_overhead=contract.framing_overhead,
         accounting_method=contract.accounting_method if current else "",

@@ -205,3 +205,25 @@ def test_capacity_preparation_only_narrows_the_final_router_without_authorizing_
     with pytest.raises(KernelError, match="ROUTING_CAPACITY_PREPARATION_ONLY"):
         router.select(None, task_type="draft", project_id="p", work_id="b", operation_id="o", attempt_id="a",
             stable_key="k", input_tokens=1000, output_tokens=100, trace_id="t", correlation_id="c", prepare_capacity=True)
+
+
+def test_codex_separate_protocol_schema_is_frozen_and_included_in_capacity():
+    from novel_forge.modules.production_execution.token_meter import route_input_tokens, route_protocol_schema
+    from novel_forge.modules.chapter_authority.context_compression_provider import CLI_CONTEXT_HEADROOM_POLICY
+    schema = {"type": "object", "properties": {"result": {"type": "string"}}, "required": ["result"], "additionalProperties": False}
+    configured = route(method="CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1", model="fixture-codex", limit=512000)
+    configured.model_profile.model_provider = "codex-cli"
+    configured.output_reservation_policy = CLI_CONTEXT_HEADROOM_POLICY
+    protocol_schema = route_protocol_schema(configured, schema, "fixture-schema:v1")
+    contract = build_route_token_accounting_contract(provider="codex-cli", model="fixture-codex", route_identity="fixture:cli",
+        accounting_method=configured.token_accounting_method, accounting_evidence_ref="fixture:cli",
+        model_context_limit=512000, execution_token_limit=512000, output_reserve=100,
+        safety_margin=0, framing_overhead=0, contract_version="provider-token-accounting-v4")
+    envelope = ProviderRequestEnvelope("codex-cli", "fixture-codex", "codex-cli-application-stdin-v1", "visible schema in Prompt", 100, 60, "fixture",
+        protocol_schema_json=protocol_schema)
+    receipt = prepare_provider_admission(envelope, contract, complete_request_coverage=COMPLETE_COVERAGE)
+    assert receipt.status == "ADMITTED"
+    assert receipt.component_usage["application_protocol_schema"] == len(protocol_schema.encode())
+    assert receipt.total_reserved == route_input_tokens(configured, envelope.input_text, protocol_schema_json=protocol_schema) + 100
+    assert ProviderRequestEnvelope.from_identity_dict(envelope.to_identity_dict(), input_text=envelope.input_text) == envelope
+    assert replace(envelope, protocol_schema_json="{}").envelope_hash != envelope.envelope_hash

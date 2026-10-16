@@ -81,18 +81,18 @@ def serialized_tokens(value: Any, *, method: str, model: str, evidence_ref: str 
                       method=method, model=model, evidence_ref=evidence_ref)
 
 
-def route_input_tokens(route: Any, text: str, *, output_schema_json: str = "") -> int:
+def route_input_tokens(route: Any, text: str, *, output_schema_json: str = "", protocol_schema_json: str = "") -> int:
     from .provider_admission import provider_request_token_components
 
     components = provider_request_token_components(text, output_reserve=1,
         safety_margin=route.token_safety_margin, framing_overhead=route.token_framing_overhead,
-        output_schema_json=output_schema_json, accounting_method=route.token_accounting_method,
+        output_schema_json=output_schema_json, protocol_schema_json=protocol_schema_json, accounting_method=route.token_accounting_method,
         model=route.model_profile.model_id, accounting_evidence_ref=route.token_accounting_evidence_ref)
     return sum(components.values()) - 1
 
 
-def route_request_size(route: Any, text: str, *, output_reserve: int, output_schema_json: str = "") -> tuple[int, int]:
-    amount = route_input_tokens(route, text, output_schema_json=output_schema_json)
+def route_request_size(route: Any, text: str, *, output_reserve: int, output_schema_json: str = "", protocol_schema_json: str = "") -> tuple[int, int]:
+    amount = route_input_tokens(route, text, output_schema_json=output_schema_json, protocol_schema_json=protocol_schema_json)
     model_limit = route.model_context_limit
     if model_limit <= 0 and route.model_profile.model_provider == "scripted_provider_v2":
         model_limit = SYSTEM_CONTEXT_LIMIT
@@ -119,3 +119,10 @@ def capacity_route_binding(route: Any, decision: dict | None = None) -> dict:
     candidate = ((decision or {}).get("selected") or {}).get("candidate")
     return {"route": capacity_route_contract(route), **({"candidate": {key: candidate[key] for key in
         ("candidate_id", "provider", "model", "model_revision", "reasoning", "context_limit", "output_limit")}} if candidate else {})}
+
+
+def route_protocol_schema(route, schema, schema_ref):
+    if route.model_profile.model_provider != "codex-cli":
+        return ""
+    from .codex_configuration import codex_output_schema
+    return json.dumps(codex_output_schema(schema, schema_ref=schema_ref), ensure_ascii=False, sort_keys=True, indent=2) + "\n"

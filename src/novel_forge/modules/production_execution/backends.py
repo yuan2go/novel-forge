@@ -2011,6 +2011,12 @@ class CodexCliExecutionBackend:
         route = admission.route_snapshot
         layout = self.supervisor.execution_directory.prepare(request.execution_id)
         schema_path = layout.result_path("output.schema.json")
+        frozen_schema = payload.request_payload.get("protocol_schema_json")
+        if frozen_schema:
+            actual_schema = json.dumps(codex_output_schema(payload.output_schema, schema_ref=payload.output_schema_version),
+                ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+            if frozen_schema != actual_schema:
+                raise ValueError("PROVIDER_PROTOCOL_SCHEMA_DRIFT")
         schema_path.write_text(
             json.dumps(
                 codex_output_schema(payload.output_schema, schema_ref=payload.output_schema_version),

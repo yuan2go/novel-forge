@@ -1,5 +1,6 @@
 from __future__ import annotations
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
+from novel_forge.modules.production_execution.token_meter import route_protocol_schema
 from novel_forge.modules.production_execution.contracts import local_cli_remote_outcome_unknown
 from dataclasses import dataclass, replace
 from copy import deepcopy
@@ -1111,7 +1112,7 @@ class PostgresChapterExecutionContractBinder:
             if self.provider_router is not None:
                 route, _ = self.provider_router.select(route, task_type=stage, project_id=project_id, work_id=book_id,
                     operation_id=operation_id, attempt_id=attempt_id, stable_key=stable_idempotency_key,
-                    input_tokens=route_input_tokens(route, prompt), output_tokens=1 if route.output_reservation_policy else output_reserve,
+                    input_tokens=route_input_tokens(route, prompt, protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref) if frozen_context_policy_payload.get("capacity_policy") else ""), output_tokens=1 if route.output_reservation_policy else output_reserve,
                     trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                     producer_contract=chapter_producer_contract_identity(prompt_evidence, contract), request_input=provider_inputs,
                     input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0),
@@ -1119,7 +1120,7 @@ class PostgresChapterExecutionContractBinder:
             elif capacity_binding["route"] != capacity_route_contract(route):
                 raise KernelError("ROUTING_CAPACITY_BINDING_DRIFT", "Retained compression must retain its prepared static route")
         if capacity_probe:
-            total, limit = route_request_size(route, prompt, output_reserve=output_reserve)
+            total, limit = route_request_size(route, prompt, output_reserve=output_reserve, protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref))
             return total <= limit
         if (frozen_context_policy_payload.get("capacity_policy") == "complete-request-capacity.v1"
                 and stage not in CONTEXT_MODEL_STAGES | {"retrieval", "retrieval_query_expansion"}
@@ -1137,7 +1138,7 @@ class PostgresChapterExecutionContractBinder:
                 prepared_route, preparation = self.provider_router.select(route, task_type=stage,
                     project_id=project_id, work_id=book_id, operation_id=operation_id,
                     attempt_id=attempt_id, stable_key=stable_idempotency_key,
-                    input_tokens=route_input_tokens(route, prompt),
+                    input_tokens=route_input_tokens(route, prompt, protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref) if frozen_context_policy_payload.get("capacity_policy") else ""),
                     output_tokens=1 if route.output_reservation_policy else output_reserve,
                     trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                     producer_contract=chapter_producer_contract_identity(prompt_evidence, contract),
@@ -1156,7 +1157,7 @@ class PostgresChapterExecutionContractBinder:
             def measure(projection):
                 measured, _ = _materialize_production_codex_prompt(target_scope=target_scope, stage=stage,
                     inputs={**provider_inputs, **({"_context_capacity_projection": projection} if projection else {})}, materialization=contract)
-                return route_request_size(route, measured, output_reserve=output_reserve)
+                return route_request_size(route, measured, output_reserve=output_reserve, protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref))
 
             def chunk_fits(task):
                 from .context_compression_provider import task_provider_output_reserve
@@ -1176,7 +1177,7 @@ class PostgresChapterExecutionContractBinder:
                             subroute, decision = self.provider_router.select(subroute, task_type=substage,
                                 project_id=project_id, work_id=book_id, operation_id=operation_id, attempt_id=attempt_id,
                                 stable_key=stable_idempotency_key + ":capacity-probe:" + substage,
-                                input_tokens=route_input_tokens(subroute, rendered),
+                                input_tokens=route_input_tokens(subroute, rendered, protocol_schema_json=route_protocol_schema(subroute, sub_schema, sub_ref)),
                                 output_tokens=1 if subroute.output_reservation_policy else task_provider_output_reserve(substage, subroute),
                                 trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                                 producer_contract=chapter_producer_contract_identity(sub_evidence, sub_contract),
@@ -1192,6 +1193,7 @@ class PostgresChapterExecutionContractBinder:
                         subroutes[substage] = subroute
                     subroute = subroutes[substage]
                     total, limit = route_request_size(subroute, rendered,
+                        protocol_schema_json=route_protocol_schema(subroute, sub_schema, sub_ref),
                         output_reserve=task_provider_output_reserve(substage, subroute, system_limit=512_000))
                     if total > limit:
                         return False
@@ -1206,7 +1208,7 @@ class PostgresChapterExecutionContractBinder:
                 prompt, prompt_evidence = _materialize_production_codex_prompt(target_scope=target_scope,
                     stage=stage, inputs=provider_inputs, materialization=contract)
         output_policy = str(metadata.get("output_reservation_policy") or "")
-        complete_input_reserve = route_input_tokens(route, prompt)
+        complete_input_reserve = route_input_tokens(route, prompt, protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref) if frozen_context_policy_payload.get("capacity_policy") else "")
         system_limit = 512_000 if frozen_context_policy_payload.get("capacity_policy") == "complete-request-capacity.v1" else None
         if output_policy:
             from .context_compression_provider import CLI_CONTEXT_HEADROOM_POLICY, context_headroom_output_reserve
@@ -1244,6 +1246,7 @@ class PostgresChapterExecutionContractBinder:
             model=route.model_profile.model_id,
             protocol=provider_request_protocol(route.model_profile.model_provider),
             input_text=prompt,
+            protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref) if system_limit else "",
             max_output_tokens=output_reserve,
             timeout_seconds=_provider_process_timeout_seconds(
                 timeout_seconds, max_attempts=1 if stage == "longform_prose_review" else 2

@@ -740,7 +740,9 @@ silently change models or grant a paid spending authorization.
 
 New `complete-request-capacity.v1` requests render and meter the full Prompt, System,
 Skill, materials and output schema before capacity-driven extraction. DeepSeek strict
-tool transport is counted in addition to the visible schema once. Protocol framing,
+tool transport is counted in addition to the visible schema once. The separately
+passed Codex CLI output-schema file is also frozen, metered and checked before send;
+it does not stand in for the schema already present in the Prompt. Protocol framing,
 safety, output and reasoning reservations are recorded separately. After independent
 fidelity checking and necessary restoration, the owner renders again and freezes the
 derived request actually dispatched. A fitting full request makes no compression call.
@@ -781,7 +783,7 @@ with `project_id`, `expected_source_version`, `decision_evidence` (`authorizatio
 `authorized_reasoning_effort`, `reason`), `trace_id` and `correlation_id`. Ordinary
 `authority-creation continue --formation-run-id <id> --foreground` follows the saved
 successor. Chapter Attempt restart follows its original Root and can reuse completed
-compression receipts; `POST /product/production/book-authority/chapters/{chapter_request_id}/reconcile`
+compression receipts; `POST /product/production/book-authority/chapter-requests/{chapter_request_id}/reconcile`
 uses the existing Chapter reconciliation owner. Inspect the original Context, projection,
 substage Effects, admission, model-call and cost records together. Unknown external
 results retain their original IDs and native reconciliation path before further calls.

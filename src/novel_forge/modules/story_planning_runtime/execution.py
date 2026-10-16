@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
+from novel_forge.modules.production_execution.token_meter import route_protocol_schema
 from novel_forge.modules.capability_pack_authority import (
     CapabilityPackAttemptSnapshot,
 )
@@ -4853,7 +4854,7 @@ class PostgresPlanningExecutionPreparer:
                 prepared_route, preparation = provider_router.select(planning_route, task_type=stage_name,
                     project_id=command.project_id, work_id=command.book_id, operation_id=operation_id,
                     attempt_id=attempt_id, stable_key=stable_key,
-                    input_tokens=route_input_tokens(planning_route, prompt, output_schema_json=transport_schema(planning_route)),
+                    input_tokens=route_input_tokens(planning_route, prompt, output_schema_json=transport_schema(planning_route), protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref)),
                     output_tokens=1 if planning_route.output_reservation_policy else reserve,
                     trace_id=command.trace_id, correlation_id=command.correlation_id,
                     request_input=stable_request_payload["input"], input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
@@ -4870,7 +4871,7 @@ class PostgresPlanningExecutionPreparer:
             capacity_binding = capacity_route_binding(planning_route, preparation if provider_router is not None else None)
             capacity_bindings[stage_name] = capacity_binding
             if capacity_probe:
-                total, limit = route_request_size(planning_route, prompt, output_reserve=reserve, output_schema_json=transport_schema(planning_route))
+                total, limit = route_request_size(planning_route, prompt, output_reserve=reserve, output_schema_json=transport_schema(planning_route), protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref))
                 return total <= limit
             if not capacity_task:
                 arguments = dict(operation_id=operation_id, attempt_id=attempt_id, fencing_token=fencing_token,
@@ -4904,7 +4905,7 @@ class PostgresPlanningExecutionPreparer:
                                 subroute, decision = provider_router.select(subroute, task_type=substage,
                                     project_id=command.project_id, work_id=command.book_id, operation_id=operation_id,
                                     attempt_id=attempt_id, stable_key=stable_key + ":capacity-probe:" + substage,
-                                    input_tokens=route_input_tokens(subroute, rendered),
+                                    input_tokens=route_input_tokens(subroute, rendered, protocol_schema_json=route_protocol_schema(subroute, schema, chapter_provider_output_schema_ref(substage))),
                                     output_tokens=1 if subroute.output_reservation_policy else task_provider_output_reserve(substage, subroute, router_binding_pending=True),
                                     trace_id=command.trace_id, correlation_id=command.correlation_id,
                                     producer_contract=producer_contract_identity(sub_evidence, sub_contract,
@@ -4923,6 +4924,7 @@ class PostgresPlanningExecutionPreparer:
                         submode = dict(dict(context_policy.get("provider_output_modes") or {}).get(substage) or {}).get("deepseek")
                         schema_json = json.dumps(schema, sort_keys=True, ensure_ascii=False) if submode and subroute.model_profile.model_provider == "deepseek" else ""
                         total, limit = route_request_size(subroute, rendered,
+                            protocol_schema_json=route_protocol_schema(subroute, schema, chapter_provider_output_schema_ref(substage)),
                             output_reserve=task_provider_output_reserve(substage, subroute, router_binding_pending=provider_router is not None, system_limit=512_000),
                             output_schema_json=schema_json)
                         if total > limit:
@@ -4933,7 +4935,7 @@ class PostgresPlanningExecutionPreparer:
                     rendered, _ = _materialize_production_codex_prompt(target_scope=target_scope, stage=stage_name,
                         inputs={**stable_request_payload["input"], **({"_context_capacity_projection": projection} if projection else {})},
                         materialization=materialization)
-                    return route_request_size(planning_route, rendered, output_reserve=reserve, output_schema_json=transport_schema(planning_route))
+                    return route_request_size(planning_route, rendered, output_reserve=reserve, output_schema_json=transport_schema(planning_route), protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref))
 
                 projection = prepare_request_capacity(original=capture, stage=stage_name, route=planning_route,
                     source_boundary=source_boundary, capacity_bindings=capacity_bindings,
@@ -4962,6 +4964,7 @@ class PostgresPlanningExecutionPreparer:
                 transport_schema = ""
             components = provider_request_token_components(
                 complete_prompt, output_schema_json=transport_schema,
+                protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref) if complete_capacity else "",
                 output_reserve=1, safety_margin=planning_route.token_safety_margin,
                 framing_overhead=planning_route.token_framing_overhead,
                 accounting_method=planning_route.token_accounting_method if complete_capacity else "",
@@ -5055,6 +5058,7 @@ class PostgresPlanningExecutionPreparer:
             token_components = provider_request_token_components(
                 prompt,
                 output_schema_json=transport_schema_json,
+                protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref) if complete_capacity else "",
                 output_reserve=output_reserve,
                 safety_margin=planning_route.token_safety_margin,
                 framing_overhead=planning_route.token_framing_overhead,
@@ -5140,6 +5144,7 @@ class PostgresPlanningExecutionPreparer:
                 if planning_route.model_profile.model_provider == "deepseek"
                 else "",
                 input_text=prompt,
+                protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref) if complete_capacity else "",
                 max_output_tokens=output_reserve,
                 timeout_seconds=_provider_process_timeout_seconds(
                     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
