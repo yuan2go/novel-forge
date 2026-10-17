@@ -1,0 +1,35 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "base_sha": "e92297509d1c0e0cb3720cc21af278e83048e595",
+  "scope": "Two independent read-only static reviews under repository code-review skill; reviewers did not rerun tests or access Provider/database",
+  "standards": {
+    "status": "NO_NEW_CONFIRMED_ISSUE",
+    "scope": "new explicit frozen transport marker and absent-marker historical compatibility; host audit remains durable"
+  },
+  "spec": {
+    "status": "NO_NEW_CONFIRMED_ISSUE",
+    "scope": "empty-probe and final projection bind same transport; unknown marker rejected; actual sent display and retained audit inspected"
+  },
+  "qualification": "NOT_A_TEST_OR_PROVIDER_QUALIFICATION",
+  "final_evidence_reviews": {
+    "scope": "Two independent static read-only archive reviews, followed by focused read-only closure confirmation. No database, Provider or test execution by reviewers. Formal pending at review time.",
+    "standards": {
+      "status": "CONFIRMED_FINDINGS_CLOSED",
+      "closed": [
+        "Four stale native execution SHA labels in8b coverage corrected to actual8b/be141 sources",
+        "Relocated4790 supplements prior archive references now resolve to5c custody; original metadata retained"
+      ]
+    },
+    "spec": {
+      "status": "CONFIRMED_FINDING_CLOSED",
+      "closed": [
+        "Relocated supplement references resolve to original5c receipts; XZ storage digests match"
+      ],
+      "bounded_observations": [
+        "Native actual Provider tokens null and fixture protocol explicit",
+        "13/13 measures predefined original support preservation, not comprehension",
+        "Old upstream execution SHA and current-source NOT_RUN remain distinct"
+      ]
+    }
+  }
+}

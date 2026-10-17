@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-17T01:58:33.512884+00:00",
+  "remote_refs": "479000c6584e309191b378e04cae10b157cff67c\trefs/heads/codex/wp-nf-context-compression-recovery-01\ne92297509d1c0e0cb3720cc21af278e83048e595\trefs/heads/main\n",
+  "open_pull_requests": [
+    {
+      "baseRefName": "main",
+      "headRefName": "codex/wp-nf-context-compression-recovery-01",
+      "headRefOid": "479000c6584e309191b378e04cae10b157cff67c",
+      "isDraft": true,
+      "number": 181,
+      "title": "fix: preserve compression receipts and freeze story extract transport",
+      "updatedAt": "2026-10-17T01:55:19Z",
+      "url": "https://github.com/yuan2go/novel-forge/pull/181"
+    }
+  ],
+  "rule": "Only this task branch pushed; no main rewrite, PR merge or production deployment by this task"
+}

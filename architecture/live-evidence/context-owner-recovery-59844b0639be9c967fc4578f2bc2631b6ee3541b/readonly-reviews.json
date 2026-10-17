@@ -1,0 +1,7 @@
+{
+  "source_sha": "59844b0639be9c967fc4578f2bc2631b6ee3541b",
+  "fixed_point": "479000c6584e309191b378e04cae10b157cff67c",
+  "standards": "No confirmed issue: native explicit historical builder flags and exact6b policy replace manifest surgery; old assertions and gates unchanged.",
+  "spec": "No confirmed issue: original zero Effect, concurrent idempotency, command and repair number, oldv2/newv3 Context, projection hash and saved candidate assertions retained.",
+  "scope": "Read-only static two-axis review under repository code-review skill; no test, database or Provider use by reviewers."
+}

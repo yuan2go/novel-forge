@@ -1,0 +1,9 @@
+{
+  "status": "PASS_BYTE_IDENTITY",
+  "original_sha": "6b69b22b331191331292a51a905833871b17b283",
+  "original_path": "config/execution_templates/creation_inputs.json",
+  "fixture_path": "tests/fixtures/creation/frozen-capacity-policy-6b69b22.json",
+  "sha256": "9588eb2a923c0c14c3b4aa2a35dfe422bb4ddc841abc98d191f7cb2f30c5be94",
+  "bytes": 10919,
+  "scope": "Historical policy fixture only; no change of current normal default or capacity assertions"
+}

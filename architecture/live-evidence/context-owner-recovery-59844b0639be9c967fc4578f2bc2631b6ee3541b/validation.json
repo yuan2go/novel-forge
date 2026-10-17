@@ -1,0 +1,28 @@
+{
+  "source_sha": "59844b0639be9c967fc4578f2bc2631b6ee3541b",
+  "implementation_tree_sha": "sha256:47e8d24edd9ab54a6fc47a9d4ce465cfadde7a8ab8f78cb3d16cf664e8acc343",
+  "unchanged_business_source": "479000c6584e309191b378e04cae10b157cff67c",
+  "changed_paths": [
+    "architecture/reality-evidence.json",
+    "tests/integration/test_synthesis_formation_postgres.py"
+  ],
+  "focused_native": {
+    "status": "PASS",
+    "tests": 1,
+    "seconds": 20.95,
+    "entry": "tests/integration/test_synthesis_formation_postgres.py::test_native_undispatched_result_repair_capacity_successor_preserves_raw_task",
+    "raw": "native/semantic-59844b06-legacy-planning-upgrade/run/pytest.xml.gz"
+  },
+  "formal_whole_source": "NOT_RUN on this test-only correction; same business-source full4790 P0 is FAIL, not transferred as PASS",
+  "retained_parent_formal": "../context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/formal-qualification.json",
+  "qualification": "NOT_QUALIFIED",
+  "before": "v2 test Manifest retained new v4 semantic history constraint; compiler rejected mixed contracts",
+  "after": "Use native coherent legacy builder, frozen6b Creation policy and explicit v3 successor; all original upgrade assertions retained",
+  "real_provider": "NOT_RUN",
+  "production": "NOT_RUN",
+  "repository_governance_checks": {
+    "status": "PASS",
+    "command": "make pr-governance-checks",
+    "meaning": "Static/documentation/manifests/governance checks only; not canonical whole-source P0"
+  }
+}

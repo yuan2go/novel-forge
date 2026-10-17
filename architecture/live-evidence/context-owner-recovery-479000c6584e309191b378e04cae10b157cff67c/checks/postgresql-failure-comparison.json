@@ -1,0 +1,232 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "prior_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+  "prior_failed_entries": 262,
+  "current_failed_entries": 254,
+  "current_junit_failures": 243,
+  "current_junit_errors": 11,
+  "current_junit_testcases": 2296,
+  "removed_failures": [
+    "tests.integration.test_agent_harness_scheduler_postgres.AgentHarnessSchedulerPostgresTests::test_pep_gateway_receipt_recovers_before_transcript_without_duplicate_model_effect",
+    "tests.integration.test_authority_book_design_postgres.BookDesignAuthorityPostgresTests::test_real_provider_evaluator_records_independent_receipt_and_replays_once",
+    "tests.integration.test_book_followup_authority_postgres.BookFollowupAuthorityPostgresTests::test_reader_outcome_freezes_its_own_governed_pack_snapshot",
+    "tests.integration.test_book_followup_authority_postgres.BookFollowupAuthorityPostgresTests::test_reader_outcome_uses_pep_external_effect_and_replays_once",
+    "tests.integration.test_creation_cli_postgres::test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source[capacity-foundation-new-cause]",
+    "tests.integration.test_creation_cli_postgres::test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source[capacity-foundation]",
+    "tests.integration.test_creation_cli_postgres::test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source[capacity-recovery]",
+    "tests.integration.test_creation_cli_postgres::test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source[capacity-repair]",
+    "tests.integration.test_creation_cli_postgres::test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source[capacity-retained-repair-cause]"
+  ],
+  "added_failures": [
+    "tests.integration.test_synthesis_formation_postgres::test_native_undispatched_result_repair_capacity_successor_preserves_raw_task"
+  ],
+  "top_classes": [
+    [
+      "tests.integration.test_core_functional_loops_postgres",
+      47
+    ],
+    [
+      "tests.integration.test_synthesis_formation_postgres",
+      23
+    ],
+    [
+      "tests.integration.test_chapter_authority_scheduler_postgres.ChapterAuthoritySchedulerPostgresTests",
+      18
+    ],
+    [
+      "tests.integration.test_chapter_provider_sampling_postgres",
+      13
+    ],
+    [
+      "tests.integration.test_cross_model_source_postgres",
+      13
+    ],
+    [
+      "tests.integration.test_provider_routing_postgres",
+      11
+    ],
+    [
+      "tests.integration.test_craft_planning_postgres",
+      10
+    ],
+    [
+      "tests.integration.test_narrative_craft_chapter_postgres",
+      8
+    ],
+    [
+      "tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests",
+      7
+    ],
+    [
+      "tests.integration.test_chapter_group_authority_postgres.BookToChapterAuthorityVerticalPostgresTests",
+      7
+    ],
+    [
+      "tests.integration.test_longform_prose_editorial_postgres",
+      7
+    ],
+    [
+      "tests.integration.test_routing_bootstrap_budget_postgres",
+      7
+    ],
+    [
+      "tests.integration.test_quality_context_formal_e2e_postgres",
+      6
+    ],
+    [
+      "tests.integration.test_author_book_replacement_postgres",
+      5
+    ],
+    [
+      "tests.integration.test_capability_pack_runtime_snapshot_postgres",
+      5
+    ],
+    [
+      "tests.integration.test_chapter_model_effects_postgres.ChapterModelEffectsPostgresTests",
+      5
+    ],
+    [
+      "tests.integration.test_narrative_evaluation_durable_replay_postgres",
+      5
+    ],
+    [
+      "tests.integration.test_opening_capacity_continuation_postgres",
+      5
+    ],
+    [
+      "tests.integration.test_provider_budget_scope_postgres.ProviderBudgetScopePostgresTests",
+      5
+    ],
+    [
+      "tests.integration.test_creative_experiment_budget_postgres",
+      4
+    ],
+    [
+      "tests.integration.test_creation_cli_postgres",
+      3
+    ],
+    [
+      "tests.integration.test_cross_chapter_prose_review_postgres",
+      3
+    ],
+    [
+      "tests.integration.test_chapter_dispatch_recovery_postgres.ChapterGroupAuthorityPostgresTests",
+      2
+    ],
+    [
+      "tests.integration.test_chapter_group_authority_postgres.ChapterGroupAuthorityPostgresTests",
+      2
+    ],
+    [
+      "tests.integration.test_creative_budget_reallocation_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_knowledge_closure_helper_source_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_planning_routing_bootstrap_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_postgresql_only_chapter_slice.PostgreSQLOnlyChapterSliceTests",
+      2
+    ],
+    [
+      "tests.integration.test_production_book_budget_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_prose_reviewer_sampling_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_single_book_budget_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_world_actor_isolation_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_world_actor_sampling_postgres",
+      2
+    ],
+    [
+      "tests.integration.test_author_reading_checkpoints_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_author_supervision_workspace_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_book_completion_accepted_history_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_book_editions_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_content_authority_runtime_postgres.ContentAuthorityRuntimePostgresTests",
+      1
+    ],
+    [
+      "tests.integration.test_corpus_ingestion_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_generation_execution_policy_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_narrative_closure_campaign_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_narrative_orchestration_qualification_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_provider_callback_authority_postgres",
+      1
+    ],
+    [
+      "tests.integration.test_retrieval_embedding_projection_postgres.RetrievalEmbeddingProjectionPostgresTests",
+      1
+    ],
+    [
+      "tests.integration.test_runtime_policies_postgres.RuntimePolicyPostgresTests",
+      1
+    ],
+    [
+      "tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests",
+      1
+    ],
+    [
+      "tests.integration.test_unified_agent_runtime_postgres.UnifiedAgentRuntimePostgresTests",
+      1
+    ],
+    [
+      "tests.integration.test_world_obligation_retrieval_postgres",
+      1
+    ]
+  ],
+  "new_failure_followup": {
+    "source_sha": "59844b0639be9c967fc4578f2bc2631b6ee3541b",
+    "component_status": "PASS_1_NATIVE_TEST",
+    "evidence": "../context-owner-recovery-59844b0639be9c967fc4578f2bc2631b6ee3541b/validation.json",
+    "cause": "Historical v2 test manifest retained v4-only semantic protection; use coherent native legacy builder and frozen Creation policy. Original upgrade assertions and compiler unchanged.",
+    "whole_new_source_qualification": "NOT_RUN; corrected component is not a whole-suite PASS"
+  },
+  "remaining_attribution": "Retain all failed entries. 30 budget/routing baseline negatives reproduced on healthy original6b database. Prior OOM-contaminated baseline cohorts cannot justify blanket pre-existing attribution; remaining failures unresolved.",
+  "followup_groups": [
+    "Style projection fixtures require governed migration; do not weaken STYLE_PROJECTION_MIGRATION_REQUIRED",
+    "Accepted State must be explicitly frozen; do not disable REALIZATION_SOURCE_BINDING_REQUIRED",
+    "Legacy cumulative budget and old128000 fixtures conflict with new defaults; only explicitly historical capacity fixtures changed",
+    "Planning repair, World source-version and Narrative frozen-profile issues retain their native failure evidence"
+  ],
+  "qualification": "FAIL; dependent migration-head/query-plan/Compose/evidence-finalization gates NOT_RUN"
+}

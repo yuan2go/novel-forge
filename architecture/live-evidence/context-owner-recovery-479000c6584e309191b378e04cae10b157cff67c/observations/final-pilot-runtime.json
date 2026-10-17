@@ -1,0 +1,35 @@
+{
+  "read_only": "on",
+  "observed_at": "2026-10-17T06:17:20.711517+00:00",
+  "database": "novel_forge_first_novel_pilot_test",
+  "migration_head": [
+    {
+      "migration_id": "20260928_0148_author_supervised_design",
+      "applied_at": "2026-09-28T07:48:16.32336+00:00"
+    }
+  ],
+  "latest_snapshot": {
+    "snapshot_id": "sha256:5ab5e22824cc1b69ccb8761708e3698695660fc667dbe14292d61d2698cd6ab3",
+    "operation_id": "d4e81f81-d074-4795-b133-7e871ee59362",
+    "release_sha": "1f3da4eeca7b0da6a19fea453ad09ad9380ee6cb",
+    "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+    "pack_version": "2.3.13",
+    "context_policy_ref": "context-policy:wp02-strict-creative-budget-10000:v1",
+    "context_policy_hash": "sha256:6e996dc8f4998d88be69b66ba5422a57937528fa2e2f690dec127eb7e25bd79a",
+    "snapshot_hash": "sha256:03d2ef3c8f2b03360818398e05bac1e0f3d2ad2cbba1ec6f6d8cc5e51f326637",
+    "created_at": "2026-09-28T02:28:36.469582+00:00",
+    "frozen_context_policy": "{\"allowed_asset_types\":[\"book_design\",\"canon_snapshot\",\"chapter_execution_intent\",\"chapter_plan\",\"chapter_plan_version\",\"context_bundle\",\"knowledge_pack\",\"planning_generation_input_snapshot\",\"story_state\"],\"forbidden_asset_types\":[\"raw_source_document\",\"raw_source_chunk\"],\"freshness\":{\"reject_cross_project\":true,\"reject_stale\":true,\"reject_unqualified\":true},\"longform_bindings\":{\"arc\":\"optional\",\"book\":\"required\",\"canon\":\"required\",\"chapter\":\"required\",\"chapter_group\":\"required\",\"reader_feedback\":\"optional\",\"story_bible\":\"required\",\"volume\":\"optional\"},\"max_tokens\":10000,\"policy_id\":\"context-policy:wp02-strict-creative-budget-10000:v1\",\"priority\":[\"chapter_plan\",\"canon_snapshot\",\"story_state\",\"knowledge_pack\"],\"required_version_refs\":[\"chapter_plan_asset_version_id\",\"canon_snapshot_version_id\"],\"source_isolation\":\"ABSTRACT_ASSETS_ONLY\"}"
+  },
+  "planning_activation": {
+    "pack_id": "wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+    "pack_version": "2.3.15",
+    "activation_version": 14,
+    "active_deployment_id": "deployment:wp02-author:88f2a4fbf9df:wp02-planning-diagnostic-4ccc3aa53044-native-retry",
+    "activated_at": "2026-09-28T09:00:43.630571+00:00"
+  },
+  "database_cluster": "novel-forge-first-novel-pilot-data",
+  "actual_running_application_release": "UNVERIFIED",
+  "production_deployment": "NOT_RUN",
+  "historical_task_upgrade": "NOT_RUN",
+  "meaning": "Frozen selected Pack and Context are historical actual task facts; newer activation/default does not upgrade that task."
+}

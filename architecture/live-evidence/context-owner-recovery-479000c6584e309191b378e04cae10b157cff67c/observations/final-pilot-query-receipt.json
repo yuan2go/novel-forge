@@ -1,0 +1,6 @@
+{
+  "exit_code": 0,
+  "read_only_query": "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSELECT json_build_object('read_only',current_setting('transaction_read_only'),'observed_at',clock_timestamp(),'database',current_database(),\n'migration_head',(SELECT json_agg(x) FROM (SELECT migration_id,applied_at FROM nf_schema_migrations ORDER BY applied_at DESC,migration_id DESC LIMIT 1)x),\n'latest_snapshot',(SELECT row_to_json(x) FROM (SELECT snapshot_id,operation_id,release_sha,pack_id,pack_version,snapshot_payload->>'context_policy_ref' AS context_policy_ref,snapshot_payload->>'context_policy_hash' AS context_policy_hash,snapshot_hash,created_at,snapshot_payload->>'context_policy_payload_json' AS frozen_context_policy FROM authority_attempt_capability_pack_snapshot ORDER BY created_at DESC LIMIT 1)x),\n'planning_activation',(SELECT row_to_json(x) FROM (SELECT a.pack_id,d.pack_version,a.activation_version,a.active_deployment_id,a.activated_at FROM authority_capability_pack_activation a JOIN authority_capability_pack_deployment d ON d.deployment_id=a.active_deployment_id WHERE a.pack_id='wp02-planning-diagnostic-4ccc3aa53044-native-retry' ORDER BY a.activated_at DESC LIMIT 1)x));\nCOMMIT;",
+  "stderr": "",
+  "scope": "Read-only pilot frozen runtime identity; no migration, provider, author text mutation or task resume"
+}

@@ -1,0 +1,12 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "source_asset_version_id": "authority-output:d59062ff-be41-4b96-bd95-bb40e86bfab3:chapter.draft:v1",
+  "source_content_hash": "sha256:714f787ef7c354c0792d694cf14743dcb139cb79f1d970b463d17f0e191f462b",
+  "text_bytes": 157,
+  "text_sha256": "554fc39396b0008b9b55f4dab3fb2b9eb621434f154d9686637ec7b16481d37a",
+  "scope": "CONTROLLED_FIXTURE_NATIVE_PROSE; no author acceptance, real Provider or literary qualification",
+  "checkpoint_process_id": 32555,
+  "resume_process_id": 32581,
+  "effect_count_before": 2,
+  "effect_count_after": 8
+}

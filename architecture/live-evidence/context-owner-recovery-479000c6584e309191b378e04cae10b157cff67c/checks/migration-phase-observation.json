@@ -1,0 +1,18 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "observed_at": "2026-10-17T03:12:45.283558+00:00",
+  "formal_root": "/tmp/nf-compression-final-479000c6-r2",
+  "migration_compatibility": {
+    "status": "PASS",
+    "nodes": 958,
+    "additional_subtests": 13,
+    "duration_seconds": 2008.59,
+    "junit_cases": 971,
+    "failures": 0,
+    "errors": 0
+  },
+  "qualification": "NOT_CLAIMED_PENDING_WHOLE_FORMAL_TERMINAL",
+  "prior_configuration_failure": "checks/formal-missing-backup-configuration/configuration-failure-cause.json.gz",
+  "scope": "MIGRATION_PHASE_ONLY; whole formal qualification is reported separately from its terminal report",
+  "next_phase_at_observation": "IN_PROGRESS"
+}

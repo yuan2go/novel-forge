@@ -1,0 +1,23 @@
+{
+  "observed_at_utc": "2026-10-17T06:17:20.730174+00:00",
+  "main_sha": "e92297509d1c0e0cb3720cc21af278e83048e595",
+  "pr181": {
+    "baseRefName": "main",
+    "headRefOid": "479000c6584e309191b378e04cae10b157cff67c",
+    "isDraft": true,
+    "mergeStateStatus": "CLEAN",
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "url": "https://github.com/yuan2go/novel-forge/pull/181"
+  },
+  "open_prs": [
+    {
+      "headRefName": "codex/wp-nf-context-compression-recovery-01",
+      "headRefOid": "479000c6584e309191b378e04cae10b157cff67c",
+      "isDraft": true,
+      "number": 181,
+      "title": "fix: preserve compression receipts and freeze story extract transport"
+    }
+  ],
+  "scope": "Read-only; implementation commits and forthcoming evidence push do not deploy or merge main"
+}

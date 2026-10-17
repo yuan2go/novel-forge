@@ -1,0 +1,57 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "observed_at": "2026-10-17T05:28:01.533075+00:00",
+  "scope": "READ_ONLY_OWNED_FORMAL_TEST_RESOURCE_SAMPLE; not production runtime proof or whole-run memory qualification",
+  "container_id": "0f087cc039e935450920c624274e423f6a7b43d5f17094b53e4c0846cf905e29",
+  "state": {
+    "Status": "running",
+    "Running": true,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "Pid": 77285,
+    "ExitCode": 0,
+    "Error": "",
+    "StartedAt": "2026-10-17T02:38:16.253187501Z",
+    "FinishedAt": "0001-01-01T00:00:00Z",
+    "Health": {
+      "Status": "healthy",
+      "FailingStreak": 0,
+      "Log": [
+        {
+          "Start": "2026-10-17T05:27:52.163761544Z",
+          "End": "2026-10-17T05:27:52.198808003Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T05:27:54.200858254Z",
+          "End": "2026-10-17T05:27:54.23054067Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T05:27:56.231387421Z",
+          "End": "2026-10-17T05:27:56.263921296Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T05:27:58.264521089Z",
+          "End": "2026-10-17T05:27:58.296764422Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T05:28:00.297489215Z",
+          "End": "2026-10-17T05:28:00.329000548Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        }
+      ]
+    }
+  },
+  "test_process": "42661 02:16:11  22.3 278416",
+  "postgresql_matrix": "IN_PROGRESS_AT_OBSERVATION"
+}

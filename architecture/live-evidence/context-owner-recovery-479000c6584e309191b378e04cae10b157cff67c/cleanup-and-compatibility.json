@@ -1,0 +1,43 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "canonical_documents_only": [
+    "docs/current-system.md",
+    "docs/runtime-operations.md",
+    "docs/development.md"
+  ],
+  "superseded_defaults": [
+    {
+      "policy": "normal task material budget and24000-character working history",
+      "new_contract": "complete-request-capacity.v1; Contextv4 / working-prose-projection.v7",
+      "old_contract": "Original frozen Pack/Context/history versions remain immutable; upgrade only through existing native successor admission"
+    },
+    {
+      "policy": "permanent8-chunk processing ceiling",
+      "new_contract": "Resumable scheduling batches, complete compressor/checker request capacity, durable completed Effects"
+    },
+    {
+      "policy": "capacity audit hash notice in model Context",
+      "new_contract": "capacity-story-extract.v1 for new derivations; host retains audit; absent marker retains original display"
+    }
+  ],
+  "preserved": [
+    "Original manuscripts and source asset versions",
+    "Historical Pack/Schema contracts and published migration bodies",
+    "Failed, UNKNOWN and uncertain usage evidence",
+    "Real paid spend admission, cancellation, lease/fence and identity checks",
+    "Existing relevance selection and source isolation"
+  ],
+  "not_reintroduced": [
+    "Cumulative token/call veto",
+    "Unfounded local generation time veto",
+    "Parallel compression Agent/approval chain/Canon/state machine"
+  ],
+  "migrations": "NONE; no published migration edited",
+  "test_compatibility": {
+    "frozen_original_creation_fixture": "tests/fixtures/creation/frozen-capacity-policy-6b69b22.json",
+    "original_sha": "6b69b22b331191331292a51a905833871b17b283",
+    "path_in_original": "config/execution_templates/creation_inputs.json",
+    "bytes_sha256": "9588eb2a923c0c14c3b4aa2a35dfe422bb4ddc841abc98d191f7cb2f30c5be94",
+    "scope": "Only artificial capacity-* legacy successor tests; original128000/source/cause/no-duplicate assertions remain; ordinary new task defaults unchanged"
+  }
+}

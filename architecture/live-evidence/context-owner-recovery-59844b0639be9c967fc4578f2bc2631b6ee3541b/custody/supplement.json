@@ -1,0 +1,27 @@
+{
+  "status": "PASS_DUMP_AND_LOSSLESS_READBACK_ONLY",
+  "source_sha": "59844b0639be9c967fc4578f2bc2631b6ee3541b",
+  "container_id": "eeb98832a809c649dee5b6d5ee75675fb001f9b029203d02c88119d01f4f2265",
+  "database": "nf_p0_c7e436c7c51c47539f84fddb45727285_test",
+  "command": [
+    "docker",
+    "exec",
+    "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+    "pg_dump",
+    "-U",
+    "novel_forge",
+    "--create",
+    "nf_p0_c7e436c7c51c47539f84fddb45727285_test"
+  ],
+  "archive": "semantic-59844b06-legacy-planning-upgrade.sql.xz",
+  "raw_bytes": 17420966,
+  "raw_sha256": "7a115f27415bfb799eee222a83fa455d041c7925217331cf5e99552bc4a5e816",
+  "storage_bytes": 655684,
+  "storage_sha256": "c47d076abe14aac40993f2d6eda7c1b39ddb94f41ccb39eeffcd894aa269efa6",
+  "decompression_verified": true,
+  "actual_postgresql_restore": "NOT_RUN",
+  "prior_receipts": [
+    "../../context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/custody/supplements.json",
+    "../../context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/custody/overhead-supplement.json"
+  ]
+}
