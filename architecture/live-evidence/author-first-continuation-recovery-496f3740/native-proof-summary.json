@@ -1,0 +1,151 @@
+{
+  "source_sha": "496f37403b49fe2a694091a8c3960e32b11f52ff",
+  "evidence_ceiling": "EXECUTABLE",
+  "scripted_native_chains": [
+    {
+      "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[single-interruption]",
+      "source_sha": "496f37403b49fe2a694091a8c3960e32b11f52ff",
+      "database": "nf_author_first_test",
+      "cluster": "7697608597895058057",
+      "book_run_id": "book-run:299796c9-8912-40fa-aadb-d71c742dfde9",
+      "book_id": "book:author:6cd0d3fa7c53cd40afe19404ed459cce42f56d1ce560b1e28b8af0b81eddd685",
+      "project_id": "project:author:6cd0d3fa7c53cd40afe19404ed459cce42f56d1ce560b1e28b8af0b81eddd685",
+      "input_mode": "RESOLVED_AUTHORITY_INPUT",
+      "root_operation_id": "299796c9-8912-40fa-aadb-d71c742dfde9",
+      "current_chapter": 8,
+      "accepted_through_chapter": 0,
+      "saved_deliveries": 8,
+      "natural_group_versions": [
+        "authority-output:64825eb1-842d-4a31-bc4f-1d8e09e70fc9:story_planning.candidate:v1",
+        "authority-output:8649e776-73d5-4761-aa81-d87a5efa6d54:story_planning.candidate:v1",
+        "authority-output:c7293837-8384-44c6-af20-bac7e7f14c84:story_planning.candidate:v1"
+      ],
+      "actual_prompt_stdin_matches": 32,
+      "working_source_binding_occurrences": 222,
+      "readback": "readbacks/6dde8be276df6432.json.gz",
+      "actual_dispatch": "readbacks/6dde8be276df6432-dispatch.json",
+      "human_acceptance": "NOT_RUN",
+      "literary_qualification": "NOT_RUN",
+      "real_provider": false,
+      "frozen_pack_identities": [
+        {
+          "pack_id": "story_planning_pack.creative.ce4b5c657178f673a6fef3a9",
+          "pack_version": "2.19.0",
+          "manifest_hash": "sha256:73477bde18743ae299943a63d9a6ec1a70717e4f4001613f1afbbf19c37b9443",
+          "binding_set_id": "b6e38b1c-99f3-4517-89d5-7a0dd386e2b1",
+          "binding_set_hash": "sha256:5376d6f2a4f088d3249c2d8e9ce338f07afcf8049339b4a9eb2032121f65b501",
+          "compilation_hash": "sha256:69e6b4ff0f9f8a30eee5214b7e6335cb3b20cd39cc6c6dbd0ddbc6a16087cdd9",
+          "catalog_snapshot_hash": "sha256:8e9552da214c8d7514784af30b8d22de6cd40e9daee0b826edbb9b6b49399519"
+        },
+        {
+          "pack_id": "chapter_generation_pack.creative.ce4b5c657178f673a6fef3a9",
+          "pack_version": "3.2.0",
+          "manifest_hash": "sha256:1b71af0c6822dc853b41101c95f99e8d6cc227777164d6edc254ead53aa920c6",
+          "binding_set_id": "7eea9b6f-e8bd-432e-a21b-54f2cdf072d1",
+          "binding_set_hash": "sha256:7ee365c1b63f655898eda9e92b25b1c50b72ff9f283b5390124f5497f406761c",
+          "compilation_hash": "sha256:e87c75124625ebb69b5fe361159efc0c4b625add772f87eaca73c22529c98c5f",
+          "catalog_snapshot_hash": "sha256:93ed396967c674e3960168480f8548f39426ad8c3ae3e0ca7013f212490e177f"
+        }
+      ],
+      "runtime_identity_note": "Scripted harness build/release markers are synthetic and retained in each frozen Pack identity; source under test is the explicit clean Git SHA. This does not confer release/Provider qualification."
+    },
+    {
+      "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[saved-complete-result]",
+      "source_sha": "496f37403b49fe2a694091a8c3960e32b11f52ff",
+      "database": "nf_author_first_test",
+      "cluster": "7697608597895058057",
+      "book_run_id": "book-run:59c8e952-46a4-4e22-8f18-72c2c343e724",
+      "book_id": "book:author:be408e2dbdf77402a9b25da0cccd4b2bbb8399cd64ef4220a50c3b34fd102ebf",
+      "project_id": "project:author:be408e2dbdf77402a9b25da0cccd4b2bbb8399cd64ef4220a50c3b34fd102ebf",
+      "input_mode": "RESOLVED_AUTHORITY_INPUT",
+      "root_operation_id": "59c8e952-46a4-4e22-8f18-72c2c343e724",
+      "current_chapter": 8,
+      "accepted_through_chapter": 0,
+      "saved_deliveries": 8,
+      "natural_group_versions": [
+        "authority-output:0273ba97-94ee-45fe-ba6d-1bf0210cbad2:story_planning.candidate:v1",
+        "authority-output:7cf18cb7-be9a-4500-99dd-e5ef4331b9a4:story_planning.candidate:v1",
+        "authority-output:ea965710-4526-4a60-a8b3-05b9f2a300cf:story_planning.candidate:v1"
+      ],
+      "actual_prompt_stdin_matches": 33,
+      "working_source_binding_occurrences": 222,
+      "readback": "readbacks/222840b26bcc8a18.json.gz",
+      "actual_dispatch": "readbacks/222840b26bcc8a18-dispatch.json",
+      "human_acceptance": "NOT_RUN",
+      "literary_qualification": "NOT_RUN",
+      "real_provider": false,
+      "frozen_pack_identities": [
+        {
+          "pack_id": "story_planning_pack.creative.ed4c8569b3b231a4b63caec3",
+          "pack_version": "2.19.0",
+          "manifest_hash": "sha256:501b413e1205afb40d3af1abf7c0311edec0e7754abedf95bbfc2cdb3cd9f6a2",
+          "binding_set_id": "9613ef05-68f6-4d12-885c-08d45b854930",
+          "binding_set_hash": "sha256:e76ffedd8dcb9776551a9bd7d766365759efa65da360bd43d6710b2d05d5cd01",
+          "compilation_hash": "sha256:dc7db04ad2630ebc8230ab44758426eb0e91a7470c29c2fc62ff90cd4fc29ea4",
+          "catalog_snapshot_hash": "sha256:f3f2b351d1da6b067121cbdad9317ecaa0dc6f633c5f7118f2414f1bbd8bd3d4"
+        },
+        {
+          "pack_id": "chapter_generation_pack.creative.ed4c8569b3b231a4b63caec3",
+          "pack_version": "3.2.0",
+          "manifest_hash": "sha256:077df500e84cf4ffc8684002d51629963104f135294768423deac9f7f37cc0f5",
+          "binding_set_id": "74fed454-9bc3-43c9-891e-91d80d5932aa",
+          "binding_set_hash": "sha256:04ed15ad87ed3355c6c3cccf4fcf46712c66527180bbaa17b8c9ace3e919bb88",
+          "compilation_hash": "sha256:4d77a6cb5aec39029601bef03ce852213fefbd7808a44b59973d4ca88ca83b68",
+          "catalog_snapshot_hash": "sha256:575115a16d4ed8de15f31aa5fef404013dda1f38376576788d95e6e350b74450"
+        }
+      ],
+      "runtime_identity_note": "Scripted harness build/release markers are synthetic and retained in each frozen Pack identity; source under test is the explicit clean Git SHA. This does not confer release/Provider qualification."
+    },
+    {
+      "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[completed-sibling-interruption]",
+      "source_sha": "496f37403b49fe2a694091a8c3960e32b11f52ff",
+      "database": "nf_author_final_sibling_test",
+      "cluster": "7697608597895058057",
+      "book_run_id": "book-run:017dce99-9be0-48ec-9800-77697210ec3b",
+      "book_id": "book:author:5a9984423a5b0c61f91b4acd78fb8f5cf6e5802412e7e3a05d6d19fab2fff89d",
+      "project_id": "project:author:5a9984423a5b0c61f91b4acd78fb8f5cf6e5802412e7e3a05d6d19fab2fff89d",
+      "input_mode": "RESOLVED_AUTHORITY_INPUT",
+      "root_operation_id": "017dce99-9be0-48ec-9800-77697210ec3b",
+      "current_chapter": 8,
+      "accepted_through_chapter": 0,
+      "saved_deliveries": 8,
+      "natural_group_versions": [
+        "authority-output:1439f175-449e-450f-a23c-36bab2c50a75:story_planning.candidate:v1",
+        "authority-output:1467eb01-23c1-4320-b892-ebc3d582b147:story_planning.candidate:v1",
+        "authority-output:40f7e877-be87-4c6b-bc93-11715abfa7c8:story_planning.candidate:v1"
+      ],
+      "actual_prompt_stdin_matches": 33,
+      "working_source_binding_occurrences": 222,
+      "readback": "readbacks/2f32e4a7b38e5bf1.json.gz",
+      "actual_dispatch": "readbacks/2f32e4a7b38e5bf1-dispatch.json",
+      "human_acceptance": "NOT_RUN",
+      "literary_qualification": "NOT_RUN",
+      "real_provider": false,
+      "frozen_pack_identities": [
+        {
+          "pack_id": "story_planning_pack.creative.21a274da3d262757707e5ce7",
+          "pack_version": "2.19.0",
+          "manifest_hash": "sha256:1ac2848a4675b968d20ebc41f120fbc75dc623e3b984d8ca0f7f4375ffc9b503",
+          "binding_set_id": "c677f134-951e-4656-aa9c-318025454f74",
+          "binding_set_hash": "sha256:aca943d3d98c60c5bc9afaf2a308e743a80fd1cab7b5c1ac68f84636905a73d6",
+          "compilation_hash": "sha256:ecc59afa3996c1b975748d89ec9b24132aea5360e4ca03fda70c85b3c810b934",
+          "catalog_snapshot_hash": "sha256:4ce982e76ef9685720cc2145fb6885a75ede7c2ba5de6d9a33304aa451ae72b1"
+        },
+        {
+          "pack_id": "chapter_generation_pack.creative.21a274da3d262757707e5ce7",
+          "pack_version": "3.2.0",
+          "manifest_hash": "sha256:d8208c6d3353852c732844bdc0cd2610c56ac1b262914a512812ce68b444d50f",
+          "binding_set_id": "00d2c12d-fdfd-41c9-b40c-6d29ca7fd9e7",
+          "binding_set_hash": "sha256:ff056e085a1ecf29c0bcafe34b3ce9f89eb2369ea88147684761994585cdcd71",
+          "compilation_hash": "sha256:bf8a4e108da39421764d1b8493b11e02aab55df9e18da2542602a15d12729fa7",
+          "catalog_snapshot_hash": "sha256:316752d105b03675949d36dd1da77def0e5899aedb43a124835c29f5b7dd8e5e"
+        }
+      ],
+      "runtime_identity_note": "Scripted harness build/release markers are synthetic and retained in each frozen Pack identity; source under test is the explicit clean Git SHA. This does not confer release/Provider qualification."
+    }
+  ],
+  "positive_path": "Ordinary Creation -> native Foundation/Opening/Planning -> Memo -> Writer -> saved manuscript -> continuation -> natural ChapterGroup -> pause/resume -> exact export. No LEGACY_FIXTURE_INPUT_MODE, no SQL-seeded plan/prose, no accept_chapter for these three chains. Scripted Provider output is not real prose delivery.",
+  "working_history_semantics": "Frozen working-prose sources describe prior selected occurrences only. Acceptance boundary remains 0; no evidence upgrades working history to accepted Canon, future events or character knowledge.",
+  "export_readback": "checks/scripted-export-readback.json.gz",
+  "real_provider": "real-provider/native-checkpoint.json.gz"
+}

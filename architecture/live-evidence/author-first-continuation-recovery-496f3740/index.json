@@ -1,0 +1,42 @@
+{
+  "schema_version": "author-first-continuation-recovery-work-pack.v1",
+  "work_package": "WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+  "base_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "related_merged_pr": {
+    "number": 182,
+    "merge_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e"
+  },
+  "source_sha": "496f37403b49fe2a694091a8c3960e32b11f52ff",
+  "production_repair_commit": "809e81f9548fc3bb6ab6bffdb06453aa7506062d",
+  "evidence_ceiling": "EXECUTABLE",
+  "task_status": "PARTIAL_REAL_PROVIDER_BLOCKED",
+  "formal_exact_revision_P0": "NOT_RUN",
+  "production_qualification": "NOT_RUN",
+  "long_form_literary_qualification": "NOT_RUN",
+  "human_author_acceptance": "NOT_RUN",
+  "full_target_chapters": 600,
+  "han_per_chapter": [
+    4000,
+    5000
+  ],
+  "first_delivery_window": 100,
+  "scripted_phase_samples": "3 independent fault scenarios, 8 saved chapters each; not 24 continuous real chapters and not 100-chapter delivery.",
+  "issue_classification": "failure-comparison.json",
+  "directed_runs": "test-runs.json",
+  "native_proof": "native-proof-summary.json",
+  "real_provider": "real-provider/summary.json",
+  "safety": {
+    "original_dirty_workspace": "preserved; isolated managed worktree",
+    "published_migrations": "unchanged",
+    "production_database": "NOT_ACCESSED",
+    "test_databases": "task-owned cluster port 56437; historical seeded fixtures separate from positive native Creation chains",
+    "runtime_config": "private config omitted; subscription authorized only, paid API disabled",
+    "main_merge": "NOT_RUN"
+  },
+  "task_storage": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+  "recovery_entry": "authority-creation recover/continue with the original Formation identity; real-provider checkpoint records status and command.",
+  "remaining": [
+    "Independent real-provider World/Foundation -> native Planning/Memo/Writer -> at least two normal-length saved chapters -> exact export/readback; no real prose delivered yet.",
+    "100-chapter delivery and long-form literary quality remain unfulfilled; phase test samples do not satisfy them."
+  ]
+}

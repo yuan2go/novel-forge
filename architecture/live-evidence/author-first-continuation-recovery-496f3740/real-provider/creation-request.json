@@ -1,0 +1,31 @@
+{
+  "version": "creation-request.v1",
+  "title": "石渠问道",
+  "target_chapters": 600,
+  "execution_window": {
+    "version": "creation-execution-window.v1",
+    "stop_after_chapter": 100
+  },
+  "language_contract": {
+    "required_language": "zh-CN"
+  },
+  "chapter_length": {
+    "minimum": 4000,
+    "maximum": 5000
+  },
+  "brief": {
+    "creative_brief_contract_version": "creative-brief-v2",
+    "idea": "独立原创传统修仙长篇：山村修渠学徒在山洪后发现旧水渠的灵气分配牵连了仙门药田与凡人灌溉。他靠测水、凿石和逐步修炼求取入门机会；每次获得修炼资源都要付出劳动、关系或风险代价。人物在具体行动与选择中成长，冲突由资源、规则、承诺和利益推进。第一章从一件迫在眉睫的修渠难题起笔，避免先讲完整修仙百科。",
+    "genre": "传统修仙",
+    "audience": "中文长篇修仙读者",
+    "constraints": [
+      "全书600章，首期交付窗口100章，每章4000至5000汉字。当前工作包的少量章节仅作链路样本。",
+      "独立新书、新人物、新世界；不用旧书稿件或受保护作品表达。",
+      "行动要留下后果，人物有不同反应；下一章承接已发生经历，避免重复讲解和复述。",
+      "境界、能力、资源与人际关系渐进发展，不凭空得到超出铺垫的力量。"
+    ],
+    "source_boundaries": [
+      "仅使用本书原创设定与原生生成的规划、选定工作稿；不引入参考小说原文。"
+    ]
+  }
+}

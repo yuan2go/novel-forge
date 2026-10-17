@@ -1,0 +1,103 @@
+{
+  "templates": [],
+  "pack_materializations": [
+    {
+      "asset_version_id": "7d98a84c-9112-4f5d-a31d-b7de00ee9d3a",
+      "content_hash": "sha256:690b68082451c9223fdaf33dd1b377836230267f6c6109b9423e63e9a480cdcb",
+      "stage": "creative.candidates.generate",
+      "pack_identity": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "binding_set_id": "c48cfd46-dcad-4663-a7c3-0fc4ec0d9af2",
+        "binding_set_hash": "sha256:59f46aa670a154e20e863799b1482e4166b1585b6a299a348993799515a26a22",
+        "compilation_hash": "sha256:95cbda76b355abf93896575f5a21a41769b19c66fe2ef481083b77eeaaa05943",
+        "catalog_snapshot_hash": "sha256:c6cb4100bc5d5f4e6111412f7550b143fe5d51ef656eea5c47193d406cbfdac8"
+      }
+    },
+    {
+      "asset_version_id": "5c9643af-79fb-4787-a470-aa4909e34608",
+      "content_hash": "sha256:ee39a70c01a92a75a203bde2530701eb0e2a6b8de3842030a20ba93cfcc2012a",
+      "stage": "creative.candidates.generate",
+      "pack_identity": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "binding_set_id": "c48cfd46-dcad-4663-a7c3-0fc4ec0d9af2",
+        "binding_set_hash": "sha256:59f46aa670a154e20e863799b1482e4166b1585b6a299a348993799515a26a22",
+        "compilation_hash": "sha256:95cbda76b355abf93896575f5a21a41769b19c66fe2ef481083b77eeaaa05943",
+        "catalog_snapshot_hash": "sha256:c6cb4100bc5d5f4e6111412f7550b143fe5d51ef656eea5c47193d406cbfdac8"
+      }
+    },
+    {
+      "asset_version_id": "33eeae7b-b036-472f-ac3b-e6b58b1d27a6",
+      "content_hash": "sha256:b07bceb67a0e94a58cbf6b436eb97b9a80b059d46956a082d18b47d992843c50",
+      "stage": "theme.candidates.generate",
+      "pack_identity": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "binding_set_id": "c48cfd46-dcad-4663-a7c3-0fc4ec0d9af2",
+        "binding_set_hash": "sha256:59f46aa670a154e20e863799b1482e4166b1585b6a299a348993799515a26a22",
+        "compilation_hash": "sha256:95cbda76b355abf93896575f5a21a41769b19c66fe2ef481083b77eeaaa05943",
+        "catalog_snapshot_hash": "sha256:c6cb4100bc5d5f4e6111412f7550b143fe5d51ef656eea5c47193d406cbfdac8"
+      }
+    },
+    {
+      "asset_version_id": "408cf671-22e2-4b47-8262-4d4a9d80a953",
+      "content_hash": "sha256:40d85c7e6c7d7d2bf32adc39f34bca9423e317267a592ead78cbc971ac93e75d",
+      "stage": "ending.intent.generate",
+      "pack_identity": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "binding_set_id": "c48cfd46-dcad-4663-a7c3-0fc4ec0d9af2",
+        "binding_set_hash": "sha256:59f46aa670a154e20e863799b1482e4166b1585b6a299a348993799515a26a22",
+        "compilation_hash": "sha256:95cbda76b355abf93896575f5a21a41769b19c66fe2ef481083b77eeaaa05943",
+        "catalog_snapshot_hash": "sha256:c6cb4100bc5d5f4e6111412f7550b143fe5d51ef656eea5c47193d406cbfdac8"
+      }
+    },
+    {
+      "asset_version_id": "9882c0a1-60b4-495d-b230-cf52d0ef5fdb",
+      "content_hash": "sha256:c87088b2a3bc86c137302007820f974c01afe6b1335310c7184093019003bf8e",
+      "stage": "reader.promise.generate",
+      "pack_identity": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "binding_set_id": "c48cfd46-dcad-4663-a7c3-0fc4ec0d9af2",
+        "binding_set_hash": "sha256:59f46aa670a154e20e863799b1482e4166b1585b6a299a348993799515a26a22",
+        "compilation_hash": "sha256:95cbda76b355abf93896575f5a21a41769b19c66fe2ef481083b77eeaaa05943",
+        "catalog_snapshot_hash": "sha256:c6cb4100bc5d5f4e6111412f7550b143fe5d51ef656eea5c47193d406cbfdac8"
+      }
+    },
+    {
+      "asset_version_id": "127318fe-9fbd-472e-9cb3-bc3816a31869",
+      "content_hash": "sha256:509f372de88a6eb5e2b82ee563767794e7eddcaafa6b71f9a8ff67f905c3d21b",
+      "stage": "world.design.generate",
+      "pack_identity": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "binding_set_id": "c48cfd46-dcad-4663-a7c3-0fc4ec0d9af2",
+        "binding_set_hash": "sha256:59f46aa670a154e20e863799b1482e4166b1585b6a299a348993799515a26a22",
+        "compilation_hash": "sha256:95cbda76b355abf93896575f5a21a41769b19c66fe2ef481083b77eeaaa05943",
+        "catalog_snapshot_hash": "sha256:c6cb4100bc5d5f4e6111412f7550b143fe5d51ef656eea5c47193d406cbfdac8"
+      }
+    },
+    {
+      "asset_version_id": "c17c92c2-6ff3-47a1-891d-b8ff0f09af5e",
+      "content_hash": "sha256:0e64529b3d18b6917cb8d6d952715a412d3077bcc1510d8bcbe30facfbd74567",
+      "stage": "world.design.generate",
+      "pack_identity": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "binding_set_id": "c48cfd46-dcad-4663-a7c3-0fc4ec0d9af2",
+        "binding_set_hash": "sha256:59f46aa670a154e20e863799b1482e4166b1585b6a299a348993799515a26a22",
+        "compilation_hash": "sha256:95cbda76b355abf93896575f5a21a41769b19c66fe2ef481083b77eeaaa05943",
+        "catalog_snapshot_hash": "sha256:c6cb4100bc5d5f4e6111412f7550b143fe5d51ef656eea5c47193d406cbfdac8"
+      }
+    }
+  ]
+}

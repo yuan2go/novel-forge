@@ -1,0 +1,78 @@
+{
+  "source_sha": "496f37403b49fe2a694091a8c3960e32b11f52ff",
+  "issues": [
+    {
+      "id": "A",
+      "classification": "PRODUCTION_DEFECT",
+      "first_failure": "v12 _native_preflight_evidence selected native-planning-repair-evidence.v2; v4-v11 selected stage-aware v3. Same drift existed in both stage bounds and continuation/World reachability checks.",
+      "repair": "Resolve repair evidence from the validated frozen repair_routing contract in execution_template.py; stage limits, preflight and continuation consume that frozen capability. World policy uses its frozen field. No latest-config reinterpretation.",
+      "recheck": "PASS; red v12 case retained; v4-v12 and historical routing/repair unit cases passed. Stage allowance and global monotonic repair sequence remain distinct; no reset or cap growth.",
+      "evidence": [
+        "checks/red-v12.log.gz",
+        "checks/final-unit.xml"
+      ],
+      "constraint_class": "CONFIGURABLE_POLICY"
+    },
+    {
+      "id": "B",
+      "classification": "OUTDATED_FIXTURE",
+      "first_failure": "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID from synthetic Foundation/cast without the current Book-scoped flattened provenance; fixture activation also omitted scope_layer/book_id.",
+      "repair": "Bring only synthetic Foundation/cast envelopes and scoped activation rows up to the executable contract. Current native generation already binds Book identity, source version and content hash. No broad legacy JSON fallback or historic asset rewrite. Craft fixture now supplies a relevant writing problem in its initial authoritative Book profile; current need-driven Craft refusal stays intact.",
+      "recheck": "PASS in native ordinary Creation scripted chain and Craft/Formation/closure integration; cross-Book/hash/missing/version mismatch guards retained by character-reference and retained-frontier units. Real Provider cast stage is not yet proven by this packet.",
+      "evidence": [
+        "checks/baseline-boundaries.log.gz",
+        "checks/final-boundaries.xml",
+        "checks/final-unit.xml",
+        "readbacks/6dde8be276df6432.json.gz"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    },
+    {
+      "id": "C",
+      "classification": "OUTDATED_FAULT_INJECTION_AND_CORRECT_REFUSAL",
+      "first_failure": "Old binder.execute monkeypatch failed before real snapshot preparation, so it could only exercise zero-preparation budget succession.",
+      "repair": "Fault synthetic route capacity at the native execution preparer and evaluate the complete rendered request. Actual TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED leaves frozen snapshot/input evidence, no external intent. Preserve failed Attempt and use existing Opening execution recovery; prepared work correctly refuses zero-work capacity replacement. No production change needed.",
+      "recheck": "PASS 10 capacity tests and 6 saved-result/recovery tests. Same-capacity native continuation retains complete-request semantics; after-intent/active/changed identity refusals remain. Two existing fresh/upgrade deletion-fence tests independently retain predecessor protection.",
+      "evidence": [
+        "checks/final-capacity.xml",
+        "checks/final-fence-02.xml"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    },
+    {
+      "id": "D",
+      "classification": "PRODUCTION_SCANNER_DEFECT_AND_OUTDATED_EXPECTATION",
+      "first_failure": "Retained Quality scanner ran current graph frontier validation against historical 3.8 even though that scanner cannot handle 3.8, yielding RETAINED_GRAPH_BOOK_CONFLICT before Memo recovery.",
+      "repair": "An inapplicable Quality scanner returns false before frontier checks; direct applicable recovery still enforces exact actor, current Book boundary, cancellation and replacement guards. Historical Memo test now expects authorized stopped-generation isolation and linked successor, while strict acceptance still rejects UNKNOWN usage.",
+      "recheck": "PASS historical 3.8 Memo and three current native Creation interruption cases. Completed results reused, completed Context sibling reused, saved Draft delivery repaired with no repeat Writer. Original UNKNOWN and HELD_UNKNOWN survive; commit rights revoked before successor; concurrency/rollback/late-result guards retained.",
+      "evidence": [
+        "checks/baseline-quality-memo.log.gz",
+        "checks/final-boundaries.xml",
+        "checks/final-author-sibling.xml",
+        "readbacks/6dde8be276df6432.json.gz",
+        "readbacks/222840b26bcc8a18.json.gz"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    },
+    {
+      "id": "E",
+      "classification": "PUBLICATION_DISPATCH_DEFECT_AND_CORRECT_UNCALIBRATED_QUALITY_REFUSAL",
+      "first_failure": "Ordinary blocked export incorrectly invoked specialized native-publication successor revalidation without an immutable successor journal, reporting PUBLICATION_RECOVERY_SOURCE_INVALID. Joint Quality fixture expected uncalibrated observations to authorize correction.",
+      "repair": "Only an actual immutable Saga Step successor invokes publication revalidation; ordinary export reports the owning strict Quality gate. Keep exact-source replacement guards. Update stale uncalibrated Quality expectation to refuse automatic revision/acceptance; preserve original combined Craft/continuity text and exact frozen checks.",
+      "recheck": "PASS; precise source actor/hash/cause/version/failure negatives remain, existing qualified-selection/range units pass. Default author-first graph still has optional review/Canon excluded; complete working prose remains readable and exactly exportable with acceptance 0.",
+      "evidence": [
+        "checks/baseline-quality-memo.log.gz",
+        "checks/final-boundaries.xml",
+        "checks/final-unit.xml",
+        "checks/scripted-export-readback.json.gz"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    }
+  ],
+  "assertion_changes": {
+    "native_capacity": "Zero-work successor assertions cannot apply after actual preparation; existing fresh/upgrade predecessor-delete guards ran separately. Native tests now assert retained snapshot/input/failure/causality instead.",
+    "memo_unknown": "Replace stale permanent WAITING expectation with native isolation/successor while retaining original UNKNOWN/HELD_UNKNOWN, one original dispatch and strict acceptance refusal.",
+    "joint_quality": "Uncalibrated Quality does not grant revision authority; selected/range correction positive contract stays covered in existing unit cases. No valid negative guards were removed.",
+    "world_fixture": "NO_OP world-agency.v2 fixture includes empty action_classifications, as required by the current schema."
+  }
+}
