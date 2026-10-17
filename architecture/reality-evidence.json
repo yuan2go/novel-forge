@@ -7535,6 +7535,22 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
           "symbol": "PostgresPlanningExecutionPreparer._prepare_stage"
+        },
+        {
+          "path": "src/novel_forge/modules/agent_runtime/production.py",
+          "symbol": "PostgresAgentExecutionContractBinder.freeze_before_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/execution.py",
+          "symbol": "PostgresReaderOutcomeExecutionContractBinder.freeze_before_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_execution.py",
+          "symbol": "PostgresNarrativeEvaluationExecutionContractBinder.freeze_before_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/model_reference_execution.py",
+          "symbol": "ModelReferenceExecutionContractBinder.freeze_before_external_effect"
         }
       ],
       "domain_symbols": [
@@ -7732,6 +7748,10 @@
         {
           "path": "tests/unit/test_semantic_context_units.py",
           "symbol": "test_final_request_restore_reallocates_from_original_sources_and_checks_the_new_version"
+        },
+        {
+          "path": "tests/unit/test_context_capacity_owner_contracts.py",
+          "symbol": "test_real_recursive_model_envelope_carries_owner_created_context_and_reference"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -10509,7 +10529,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:72ac0541418ee3d6d5ecf83f09656b092efdc4e67df4978bdc79420a69253b03"
+    "implementation_tree_sha": "sha256:9365fbf4ec96f4b8336e138b71d54dd327521a3e9f60760dd211f123e77b4869"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
