@@ -845,6 +845,11 @@ class PostgresBookProductionSupervisor:
         report = dict(prepared.preparation_report)
         if book is not None and profile.content.get("context_capacity_policy") == "complete-request-capacity.v1":
             report["context_capacity_policy"] = profile.content["context_capacity_policy"]
+            if profile.content.get("context_semantic_contract"):
+                from novel_forge.modules.context_builder.semantic_units import SEMANTIC_CONTRACT
+                if profile.content["context_semantic_contract"] != SEMANTIC_CONTRACT:
+                    raise KernelError("CONTEXT_SEMANTIC_POLICY_INVALID", "Unknown frozen semantic Context contract")
+                report["context_semantic_contract"] = SEMANTIC_CONTRACT
         stage_budgets = dict(report.get("stage_context_token_budgets") or {})
         report["stage_context_token_budgets"] = {
             **stage_budgets,

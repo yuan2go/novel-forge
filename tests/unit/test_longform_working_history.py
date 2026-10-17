@@ -181,7 +181,7 @@ def test_longform_neutral_guidance_preserves_author_scope():
         assert historical_requirement not in instruction
     template = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())
     policy = template["profiles"]["production_profile"]["content"]["working_prose_policy"]
-    assert policy["version"] == "working-prose-projection.v6" and policy["history_chapters"] == 128
+    assert policy["version"] == "working-prose-projection.v7" and policy["history_chapters"] == 128
     assert policy["max_characters"] is None
 
 

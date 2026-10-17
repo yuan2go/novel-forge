@@ -856,6 +856,7 @@ class ProductionProviderRouter:
         quality_floor: float = 0,
         dry_run: bool = False,
         prepare_capacity: bool = False,
+        capacity_preparation_policy: str = "",
         capacity_binding: Mapping[str, Any] | None = None,
         cache_prefix: bytes = b"",
         input_hash: str = "",
@@ -866,6 +867,8 @@ class ProductionProviderRouter:
     ) -> tuple[Any, dict[str, Any]]:
         if prepare_capacity and not dry_run:
             raise KernelError("ROUTING_CAPACITY_PREPARATION_ONLY", "capacity preparation cannot freeze a routing decision or authorize an Effect")
+        if capacity_preparation_policy not in {"", "max-authorized-effective-context.v1"} or capacity_preparation_policy and not prepare_capacity:
+            raise KernelError("ROUTING_CAPACITY_PREPARATION_POLICY_INVALID", "Capacity preference requires an explicit supported preparation contract")
         lineage = _routing_operation_lineage(operation_id, lineage_operation_ids)
         contract = dict(producer_contract or {})
         contract_hash = snapshot_hash(contract) if contract else ""
@@ -1089,6 +1092,7 @@ class ProductionProviderRouter:
             stable_key=stable_key,
             declared_requirements={
                 **({"capacity_preparation": True} if prepare_capacity else {}),
+                **({"capacity_preparation_policy": capacity_preparation_policy} if capacity_preparation_policy else {}),
                 **({"capacity_route_binding": dict(capacity_binding)} if capacity_binding else {}),
                 "pure_generation": True,
                 "risk": risk,

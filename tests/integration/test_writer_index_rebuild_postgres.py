@@ -148,3 +148,38 @@ def test_real_accepted_repository_writes_clean_projection_and_detects_conflictin
         cursor.execute("UPDATE authority_narrative_retrieval_document SET projection_hash=%s WHERE project_id=%s AND memory_layer='L0'", ["sha256:" + "f" * 64, project])
         with pytest.raises(ValueError, match="WRITER_RETRIEVAL_REBUILD_REQUIRED"):
             BookAuthorityRepository(cursor)._commit_narrative_retrieval_documents(projection)
+
+
+def test_semantic_retrieval_recovers_original_json_fields_and_replays_frozen_binding():
+    from novel_forge.modules.context_builder.production_retrieval import _bind_source_json_projections, _selected_document
+    from novel_forge.modules.context_builder.story_projection import visible_business_data
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+
+    ensure_migrated()
+    project = identifier('source-json-retrieval')
+    book = 'book:' + project
+    seed_authority_project_book(project_id=project, book_id=book)
+    identity = project + ':source:v1'
+    original = {'safe_summary': '{"quantity":0.123456789012345678901,"units":"尺","summary":"未达条件不能开闸。","provider_evidence":{"text":"内部执行信息"}}',
+        'unselected': '未选中的原始字段仍保存在资产中。'}
+    source_hash = narrative_hash(original)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'chapter_episodic_summary')", [identity, project])
+        cursor.execute("""INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version)
+            VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'episodic.v1')""", [identity, identity, Jsonb(original), source_hash])
+    previous = visible_business_data(json.dumps({'safe_summary': original['safe_summary']}, ensure_ascii=False), stage='draft', history=True)
+    document = {'retrieval_document_id': 'selected-scoped-document', 'source_asset_version_id': identity,
+        'source_content_hash': source_hash, 'source_artifact_type': 'chapter_episodic_summary', 'projection_hash': narrative_hash(previous),
+        'content_text': previous, 'metadata': {}}
+    bound = _bind_source_json_projections(DATABASE_URL, project_id=project, documents=[document])[0]
+    selected = _selected_document(bound, clean_history=True, projection_version='accepted-writer-history.v2', preserve_json=True)
+    assert '0.123456789012345678901' in selected['safe_summary']
+    assert '内部执行信息' not in selected['safe_summary'] and '未选中的原始字段' not in selected['safe_summary']
+    assert bound['source_json_projection']['field_bindings'][0]['source_field_path'] == ['safe_summary']
+    assert selected == _selected_document(json.loads(json.dumps(bound)), clean_history=True, projection_version='accepted-writer-history.v2', preserve_json=True)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute('SELECT content,content_hash FROM authority_asset_version WHERE asset_version_id=%s', [identity])
+        assert cursor.fetchone() == (original, source_hash)
+    changed = {**bound, 'source_content_hash': 'different-source'}
+    with pytest.raises(KernelError, match='CONTEXT_SOURCE_JSON_BINDING_CHANGED'):
+        _selected_document(changed, clean_history=True, projection_version='accepted-writer-history.v2', preserve_json=True)

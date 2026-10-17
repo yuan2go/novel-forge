@@ -1714,15 +1714,15 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                                 break
                             if error.code != "MODEL_EFFECT_RETRYABLE_CAPACITY_PROOF":
                                 raise
-                            from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
-                            previous = application
-                            application = ChapterAuthorityApplication(DATABASE_URL, model_adapter=execution.gateway,
-                                object_store_adapter=previous._object_store_adapter, worker_id=previous.worker_id,
-                                capability_binder=previous._model_port.capability_binder,
-                                agent_binding_recorder=previous.agent_binding_recorder,
-                                agent_binding_required=previous._model_port.agent_binding_required,
-                                allow_synchronous_fixture=previous.allow_synchronous_fixture,
-                                application_build_id=previous.application_build_id, commit_sha=previous.commit_sha)
+                            previous_gateway = execution.gateway
+                            previous_binder = application._model_port.capability_binder
+                            execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=pack_review_fixture)
+                            if routed:
+                                router = attach_mock_qualified_router(execution, DATABASE_URL)
+                                router.candidates = tuple(replace(item, context_limit=request_limit) for item in router.candidates)
+                            application = build_chapter_authority_application(settings, execution=execution, env=env)
+                            self.assertIsNot(execution.gateway, previous_gateway)
+                            self.assertIsNot(application._model_port.capability_binder, previous_binder)
                             scheduler = application.scheduler(principal=principal)
                             continue
                         self.assertEqual(tick.operation_status, "SUCCEEDED")
@@ -1801,6 +1801,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     (destination / "final-request.txt").write_text(rendered_prompts[prompt_hash])
                     (destination / "native-prose.txt").write_text(saved_prose)
                     (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+                        "recovery": {"application_rebuilt": restart, "gateway_and_binder_rebuilt": restart, "os_process_kill": False},
                         "project_id": project_id, "root_operation_id": admitted.root_operation_id, "provider_admission": admission,
                         "effects": [{"capability": row[0], "status": row[1], "stage": row[2]["stage"],
                             "stable_idempotency_key": row[2]["stable_idempotency_key"],

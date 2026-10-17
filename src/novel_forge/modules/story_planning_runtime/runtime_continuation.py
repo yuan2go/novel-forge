@@ -1218,7 +1218,8 @@ def _require_complete_capacity_pack_successor(uow, *, project_id, source, target
         return None
     old = json.loads(original["context_policy_payload_json"])
     new = json.loads(successor["context_policy_payload_json"])
-    if new.get("capacity_policy") != "complete-request-capacity.v1" or old.get("capacity_policy"):
+    if new.get("capacity_policy") != "complete-request-capacity.v1" or (old.get("capacity_policy")
+            and not (old.get("policy_id") == "context-policy:chapter-generation-pack:v3" and new.get("policy_id") == "context-policy:chapter-generation-pack:v4")):
         return None
     if "planning_task_token_budget" not in old and source.get("original_context_target") is None:
         repository = CapabilityPackAuthorityRepository(uow.cursor)

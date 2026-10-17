@@ -94,16 +94,16 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
         **path["planning"])
     skill = next(item for item in planning.manifest["skill_binding"]["skills"] if item["skill_ref"] == "long-outline")
     assert skill["version"] == "long-outline-v5"
-    assert planning.manifest["identity"]["version"] == "2.17.0"
-    assert path["chapter"] == {"pack_version_override": "3.1.0", "prose_skill_version": "prose-generation-v5",
+    assert planning.manifest["identity"]["version"] == "2.19.0"
+    assert path["chapter"] == {"pack_version_override": "3.2.0", "prose_skill_version": "prose-generation-v5",
         "prompt_template_version": "v15"}
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v1"})["chapter"]["pack_version_override"] == "3.0.3"
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v2"})["chapter"]["pack_version_override"] == "3.0.4"
     profile = policy["profiles"]["production_profile"]["content"]
     current = working_prose_policy(profile)
-    assert current["version"] == "working-prose-projection.v6"
+    assert current["version"] == "working-prose-projection.v7"
     assert current["max_characters"] is None
-    assert planning.manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:v3"
+    assert planning.manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:v4"
     assert "No fixed number of turns" in working_instruction(current)
     assert profile["craft_budget_policy"]["schema_version"] == "narrative-craft-budget.v5"
     assert profile["working_craft_history_policy"] == {"version": "working-craft-delivery.v2", "use": "SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}

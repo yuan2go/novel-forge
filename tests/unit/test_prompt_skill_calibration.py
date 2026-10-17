@@ -324,7 +324,7 @@ def test_narrative_intent_pack_reaches_real_prompt_assembly_and_keeps_work_speci
     from tests.unit.test_production_execution_gateway import contracts
 
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash=HASH)
-    assert profile.manifest["identity"]["version"] == "2.16.0"
+    assert profile.manifest["identity"]["version"] == "2.18.0"
     assert profile.manifest["prompt_binding"]["template_version"] == "v3"
     artifacts = profile.artifact_catalog["artifacts"]
     def artifact(kind, ref, version):
@@ -452,3 +452,13 @@ def test_event_first_schema_hints_reach_nested_plan_fields_without_changing_vali
             except KernelError:
                 return False
         assert valid(schema) == valid(legacy) == valid(revised)
+
+
+@pytest.mark.parametrize("stage", ["context_compress", "context_fidelity"])
+def test_semantic_context_substages_project_real_frozen_skill_and_system_methods(stage):
+    method = "source-unit-dependency-and-final-composition.v2"
+    for ref, version in [("prose-generation", "prose-generation-v5"), ("long-outline", "long-outline-v5")]:
+        text = (ROOT / "skills" / ref / "SKILL.md").read_text()
+        assert project_skill_method(text, ref=ref, version=version, stage=stage, targeted=False, context_substage_method=method) == project_sections(text, "Shared rules")
+    text = (ROOT / "config/capability_packs/artifacts/story_planning_system_instruction.md").read_text()
+    assert project_planning_system(text, stage=stage, context_substage_method=method) == project_sections(text, "Shared rules")

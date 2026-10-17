@@ -1,0 +1,72 @@
+{
+  "source_sha": "22de17d0ca1071f9b834e03bce817dfa4ea712b6",
+  "evidence_class": "PRODUCTION_ADMISSION_COMPILATION_AND_FINAL_BUNDLE_SCOPE_REGRESSION",
+  "admitted": [
+    "A",
+    "B",
+    "plan"
+  ],
+  "selected_roles": [
+    {
+      "asset_version_id": "A",
+      "narrative_function": "character_belief",
+      "semantic_representation_identity": "hearsay:A"
+    }
+  ],
+  "deduplications": [
+    {
+      "asset_version_id": "B",
+      "retained_asset_version_id": "A",
+      "reason": "IDENTICAL_VERSION_SCOPE_CONTENT_AND_ATTRIBUTION",
+      "identity_hash": "sha256:ad40053f5f01bc398f82a3f0572f740e300ecf4f86e33c35286aa3876273ca43"
+    }
+  ],
+  "model_calls": 0,
+  "system_context_limit": 512000,
+  "range_members_retained": [
+    {
+      "id": "A",
+      "text": "甲乙丙丁戊己",
+      "representation": "hearsay:A",
+      "policy": "",
+      "section": "NARRATIVE",
+      "bucket": "GENERAL"
+    }
+  ],
+  "range_union_receipts": [
+    {
+      "asset_version_id": "B",
+      "retained_asset_version_id": "A",
+      "reason": "VERIFIED_ORIGINAL_RANGE_UNION",
+      "members": [
+        {
+          "asset_version_id": "A",
+          "field_path": [
+            "text"
+          ],
+          "start": 0,
+          "end": 4,
+          "text_hash": "sha256:c89664987661b0dc3c75a2ca1ca9701bfde232c9f83cad2757fd9c546f01181f"
+        },
+        {
+          "asset_version_id": "B",
+          "field_path": [
+            "text"
+          ],
+          "start": 2,
+          "end": 6,
+          "text_hash": "sha256:57a712182229b89602d1a26eea0f511c79a49f63cff98371c92ff617d4373ead"
+        }
+      ]
+    }
+  ],
+  "real_provider": "NOT_RUN",
+  "semantic_comprehension": "NOT_VERIFIED",
+  "provider_visible_roles": [
+    {
+      "asset_version_id": "A",
+      "narrative_function": "character_belief",
+      "text": "门仍未开。"
+    }
+  ]
+}

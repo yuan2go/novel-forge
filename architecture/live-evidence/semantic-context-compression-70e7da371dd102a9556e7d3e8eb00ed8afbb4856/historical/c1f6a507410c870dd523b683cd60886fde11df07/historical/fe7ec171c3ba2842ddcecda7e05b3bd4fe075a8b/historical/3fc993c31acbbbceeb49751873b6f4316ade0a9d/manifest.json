@@ -1,0 +1,545 @@
+{
+  "schema_version": "novel-forge.semantic-context-delivery-evidence.v1",
+  "work_package": "WP-NF-SEMANTIC-CONTEXT-COMPRESSION-01",
+  "source_sha": "3fc993c31acbbbceeb49751873b6f4316ade0a9d",
+  "baseline_capacity_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+  "reference_main_sha": "6b69b22b331191331292a51a905833871b17b283",
+  "implementation_tree_sha": "sha256:599fd9b63834a5b28aeab5217f0f7e098972a893a9329c0f568690594f3d5113",
+  "recorded_at_utc": "2026-10-16T21:24:39.396641+00:00",
+  "evidence_ceiling": "EXECUTABLE",
+  "formal_qualification": "FAIL",
+  "runtime_identity_boundary": "Native tests use explicitly controlled fixture build/release identities; those are separate from the Git source that executed the tests. No production deployment identity is inferred.",
+  "remote_pr": "https://github.com/yuan2go/novel-forge/pull/179",
+  "files": [
+    {
+      "path": "checks/fixes-focused-2.log.gz",
+      "sha256": "bf642aeaba1b84b517fb8ce401ce2f31d2eb8a6a60bfa85044fab4c0b6f8e61f",
+      "size_bytes": 107
+    },
+    {
+      "path": "checks/fixes-focused.log.gz",
+      "sha256": "df3eb87ca4bda75aab216febac26ef3024fd8ccf24be8b36ba2476b4e1d8442c",
+      "size_bytes": 86
+    },
+    {
+      "path": "checks/fixes-validate-2.log.gz",
+      "sha256": "db76602658b20dc7ccdfbf3149596c85cedba3270fde1ba077e9e73fd84dc97d",
+      "size_bytes": 2133
+    },
+    {
+      "path": "checks/fixes-validate-3.log.gz",
+      "sha256": "8197091f56d4c16f72920ac839d9ffdca9028d9ecddecc0e250840f4d81a7071",
+      "size_bytes": 113433
+    },
+    {
+      "path": "checks/fixes-validate.log.gz",
+      "sha256": "1da8f55f6d9deb0f7c1b657f10a724bd817941fff17f65505d8a2d6b9564b266",
+      "size_bytes": 301
+    },
+    {
+      "path": "checks/global-closure-focused.log.gz",
+      "sha256": "e64fe5904a75d7850110f166bd0e98dc34169102a4f1c7881442cdd5fa91bdd0",
+      "size_bytes": 79
+    },
+    {
+      "path": "checks/global-final-focused.log.gz",
+      "sha256": "058734baaf5d5ffed7523eb746f6ab2e195671fa75b271f2d4123d2fdb2903a3",
+      "size_bytes": 96
+    },
+    {
+      "path": "checks/global-validate.log.gz",
+      "sha256": "0f8d6e476f91dffefd22bdf97bb48516c164167992e37c1af8ed1edbb5d449e6",
+      "size_bytes": 113416
+    },
+    {
+      "path": "checks/initial-validate-3.log.gz",
+      "sha256": "22053d448155e0ffed7edd0065b93b67a77b961e901ad9f37347f08c279f0ad7",
+      "size_bytes": 113389
+    },
+    {
+      "path": "checks/later-chunk-guard.log.gz",
+      "sha256": "ee388b4f93ea58cfdc669bed9aaaf781b4f92b8e4704b1f0de8102fb576a8cfd",
+      "size_bytes": 3947
+    },
+    {
+      "path": "checks/post-review-focused-2.log.gz",
+      "sha256": "18a554226bee583ef82bf4f06eca71eddaf12ea495a4d26eec9446e91ef6d162",
+      "size_bytes": 88
+    },
+    {
+      "path": "comparison.json",
+      "sha256": "0f9c10cc491d5f8b42f6fa0703d734bb0dee4a641118e2cbbdf006fe42b24509",
+      "size_bytes": 1105
+    },
+    {
+      "path": "entry-coverage.json",
+      "sha256": "43cd80f0ebc457fd9105bf2dda91f6e66f9c2e75be69c829a82af93c09665dc4",
+      "size_bytes": 41504
+    },
+    {
+      "path": "formal/console.log.gz",
+      "sha256": "d72c3268c402716aa21af3430f47dbe696c0f785dab691128543cdbb37b28a26",
+      "size_bytes": 115757
+    },
+    {
+      "path": "formal/novel-forge-p0-3fc993c31acb-2aebc5eccd2f416288c3b86d0742ae2c/backend-pytest-collection.json.gz",
+      "sha256": "a1e8352ff4aaeb59c82ef990566248e56174df41b3a60a5ea025480c85428993",
+      "size_bytes": 120695
+    },
+    {
+      "path": "formal/novel-forge-p0-3fc993c31acb-2aebc5eccd2f416288c3b86d0742ae2c/backend-pytest-process.json.gz",
+      "sha256": "6716da999954f487ceb758d1cc67184c9ea33cf610a4a997fe4b889ba1f38f19",
+      "size_bytes": 3712
+    },
+    {
+      "path": "formal/novel-forge-p0-3fc993c31acb-2aebc5eccd2f416288c3b86d0742ae2c/backend-pytest.xml.gz",
+      "sha256": "573428c346a1b924eb9583870af797672f6ee836c85cb8acb4334d2d378bf653",
+      "size_bytes": 128353
+    },
+    {
+      "path": "formal/novel-forge-p0-3fc993c31acb-2aebc5eccd2f416288c3b86d0742ae2c/documentation-reality-process.json.gz",
+      "sha256": "fd04e828ed202ebf491db4a8abb2c9d9e99e5d91e5f27c1408c0616dd6a1a499",
+      "size_bytes": 450
+    },
+    {
+      "path": "formal/novel-forge-p0-3fc993c31acb-2aebc5eccd2f416288c3b86d0742ae2c/documentation-reality.json.gz",
+      "sha256": "153fd3e762b6f97fe6e30f4147462bf2f1ab1686f40ebcce09254a8677463650",
+      "size_bytes": 409
+    },
+    {
+      "path": "formal/novel-forge-p0-3fc993c31acb-2aebc5eccd2f416288c3b86d0742ae2c/static-and-manifests.json.gz",
+      "sha256": "287bd825ccc31cfb706d945c5f0ac713b90e18b99eacae5b32f435bcc21dafc0",
+      "size_bytes": 116248
+    },
+    {
+      "path": "formal/p0-backend-qualification-3fc993c31acbbbceeb49751873b6f4316ade0a9d.json.gz",
+      "sha256": "bb213c821c4408a864413cc21d1079bf8065c037d001795d45b5621ce1c08196",
+      "size_bytes": 3503
+    },
+    {
+      "path": "formal/pr-governance-3fc993c31acbbbceeb49751873b6f4316ade0a9d.json.gz",
+      "sha256": "e9b99c1f44356af22511190c7daf2aa5f0bc76584650535624fa0948dc770ae8",
+      "size_bytes": 1272
+    },
+    {
+      "path": "measurements.json",
+      "sha256": "ce1fff26c137eca6edfff1ea6110e26eccab2d7090064e22512344d0c048f46f",
+      "size_bytes": 12640
+    },
+    {
+      "path": "native/index.json",
+      "sha256": "20a7d6122cba876f8362262f2baeb385431493b6bd92daf24953d6622a110d17",
+      "size_bytes": 13342
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144/compression-projection.json.gz",
+      "sha256": "31875d70f641a3957d31e2efd61d143a0675120a5c73e2e0e8818a8d85d1a5cc",
+      "size_bytes": 90515
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144/final-request.txt.gz",
+      "sha256": "a85e932b58f465f419dc299301218de1584c2bbff2f78722232cca40b90e9af1",
+      "size_bytes": 11600
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144/native-prose.txt.gz",
+      "sha256": "0c34be04b921b52c9be2a0367d8110bf831307e800fbe206e402b98b3a729890",
+      "size_bytes": 182
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144/original-materials.json.gz",
+      "sha256": "f0bb91a8eda82a5d9a3eb9152399d03f6939cfc65849b213f7b074d7672dbde4",
+      "size_bytes": 12596
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144/receipts.json.gz",
+      "sha256": "0179c19378bb8da7488c9f5dfdc6d884cb0ba178337f3305eef35b791416dcb1",
+      "size_bytes": 11447
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144-routed-restart/compression-projection.json.gz",
+      "sha256": "754db0a180d33e1ff6b01b6d3273f2b9e6e0df127fb676f9ffb13bc268fa572f",
+      "size_bytes": 91872
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144-routed-restart/final-request.txt.gz",
+      "sha256": "0ad411fec7493810ccad5071debe2e9d7ec82996755f95eb6b624909fbc067c5",
+      "size_bytes": 11621
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144-routed-restart/native-prose.txt.gz",
+      "sha256": "0c34be04b921b52c9be2a0367d8110bf831307e800fbe206e402b98b3a729890",
+      "size_bytes": 182
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144-routed-restart/original-materials.json.gz",
+      "sha256": "953ca8f1a1b51ea5fa61fe5569632e2686efdbcb657324971cb2a20308e285f3",
+      "size_bytes": 12585
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-262144-routed-restart/receipts.json.gz",
+      "sha256": "6353e91bf8ba5712c078580daac01c59487ba3c24623f0c8c7276939ba417cee",
+      "size_bytes": 69440
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-512000/compression-projection.json.gz",
+      "sha256": "b3702bed0e876d477a8ce5b2610cd20b7d97d6bc8d449cd7195892839ace320d",
+      "size_bytes": 130142
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-512000/final-request.txt.gz",
+      "sha256": "14eff0fe78af2c2bd0ffd97e0bfb5d91d1955f947d324cbc33b0eb3e0e3e9157",
+      "size_bytes": 11592
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-512000/native-prose.txt.gz",
+      "sha256": "0c34be04b921b52c9be2a0367d8110bf831307e800fbe206e402b98b3a729890",
+      "size_bytes": 182
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-512000/original-materials.json.gz",
+      "sha256": "a122b21c92c2ac4a8b5066701d19aef16fda3dc2b5034006724d650c6e711640",
+      "size_bytes": 14434
+    },
+    {
+      "path": "native/semantic-core-latest/artifacts/complete-request-512000/receipts.json.gz",
+      "sha256": "9cc643f3c2cdda65c4b4a65a8e63fbc266ae260f917951e1161afa9571cc6f88",
+      "size_bytes": 12228
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_attempt.jsonl.gz",
+      "sha256": "0ca6c48df03c2b0c8a1a7de6215dcacead0c290d96ab776d45fb96b2c690183c",
+      "size_bytes": 3792
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_attempt_capability_pack_snapshot.jsonl.gz",
+      "sha256": "e285ee72cd96372375b145365040a2bcea5e2fa81352edb230e4a5e304b8514e",
+      "size_bytes": 6472
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_book_chapter_request.jsonl.gz",
+      "sha256": "4a293e3738a69169ddaf39202f72cc93a8c570c55e687c118f026ae1d06d4bb7",
+      "size_bytes": 57
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_book_production.jsonl.gz",
+      "sha256": "0ab749b9d2ab21b499da24595a820a554004707fc446ebdc447b6e8899c38604",
+      "size_bytes": 52
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_budget_reservation.jsonl.gz",
+      "sha256": "579aa08b00b6ed8e2ec83e1d6413c67a1cbbb63f7e5e9a08feee9bd73a9b1964",
+      "size_bytes": 4541
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_external_effect.jsonl.gz",
+      "sha256": "3f0d6b2815b76f38cce308a92806a599dc8feb3847ae1196c438d5652035993c",
+      "size_bytes": 640227
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_external_effect_dispatch.jsonl.gz",
+      "sha256": "579589eb6e3e3efe8de1f385d38adaceb79c3f888d72971cf9e5b6e98ee7b152",
+      "size_bytes": 32860
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_external_receipt.jsonl.gz",
+      "sha256": "e114f0bce5ccc0f9cdfb676943fb648eb848730f61debec8fe9f77c43e5c69d7",
+      "size_bytes": 32085
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_lease_acquisition.jsonl.gz",
+      "sha256": "90d68bd163bcfc96051079a3695c7457fbec9d652e8839c02ef7e5bf1badd0fa",
+      "size_bytes": 2090
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_operation.jsonl.gz",
+      "sha256": "12265280b7896e278e5eaee3eaaab15516b67ab24488a2e4e42ce226ed1f4ada",
+      "size_bytes": 718400
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_saga_step_successor.jsonl.gz",
+      "sha256": "2695256a1c51efeaee8815023b12a9803f14d6b763460eddbb35c857e3fc45ef",
+      "size_bytes": 56
+    },
+    {
+      "path": "native/semantic-core-latest/database/authority_story_formation_run.jsonl.gz",
+      "sha256": "4f7e1e0d18b4b4e294092e58ad853e57101b48c57cc6983d72f0bf92127f8ffb",
+      "size_bytes": 56
+    },
+    {
+      "path": "native/semantic-core-latest/pytest.log.gz",
+      "sha256": "ed616106c4f3e776faff267608571a5987a4737450a5bdd864bc2574fd9714db",
+      "size_bytes": 75
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_attempt.jsonl.gz",
+      "sha256": "08c332e074fc250aeb32287900240a203b50c7399ec94870ac4cc17353eb5096",
+      "size_bytes": 29472
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_attempt_capability_pack_snapshot.jsonl.gz",
+      "sha256": "d518477c03fc9484665569ae3d323dc09541951c821c22ea692afa82fd27beab",
+      "size_bytes": 12680
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_book_chapter_request.jsonl.gz",
+      "sha256": "584948a159dd38dc8dde200ad882955f3cd15f8c693eda1ea1074d3baa484258",
+      "size_bytes": 104323
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_book_production.jsonl.gz",
+      "sha256": "13213067b55afc4b360cf13637c55329b2e308d1e1a8a5895503a61ef4044089",
+      "size_bytes": 1282
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_budget_reservation.jsonl.gz",
+      "sha256": "b471147eea67b1c9563bdacf6f97e60b9f5503bbb399e0764fdfe4c81d074b89",
+      "size_bytes": 6164
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_external_effect.jsonl.gz",
+      "sha256": "851afe3774b40304bb64455b9f3ce1cfbff64c7c3f286eb3d1eda62709558a4f",
+      "size_bytes": 1199141
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_external_effect_dispatch.jsonl.gz",
+      "sha256": "21b6114274cef4fba22f16446e45e8d77f03c6c0e4788ff1378c0bc9300cf2bc",
+      "size_bytes": 461961
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_external_receipt.jsonl.gz",
+      "sha256": "c1543e613b3ae81d9006854ea4b624b5cefc13dbea0923f44bb4e235d10deb61",
+      "size_bytes": 464541
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_lease_acquisition.jsonl.gz",
+      "sha256": "ed307fc3a629db43dc067cccfe052b51d709783ca24fc1845b4e7b4ff3214fc3",
+      "size_bytes": 15837
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_operation.jsonl.gz",
+      "sha256": "116fb6945d00f159892afe19e5bc630c7c9e90437c253d21ef78ff3c46bca7c8",
+      "size_bytes": 1730292
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_saga_step_successor.jsonl.gz",
+      "sha256": "2695256a1c51efeaee8815023b12a9803f14d6b763460eddbb35c857e3fc45ef",
+      "size_bytes": 56
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/database/authority_story_formation_run.jsonl.gz",
+      "sha256": "50270db7f9da4b3ec951f3f7e6681487d65293e587281f46359ac5fe5cb05c56",
+      "size_bytes": 3368
+    },
+    {
+      "path": "native/semantic-retained-upgrade-3fc993c3/pytest.log.gz",
+      "sha256": "67ef8e8baad0a13cde023953a86d0c3938554e5fbf85acebed8144b288b3d0a5",
+      "size_bytes": 2637
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/artifacts/chapter-capacity-upgrade-memo-True-semantic-v4/native-prose.txt.gz",
+      "sha256": "67f6c1018509a3efb8e5a72b7c93d8a3d30a3466b78b5b2b839882ab14d880fa",
+      "size_bytes": 126
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/artifacts/chapter-capacity-upgrade-memo-True-semantic-v4/proof.json.gz",
+      "sha256": "43ee2734b3cce7dc5634856d4652bf20830f3ed61a2ac1eb41ef5e03d04fa6d3",
+      "size_bytes": 138360
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/artifacts/chapter-capacity-upgrade-memo-True-semantic-v4/sent.txt.gz",
+      "sha256": "e4cd635dee834b56dd25bde3cf976c246b1ba7083ba5cc78416579a4768446ad",
+      "size_bytes": 16620
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_attempt.jsonl.gz",
+      "sha256": "65e5fc7f9e9ac32e996ab12392b87843d732a6236f6c6e20a1f8d5c5d76c2e21",
+      "size_bytes": 22860
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_attempt_capability_pack_snapshot.jsonl.gz",
+      "sha256": "0d314528b216c11e168139fb2bd772e06fdca8a8759b677c1470bc6d7fa56513",
+      "size_bytes": 11536
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_book_chapter_request.jsonl.gz",
+      "sha256": "f755489593247cdabe7c3c7baf9622b3e13d77a9fe7fde434ee995cfb9bb9303",
+      "size_bytes": 10817
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_book_production.jsonl.gz",
+      "sha256": "a44a725bf77b84536caafc6a9e9af25530f4a6d811e91e4c0042ad32c01ce13f",
+      "size_bytes": 1255
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_budget_reservation.jsonl.gz",
+      "sha256": "bca1f01c2eaaaeb9f9719949c007434d3873e31b22d5c024b396860adb7edee7",
+      "size_bytes": 4747
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_external_effect.jsonl.gz",
+      "sha256": "d1e9698e5ba23a507bef27ea585d5e4271599b0a8527ce322f76469c3403e531",
+      "size_bytes": 320290
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_external_effect_dispatch.jsonl.gz",
+      "sha256": "171f3154d3d62267ec90e32292bae1bd2ae64ff3efac25ce2d0b5f04fb81017f",
+      "size_bytes": 277247
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_external_receipt.jsonl.gz",
+      "sha256": "b44b4dc88176954f88f3978d1113aefffc287871301e521136ac0d9ccc2134ef",
+      "size_bytes": 277025
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_lease_acquisition.jsonl.gz",
+      "sha256": "93bc7f1151ba4c4f61e5fb08ab610cd39e9f8f9b6614a5a3c396e0d9a5a877e6",
+      "size_bytes": 12339
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_operation.jsonl.gz",
+      "sha256": "f7f6ec69bdeedb2c094eb3ae8593475d390f695cae1fb3c570e081d06d8aaab2",
+      "size_bytes": 692918
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_saga_step_successor.jsonl.gz",
+      "sha256": "547dc45006dbdc3808fef4ef27c9e04fa0546d3e49e8bfbe78b02c20302a775d",
+      "size_bytes": 14101
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/database/authority_story_formation_run.jsonl.gz",
+      "sha256": "a0cebd2640a3493569eefa0513ae82fcbf69494bc5ef2c0ab3e7a5e904d74e0e",
+      "size_bytes": 3339
+    },
+    {
+      "path": "native/semantic-upgrade-0948b9f8/pytest.log.gz",
+      "sha256": "579bee3a412c6a5c6ea32884581bcb4eda358fca4f1120f3020bda61c5b01e7c",
+      "size_bytes": 72
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_attempt.jsonl.gz",
+      "sha256": "58cd3940b4684514bc7211bbbc214ca7c5870e48555d2af5660f717170c98774",
+      "size_bytes": 29452
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_attempt_capability_pack_snapshot.jsonl.gz",
+      "sha256": "fdc40f66834affbc0ab06f2319e2236afc2a54dcafe88c4725b11b274adcf461",
+      "size_bytes": 12895
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_book_chapter_request.jsonl.gz",
+      "sha256": "9ff8bd512bb786e774e537524365ca1182538cfb2caaf445b092ab0ace5da941",
+      "size_bytes": 104363
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_book_production.jsonl.gz",
+      "sha256": "367f12027ed59dd709b86a15f4e70ae8a9c5b5388ef235f59400ea7b1ce5a3d9",
+      "size_bytes": 1280
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_budget_reservation.jsonl.gz",
+      "sha256": "de459f4ce4585f56964eda960c39c6c2f2427d8367884531a286b5c4b4e3ac9b",
+      "size_bytes": 6182
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_external_effect.jsonl.gz",
+      "sha256": "ac86259dcf694274d31c6e0ae6178ca55717399da11441bba9651eb80fcbbb7d",
+      "size_bytes": 1200577
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_external_effect_dispatch.jsonl.gz",
+      "sha256": "f58f2d006e6822ee965e0dc342264313d1fee4ac6392b5122fe30ae5f804b6bb",
+      "size_bytes": 461988
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_external_receipt.jsonl.gz",
+      "sha256": "731e9ff481eb45f7dd3f80b2d5583a746eb388b682b04bc27b98c58975f8d091",
+      "size_bytes": 464051
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_lease_acquisition.jsonl.gz",
+      "sha256": "d4874fcca35bda04db6e856ba6d7e2ca4c07a4ad30744b2a7e58547eeabd2dff",
+      "size_bytes": 15926
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_operation.jsonl.gz",
+      "sha256": "cbe98f873b74ccc2d943e65795bee8a4294c238bb9f36675270a7a5b5c96e1a2",
+      "size_bytes": 1744514
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_saga_step_successor.jsonl.gz",
+      "sha256": "2695256a1c51efeaee8815023b12a9803f14d6b763460eddbb35c857e3fc45ef",
+      "size_bytes": 56
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/database/authority_story_formation_run.jsonl.gz",
+      "sha256": "80ac61c4d541bf19e9f77e8847c115dccee40202515e64bd5be89255995c3f5b",
+      "size_bytes": 3366
+    },
+    {
+      "path": "native/semantic-upstream-3fc993c3/pytest.log.gz",
+      "sha256": "0a49370cd4b557c94470817cc8649edfe33d4fde46e8184870dba2e5c1b9916b",
+      "size_bytes": 3292
+    },
+    {
+      "path": "negative/native-core-0948b9f8.log.gz",
+      "sha256": "53b6b5a5f80d36456107185696621af0c114e2eeb8dc86ed71a3c1b26ae7e669",
+      "size_bytes": 6059
+    },
+    {
+      "path": "negative/native-core-281be057.log.gz",
+      "sha256": "2fdeaa9b8878eb3d3ce7220a504fc8a143ee082887c1c272ac2f483f0f688ef7",
+      "size_bytes": 7255
+    },
+    {
+      "path": "negative/native-retained-upgrade-281be057.log.gz",
+      "sha256": "d07778d72cd611c2274b4de52ac08b37f9b3161dcf4c831f4a0fce93dc01036a",
+      "size_bytes": 3522
+    },
+    {
+      "path": "negative/native-upgrade-0948b9f8.log.gz",
+      "sha256": "5af76fd5f1f501bc13c3c4fc2603947f86ba25c0cc91cabe92f58779b4c44385",
+      "size_bytes": 89
+    },
+    {
+      "path": "negative/native-upstream-0948b9f8.log.gz",
+      "sha256": "25bc022cc95709c8c84d176a337e573690a011e886839e98b1be31ebaa7af570",
+      "size_bytes": 3775
+    },
+    {
+      "path": "negative/native-upstream-281be057.log.gz",
+      "sha256": "5b71ded119a1c584b94266e6c1803e6c4fbe2fef7b497095dde2144302abd3f0",
+      "size_bytes": 5101
+    },
+    {
+      "path": "nf-semantic-compare-production.py",
+      "sha256": "8f76dcd291cee8e3cdcc6cef52720f56fabdff6d85e4f47a7915403c9ea7e993",
+      "size_bytes": 4448
+    },
+    {
+      "path": "nf-semantic-comparison-baseline-35a7b26e.json",
+      "sha256": "5c3362c99ffcbd87d344abce0519ac7d71fcb5cc1667ccc82d1f2b845bf5bb16",
+      "size_bytes": 136408
+    },
+    {
+      "path": "nf-semantic-comparison-new-3fc993c3.json",
+      "sha256": "74d37bf479b966ff1719d26130504b38fe190083b36bcacaa09fd214967e1852",
+      "size_bytes": 560461
+    },
+    {
+      "path": "recovery-entrypoints.json",
+      "sha256": "a2a4fd8880ab26f452810da815ea7168328ea5e4681a3fa310f65ef923204446",
+      "size_bytes": 1130
+    },
+    {
+      "path": "semantic_compression_gold.json",
+      "sha256": "76e54664a68db8076685b3590e354c950bc3b350499a9a091c654a28fa3b4fde",
+      "size_bytes": 5556
+    },
+    {
+      "path": "validation.json",
+      "sha256": "b0e8ecf22b45861608ebfebf235e39bd1478f7c1955fa553ccb5a0d2acf9eee1",
+      "size_bytes": 7743
+    }
+  ]
+}

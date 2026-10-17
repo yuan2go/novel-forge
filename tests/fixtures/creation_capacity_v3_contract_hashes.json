@@ -1,0 +1,12 @@
+{
+  "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+  "scope": "Actual historical installer and profile hashes, no external execution",
+  "chapter": {
+    "manifest_hash": "sha256:ac6eec7bdc3825d72630bec91602bf851628babec89b763f70b40ea3d6c761e3",
+    "artifact_catalog_hash": "sha256:00683b57171c61b7fdee8d1084de16bace5d839d26a4ecf54864ab1f1294e87a"
+  },
+  "planning": {
+    "manifest_hash": "sha256:beefb3cfce60d5ce926a8a235009912278bcfb2885e39dc6d2e7df45cd2331dd",
+    "artifact_catalog_hash": "sha256:de9b6db63b1712c70c77fdfc2300602b13351b2abe0b8ac5c95472ab856e6c37"
+  }
+}

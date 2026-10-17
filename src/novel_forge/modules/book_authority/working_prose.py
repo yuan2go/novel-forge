@@ -11,7 +11,9 @@ MEMORY_POLICY_VERSION = "working-prose-projection.v3"
 PROGRESSION_POLICY_VERSION = "working-prose-projection.v4"
 LONGFORM_POLICY_VERSION = "working-prose-projection.v5"
 CAPACITY_POLICY_VERSION = "working-prose-projection.v6"
-LONGFORM_POLICY_VERSIONS = {LONGFORM_POLICY_VERSION, CAPACITY_POLICY_VERSION}
+SEMANTIC_POLICY_VERSION = "working-prose-projection.v7"
+CAPACITY_POLICY_VERSIONS = {CAPACITY_POLICY_VERSION, SEMANTIC_POLICY_VERSION}
+LONGFORM_POLICY_VERSIONS = {LONGFORM_POLICY_VERSION, *CAPACITY_POLICY_VERSIONS}
 MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
 RESOLVED_POLICY_VERSIONS = {PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
 POLICY_VERSIONS = {POLICY_VERSION, *MEMORY_POLICY_VERSIONS}
@@ -165,7 +167,7 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
         or not 1 <= value["history_chapters"] <= (10000 if value["version"] in MEMORY_POLICY_VERSIONS else 32)
         or type(value.get("recent_complete_chapters")) is not int
         or not 1 <= value["recent_complete_chapters"] <= value["history_chapters"]
-        or (value.get("max_characters") is not None if value.get("version") == CAPACITY_POLICY_VERSION
+        or (value.get("max_characters") is not None if value.get("version") in CAPACITY_POLICY_VERSIONS
             else type(value.get("max_characters")) is not int or not 1 <= value["max_characters"] <= 200_000)
         or not isinstance(value.get("queries"), list)
         or len(value["queries"]) > 16
@@ -198,7 +200,7 @@ def project_working_sources(
     ]
     recent_start = max(1, target_chapter - policy["recent_complete_chapters"])
     mandatory = [unit for unit in units if unit[0] >= recent_start]
-    allocation = sum(len(unit[3]) for unit in units) if policy["version"] == CAPACITY_POLICY_VERSION else policy["max_characters"]
+    allocation = sum(len(unit[3]) for unit in units) if policy["version"] in CAPACITY_POLICY_VERSIONS else policy["max_characters"]
     remaining = allocation - sum(len(unit[3]) for unit in mandatory)
     if remaining < 0:
         raise KernelError(

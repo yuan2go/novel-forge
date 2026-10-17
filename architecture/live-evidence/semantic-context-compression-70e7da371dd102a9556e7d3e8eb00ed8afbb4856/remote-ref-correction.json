@@ -1,0 +1,13 @@
+{
+  "event_at_utc": "2026-10-16T23:01:06Z",
+  "cause": "An asynchronous git push HEAD resolved after the working branch switched, pushing a semantic merge to the capacity feature branch. GitHub automatically marked dependent PR179 merged into that feature branch.",
+  "unintended_feature_tip": "d97a486bb3b413f84a875fceee93588c5f8c4b74",
+  "preserved_semantic_branch": "codex/wp-nf-semantic-context-compression-01",
+  "restored_capacity_tip": "53c1be9e1207e8cea5e37ccf03a7cfaab06806cd",
+  "correction": "Preserve semantic commit remotely first, then restore only the owned capacity feature branch with force-with-lease requiring exactly d97a486b. Subsequent pushes use explicit source commit SHAs.",
+  "main_sha_verified_unchanged": "6b69b22b331191331292a51a905833871b17b283",
+  "current_pr": "https://github.com/yuan2go/novel-forge/pull/180",
+  "superseded_pr": "https://github.com/yuan2go/novel-forge/pull/179",
+  "production_or_manuscripts_changed": false,
+  "qualification_inferred_from_github_merged_state": false
+}

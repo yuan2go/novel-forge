@@ -1040,3 +1040,26 @@ def test_governed_stage_receipt_requires_exact_stage_and_global_bound(ordinal, t
         declared_requirements={"governed_repair": receipt})
     result = route(context, [candidate()], {"flash": samples()})
     assert result["status"] == expected
+
+
+def test_semantic_preparation_uses_the_largest_authorized_window_and_preserves_legacy_choice():
+    small = replace(candidate(), context_limit=4000)
+    big = replace(candidate('pro', '3'), context_limit=12000)
+    observations = {'flash': samples(), 'pro': samples()}
+    legacy = task(input_tokens=6000, output_tokens=100, declared_requirements={'capacity_preparation': True})
+    assert route(legacy, [small, big], observations)['selected']['candidate']['candidate_id'] == 'flash'
+    semantic = replace(legacy, declared_requirements={**legacy.declared_requirements,
+        'capacity_preparation_policy': 'max-authorized-effective-context.v1'})
+    assert route(semantic, [small, big], observations)['selected']['candidate']['candidate_id'] == 'pro'
+    forbidden = replace(big, authorized_tasks=('draft',))
+    assert route(semantic, [small, forbidden], observations)['selected']['candidate']['candidate_id'] == 'flash'
+
+
+def test_semantic_capacity_preparation_does_not_lock_an_unaffordable_larger_route():
+    small = replace(candidate(), context_limit=8000)
+    big = replace(candidate('pro', '1000'), context_limit=12000)
+    preparing = task(input_tokens=6000, output_tokens=100, remaining_money='1', declared_requirements={
+        'pure_generation': True, 'capacity_preparation': True,
+        'capacity_preparation_policy': 'max-authorized-effective-context.v1'})
+    result = route(preparing, [small, big], {'flash': samples(), 'pro': samples()})
+    assert result['selected']['candidate']['candidate_id'] == 'flash'

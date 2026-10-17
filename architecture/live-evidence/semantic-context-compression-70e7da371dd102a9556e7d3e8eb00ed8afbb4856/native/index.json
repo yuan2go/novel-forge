@@ -1,0 +1,53 @@
+[
+  {
+    "label": "semantic-core-70e7da37",
+    "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+    "status": "PASS",
+    "summary": "9 passed in 67.39s (0:01:07)",
+    "database": "nf_p0_36f6548c54b143d391af3156023b4e94_test",
+    "project_ids": [
+      "source-json-retrieval-9c99332a-b865-45db-a24a-786c116040b1",
+      "writer-rebuild-40fbf037-0bc2-4a81-beb4-fab8cbe9f352",
+      "writer-rebuild-4918ee5b-9703-4468-a260-94a3eb384c98",
+      "writer-rebuild-5483a4a6-2a78-4a4c-9cfe-c8f82d2abc25",
+      "writer-rebuild-60b13db5-aa6d-467c-a9d3-eca272058d7f",
+      "writer-rebuild-6894bfd9-3be0-49c5-9801-5fb46eb57e01"
+    ],
+    "database_index": "native/semantic-core-70e7da37/database-index.json"
+  },
+  {
+    "label": "semantic-upstream-70e7da37",
+    "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+    "status": "PASS",
+    "summary": "1 passed in 548.42s (0:09:08)",
+    "database": "nf_p0_07608bf50bcc4f2f8be9ebd81b90945f_test",
+    "project_ids": [
+      "project-9879e0fe6f8b472587a93dcc46cdaad7",
+      "project:author:e10c5a4ffce7949846f0467966c229f77a846bcf6eae9b1d7c9700d69b4db9eb"
+    ],
+    "database_index": "native/semantic-upstream-70e7da37/database-index.json"
+  },
+  {
+    "label": "semantic-retained-upgrade-70e7da37",
+    "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+    "status": "PASS",
+    "summary": "1 passed in 532.63s (0:08:52)",
+    "database": "nf_p0_641d796e9f87467ea23876d259f5a572_test",
+    "project_ids": [
+      "project:author:e1104ba4ff6923168cf56c9fa77a7eff1cf50a476e58a98f70b34f713c73ee74",
+      "project-d5957be3f0284187946cf8df569b912c"
+    ],
+    "database_index": "native/semantic-retained-upgrade-70e7da37/database-index.json"
+  },
+  {
+    "label": "semantic-process-restart-70e7da37",
+    "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+    "status": "PASS",
+    "summary": "START checkpoint\nDURABLE_CHECKPOINT_PROCESS_EXIT 60000 project-2f825b54115e421db91dc6ce4400e5f2\nSTART resume\nPASS_DISTINCT_NATIVE_PROCESSES 60000 60060 before 2 after 8 writer 1\nNATIVE_PROCESS_RESTART_PASS\n",
+    "database": "nf_p0_3b3e98e05ea842f5b3c34287f63d4382_test",
+    "project_ids": [
+      "project-2f825b54115e421db91dc6ce4400e5f2"
+    ],
+    "database_index": "native/semantic-process-restart-70e7da37/database-index.json"
+  }
+]

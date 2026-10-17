@@ -682,6 +682,7 @@ def select_context_candidates(
     effective_policy: EffectiveContextPolicy | None = None,
     authority_state_boundary: dict[str, Any] | None = None,
     defer_token_capacity: bool = False,
+    semantic_context_compression: bool = False,
 ) -> ContextSelection:
     if not project_id.strip():
         raise ValueError("project_id is required")
@@ -726,7 +727,11 @@ def select_context_candidates(
         else:
             accepted.append(candidate)
     required_kinds = set(policy.required_logical_kinds)
-    accepted, deduplications = deduplicate_context_candidates(accepted, required_logical_kinds=policy.required_logical_kinds)
+    if semantic_context_compression:
+        from .semantic_units import exact_deduplicate
+        accepted, deduplications = exact_deduplicate(accepted)
+    else:
+        accepted, deduplications = deduplicate_context_candidates(accepted, required_logical_kinds=policy.required_logical_kinds)
     decisions.extend(deduplications)
     rejected.extend({"asset_version_id": receipt["asset_version_id"], "reason": receipt["reason"]} for receipt in deduplications)
     selected: list[ContextCandidate] = []
@@ -1100,6 +1105,7 @@ def build_authority_context_bundle(
         effective_policy=compilation.effective_policy,
         authority_state_boundary=dict(authority_state_boundary or {}),
         defer_token_capacity=defer_token_capacity,
+        semantic_context_compression=bool((task_context_receipt or {}).get("semantic_contract")),
     )
     selection = replace(selection, policy_compilation=dict(compilation.receipt))
     exact_accounting = (task_context_receipt or {}).get("protected_exact_accounting")

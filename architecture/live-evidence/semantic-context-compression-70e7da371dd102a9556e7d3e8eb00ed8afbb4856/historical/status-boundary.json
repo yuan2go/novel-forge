@@ -1,0 +1,5 @@
+{
+  "source_sha": "c1f6a507410c870dd523b683cd60886fde11df07",
+  "scope": "Byte-preserved historical stage, including earlier native source bindings and raw PostgreSQL JSON line exports. It was packaged while its formal matrix was in progress; that matrix was subsequently interrupted after confirmed pre-protection JSON precision loss. Its original manifest is not relabelled as current qualification.",
+  "current_source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856"
+}

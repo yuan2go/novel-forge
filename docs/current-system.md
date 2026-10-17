@@ -22,15 +22,17 @@ identity changes without a corresponding projection update.
 ## Ordinary author writing
 
 New Creation requests select `config/execution_templates/author_first.json` (v12).
-The default creation-input policy freezes `native-narrative-execution.v3`: Chapter Pack
-3.1.0 with prose Skill v5 and Template v15, event-first Planning Pack 2.17.0, and
-working-prose projection v6, Craft budget v5 and selected-working delivery v2.
+The default creation-input policy freezes `native-narrative-execution.v4`: Chapter Pack
+3.2.0 with prose Skill v5 and Template v15, event-first Planning Pack 2.19.0, and
+working-prose projection v7, Craft budget v5 and selected-working delivery v2.
 The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 Creation v1/v2 installation uses the preserved Chapter 3.0.2 base manifest and Context
 v2 catalog, then its original Skill/template bindings. Its event-first Planning
 profile remains Pack 2.15 with Context v2. Replaying a version name never relabels
 the current capacity contract as an older Pack.
+Frozen Creation v3 retains Chapter 3.1, event-first Planning 2.17 and Context v3,
+including their original installer manifest and catalog hashes.
 These native bindings do not establish literary effectiveness.
 Fresh work-requirements Contexts derive `chapter-generation-length.v1` from the exact
 visible frozen Platform profile. Writer receives its Han bounds, unit and source hashes;
@@ -212,7 +214,8 @@ realized beats as premises, compresses incidental daily transitions, and asks ex
 scene goals, conflicts, beats and exit states to carry immediate friction, costly action
 and an irreversible ending that demands a next action. Missing source coverage or exceeded
 history/allocation closes input admission; literary interpretation remains a review concern.
-New Creation profiles select `working-prose-projection.v5`. Book freezes every predecessor's
+New Creation profiles select `working-prose-projection.v7`; frozen v5 profiles retain
+their historical character allocation. Book freezes every predecessor's
 exact effective source, source hash and selection lineage in `working-source-history.v1`,
 separately from the bounded prose passages sent to Planning, Memo and Writer. The configured
 128-chapter passage window does not reject chapter 130 or discard earlier source identities.
@@ -1331,20 +1334,76 @@ local original units. Historical material-target contracts retain their target g
 the complete-request policy admits only after rebuilding and measuring the full request. A
 compressed derivative never mutates Canon and is not unconditionally recompressed.
 
+Context v4 filters original JSON strings with exact numeric lexemes before source-unit
+protection and through Provider rendering. Duplicate fields and nonfinite numbers stop
+with an explicit source error; filtering still removes internal Quality and execution
+history. JSON-looking novel prose retains its original literal text. Numeric objects
+that cannot be represented exactly by the unit decoder remain mandatory original objects;
+their decoded text fields still locate quotations and explicit dependencies.
+New semantic retrieval freezes `source-json-values.v1` in its query plan. Discovery binds
+the exact eligible original AssetVersion ID/hash/type, selected index hash, field scopes
+and derived text. Old rounded JSON string fields can be restored only from the same
+original field and a known exact or historical filtered representation. Filtered or
+reordered list elements require a unique whole-record match and one-to-one source use;
+ambiguous, changed or repeated scopes stop with `CONTEXT_SOURCE_JSON_SCOPE_CHANGED`.
+Unselected source fields are not imported. Context continuation can derive these fields
+from its original frozen inputs before merging old RetrievalResults. New indexes and
+explicit scoped index rebuilds use the same filtering; existing sources, old indexes,
+RetrievalResults and frozen requests are not rewritten by a Context rebuild. Typed
+PostgreSQL numeric values cannot recover precision absent from the stored source.
+
+Context v4 binds `source-unit-dependency-and-final-composition.v2`. Its immutable source
+catalog retains original Unicode ranges, field paths, order and source attribution.
+Preserved quotes are located before splitting, across paragraph or declared narrative
+field boundaries; original CRLF coordinates remain distinct from normalized matching.
+Missing quotes stop explicitly; repeated matches are all protected and reported.
+Explicit located dependencies close deterministically without choosing between attributed
+contradictions. Optional history stays distinct from required facts and current experience.
+Candidate deduplication compares all source metadata except asset handle, estimated
+occupancy and relevance. Distinct narrative roles, representation identities, policy
+and governance fields remain separate. Exact duplicates retain their member mapping
+and highest relevance; overlap union also binds the original field and every member
+range, while requiring the remaining metadata to match.
+Working projection v7 retains v6's capacity-derived prose allocation and closes selected
+working observation causes over their original located records. Their quotes protect the
+intersecting history units, and their subject, perspective and knowledge owner travel with
+those units. An observation's own copied quote cannot satisfy a missing original passage.
+Frozen v6 keeps its original memory selection; neither version turns observations into Canon.
+Comprehension neighbors stay in original order and cannot be compressor selections.
+Oversized text splits at complete sentence boundaries outside protected quote spans.
+Allocation reserves required units first, then uses relevance and incremental occupancy;
+the final complete request remains the capacity authority. Restoring all units restores
+the original summary object rather than a concatenation of flattened fields.
+Structured history is presented as readable fields; disjoint text excerpts carry an
+explicit omission boundary. Host hashes and source mappings remain execution evidence.
+
+After local extraction, deterministic field/range and dependency checks and bounded
+semantic risk windows check the reconstructed candidate. A second bounded check spans
+the actual combined Provider projection and its relevant original neighbors. Located
+missing units become original-source preservation requirements, followed by reallocation,
+reconstruction and another complete request measurement. No-progress uncertainty stops
+with the existing Effects retained. The final proof binds the supplied projection, exact
+selection and source boundary; transport requires it and checks its hashes before sending.
+These checks do not prove unrestricted free-text equivalence or literary quality. Original
+source versions remain the recovery authority, including material omitted from this request.
+
 The author capacity policy is one complete request of at most 512,000 tokens,
 further bounded by the selected route's confirmed capacity. Material selection
 targets, historical character allocations and byte upper bounds are not evidence
 that the complete request exceeds that capacity. Ordinary writing has no additional
 cumulative token/call or local generation time veto. Paid spend authorization,
 physical interface limits, cancellation and execution identity still apply.
-New Chapter Pack `3.1.0` and current intent-boundary Planning profiles freeze
-`context-policy:chapter-generation-pack:v3` and `complete-request-capacity.v1`.
+New Chapter Pack `3.2.0` and current intent-boundary Planning profiles freeze
+`context-policy:chapter-generation-pack:v4` and `complete-request-capacity.v1`.
+The capacity meaning is unchanged; Context v4 versions the semantic method. Context v3
+retains the earlier method, and its frozen manifests and catalog remain available.
 Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and
 Context v2, including its original manifest and artifact catalog identities.
 Creation continuation also reaches Chapter's capacity-specific use of the existing
 failed-step successor. It requires an exact old capacity failure, a failed step with
-no Effect or reservation, reconciled sibling calls and the approved same-Book v3
-Pack. Only the three Context capacity fields and the explicit capacity artifact
+no main model Effect, reconciled sibling calls and the approved same-Book v3/v4
+Pack. Only the registered Context capacity fields (including the semantic history
+protection count) and the explicit capacity artifact
 delta may change; source rules, workflow, Skills, Prompt, Schema and routes remain
 exact. Original commands, source versions and terminal history are retained. A local
 Context without a model Snapshot requires its earlier successful same-Book activation
@@ -1352,21 +1411,37 @@ evidence; repository defaults cannot prove that identity. Draft/Revision continu
 rebuilds Context through its original producer's frozen inputs before further
 compression, rather than extracting an old summary again. The derived content and
 its original source proof are frozen in the existing Effect and checked at rendering.
+The v4 continuation may retain only Kernel-verified, settled compression/fidelity receipts
+from an unsent failed main step. It uses the existing known-receipt StepSuccessor path
+and records `MAIN_UNSENT_CONTEXT_EFFECTS_RECONCILED`; it does not claim zero external calls.
+Unknown outcomes, main Writer calls, changed source contracts and unsettled spend stop it.
 The Context owner retains relevance, deduplication and source eligibility while
 deferring capacity eviction to the fully rendered request. Book's
-`working-prose-projection.v6` retains the selected historical passages without the
+`working-prose-projection.v6` and v7 retain the selected historical passages without the
 legacy 24,000-character allocation; source identity and lossless history references
 remain separate from delivered expression. Older frozen policies retain their limits.
 
 Chapter's binder and Planning's preparer coordinate capacity within their existing
 Owners before planning the main Effect. Eligible older historical expression is
 extracted from the original frozen projection, independently checked, restored as
-needed, rebuilt and measured again. Current prose, facts, recent complete chapters
-and source boundaries remain exact. Compressor chunks are sized against both fully
+needed, rebuilt and measured again. Current prose, facts and source boundaries remain exact. Preparation completeness
+and capacity protection are separate policies: the frozen Context-v4
+`capacity_history_exact_chapters` field keeps the configured immediate predecessors
+exact while allowing older selected history expression to enter the existing loop
+only after complete-request overflow. New Packs select one exact predecessor; source
+facts, quotations and dependency closure remain protected. An older frozen policy
+without this field retains its original recent-complete protection. The extracted
+version retains the original preparation policy and source hashes as provenance. Compressor chunks are sized against both fully
 rendered substage requests and have no eight-chunk lifetime limit. Oversized text
 uses original Unicode coordinates and preserves quoted spans. Verified restoration
 can reallocate other compressible history. Each completed chunk retains its original
 ExternalEffect; retry reuses matching source, task, Pack and route bindings.
+The semantic contract prepares the largest currently spend-admissible authorized Context window (capped
+at 512,000), with cost breaking capacity ties; final serialization still undergoes
+route-specific admission. Original frozen plan predecessor records are retrieved through
+the ChapterPlan realization identity and exact parent-version hash, labelled as planned
+rather than occurred or accepted. Completely unchanged sources have exact-original
+proofs; bounded semantic checks target changed extracts and their located dependencies.
 Working passages batch within their original Chapter source, retaining per-passage
 coordinates. Identical wrappers of the same source version share one extract; another
 Chapter or changed source hash cannot borrow that identity.
@@ -2203,7 +2278,7 @@ assessment separately from the Chapter's selected methods. Book serial potential
 does not require a hook or serial function in every chapter, and a finite work's
 next-chapter continuity does not contradict its lack of long-serial potential.
 Quality recompiles the candidate's declared baseline version from the same exact inputs.
-New Creation v3 uses Chapter Pack 3.1.0 and the scoped Style compiler. Frozen v2
+New Creation v4 uses Chapter Pack 3.2.0 and the scoped Style compiler. Frozen v3 retains Pack 3.1.0; v2
 retains Pack 3.0.4 and v1 retains Pack 3.0.3. At a native Creation checkpoint without an active Chapter
 request or unresolved unisolated generation, the original Creator may derive v5
 from the same Foundation inputs through Content Authority. Normal preparation then

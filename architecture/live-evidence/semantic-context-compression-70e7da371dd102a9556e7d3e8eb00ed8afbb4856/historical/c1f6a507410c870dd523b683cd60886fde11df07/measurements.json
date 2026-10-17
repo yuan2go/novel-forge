@@ -1,0 +1,257 @@
+[
+  {
+    "case": "complete-request-262144-routed-restart",
+    "source_sha": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+    "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+    "context_material_measurement": {
+      "limit": 262144,
+      "token_method": "",
+      "after_reserved": 57242,
+      "before_reserved": 466771,
+      "actual_provider_tokens": null
+    },
+    "final_request_admission": {
+      "reason": "ADMITTED",
+      "status": "ADMITTED",
+      "precision": "EXACT",
+      "measurement": {
+        "model": "synthesis-scripted",
+        "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "precision": "FIXTURE_BYTES_EXACT",
+        "utf8_bytes": 40586,
+        "input_tokens": 40586,
+        "system_context_limit": 512000,
+        "tokenized_text_tokens": null,
+        "input_token_upper_bound": null,
+        "actual_provider_input_tokens": null,
+        "protocol_framing_tokens_estimate": 16
+      },
+      "envelope_hash": "sha256:93a7035c756963fd42ca23a6d34f80a1b71916a8918061fe252d78f115b07e77",
+      "total_reserved": 57242,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40586,
+        "request_framing": 16
+      },
+      "applicable_limit": 262144,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "synthesis-scripted",
+        "provider": "scripted_provider_v2",
+        "precision": "EXACT",
+        "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "scripted-byte-token-meter",
+        "output_reserve": 16384,
+        "route_identity": "routing-decision:685edf05369bdc8c06437ba18d0c076a39e45d1ce138a0a20a6b6741ba40ed2c",
+        "contract_version": "provider-token-accounting-v4",
+        "framing_overhead": 16,
+        "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "model_context_limit": 262144,
+        "execution_token_limit": 262144,
+        "serialization_contract": "scripted-responses-text-envelope-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 441222,
+      "input_component_hashes": {
+        "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+        "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:1037ea05dd13e7a2f13af308d7152902ee8e7bfb011da774abacacd0caec05b5",
+        "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+        "fully_rendered_prompt": "sha256:fdea27218081f599cb12374f8af5e86a4a2e37f6f0e4d1976655455ce8c6b514",
+        "provider_context_view": "sha256:c3ec3aac825214038d944f868e2ed9762c95a62f4bb9e0c8b410ab0fb504cdac",
+        "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "interpretation": "The scripted byte meter is an engineering stand-in; its exact fixture count is not an actual model token count. The projection route method may be blank in this fixture; admission explicitly binds SCRIPTED_UTF8_BYTES_EXACT_V1. No real 512K token capacity or long-form memory claim.",
+    "original_projection_hash": "sha256:ad3abf4e9cc863c9a9112d725d7471f5521c34ade6a358605880f95f742e22b5",
+    "result_projection_hash": "sha256:db4c63833317b81a2be130afda276e4b33ee259c23f37a5f530a954180261d81",
+    "final_supplied_projection_hash": "sha256:db4c63833317b81a2be130afda276e4b33ee259c23f37a5f530a954180261d81"
+  },
+  {
+    "case": "complete-request-512000",
+    "source_sha": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+    "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+    "context_material_measurement": {
+      "limit": 512000,
+      "token_method": "",
+      "after_reserved": 57242,
+      "before_reserved": 690871,
+      "actual_provider_tokens": null
+    },
+    "final_request_admission": {
+      "reason": "ADMITTED",
+      "status": "ADMITTED",
+      "precision": "EXACT",
+      "measurement": {
+        "model": "scripted_provider_v2-draft",
+        "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "precision": "FIXTURE_BYTES_EXACT",
+        "utf8_bytes": 40586,
+        "input_tokens": 40586,
+        "system_context_limit": 512000,
+        "tokenized_text_tokens": null,
+        "input_token_upper_bound": null,
+        "actual_provider_input_tokens": null,
+        "protocol_framing_tokens_estimate": 16
+      },
+      "envelope_hash": "sha256:afc7a2196c371865a3d23c3cfdcde011a27b8a6eb5129990ee0bc7a7ee47de51",
+      "total_reserved": 57242,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40586,
+        "request_framing": 16
+      },
+      "applicable_limit": 512000,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "scripted_provider_v2-draft",
+        "provider": "scripted_provider_v2",
+        "precision": "EXACT",
+        "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "scripted-byte-token-meter",
+        "output_reserve": 16384,
+        "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:56bc84453043e33077204da580d949597bf5feb383441c0a1355ef8b4eb94909",
+        "contract_version": "provider-token-accounting-v4",
+        "framing_overhead": 16,
+        "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "model_context_limit": 512000,
+        "execution_token_limit": 512000,
+        "serialization_contract": "scripted-responses-text-envelope-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 665322,
+      "input_component_hashes": {
+        "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+        "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:d222d7c69b1c1a59acd8f5b89f4b04a0bda72ae94022b06047e23ae3eb2e1d46",
+        "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+        "fully_rendered_prompt": "sha256:15e23ed2702f6c85e237ba6a51c1027fdf9974f4ee2be23e53d4548a804925f0",
+        "provider_context_view": "sha256:c89637cbe84354003dd04c1969169140916345ad97a7e1d45f9841c2c7961743",
+        "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "interpretation": "The scripted byte meter is an engineering stand-in; its exact fixture count is not an actual model token count. The projection route method may be blank in this fixture; admission explicitly binds SCRIPTED_UTF8_BYTES_EXACT_V1. No real 512K token capacity or long-form memory claim.",
+    "original_projection_hash": "sha256:7aff7784e678e9aba737aca7a9e7fa1e5f2335e2cb1ff2b40e3052efcc38bb6e",
+    "result_projection_hash": "sha256:d8736092b66c62ca60efbd85417094e8a3c2ddfb3025e998170f79c609b7d9e2",
+    "final_supplied_projection_hash": "sha256:d8736092b66c62ca60efbd85417094e8a3c2ddfb3025e998170f79c609b7d9e2"
+  },
+  {
+    "case": "complete-request-262144",
+    "source_sha": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+    "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+    "context_material_measurement": {
+      "limit": 262144,
+      "token_method": "",
+      "after_reserved": 57242,
+      "before_reserved": 466771,
+      "actual_provider_tokens": null
+    },
+    "final_request_admission": {
+      "reason": "ADMITTED",
+      "status": "ADMITTED",
+      "precision": "EXACT",
+      "measurement": {
+        "model": "scripted_provider_v2-draft",
+        "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "precision": "FIXTURE_BYTES_EXACT",
+        "utf8_bytes": 40586,
+        "input_tokens": 40586,
+        "system_context_limit": 512000,
+        "tokenized_text_tokens": null,
+        "input_token_upper_bound": null,
+        "actual_provider_input_tokens": null,
+        "protocol_framing_tokens_estimate": 16
+      },
+      "envelope_hash": "sha256:4942ebd3fe681cabfa2f719279d430f0c27f3fe370574cf252a7175331c1d350",
+      "total_reserved": 57242,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 16384,
+        "provider_input": 40586,
+        "request_framing": 16
+      },
+      "applicable_limit": 262144,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "scripted_provider_v2-draft",
+        "provider": "scripted_provider_v2",
+        "precision": "EXACT",
+        "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "scripted-byte-token-meter",
+        "output_reserve": 16384,
+        "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:c5f4841e6d832e573b472d6d5ef071ee0f36f29cc72a5780ca5a2b52ece07729",
+        "contract_version": "provider-token-accounting-v4",
+        "framing_overhead": 16,
+        "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+        "model_context_limit": 262144,
+        "execution_token_limit": 262144,
+        "serialization_contract": "scripted-responses-text-envelope-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 441222,
+      "input_component_hashes": {
+        "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+        "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:d8b77a922459ebd7f7f30f63e81ef549b7d9dfde0ac854e3862f19d8c583936d",
+        "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+        "fully_rendered_prompt": "sha256:6c5721cd3c0445450db060f03e6b891265356c55145b17051db885b167e9caa1",
+        "provider_context_view": "sha256:ad8cedfda7fef5e8c1e10f8c409f01f86b7637a399aa61785f96f2c5ebaf9b2a",
+        "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "interpretation": "The scripted byte meter is an engineering stand-in; its exact fixture count is not an actual model token count. The projection route method may be blank in this fixture; admission explicitly binds SCRIPTED_UTF8_BYTES_EXACT_V1. No real 512K token capacity or long-form memory claim.",
+    "original_projection_hash": "sha256:33c4524eaabc4c6d40580f131b04aa858bed45aec3785a346b8df38f2569a3d8",
+    "result_projection_hash": "sha256:78b7390e32fbe9badbd3598ffb843e86927e2e0000f34b1bea7f08f38bfff91a",
+    "final_supplied_projection_hash": "sha256:78b7390e32fbe9badbd3598ffb843e86927e2e0000f34b1bea7f08f38bfff91a"
+  }
+]

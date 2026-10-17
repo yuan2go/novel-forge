@@ -7577,6 +7577,26 @@
         {
           "path": "src/novel_forge/modules/context_builder/request_capacity.py",
           "symbol": "apply_capacity_projection"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/semantic_units.py",
+          "symbol": "source_units"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/semantic_units.py",
+          "symbol": "protect_quotes"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/semantic_units.py",
+          "symbol": "close_catalog_dependencies"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/semantic_units.py",
+          "symbol": "verify_final_selection"
+        },
+        {
+          "path": "src/novel_forge/modules/context_builder/request_capacity.py",
+          "symbol": "verify_request_composition"
         }
       ],
       "commands_operations": [
@@ -7661,11 +7681,15 @@
       ],
       "external_effects": {
         "mode": "DIRECT",
-        "rule": "Embedding and optional query expansion are ExternalEffects; deterministic policy bounds campaign rounds and freezes the admissible union.",
+        "rule": "Embedding, optional query expansion, bounded source extraction and final semantic fidelity checks use the existing Kernel ExternalEffects. Original source catalogs, task/route identity and final Provider admission bind reuse and transmission.",
         "evidence": [
           {
             "path": "src/novel_forge/modules/context_builder/embedding_projection.py",
             "symbol": "RetrievalEmbeddingProjectionRuntime"
+          },
+          {
+            "path": "src/novel_forge/modules/context_builder/request_capacity.py",
+            "symbol": "verify_request_composition"
           }
         ]
       },
@@ -7716,6 +7740,14 @@
         {
           "path": "tests/integration/test_chapter_model_effects_postgres.py",
           "symbol": "ChapterModelEffectsPostgresTests.test_routed_overflow_prepares_before_router_rejection_and_restarts_from_completed_chunk"
+        },
+        {
+          "path": "tests/unit/test_semantic_context_units.py",
+          "symbol": "test_semantic_complete_request_consumes_the_actual_final_projection_and_preserves_rich_fields"
+        },
+        {
+          "path": "tests/unit/test_semantic_context_units.py",
+          "symbol": "test_final_request_restore_reallocates_from_original_sources_and_checks_the_new_version"
         },
         {
           "path": "tests/unit/test_context_capacity_owner_contracts.py",
@@ -10497,7 +10529,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:0c49b5dab6ee7d7be81e7420cc01a2e84ff67f9e0aab6a677776d72ac5ebff18"
+    "implementation_tree_sha": "sha256:9365fbf4ec96f4b8336e138b71d54dd327521a3e9f60760dd211f123e77b4869"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

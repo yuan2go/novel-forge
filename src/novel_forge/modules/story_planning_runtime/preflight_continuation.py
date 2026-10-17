@@ -101,13 +101,17 @@ def require_capacity_target(source, target):
         return {"context_policy":"UNCHANGED","recovery_kind":"NATIVE_BOUNDED_REPAIR_ROUTE","book_usage_budget":False}
     original = old.pop("planning_task_token_budget", source.get("original_context_target"))
     successor = new.pop("planning_task_token_budget",None)
-    policy_upgrade = (old.get("policy_id") == "context-policy:chapter-generation-pack:v2"
-        and new.get("policy_id") == "context-policy:chapter-generation-pack:v3"
+    policy_upgrade = (old.get("policy_id") in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
+        and new.get("policy_id") in {"context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}
+        and old.get("policy_id") != new.get("policy_id")
         and new.get("capacity_policy") == "complete-request-capacity.v1"
-        and new.get("context_substage_method") == "shared-rules-and-native-context-contract.v1"
-        and "capacity_policy" not in old and "context_substage_method" not in old)
+        and new.get("context_substage_method") == ("source-unit-dependency-and-final-composition.v2" if new.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "shared-rules-and-native-context-contract.v1"))
     comparison = {**old, "policy_id": new["policy_id"], "capacity_policy": new["capacity_policy"],
                   "context_substage_method": new["context_substage_method"]} if policy_upgrade else old
+    if policy_upgrade and "capacity_history_exact_chapters" in new:
+        if new["policy_id"] != "context-policy:chapter-generation-pack:v4" or type(new["capacity_history_exact_chapters"]) is not int or new["capacity_history_exact_chapters"] < 1:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "History protection requires the frozen semantic policy")
+        comparison["capacity_history_exact_chapters"] = new["capacity_history_exact_chapters"]
     if comparison != new or type(original) is not int or type(successor) is not int or not original <= successor <= old["max_tokens"] <= 512000 or (not policy_upgrade and original == successor):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Only the bounded Planning task Context target may increase")
     return {"original_target":original,"successor_target":successor,

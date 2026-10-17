@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "semantic-context-source-units",
+      "patterns": [
+        "tests/unit/test_semantic_context_units.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "context-builder",
+      "capability": "semantic-context-source-units",
+      "production_target": "src/novel_forge/modules/context_builder/semantic_units.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
       "id": "complete-request-capacity",
       "patterns": [
         "tests/unit/test_complete_request_capacity.py",

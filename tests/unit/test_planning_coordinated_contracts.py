@@ -62,7 +62,7 @@ def test_explicit_legacy_planning_contract_keeps_serialization_and_world_schema(
 
 def test_current_default_planning_pack_keeps_new_intent_boundary_separate_from_replay():
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "b" * 64)
-    assert profile.manifest["identity"]["version"] == "2.16.0"
+    assert profile.manifest["identity"]["version"] == "2.18.0"
     assert profile.manifest["prompt_binding"]["system_instruction_version"] == "v12"
     assert profile.manifest["prompt_binding"]["template_version"] == "v3"
     assert any(item["skill_ref"] == "long-outline" and item["version"] == "long-outline-v4"

@@ -4876,7 +4876,7 @@ class PostgresPlanningExecutionPreparer:
                     request_input=stable_request_payload["input"], input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
                     producer_contract=producer_contract_identity(preparation_prompt_evidence, materialization,
                         schema_identity=stage_schema_evidence_identity(stage_name, output_schema, output_schema_ref, world_stage=provider_stage is not None)),
-                    dry_run=True, prepare_capacity=True, capacity_binding=capacity_binding)
+                    dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=capacity_binding)
                 if not preparation.get("selected"):
                     from novel_forge.modules.production_execution.routing_runtime import routing_failure_details
                     raise KernelError("PROVIDER_ROUTING_BLOCKED", str(preparation.get("decision_id")), details=routing_failure_details(preparation))
@@ -4927,7 +4927,7 @@ class PostgresPlanningExecutionPreparer:
                                     producer_contract=producer_contract_identity(sub_evidence, sub_contract,
                                         schema_identity=stage_schema_evidence_identity(substage, schema, chapter_provider_output_schema_ref(substage))),
                                     request_input={"context_compression_task": chunk}, input_hash="sha256:" + hashlib.sha256(rendered.encode()).hexdigest(),
-                                    dry_run=True, prepare_capacity=True, capacity_binding=sub_binding)
+                                    dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=sub_binding)
                                 if not decision.get("selected"):
                                     raise KernelError("PROVIDER_ROUTING_BLOCKED", "No authorized Planning compression route is available")
                             else:
@@ -4955,7 +4955,9 @@ class PostgresPlanningExecutionPreparer:
 
                 projection = prepare_request_capacity(original=capture, stage=stage_name, route=planning_route,
                     source_boundary=source_boundary, capacity_bindings=capacity_bindings,
-                    preserve_quotes=protected_expression_quotes(capture), measure=measure, model_call=model_call, chunk_fits=chunk_fits)
+                    preserve_quotes=protected_expression_quotes(capture, include_working_observations=context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4"), measure=measure, model_call=model_call, chunk_fits=chunk_fits,
+                    semantic_contract=context_policy.get("context_substage_method", "") if context_policy.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "",
+                history_exact_chapters=context_policy.get("capacity_history_exact_chapters"))
                 if projection:
                     stable_request_payload["input"]["_context_capacity_projection"] = projection
         if existing_intent is not None:
@@ -4963,7 +4965,7 @@ class PostgresPlanningExecutionPreparer:
             if frozen_projection is not None:
                 stable_request_payload["input"]["_context_capacity_projection"] = frozen_projection
         requested_output_token_ceiling = None
-        if existing_intent is None and frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}:
+        if existing_intent is None and frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}:
             target_scope = TargetScope(
                 scope_kind=command.planning_scope.value.lower(),
                 scope_id=command.logical_key,
@@ -5121,7 +5123,7 @@ class PostgresPlanningExecutionPreparer:
                     input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
                     lineage_operation_ids=routing_lineage, capacity_binding=capacity_binding,
                 )
-            if frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}:
+            if frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}:
                 from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning, require_task_output_reserve
 
                 require_task_reasoning(planning_route, task_scoped=True)
@@ -5347,7 +5349,7 @@ class PostgresPlanningExecutionPreparer:
 
             routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
             planning_route, routing_decision = provider_router.select_for_payload(self.planning_route, request_payload)
-            if frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}:
+            if frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}:
                 from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning
 
                 require_task_reasoning(planning_route, task_scoped=True)
@@ -6156,7 +6158,7 @@ class PostgresPlanningExecutionPreparer:
             selected_inputs=selected,
             knowledge_access_policy=knowledge_access_policy,
         )
-        if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"} and (
+        if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"} and (
             isinstance(planning_task_token_budget, bool)
             or not isinstance(planning_task_token_budget, int)
             or not 0 < planning_task_token_budget <= 512_000
@@ -6267,11 +6269,11 @@ class PostgresPlanningExecutionPreparer:
             ),
             **({"repair_context": repair_context} if repair_context else {}),
             "token_budget": planning_task_token_budget
-            if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
+            if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}
             else 16000,
             **(
                 {"planning_context_policy_version": context_policy_ref}
-                if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
+                if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}
                 else {}
             ),
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
@@ -6354,7 +6356,7 @@ class PostgresPlanningExecutionPreparer:
         if capacity_policy_upgrade:
             if (capacity_policy_upgrade.get("contract_version") != "complete-request-capacity-upgrade.v1"
                     or source.get("planning_context_policy_version") != capacity_policy_upgrade["source_context_policy_ref"]
-                    or capacity_policy_upgrade["target_context_policy_ref"] != "context-policy:chapter-generation-pack:v3"):
+                    or capacity_policy_upgrade["target_context_policy_ref"] not in {"context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}):
                 raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Capacity upgrade must derive from its verified frozen policy")
             content["planning_context_policy_version"] = capacity_policy_upgrade["target_context_policy_ref"]
             content["capacity_policy_upgrade"] = deepcopy(capacity_policy_upgrade)
@@ -6601,7 +6603,7 @@ class PostgresPlanningExecutionPreparer:
         task_byte_accounting = (
             dict(provider_stage.task.get("policy") or {}).get("version") in {"world-production-policy.v4", "world-production-policy.v5"}
             if provider_stage is not None
-            else content.get("planning_context_policy_version") in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
+            else content.get("planning_context_policy_version") in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}
         )
         if provider_stage is None:
             provider_view, projection_audit = compile_planning_provider_context(stage_name, content)
@@ -6896,7 +6898,7 @@ class PostgresPlanningExecutionPreparer:
             token_budget=token_budget,
             effective_policy=compilation.effective_policy,
             authority_state_boundary=accepted_state_boundary,
-            defer_token_capacity=content.get("planning_context_policy_version") == "context-policy:chapter-generation-pack:v3",
+            defer_token_capacity=content.get("planning_context_policy_version") in {"context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"},
         )
         if len(selection.selected) != len(candidates):
             raise KernelError(
@@ -7062,7 +7064,7 @@ class PostgresPlanningExecutionPreparer:
             or content.get("arc_working_set") != dict(command.arc_working_set or {})
             or content.get("narrative_search") != command.narrative_search_snapshot
             or str(content.get("planning_context_policy_version") or "") != (
-                context_policy_ref if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"} else ""
+                context_policy_ref if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"} else ""
             )
             or not isinstance(frozen_inputs, list)
             or frozen_inputs[: len(selected_inputs)] != selected_inputs

@@ -303,12 +303,24 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
 
 
 def test_native_upstream_complete_request_overflow_consumes_checked_history_extract(tmp_path, monkeypatch):
+    _run_native_semantic_capacity(tmp_path, monkeypatch, upgrade_context_effects=False)
+
+
+def test_native_semantic_upgrade_retains_settled_compression_before_unsent_writer(tmp_path, monkeypatch):
+    _run_native_semantic_capacity(tmp_path, monkeypatch, upgrade_context_effects=True)
+
+
+def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effects):
     import hashlib
     from tokenizers import Tokenizer, models, pre_tokenizers
     from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
 
     harness = CapabilityPackPostgresHarness("upstream-capacity")
     root = Path(__file__).resolve().parents[2]
+    gold_path = root / "tests/fixtures/semantic_compression_gold.json"
+    gold = json.loads(gold_path.read_text())
+    gold_text = "\n\n".join(paragraph for source in gold["sources"] for paragraph in source["paragraphs"])
+    actual_prompt_qa = []
     transport = SynthesisTransport()
     class HistoryTransport(AdviceOnlySynthesisChapterTransport):
         def __call__(self, stage, inputs):
@@ -318,9 +330,27 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
             if stage == "draft":
                 chapter = inputs["plan"]["chapter"]
                 text = "\n\n".join(f"第{chapter}章记录第{index}次查验。" + "她停在门外，听见木轮碾过石板，仍不敢替证人确认消息。" * 3 for index in range(600))
+                if chapter == 1 and not upgrade_context_effects:
+                    text = gold_text + "\n\n" + text
                 from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
                 output["scene_artifacts"][0]["text"] = text + "\n\n" + output["scene_artifacts"][0]["text"]
                 output["text"] = serialize_realization(output["scene_artifacts"])
+                if chapter == 1 and not upgrade_context_effects:
+                    observations = []
+                    for source in gold["sources"]:
+                        for index, paragraph in enumerate(source["paragraphs"]):
+                            perspective, owner = "OBSERVED", ""
+                            if source["id"] == "selected-working:harbor:7" and index == 4:
+                                perspective, owner = "HEARSAY", "阿岚"
+                            elif source["id"] == "selected-working:harbor:7" and index == 5 or source["id"] == "selected-working:unicode:3" and index == 2:
+                                perspective = "READER_ONLY"
+                            elif source["id"].startswith("witness:"):
+                                perspective, owner = "HEARSAY", "账房甲" if source["id"].endswith(":a") else "搬夫乙"
+                            observations.append({"kind": "KNOWLEDGE" if perspective == "HEARSAY" else "EVENT",
+                                "subject": owner or "工作稿叙述", "state_key": source["id"] + ":" + str(index),
+                                "claim": paragraph, "perspective": perspective, "knowledge_owner": owner,
+                                "quote": paragraph, "causes": []})
+                    output["working_memory_json"] = json.dumps(observations, ensure_ascii=False)
             return output
     transport.chapter = HistoryTransport()
     transport.database_url = DATABASE_URL
@@ -342,6 +372,23 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
     def capture_sent_request(resolver, request, admission):
         payload = original_resolve(resolver, request, admission)
         sent_requests[request.external_effect_id] = payload.input_text
+        if request.stage == "draft":
+            from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+            from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+            layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+            response_path = layout.result_path("fixture-response.json")
+            response = json.loads(response_path.read_text())
+            if not upgrade_context_effects and (response.get("chapter") == 4 or any(scene.get("chapter") == 4 for scene in response.get("scene_artifacts", []))):
+                assert "阿岚" in payload.input_text
+            support = [paragraph for source in gold["sources"] for paragraph in source["paragraphs"] if paragraph in payload.input_text]
+            if support:
+                actual_prompt_qa.append({"effect_id": request.external_effect_id, "sent_input_hash": hashlib.sha256(payload.input_text.encode()).hexdigest(),
+                    "support_paragraphs": support, "scope": "Exact original support in actual serialized prompt; not model semantic comprehension"})
+                if "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。" in support:
+                    response["scene_artifacts"][0]["text"] += "\n\n钥匙已经归还，闸门仍旧未开；阿岚没有把那条未经核实的传闻递给林砚。"
+                    if "text" in response:
+                        response["text"] = serialize_realization(response["scene_artifacts"])
+                    response_path.write_text(json.dumps(response, ensure_ascii=False))
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_sent_request)
     tokenizer = Tokenizer(models.WordLevel({"[UNK]": 0}, unk_token="[UNK]"))
@@ -353,6 +400,11 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
     candidates = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
     for model in candidates["models"]:
         model["context_limit"] = 310000
+    if upgrade_context_effects:
+        writer = {**candidates["models"][0], "reasoning": "xhigh", "tasks": ["draft"], "context_limit": 260000}
+        for model in candidates["models"]:
+            model["tasks"] = [task for task in model["tasks"] if task != "draft"]
+        candidates["models"].append(writer)
     env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(candidates)
     env["NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT"] = "310000"
     for key, value in env.items():
@@ -365,12 +417,76 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
             "genre": "social mystery", "audience": "adult readers", "constraints": ["Keep the witness's limited viewpoint"], "source_boundaries": ["Original work"]}}))
     args = _authority_parser().parse_args(["authority-creation", "start", "--input-file", str(request),
         "--repository-root", str(root), "--maximum-ticks", "250", "--foreground"])
-    result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
+    settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+    upgrade_proof = None
+    if upgrade_context_effects:
+        from novel_forge.modules.chapter_authority import capacity_continuation
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+        from novel_forge.modules.capability_packs.validation_deployment import install_chapter_validation_pack
+        from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+        from novel_forge.modules.command_kernel.errors import KernelError
+        policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
+        policy["narrative_execution_contract"] = "native-narrative-execution.v3"
+        policy["profiles"]["production_profile"]["content"]["working_prose_policy"]["version"] = "working-prose-projection.v6"
+        policy_file = tmp_path / "frozen-complete-capacity-v3.json"
+        policy_file.write_text(json.dumps(policy))
+        args.creation_policy_file = policy_file
+        freeze = PostgresChapterExecutionContractBinder.freeze_before_external_effect
+        interrupted = []
+        def fail_after_context(binder, **arguments):
+            result = freeze(binder, **arguments)
+            payload = arguments["request_payload"]
+            if payload.get("stage") == "draft" and payload.get("input", {}).get("_context_capacity_projection") and not interrupted:
+                interrupted.append(payload["_production_execution"]["operation_id"])
+                raise KernelError("PROVIDER_CONTEXT_LIMIT_EXCEEDED", "Controlled failure after settled Context calls and before Writer Effect intent")
+            return result
+        with monkeypatch.context() as old_worker:
+            old_worker.setattr(capacity_continuation, "recover_capacity_continuation", lambda *unused: False)
+            old_worker.setattr(PostgresChapterExecutionContractBinder, "freeze_before_external_effect", fail_after_context)
+            stopped = run_creation_command(settings, args)
+        assert interrupted, stopped
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            failed = uow.cursor.execute("SELECT to_jsonb(owner) FROM authority_operation owner WHERE operation_id=%s", [interrupted[0]]).fetchone()[0]
+            retained = uow.cursor.execute("SELECT external_effect_id,request_hash,status,request_payload->>'stage' FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [interrupted[0]]).fetchall()
+            assert retained and all(row[2] == "SUCCEEDED" and row[3] in {"context_compress", "context_fidelity"} for row in retained)
+            book = uow.cursor.execute("SELECT to_jsonb(book) FROM authority_book_production book WHERE project_id=%s", [stopped["project_id"]]).fetchone()[0]
+            pack = uow.cursor.execute("SELECT pack_id,active_deployment_id FROM authority_capability_pack_activation WHERE project_id=%s AND book_id=%s AND workflow_definition_ref='chapter_authority_slice@3.10.0'", [book["project_id"], book["book_id"]]).fetchone()
+        principal = build_trusted_principal_resolver().resolve_api_principal()
+        install_chapter_validation_pack(DATABASE_URL, repository_root=root, project_id=book["project_id"],
+            workspace_id=book["workspace_id"], book_id=book["book_id"], application_build_id=harness.application_build_id,
+            commit_sha=harness.release_sha, compiler=principal, approver=principal, agent_admin=principal,
+            pack_id_override=pack[0], pack_version_override="3.2.0", expected_activation_version=1,
+            runtime_environment="production", prose_skill_version="prose-generation-v5", prompt_template_version="v15")
+        resume = _authority_parser().parse_args(["authority-creation", "continue", "--project-id", book["project_id"],
+            "--formation-run-id", stopped["formation_run_id"], "--repository-root", str(root), "--maximum-ticks", "250", "--foreground"])
+        result = run_creation_command(settings, resume)
+        assert run_creation_command(settings, resume)["stop_reason"] == "MANUSCRIPT_READY"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            edge = uow.cursor.execute("SELECT policy_evidence,successor_operation_id FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [interrupted[0]]).fetchone()
+            assert edge and edge[0]["external_call_scope"] == "MAIN_UNSENT_CONTEXT_EFFECTS_RECONCILED"
+            after = uow.cursor.execute("SELECT external_effect_id,request_hash,status,request_payload->>'stage' FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [interrupted[0]]).fetchall()
+            assert after == retained
+            assert uow.cursor.execute("SELECT command_payload,input_asset_snapshot FROM authority_operation WHERE operation_id=%s", [interrupted[0]]).fetchone() == (failed["command_payload"], failed["input_asset_snapshot"])
+        upgrade_proof = {"source": failed, "retained_context_effects": retained, "policy": edge[0], "successor_operation_id": edge[1]}
+    else:
+        result = run_creation_command(settings, args)
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT capability,status,request_payload,external_effect_id FROM authority_external_effect WHERE project_id=%s ORDER BY created_at", [result["project_id"]])
         effects = uow.cursor.fetchall()
         failures = uow.cursor.execute("SELECT definition_name,status FROM authority_operation WHERE project_id=%s AND status IN ('FAILED_FINAL','FAILED_RETRYABLE')", [result["project_id"]]).fetchall()
     assert result["stop_reason"] == "MANUSCRIPT_READY", (result, failures)
+    from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+    from novel_forge.modules.book_authority.manuscript import require_manuscript
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        book_run_id = uow.cursor.execute("SELECT book_run_id FROM authority_book_production WHERE project_id=%s", [result["project_id"]]).fetchone()[0]
+    readback = require_manuscript(DATABASE_URL, project_id=result["project_id"], book_run_id=book_run_id,
+        principal=build_trusted_principal_resolver().resolve_api_principal())
+    readback_text = "\n\n".join(unit["text"] for unit in readback["units"])
+    if not upgrade_context_effects:
+        assert "钥匙已经归还，闸门仍旧未开" in readback_text
+        assert actual_prompt_qa and any(len(row["support_paragraphs"]) == sum(len(source["paragraphs"]) for source in gold["sources"]) for row in actual_prompt_qa)
+    else:
+        assert len(readback["units"]) == 4 and readback_text
     compression = [row for row in effects if row[2].get("stage") in {"context_compress", "context_fidelity"}]
     assert compression and all(row[1] == "SUCCEEDED" for row in compression)
     compression_proofs = []
@@ -394,6 +510,9 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
         admission = admission.get("contract", admission)
         assert admission["provider_request_identity"]["input_text_hash"] == "sha256:" + hashlib.sha256(sent_requests[effect_id].encode()).hexdigest()
         projection = payload["input"]["_context_capacity_projection"]
+        if not upgrade_context_effects or projection.get("semantic_contract"):
+            assert projection["semantic_contract"] == "source-unit-dependency-and-final-composition.v2"
+            assert projection["final_composition"]["provider_combination"]["phase"] == "FINAL_PROVIDER_COMPOSITION"
         assert projection["original_hash"] != projection["result_hash"]
         assert projection["measurement"]["after_reserved"] <= projection["measurement"]["limit"]
         proofs.append({"effect_id": effect_id, "capability": capability, "projection": projection,
@@ -402,9 +521,15 @@ def test_native_upstream_complete_request_overflow_consumes_checked_history_extr
     import gzip
     evidence_root = os.environ.get("NOVEL_FORGE_POSTGRES_EVIDENCE_DIR")
     if evidence_root:
-        destination = Path(evidence_root) / "upstream-complete-request"
+        destination = Path(evidence_root) / ("upstream-main-unsent-upgrade" if upgrade_context_effects else "upstream-complete-request")
         destination.mkdir(parents=True, exist_ok=True)
-        (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_SYNTHETIC_CHARACTER_METER_ONLY",
-            "result": result, "proofs": proofs, "compression_effects": compression_proofs}, ensure_ascii=False, indent=2))
+        (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_MAIN_UNSENT_UPGRADE_WITH_SYNTHETIC_LOAD" if upgrade_context_effects else "NATIVE_CONTROLLED_GOLD_WITH_SYNTHETIC_CAPACITY_LOAD",
+            "gold_applied": not upgrade_context_effects, "gold_sha256": hashlib.sha256(gold_path.read_bytes()).hexdigest(), "gold_questions_fixed_before_compression": True,
+            "route_windows": {"planning": 310000, "writer": 260000 if upgrade_context_effects else 310000,
+                "unit": "SYNTHETIC_CHARACTER_METER_NOT_REAL_TOKENS", "purpose": "A narrower authorized Writer fixture exercises actual compression before its unsent checkpoint" if upgrade_context_effects else "Complete upstream request overflow with fixed original Gold"},
+            "actual_prompt_support": actual_prompt_qa, "semantic_comprehension": "NOT_VERIFIED",
+            "result": result, "proofs": proofs, "compression_effects": compression_proofs, "upgrade": upgrade_proof}, ensure_ascii=False, indent=2))
+        (destination / "native-manuscript-readback.txt.gz").write_bytes(gzip.compress(readback_text.encode(), mtime=0))
+        (destination / "manuscript-readback.json").write_text(json.dumps({key: value for key, value in readback.items() if key != "units"}, ensure_ascii=False, default=str))
         for effect_id in {proof["effect_id"] for proof in proofs + compression_proofs}:
             (destination / (effect_id + "-sent.txt.gz")).write_bytes(gzip.compress(sent_requests[effect_id].encode(), mtime=0))

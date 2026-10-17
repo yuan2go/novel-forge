@@ -1,0 +1,29 @@
+{
+  "system_ceiling": {
+    "classification": "CONFIGURABLE_POLICY",
+    "tokens": 512000,
+    "selected_route": "Confirmed smaller physical capacity still applies; a larger interface never increases the system ceiling."
+  },
+  "numeric_unit_decoder": {
+    "classification": "CURRENT_RUNTIME_FACT",
+    "behavior": "Valid JSON numeric objects not exactly representable by the unit decoder remain mandatory original objects. Decoded strings still locate quotations and dependencies. The raw numeric lexeme is retained before filtering through Provider projection.",
+    "limitation": "Partial extraction of such an opaque numeric object is unsupported. Its protected-size failure is a current representation/progress limitation, not proof that every conceivable encoding of its necessary story facts is irreducible."
+  },
+  "semantic_proof": {
+    "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+    "deterministic": "Explicit source ranges, field/record identity, required support and declared dependency closure checked.",
+    "not_qualified": "Free-text equivalence, implicit relations and model understanding have no independent real-Provider sample qualification; supported/coverage_complete and legal IDs alone do not prove these."
+  },
+  "real_measurement": {
+    "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+    "status": "NOT_RUN",
+    "reason": "Membership credentials exist, but the selected native interface has no jointly qualified matching complete-protocol meter and physical route capacity evidence. Scripted bytes and character tokenizers are separate engineering fixtures."
+  },
+  "restart": {
+    "classification": "CURRENT_RUNTIME_FACT",
+    "verified": "Different OS processes resume after known settled compression and native retryable bookkeeping, retaining original Effects.",
+    "not_verified": "Unknown in-flight physical Provider kill/query/reconciliation was not exercised against a real Provider."
+  },
+  "upstream_coverage": "See entry-coverage.json: WIRED does not imply native overflow EXECUTABLE for every stage.",
+  "literary_and_long_form": "NOT_RUN; controlled samples and repeated load do not qualify an entire novel, long-form memory stability or literary quality."
+}

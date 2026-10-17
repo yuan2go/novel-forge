@@ -1,0 +1,151 @@
+{
+  "source_sha": "c1f6a507410c870dd523b683cd60886fde11df07",
+  "focused_production_regressions": {
+    "status": "PASS",
+    "passed": 148,
+    "source_body_committed_as": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+    "log": "checks/source-scope-final.log.gz"
+  },
+  "current_changed_contract_checks": {
+    "status": "PASS",
+    "source_sha": "c1f6a507410c870dd523b683cd60886fde11df07",
+    "passed": 492
+  },
+  "earlier_broader_focused_checks": {
+    "status": "PASS",
+    "passed": 366,
+    "subtests": 1317,
+    "source_sha": "fe7ec171c3ba2842ddcecda7e05b3bd4fe075a8b",
+    "log": "checks/history-policy-regression.log.gz"
+  },
+  "formal_pr_qualification": {
+    "status": "IN_PROGRESS"
+  },
+  "native_runs": [
+    {
+      "source_sha": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+      "purpose": "Native core complete request/byte-fixture512000/restart/cancel; production source unchanged through final commit",
+      "label": "semantic-core-e5ec2881",
+      "status": "PASS",
+      "summary": "....                                                                     [100%]\n4 passed in 145.86s (0:02:25)",
+      "database": "nf_p0_96a1445690ee4729a44432d13ca3cb74_test",
+      "project_ids": [
+        "project-33ecfc35834b47f88d71c4d3f9ea0861",
+        "project-70ccb407e5f347d0b409967cf387e1a6",
+        "project-95df2bd8ebe44053a3d4f307501fcaa9",
+        "project-a2b9785ee4a54cb69b021eac0331acde"
+      ]
+    },
+    {
+      "source_sha": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+      "purpose": "Native fixed original Gold, full upstream compression, actual sent request and four saved/read chapters; production source unchanged",
+      "label": "semantic-upstream-e5ec2881",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 624.93s (0:10:24)",
+      "database": "nf_p0_aaa664870dbd4013a48b5026dc90df1e_test",
+      "project_ids": [
+        "project:author:9e9b80aafe0f0436a6ef6b5c26603ae762ced20cf903efa12a59b7596fcddc46",
+        "project-be79ab7d7ef44e1ca83d857e2efe68e0"
+      ]
+    },
+    {
+      "source_sha": "4ef982aaa859f4d6b33b9d0f29c40adaa0a6e41c",
+      "purpose": "Native v3 main-unsent continuation preserving six settled Context Effects and one Writer submission; production source unchanged",
+      "label": "semantic-retained-upgrade-4ef982aa",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 464.57s (0:07:44)",
+      "database": "nf_p0_e97f5018f95b426d9bc1755abecf50ea_test",
+      "project_ids": [
+        "project:author:8db02b472622162f9ac2b9695edfdf984886402ea60d5fe7f929d5fcdbff7d2b",
+        "project-e75aa3ac7054403ca11f6590a564d900"
+      ]
+    },
+    {
+      "source_sha": "4ef982aaa859f4d6b33b9d0f29c40adaa0a6e41c",
+      "source_worktree_test_patch": "nf-semantic-cold-restart-test.patch",
+      "test_source_binding": "nf-semantic-cold-restart-source-binding.json",
+      "purpose": "Precommit exact file binding for final c1f6a507 test; fresh execution Gateway/Binder/application replay from durable receipts, not OS kill",
+      "label": "semantic-cold-restart-final",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 17.78s",
+      "database": "nf_p0_7ce46163fc83416ab6eeb3ca8f5e3001_test",
+      "project_ids": [
+        "project-6a28c2827f664b0cb9bff49ca4e30fd6"
+      ]
+    }
+  ],
+  "historical_native_runs": [
+    {
+      "source_sha": "e5ec2881568cf801fe57bacf0731eadc5f1056f1",
+      "purpose": "NEGATIVE controlled different-model meter mismatch; correct UNCERTAIN, not current upgrade qualification",
+      "label": "semantic-retained-upgrade-e5ec2881",
+      "status": "PASS",
+      "summary": "",
+      "database": "nf_p0_3e9c6c9801cf4e2e8d5214610a206ce8_test",
+      "project_ids": [
+        "project:author:2e7028de182e8f3424f9f9aea83c07a0ec5c175c5cfca05200a371e0c0d6bb6a",
+        "project-f1022643e7954dc88384848a4215d7e4"
+      ]
+    },
+    {
+      "source_sha": "0948b9f823f1eda7e280763444f71807649731f4",
+      "purpose": "Historical Context v2-to-v4 native continuation, retains its actual source",
+      "label": "semantic-upgrade-0948b9f8",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 188.05s (0:03:08)",
+      "database": "nf_p0_71310a596d404aa6bb351d2391f730af_test",
+      "project_ids": [
+        "project-9a4d6b0add324dac9bb260a408833de3",
+        "project:author:24a1d19a8d7d65a42bda735ab269829178066f3223bf9bba3251b2418b22346a"
+      ]
+    },
+    {
+      "source_sha": "22de17d0ca1071f9b834e03bce817dfa4ea712b6",
+      "purpose": "Historical controlled execution; retained source and failure boundaries, not current-source qualification",
+      "label": "semantic-core-22de17d0",
+      "status": "PASS",
+      "summary": "....                                                                     [100%]\n4 passed in 177.25s (0:02:57)",
+      "database": "nf_p0_bd325a9f02064692a1deacf23d919bac_test",
+      "project_ids": [
+        "project-2ca67fb9fccf4612a61ef5e86472f9d7",
+        "project-5078ece5ac9c4988bafbeb01822609b8",
+        "project-646f9497d1cd4066bcd7e8370da5270d",
+        "project-b66239c389cc4d62971e09af0600bbb4"
+      ]
+    },
+    {
+      "source_sha": "22de17d0ca1071f9b834e03bce817dfa4ea712b6",
+      "purpose": "Historical controlled execution; retained source and failure boundaries, not current-source qualification",
+      "label": "semantic-upstream-22de17d0",
+      "status": "PASS",
+      "summary": ".                                                                        [100%]\n1 passed in 869.80s (0:14:29)",
+      "database": "nf_p0_c84debb594ef4626818eaf2455c2f000_test",
+      "project_ids": [
+        "project-710d7e63a63843b0bc39de9aa93eed91",
+        "project:author:af67e25bfd06db3aa79b88f147d0335bfd9d98635c840d15460419a1e1f3a615"
+      ]
+    },
+    {
+      "source_sha": "22de17d0ca1071f9b834e03bce817dfa4ea712b6",
+      "purpose": "Historical controlled execution; retained source and failure boundaries, not current-source qualification",
+      "label": "semantic-retained-upgrade-22de17d0",
+      "status": "PASS",
+      "summary": "",
+      "database": "nf_p0_86aad29078ce46e5ade191ab981144cf_test",
+      "project_ids": [
+        "project-9cadb509692746a08a5817452b039b8e",
+        "project:author:7df211634fcd4994c13e238f85290c22bc3eff411fba01455d7e802c45352ccf"
+      ]
+    }
+  ],
+  "reviews": {
+    "standards": "Initial findings closed at 3fc993c3; extreme Decimal parsing and stale field-count wording closed at 22de17d0. Readonly, no DB/Provider writes.",
+    "spec": "Initial final-closure findings closed at 3fc993c3; evidence-directory isolation closed at 22de17d0; complete source-metadata scope closed after 17 focused production-function cases and final bundle projection. Review explicitly binds PYTHONPATH=src."
+  },
+  "actual_worker_OS_kill": "NOT_RUN; durable failure and application reconstruction exercised separately",
+  "real_provider_compression_fidelity_prose": "NOT_RUN",
+  "real_512k_tokens": "NOT_RUN",
+  "long_form_memory_quality": "NOT_RUN",
+  "literary_quality": "NOT_RUN",
+  "deployment": "UNVERIFIED_NOT_PERFORMED"
+}

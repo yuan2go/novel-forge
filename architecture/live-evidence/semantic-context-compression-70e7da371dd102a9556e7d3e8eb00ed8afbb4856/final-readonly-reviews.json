@@ -1,0 +1,23 @@
+{
+  "schema_version": "novel-forge.readonly-review-evidence.v1",
+  "source_sha": "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+  "standards": {
+    "reviewer": "/root/standards_review",
+    "incremental_range": "67c07ef0..70e7da37",
+    "scope": "Two production modules and added tests; earlier Standards review retained separately",
+    "confirmed_findings": [],
+    "conclusion": "Full JSON syntax validation precedes ambiguity/precision reports; valid enormous integers retain mandatory original text; no source, transaction or recovery boundary was weakened.",
+    "tests_run_by_this_review": false,
+    "database_or_provider_access": false,
+    "formal_postgres_qualification": "NOT_ASSESSED"
+  },
+  "spec": {
+    "reviewer": "/root/spec_review",
+    "scope": "Current 70e7da37 JSON syntax/lexeme classification correction, following prior complete semantic review",
+    "confirmed_findings": [],
+    "targeted_production_tests": 12,
+    "status": "PASS",
+    "formal_postgres_qualification": "NOT_ASSESSED"
+  },
+  "interpretation": "Review evidence is separate from runtime, real Provider, free-text semantic and literary qualification. It does not convert a pending formal matrix into PASS."
+}

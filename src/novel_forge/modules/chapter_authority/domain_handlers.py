@@ -127,6 +127,8 @@ def build_context_bundle(
     context_model_call: Any = None,
     compression_input_tokens: int = 0,
     defer_token_capacity: bool = False,
+    semantic_context_compression: bool = False,
+    plan_dependency_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     if context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"}:
@@ -287,6 +289,8 @@ def build_context_bundle(
         f"Chapter {plan['chapter']} objective: {objective}. "
         f"Premise: {plan['premise']}. Scene sequence: {scene_sequence}."
     )
+    if semantic_context_compression and plan_dependency_sources:
+        plan_safe_summary = json.dumps({"safe_summary": plan_safe_summary, "planned_dependency_sources": plan_dependency_sources}, ensure_ascii=False)
     plan_structured_facts = (
         {"kind": "chapter", "value": plan["chapter"]},
         {"kind": "objective", "value": objective},
@@ -409,7 +413,7 @@ def build_context_bundle(
     clean_history = (retrieval_result or {}).get("query_plan", {}).get("writer_projection_version") == "accepted-writer-history.v2"
     if clean_history:
         from novel_forge.modules.context_builder.story_projection import clean_context_candidates
-        candidates = clean_context_candidates(candidates, stage="draft")
+        candidates = clean_context_candidates(candidates, stage="draft", preserve_json=semantic_context_compression)
     task_receipt = None
     if context_profile_version == "draft-context-profile-v4":
         from novel_forge.modules.context_builder.task_compression import compile_task_context, validate_task_dependencies
@@ -420,6 +424,9 @@ def build_context_bundle(
             "memo_fingerprint": str((chapter_memo or {}).get("memo_fingerprint") or ""),
             "preserve_quotes": list(plan.get("preserve_quotes") or ()),
         }
+        if semantic_context_compression:
+            from novel_forge.modules.context_builder.semantic_units import SEMANTIC_CONTRACT
+            task["semantic_contract"] = SEMANTIC_CONTRACT
         if (clean_history and access.get("mode") == "ALLOW_ONLY"
                 and access.get("usage_scope") == "EXPERIMENTAL_VALIDATION"
                 and access.get("craft_candidate_review_version") == "explicit-allowlist-craft-review.v1"):
@@ -663,7 +670,7 @@ def normalize_draft_result(
     )
     memory = None
     working = (context_content or {}).get("working_manuscript") or {}
-    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6"}:
+    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}:
         from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
         memory = optional_draft_memory(result.get("working_memory_json"), text,
             available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})

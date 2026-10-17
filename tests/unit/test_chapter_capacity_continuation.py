@@ -14,10 +14,10 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.context_builder.request_capacity import recompose_capacity_context
 
 
-def versions(monkeypatch):
+def versions(monkeypatch, identities=("3.0.4", "3.1.0")):
     monkeypatch.setattr(validation_deployment, "_install_validation_manifest", lambda *args, **kwargs: kwargs)
     result = []
-    for version in ("3.0.4", "3.1.0"):
+    for version in identities:
         captured = validation_deployment.install_chapter_validation_pack("not-connected",
             repository_root=Path(__file__).resolve().parents[2], project_id="p", workspace_id="w", book_id="b",
             application_build_id="fixture", commit_sha="a" * 40, compiler=None, approver=None, agent_admin=None,
@@ -27,6 +27,27 @@ def versions(monkeypatch):
             "manifest_hash": canonical_hash(captured["manifest"]),
             "artifact_catalog_hash": canonical_hash(captured["artifact_catalog"])})
     return result
+
+
+@pytest.mark.parametrize("source", ["3.0.4", "3.1.0"])
+def test_semantic_capacity_upgrade_retains_original_pack_scope_and_old_artifact_bytes(monkeypatch, source):
+    old, new = versions(monkeypatch, (source, "3.2.0"))
+    proof = validate_capacity_pack_pair(old, new)
+    assert proof["target_context_policy_ref"] == "context-policy:chapter-generation-pack:v4"
+    assert proof["source_context_policy_ref"] == old["manifest"]["context_sources"]["policy_id"]
+
+
+def test_first_complete_capacity_contract_reinstalls_with_its_exact_original_hashes(monkeypatch):
+    import json
+    from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+    root = Path(__file__).resolve().parents[2]
+    frozen = json.loads((root / "tests/fixtures/creation_capacity_v3_contract_hashes.json").read_text())
+    chapter = versions(monkeypatch, ("3.1.0",))[0]
+    assert {key: chapter[key] for key in ("manifest_hash", "artifact_catalog_hash")} == frozen["chapter"]
+    planning = build_story_planning_pack_profile(root, operation_definition_hash="sha256:" + "a" * 64,
+        event_first_planning=True, complete_request_capacity=True, semantic_context_compression=False)
+    assert planning.manifest["identity"]["version"] == "2.17.0"
+    assert {"manifest_hash": canonical_hash(planning.manifest), "artifact_catalog_hash": canonical_hash(planning.artifact_catalog)} == frozen["planning"]
 
 
 def test_actual_historical_and_new_installers_prove_only_capacity_changed(monkeypatch):
@@ -252,3 +273,23 @@ def test_native_receipt_request_constructor_restores_the_original_verified_conte
         assert request.require_input("context_bundle").content == context.content
         assert request.capacity_context_derivation == derivation
     assert verified == ["effect"]
+
+
+@pytest.mark.parametrize('policy,allowed', [('v2', True), ('v3', True), ('v4', False)])
+def test_original_draft_snapshot_accepts_only_the_supported_capacity_predecessors(monkeypatch, policy, allowed):
+    from novel_forge.modules.chapter_authority.capacity_continuation import _source_version
+    from novel_forge.storage.capability_pack_authority_repositories import CapabilityPackAuthorityRepository
+    version = {'manifest_hash': 'manifest'}
+    monkeypatch.setattr(CapabilityPackAuthorityRepository, 'require_version', lambda *args, **kwargs: version)
+    class Cursor:
+        def execute(self, *args):
+            pass
+        def fetchall(self):
+            return [('pack', '3.1.0', 'manifest', 'snapshot', 'snapshot-hash', 'context-policy:chapter-generation-pack:' + policy)]
+    source = {'root_operation_id': 'root', 'project_id': 'p', 'operation_id': 'draft',
+        'definition_name': 'chapter.draft.generate', 'created_at': 'frozen'}
+    if allowed:
+        assert _source_version(Cursor(), source)[0] == version
+    else:
+        with pytest.raises(KernelError, match='SOURCE_UNPROVEN'):
+            _source_version(Cursor(), source)

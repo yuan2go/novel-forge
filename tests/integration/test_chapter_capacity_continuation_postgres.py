@@ -21,6 +21,14 @@ from tests.integration.synthesis_production_support import AdviceOnlySynthesisCh
 
 @pytest.mark.parametrize("enable_memo", [False, True])
 def test_native_creation_continues_a_frozen_legacy_chapter_context_capacity_failure(tmp_path, monkeypatch, enable_memo):
+    _run_capacity_continuation(tmp_path, monkeypatch, enable_memo=enable_memo, target_pack="3.1.0")
+
+
+def test_native_creation_upgrades_to_semantic_context_without_claiming_zero_root_calls(tmp_path, monkeypatch):
+    _run_capacity_continuation(tmp_path, monkeypatch, enable_memo=True, target_pack="3.2.0")
+
+
+def _run_capacity_continuation(tmp_path, monkeypatch, *, enable_memo, target_pack):
     harness = CapabilityPackPostgresHarness("chapter-capacity-continuation-" + str(enable_memo))
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
@@ -96,7 +104,7 @@ def test_native_creation_continues_a_frozen_legacy_chapter_context_capacity_fail
         project_id=book["project_id"], workspace_id=book["workspace_id"], book_id=book["book_id"],
         application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
         compiler=principal, approver=principal, agent_admin=principal, pack_id_override=pack_id,
-        pack_version_override="3.1.0", expected_activation_version=1, runtime_environment="production",
+        pack_version_override=target_pack, expected_activation_version=1, runtime_environment="production",
         prose_skill_version="prose-generation-v5", prompt_template_version="v15")
     from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
     resolve = PostgresProductionExecutionPayloadResolver.resolve
@@ -132,6 +140,8 @@ def test_native_creation_continues_a_frozen_legacy_chapter_context_capacity_fail
             [edge[1]]).fetchone()[0]
         assert context["context_manifest"]["task_context_receipt"]["capacity_admission"] == "DEFERRED_COMPLETE_REQUEST"
         assert context["capacity_policy_upgrade"]["source_operation_id"] == failed["operation_id"]
+        if target_pack == "3.2.0":
+            assert context["context_manifest"]["task_context_receipt"]["semantic_contract"] == "source-unit-dependency-and-final-composition.v2"
         prose = uow.cursor.execute("""SELECT version.content FROM authority_asset_version version
             JOIN authority_asset asset USING(asset_id) WHERE asset.project_id=%s AND asset.asset_type='draft_chapter'""",
             [book["project_id"]]).fetchone()[0]["text"]
@@ -146,7 +156,7 @@ def test_native_creation_continues_a_frozen_legacy_chapter_context_capacity_fail
         assert admission["provider_request_identity"]["input_text_hash"] == "sha256:" + hashlib.sha256(sent[0][1].encode()).hexdigest()
     evidence = os.environ.get("NOVEL_FORGE_POSTGRES_EVIDENCE_DIR")
     if evidence:
-        target = Path(evidence) / ("chapter-capacity-upgrade-memo-" + str(enable_memo))
+        target = Path(evidence) / ("chapter-capacity-upgrade-memo-" + str(enable_memo) + ("-semantic-v4" if target_pack == "3.2.0" else ""))
         target.mkdir(parents=True, exist_ok=True)
         (target / "proof.json").write_text(json.dumps({"evidence_class": "NATIVE_CONTROLLED_PROVIDER_ONLY",
             "project_id": book["project_id"], "book_run_id": book["book_run_id"], "source": failed,

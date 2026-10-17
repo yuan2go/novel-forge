@@ -985,6 +985,7 @@ def _retrieval_admission_snapshot(
         memo=memo,
         semantic_policy=semantic_policy,
         task_dependency_refs=dependencies,
+        preserve_source_json=bool(dict(request.preparation_report or {}).get("context_semantic_contract")),
     )
     if query_plan["semantic_policy"] == "REQUIRED" and not semantic_provider_bound:
         raise KernelError(

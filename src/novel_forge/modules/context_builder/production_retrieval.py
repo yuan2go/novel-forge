@@ -126,6 +126,7 @@ def build_retrieval_query_plan(
     semantic_policy: str = "FALLBACK_ALLOWED",
     campaign_policy: RetrievalCampaignPolicy | None = None,
     task_dependency_refs: Mapping[str, Any] | None = None,
+    preserve_source_json: bool = False,
 ) -> dict[str, Any]:
 
     policy = semantic_policy.strip().upper()
@@ -212,6 +213,7 @@ def build_retrieval_query_plan(
         "memo_fingerprint": str(memo.get("memo_fingerprint") or ""),
         "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
         "writer_projection_version": "accepted-writer-history.v2",
+        **({"source_json_projection": "source-json-values.v1"} if preserve_source_json else {}),
         "ranking_policy_version": RANKING_POLICY_VERSION,
         "ranking_weights": dict(RANKING_WEIGHTS),
         "semantic_policy": policy,
@@ -570,6 +572,7 @@ def discover_accepted_retrieval_candidates(
                 uow, project_id=project_id,
                 documents=(*(_document_from_row(row) for row in rows), *dependency_documents),
                 projection_version=str(query_plan.get("writer_projection_version") or ""),
+                preserve_json=query_plan.get("source_json_projection") == "source-json-values.v1",
             )
             if query_plan.get("writer_projection_version") in {WRITER_PROJECTION_VERSION, "accepted-writer-history.v2"}
             else {}
@@ -638,6 +641,8 @@ def discover_accepted_retrieval_candidates(
         if item["source_asset_version_id"] in writer_projections else item
         for item in documents
     )
+    if query_plan.get("source_json_projection") == "source-json-values.v1":
+        documents = _bind_source_json_projections(database_url, project_id=project_id, documents=documents)
     inputs = tuple(
         {
             "asset_version_id": str(item["source_asset_version_id"]),
@@ -1660,7 +1665,7 @@ def build_retrieval_result(
     projection_version = str(query_plan.get("writer_projection_version") or "")
     if projection_version not in {"", WRITER_PROJECTION_VERSION, "accepted-writer-history.v2"}:
         raise KernelError("WRITER_HISTORY_PROJECTION_UNSUPPORTED", "frozen retrieval uses an unsupported Writer projection")
-    selected = [_selected_document(item, preserve_text=task_scoped, clean_history=bool(projection_version), projection_version=projection_version) for item in ranked]
+    selected = [_selected_document(item, preserve_text=task_scoped, clean_history=bool(projection_version), projection_version=projection_version, preserve_json=query_plan.get("source_json_projection") == "source-json-values.v1") for item in ranked]
     result = {
         "type": "RetrievalResult",
         "contract_version": "chapter-retrieval-result-v6" if task_scoped else "chapter-retrieval-result-v5",
@@ -1743,7 +1748,7 @@ def build_retrieval_result(
 
 
 def _load_writer_history_projections(
-    uow: AuthorityUnitOfWork, *, project_id: str, documents: Iterable[Mapping[str, Any]], projection_version: str = WRITER_PROJECTION_VERSION,
+    uow: AuthorityUnitOfWork, *, project_id: str, documents: Iterable[Mapping[str, Any]], projection_version: str = WRITER_PROJECTION_VERSION, preserve_json: bool = False,
 ) -> dict[str, dict[str, str]]:
     bindings: dict[str, tuple[str, str]] = {}
     for item in documents:
@@ -1770,11 +1775,11 @@ def _load_writer_history_projections(
             raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "accepted prose source differs from its frozen retrieval binding")
         projections[identity] = bind_writer_history_source(
             content, source_asset_version_id=identity, source_content_hash=content_hash,
-            source_artifact_type=artifact_type,
+            source_artifact_type=artifact_type, preserve_json=preserve_json,
         )
         if projection_version == "accepted-writer-history.v2":
             from .story_projection import story_history
-            clean_text = story_history(json.dumps(content, ensure_ascii=False), physical_type=artifact_type)
+            clean_text = story_history(json.dumps(content, ensure_ascii=False), physical_type=artifact_type, preserve_json=preserve_json)
             projections[identity].update(version=projection_version, text=clean_text,
                                          text_fingerprint="sha256:" + hashlib.sha256(clean_text.encode()).hexdigest())
     if set(projections) != set(bindings):
@@ -1812,18 +1817,23 @@ def _document_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
     }
 
 
-def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False, clean_history: bool = False, projection_version: str = "") -> dict[str, Any]:
+def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False, clean_history: bool = False, projection_version: str = "", preserve_json: bool = False) -> dict[str, Any]:
     content = str(item.get("content_text") or "")
+    json_binding = item.get("source_json_projection")
+    if preserve_json:
+        _validate_source_json_projection(item, json_binding)
+        item = {**item, "content_text": json_binding["text"], "metadata": json_binding["metadata"]}
+        content = json_binding["text"]
     if clean_history:
         binding = item.get("writer_history_projection")
         checked_item = item
         if isinstance(binding, Mapping) and binding.get("version") == "accepted-writer-history.v2":
             checked_item = {**item, "writer_history_projection": {**binding, "version": WRITER_PROJECTION_VERSION}}
-        content = project_writer_retrieval_history(checked_item)
+        content = project_writer_retrieval_history(checked_item, preserve_json=preserve_json)
         if projection_version == "accepted-writer-history.v2":
             from .story_projection import story_history, visible_business_data
-            content = story_history(str(binding["text"]) if isinstance(binding, Mapping) else str(item.get("content_text") or ""), physical_type=str(item.get("source_artifact_type") or ""))
-            item = {**item, "metadata": visible_business_data(dict(item.get("metadata") or {}), stage="draft", history=True)}
+            content = story_history(str(binding["text"]) if isinstance(binding, Mapping) else str(item.get("content_text") or ""), physical_type=str(item.get("source_artifact_type") or ""), preserve_json=preserve_json)
+            item = {**item, "metadata": visible_business_data(dict(item.get("metadata") or {}), stage="draft", history=True, preserve_json=preserve_json)}
         else:
             item = {**item, "metadata": provider_visible_data(dict(item.get("metadata") or {}))}
     maximum = len(content) if preserve_text or clean_history else 4_000
@@ -1869,6 +1879,7 @@ def _selected_document(item: Mapping[str, Any], *, preserve_text: bool = False, 
             "source_asset_version_id": str(item["source_asset_version_id"]),
             "source_content_hash": str(item["source_content_hash"]),
             "source_projection_hash": str(item["projection_hash"]),
+            **({"source_json_projection": dict(json_binding)} if preserve_json else {}),
             **({"writer_projection_version": projection_version or WRITER_PROJECTION_VERSION,
                 "source_text_fingerprint": "sha256:" + hashlib.sha256(str(item.get("content_text") or "").encode()).hexdigest(),
                 **({"writer_source_text_fingerprint": item["writer_history_projection"]["source_text_fingerprint"]}
@@ -1935,3 +1946,49 @@ __all__ = [
     "freeze_retrieval_candidate_union",
     "load_frozen_retrieval_candidate_union",
 ]
+
+
+def _bind_source_json_projections(database_url, *, project_id, documents):
+    from .story_projection import SOURCE_JSON_PROJECTION, restore_source_json_fields, story_history, visible_business_data
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+
+    identities = sorted({item["source_asset_version_id"] for item in documents})
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SET TRANSACTION READ ONLY")
+        uow.cursor.execute("""SELECT version.asset_version_id,version.content_hash,version.content,asset.asset_type
+            FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+            WHERE asset.project_id=%s AND version.asset_version_id=ANY(%s::text[])
+              AND version.lifecycle IN ('ACTIVE','SUPERSEDED') AND version.eligibility='ELIGIBLE' AND version.governance='CLEAR'""", [project_id, identities])
+        sources = {row[0]: row[1:] for row in uow.cursor.fetchall()}
+    result = []
+    for item in documents:
+        source = sources.get(item["source_asset_version_id"])
+        if not source or source[0] != item["source_content_hash"] or source[2] != item["source_artifact_type"]:
+            raise KernelError("CONTEXT_SOURCE_JSON_BINDING_CHANGED", "JSON projection requires its exact eligible original AssetVersion")
+        if source[2] in WRITER_PROSE_TYPES:
+            text, fields = story_history(json.dumps(source[1], ensure_ascii=False), physical_type=source[2], preserve_json=True), []
+        else:
+            text = story_history(str(item["content_text"]), physical_type=source[2], preserve_json=True)
+            text, fields = restore_source_json_fields(text, source[1])
+        metadata_text = visible_business_data(json.dumps(item.get("metadata") or {}, ensure_ascii=False), stage="draft", history=True, preserve_json=True)
+        metadata_text, metadata_fields = restore_source_json_fields(metadata_text, source[1])
+        metadata = visible_business_data(json.loads(metadata_text), stage="draft", history=True, preserve_json=True)
+        binding = {"version": SOURCE_JSON_PROJECTION, "source_asset_version_id": item["source_asset_version_id"],
+            "source_content_hash": source[0], "source_artifact_type": source[2], "source_projection_hash": item["projection_hash"],
+            "input_text_hash": narrative_hash(item["content_text"]), "text": text, "text_hash": narrative_hash(text),
+            "metadata": metadata, "metadata_hash": narrative_hash(metadata), "field_bindings": fields, "metadata_field_bindings": metadata_fields}
+        result.append({**item, "source_json_projection": binding})
+    return tuple(result)
+
+
+def _validate_source_json_projection(item, binding):
+    from .story_projection import SOURCE_JSON_PROJECTION
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+
+    if (not isinstance(binding, Mapping) or binding.get("version") != SOURCE_JSON_PROJECTION
+        or any(binding.get(key) != item.get(key) for key in ("source_asset_version_id", "source_content_hash", "source_artifact_type"))
+        or binding.get("source_projection_hash") != item.get("projection_hash")
+        or binding.get("input_text_hash") != narrative_hash(item.get("content_text"))
+        or not isinstance(binding.get("text"), str) or binding.get("text_hash") != narrative_hash(binding["text"])
+        or not isinstance(binding.get("metadata"), Mapping) or binding.get("metadata_hash") != narrative_hash(binding["metadata"])):
+        raise KernelError("CONTEXT_SOURCE_JSON_BINDING_CHANGED", "frozen original-source JSON projection or its field scope changed")

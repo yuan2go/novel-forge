@@ -1,0 +1,5 @@
+{
+  "database_exports": "Read-only terminal database state after each native suite. Core pytest fixtures clean some rows between cases; per-case captured receipts/requests/readback are retained separately under artifacts. Full upstream, retained-upgrade and distinct-process databases preserve their source asset/version and complete Effect chains.",
+  "source_of_truth": "Original PostgreSQL rows, immutable AssetVersions and per-case durable receipts; summary JSON is a checked index, not replacement business authority.",
+  "model_call_cost": "All schema-backed model_call_log and cost_ledger assets remain in raw authority_asset_version exports; no physical authority_model_call_log table is assumed."
+}

@@ -1,0 +1,32 @@
+{
+  "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+  "evidence_class": "PRODUCTION_ADMISSION_COMPILE_BUNDLE_AND_PROVIDER_VIEW_DIAGNOSTIC",
+  "cases": [
+    {
+      "case": "precise_quantity",
+      "original": "{\"subject\":\"阿岚\",\"conditions\":[\"只有潮尺低于此值\"],\"quantity\":0.123456789012345678901,\"units\":\"尺\",\"summary\":\"她尚未开闸。\",\"provider_evidence\":{\"text\":\"内部执行信息\"},\"private\":{\"provider_visibility\":\"INTERNAL_QUALITY_ONLY\",\"text\":\"内部质量信息\"}}",
+      "original_hash": "sha256:044a6e8afed2f75e75cf9d00a528a121732f90b2fd584d0492c66d1dd4bb85bb",
+      "system_context_limit": 512000,
+      "capacity_evidence": "BYTE_UPPER_BOUND_MATERIAL_FITS_NOT_PROVIDER_TOKEN_QUALIFICATION",
+      "status": "RENDERED",
+      "final_provider_summary": "{\"conditions\":[\"只有潮尺低于此值\"],\"quantity\":0.12345678901234568,\"subject\":\"阿岚\",\"summary\":\"她尚未开闸。\",\"units\":\"尺\"}",
+      "fast_path": true,
+      "source_unchanged": true
+    },
+    {
+      "case": "duplicate_subject",
+      "original": "{\"subject\":\"阿岚\",\"subject\":\"读者\",\"summary\":\"未曾开闸。\"}",
+      "original_hash": "sha256:08edde80c5493714983cd18ee81e349583a4bb81fa0f999452e01a663ed2ce4c",
+      "system_context_limit": 512000,
+      "capacity_evidence": "BYTE_UPPER_BOUND_MATERIAL_FITS_NOT_PROVIDER_TOKEN_QUALIFICATION",
+      "status": "RENDERED",
+      "final_provider_summary": "{\"subject\":\"读者\",\"summary\":\"未曾开闸。\"}",
+      "fast_path": true,
+      "source_unchanged": true
+    }
+  ],
+  "model_calls": 0,
+  "real_provider": "NOT_RUN",
+  "real_tokens": "NOT_MEASURED",
+  "native_dispatch": "NOT_RUN_IN_THIS_DIAGNOSTIC"
+}

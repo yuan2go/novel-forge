@@ -8,6 +8,8 @@ from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
+from . import source_json
+
 WRITER_PROJECTION_VERSION = "accepted-writer-history.v1"
 WRITER_PROSE_TYPES = frozenset({"best_draft_candidate", "draft_chapter", "draft_version"})
 
@@ -25,9 +27,11 @@ def provider_visible_data(value: Any) -> Any:
     return deepcopy(value)
 
 
-def project_writer_history(content_text: str, *, source_artifact_type: str) -> str:
+def project_writer_history(content_text: str, *, source_artifact_type: str, preserve_json: bool = False) -> str:
     try:
-        source = json.loads(content_text)
+        source = source_json.loads(content_text) if preserve_json else json.loads(content_text)
+    except KernelError:
+        raise
     except (ValueError, TypeError) as error:
         if source_artifact_type in WRITER_PROSE_TYPES:
             raise KernelError("WRITER_HISTORY_SOURCE_INVALID", "accepted prose projection requires the complete source JSON") from error
@@ -58,26 +62,26 @@ def project_writer_history(content_text: str, *, source_artifact_type: str) -> s
         projected.update({key: deepcopy(source[key]) for key in ("chapter", "title") if key in source})
     else:
         projected = source
-    return json.dumps(provider_visible_data(projected), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return source_json.dumps(provider_visible_data(projected)) if preserve_json else json.dumps(provider_visible_data(projected), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def bind_writer_history_source(content: Mapping[str, Any], *, source_asset_version_id: str,
-                               source_content_hash: str, source_artifact_type: str) -> dict[str, str]:
+                               source_content_hash: str, source_artifact_type: str, preserve_json: bool = False) -> dict[str, str]:
     source_text = json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     if source_artifact_type not in WRITER_PROSE_TYPES or not source_asset_version_id or not source_content_hash:
         raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "Writer history requires the exact frozen prose asset and content hash")
-    text = project_writer_history(source_text, source_artifact_type=source_artifact_type)
+    text = project_writer_history(source_text, source_artifact_type=source_artifact_type, preserve_json=preserve_json)
     return {"version": WRITER_PROJECTION_VERSION, "source_asset_version_id": source_asset_version_id,
             "source_content_hash": source_content_hash, "source_artifact_type": source_artifact_type,
             "source_text_fingerprint": "sha256:" + hashlib.sha256(source_text.encode()).hexdigest(),
             "text": text, "text_fingerprint": "sha256:" + hashlib.sha256(text.encode()).hexdigest()}
 
 
-def project_writer_retrieval_history(document: Mapping[str, Any]) -> str:
+def project_writer_retrieval_history(document: Mapping[str, Any], *, preserve_json: bool = False) -> str:
     binding = document.get("writer_history_projection")
     if binding is None:
         return project_writer_history(str(document.get("content_text") or ""),
-                                      source_artifact_type=str(document.get("source_artifact_type") or ""))
+                                      source_artifact_type=str(document.get("source_artifact_type") or ""), preserve_json=preserve_json)
     if (not isinstance(binding, Mapping) or binding.get("version") != WRITER_PROJECTION_VERSION
         or any(not document.get(key) or binding.get(key) != document.get(key)
                for key in ("source_asset_version_id", "source_content_hash", "source_artifact_type"))
@@ -85,19 +89,21 @@ def project_writer_retrieval_history(document: Mapping[str, Any]) -> str:
         or not isinstance(binding.get("text"), str)
         or binding.get("text_fingerprint") != "sha256:" + hashlib.sha256(binding["text"].encode()).hexdigest()):
         raise KernelError("WRITER_HISTORY_SOURCE_BINDING_INVALID", "retrieved Writer history changed its frozen source or semantic projection")
-    return project_writer_history(binding["text"], source_artifact_type=str(binding["source_artifact_type"]))
+    return project_writer_history(binding["text"], source_artifact_type=str(binding["source_artifact_type"]), preserve_json=preserve_json)
 
 
-def project_visible_summary(text: str) -> str:
+def project_visible_summary(text: str, *, preserve_json: bool = False) -> str:
     try:
-        source = json.loads(text)
+        source = source_json.loads(text) if preserve_json else json.loads(text)
+    except KernelError:
+        raise
     except (ValueError, TypeError):
         return text
     projected = provider_visible_data(source)
-    return "" if projected is None else json.dumps(projected, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "" if projected is None else source_json.dumps(projected) if preserve_json else json.dumps(projected, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping[str, Any], *, projection_version: str = WRITER_PROJECTION_VERSION) -> str:
+def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping[str, Any], *, projection_version: str = WRITER_PROJECTION_VERSION, preserve_json: bool = False) -> str:
     from novel_forge.modules.narrative_state.reality import narrative_hash
 
     summary = str(segment.get("safe_summary") or "").strip()
@@ -105,7 +111,7 @@ def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping
              or segment.get("physical_asset_type") in WRITER_PROSE_TYPES
              or segment.get("narrative_function") == "recent_accepted_prose")
     if not prose:
-        return project_visible_summary(summary)
+        return project_visible_summary(summary, preserve_json=preserve_json)
     if segment.get("compression_method") == "host-bound-extractive-semantic.v2":
         records = [row for row in manifest.get("compression_trace") or ()
                    if isinstance(row, Mapping) and row.get("asset_version_id") == segment.get("asset_version_id")]
@@ -120,5 +126,5 @@ def project_writer_context_summary(segment: Mapping[str, Any], manifest: Mapping
             or trace.get("forward_check") != "EXACT_HOST_SOURCE_UNITS"
             or trace.get("result_content_hash") != narrative_hash(payload)):
             raise KernelError("WRITER_HISTORY_COMPRESSED_PROJECTION_REQUIRED", "compressed accepted prose requires its frozen clean source projection and exact extraction receipt")
-        return summary if projection_version == "accepted-writer-history.v2" else project_visible_summary(summary)
-    return project_writer_history(summary, source_artifact_type="best_draft_candidate")
+        return summary if projection_version == "accepted-writer-history.v2" else project_visible_summary(summary, preserve_json=preserve_json)
+    return project_writer_history(summary, source_artifact_type="best_draft_candidate", preserve_json=preserve_json)

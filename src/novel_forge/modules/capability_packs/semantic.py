@@ -382,6 +382,9 @@ def validate_capability_pack_semantics(
             ),
         }
         target = manifest.context_sources.planning_task_token_budget
+        history_exact = manifest.context_sources.capacity_history_exact_chapters
+        if history_exact is not None:
+            context_expectations["capacity_history_exact_chapters"] = history_exact
         for field in ("capacity_policy", "context_substage_method"):
             value = getattr(manifest.context_sources, field)
             if value:

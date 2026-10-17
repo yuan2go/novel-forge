@@ -96,6 +96,7 @@ def build_story_planning_pack_profile(
     narrative_intent_boundary: bool = True,
     event_first_planning: bool = False,
     complete_request_capacity: bool | None = None,
+    semantic_context_compression: bool | None = None,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
     if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"}:
@@ -106,14 +107,21 @@ def build_story_planning_pack_profile(
     if complete_request_capacity is not None and type(complete_request_capacity) is not bool:
         raise ValueError("Complete request capacity selection must be explicit boolean")
     complete_capacity = intent_boundary if complete_request_capacity is None else complete_request_capacity
+    if semantic_context_compression is not None and type(semantic_context_compression) is not bool:
+        raise ValueError("Semantic Context selection must be explicit boolean")
+    semantic = complete_capacity if semantic_context_compression is None else semantic_context_compression
+    if semantic and not complete_capacity:
+        raise ValueError("Semantic compression requires complete request capacity")
     if complete_capacity and not intent_boundary:
         raise ValueError("Complete request capacity requires the current narrative intent contract")
     operation_ref = f"story_planning.generate@{version}"
-    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=complete_capacity)
+    root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=complete_capacity, semantic_context_compression=semantic)
     if complete_capacity:
-        manifest["context_sources"].update(policy_id="context-policy:chapter-generation-pack:v3",
+        manifest["context_sources"].update(policy_id="context-policy:chapter-generation-pack:v4" if semantic else "context-policy:chapter-generation-pack:v3",
             planning_task_token_budget=512_000, capacity_policy="complete-request-capacity.v1",
-            context_substage_method="shared-rules-and-native-context-contract.v1")
+            context_substage_method="source-unit-dependency-and-final-composition.v2" if semantic else "shared-rules-and-native-context-contract.v1")
+        if semantic:
+            manifest["context_sources"]["capacity_history_exact_chapters"] = 1
     if version != "1.21.0":
         artifacts = [item for item in artifacts if not (
             item["kind"] == ArtifactKind.SKILL.value and item["ref"] == "quality-review"
@@ -169,7 +177,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version=("2.17.0" if event_first_planning else "2.16.0") if complete_capacity else "2.15.0" if event_first_planning else "2.14.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
+        version=("2.19.0" if event_first_planning else "2.18.0") if semantic else ("2.17.0" if event_first_planning else "2.16.0") if complete_capacity else "2.15.0" if event_first_planning else "2.14.0" if intent_boundary else "2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -279,7 +287,7 @@ def build_reader_outcome_pack_profile(
     version = READER_OUTCOME_DEFINITION_VERSION if coordinated_contract else BOOK_FOLLOWUP_DEFINITION_VERSION
     root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=coordinated_contract)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.7.0" if coordinated_contract else "1.2.0"
+    manifest["identity"]["version"] = "1.8.0" if coordinated_contract else "1.2.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -396,7 +404,7 @@ def build_longform_prose_review_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id, complete_request_capacity=literal_citations)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.6.0" if literal_citations else "1.4.0"
+    manifest["identity"]["version"] = "1.7.0" if literal_citations else "1.4.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -570,7 +578,7 @@ def build_narrative_evaluation_pack_profile(
         timeout_policy_ref="timeout:quality-intrinsic-judge:v1",
     )
     manifest["identity"].update(
-        version="2.28.0",
+        version="2.29.0",
         name="Narrative Semantic Evaluation Pack",
         domain="story_design",
         description=(
@@ -644,12 +652,19 @@ def build_narrative_evaluation_pack_profile(
 
 
 def _base(
-    repository_root: str | Path, pack_id: str, *, complete_request_capacity: bool = False
+    repository_root: str | Path, pack_id: str, *, complete_request_capacity: bool = False,
+    semantic_context_compression: bool = True,
 ) -> tuple[Path, dict[str, Any], list[dict[str, Any]]]:
     root = Path(repository_root).resolve()
     manifest = json.loads((root / _BASE_PACK).read_text(encoding="utf-8"))
     manifest["identity"]["pack_id"] = pack_id
-    if not complete_request_capacity:
+    if complete_request_capacity:
+        manifest["context_sources"].update(policy_id="context-policy:chapter-generation-pack:v4" if semantic_context_compression else "context-policy:chapter-generation-pack:v3",
+            planning_task_token_budget=512_000, capacity_policy="complete-request-capacity.v1",
+            context_substage_method="source-unit-dependency-and-final-composition.v2" if semantic_context_compression else "shared-rules-and-native-context-contract.v1")
+        if semantic_context_compression:
+            manifest["context_sources"]["capacity_history_exact_chapters"] = 1
+    else:
         manifest["context_sources"]["policy_id"] = "context-policy:chapter-generation-pack:v2"
         manifest["context_sources"].pop("planning_task_token_budget", None)
         manifest["context_sources"].pop("capacity_policy", None)
@@ -658,7 +673,9 @@ def _base(
         item.to_dict() for item in default_chapter_artifact_resolver(root, include_current_contracts=False).artifacts()
     ]
     if not complete_request_capacity:
-        artifacts = [item for item in artifacts if item["ref"] != "context-policy:chapter-generation-pack:v3"]
+        artifacts = [item for item in artifacts if item["ref"] not in {"context-policy:chapter-generation-pack:v3", "context-policy:chapter-generation-pack:v4"}]
+    elif not semantic_context_compression:
+        artifacts = [item for item in artifacts if item["ref"] != "context-policy:chapter-generation-pack:v4"]
     return root, manifest, artifacts
 
 
@@ -841,6 +858,8 @@ def _update_policy_artifacts(
 ) -> None:
     for artifact in artifacts:
         if artifact["ref"] == manifest["context_sources"]["policy_id"]:
+            if "capacity_history_exact_chapters" in manifest["context_sources"]:
+                artifact["content"]["capacity_history_exact_chapters"] = manifest["context_sources"]["capacity_history_exact_chapters"]
             if "planning_task_token_budget" in manifest["context_sources"]:
                 artifact["content"]["planning_task_token_budget"] = manifest["context_sources"]["planning_task_token_budget"]
             artifact["content"]["allowed_asset_types"] = list(

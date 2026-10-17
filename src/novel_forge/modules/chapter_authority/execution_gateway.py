@@ -212,7 +212,7 @@ def _provider_context_selection(
     retrieval_projection: bool,
     compression_task: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    if stage in CONTEXT_MODEL_STAGES and (compression_task or {}).get("contract_version") == "task-context-compression.v2":
+    if stage in CONTEXT_MODEL_STAGES and (compression_task or {}).get("contract_version") in {"task-context-compression.v2", "task-context-compression.v3"}:
         boundary = compression_task["frozen_input_boundary"]
         available = {(item["asset_version_id"], item["content_hash"]) for item in selected_inputs}
         if any((row["asset_version_id"], row["content_hash"]) not in available for row in boundary["sources"]):
@@ -979,14 +979,14 @@ class PostgresChapterExecutionContractBinder:
             context_policy_ref=attempt_snapshot.execution_snapshot.context_policy_ref,
             route_identity=route_identity,
             route_allowed_physical_types=tuple(item["artifact_type"] for item in context_selection)
-            if stage in CONTEXT_MODEL_STAGES and chunk.get("contract_version") == "task-context-compression.v2"
+            if stage in CONTEXT_MODEL_STAGES and chunk.get("contract_version") in {"task-context-compression.v2", "task-context-compression.v3"}
             else _provider_route_context_types(stage, retrieval_projection=retrieval_projection),
         )
         tool_payload = json.loads(
             attempt_snapshot.execution_snapshot.tool_policy_payload_json
         )
         allowed_tools, denied_tools = _stage_tool_permissions(tool_payload, stage,
-            owner_node_id=attempt_snapshot.execution_snapshot.workflow_node_id if stage in CONTEXT_MODEL_STAGES and chunk.get("contract_version") == "task-context-compression.v2" else "")
+            owner_node_id=attempt_snapshot.execution_snapshot.workflow_node_id if stage in CONTEXT_MODEL_STAGES and chunk.get("contract_version") in {"task-context-compression.v2", "task-context-compression.v3"} else "")
         if "model.provider.invoke" not in allowed_tools:
             raise KernelError(
                 "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
@@ -1148,7 +1148,7 @@ class PostgresChapterExecutionContractBinder:
                     trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                     producer_contract=chapter_producer_contract_identity(prompt_evidence, contract), request_input=provider_inputs,
                     input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(), chapter=int(metadata.get("chapter") or 0),
-                    dry_run=True, prepare_capacity=True, capacity_binding=capacity_binding)
+                    dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=capacity_binding)
             elif capacity_binding["route"] != capacity_route_contract(route):
                 raise KernelError("ROUTING_CAPACITY_BINDING_DRIFT", "Retained compression must retain its prepared static route")
         if capacity_probe:
@@ -1175,7 +1175,7 @@ class PostgresChapterExecutionContractBinder:
                     trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                     producer_contract=chapter_producer_contract_identity(prompt_evidence, contract),
                     request_input=provider_inputs, input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
-                    chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_binding=capacity_binding)
+                    chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=capacity_binding)
                 if not preparation.get("selected"):
                     from novel_forge.modules.production_execution.routing_runtime import routing_failure_details
                     raise KernelError("PROVIDER_ROUTING_BLOCKED", str(preparation.get("decision_id")), details=routing_failure_details(preparation))
@@ -1214,7 +1214,7 @@ class PostgresChapterExecutionContractBinder:
                                 trace_id=str(request_payload["trace_id"]), correlation_id=str(request_payload["correlation_id"]),
                                 producer_contract=chapter_producer_contract_identity(sub_evidence, sub_contract),
                                 request_input=subpayload["input"], input_hash="sha256:" + hashlib.sha256(rendered.encode()).hexdigest(),
-                                chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_binding=sub_binding)
+                                chapter=int(metadata.get("chapter") or 0), dry_run=True, prepare_capacity=True, capacity_preparation_policy="max-authorized-effective-context.v1" if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "", capacity_binding=sub_binding)
                             if not decision.get("selected"):
                                 raise KernelError("PROVIDER_ROUTING_BLOCKED", "No authorized compression route is available")
                         else:
@@ -1233,7 +1233,9 @@ class PostgresChapterExecutionContractBinder:
 
             projection = prepare_request_capacity(original=provider_data, stage=stage, source_boundary=source_boundary,
                 route=route, measure=measure, model_call=context_model_call, chunk_fits=chunk_fits,
-                capacity_bindings=capacity_bindings, preserve_quotes=protected_expression_quotes(provider_data))
+                capacity_bindings=capacity_bindings, preserve_quotes=protected_expression_quotes(provider_data, include_working_observations=frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4"),
+                semantic_contract=frozen_context_policy_payload.get("context_substage_method", "") if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "",
+                history_exact_chapters=frozen_context_policy_payload.get("capacity_history_exact_chapters"))
             if projection:
                 provider_inputs = {**provider_inputs, "_context_capacity_projection": projection}
                 request_payload["input"] = provider_inputs
@@ -1514,7 +1516,7 @@ class PostgresChapterExecutionContractBinder:
             schema = scoped_realization_schema(schema, inputs["realization_contract"])
             schema_ref = "schema:chapter-provider-output:draft:v4"
         working = inputs.get("working_manuscript") or (inputs.get("frozen_intent") or {}).get("working_manuscript") or (inputs.get("execution_intent") or {}).get("working_manuscript") or {}
-        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6"}:
+        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}:
             schema["properties"]["working_memory_json"] = {"type": "string", "maxLength": 100000}
             schema_ref += ":working-memory-v1"
         if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
@@ -1809,7 +1811,7 @@ class PostgresChapterExecutionContractBinder:
             tool_policy_payload = json.loads(pack_snapshot.tool_policy_payload_json)
             allowed_tools, denied_tools = _stage_tool_permissions(
                 tool_policy_payload, stage,
-                owner_node_id=pack_snapshot.workflow_node_id if stage in CONTEXT_MODEL_STAGES and dict(dict(request_payload.get("input") or {}).get("context_compression_task") or {}).get("contract_version") == "task-context-compression.v2" else "",
+                owner_node_id=pack_snapshot.workflow_node_id if stage in CONTEXT_MODEL_STAGES and dict(dict(request_payload.get("input") or {}).get("context_compression_task") or {}).get("contract_version") in {"task-context-compression.v2", "task-context-compression.v3"} else "",
             )
             prompt_version = pack_snapshot.prompt_bundle_ref
             skill_version = pack_snapshot.skill_version
@@ -3518,6 +3520,15 @@ class PostgresProductionExecutionPayloadResolver:
         stored_inputs = payload.get("input")
         if stage != request.stage or not isinstance(stored_inputs, Mapping):
             raise ValueError("frozen Production ExternalEffect payload changed")
+        capacity_projection = stored_inputs.get("_context_capacity_projection")
+        if isinstance(capacity_projection, Mapping) and capacity_projection.get("semantic_contract"):
+            from novel_forge.modules.context_builder.semantic_units import SEMANTIC_CONTRACT
+            composition = capacity_projection.get("final_composition") or {}
+            if (capacity_projection["semantic_contract"] != SEMANTIC_CONTRACT
+                    or composition.get("contract_version") != SEMANTIC_CONTRACT
+                    or composition.get("deterministic_source_fields_ranges_attribution_and_dependencies") != "VERIFIED"
+                    or composition.get("provider_combination", {}).get("phase") != "FINAL_PROVIDER_COMPOSITION"):
+                raise KernelError("CONTEXT_FINAL_COMPOSITION_REQUIRED", "The frozen semantic extract needs its final source-bound composition proof before transmission")
         source_metadata = payload.get("_source_intelligence")
         source_execution = isinstance(source_metadata, Mapping)
         from novel_forge.modules.source_authority.corpus_consumption import (
@@ -4851,13 +4862,27 @@ def _materialize_production_codex_prompt(
         from novel_forge.modules.context_builder.request_capacity import recompose_capacity_context
         context_view, capacity_upgrade_receipt = recompose_capacity_context(context_view, inputs["_context_capacity_upgrade"])
     original_data = {"input_manifest": task_view, "context_bundle": context_view}
+    if (pack_artifacts.get("context_policy", {}).get("content") or {}).get("policy_id") == "context-policy:chapter-generation-pack:v4":
+        from novel_forge.modules.context_builder.request_capacity import expand_semantic_history
+        original_data = expand_semantic_history(original_data)
+        task_view, context_view = original_data["input_manifest"], original_data["context_bundle"]
     if provider_data_capture is not None:
         provider_data_capture.update(deepcopy(original_data))
     capacity_projection = inputs.get("_context_capacity_projection")
     if capacity_projection is not None:
         from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, project_capacity_passages
+        if capacity_projection.get("capacity_history_exact_chapters") != (pack_artifacts.get("context_policy", {}).get("content") or {}).get("capacity_history_exact_chapters"):
+            raise KernelError("CONTEXT_HISTORY_PROTECTION_POLICY_DRIFT", "Extract protection must match the actual frozen Context policy")
         derived_data = apply_capacity_projection(original_data, capacity_projection)
         derived_data = project_capacity_passages(original_data, derived_data, capacity_projection)
+        if capacity_projection.get("semantic_contract") and capacity_projection.get("final_composition"):
+            proof = capacity_projection["final_composition"]
+            if (proof["supplied_projection_hash"] != canonical_hash(derived_data)
+                    or proof["selection_hash"] != canonical_hash(capacity_projection["replacements"])
+                    or proof["source_boundary_hash"] != canonical_hash(capacity_projection["source_boundary"])
+                    or proof["original_hash"] != capacity_projection["original_hash"]
+                    or proof["result_hash"] != capacity_projection["result_hash"]):
+                raise KernelError("CONTEXT_FINAL_COMPOSITION_DRIFT", "Final checked source selection differs from the actual supplied Provider projection")
         task_view, context_view = derived_data["input_manifest"], derived_data["context_bundle"]
         context_view["capacity_extract"] = {"contract_version": "complete-request-capacity.v1",
             "source_projection_hash": capacity_projection["original_hash"],
@@ -4866,6 +4891,7 @@ def _materialize_production_codex_prompt(
             "derivation_hash": canonical_hash({key: capacity_projection[key] for key in
                 ("contract_version", "original_hash", "result_hash", "source_boundary", "stage", "replacements", "compression_receipt", "retained_fidelity_traces") if key in capacity_projection}),
             "mapping_custody": "FROZEN_EXTERNAL_EFFECT_REQUEST_CONTEXT_CAPACITY_PROJECTION",
+            **({"semantic_contract": capacity_projection["semantic_contract"], "final_composition_hash": canonical_hash(capacity_projection.get("final_composition"))} if capacity_projection.get("semantic_contract") else {}),
             "meaning": "Historical text contains fidelity-checked original extracts. Whole-source identity remains unchanged. Explicit historical_extract passages use original Unicode ranges and hashes of supplied text; other source bounds describe the complete original source. Exact derivation and fidelity receipts remain frozen in host custody. Empty or omitted expression is not evidence of absence."}
     exact_reference_proof = None
     protected_accounting_version = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version")
@@ -4886,7 +4912,7 @@ def _materialize_production_codex_prompt(
         from .provider_views import compile_exact_context_references
         structured_transport = (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
             stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
-            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6"}))
+            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}))
         short_literals = (context_content.get("planning_method_scope_projection_version") == "book-method-scope-projection.v1"
             or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
             or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1"

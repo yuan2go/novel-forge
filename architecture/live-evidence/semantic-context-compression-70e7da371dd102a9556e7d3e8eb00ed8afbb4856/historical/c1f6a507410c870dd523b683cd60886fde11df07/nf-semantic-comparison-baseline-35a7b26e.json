@@ -1,0 +1,3037 @@
+{
+  "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+  "evidence_class": "PRODUCTION_FUNCTION_CONTROLLED_SELECTION_WITH_FIXED_ORIGINAL_GOLD_AND_SYNTHETIC_CAPACITY_LOAD",
+  "semantic_comprehension": "NOT_VERIFIED",
+  "gold_sha256": "76e54664a68db8076685b3590e354c950bc3b350499a9a091c654a28fa3b4fde",
+  "input_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+  "task_without_algorithm_hash": "sha256:34c09124b0c1384e5b528c7d60d5b759b49f140d1feeccf5b2259a41bca49093",
+  "capacity_unit": "CONTROLLED_SERIALIZED_UTF8_BYTES_NOT_REAL_MODEL_TOKENS",
+  "limit": 11000,
+  "before_bytes": 25925,
+  "after_bytes": 7890,
+  "model_calls": 12,
+  "call_stages": [
+    "context_compress",
+    "context_fidelity",
+    "context_compress",
+    "context_fidelity",
+    "context_compress",
+    "context_fidelity",
+    "context_compress",
+    "context_fidelity",
+    "context_compress",
+    "context_fidelity",
+    "context_compress",
+    "context_fidelity"
+  ],
+  "questions": [
+    {
+      "question": "初九晚谁持有铜钥匙？",
+      "answer": "阿岚，林砚当晚没有副本。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        0
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 0,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "蓝灯亮且潮尺正好二尺时能开闸吗？",
+      "answer": "不能；必须严格低于二尺，且蓝灯已亮。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        1,
+        2
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 1,
+          "present": true
+        },
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 2,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "三声短钟有什么影响？",
+      "answer": "立即撤销全部开闸许可。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        2
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 2,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "一尺八寸时阿岚为何没开闸？",
+      "answer": "她未见蓝灯，两个必要条件并未同时满足。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        1,
+        2,
+        3
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 1,
+          "present": true
+        },
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 2,
+          "present": true
+        },
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 3,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "阿岚知道守闸人已离城吗？",
+      "answer": "她只是听茶棚老板这样说，没有核实；该命题尚非她的确定知识。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        4
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 4,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "林砚是否收到离城传闻？",
+      "answer": "初九他不在茶棚，初十阿岚仍未转告，材料不支持他知道该传闻。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        4,
+        8
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 4,
+          "present": true
+        },
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 8,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "谁知道守闸人藏在夹层？",
+      "answer": "读者获知；阿岚与林砚都不知道。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        5
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 5,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "复查蓝灯已经发生了吗？",
+      "answer": "初九只是计划明日复查，尚未发生。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        6
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 6,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "工作稿未接纳意味着阿岚从未拿钥匙吗？",
+      "answer": "不意味着；所选工作版本中她已接过并在初十归还，正式接纳状态与该版本中的经历不同。",
+      "source": "selected-working:harbor:7",
+      "paragraphs": [
+        0,
+        3,
+        8
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 0,
+          "present": true
+        },
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 3,
+          "present": true
+        },
+        {
+          "source": "selected-working:harbor:7",
+          "paragraph": 8,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "甲亲自确认了所有盐袋重量吗？",
+      "answer": "只称第一袋，其余两袋四十斤是转述；破封须复称。",
+      "source": "witness:ledger:a",
+      "paragraphs": [
+        0,
+        1
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "witness:ledger:a",
+          "paragraph": 0,
+          "present": true
+        },
+        {
+          "source": "witness:ledger:a",
+          "paragraph": 1,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "初八入库到底两袋还是三袋？",
+      "answer": "甲称三袋四十斤、乙称两袋三十斤，尚未核对，应保留矛盾和各自归属。",
+      "sources": [
+        {
+          "source": "witness:ledger:a",
+          "paragraphs": [
+            0
+          ]
+        },
+        {
+          "source": "witness:ledger:b",
+          "paragraphs": [
+            0
+          ]
+        }
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "witness:ledger:a",
+          "paragraph": 0,
+          "present": true
+        },
+        {
+          "source": "witness:ledger:b",
+          "paragraph": 0,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "罗清知道门后的人并非沈遥吗？",
+      "answer": "不知道；他只收到前两行，第三行仅读者可见。",
+      "source": "selected-working:unicode:3",
+      "paragraphs": [
+        0,
+        1,
+        2
+      ],
+      "exact_original_support_complete": false,
+      "support": [
+        {
+          "source": "selected-working:unicode:3",
+          "paragraph": 0,
+          "present": false
+        },
+        {
+          "source": "selected-working:unicode:3",
+          "paragraph": 1,
+          "present": true
+        },
+        {
+          "source": "selected-working:unicode:3",
+          "paragraph": 2,
+          "present": true
+        }
+      ]
+    },
+    {
+      "question": "不要开门是永久禁令吗？",
+      "answer": "不是，只约束潮声停止的时段。",
+      "source": "selected-working:unicode:3",
+      "paragraphs": [
+        1,
+        3
+      ],
+      "exact_original_support_complete": true,
+      "support": [
+        {
+          "source": "selected-working:unicode:3",
+          "paragraph": 1,
+          "present": true
+        },
+        {
+          "source": "selected-working:unicode:3",
+          "paragraph": 3,
+          "present": true
+        }
+      ]
+    }
+  ],
+  "explicit_quotes": [
+    {
+      "quote": "林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。",
+      "present_in_one_original_source": true
+    },
+    {
+      "quote": "🜁门不认姓名，只认潮声。\n\n若潮声停了，切勿推门。",
+      "present_in_one_original_source": false
+    }
+  ],
+  "receipt": {
+    "policy_version": "task-scoped-context.v1",
+    "task_hash": "sha256:34c09124b0c1384e5b528c7d60d5b759b49f140d1feeccf5b2259a41bca49093",
+    "frozen_input_boundary": {
+      "kind": "FROZEN_STAGE_INPUTS",
+      "project_id": "p",
+      "book_id": "b",
+      "sources": [
+        {
+          "asset_version_id": "frozen-context",
+          "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+        }
+      ]
+    },
+    "source_bindings": [
+      {
+        "asset_version_id": "selected-working:harbor:7",
+        "source_revision": "sha256:fb2876455bc1b3228ea6a6e79b4c844dc7dc3568b2c2bcd9d35145a82652abf1",
+        "content_hash": "sha256:fb2876455bc1b3228ea6a6e79b4c844dc7dc3568b2c2bcd9d35145a82652abf1"
+      },
+      {
+        "asset_version_id": "witness:ledger:a",
+        "source_revision": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a",
+        "content_hash": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a"
+      },
+      {
+        "asset_version_id": "witness:ledger:b",
+        "source_revision": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9",
+        "content_hash": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9"
+      },
+      {
+        "asset_version_id": "selected-working:unicode:3",
+        "source_revision": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94",
+        "content_hash": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94"
+      }
+    ],
+    "system_context_window_tokens": 512000,
+    "task_target_tokens": 11000,
+    "token_accounting": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+    "capacity_admission": "MATERIAL_TARGET",
+    "candidate_accounting": [
+      {
+        "asset_version_id": "selected-working:harbor:7",
+        "representation": "ROUTE_METER_PROJECTION",
+        "provider_data_token_estimate": 7047,
+        "storage_payload_bytes": 7047
+      },
+      {
+        "asset_version_id": "selected-working:unicode:3",
+        "representation": "ROUTE_METER_PROJECTION",
+        "provider_data_token_estimate": 6374,
+        "storage_payload_bytes": 6374
+      },
+      {
+        "asset_version_id": "witness:ledger:a",
+        "representation": "ROUTE_METER_PROJECTION",
+        "provider_data_token_estimate": 6296,
+        "storage_payload_bytes": 6296
+      },
+      {
+        "asset_version_id": "witness:ledger:b",
+        "representation": "ROUTE_METER_PROJECTION",
+        "provider_data_token_estimate": 6208,
+        "storage_payload_bytes": 6208
+      }
+    ],
+    "before_estimated_tokens": 25925,
+    "after_estimated_tokens": 7890,
+    "protected_estimated_tokens": 0,
+    "dependency_coverage": {
+      "required_refs": [],
+      "available_refs": [],
+      "verified_foundation_refs": [],
+      "coverage": "COMPLETE"
+    },
+    "deduplications": [],
+    "excluded_asset_version_ids": [],
+    "compression_trace": [
+      {
+        "source_asset_version_id": "witness:ledger:b",
+        "source_content_hash": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9",
+        "source_revision": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9",
+        "source_binding": {
+          "asset_version_id": "witness:ledger:b",
+          "content_hash": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9",
+          "source_revision": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9"
+        },
+        "source_binding_role": "FROZEN_PROVIDER_CONTEXT_CUSTODY",
+        "original_expression_path": null,
+        "task_hash": "sha256:34c09124b0c1384e5b528c7d60d5b759b49f140d1feeccf5b2259a41bca49093",
+        "frozen_input_boundary": {
+          "kind": "FROZEN_STAGE_INPUTS",
+          "project_id": "p",
+          "book_id": "b",
+          "sources": [
+            {
+              "asset_version_id": "frozen-context",
+              "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+            }
+          ]
+        },
+        "policy_version": "task-scoped-context.v1",
+        "method": "host-bound-extractive-semantic.v2",
+        "selected_unit_ids": [
+          "text:0"
+        ],
+        "source_units": [
+          {
+            "unit_id": "text:0",
+            "source_path": [
+              "safe_summary"
+            ],
+            "index": 0,
+            "unit_hash": "sha256:c7d8a77fe7df5d15dfa75b323dcfb47827519ad2cc65709671164d6101ef7f7b",
+            "kind": "SOURCE_PARAGRAPH"
+          }
+        ],
+        "restored_unit_ids": [],
+        "result_content_hash": "sha256:32f80e46650f3fe7e6dfbe8fa91661bec451234191f00162ac814c3aa61d5936",
+        "forward_check": "EXACT_HOST_SOURCE_UNITS",
+        "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE",
+        "model_execution_evidence": [
+          {},
+          {},
+          {},
+          {}
+        ],
+        "routing_assessments": [
+          {
+            "task": {
+              "contract_version": "task-context-compression.v2",
+              "policy_version": "task-scoped-context.v1",
+              "frozen_input_boundary": {
+                "kind": "FROZEN_STAGE_INPUTS",
+                "project_id": "p",
+                "book_id": "b",
+                "sources": [
+                  {
+                    "asset_version_id": "frozen-context",
+                    "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                  }
+                ]
+              },
+              "task_fingerprint": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+              "task": {
+                "stage": "draft",
+                "frozen_input_boundary": {
+                  "kind": "FROZEN_STAGE_INPUTS",
+                  "project_id": "p",
+                  "book_id": "b",
+                  "sources": [
+                    {
+                      "asset_version_id": "frozen-context",
+                      "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                    }
+                  ]
+                },
+                "source_projection_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+                "preserve_quotes": [
+                  "林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。",
+                  "🜁门不认姓名，只认潮声。\n\n若潮声停了，切勿推门。",
+                  "初九傍晚，林砚把铜钥匙交给渡口的阿岚。阿岚亲手接过，放进左边衣袋；林砚没有留副本。",
+                  "阿岚看见潮尺是一尺八寸，却未见蓝灯，因此没有开闸。她已经拿过钥匙，并非等待正式入档才算拿到。",
+                  "茶棚老板说，守闸人今晨离城了。阿岚只听到了这番话，没有核实；林砚当时不在茶棚。",
+                  "读者此时看到守闸人藏在闸室夹层里。阿岚与林砚都不知道这件事。",
+                  "阿岚计划明日再查一次蓝灯。这是未来打算，初九并没有发生这次复查。",
+                  "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。",
+                  "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。",
+                  "手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+                  "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+                  "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。",
+                  "第三行是：门后的人并非沈遥。只有读者读到了它。",
+                  "她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。"
+                ],
+                "task_context": {
+                  "questions": [
+                    "初九晚谁持有铜钥匙？",
+                    "蓝灯亮且潮尺正好二尺时能开闸吗？",
+                    "三声短钟有什么影响？",
+                    "一尺八寸时阿岚为何没开闸？",
+                    "阿岚知道守闸人已离城吗？",
+                    "林砚是否收到离城传闻？",
+                    "谁知道守闸人藏在夹层？",
+                    "复查蓝灯已经发生了吗？",
+                    "工作稿未接纳意味着阿岚从未拿钥匙吗？",
+                    "甲亲自确认了所有盐袋重量吗？",
+                    "初八入库到底两袋还是三袋？",
+                    "罗清知道门后的人并非沈遥吗？",
+                    "不要开门是永久禁令吗？"
+                  ]
+                }
+              },
+              "units": [
+                {
+                  "unit_id": "text:0",
+                  "text": "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": true
+                },
+                {
+                  "unit_id": "text:1",
+                  "text": "背景杂事第0项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:2",
+                  "text": "背景杂事第1项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:3",
+                  "text": "背景杂事第2项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:4",
+                  "text": "背景杂事第3项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:5",
+                  "text": "背景杂事第4项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:6",
+                  "text": "背景杂事第5项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:7",
+                  "text": "背景杂事第6项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:8",
+                  "text": "背景杂事第7项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:9",
+                  "text": "背景杂事第8项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:10",
+                  "text": "背景杂事第9项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:11",
+                  "text": "背景杂事第10项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:12",
+                  "text": "背景杂事第11项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:13",
+                  "text": "背景杂事第12项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:14",
+                  "text": "背景杂事第13项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:15",
+                  "text": "背景杂事第14项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:16",
+                  "text": "背景杂事第15项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:17",
+                  "text": "背景杂事第16项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:18",
+                  "text": "背景杂事第17项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:19",
+                  "text": "背景杂事第18项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:20",
+                  "text": "背景杂事第19项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:21",
+                  "text": "背景杂事第20项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:22",
+                  "text": "背景杂事第21项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:23",
+                  "text": "背景杂事第22项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:24",
+                  "text": "背景杂事第23项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:25",
+                  "text": "背景杂事第24项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:26",
+                  "text": "背景杂事第25项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:27",
+                  "text": "背景杂事第26项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:28",
+                  "text": "背景杂事第27项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:29",
+                  "text": "背景杂事第28项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:30",
+                  "text": "背景杂事第29项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:31",
+                  "text": "背景杂事第30项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:32",
+                  "text": "背景杂事第31项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:33",
+                  "text": "背景杂事第32项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:34",
+                  "text": "背景杂事第33项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:35",
+                  "text": "背景杂事第34项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:36",
+                  "text": "背景杂事第35项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:37",
+                  "text": "背景杂事第36项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:38",
+                  "text": "背景杂事第37项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:39",
+                  "text": "背景杂事第38项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:40",
+                  "text": "背景杂事第39项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:41",
+                  "text": "背景杂事第40项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:42",
+                  "text": "背景杂事第41项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:43",
+                  "text": "背景杂事第42项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:44",
+                  "text": "背景杂事第43项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:45",
+                  "text": "背景杂事第44项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:46",
+                  "text": "背景杂事第45项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:47",
+                  "text": "背景杂事第46项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:48",
+                  "text": "背景杂事第47项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:49",
+                  "text": "背景杂事第48项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:50",
+                  "text": "背景杂事第49项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:51",
+                  "text": "背景杂事第50项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:52",
+                  "text": "背景杂事第51项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:53",
+                  "text": "背景杂事第52项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:54",
+                  "text": "背景杂事第53项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:55",
+                  "text": "背景杂事第54项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:56",
+                  "text": "背景杂事第55项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:57",
+                  "text": "背景杂事第56项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:58",
+                  "text": "背景杂事第57项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:59",
+                  "text": "背景杂事第58项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:60",
+                  "text": "背景杂事第59项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:61",
+                  "text": "背景杂事第60项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:62",
+                  "text": "背景杂事第61项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:63",
+                  "text": "背景杂事第62项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:64",
+                  "text": "背景杂事第63项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:65",
+                  "text": "背景杂事第64项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:66",
+                  "text": "背景杂事第65项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:67",
+                  "text": "背景杂事第66项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:68",
+                  "text": "背景杂事第67项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:69",
+                  "text": "背景杂事第68项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:70",
+                  "text": "背景杂事第69项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:71",
+                  "text": "背景杂事第70项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:72",
+                  "text": "背景杂事第71项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:73",
+                  "text": "背景杂事第72项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:74",
+                  "text": "背景杂事第73项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:75",
+                  "text": "背景杂事第74项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:76",
+                  "text": "背景杂事第75项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:77",
+                  "text": "背景杂事第76项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:78",
+                  "text": "背景杂事第77项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:79",
+                  "text": "背景杂事第78项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:80",
+                  "text": "背景杂事第79项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:81",
+                  "text": "背景杂事第80项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:82",
+                  "text": "背景杂事第81项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:83",
+                  "text": "背景杂事第82项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:84",
+                  "text": "背景杂事第83项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:85",
+                  "text": "背景杂事第84项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:86",
+                  "text": "背景杂事第85项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:87",
+                  "text": "背景杂事第86项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:88",
+                  "text": "背景杂事第87项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:89",
+                  "text": "背景杂事第88项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:90",
+                  "text": "背景杂事第89项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:91",
+                  "text": "背景杂事第90项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:92",
+                  "text": "背景杂事第91项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:93",
+                  "text": "背景杂事第92项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                }
+              ],
+              "required_unit_ids": [
+                "text:0"
+              ],
+              "target_tokens": 2405,
+              "candidate_target_tokens": 2634,
+              "selection_policy": "source-attribution-and-shared-group-budget.v2",
+              "source_binding": {
+                "asset_version_id": "witness:ledger:b",
+                "content_hash": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9",
+                "source_revision": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9"
+              },
+              "chunk_index": 0
+            },
+            "selected_unit_ids": [
+              "text:0"
+            ],
+            "fidelity_selected_unit_ids": [
+              "text:0"
+            ],
+            "fidelity": {
+              "supported": true,
+              "coverage_complete": true,
+              "missing_unit_ids": [],
+              "distorted_unit_ids": []
+            },
+            "compressor_evidence": {},
+            "fidelity_evidence": {},
+            "extract_accepted": true
+          },
+          {
+            "task": {
+              "contract_version": "task-context-compression.v2",
+              "policy_version": "task-scoped-context.v1",
+              "frozen_input_boundary": {
+                "kind": "FROZEN_STAGE_INPUTS",
+                "project_id": "p",
+                "book_id": "b",
+                "sources": [
+                  {
+                    "asset_version_id": "frozen-context",
+                    "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                  }
+                ]
+              },
+              "task_fingerprint": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+              "task": {
+                "stage": "draft",
+                "frozen_input_boundary": {
+                  "kind": "FROZEN_STAGE_INPUTS",
+                  "project_id": "p",
+                  "book_id": "b",
+                  "sources": [
+                    {
+                      "asset_version_id": "frozen-context",
+                      "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                    }
+                  ]
+                },
+                "source_projection_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+                "preserve_quotes": [
+                  "林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。",
+                  "🜁门不认姓名，只认潮声。\n\n若潮声停了，切勿推门。",
+                  "初九傍晚，林砚把铜钥匙交给渡口的阿岚。阿岚亲手接过，放进左边衣袋；林砚没有留副本。",
+                  "阿岚看见潮尺是一尺八寸，却未见蓝灯，因此没有开闸。她已经拿过钥匙，并非等待正式入档才算拿到。",
+                  "茶棚老板说，守闸人今晨离城了。阿岚只听到了这番话，没有核实；林砚当时不在茶棚。",
+                  "读者此时看到守闸人藏在闸室夹层里。阿岚与林砚都不知道这件事。",
+                  "阿岚计划明日再查一次蓝灯。这是未来打算，初九并没有发生这次复查。",
+                  "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。",
+                  "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。",
+                  "手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+                  "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+                  "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。",
+                  "第三行是：门后的人并非沈遥。只有读者读到了它。",
+                  "她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。"
+                ],
+                "task_context": {
+                  "questions": [
+                    "初九晚谁持有铜钥匙？",
+                    "蓝灯亮且潮尺正好二尺时能开闸吗？",
+                    "三声短钟有什么影响？",
+                    "一尺八寸时阿岚为何没开闸？",
+                    "阿岚知道守闸人已离城吗？",
+                    "林砚是否收到离城传闻？",
+                    "谁知道守闸人藏在夹层？",
+                    "复查蓝灯已经发生了吗？",
+                    "工作稿未接纳意味着阿岚从未拿钥匙吗？",
+                    "甲亲自确认了所有盐袋重量吗？",
+                    "初八入库到底两袋还是三袋？",
+                    "罗清知道门后的人并非沈遥吗？",
+                    "不要开门是永久禁令吗？"
+                  ]
+                }
+              },
+              "units": [
+                {
+                  "unit_id": "text:94",
+                  "text": "背景杂事第93项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:95",
+                  "text": "背景杂事第94项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:96",
+                  "text": "背景杂事第95项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:97",
+                  "text": "背景杂事第96项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:98",
+                  "text": "背景杂事第97项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:99",
+                  "text": "背景杂事第98项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:100",
+                  "text": "背景杂事第99项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:92",
+                  "text": "背景杂事第91项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:93",
+                  "text": "背景杂事第92项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                }
+              ],
+              "required_unit_ids": [],
+              "target_tokens": 228,
+              "candidate_target_tokens": 2634,
+              "selection_policy": "source-attribution-and-shared-group-budget.v2",
+              "source_binding": {
+                "asset_version_id": "witness:ledger:b",
+                "content_hash": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9",
+                "source_revision": "sha256:7b4e95fc1071714470b851663bb2bb21cb79aecf48f0e5aa505316c2160127f9"
+              },
+              "chunk_index": 1
+            },
+            "selected_unit_ids": [],
+            "fidelity_selected_unit_ids": [],
+            "fidelity": {
+              "supported": true,
+              "coverage_complete": true,
+              "missing_unit_ids": [],
+              "distorted_unit_ids": []
+            },
+            "compressor_evidence": {},
+            "fidelity_evidence": {},
+            "extract_accepted": true
+          }
+        ]
+      },
+      {
+        "source_asset_version_id": "selected-working:unicode:3",
+        "source_content_hash": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94",
+        "source_revision": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94",
+        "source_binding": {
+          "asset_version_id": "selected-working:unicode:3",
+          "content_hash": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94",
+          "source_revision": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94"
+        },
+        "source_binding_role": "FROZEN_PROVIDER_CONTEXT_CUSTODY",
+        "original_expression_path": null,
+        "task_hash": "sha256:34c09124b0c1384e5b528c7d60d5b759b49f140d1feeccf5b2259a41bca49093",
+        "frozen_input_boundary": {
+          "kind": "FROZEN_STAGE_INPUTS",
+          "project_id": "p",
+          "book_id": "b",
+          "sources": [
+            {
+              "asset_version_id": "frozen-context",
+              "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+            }
+          ]
+        },
+        "policy_version": "task-scoped-context.v1",
+        "method": "host-bound-extractive-semantic.v2",
+        "selected_unit_ids": [
+          "text:1",
+          "text:2",
+          "text:3"
+        ],
+        "source_units": [
+          {
+            "unit_id": "text:1",
+            "source_path": [
+              "safe_summary"
+            ],
+            "index": 1,
+            "unit_hash": "sha256:1c8ba5c315d55bb975663b99077db2faf0a4d5bf614442458abc8736b8274ccf",
+            "kind": "SOURCE_PARAGRAPH"
+          },
+          {
+            "unit_id": "text:2",
+            "source_path": [
+              "safe_summary"
+            ],
+            "index": 2,
+            "unit_hash": "sha256:fdfe7dd9b674e8a94fa44e6a9e9b20a6cf5ff2c464dc150e85da8d1ecb8c8e3f",
+            "kind": "SOURCE_PARAGRAPH"
+          },
+          {
+            "unit_id": "text:3",
+            "source_path": [
+              "safe_summary"
+            ],
+            "index": 3,
+            "unit_hash": "sha256:c3045e21a1b7b60fc8c5a4bbeb8f883dc4067f956ce6699877bf92d0f7ef08b6",
+            "kind": "SOURCE_PARAGRAPH"
+          }
+        ],
+        "restored_unit_ids": [],
+        "result_content_hash": "sha256:7398b5664aafa5d65dbe9463b1067a473f7efa825d1a2943a0a9b7fd4f01bb40",
+        "forward_check": "EXACT_HOST_SOURCE_UNITS",
+        "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE",
+        "model_execution_evidence": [
+          {},
+          {},
+          {},
+          {}
+        ],
+        "routing_assessments": [
+          {
+            "task": {
+              "contract_version": "task-context-compression.v2",
+              "policy_version": "task-scoped-context.v1",
+              "frozen_input_boundary": {
+                "kind": "FROZEN_STAGE_INPUTS",
+                "project_id": "p",
+                "book_id": "b",
+                "sources": [
+                  {
+                    "asset_version_id": "frozen-context",
+                    "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                  }
+                ]
+              },
+              "task_fingerprint": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+              "task": {
+                "stage": "draft",
+                "frozen_input_boundary": {
+                  "kind": "FROZEN_STAGE_INPUTS",
+                  "project_id": "p",
+                  "book_id": "b",
+                  "sources": [
+                    {
+                      "asset_version_id": "frozen-context",
+                      "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                    }
+                  ]
+                },
+                "source_projection_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+                "preserve_quotes": [
+                  "林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。",
+                  "🜁门不认姓名，只认潮声。\n\n若潮声停了，切勿推门。",
+                  "初九傍晚，林砚把铜钥匙交给渡口的阿岚。阿岚亲手接过，放进左边衣袋；林砚没有留副本。",
+                  "阿岚看见潮尺是一尺八寸，却未见蓝灯，因此没有开闸。她已经拿过钥匙，并非等待正式入档才算拿到。",
+                  "茶棚老板说，守闸人今晨离城了。阿岚只听到了这番话，没有核实；林砚当时不在茶棚。",
+                  "读者此时看到守闸人藏在闸室夹层里。阿岚与林砚都不知道这件事。",
+                  "阿岚计划明日再查一次蓝灯。这是未来打算，初九并没有发生这次复查。",
+                  "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。",
+                  "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。",
+                  "手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+                  "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+                  "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。",
+                  "第三行是：门后的人并非沈遥。只有读者读到了它。",
+                  "她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。"
+                ],
+                "task_context": {
+                  "questions": [
+                    "初九晚谁持有铜钥匙？",
+                    "蓝灯亮且潮尺正好二尺时能开闸吗？",
+                    "三声短钟有什么影响？",
+                    "一尺八寸时阿岚为何没开闸？",
+                    "阿岚知道守闸人已离城吗？",
+                    "林砚是否收到离城传闻？",
+                    "谁知道守闸人藏在夹层？",
+                    "复查蓝灯已经发生了吗？",
+                    "工作稿未接纳意味着阿岚从未拿钥匙吗？",
+                    "甲亲自确认了所有盐袋重量吗？",
+                    "初八入库到底两袋还是三袋？",
+                    "罗清知道门后的人并非沈遥吗？",
+                    "不要开门是永久禁令吗？"
+                  ]
+                }
+              },
+              "units": [
+                {
+                  "unit_id": "text:0",
+                  "text": "沈遥在纸背写下：🜁门不认姓名，只认潮声。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:1",
+                  "text": "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": true
+                },
+                {
+                  "unit_id": "text:2",
+                  "text": "第三行是：门后的人并非沈遥。只有读者读到了它。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": true
+                },
+                {
+                  "unit_id": "text:3",
+                  "text": "她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": true
+                },
+                {
+                  "unit_id": "text:4",
+                  "text": "背景杂事第0项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:5",
+                  "text": "背景杂事第1项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:6",
+                  "text": "背景杂事第2项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:7",
+                  "text": "背景杂事第3项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:8",
+                  "text": "背景杂事第4项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:9",
+                  "text": "背景杂事第5项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:10",
+                  "text": "背景杂事第6项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:11",
+                  "text": "背景杂事第7项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:12",
+                  "text": "背景杂事第8项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:13",
+                  "text": "背景杂事第9项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:14",
+                  "text": "背景杂事第10项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:15",
+                  "text": "背景杂事第11项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:16",
+                  "text": "背景杂事第12项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:17",
+                  "text": "背景杂事第13项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:18",
+                  "text": "背景杂事第14项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:19",
+                  "text": "背景杂事第15项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:20",
+                  "text": "背景杂事第16项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:21",
+                  "text": "背景杂事第17项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:22",
+                  "text": "背景杂事第18项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:23",
+                  "text": "背景杂事第19项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:24",
+                  "text": "背景杂事第20项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:25",
+                  "text": "背景杂事第21项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:26",
+                  "text": "背景杂事第22项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:27",
+                  "text": "背景杂事第23项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:28",
+                  "text": "背景杂事第24项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:29",
+                  "text": "背景杂事第25项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:30",
+                  "text": "背景杂事第26项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:31",
+                  "text": "背景杂事第27项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:32",
+                  "text": "背景杂事第28项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:33",
+                  "text": "背景杂事第29项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:34",
+                  "text": "背景杂事第30项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:35",
+                  "text": "背景杂事第31项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:36",
+                  "text": "背景杂事第32项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:37",
+                  "text": "背景杂事第33项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:38",
+                  "text": "背景杂事第34项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:39",
+                  "text": "背景杂事第35项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:40",
+                  "text": "背景杂事第36项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:41",
+                  "text": "背景杂事第37项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:42",
+                  "text": "背景杂事第38项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:43",
+                  "text": "背景杂事第39项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:44",
+                  "text": "背景杂事第40项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:45",
+                  "text": "背景杂事第41项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:46",
+                  "text": "背景杂事第42项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:47",
+                  "text": "背景杂事第43项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:48",
+                  "text": "背景杂事第44项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:49",
+                  "text": "背景杂事第45项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:50",
+                  "text": "背景杂事第46项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:51",
+                  "text": "背景杂事第47项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:52",
+                  "text": "背景杂事第48项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:53",
+                  "text": "背景杂事第49项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:54",
+                  "text": "背景杂事第50项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:55",
+                  "text": "背景杂事第51项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:56",
+                  "text": "背景杂事第52项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:57",
+                  "text": "背景杂事第53项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:58",
+                  "text": "背景杂事第54项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:59",
+                  "text": "背景杂事第55项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:60",
+                  "text": "背景杂事第56项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:61",
+                  "text": "背景杂事第57项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:62",
+                  "text": "背景杂事第58项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:63",
+                  "text": "背景杂事第59项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:64",
+                  "text": "背景杂事第60项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:65",
+                  "text": "背景杂事第61项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:66",
+                  "text": "背景杂事第62项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:67",
+                  "text": "背景杂事第63项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:68",
+                  "text": "背景杂事第64项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:69",
+                  "text": "背景杂事第65项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:70",
+                  "text": "背景杂事第66项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:71",
+                  "text": "背景杂事第67项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:72",
+                  "text": "背景杂事第68项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:73",
+                  "text": "背景杂事第69项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:74",
+                  "text": "背景杂事第70项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:75",
+                  "text": "背景杂事第71项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:76",
+                  "text": "背景杂事第72项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:77",
+                  "text": "背景杂事第73项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:78",
+                  "text": "背景杂事第74项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:79",
+                  "text": "背景杂事第75项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:80",
+                  "text": "背景杂事第76项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:81",
+                  "text": "背景杂事第77项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:82",
+                  "text": "背景杂事第78项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:83",
+                  "text": "背景杂事第79项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:84",
+                  "text": "背景杂事第80项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:85",
+                  "text": "背景杂事第81项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:86",
+                  "text": "背景杂事第82项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:87",
+                  "text": "背景杂事第83项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:88",
+                  "text": "背景杂事第84项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:89",
+                  "text": "背景杂事第85项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:90",
+                  "text": "背景杂事第86项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:91",
+                  "text": "背景杂事第87项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:92",
+                  "text": "背景杂事第88项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:93",
+                  "text": "背景杂事第89项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                }
+              ],
+              "required_unit_ids": [
+                "text:1",
+                "text:2",
+                "text:3"
+              ],
+              "target_tokens": 2398,
+              "candidate_target_tokens": 2704,
+              "selection_policy": "source-attribution-and-shared-group-budget.v2",
+              "source_binding": {
+                "asset_version_id": "selected-working:unicode:3",
+                "content_hash": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94",
+                "source_revision": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94"
+              },
+              "chunk_index": 0
+            },
+            "selected_unit_ids": [
+              "text:1",
+              "text:2",
+              "text:3"
+            ],
+            "fidelity_selected_unit_ids": [
+              "text:1",
+              "text:2",
+              "text:3"
+            ],
+            "fidelity": {
+              "supported": true,
+              "coverage_complete": true,
+              "missing_unit_ids": [],
+              "distorted_unit_ids": []
+            },
+            "compressor_evidence": {},
+            "fidelity_evidence": {},
+            "extract_accepted": true
+          },
+          {
+            "task": {
+              "contract_version": "task-context-compression.v2",
+              "policy_version": "task-scoped-context.v1",
+              "frozen_input_boundary": {
+                "kind": "FROZEN_STAGE_INPUTS",
+                "project_id": "p",
+                "book_id": "b",
+                "sources": [
+                  {
+                    "asset_version_id": "frozen-context",
+                    "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                  }
+                ]
+              },
+              "task_fingerprint": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+              "task": {
+                "stage": "draft",
+                "frozen_input_boundary": {
+                  "kind": "FROZEN_STAGE_INPUTS",
+                  "project_id": "p",
+                  "book_id": "b",
+                  "sources": [
+                    {
+                      "asset_version_id": "frozen-context",
+                      "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                    }
+                  ]
+                },
+                "source_projection_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+                "preserve_quotes": [
+                  "林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。",
+                  "🜁门不认姓名，只认潮声。\n\n若潮声停了，切勿推门。",
+                  "初九傍晚，林砚把铜钥匙交给渡口的阿岚。阿岚亲手接过，放进左边衣袋；林砚没有留副本。",
+                  "阿岚看见潮尺是一尺八寸，却未见蓝灯，因此没有开闸。她已经拿过钥匙，并非等待正式入档才算拿到。",
+                  "茶棚老板说，守闸人今晨离城了。阿岚只听到了这番话，没有核实；林砚当时不在茶棚。",
+                  "读者此时看到守闸人藏在闸室夹层里。阿岚与林砚都不知道这件事。",
+                  "阿岚计划明日再查一次蓝灯。这是未来打算，初九并没有发生这次复查。",
+                  "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。",
+                  "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。",
+                  "手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+                  "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+                  "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。",
+                  "第三行是：门后的人并非沈遥。只有读者读到了它。",
+                  "她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。"
+                ],
+                "task_context": {
+                  "questions": [
+                    "初九晚谁持有铜钥匙？",
+                    "蓝灯亮且潮尺正好二尺时能开闸吗？",
+                    "三声短钟有什么影响？",
+                    "一尺八寸时阿岚为何没开闸？",
+                    "阿岚知道守闸人已离城吗？",
+                    "林砚是否收到离城传闻？",
+                    "谁知道守闸人藏在夹层？",
+                    "复查蓝灯已经发生了吗？",
+                    "工作稿未接纳意味着阿岚从未拿钥匙吗？",
+                    "甲亲自确认了所有盐袋重量吗？",
+                    "初八入库到底两袋还是三袋？",
+                    "罗清知道门后的人并非沈遥吗？",
+                    "不要开门是永久禁令吗？"
+                  ]
+                }
+              },
+              "units": [
+                {
+                  "unit_id": "text:94",
+                  "text": "背景杂事第90项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:95",
+                  "text": "背景杂事第91项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:96",
+                  "text": "背景杂事第92项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:97",
+                  "text": "背景杂事第93项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:98",
+                  "text": "背景杂事第94项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:99",
+                  "text": "背景杂事第95项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:100",
+                  "text": "背景杂事第96项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:101",
+                  "text": "背景杂事第97项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:102",
+                  "text": "背景杂事第98项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:103",
+                  "text": "背景杂事第99项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:92",
+                  "text": "背景杂事第88项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:93",
+                  "text": "背景杂事第89项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                }
+              ],
+              "required_unit_ids": [],
+              "target_tokens": 305,
+              "candidate_target_tokens": 2704,
+              "selection_policy": "source-attribution-and-shared-group-budget.v2",
+              "source_binding": {
+                "asset_version_id": "selected-working:unicode:3",
+                "content_hash": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94",
+                "source_revision": "sha256:8345fdaa70017701b00857342fb5b64d3bfb8f9bea08769b2722d04d1d054f94"
+              },
+              "chunk_index": 1
+            },
+            "selected_unit_ids": [],
+            "fidelity_selected_unit_ids": [],
+            "fidelity": {
+              "supported": true,
+              "coverage_complete": true,
+              "missing_unit_ids": [],
+              "distorted_unit_ids": []
+            },
+            "compressor_evidence": {},
+            "fidelity_evidence": {},
+            "extract_accepted": true
+          }
+        ]
+      },
+      {
+        "source_asset_version_id": "witness:ledger:a",
+        "source_content_hash": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a",
+        "source_revision": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a",
+        "source_binding": {
+          "asset_version_id": "witness:ledger:a",
+          "content_hash": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a",
+          "source_revision": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a"
+        },
+        "source_binding_role": "FROZEN_PROVIDER_CONTEXT_CUSTODY",
+        "original_expression_path": null,
+        "task_hash": "sha256:34c09124b0c1384e5b528c7d60d5b759b49f140d1feeccf5b2259a41bca49093",
+        "frozen_input_boundary": {
+          "kind": "FROZEN_STAGE_INPUTS",
+          "project_id": "p",
+          "book_id": "b",
+          "sources": [
+            {
+              "asset_version_id": "frozen-context",
+              "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+            }
+          ]
+        },
+        "policy_version": "task-scoped-context.v1",
+        "method": "host-bound-extractive-semantic.v2",
+        "selected_unit_ids": [
+          "text:0",
+          "text:1"
+        ],
+        "source_units": [
+          {
+            "unit_id": "text:0",
+            "source_path": [
+              "safe_summary"
+            ],
+            "index": 0,
+            "unit_hash": "sha256:28c1cb28ca0077a82354f6f9824bc8e50506cf411d26d43f5d4353764d10cafe",
+            "kind": "SOURCE_PARAGRAPH"
+          },
+          {
+            "unit_id": "text:1",
+            "source_path": [
+              "safe_summary"
+            ],
+            "index": 1,
+            "unit_hash": "sha256:8a54b6f625723043bc4a7668f4b838485099145452447196bf309e0c135cc2b1",
+            "kind": "SOURCE_PARAGRAPH"
+          }
+        ],
+        "restored_unit_ids": [],
+        "result_content_hash": "sha256:6acbabe97e9353a42635f8cbf9342237cfc0cc9b7b9633d8bc4d35e7c83ba61c",
+        "forward_check": "EXACT_HOST_SOURCE_UNITS",
+        "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE",
+        "model_execution_evidence": [
+          {},
+          {},
+          {},
+          {}
+        ],
+        "routing_assessments": [
+          {
+            "task": {
+              "contract_version": "task-context-compression.v2",
+              "policy_version": "task-scoped-context.v1",
+              "frozen_input_boundary": {
+                "kind": "FROZEN_STAGE_INPUTS",
+                "project_id": "p",
+                "book_id": "b",
+                "sources": [
+                  {
+                    "asset_version_id": "frozen-context",
+                    "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                  }
+                ]
+              },
+              "task_fingerprint": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+              "task": {
+                "stage": "draft",
+                "frozen_input_boundary": {
+                  "kind": "FROZEN_STAGE_INPUTS",
+                  "project_id": "p",
+                  "book_id": "b",
+                  "sources": [
+                    {
+                      "asset_version_id": "frozen-context",
+                      "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                    }
+                  ]
+                },
+                "source_projection_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+                "preserve_quotes": [
+                  "林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。",
+                  "🜁门不认姓名，只认潮声。\n\n若潮声停了，切勿推门。",
+                  "初九傍晚，林砚把铜钥匙交给渡口的阿岚。阿岚亲手接过，放进左边衣袋；林砚没有留副本。",
+                  "阿岚看见潮尺是一尺八寸，却未见蓝灯，因此没有开闸。她已经拿过钥匙，并非等待正式入档才算拿到。",
+                  "茶棚老板说，守闸人今晨离城了。阿岚只听到了这番话，没有核实；林砚当时不在茶棚。",
+                  "读者此时看到守闸人藏在闸室夹层里。阿岚与林砚都不知道这件事。",
+                  "阿岚计划明日再查一次蓝灯。这是未来打算，初九并没有发生这次复查。",
+                  "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。",
+                  "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。",
+                  "手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+                  "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+                  "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。",
+                  "第三行是：门后的人并非沈遥。只有读者读到了它。",
+                  "她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。"
+                ],
+                "task_context": {
+                  "questions": [
+                    "初九晚谁持有铜钥匙？",
+                    "蓝灯亮且潮尺正好二尺时能开闸吗？",
+                    "三声短钟有什么影响？",
+                    "一尺八寸时阿岚为何没开闸？",
+                    "阿岚知道守闸人已离城吗？",
+                    "林砚是否收到离城传闻？",
+                    "谁知道守闸人藏在夹层？",
+                    "复查蓝灯已经发生了吗？",
+                    "工作稿未接纳意味着阿岚从未拿钥匙吗？",
+                    "甲亲自确认了所有盐袋重量吗？",
+                    "初八入库到底两袋还是三袋？",
+                    "罗清知道门后的人并非沈遥吗？",
+                    "不要开门是永久禁令吗？"
+                  ]
+                }
+              },
+              "units": [
+                {
+                  "unit_id": "text:0",
+                  "text": "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": true
+                },
+                {
+                  "unit_id": "text:1",
+                  "text": "手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": true
+                },
+                {
+                  "unit_id": "text:2",
+                  "text": "背景杂事第0项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:3",
+                  "text": "背景杂事第1项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:4",
+                  "text": "背景杂事第2项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:5",
+                  "text": "背景杂事第3项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:6",
+                  "text": "背景杂事第4项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:7",
+                  "text": "背景杂事第5项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:8",
+                  "text": "背景杂事第6项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:9",
+                  "text": "背景杂事第7项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:10",
+                  "text": "背景杂事第8项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:11",
+                  "text": "背景杂事第9项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:12",
+                  "text": "背景杂事第10项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:13",
+                  "text": "背景杂事第11项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:14",
+                  "text": "背景杂事第12项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:15",
+                  "text": "背景杂事第13项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:16",
+                  "text": "背景杂事第14项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:17",
+                  "text": "背景杂事第15项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:18",
+                  "text": "背景杂事第16项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:19",
+                  "text": "背景杂事第17项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:20",
+                  "text": "背景杂事第18项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:21",
+                  "text": "背景杂事第19项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:22",
+                  "text": "背景杂事第20项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:23",
+                  "text": "背景杂事第21项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:24",
+                  "text": "背景杂事第22项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:25",
+                  "text": "背景杂事第23项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:26",
+                  "text": "背景杂事第24项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:27",
+                  "text": "背景杂事第25项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:28",
+                  "text": "背景杂事第26项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:29",
+                  "text": "背景杂事第27项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:30",
+                  "text": "背景杂事第28项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:31",
+                  "text": "背景杂事第29项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:32",
+                  "text": "背景杂事第30项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:33",
+                  "text": "背景杂事第31项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:34",
+                  "text": "背景杂事第32项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:35",
+                  "text": "背景杂事第33项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:36",
+                  "text": "背景杂事第34项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:37",
+                  "text": "背景杂事第35项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:38",
+                  "text": "背景杂事第36项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:39",
+                  "text": "背景杂事第37项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:40",
+                  "text": "背景杂事第38项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:41",
+                  "text": "背景杂事第39项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:42",
+                  "text": "背景杂事第40项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:43",
+                  "text": "背景杂事第41项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:44",
+                  "text": "背景杂事第42项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:45",
+                  "text": "背景杂事第43项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:46",
+                  "text": "背景杂事第44项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:47",
+                  "text": "背景杂事第45项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:48",
+                  "text": "背景杂事第46项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:49",
+                  "text": "背景杂事第47项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:50",
+                  "text": "背景杂事第48项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:51",
+                  "text": "背景杂事第49项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:52",
+                  "text": "背景杂事第50项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:53",
+                  "text": "背景杂事第51项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:54",
+                  "text": "背景杂事第52项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:55",
+                  "text": "背景杂事第53项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:56",
+                  "text": "背景杂事第54项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:57",
+                  "text": "背景杂事第55项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:58",
+                  "text": "背景杂事第56项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:59",
+                  "text": "背景杂事第57项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:60",
+                  "text": "背景杂事第58项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:61",
+                  "text": "背景杂事第59项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:62",
+                  "text": "背景杂事第60项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:63",
+                  "text": "背景杂事第61项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:64",
+                  "text": "背景杂事第62项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:65",
+                  "text": "背景杂事第63项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:66",
+                  "text": "背景杂事第64项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:67",
+                  "text": "背景杂事第65项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:68",
+                  "text": "背景杂事第66项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:69",
+                  "text": "背景杂事第67项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:70",
+                  "text": "背景杂事第68项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:71",
+                  "text": "背景杂事第69项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:72",
+                  "text": "背景杂事第70项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:73",
+                  "text": "背景杂事第71项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:74",
+                  "text": "背景杂事第72项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:75",
+                  "text": "背景杂事第73项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:76",
+                  "text": "背景杂事第74项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:77",
+                  "text": "背景杂事第75项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:78",
+                  "text": "背景杂事第76项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:79",
+                  "text": "背景杂事第77项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:80",
+                  "text": "背景杂事第78项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:81",
+                  "text": "背景杂事第79项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:82",
+                  "text": "背景杂事第80项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:83",
+                  "text": "背景杂事第81项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:84",
+                  "text": "背景杂事第82项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:85",
+                  "text": "背景杂事第83项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:86",
+                  "text": "背景杂事第84项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:87",
+                  "text": "背景杂事第85项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:88",
+                  "text": "背景杂事第86项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:89",
+                  "text": "背景杂事第87项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:90",
+                  "text": "背景杂事第88项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:91",
+                  "text": "背景杂事第89项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:92",
+                  "text": "背景杂事第90项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:93",
+                  "text": "背景杂事第91项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                }
+              ],
+              "required_unit_ids": [
+                "text:0",
+                "text:1"
+              ],
+              "target_tokens": 2416,
+              "candidate_target_tokens": 2671,
+              "selection_policy": "source-attribution-and-shared-group-budget.v2",
+              "source_binding": {
+                "asset_version_id": "witness:ledger:a",
+                "content_hash": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a",
+                "source_revision": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a"
+              },
+              "chunk_index": 0
+            },
+            "selected_unit_ids": [
+              "text:0",
+              "text:1"
+            ],
+            "fidelity_selected_unit_ids": [
+              "text:0",
+              "text:1"
+            ],
+            "fidelity": {
+              "supported": true,
+              "coverage_complete": true,
+              "missing_unit_ids": [],
+              "distorted_unit_ids": []
+            },
+            "compressor_evidence": {},
+            "fidelity_evidence": {},
+            "extract_accepted": true
+          },
+          {
+            "task": {
+              "contract_version": "task-context-compression.v2",
+              "policy_version": "task-scoped-context.v1",
+              "frozen_input_boundary": {
+                "kind": "FROZEN_STAGE_INPUTS",
+                "project_id": "p",
+                "book_id": "b",
+                "sources": [
+                  {
+                    "asset_version_id": "frozen-context",
+                    "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                  }
+                ]
+              },
+              "task_fingerprint": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+              "task": {
+                "stage": "draft",
+                "frozen_input_boundary": {
+                  "kind": "FROZEN_STAGE_INPUTS",
+                  "project_id": "p",
+                  "book_id": "b",
+                  "sources": [
+                    {
+                      "asset_version_id": "frozen-context",
+                      "content_hash": "sha256:63b240cbc3d3b0e88961f6dfbe9e2dee5a2fa9061373c84c8c1d7d599c1e05fc"
+                    }
+                  ]
+                },
+                "source_projection_hash": "sha256:399a319aaeeae8579cedc2f4827db95a8a21ca1df60f2c55673c6d53db5097f3",
+                "preserve_quotes": [
+                  "林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。",
+                  "🜁门不认姓名，只认潮声。\n\n若潮声停了，切勿推门。",
+                  "初九傍晚，林砚把铜钥匙交给渡口的阿岚。阿岚亲手接过，放进左边衣袋；林砚没有留副本。",
+                  "阿岚看见潮尺是一尺八寸，却未见蓝灯，因此没有开闸。她已经拿过钥匙，并非等待正式入档才算拿到。",
+                  "茶棚老板说，守闸人今晨离城了。阿岚只听到了这番话，没有核实；林砚当时不在茶棚。",
+                  "读者此时看到守闸人藏在闸室夹层里。阿岚与林砚都不知道这件事。",
+                  "阿岚计划明日再查一次蓝灯。这是未来打算，初九并没有发生这次复查。",
+                  "初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。",
+                  "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。",
+                  "手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+                  "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+                  "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。",
+                  "第三行是：门后的人并非沈遥。只有读者读到了它。",
+                  "她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。"
+                ],
+                "task_context": {
+                  "questions": [
+                    "初九晚谁持有铜钥匙？",
+                    "蓝灯亮且潮尺正好二尺时能开闸吗？",
+                    "三声短钟有什么影响？",
+                    "一尺八寸时阿岚为何没开闸？",
+                    "阿岚知道守闸人已离城吗？",
+                    "林砚是否收到离城传闻？",
+                    "谁知道守闸人藏在夹层？",
+                    "复查蓝灯已经发生了吗？",
+                    "工作稿未接纳意味着阿岚从未拿钥匙吗？",
+                    "甲亲自确认了所有盐袋重量吗？",
+                    "初八入库到底两袋还是三袋？",
+                    "罗清知道门后的人并非沈遥吗？",
+                    "不要开门是永久禁令吗？"
+                  ]
+                }
+              },
+              "units": [
+                {
+                  "unit_id": "text:94",
+                  "text": "背景杂事第92项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:95",
+                  "text": "背景杂事第93项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:96",
+                  "text": "背景杂事第94项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:97",
+                  "text": "背景杂事第95项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:98",
+                  "text": "背景杂事第96项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:99",
+                  "text": "背景杂事第97项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:100",
+                  "text": "背景杂事第98项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:101",
+                  "text": "背景杂事第99项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:92",
+                  "text": "背景杂事第90项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                },
+                {
+                  "unit_id": "text:93",
+                  "text": "背景杂事第91项，街口没有新的必要消息。",
+                  "kind": "SOURCE_PARAGRAPH",
+                  "required": false
+                }
+              ],
+              "required_unit_ids": [],
+              "target_tokens": 254,
+              "candidate_target_tokens": 2671,
+              "selection_policy": "source-attribution-and-shared-group-budget.v2",
+              "source_binding": {
+                "asset_version_id": "witness:ledger:a",
+                "content_hash": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a",
+                "source_revision": "sha256:ced4b2e0aa674ebf6b61733ee96bc976c08f82edc6dda05b8b2fcaa9e8f0691a"
+              },
+              "chunk_index": 1
+            },
+            "selected_unit_ids": [],
+            "fidelity_selected_unit_ids": [],
+            "fidelity": {
+              "supported": true,
+              "coverage_complete": true,
+              "missing_unit_ids": [],
+              "distorted_unit_ids": []
+            },
+            "compressor_evidence": {},
+            "fidelity_evidence": {},
+            "extract_accepted": true
+          }
+        ]
+      }
+    ],
+    "fast_path": false,
+    "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY",
+    "fact_mutation_allowed": false,
+    "receipt_hash": "sha256:50e1a976c551421786f8065b714baf9c1aed7d100289879d359542d6ecc7cfd3"
+  },
+  "final_sources": {
+    "witness:ledger:b": "搬夫乙说初八只送来两袋盐，每袋三十斤。乙说自己记得很清楚，却没拿出磅单。甲乙的说法尚未核对，不能由记录员择一当作定论。",
+    "selected-working:unicode:3": "若潮声停了，切勿推门。她把这两行一起交给罗清，罗清没有看见纸背的第三行。\n\n第三行是：门后的人并非沈遥。只有读者读到了它。\n\n她说“不要开门”，指的是潮声停止的那段时间，不是永远禁止进入。",
+    "witness:ledger:a": "账房甲在自己的手簿写道：初八入库的是三袋盐，每袋四十斤；他亲自称了第一袋，另外两袋的斤数听搬夫所说。\n\n手簿末尾另注：若封口被雨浸破，须复称；没有复称就不能把四十斤当作交割重量。",
+    "selected-working:harbor:7": "初九傍晚，林砚把铜钥匙交给渡口的阿岚。阿岚亲手接过，放进左边衣袋；林砚没有留副本。\n\n林砚只允许她在潮尺低于二尺、且守闸人已经点亮蓝灯时开闸。\n\n这两个条件缺一不可。即使蓝灯已亮，潮尺等于二尺也不许开。若听见三声短钟，一切许可立即作废。\n\n阿岚看见潮尺是一尺八寸，却未见蓝灯，因此没有开闸。她已经拿过钥匙，并非等待正式入档才算拿到。\n\n茶棚老板说，守闸人今晨离城了。阿岚只听到了这番话，没有核实；林砚当时不在茶棚。\n\n读者此时看到守闸人藏在闸室夹层里。阿岚与林砚都不知道这件事。\n\n阿岚计划明日再查一次蓝灯。这是未来打算，初九并没有发生这次复查。\n\n夜里潮声轻了，棚檐挂着旧芦席。阿岚把未喝完的半碗茶推向窗边。\n\n初十清晨，阿岚把同一把铜钥匙退还林砚。她仍未开闸，也没有把茶棚传闻告诉他。\n\n背景杂事第0项，街口没有新的必要消息。\n\n背景杂事第1项，街口没有新的必要消息。\n\n背景杂事第2项，街口没有新的必要消息。\n\n背景杂事第3项，街口没有新的必要消息。\n\n背景杂事第4项，街口没有新的必要消息。\n\n背景杂事第5项，街口没有新的必要消息。\n\n背景杂事第6项，街口没有新的必要消息。\n\n背景杂事第7项，街口没有新的必要消息。\n\n背景杂事第8项，街口没有新的必要消息。\n\n背景杂事第9项，街口没有新的必要消息。\n\n背景杂事第10项，街口没有新的必要消息。\n\n背景杂事第11项，街口没有新的必要消息。\n\n背景杂事第12项，街口没有新的必要消息。\n\n背景杂事第13项，街口没有新的必要消息。\n\n背景杂事第14项，街口没有新的必要消息。\n\n背景杂事第15项，街口没有新的必要消息。\n\n背景杂事第16项，街口没有新的必要消息。\n\n背景杂事第17项，街口没有新的必要消息。\n\n背景杂事第18项，街口没有新的必要消息。\n\n背景杂事第19项，街口没有新的必要消息。\n\n背景杂事第20项，街口没有新的必要消息。\n\n背景杂事第21项，街口没有新的必要消息。\n\n背景杂事第22项，街口没有新的必要消息。\n\n背景杂事第23项，街口没有新的必要消息。\n\n背景杂事第24项，街口没有新的必要消息。\n\n背景杂事第25项，街口没有新的必要消息。\n\n背景杂事第26项，街口没有新的必要消息。\n\n背景杂事第27项，街口没有新的必要消息。\n\n背景杂事第28项，街口没有新的必要消息。\n\n背景杂事第29项，街口没有新的必要消息。\n\n背景杂事第30项，街口没有新的必要消息。\n\n背景杂事第31项，街口没有新的必要消息。\n\n背景杂事第32项，街口没有新的必要消息。\n\n背景杂事第33项，街口没有新的必要消息。\n\n背景杂事第34项，街口没有新的必要消息。\n\n背景杂事第35项，街口没有新的必要消息。\n\n背景杂事第36项，街口没有新的必要消息。\n\n背景杂事第37项，街口没有新的必要消息。\n\n背景杂事第38项，街口没有新的必要消息。\n\n背景杂事第39项，街口没有新的必要消息。\n\n背景杂事第40项，街口没有新的必要消息。\n\n背景杂事第41项，街口没有新的必要消息。\n\n背景杂事第42项，街口没有新的必要消息。\n\n背景杂事第43项，街口没有新的必要消息。\n\n背景杂事第44项，街口没有新的必要消息。\n\n背景杂事第45项，街口没有新的必要消息。\n\n背景杂事第46项，街口没有新的必要消息。\n\n背景杂事第47项，街口没有新的必要消息。\n\n背景杂事第48项，街口没有新的必要消息。\n\n背景杂事第49项，街口没有新的必要消息。\n\n背景杂事第50项，街口没有新的必要消息。\n\n背景杂事第51项，街口没有新的必要消息。\n\n背景杂事第52项，街口没有新的必要消息。\n\n背景杂事第53项，街口没有新的必要消息。\n\n背景杂事第54项，街口没有新的必要消息。\n\n背景杂事第55项，街口没有新的必要消息。\n\n背景杂事第56项，街口没有新的必要消息。\n\n背景杂事第57项，街口没有新的必要消息。\n\n背景杂事第58项，街口没有新的必要消息。\n\n背景杂事第59项，街口没有新的必要消息。\n\n背景杂事第60项，街口没有新的必要消息。\n\n背景杂事第61项，街口没有新的必要消息。\n\n背景杂事第62项，街口没有新的必要消息。\n\n背景杂事第63项，街口没有新的必要消息。\n\n背景杂事第64项，街口没有新的必要消息。\n\n背景杂事第65项，街口没有新的必要消息。\n\n背景杂事第66项，街口没有新的必要消息。\n\n背景杂事第67项，街口没有新的必要消息。\n\n背景杂事第68项，街口没有新的必要消息。\n\n背景杂事第69项，街口没有新的必要消息。\n\n背景杂事第70项，街口没有新的必要消息。\n\n背景杂事第71项，街口没有新的必要消息。\n\n背景杂事第72项，街口没有新的必要消息。\n\n背景杂事第73项，街口没有新的必要消息。\n\n背景杂事第74项，街口没有新的必要消息。\n\n背景杂事第75项，街口没有新的必要消息。\n\n背景杂事第76项，街口没有新的必要消息。\n\n背景杂事第77项，街口没有新的必要消息。\n\n背景杂事第78项，街口没有新的必要消息。\n\n背景杂事第79项，街口没有新的必要消息。\n\n背景杂事第80项，街口没有新的必要消息。\n\n背景杂事第81项，街口没有新的必要消息。\n\n背景杂事第82项，街口没有新的必要消息。\n\n背景杂事第83项，街口没有新的必要消息。\n\n背景杂事第84项，街口没有新的必要消息。\n\n背景杂事第85项，街口没有新的必要消息。\n\n背景杂事第86项，街口没有新的必要消息。\n\n背景杂事第87项，街口没有新的必要消息。\n\n背景杂事第88项，街口没有新的必要消息。\n\n背景杂事第89项，街口没有新的必要消息。\n\n背景杂事第90项，街口没有新的必要消息。\n\n背景杂事第91项，街口没有新的必要消息。\n\n背景杂事第92项，街口没有新的必要消息。\n\n背景杂事第93项，街口没有新的必要消息。\n\n背景杂事第94项，街口没有新的必要消息。\n\n背景杂事第95项，街口没有新的必要消息。\n\n背景杂事第96项，街口没有新的必要消息。\n\n背景杂事第97项，街口没有新的必要消息。\n\n背景杂事第98项，街口没有新的必要消息。\n\n背景杂事第99项，街口没有新的必要消息。"
+  }
+}

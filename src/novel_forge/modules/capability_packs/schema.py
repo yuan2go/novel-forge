@@ -342,6 +342,7 @@ class ContextSources:
     planning_task_token_budget: Any = None
     capacity_policy: str = ""
     context_substage_method: str = ""
+    capacity_history_exact_chapters: Any = None
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "ContextSources":
@@ -358,6 +359,7 @@ class ContextSources:
             payload.get("planning_task_token_budget"),
             str(payload.get("capacity_policy") or ""),
             str(payload.get("context_substage_method") or ""),
+            payload.get("capacity_history_exact_chapters"),
         )
 
 

@@ -1,0 +1,16 @@
+{
+  "capacity_continuation": "Approve/deploy/activate the compatible same-Book Pack through existing Pack Authority, then novel-forge authority-creation continue --project-id PROJECT --formation-run-id RUN --repository-root ACTUAL_CHECKOUT --foreground",
+  "original_history_read": "novel-forge authority-manuscript read --project-id PROJECT --book-run-id BOOK_RUN --candidate-version ORIGINAL_VERSION",
+  "original_history_export": "novel-forge authority-manuscript export --project-id PROJECT --book-run-id BOOK_RUN --candidate-version ORIGINAL_VERSION --output NEW_PATH",
+  "writer_index_dry_run": "NOVEL_FORGE_DATABASE_URL=OWNED_DB PYTHONPATH=src .venv/bin/python scripts/rebuild_writer_retrieval.py --project-id PROJECT --book-id BOOK --from-chapter FIRST --to-chapter LAST --limit 100 --after-id CURSOR --manifest NEW_MANIFEST.json",
+  "writer_index_apply": "Same environment; scripts/rebuild_writer_retrieval.py --manifest FROZEN_MANIFEST.json --apply",
+  "writer_index_rollback": "Same environment; scripts/rebuild_writer_retrieval.py --manifest FROZEN_MANIFEST.json --apply --rollback",
+  "writer_index_resume": "Use next after-id from the bounded dry-run result with a new manifest. Source version/hash, plan hash and compare-and-swap guards must match; no Provider call or original manuscript rewrite.",
+  "diagnostics": [
+    "Original Operation/Attempt, immutable source AssetVersions and frozen Capability Pack snapshot",
+    "Per-chunk ExternalEffect intent/hash, trusted receipt, reservation settlement and capacity source bindings",
+    "Main Effect _context_capacity_projection.final_composition, actual admission prompt hash, saved manuscript source version",
+    "Uncarried ranges remain retrievable from original source; omission does not mean an event never happened"
+  ],
+  "unknown": "Reconcile the original Effect before continuation; no new ID blind retry and no zero-send claim from merely unsent Writer."
+}

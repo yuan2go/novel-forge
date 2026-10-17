@@ -42,7 +42,7 @@ def project_skill_method(text: str, *, ref: str, version: str, stage: str, targe
     calibrated = calibrated or (ref == "prose-generation" and version == "prose-generation-v5")
     if not calibrated:
         return text
-    if stage in {"context_compress", "context_fidelity"} and ref != "context-builder-source-isolation" and context_substage_method == "shared-rules-and-native-context-contract.v1":
+    if stage in {"context_compress", "context_fidelity"} and ref != "context-builder-source-isolation" and context_substage_method in {"shared-rules-and-native-context-contract.v1", "source-unit-dependency-and-final-composition.v2"}:
         return project_sections(text, "Shared rules")
     method = "Quality dimension" if ref == "quality-review" and stage.startswith("quality_") else _METHODS[ref].get(stage)
     if ref == "prose-generation" and stage == "revision" and targeted:
@@ -53,7 +53,7 @@ def project_skill_method(text: str, *, ref: str, version: str, stage: str, targe
 
 
 def project_planning_system(text: str, *, stage: str, narrative_intent_boundary: bool = False, context_substage_method: str = "") -> str:
-    if stage in {"context_compress", "context_fidelity"} and context_substage_method == "shared-rules-and-native-context-contract.v1":
+    if stage in {"context_compress", "context_fidelity"} and context_substage_method in {"shared-rules-and-native-context-contract.v1", "source-unit-dependency-and-final-composition.v2"}:
         return project_sections(text, "Shared rules")
     methods = {
         "creative.candidates.generate": "Foundation", "theme.candidates.generate": "Foundation",
