@@ -1392,6 +1392,14 @@ Chapter tests establish executable engineering control flow and saved Draft read
 Real Provider 512K capacity, upstream overflow execution, literary fidelity and
 long-form stability require their own evidence and are not implied by these tests.
 
+Specialized Agent, Reader, Narrative Evaluation and Model Reference binders explicitly
+forward the complete-request callback. Context substages retain the original Owner node
+and Pack permissions, use the Context output schema and receive the exact persisted
+Owner ContextBundle as their frozen source. Foreign Owner, source or Attempt bindings
+are rejected. Vector projection retains its separate physical admission protocol.
+Native small-request adapter verification and Chapter overflow execution do not qualify
+all specialized Owner overflow paths or the complete PostgreSQL acceptance matrix.
+
 Compression and fidelity calls use existing Chapter Provider Runtime, Pack/PEP,
 Kernel ExternalEffect, cost reservation, Lease/Fence and durable result reconciliation.
 They create no new Authority or acceptance path. Task source eligibility gates run

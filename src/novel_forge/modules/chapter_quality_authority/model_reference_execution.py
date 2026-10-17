@@ -26,6 +26,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.capability_pack_authority.runtime import CapabilityPackResolutionRequest
 from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+from novel_forge.modules.chapter_authority.context_compression_provider import CONTEXT_MODEL_STAGES
 from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
 from novel_forge.modules.chapter_authority.model_effects import ExternalEffectChapterModelPort, model_call_log_ref
@@ -454,8 +455,18 @@ class ModelReferenceExecutionContractBinder(PostgresChapterExecutionContractBind
 
     def freeze_before_external_effect(self, *, capability: str,
         request_payload: Mapping[str, Any], snapshot_fencing_token: int,
-        snapshot_worker_id: str):
+        snapshot_worker_id: str, context_model_call: Any = None, capacity_probe: bool = False):
         stage = str(request_payload.get("stage") or "")
+        if stage in CONTEXT_MODEL_STAGES:
+            metadata = request_payload.get("_production_execution") or {}
+            admitted = self.assert_before_provider_send(operation_id=str(metadata.get("operation_id") or ""),
+                project_id=str(metadata.get("project_id") or ""))
+            self._require_capacity_context_owner(request_payload, owner_stage=admitted["command"]["generator_operation_name"])
+            if metadata.get("model_reference") != admitted["frozen"]:
+                raise _invalid("reference compression differs from its admitted source")
+            return super().freeze_before_external_effect(capability=capability, request_payload=request_payload,
+                snapshot_fencing_token=snapshot_fencing_token, snapshot_worker_id=snapshot_worker_id,
+                context_model_call=context_model_call, capacity_probe=capacity_probe)
         if stage not in MODEL_REFERENCE_STAGE.values() or capability != "model." + stage:
             raise _invalid("reference binder accepts only formal model reference stages")
         metadata = request_payload.get("_production_execution")
@@ -481,11 +492,14 @@ class ModelReferenceExecutionContractBinder(PostgresChapterExecutionContractBind
             raise _invalid("reference Effect must select exactly its Attempt ContextBundle")
         return super().freeze_before_external_effect(capability=capability,
             request_payload=request_payload, snapshot_fencing_token=snapshot_fencing_token,
-            snapshot_worker_id=snapshot_worker_id)
+            snapshot_worker_id=snapshot_worker_id, context_model_call=context_model_call, capacity_probe=capacity_probe)
 
     def _provider_output_contract(self, *, stage: str, request_payload: Mapping[str, Any],
                                   legacy_contract: bool = False,
                                   prompt_contract_version: str = "v9") -> tuple[dict[str, Any], str]:
+        if stage in CONTEXT_MODEL_STAGES:
+            return super()._provider_output_contract(stage=stage, request_payload=request_payload,
+                legacy_contract=legacy_contract, prompt_contract_version=prompt_contract_version)
         del legacy_contract, prompt_contract_version
         if stage not in MODEL_REFERENCE_STAGE.values():
             raise _invalid("reference output schema stage differs")
@@ -522,6 +536,8 @@ class ModelReferenceExecutionContractBinder(PostgresChapterExecutionContractBind
         execution_fencing_token: int, worker_id: str,
         snapshot_creation_fencing_token: int, snapshot_creation_worker_id: str,
         stage: str, graph: Mapping[str, str], route: Any):
+        if stage in CONTEXT_MODEL_STAGES:
+            stage = MODEL_REFERENCE_STAGE.get(graph["definition_name"], "")
         if stage not in MODEL_REFERENCE_STAGE.values() or not self.capability_pack_id:
             raise _invalid("reference Pack identity is missing")
         return self.pack_resolver.freeze_attempt_snapshot(CapabilityPackResolutionRequest(

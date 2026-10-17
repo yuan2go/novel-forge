@@ -10,7 +10,8 @@
     {
       "id": "complete-request-capacity",
       "patterns": [
-        "tests/unit/test_complete_request_capacity.py"
+        "tests/unit/test_complete_request_capacity.py",
+        "tests/unit/test_context_capacity_owner_contracts.py"
       ],
       "classification": "CURRENT_RUNTIME_CONTRACT",
       "owner": "production-execution",

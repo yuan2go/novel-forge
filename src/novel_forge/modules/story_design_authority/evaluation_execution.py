@@ -15,6 +15,7 @@ from novel_forge.modules.chapter_authority.contracts import (
 from novel_forge.modules.chapter_authority.execution_gateway import (
     PostgresChapterExecutionContractBinder,
 )
+from novel_forge.modules.chapter_authority.context_compression_provider import CONTEXT_MODEL_STAGES
 from novel_forge.modules.chapter_authority.model_effects import (
     ExternalEffectChapterModelPort,
     model_call_log_ref,
@@ -94,7 +95,16 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         request_payload: Mapping[str, Any],
         snapshot_fencing_token: int,
         snapshot_worker_id: str,
+        context_model_call: Any = None,
+        capacity_probe: bool = False,
     ):
+        if self._require_capacity_context_owner(request_payload, owner_stage=NARRATIVE_EVALUATION_STAGE):
+            metadata = request_payload["_production_execution"]
+            self.assert_before_provider_send(operation_id=metadata["operation_id"], project_id=metadata["project_id"])
+            return super().freeze_before_external_effect(
+                capability=capability, request_payload=request_payload,
+                snapshot_fencing_token=snapshot_fencing_token, snapshot_worker_id=snapshot_worker_id,
+                context_model_call=context_model_call, capacity_probe=capacity_probe)
         if (
             capability != f"model.{NARRATIVE_EVALUATION_STAGE}"
             or str(request_payload.get("stage") or "") != NARRATIVE_EVALUATION_STAGE
@@ -156,6 +166,8 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
             request_payload=request_payload,
             snapshot_fencing_token=snapshot_fencing_token,
             snapshot_worker_id=snapshot_worker_id,
+            context_model_call=context_model_call,
+            capacity_probe=capacity_probe,
         )
 
     def _provider_output_contract(
@@ -166,6 +178,9 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         legacy_contract: bool = False,
         prompt_contract_version: str = "v3",
     ) -> tuple[dict[str, Any], str]:
+        if stage in CONTEXT_MODEL_STAGES:
+            return super()._provider_output_contract(stage=stage, request_payload=request_payload,
+                legacy_contract=legacy_contract, prompt_contract_version=prompt_contract_version)
         if stage != NARRATIVE_EVALUATION_STAGE:
             raise KernelError(
                 "NARRATIVE_EVALUATION_STAGE_INVALID",
@@ -203,7 +218,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         graph: Mapping[str, str],
         route: Any,
     ):
-        if stage != NARRATIVE_EVALUATION_STAGE:
+        if stage != NARRATIVE_EVALUATION_STAGE and stage not in CONTEXT_MODEL_STAGES:
             raise KernelError(
                 "NARRATIVE_EVALUATION_STAGE_INVALID",
                 "Narrative evaluator Pack cannot bind another stage",

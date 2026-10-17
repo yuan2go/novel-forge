@@ -788,6 +788,29 @@ class PostgresChapterExecutionContractBinder:
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
         self.provider_router: Any = None
 
+    def _require_capacity_context_owner(self, request_payload: Mapping[str, Any], *, owner_stage: str) -> bool:
+        stage = str(request_payload.get("stage") or "")
+        if stage not in CONTEXT_MODEL_STAGES:
+            return False
+        metadata = request_payload.get("_production_execution") or {}
+        chunk = dict(dict(request_payload.get("input") or {}).get("context_compression_task") or {})
+        task = dict(chunk.get("task") or {})
+        source = dict(chunk.get("source_binding") or {})
+        if (chunk.get("contract_version") != "task-context-compression.v2"
+                or task.get("stage") != owner_stage
+                or task.get("capacity_policy") != "complete-request-capacity.v1"
+                or metadata.get("context_capacity_owner_stage") != owner_stage):
+            raise KernelError("CONTEXT_COMPRESSION_OWNER_DRIFT", "Context substage must retain its original domain stage")
+        pointers = [item for item in self._artifacts(metadata) if item.asset_version_id == source.get("asset_version_id")]
+        if len(pointers) != 1 or pointers[0].artifact_type != "context_bundle" or pointers[0].content_hash != source.get("content_hash"):
+            raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "Owner compression requires its exact persisted ContextBundle")
+        document = self.query.require(project_id=metadata["project_id"], asset_version_id=pointers[0].asset_version_id)
+        if (document.content_hash != source["content_hash"]
+                or document.content.get("operation_id") != metadata.get("operation_id")
+                or document.content.get("attempt_id") != metadata.get("attempt_id")):
+            raise KernelError("CONTEXT_COMPRESSION_OWNER_DRIFT", "ContextBundle belongs to another owning Attempt")
+        return True
+
     def freeze_before_external_effect(
         self,
         *,
@@ -879,6 +902,12 @@ class PostgresChapterExecutionContractBinder:
         materialization = self.pack_resolver.materialize_attempt_artifacts(
             attempt_snapshot
         )
+        if stage in CONTEXT_MODEL_STAGES:
+            task = dict(dict(dict(request_payload.get("input") or {}).get("context_compression_task") or {}).get("task") or {})
+            boundary = dict(task.get("frozen_input_boundary") or {})
+            if boundary and (boundary.get("project_id") != project_id or boundary.get("book_id") != book_id
+                    or boundary.get("pack_snapshot_hash") != attempt_snapshot.snapshot_hash):
+                raise KernelError("CONTEXT_COMPRESSION_OWNER_DRIFT", "Compression must retain its owning frozen Pack and scope")
         supported_templates = {
             "prompt-template:chapter-generation-pack": {
                 "v2",
@@ -2565,6 +2594,8 @@ class PostgresRetrievalProjectionExecutionContractBinder(
 ):
     """INVARIANT: retrieval is not a Chapter Saga node and must not borrow its Capability Pack."""
 
+    supports_request_capacity = False
+
     def __init__(
         self,
         database_url: str,
@@ -2590,7 +2621,11 @@ class PostgresRetrievalProjectionExecutionContractBinder(
         request_payload: Mapping[str, Any],
         snapshot_fencing_token: int,
         snapshot_worker_id: str,
+        context_model_call: Any = None,
+        capacity_probe: bool = False,
     ) -> ChapterCapabilityPreflight | None:
+        if context_model_call is not None or capacity_probe:
+            raise KernelError("RETRIEVAL_PROJECTION_CAPABILITY_INVALID", "Vector projection uses its own physical admission protocol")
         stage = str(request_payload.get("stage") or "")
         metadata = request_payload.get("_production_execution")
         if capability != "model.retrieval" or stage != "retrieval":

@@ -8,6 +8,7 @@ import math
 from typing import Any, Mapping, Protocol
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRequest,
+    ChapterInputAsset,
     resolve_stage_context_token_budget,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
@@ -638,7 +639,10 @@ class ExternalEffectChapterModelPort:
                     business_payload.get("generator_operation_name") or ""
                 ),
                 **({"model_reference": dict(business_payload["model_reference"])}
-                   if stage in {"model_reference_evaluate", "model_reference_adjudicate"}
+                   if (stage in {"model_reference_evaluate", "model_reference_adjudicate"}
+                       or (stage in CONTEXT_MODEL_STAGES and self.execution_binding_domain == "model_reference"
+                           and request.command.get("_context_capacity_owner_stage") == business_payload.get("generator_operation_name")
+                           and business_payload.get("generator_operation_name") in {"model_reference_evaluate", "model_reference_adjudicate"}))
                    and isinstance(business_payload.get("model_reference"), Mapping) else {}),
                 "route_provider": str(
                     getattr(
@@ -677,6 +681,8 @@ class ExternalEffectChapterModelPort:
                     }
                     for item in request.inputs
                 ],
+                **({"context_capacity_owner_stage": request.command["_context_capacity_owner_stage"]}
+                   if stage in CONTEXT_MODEL_STAGES and request.command.get("_context_capacity_owner_stage") else {}),
             },
         }
         binder = self.capability_binder or getattr(self.adapter, "binder", None)
@@ -765,7 +771,15 @@ class ExternalEffectChapterModelPort:
 
             def context_model_call(substage, task):
                 require_context_execution()
-                nested = replace(request, command={**request.command,
+                sources = []
+                for pointer in effect_request_payload["_production_execution"]["input_artifacts"]:
+                    document = self.query.require(project_id=request.project_id, asset_version_id=pointer["asset_version_id"])
+                    if document.content_hash != pointer["content_hash"] or document.asset_type != pointer["artifact_type"]:
+                        raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "Owner input changed before Context execution")
+                    sources.append(ChapterInputAsset(asset_version_id=document.asset_version_id, asset_type=document.asset_type,
+                        content_hash=document.content_hash, content=document.content))
+                nested = replace(request, inputs=tuple(sources), command={**request.command,
+                    "_context_capacity_owner_stage": stage,
                     "_effect_instance": hashlib.sha256(json.dumps({"stage": substage, "task": task}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()})
                 result = self.invoke(nested, stage=substage, payload={"context_compression_task": task},
                                      pre_send_assertion=require_context_execution)
