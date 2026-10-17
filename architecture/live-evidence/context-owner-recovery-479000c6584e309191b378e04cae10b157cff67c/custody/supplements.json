@@ -1,0 +1,60 @@
+{
+  "status": "PASS_DUMP_AND_LOSSLESS_READBACK_ONLY",
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "container_id": "eeb98832a809c649dee5b6d5ee75675fb001f9b029203d02c88119d01f4f2265",
+  "completed_at": "2026-10-17T01:54:31.922579+00:00",
+  "prior_base": "../../context-owner-recovery-5c54f5250b192d2c8c2e122189675883e4da29ac/custody/complete-owned-cluster.json",
+  "prior_reader_supplement": "../../context-owner-recovery-5c54f5250b192d2c8c2e122189675883e4da29ac/custody/reader-retry-supplement.json",
+  "scope": "Two newly created4790 diagnostic databases after task-owned cluster restart. No historical UNKNOWN task resumed or replaced. Archive only; actual PostgreSQL restore NOT_RUN.",
+  "supplements": [
+    {
+      "label": "semantic-479000c6-native-core-r2",
+      "database": "nf_p0_361234bd158a43249481028208dd8061_test",
+      "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+      "command": [
+        "docker",
+        "exec",
+        "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+        "pg_dump",
+        "-U",
+        "novel_forge",
+        "--create",
+        "nf_p0_361234bd158a43249481028208dd8061_test"
+      ],
+      "exit_code": 0,
+      "archive": "semantic-479000c6-native-core-r2.sql.xz",
+      "raw_bytes": 128872878,
+      "raw_sha256": "17ea526bd2b8f9ced88b71e09fe65b442c5890d3c6cf3575f6bac98a4187f11d",
+      "storage_bytes": 1353772,
+      "storage_sha256": "1191189694573b0deb64698b9e35e3aaecdf9405407b3bde93c81caff6f90730",
+      "decompression_verified": true
+    },
+    {
+      "label": "semantic-479000c6-process-restart",
+      "database": "nf_p0_a8c76782c0b9416da346f2b3b613c999_test",
+      "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+      "command": [
+        "docker",
+        "exec",
+        "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+        "pg_dump",
+        "-U",
+        "novel_forge",
+        "--create",
+        "nf_p0_a8c76782c0b9416da346f2b3b613c999_test"
+      ],
+      "exit_code": 0,
+      "archive": "semantic-479000c6-process-restart.sql.xz",
+      "raw_bytes": 35357243,
+      "raw_sha256": "3c16dbeb8aa67957956cf17875294d0d8722ad4757b1abf6ca42135d53f5b537",
+      "storage_bytes": 556208,
+      "storage_sha256": "41233391600d7e97a46c71f30b84fa83cb5fd2ba1e02e1b52449ee02af9182b8",
+      "decompression_verified": true
+    }
+  ],
+  "original_location_prior_references": {
+    "prior_base": "../complete-owned-cluster.json",
+    "prior_reader_supplement": "../reader-retry-supplement.json"
+  },
+  "delivery_relocation": "Only relative custody index paths relocated; original metadata retained in supplements-original.json.gz; SQL/XZ bytes unchanged"
+}

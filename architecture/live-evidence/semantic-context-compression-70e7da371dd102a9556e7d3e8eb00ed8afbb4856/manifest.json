@@ -5,9 +5,9 @@
   "baseline_capacity_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
   "reference_main_sha": "6b69b22b331191331292a51a905833871b17b283",
   "implementation_tree_sha": "sha256:72ac0541418ee3d6d5ecf83f09656b092efdc4e67df4978bdc79420a69253b03",
-  "recorded_at_utc": "2026-10-16T23:43:12.597299+00:00",
+  "recorded_at_utc": "2026-10-17T00:47:51.159195+00:00",
   "evidence_ceiling": "EXECUTABLE",
-  "formal_qualification": "IN_PROGRESS",
+  "formal_qualification": "FAIL",
   "runtime_identity_boundary": "Fixture Build/Release identities in native requests are controlled and separate from executing Git source SHA; no production deployment is inferred.",
   "remote_pr": "https://github.com/yuan2go/novel-forge/pull/180",
   "files": [
@@ -118,8 +118,13 @@
     },
     {
       "path": "formal-current/console.log.gz",
-      "sha256": "75c78ccece5f19f44410242654d1c90cf40b42554388212c753aec928eab3186",
-      "size_bytes": 115195
+      "sha256": "2b24c2e96a66a87f7f015a1b3066fd36c0dc73bb6241f4fe8e227d18c258daca",
+      "size_bytes": 116209
+    },
+    {
+      "path": "formal-current/interruption.json.gz",
+      "sha256": "0c27810ad4c2b528b7338d79b38b99c166d028ef104d3648faee400fd6f636dd",
+      "size_bytes": 416
     },
     {
       "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/backend-pytest-collection.json.gz",
@@ -172,9 +177,34 @@
       "size_bytes": 4174
     },
     {
+      "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/postgresql-pytest-collection.json.gz",
+      "sha256": "1ecb2149fb64360ef579cacf05de5337e7442b351395e53fed9894f5bd6e876b",
+      "size_bytes": 35612
+    },
+    {
+      "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/postgresql-pytest-process.json.gz",
+      "sha256": "01459c82df9c5e8b09b131ae611ca7f561b86d9fbf3bb2617bbe9d0d17f9f379",
+      "size_bytes": 269355
+    },
+    {
+      "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/postgresql-pytest.xml.gz",
+      "sha256": "b779352d411317b6d2f4eeae0241dc17bed80b079579348b5436cdff4f4aa638",
+      "size_bytes": 605202
+    },
+    {
       "path": "formal-current/novel-forge-p0-70e7da371dd1-81cac45582cc46cd8540a314e9a51179/static-and-manifests.json.gz",
       "sha256": "0182c00f1bfb872584525fc45fbea364ca841d00612ba05289b3c7bf00a60991",
       "size_bytes": 116479
+    },
+    {
+      "path": "formal-current/p0-backend-qualification-70e7da371dd102a9556e7d3e8eb00ed8afbb4856.json.gz",
+      "sha256": "665488ad2b5ff8c6c0783978d890ca01f8e59a058e9008befc84a612d6e0cf72",
+      "size_bytes": 8538
+    },
+    {
+      "path": "formal-current/pr-governance-70e7da371dd102a9556e7d3e8eb00ed8afbb4856.json.gz",
+      "sha256": "f5b3b53f7947ef7cded418f55260ad71ac7724afbe0f3b21d503bcdd1208e40e",
+      "size_bytes": 1446
     },
     {
       "path": "historical/archived-native-databases/semantic-core-67c07ef0.sql.xz",
@@ -11253,8 +11283,8 @@
     },
     {
       "path": "validation.json",
-      "sha256": "777ddb775340a0b202da50135b4d667988ad7a84fe31476ef964db9bb808cd52",
-      "size_bytes": 3494
+      "sha256": "773268261ab63ddb0e66ac522e95eef748c49cca1a7f0091459dbc31e103e768",
+      "size_bytes": 9450
     }
   ]
 }

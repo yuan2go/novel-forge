@@ -1,0 +1,13 @@
+{
+  "source_sha": "8b1acb0d5548d1823dffada3b3df93f90d3f0890",
+  "creation_continue": "novel-forge authority-creation continue --project-id PROJECT --formation-run-id RUN --repository-root ACTUAL_CHECKOUT --foreground",
+  "original_read": "novel-forge authority-manuscript read --project-id PROJECT --book-run-id BOOK_RUN --candidate-version ORIGINAL_VERSION",
+  "original_export": "novel-forge authority-manuscript export --project-id PROJECT --book-run-id BOOK_RUN --candidate-version ORIGINAL_VERSION --output NEW_PATH",
+  "retrieval_rebuild": "scripts/rebuild_writer_retrieval.py --project-id PROJECT --book-id BOOK --from-chapter FIRST --to-chapter LAST --limit 100 --after-id CURSOR --manifest NEW.json; review frozen manifest then --manifest FROZEN.json --apply; rollback adds --rollback",
+  "requirements": [
+    "Original Creator, Book/frontier, immutable source/hash, cancellation and lease/fence checks",
+    "Admitted compatible Pack through existing Capability Pack authority; no automatic deployment",
+    "Reconcile UNKNOWN original Effect using native evidence rules before retry; main unsent is not whole-task zero-send"
+  ],
+  "pilot_database_upgrade": "NOT_RUN; observed schema0148/frozen Pack2.3.13 differs from current code. No production deployment or author acceptance performed."
+}

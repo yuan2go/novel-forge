@@ -1,0 +1,98 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "implementation_tree_sha": "sha256:003aab8f8b4da1dd0db6c54787f048a313c853520e50d6d47fb338e60234759b",
+  "pr_governance_status": "FAIL",
+  "p0_status": "FAIL",
+  "gates": [
+    {
+      "id": "source-preflight",
+      "status": "PASS",
+      "duration_seconds": 0.588632
+    },
+    {
+      "id": "documentation-reality",
+      "status": "PASS",
+      "duration_seconds": 17.168307
+    },
+    {
+      "id": "static-and-manifests",
+      "status": "PASS",
+      "duration_seconds": 63.627047
+    },
+    {
+      "id": "pytest-backend",
+      "status": "PASS",
+      "duration_seconds": 238.803321
+    },
+    {
+      "id": "postgresql-start",
+      "status": "PASS",
+      "duration_seconds": 3.192886
+    },
+    {
+      "id": "migration-fresh",
+      "status": "PASS",
+      "duration_seconds": 2.531994
+    },
+    {
+      "id": "migration-compatibility",
+      "status": "PASS",
+      "duration_seconds": 2009.025869
+    },
+    {
+      "id": "pytest-postgresql-integration",
+      "status": "FAIL",
+      "duration_seconds": 10707.155292
+    },
+    {
+      "id": "migration-head",
+      "status": "NOT_RUN",
+      "duration_seconds": 0.0
+    },
+    {
+      "id": "query-plan-release",
+      "status": "NOT_RUN",
+      "duration_seconds": 0.0
+    },
+    {
+      "id": "compose-runtime",
+      "status": "NOT_RUN",
+      "duration_seconds": 0.0
+    },
+    {
+      "id": "resource-cleanup",
+      "status": "PASS",
+      "duration_seconds": 0.0
+    },
+    {
+      "id": "evidence-finalization",
+      "status": "NOT_RUN",
+      "duration_seconds": 0.0
+    }
+  ],
+  "cleanup": {
+    "phases": [
+      {
+        "compose_project": "nf-p0-64f2f8daf1d84aaabcd0723ced2e5edb",
+        "phase": "postgresql",
+        "receipt": "compose-resource-ownership-nf-p0-64f2f8daf1d84aaabcd0723ced2e5edb.json",
+        "remaining_resource_count": 0,
+        "resource_count": 2,
+        "run_id": "p0-64f2f8daf1d84aaabcd0723ced2e5edb",
+        "status": "PASS"
+      }
+    ],
+    "remaining_resource_count": 0,
+    "status": "PASS"
+  },
+  "raw_report": "checks/formal-current/p0-backend-qualification-479000c6584e309191b378e04cae10b157cff67c.json.gz",
+  "prior_negative_sources_preserved": [
+    "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "70e7da371dd102a9556e7d3e8eb00ed8afbb4856",
+    "844aa07671059f645278a263e102ce3704952b3f",
+    "be1418df7c241620c367b96096e80aff51d79a19",
+    "8b1acb0d5548d1823dffada3b3df93f90d3f0890",
+    "5c54f5250b192d2c8c2e122189675883e4da29ac"
+  ],
+  "prior_attribution": "30 budget/routing negatives reproduced on healthy6b baseline. OOM-contaminated cohorts not valid for blanket attribution; do not claim every formal failure pre-existing."
+}

@@ -573,9 +573,16 @@ comparison remain separate authorized activities.
 The only high-level backend engineering qualification entry is:
 
 ```bash
-P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
+mkdir -p /tmp/novel-forge-p0/backups
+chmod 700 /tmp/novel-forge-p0/backups
+NOVEL_FORGE_MIGRATION_BACKUP_DIR=/tmp/novel-forge-p0/backups \
+  P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
   make p0-backend-qualification
 ```
+
+Migration compatibility cases upgrade existing ledgers. The absolute private backup
+directory and compatible PostgreSQL clients must reach the qualification subprocesses;
+the clean-install phase alone does not exercise that prerequisite.
 
 It executes this fail-fast chain:
 
@@ -719,8 +726,10 @@ with their original hashes and semantics.
 For semantic compression inspect the frozen Context policy's
 `source-unit-dependency-and-final-composition.v2`, each chunk's source ranges and attribution,
 and `_context_capacity_projection.final_composition` on the main Effect. Its supplied
-projection hash must match the final rendered admission and `capacity_extract` evidence.
-The proof records targeted semantic windows and their existing fidelity Effects, not a
+projection hash must match the frozen selected view; bind it to the actual admission
+and host Prompt `provider_view.capacity_projection` receipt. New story-only
+`capacity_extract` notices contain no audit hashes. The proof records targeted semantic
+windows and their existing fidelity Effects, not a
 literary score or absolute semantic-losslessness certificate.
 Inspect frozen `capacity_history_exact_chapters` in both the selected Manifest and
 Context artifact, and the same field in the extraction. New v4 Packs retain one exact

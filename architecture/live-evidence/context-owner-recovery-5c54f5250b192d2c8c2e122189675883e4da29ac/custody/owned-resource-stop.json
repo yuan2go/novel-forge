@@ -1,0 +1,11 @@
+{
+  "status": "PASS_OWNED_RESOURCE_STOPPED_WITH_VOLUME_RETAINED",
+  "container": "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+  "container_id": "eeb98832a809c649dee5b6d5ee75675fb001f9b029203d02c88119d01f4f2265",
+  "run_id": "p0-85fa5a57fdd44ad6ae1d8d79bbd2b665",
+  "backup": "complete-owned-cluster.json",
+  "supplement": "reader-retry-supplement.json",
+  "volume_retained": true,
+  "other_containers_changed": false,
+  "observed_at": "2026-10-17T01:40:28.784035+00:00"
+}

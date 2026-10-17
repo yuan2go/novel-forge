@@ -1,0 +1,604 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "junit": "/tmp/nf-compression-final-479000c6-r2/novel-forge-p0-479000c6584e-64f2f8daf1d84aaabcd0723ced2e5edb/backend-pytest.xml",
+  "authority": "EXACT_SOURCE_COMPLETE_BACKEND_JUNIT",
+  "scope": "Production-function and component assertions only. Native call/receipt/cancel/process proofs are separately indexed; no actual Provider512K, literary score or absolute semantic equivalence is inferred.",
+  "groups": [
+    {
+      "requirement": "complete-request boundary and byte upper-bound uncertainty",
+      "checks": [
+        {
+          "test_function": "test_tokenized_complete_request_boundary_and_byte_observation_are_separate",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_tokenized_complete_request_boundary_and_byte_observation_are_separate"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_512k_system_ceiling_applies_even_when_model_is_larger",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_512k_system_ceiling_applies_even_when_model_is_larger"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_upper_bound_overflow_does_not_claim_proven_token_overflow",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_upper_bound_overflow_does_not_claim_proven_token_overflow"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "capacity-only lossy path and actual downstream extract",
+      "checks": [
+        {
+          "test_function": "test_new_complete_policy_defers_large_byte_material_to_full_request_meter",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_new_complete_policy_defers_large_byte_material_to_full_request_meter"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_materials_fit_but_complete_request_overflows_and_downstream_consumes_extract",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_materials_fit_but_complete_request_overflows_and_downstream_consumes_extract"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_capacity_fast_path_preserves_original_and_runs_no_model_but_validates_quotes",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_capacity_fast_path_preserves_original_and_runs_no_model_but_validates_quotes"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "chunk lifetime, huge units, complete substage requests",
+      "checks": [
+        {
+          "test_function": "test_more_than_eight_chunks_and_large_paragraph_do_not_impose_lifetime_failure",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_more_than_eight_chunks_and_large_paragraph_do_not_impose_lifetime_failure"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_oversized_units_split_only_at_sentences_and_preserve_quote_spans",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_oversized_units_split_only_at_sentences_and_preserve_quote_spans"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_context_complete_request_rejects_before_transport",
+          "cases": [
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[overflow-context_compress]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[overflow-context_fidelity]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[unknown_meter-context_compress]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[unknown_meter-context_fidelity]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[route_drift-context_compress]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[route_drift-context_fidelity]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[incomplete_coverage-context_compress]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[incomplete_coverage-context_fidelity]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[serialization_drift-context_compress]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_context_complete_request_rejects_before_transport[serialization_drift-context_fidelity]"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "original Unicode/cross-scene/duplicate quote protection",
+      "checks": [
+        {
+          "test_function": "test_quote_locates_original_unicode_ranges_before_splitting",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_quote_locates_original_unicode_ranges_before_splitting[\\n\\n]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_quote_locates_original_unicode_ranges_before_splitting[\\r\\n\\r\\n]"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_cross_scene_quote_and_attribution_survive_projection_and_exact_restoration",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_cross_scene_quote_and_attribution_survive_projection_and_exact_restoration"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_missing_quote_is_not_satisfied_by_the_instruction_copy_and_duplicates_are_exposed",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_missing_quote_is_not_satisfied_by_the_instruction_copy_and_duplicates_are_exposed"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_preserved_quote_survives_oversized_unit_boundaries_without_new_separators",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_preserved_quote_survives_oversized_unit_boundaries_without_new_separators"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "provenance scoped dedupe and overlap union",
+      "checks": [
+        {
+          "test_function": "test_same_source_different_fragments_remain_and_only_exact_duplicates_are_removed",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_same_source_different_fragments_remain_and_only_exact_duplicates_are_removed"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_partial_source_overlap_requires_exact_version_scope_and_reconstructs_both_members",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_partial_source_overlap_requires_exact_version_scope_and_reconstructs_both_members"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[narrative_function-reader_knowledge]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[semantic_representation_identity-reader-only:B]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[logical_narrative_identity-reader-scope]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[physical_asset_type-draft_version]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[policy_version-different-source-policy]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[section-KNOWLEDGE]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[bucket-reader-only]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[raw_source-True]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[source_risk-1]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_identical_text_does_not_collapse_distinct_semantic_or_governance_metadata[active_read_generation_id-other-generation]"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_overlapping_original_ranges_require_the_entire_remaining_metadata_scope",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_overlapping_original_ranges_require_the_entire_remaining_metadata_scope[semantic_representation_identity-reader-only:B]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_overlapping_original_ranges_require_the_entire_remaining_metadata_scope[narrative_function-reader_knowledge]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_overlapping_original_ranges_require_the_entire_remaining_metadata_scope[policy_version-other-policy]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_overlapping_original_ranges_require_the_entire_remaining_metadata_scope[section-KNOWLEDGE]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_overlapping_original_ranges_require_the_entire_remaining_metadata_scope[bucket-reader-only]"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "explicit dependencies, knowledge ownership, contradictory source roles",
+      "checks": [
+        {
+          "test_function": "test_explicit_dependencies_close_without_resolving_contradictory_attribution",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_explicit_dependencies_close_without_resolving_contradictory_attribution"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_catalog_dependency_closure_reaches_another_original_source",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_catalog_dependency_closure_reaches_another_original_source"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_admitted_belief_and_reader_only_sources_keep_both_roles_in_actual_bundle",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_admitted_belief_and_reader_only_sources_keep_both_roles_in_actual_bundle"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_final_global_dependency_closure_uses_original_cause_and_actual_unchanged_plan",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_final_global_dependency_closure_uses_original_cause_and_actual_unchanged_plan[False]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_final_global_dependency_closure_uses_original_cause_and_actual_unchanged_plan[True]"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "working experience distinct from accepted canon",
+      "checks": [
+        {
+          "test_function": "test_new_working_memory_preparation_restores_original_causal_observation_and_keeps_legacy_selection",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_new_working_memory_preparation_restores_original_causal_observation_and_keeps_legacy_selection"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_working_observation_quote_cannot_satisfy_its_own_missing_source",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_working_observation_quote_cannot_satisfy_its_own_missing_source"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "structure, excerpts and exact original recovery",
+      "checks": [
+        {
+          "test_function": "test_nonconsecutive_excerpts_keep_json_structure_and_restore_the_actual_original",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_nonconsecutive_excerpts_keep_json_structure_and_restore_the_actual_original"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_partial_structured_reconstruction_preserves_numeric_values_and_original_version",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_partial_structured_reconstruction_preserves_numeric_values_and_original_version"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason[{\"quantity\":0.123456789012345678901,\"summary\":\"original\"}-JSON_NUMERIC_VALUE_NOT_PRESERVED]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason[{\"subject\":\"A\",\"subject\":\"B\",\"summary\":\"original\"}-DUPLICATE_JSON_FIELD]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason[{\"quantity\":NaN,\"summary\":\"original\"}-JSON_NONFINITE_VALUE]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason[{\"quantity\":1e99999999999999999999999999,\"summary\":\"original\"}-JSON_NUMERIC_VALUE_NOT_PRESERVED]"
+            },
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_ambiguous_or_inexact_json_keeps_the_original_bytes_and_exposes_the_reason[{\"quantity\":0e99999999999999999999999999,\"summary\":\"original\"}-JSON_NUMERIC_VALUE_NOT_PRESERVED]"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "mandatory floor, backfill and reallocation, infeasibility",
+      "checks": [
+        {
+          "test_function": "test_budget_allocation_reserves_required_quotes_in_later_chunks",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_budget_allocation_reserves_required_quotes_in_later_chunks"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_final_request_restore_reallocates_from_original_sources_and_checks_the_new_version",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_final_request_restore_reallocates_from_original_sources_and_checks_the_new_version"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_fidelity_restore_reallocates_other_history_after_a_plateau",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_fidelity_restore_reallocates_other_history_after_a_plateau[1300]"
+            },
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_fidelity_restore_reallocates_other_history_after_a_plateau[1500]"
+            },
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_fidelity_restore_reallocates_other_history_after_a_plateau[1700]"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_necessary_content_cannot_be_dropped_to_fit",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_necessary_content_cannot_be_dropped_to_fit"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "final composition and actual rendering audit version",
+      "checks": [
+        {
+          "test_function": "test_final_composition_checker_restores_a_condition_from_original_neighbors",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_final_composition_checker_restores_a_condition_from_original_neighbors"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_semantic_complete_request_consumes_the_actual_final_projection_and_preserves_rich_fields",
+          "cases": [
+            {
+              "classname": "tests.unit.test_semantic_context_units",
+              "name": "test_semantic_complete_request_consumes_the_actual_final_projection_and_preserves_rich_fields"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_rendered_extract_keeps_large_host_mapping_out_of_prompt_and_stays_frozen",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_rendered_extract_keeps_large_host_mapping_out_of_prompt_and_stays_frozen"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "route capacity, schema serialization, output and reasoning once",
+      "checks": [
+        {
+          "test_function": "test_capacity_preparation_only_narrows_the_final_router_without_authorizing_it",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_capacity_preparation_only_narrows_the_final_router_without_authorizing_it"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_codex_separate_protocol_schema_is_frozen_and_included_in_capacity",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_codex_separate_protocol_schema_is_frozen_and_included_in_capacity"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_codex_full_output_and_reasoning_reserve_is_included_once_at_admission",
+          "cases": [
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_codex_full_output_and_reasoning_reserve_is_included_once_at_admission[model]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_codex_full_output_and_reasoning_reserve_is_included_once_at_admission[authorization]"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation",
+          "cases": [
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[draft]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[context_compress]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[context_fidelity]"
+            },
+            {
+              "classname": "tests.unit.test_context_compression_provider",
+              "name": "test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[book_plan.generate]"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "requirement": "durable matching chunk reuse and source drift",
+      "checks": [
+        {
+          "test_function": "test_deterministic_restart_reuses_successful_chunk_inputs",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_deterministic_restart_reuses_successful_chunk_inputs"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_fidelity_restore_has_no_silent_drop_and_sources_are_rechecked",
+          "cases": [
+            {
+              "classname": "tests.unit.test_complete_request_capacity",
+              "name": "test_fidelity_restore_has_no_silent_drop_and_sources_are_rechecked"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "test_function": "test_recovery_uses_frozen_projection_and_rejects_semantic_input_drift",
+          "cases": [
+            {
+              "classname": "tests.unit.test_context_semantic_fidelity",
+              "name": "test_recovery_uses_frozen_projection_and_rejects_semantic_input_drift"
+            }
+          ],
+          "status": "PASS"
+        }
+      ]
+    }
+  ]
+}

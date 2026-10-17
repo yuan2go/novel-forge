@@ -1,0 +1,15 @@
+{
+  "status": "PASS_DUMP_AND_LOSSLESS_READBACK_ONLY",
+  "source_sha": "5c54f5250b192d2c8c2e122189675883e4da29ac",
+  "cluster_container": "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+  "database": "nf_p0_9dded8c4a2f5490590ab75442bac08fa_test",
+  "label": "semantic-5c54f525-native-owner-retry",
+  "raw_sql_bytes": 4067733,
+  "raw_sql_sha256": "f9804e06e5d0f7f2fc5ca9d7e86fe64d690ca43719df381ed05103b415ecf392",
+  "archive": "reader-retry-supplement.sql.xz",
+  "archive_sha256": "f0ec5dc472376160ba7f985c9656cc0bdaafbf74e6ec27d4f29f7a23247ea727",
+  "supplement_to": "complete-owned-cluster.json",
+  "scope": "Fresh single native Reader retry database created after complete cluster dump; original two Attempts, one successful Effect, Context and accounting retained",
+  "restore": "NOT_RUN; base cluster then this CREATE DATABASE supplement only in isolated PostgreSQL16",
+  "observed_at": "2026-10-17T01:40:19.564361+00:00"
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "novel-forge.owned-context-cluster-custody.v1",
+  "status": "PASS_DUMP_AND_LOSSLESS_READBACK_ONLY",
+  "cluster_container": "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+  "container_id": "eeb98832a809c649dee5b6d5ee75675fb001f9b029203d02c88119d01f4f2265",
+  "compose_project": "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665",
+  "run_id": "p0-85fa5a57fdd44ad6ae1d8d79bbd2b665",
+  "started_at": "2026-10-17T01:38:02.664144+00:00",
+  "completed_at": "2026-10-17T01:38:55.404371+00:00",
+  "command": [
+    "docker",
+    "exec",
+    "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+    "pg_dumpall",
+    "-U",
+    "novel_forge",
+    "--no-role-passwords"
+  ],
+  "exit_code": 0,
+  "raw_sql_bytes": 1992977616,
+  "raw_sql_sha256": "f4d070045035d5fdd271234d06df2de606b623c69d9f387d0a98367dc748e85b",
+  "archive_bytes": 56753044,
+  "archive_sha256": "4216932c3a379e7dd01cae6e87556c5389484f4ba374fe05c1f30cfa643c54a6",
+  "lossless_decompression_verified": true,
+  "parts": [
+    {
+      "name": "complete-owned-cluster.sql.xz.part-000",
+      "bytes": 32000000,
+      "sha256": "60739386288e6cb140a73623730e3079c3c90e75d525b2612aa71f7a82325990"
+    },
+    {
+      "name": "complete-owned-cluster.sql.xz.part-001",
+      "bytes": 24753044,
+      "sha256": "fd09b863b61f18e7f7131b066faf96d196541f60450e81d805e44c4c10ce4346"
+    }
+  ],
+  "scope": "All databases in this task-owned qualification cluster, including failed/UNKNOWN/OOM histories. No production or unrelated cluster dumped/modified. No role passwords.",
+  "restore": "NOT_RUN; restore only to an isolated compatible PostgreSQL16 cluster. This is custody, not restored business qualification."
+}

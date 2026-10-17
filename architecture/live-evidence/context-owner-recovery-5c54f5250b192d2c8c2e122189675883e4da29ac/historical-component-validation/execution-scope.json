@@ -1,0 +1,7 @@
+{
+  "execution_checkout_base_sha": "8b1acb0d5548d1823dffada3b3df93f90d3f0890",
+  "working_tree_delta": "Explicit frozen6b policy fixture and branch-limited test selection were present when run began; committed as5c54f525 while the run was active. Pure in-memory Narrative fixture correction was not part of this selected integration execution.",
+  "source_binding_scope": "Selected testfile, frozen fixture and production source match5c54f525; not claimed an exact committed full-tree qualification run. Exact5c54f525 P0 separately reruns these cases.",
+  "status": "4_PASS_COMPONENT_NATIVE_COMPATIBILITY",
+  "original_assertions": "UNCHANGED"
+}
