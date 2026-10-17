@@ -1,0 +1,1989 @@
+{
+  "schema_version": "novel-forge.context-owner-regression-evidence.v1",
+  "work_package": "WP-NF-CONTEXT-512K-COMPRESSION-END-TO-END-01",
+  "source_sha": "844aa07671059f645278a263e102ce3704952b3f",
+  "implementation_tree_sha": "sha256:0c49b5dab6ee7d7be81e7420cc01a2e84ff67f9e0aab6a677776d72ac5ebff18",
+  "recorded_at_utc": "2026-10-17T01:36:00.631271+00:00",
+  "evidence_ceiling": "EXECUTABLE",
+  "formal_qualification": "READ_RAW_CURRENT_REPORT_NOT_INFERRED",
+  "real_provider": "NOT_RUN",
+  "real_512k_tokens": "NOT_RUN",
+  "literary_quality": "NOT_RUN",
+  "files": [
+    {
+      "path": "baseline/baseline-all-262-failed-nodes/migration.log.gz",
+      "sha256": "9e5192f4b0c60bd7305432b2ff63497739680c2463d8ee8d599b2e27c889248f",
+      "size_bytes": 34
+    },
+    {
+      "path": "baseline/baseline-all-262-failed-nodes/pytest.log.gz",
+      "sha256": "1db33f3475de1bf9ca0bb381ac288b86779787878f814e7886e1b5b6013c7503",
+      "size_bytes": 587826
+    },
+    {
+      "path": "baseline/baseline-all-262-failed-nodes/pytest.xml.gz",
+      "sha256": "b46b62f6355477786d0179872428068828967a2ddf51a5de3759b8aa85d2125d",
+      "size_bytes": 590349
+    },
+    {
+      "path": "baseline/baseline-all-262-failed-nodes/result.json.gz",
+      "sha256": "75270645c642fc033fb721ca14622719d9fb241a9f8ce48dae0557ec46d54739",
+      "size_bytes": 6184
+    },
+    {
+      "path": "baseline/baseline-five-families/migration.log.gz",
+      "sha256": "9e5192f4b0c60bd7305432b2ff63497739680c2463d8ee8d599b2e27c889248f",
+      "size_bytes": 34
+    },
+    {
+      "path": "baseline/baseline-five-families/pytest.log.gz",
+      "sha256": "76e104726e83f35e3801d995deb7d0e5ad4e360dfe157b0f8b3e0a233d90b32b",
+      "size_bytes": 24651
+    },
+    {
+      "path": "baseline/baseline-five-families/pytest.xml.gz",
+      "sha256": "bc25ead99b838efeaf2bcb2155051a8a9a2ebe0b34ebd8b070d16403712d5036",
+      "size_bytes": 24889
+    },
+    {
+      "path": "baseline/baseline-five-families/result.json.gz",
+      "sha256": "054969a98f6d6f815dc10a586d263dd1d6c1afbf3d1126d65df5537294ece32b",
+      "size_bytes": 515
+    },
+    {
+      "path": "baseline/nf-context-512k-baseline-failed-nodes.json.gz",
+      "sha256": "4114e47aa01669a08bfa8f59c96e88ce02c342227d73e8c7b22c8776713986ec",
+      "size_bytes": 6157
+    },
+    {
+      "path": "baseline/nf-context-512k-baseline-full-source-binding.json.gz",
+      "sha256": "8d6cd1482f3b5f32ea2b0b23ac9e29af1b7a33aafb4ddf32c803a757f1f91b83",
+      "size_bytes": 240
+    },
+    {
+      "path": "checks/current/console.log.gz",
+      "sha256": "c92fd9aa819d8f3c415982324ed1a371b5f8e7aec981657f6dd195783a7fa6dc",
+      "size_bytes": 115903
+    },
+    {
+      "path": "checks/current/interruption.json.gz",
+      "sha256": "051fd43e9c2ffd914bcf8eec46e76baeda2e95353ca6c38c40ccf88470ace926",
+      "size_bytes": 402
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/backend-pytest-collection.json.gz",
+      "sha256": "3f6afa63b159594d21bd36e4a769373a7cfe67924547fcd377e20861ce65bde4",
+      "size_bytes": 120039
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/backend-pytest-process.json.gz",
+      "sha256": "045ad14ee4f4993c944e4e304b89ce89546a8e8f2a78f10bce2d420b6b96da1c",
+      "size_bytes": 1083
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/backend-pytest.xml.gz",
+      "sha256": "4605833d05374e7f7d6ba29a6643bf7fc3543cae93241866e0b5773208a1bb08",
+      "size_bytes": 124751
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/compose-resource-ownership-nf-p0-7f0c6639740249d48a4e329fc559f3b6.json.gz",
+      "sha256": "bd5f586133e8b1f82e275b96bc4c41ddde516c89f6f23356e95060a9c70dfb35",
+      "size_bytes": 372
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/documentation-reality-process.json.gz",
+      "sha256": "36b05451d3e17d53bfe8cb2f00325df2ff74bfdb7452b6eb6184760937f31829",
+      "size_bytes": 449
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/documentation-reality.json.gz",
+      "sha256": "517d41115d3aaced5a8524433410d1b71e6dd781502005b54c9e4430d50289b0",
+      "size_bytes": 408
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/migration-compatibility-collection.json.gz",
+      "sha256": "9606e7fd6b5ed0e8ff2ad97c1f5520d2b18b10cf707d13e81de02b1319703aca",
+      "size_bytes": 9226
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/migration-compatibility-process.json.gz",
+      "sha256": "58045005164017ceb7b5c20e64656d13d1154896bf30231fe9fe51342e3fc621",
+      "size_bytes": 2997
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/migration-compatibility-pytest.xml.gz",
+      "sha256": "88bd34ce826a2525a5a49b87393a77ea55c6c03128b33ef95802eb5ed35e32db",
+      "size_bytes": 6234
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/migration-fresh-process.json.gz",
+      "sha256": "990451c6f84d424b3df7311717584812f2eb15eab19332cf47772a28f7000fe1",
+      "size_bytes": 4174
+    },
+    {
+      "path": "checks/current/novel-forge-p0-844aa0767105-7f0c6639740249d48a4e329fc559f3b6/static-and-manifests.json.gz",
+      "sha256": "812f2b1b27c6c987671ea245b8a6b027f16905c00f10b916b21dfbf3ba4060d7",
+      "size_bytes": 116113
+    },
+    {
+      "path": "checks/current/p0-backend-qualification-844aa07671059f645278a263e102ce3704952b3f.json.gz",
+      "sha256": "a53656fe34132fe2bdd67811c358fc72738b05b6ec8b8da6cade90aadc0a79dd",
+      "size_bytes": 7997
+    },
+    {
+      "path": "checks/current/pr-governance-844aa076.json.gz",
+      "sha256": "a349e6f61024e43699daae2d80cf22898b144523c03b36f208f9132f576f054c",
+      "size_bytes": 1710
+    },
+    {
+      "path": "checks/negative-projection-nf-context-capacity-pr-7465ab3e/pr-governance-7465ab3e.json.gz",
+      "sha256": "5da935e4370eb351d0a73f7bf532a0a96c985c37286850f177a019fdaa40e15e",
+      "size_bytes": 1687
+    },
+    {
+      "path": "native/capacity-7465ab3e-all-262-failed-nodes/run/interruption.json.gz",
+      "sha256": "368b0d99e2c0e7f8b709e3b8bda9a07546966379d0b72911d40cbc8c3576a28e",
+      "size_bytes": 6598
+    },
+    {
+      "path": "native/capacity-7465ab3e-all-262-failed-nodes/run/migration.log.gz",
+      "sha256": "9e5192f4b0c60bd7305432b2ff63497739680c2463d8ee8d599b2e27c889248f",
+      "size_bytes": 34
+    },
+    {
+      "path": "native/capacity-7465ab3e-all-262-failed-nodes/run/pytest.log.gz",
+      "sha256": "7e3f6bcc039dee5e5209927c3e79ea960147ff846b003bec22651afa879a5969",
+      "size_bytes": 1124769
+    },
+    {
+      "path": "native/capacity-7465ab3e-all-262-failed-nodes/run/pytest.xml.gz",
+      "sha256": "dba9b7c953c496a0a55423f99614cee71896ab2811ce5a656fe82395d6da3676",
+      "size_bytes": 1139703
+    },
+    {
+      "path": "native/capacity-7465ab3e-all-262-failed-nodes/run/result.json.gz",
+      "sha256": "30d401a8c4241fe8326a602bcb6d4cfdf693b1d23d6dba5aaab3414a9fb42125",
+      "size_bytes": 6210
+    },
+    {
+      "path": "native/capacity-7465ab3e-all-262-failed-nodes/source-binding.json",
+      "sha256": "f2ea5bc36e0b337241f407ca183546c3d5de3de41b2ebf99978c307211a33660",
+      "size_bytes": 369
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/active_story_plan_version.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/asset_dependency_edge.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/audit_log.jsonl.xz",
+      "sha256": "29521d1c91ebc560f29ae05a1149536b361bc6c8eb946f135503ee8dcb24eaea",
+      "size_bytes": 174132
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_candidate_parent.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_candidate_supersession.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_candidate_version.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_capability.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_capability_execution_mapping.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_collaboration_commit.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_collaboration_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_collaboration_session.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_collaboration_turn.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_conflict_record.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_conversation_message.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_definition.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_definition_activation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_definition_capability.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_definition_runtime_contract.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_harness_session.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_output_envelope.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_participant.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_participant_snapshot.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_runtime_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_scope_expansion_request.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_scope_snapshot.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_transcript_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_agent_work_order.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_arc_actual_state.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_arc_checkpoint_followup.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_arc_checkpoint_v2.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_arc_contribution.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_arc_membership.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_arc_outcome_v2.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_arc_progress_v2.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_artifact_invalidation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_artifact_lineage_edge.jsonl.xz",
+      "sha256": "9c96665e4ae28a5b358ffce0a2e38c2949dc3c164d65ba826b79b7e50773cea8",
+      "size_bytes": 14080
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset.jsonl.xz",
+      "sha256": "a9ed4282ceb3322a6f38de875cebacde32166158d2d029085de2eb171b748bea",
+      "size_bytes": 18724
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_activation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_dependency.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_locator.jsonl.xz",
+      "sha256": "b94a4b8c3ae8ab97d84cc38f731fab29a7bc8cfb156b9650ae19fb8f1a38f086",
+      "size_bytes": 41396
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_qualification.jsonl.xz",
+      "sha256": "4862daaf1669ce5dd82144257026a26920532ed84341ca215cedd613a1f41ee0",
+      "size_bytes": 65872
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_supersession.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_version.jsonl.xz",
+      "sha256": "78541b5e0e8d42a8920c5cf46728f24cf9a414ac315b6f625708fc6b0af8a452",
+      "size_bytes": 399900
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_asset_version_blob_reference.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_attempt.jsonl.xz",
+      "sha256": "358335bfb188ce088ee767f640310ea1810df2564c8616238aea45366f6e907b",
+      "size_bytes": 3800
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_attempt_capability_pack_snapshot.jsonl.xz",
+      "sha256": "d141ded9a6d07dab7d32f86ddfb4e2a31150479cc35b361a58e2359f35244be3",
+      "size_bytes": 6164
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_blob.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book.jsonl.xz",
+      "sha256": "6504012273536f27c96b1f21bc60652570534d9a2d4746dca3c01434148ebcc9",
+      "size_bytes": 692
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_arc_checkpoint.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_chapter_acceptance.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_chapter_request.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_completion_case.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_completion_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_completion_source.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_design_candidate.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_edition.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_edition_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_edition_head.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_edition_prefix.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_edition_revision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_edition_run.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_editorial_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_followup_operation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_foundation_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_manuscript_delivery.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_narrative_projection_set.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_branch_reconciliation_assessment.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_branch_reconciliation_receipt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_budget_effect_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_budget_operation_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_budget_reconciliation_receipt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_capacity_continuation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_execution.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_input_snapshot_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_legacy_budget_reservation_attribution.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_legacy_snapshot_entitlement.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_node_receipt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_recovery_assessment.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_recovery_intent.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_recovery_receipt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_resource_successor.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_run.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_semantic_checkpoint.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_workflow_edge.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_workflow_node.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_opening_workflow_transition_receipt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_production.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_production_input_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_production_input_snapshot.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_projection_repair.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_projection_repair_checkpoint.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_prose_review_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_prose_review_run.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_replan.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_replan_reevaluation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_retained_working_continuation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_book_volume_checkpoint.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_budget_evidence_link.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_budget_reservation.jsonl.xz",
+      "sha256": "5d8f46e5257a1ccdb9b4d4ec8484de4d317c635d1fb48e1c2b50a34f6f55431a",
+      "size_bytes": 4660
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_cancellation_command.jsonl.xz",
+      "sha256": "56934fb0801e67d5e399a254370e6d4a03b8c0d98d29fe9a959f2ae5ccbb63ba",
+      "size_bytes": 456
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_canon_approval_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_canon_approval_request.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_canon_approval_transition.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_canon_reextraction_generation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack.jsonl.xz",
+      "sha256": "b419596832d5a26a96e74e4b67e16909fe0f04ece8f019c811b11c16e976c183",
+      "size_bytes": 588
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_activation.jsonl.xz",
+      "sha256": "99042ee9e76e325587f5aefa1886bde4159088279b3434034e1b2fb3d3773ac6",
+      "size_bytes": 1164
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_approval.jsonl.xz",
+      "sha256": "ac6857692dc7b15f7131e3d87f4adb433c194880ce28e831910494a3a65bf3fe",
+      "size_bytes": 1344
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_assignment.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_binding_set.jsonl.xz",
+      "sha256": "f73b9b8d2fd7ad1836f988e76128dc799ba9526c604bce9728eb4edfb09df062",
+      "size_bytes": 9624
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_compilation.jsonl.xz",
+      "sha256": "963f9c9e05bec1c28045162f95d46cd4b1bb924ffff8db35d2e2e70ff20efd33",
+      "size_bytes": 1396
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_dependency.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_deployment.jsonl.xz",
+      "sha256": "e086de21e53b8375ebd4f0a58ceac8d1f85aa5eea5311dc01d85adbb00a11841",
+      "size_bytes": 1224
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_deprecation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_rollout.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_validation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_validation_admission.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_capability_pack_version.jsonl.xz",
+      "sha256": "1118c9b90164313daddc87b5edade0a7284a9d83f71f1367a5fff3ba014b8ac4",
+      "size_bytes": 1052
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_chapter_group_chapter.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_chapter_group_production.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_chapter_node_agent_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_chapter_node_agent_binding_activation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_child_delegation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_completion_aggregate_state.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_completion_approval.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_completion_gate.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_content_dependency.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_content_invalidation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_admission.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_book_identity.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_bridge.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_content.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_curated_member.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_curated_revision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_edition.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_equivalence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_membership.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_processing.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_retirement.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_review.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_rights.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_snapshot.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_source.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_work_member.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_corpus_work_revision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_d0_qualification_run.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_d0_scenario_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_data_quarantine.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_effect_command_rejection.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_effect_dispatch_lease.jsonl.xz",
+      "sha256": "092192781013cf06543d530d3b2e9faf26e4a0f8d75566a577b956b711b36dff",
+      "size_bytes": 2336
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_effect_manual_resolution.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_effect_reconciliation_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_effect_resource_denial.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_ending_reachability_report.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_execution_recovery_authorization.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_external_effect.jsonl.xz",
+      "sha256": "efa41faab776fb8177c51af27bac6bae002a96c69889aae749e0df4f21b66de3",
+      "size_bytes": 58856
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_external_effect_dispatch.jsonl.xz",
+      "sha256": "b29404c48356e285b14dceb2305056ec82b54a921287617cb35f9a6ad76eecf6",
+      "size_bytes": 27096
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_external_receipt.jsonl.xz",
+      "sha256": "6752bd011ee7096b860c349bc513eab6320f20fa595cd6bdb5874c5dd9e7a4c2",
+      "size_bytes": 26720
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_generation_isolation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_graph_continuation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_idempotency_record.jsonl.xz",
+      "sha256": "fd056f3231ff9b86741f719f74042587cb2ea3e40a97cccbadce59682fcc06d2",
+      "size_bytes": 4660
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_inbox_conflict.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_inbox_message.jsonl.xz",
+      "sha256": "f82f4494c7121b2181e48152ba04052e4616bd98bddf24c994b58af5b20aa32b",
+      "size_bytes": 3252
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_late_result_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_lease_acquisition.jsonl.xz",
+      "sha256": "de1e74510be6c5a6e61b53bae4bd2d57ec5d11e0a3b887fd9a651ddc5826e5a2",
+      "size_bytes": 2144
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_legacy_migration_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_legacy_migration_domain_reconciliation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_legacy_migration_item.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_legacy_migration_phase_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_legacy_migration_reference.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_legacy_migration_validation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_migration_run.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_mkaos_evidence_span.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_mkaos_governance_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_mkaos_knowledge_candidate.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_mkaos_knowledge_card.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_mkaos_knowledge_pack.jsonl.xz",
+      "sha256": "868c55575cb8aff2d8786635820d6d53cf7c8af5badeb1db1473b5717ffc1a6e",
+      "size_bytes": 724
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_mkaos_knowledge_pack_item.jsonl.xz",
+      "sha256": "e1e61fdec9401f12ee6a5a50b755fb89677255bbe779969a7fa9e82287ee1036",
+      "size_bytes": 556
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_design_qualification.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_evaluation_execution.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_evaluation_execution_head.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_formation_recovery.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_obligation_state.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_reality_revision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_realization.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_realization_consumption.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_realization_current.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_realization_deviation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_realization_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_narrative_retrieval_document.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_operation.jsonl.xz",
+      "sha256": "e54b4ede043d4d849e316950ced8165b33b46761fcb06f890a6634077a7ec1fd",
+      "size_bytes": 165040
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_operation_cost_evidence.jsonl.xz",
+      "sha256": "26d666979bc77a53ae1651e29724f53b9f8894ec96a26483585d46adee660982",
+      "size_bytes": 1852
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_operation_definition.jsonl.xz",
+      "sha256": "8316f951e27f2d25b969b15fa0c7bfc7b02ebd1d70a69216b40e8088f8fde7ca",
+      "size_bytes": 10516
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_operation_definition_release.jsonl.xz",
+      "sha256": "a2c563285b3bddff1e38bab0d67f4c57ea88600dc050cdcceeb555a9aa7e981d",
+      "size_bytes": 4000
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_operation_dependency.jsonl.xz",
+      "sha256": "63b9c4fb04eeb165d025cac4a526d40106ded22039917cf1641662ad4f9ec79a",
+      "size_bytes": 872
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_operation_output_asset.jsonl.xz",
+      "sha256": "86247e2125a0fe1b69ff9d3ed5203358a520fda534b1c3177779f4fcbf45b442",
+      "size_bytes": 63552
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_outbox_delivery_execution.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_outbox_recovery_command.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_plan_change_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_plan_change_impact.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_plan_change_proposal.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_planning_result_admission.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_project.jsonl.xz",
+      "sha256": "bf56dcefbd827bad3154c1e145878d6b11833e5bfbd368a8afe4e706d86e6145",
+      "size_bytes": 632
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_project_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_projection_watermark.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_provider_budget_scope.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_provider_callback_attempt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_provider_callback_receipt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_provider_price.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_quality_qualification_campaign.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_quality_qualification_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_quality_qualification_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_quality_qualification_subject.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_calibration_observation_set.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge_activation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge_active.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge_drift.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge_qualification_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge_retirement.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge_suspension.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reader_judge_version.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_reality_event_index.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_recovery_command.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_release_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_retrieval_campaign.jsonl.xz",
+      "sha256": "4492494666e73167a947f41ec175ed61f3f6994a3bcfafcd181d172a8ab981e8",
+      "size_bytes": 6024
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_retrieval_candidate_snapshot.jsonl.xz",
+      "sha256": "a861223ced80ebeb5822698f5d5f6f1a8154b41fc95419c8f6e8e582892eb2dc",
+      "size_bytes": 1652
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_retrieval_embedding_projection.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_retrieval_round.jsonl.xz",
+      "sha256": "c418da102e2951b05d32a70aec21f689b4935affd3c6b7f14faef565f8e45b44",
+      "size_bytes": 4672
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_dispatch_control.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_dispatch_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_job.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_job_attempt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_job_checkpoint.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_job_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_job_lease.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_job_result.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_policy_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_policy_selection.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_runtime_policy_version.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_saga.jsonl.xz",
+      "sha256": "adcbc2fe5778a0974927b79b22ee79f02509ef2a3b56e25c604fe09ecac6d498",
+      "size_bytes": 1112
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_saga_retained_step.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_saga_step.jsonl.xz",
+      "sha256": "2650730bd98b5b3ec95f40cba61d31f48171b1fd8b26edd67da5fecafc5275d5",
+      "size_bytes": 1288
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_saga_step_revalidation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_saga_step_successor.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_slice_legacy_cutover.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_analysis_plan.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_chunk.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_content_profile.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_content_profile_input.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_deconstruction_observation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_deconstruction_observation_input.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_document.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_evidence_span.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_import_job.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_import_work.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_market_attempt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_market_definition.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_market_edition_link.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_market_metadata.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_market_platform.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_market_site.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_repository_file.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_repository_snapshot.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_reprocessing_plan.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_reprocessing_plan_item.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_transform.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_unit.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_unit_version.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_work.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_source_work_version.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_creation_cancellation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_design_active_version.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_design_generator_definition.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_design_transition.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_design_version_state.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_formation_run.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_formation_stage.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_narrative_branch_reconciliation_evidence.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_narrative_search.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_narrative_search_candidate.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_narrative_search_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_planning_candidate.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_planning_generation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_planning_runtime_continuation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_planning_validation_report.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_story_state_reducer_application.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_worker_cancel_signal.jsonl.xz",
+      "sha256": "dc8331861ffdd4d0166c1e46e7f5ba2930945cc3e4b3469b6aa5a286bd01cab0",
+      "size_bytes": 416
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_worker_health_projection.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_worker_operational_metrics_projection.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/authority_workspace.jsonl.xz",
+      "sha256": "d3d660c53e51ca0daed6fbb135281d29499c6c289840db1c5f09bd7f30d841c5",
+      "size_bytes": 576
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/calibration_metric.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/calibration_profile.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/calibration_residual.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/calibration_run.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/calibration_validity.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/chapter_outcome_metric.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/human_judge_agreement_report.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/human_preference_adjudication.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/human_preference_decision.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/human_preference_evaluation_pack.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/human_preference_golden_set.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/human_preference_pair.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/human_preference_task.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/idempotency_record.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/knowledge_cards.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/knowledge_pack_items.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/knowledge_packs.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/knowledge_quality_scores.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/knowledge_usage_bindings.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/knowledge_usage_events.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/nf_asset_versions.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/nf_assets.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/nf_projects.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/nf_schema_migrations.jsonl.xz",
+      "sha256": "b029c629e680296b2eec63fe0f21a38d120c1779ff773ebec502543f15b6b933",
+      "size_bytes": 3084
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/nf_task_statuses.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/operation_attempt.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/operation_lease.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/outbox_consumer_delivery.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/outbox_event.jsonl.xz",
+      "sha256": "1d86bccd0dff3e77231d9c69a10e72606aeb56df64d7ad69f3df543049fa81ff",
+      "size_bytes": 215160
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/planning_horizon.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/production_operation.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/production_operation_command.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/reader_exposure.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/reader_outcome_event.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/reader_session.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/retention_window_metric.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/review_issues.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/rule_cards.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/source_chunks.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/source_documents.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/state_event.jsonl.xz",
+      "sha256": "a0d3c59c71623481f846ad9301451841911ca3e864243f0ca5ed5e7f1988e21e",
+      "size_bytes": 182972
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/state_snapshot.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/story_plan_binding.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/story_plan_hierarchy.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/story_production_cursor.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database/template_cards.jsonl.xz",
+      "sha256": "0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275",
+      "size_bytes": 32
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/database-index.json",
+      "sha256": "4ab7e3613d1beff9ce674d1539b214c169159474aa8ee14e7419eaa077dc23cc",
+      "size_bytes": 147846
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144/compression-projection.json.gz",
+      "sha256": "28dc63fc9306f193cc2a7028991d575433d0f001813ee3e6b390e8d8ef7772bf",
+      "size_bytes": 40912
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144/final-request.txt.gz",
+      "sha256": "4e799ff2a7f7e7ce911a88af7652ce4214995043fb07308c5a5ac3c68853a06a",
+      "size_bytes": 11328
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144/native-prose.txt.gz",
+      "sha256": "0c34be04b921b52c9be2a0367d8110bf831307e800fbe206e402b98b3a729890",
+      "size_bytes": 182
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144/original-materials.json.gz",
+      "sha256": "65bbc7ec6ccbc405d09d79b7b25da3681459a2999b50f27838da94aa7138c7cd",
+      "size_bytes": 12671
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144/receipts.json.gz",
+      "sha256": "e60df357e9d98dec1d8574ae584b974e47ef4395fae07206d4547f71be4f9ced",
+      "size_bytes": 11474
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144-routed-restart/compression-projection.json.gz",
+      "sha256": "49003027cccfd6171b5e7dced0b4b9bdcda9fc6b4e8524ee9a71dc6391ddba12",
+      "size_bytes": 42230
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144-routed-restart/final-request.txt.gz",
+      "sha256": "fd4ce700d6157ec0168ba2e07b202c57efb62b7dab627ed9e39be95cc3ef3088",
+      "size_bytes": 11327
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144-routed-restart/native-prose.txt.gz",
+      "sha256": "0c34be04b921b52c9be2a0367d8110bf831307e800fbe206e402b98b3a729890",
+      "size_bytes": 182
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144-routed-restart/original-materials.json.gz",
+      "sha256": "07fa53e9de73337d046ad5c45d6cc4ba6ba99306bf116601fddd0fa42537a19d",
+      "size_bytes": 12584
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-262144-routed-restart/receipts.json.gz",
+      "sha256": "92d07a3cecdce63f50fcdfbbadd55510722b47f5337834719c9d01cd3485e15a",
+      "size_bytes": 69542
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-512000/compression-projection.json.gz",
+      "sha256": "b281f194c8b052c741db51844ef4138b756979cfa6ef3806e4a667f8a1b072df",
+      "size_bytes": 54658
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-512000/final-request.txt.gz",
+      "sha256": "912723d5909610892076351ec2e0b13f5f0c80922d9ff81f4f01ab3ee0ed4ff1",
+      "size_bytes": 11328
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-512000/native-prose.txt.gz",
+      "sha256": "0c34be04b921b52c9be2a0367d8110bf831307e800fbe206e402b98b3a729890",
+      "size_bytes": 182
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-512000/original-materials.json.gz",
+      "sha256": "d940ba17a93c88545df7e5b52adbede205e6da1fab02d7038117d21aaffa713e",
+      "size_bytes": 14420
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/complete-request-512000/receipts.json.gz",
+      "sha256": "42f13026de4e6aed243852ab0936216d39b0343f0d8f0da2e8c4b5408ae8ccbb",
+      "size_bytes": 12245
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/migration.log.gz",
+      "sha256": "9e5192f4b0c60bd7305432b2ff63497739680c2463d8ee8d599b2e27c889248f",
+      "size_bytes": 34
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/pytest.log.gz",
+      "sha256": "b973c1475d73c62d988c98cd7d7cbcb0d471574c595ca1de340811f9c6b0693b",
+      "size_bytes": 75
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/pytest.xml.gz",
+      "sha256": "9020f02b5b769b137fa4096988a188c420f84210680e0652d5d5a623aaad2a52",
+      "size_bytes": 470
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/run/result.json.gz",
+      "sha256": "a0a7758aa78adba6e1e83b698474b33c86d3cf46a2005e3a9de667483964b598",
+      "size_bytes": 435
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/source-binding.json",
+      "sha256": "f2ea5bc36e0b337241f407ca183546c3d5de3de41b2ebf99978c307211a33660",
+      "size_bytes": 369
+    },
+    {
+      "path": "native/capacity-7465ab3e-native-core/source-to-result-chain.json",
+      "sha256": "2511fa403a8362dc072fc8dac7c904c911f9215f0a5c8371f3b681efe0e300a9",
+      "size_bytes": 175659
+    },
+    {
+      "path": "scripts/nf-run-capacity-diagnostic.py.gz",
+      "sha256": "387294a9bb43951937103c9ef26e0bfa8b97aef969c953616266dae038e54747",
+      "size_bytes": 956
+    },
+    {
+      "path": "scripts/nf-semantic-owner-process-driver.py.gz",
+      "sha256": "2e262a522d6fd6ad94a2aea6289c4b80893c7588f449506bb117155debc00b67",
+      "size_bytes": 1092
+    },
+    {
+      "path": "scripts/nf-semantic-process-restart-native.py.gz",
+      "sha256": "a3d51fb70b6da5e9ed854330b422c1afda27dbbe883a64428976e48ef5c8a984",
+      "size_bytes": 3136
+    }
+  ]
+}

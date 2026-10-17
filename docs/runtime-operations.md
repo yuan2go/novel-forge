@@ -573,9 +573,16 @@ comparison remain separate authorized activities.
 The only high-level backend engineering qualification entry is:
 
 ```bash
-P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
+mkdir -p /tmp/novel-forge-p0/backups
+chmod 700 /tmp/novel-forge-p0/backups
+NOVEL_FORGE_MIGRATION_BACKUP_DIR=/tmp/novel-forge-p0/backups \
+  P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/novel-forge-p0 \
   make p0-backend-qualification
 ```
+
+Migration compatibility cases upgrade existing ledgers. The absolute private backup
+directory and compatible PostgreSQL clients must reach the qualification subprocesses;
+the clean-install phase alone does not exercise that prerequisite.
 
 It executes this fail-fast chain:
 
@@ -719,8 +726,10 @@ with their original hashes and semantics.
 For semantic compression inspect the frozen Context policy's
 `source-unit-dependency-and-final-composition.v2`, each chunk's source ranges and attribution,
 and `_context_capacity_projection.final_composition` on the main Effect. Its supplied
-projection hash must match the final rendered admission and `capacity_extract` evidence.
-The proof records targeted semantic windows and their existing fidelity Effects, not a
+projection hash must match the frozen selected view; bind it to the actual admission
+and host Prompt `provider_view.capacity_projection` receipt. New story-only
+`capacity_extract` notices contain no audit hashes. The proof records targeted semantic
+windows and their existing fidelity Effects, not a
 literary score or absolute semantic-losslessness certificate.
 Inspect frozen `capacity_history_exact_chapters` in both the selected Manifest and
 Context artifact, and the same field in the extraction. New v4 Packs retain one exact
@@ -793,8 +802,15 @@ and actual text hash. `omitted_ranges` includes earlier selection gaps as well a
 capacity omissions. Their original reasons and the detailed mapping remain in the
 frozen Context and Effect projection. Rich semantic passage fields retain their
 original representation. Compare raw derivation and supplied-view hashes separately.
+New derivations freeze `provider_extract_transport=capacity-story-extract.v1` in the
+Effect's `_context_capacity_projection`; inspect the same value in host Prompt evidence.
+The supplied extract notice contains story interpretation, while derivation hashes and
+custody remain host evidence. Empty probes and final requests use this same display
+version. An absent version preserves the historical rendering; an unsupported version
+raises `CONTEXT_EXTRACT_TRANSPORT_INVALID`. Preserve the original Effect and reconcile
+its outcome before creating a new derivation; do not patch its frozen display version.
 Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
-new ordinary creation uses v3 Context and v6 working prose. Explicit legacy Planning
+new ordinary creation uses v4 Context and v7 working prose. Explicit legacy Planning
 without the narrative intent boundary retains Pack 2.13.0 and Context v2; selecting
 that contract does not opt into the new capacity policy. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.
@@ -2883,8 +2899,8 @@ by default: set `world_production_policy.version` to `world-production-policy.v2
 count, and `max_paths_per_candidate`, `max_preparation_steps`,
 `planning_window_chapters` to one. Set `world_actor_experiment` to
 `{"version":"world-actor-experiment.v1","actor_ids":["<approved-character-id>"],
-"max_rounds":1,"max_actions_per_actor":1}`. Keep the existing bounded Context and native
-budget limits. Each actor needs its own knowledge/belief entry in the frozen initial
+"max_rounds":1,"max_actions_per_actor":1}`. Keep the actor source boundary, cancellation and paid-spend authorization
+limits. Each actor needs its own knowledge/belief entry in the frozen initial
 StoryState or accepted reality, plus its approved goal. Missing private evidence blocks
 before any actor call; another actor's knowledge cannot substitute. Actor source/proposal receipts persist under the same World Preparation
 operation; resume that operation after reconciliation. Changing to unified generation
@@ -2894,13 +2910,14 @@ allowance are needed to assess benefit, leakage, naturalness, cost and latency.
 For accepted-state persistent intentions, freeze `world-actor-experiment.v2`; its
 `world-actor-task.v3` keeps goals, steps and commitments across accepted windows. Only
 Book acceptance completes an observed step. Deferred or abandoned commitments retain
-their disposition lineage. If the complete required private/World projection exceeds
-the v2 policy's 16,000-token ceiling, a new approved profile may explicitly select
-`world-production-policy.v3`, with a context budget no greater than 24,000 tokens.
-This changes only the configurable context ceiling: actor, round, action and window
-bounds remain enforced. It does not change old frozen v1/v2 requests, add allowance to
-their ledgers, or establish model qualification for the new input contract. The joint
-engineering scenario freezes 20,000 tokens; Provider usage is still settled from receipts.
+their disposition lineage. Older frozen v1/v2 World material policies retain 16,000
+tokens and v3 retains 24,000. Ordinary new `world-production-policy.v4` requests
+measure the complete request against 512,000 and the selected interface's smaller
+confirmed capacity, using the existing compression path when applicable. An old
+request retains its frozen policy; a native continuation requires an admitted compatible
+Pack and source binding. Actor, round, action and window bounds remain enforced.
+The historical joint engineering scenario freezes 20,000 tokens; it does not establish
+current model capacity, and actual Provider usage remains receipt-backed.
 
 ## Failure and recovery procedure
 

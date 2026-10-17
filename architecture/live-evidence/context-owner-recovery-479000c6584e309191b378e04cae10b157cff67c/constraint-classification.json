@@ -1,0 +1,45 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "constraints": [
+    {
+      "constraint": "Single complete request system ceiling512000",
+      "classification": "CONFIGURABLE_POLICY",
+      "basis": "Explicit current author requirement; route confirmed physical capacity may lower it"
+    },
+    {
+      "constraint": "Selected confirmed Provider/interface window and enforceable output/reasoning contract",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "basis": "Must come from actual qualified/frozen route; defaults and local cache are not proof of real capacity"
+    },
+    {
+      "constraint": "Complete local CLI hidden-protocol coverage and unmatched tokenizer",
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "basis": "Application-visible estimates remain labeled; missing real protocol coverage cannot be promoted to exact actual tokens"
+    },
+    {
+      "constraint": "Immutable source/version, explicit quote/field/dependency protection and source isolation",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "basis": "Schema/domain/host checks and focused tests; does not prove arbitrary free-text semantic equivalence"
+    },
+    {
+      "constraint": "Old16K/24K/64K material and24000-character working-history contracts",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "basis": "Retained frozen old versions; ordinary current native Creation explicitly selects new complete-request policy"
+    },
+    {
+      "constraint": "Resumable batches and no-progress termination",
+      "classification": "CONFIGURABLE_POLICY",
+      "basis": "Batch size is scheduling only; not a lifetime chunk or cumulative usage veto"
+    },
+    {
+      "constraint": "Known receipt integrity, UNKNOWN reconciliation, lease/fence/cancel and real paid authorization",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "basis": "Existing Kernel/gateway/Owner boundaries retained, no second effect/state ledger"
+    },
+    {
+      "constraint": "An existing-ledger upgrade with pending BACKUP_REQUIRED declarations needs an absolute private backup directory and verified dump before pending DDL",
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "basis": "Migration runner safety requirement retained. Clean install and no-op replay need no backup. First current formal caller omitted its required directory; R2 supplies it without bypass."
+    }
+  ]
+}

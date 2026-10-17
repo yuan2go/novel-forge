@@ -1,0 +1,3105 @@
+{
+  "execution_source_sha": "7465ab3e33da7fde809b672bdad61017439f2628",
+  "delivery_source_sha": "844aa07671059f645278a263e102ce3704952b3f",
+  "serialization": "Summary of original raw PostgreSQL exports; precise original text/numbers remain in raw assets and frozen request rows",
+  "chains": [
+    {
+      "source_boundary": {
+        "kind": "FROZEN_STAGE_INPUTS",
+        "book_id": "book:project-e840226a176c4f11a9acbe4214d80d26",
+        "sources": [
+          {
+            "content_hash": "sha256:bf3fa4dd11e3c0b5b6e42eaa04a226c45c75b5286e261916f1c2061bcb463a07",
+            "asset_version_id": "authority-output:8a8babba-cced-4eff-88b5-a1bd76faa400:chapter.context:v1"
+          }
+        ],
+        "project_id": "project-e840226a176c4f11a9acbe4214d80d26",
+        "pack_snapshot_hash": "sha256:26085ef41aef6a847034e11574804d977371de3b6959dd142af1fd6a744f5eec"
+      },
+      "original_provider_projection_hash": "sha256:54f37aa1eade14fe65fd02cb64bdc98a8c0c2fcc40f438c2d0c0255f1ca6c105",
+      "derived_provider_projection_hash": "sha256:840d3d0607429bb902f51b0f64d2bc3069680dfc6c96e0970c16a44604e924e2",
+      "compression_and_check_effects": [
+        {
+          "effect_id": "6ab4abc6-7536-432b-97a7-9c81a6d2b84e",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:bb6985d500c3608e1a4f68ba705765bdae34f9e58b92da7e292da138aa970245",
+          "task_fingerprint": "sha256:54f37aa1eade14fe65fd02cb64bdc98a8c0c2fcc40f438c2d0c0255f1ca6c105",
+          "source_binding": {
+            "content_hash": "sha256:bf3fa4dd11e3c0b5b6e42eaa04a226c45c75b5286e261916f1c2061bcb463a07",
+            "asset_version_id": "authority-output:8a8babba-cced-4eff-88b5-a1bd76faa400:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "a93587a2-9f51-40bc-ac10-30ae91adbf88",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:8330c6cd6479624d36f359a8ab03f571c9e7d9c08ec281ce3ca2712eaab66da3",
+          "task_fingerprint": "sha256:54f37aa1eade14fe65fd02cb64bdc98a8c0c2fcc40f438c2d0c0255f1ca6c105",
+          "source_binding": {
+            "content_hash": "sha256:bf3fa4dd11e3c0b5b6e42eaa04a226c45c75b5286e261916f1c2061bcb463a07",
+            "asset_version_id": "authority-output:8a8babba-cced-4eff-88b5-a1bd76faa400:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "862eae67-d522-470d-bf55-c3bbd19e361d",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:4694f10e02d9c5519068c4860ace368b9cac6a1d70ed14120e7c2c32b74e7d19",
+          "task_fingerprint": "sha256:54f37aa1eade14fe65fd02cb64bdc98a8c0c2fcc40f438c2d0c0255f1ca6c105",
+          "source_binding": {
+            "content_hash": "sha256:bf3fa4dd11e3c0b5b6e42eaa04a226c45c75b5286e261916f1c2061bcb463a07",
+            "asset_version_id": "authority-output:8a8babba-cced-4eff-88b5-a1bd76faa400:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "069394bd-fdad-4dfc-adc5-08241aab831e",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:a77ace0289428470b92c0fab44f26fb1393f99b6d27cf0ac643c1fba92f2a0aa",
+          "task_fingerprint": "sha256:54f37aa1eade14fe65fd02cb64bdc98a8c0c2fcc40f438c2d0c0255f1ca6c105",
+          "source_binding": {
+            "content_hash": "sha256:bf3fa4dd11e3c0b5b6e42eaa04a226c45c75b5286e261916f1c2061bcb463a07",
+            "asset_version_id": "authority-output:8a8babba-cced-4eff-88b5-a1bd76faa400:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "7c50df12-31e7-431d-ab28-465fe5fcf9da",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:47a88b43e122de314852a9a4ba1d91c5ecf456860b7b1599ef3193934a0d5981",
+          "task_fingerprint": "sha256:54f37aa1eade14fe65fd02cb64bdc98a8c0c2fcc40f438c2d0c0255f1ca6c105",
+          "source_binding": {
+            "content_hash": "sha256:bf3fa4dd11e3c0b5b6e42eaa04a226c45c75b5286e261916f1c2061bcb463a07",
+            "asset_version_id": "authority-output:8a8babba-cced-4eff-88b5-a1bd76faa400:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "88145217-b872-431a-a0aa-0498296250d6",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:705e199ae50338216a48d39ff50d2365784361aee9e835f30d7433012504e674",
+          "task_fingerprint": "sha256:54f37aa1eade14fe65fd02cb64bdc98a8c0c2fcc40f438c2d0c0255f1ca6c105",
+          "source_binding": {
+            "content_hash": "sha256:bf3fa4dd11e3c0b5b6e42eaa04a226c45c75b5286e261916f1c2061bcb463a07",
+            "asset_version_id": "authority-output:8a8babba-cced-4eff-88b5-a1bd76faa400:chapter.context:v1"
+          }
+        }
+      ],
+      "replacements": [
+        {
+          "path": [
+            "context_bundle",
+            "segments",
+            7,
+            "safe_summary"
+          ],
+          "ranges": [],
+          "source_text_hash": "sha256:8a13b16fbe7092eaaa9700af263fb699c8b931a5aae835e3503d2e581a23c794"
+        }
+      ],
+      "final_composition": null,
+      "measurement": {
+        "limit": 262144,
+        "token_method": "",
+        "after_reserved": 56970,
+        "before_reserved": 466771,
+        "actual_provider_tokens": null
+      },
+      "main_effect_id": "f1814f3a-19e8-4ebe-9c9c-967c9c9e1217",
+      "main_effect_status": "SUCCEEDED",
+      "frozen_effect_request_hash": "sha256:75010b7e33abecc88a4c2152f204e0de85c851446506ae8b2329845ba021206b",
+      "provider_request_envelope_hash": "sha256:1008ec5f5debf3f132757bbae764f9c4caa263a7c4b48649e4268a4ca59b9329",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "measurement": {
+          "model": "synthesis-scripted",
+          "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "precision": "FIXTURE_BYTES_EXACT",
+          "utf8_bytes": 40314,
+          "input_tokens": 40314,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": null,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "envelope_hash": "sha256:1008ec5f5debf3f132757bbae764f9c4caa263a7c4b48649e4268a4ca59b9329",
+        "total_reserved": 56970,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 16384,
+          "provider_input": 40314,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "synthesis-scripted",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 16384,
+          "route_identity": "routing-decision:ac2bec392d1cec325f0dce1514440b2c142d7e5d6b582bce1fe3fc441e0201ca",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 441222,
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+          "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:a71179cacdcdfaf3f449153a802399a3aaee0d2e943922b3502bf20cc9f3525f",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:08eaf1fa7ffa6c544ff270050bd4134c9dd9a803fba845adae53f4defda3da68",
+          "provider_context_view": "sha256:0336c6d1df453ab37e9f94c5e15244b9440002d881406a7a03ef0b1c3abf71d9",
+          "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "frozen_pack_snapshot_hash": "sha256:26085ef41aef6a847034e11574804d977371de3b6959dd142af1fd6a744f5eec",
+      "operation_outputs": [
+        {
+          "asset_version_id": "113cf4c9-727f-4e3c-952c-86be62e7df9f",
+          "output_key": "production_execution.contract.capability_materialization_manifest.71f0c5b02a0a41c29f9d",
+          "content_hash": "sha256:b4d459b4556fe119e8f6502e6f17bb97a3f94a77afa38eab1090b91ff6c463d9"
+        },
+        {
+          "asset_version_id": "8accbba1-c131-4259-8d14-a160cd4182db",
+          "output_key": "production_execution.contract.capability_materialization_manifest.d88abd599b0fedabd307",
+          "content_hash": "sha256:0e6b8cfb523afe4b5fe8807b0398e270d2b5f4556c9b542136b258f4a7f8c46d"
+        },
+        {
+          "asset_version_id": "d3353f40-4495-4389-9db2-e52f2999e7a0",
+          "output_key": "routing.af11e6cf02aa66845086963b2b60d731a681d3da566e382e90af267a3c5c8dc3",
+          "content_hash": "sha256:7ab253780b726d35c0e0410c972cbd1e0c6b1f840aefaba78cad3594823cc095"
+        },
+        {
+          "asset_version_id": "1e948151-cf96-44e3-a061-c0914f2249d0",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.35dfbf723e11abb9f854",
+          "content_hash": "sha256:e55993e608d1d4c7297214dcf60ec64c2ce78e48e2fd3ab5ad4fca6da8abc91d"
+        },
+        {
+          "asset_version_id": "32767520-f305-4bc6-9424-e89922cc5e98",
+          "output_key": "production_execution.contract.execution_context_policy.6a8afd4143bd3b679f7f",
+          "content_hash": "sha256:933c1e6481a43624755fd6c489b9cdfcf4da71e6dbde412a8e11bb8981ac6b06"
+        },
+        {
+          "asset_version_id": "52c80be1-ff56-4c6c-893a-9daf65b770b3",
+          "output_key": "production_execution.contract.execution_source_policy.4ead8ab9b8ba7336396a",
+          "content_hash": "sha256:bb1196c1ba0b87780732621dfc1a38ab761306637bf7632a099f42b5f6a4b49d"
+        },
+        {
+          "asset_version_id": "5c9f962d-0b61-4565-9416-bc764ec3a6c5",
+          "output_key": "production_execution.contract.execution_validation_policy.2564eaeed7963ca5cc6a",
+          "content_hash": "sha256:2cb8f9551ce12414767d7f98d4db400bf6a04f85565e913b39cf2e5e4bfe05d1"
+        },
+        {
+          "asset_version_id": "c2f08b49-33db-4d3e-a746-ee2a438560d0",
+          "output_key": "production_execution.contract.execution_commit_policy.9b3085d045d50cb4d4f1",
+          "content_hash": "sha256:b00560795bcbdab665e8e0ce422eb632e3e277bbbe5c471762dca5b2ebbfc2f6"
+        },
+        {
+          "asset_version_id": "c8586190-8a24-48d7-b93b-86af14ced2fc",
+          "output_key": "production_execution.contract.tool_permission_snapshot.7388f2574d09aa48a888",
+          "content_hash": "sha256:e050ddcd1cb8e9a51fef07e6ced194ca79c84ac4cefb24aa6beb25a69b8fc8ef"
+        },
+        {
+          "asset_version_id": "dfaed5b2-6836-4658-9d07-21b7c211e53d",
+          "output_key": "production_execution.contract.skill_bundle.b1708738029a60cb6772",
+          "content_hash": "sha256:047bf69184393dad38c5390af5baffd8a8769eaf20b0d10add9f04ef6bf2a426"
+        },
+        {
+          "asset_version_id": "583a6f6c-8866-4057-88fb-42de2b69b41e",
+          "output_key": "production_execution.contract.prompt_bundle.0dab36ff3b3fdb886b3b",
+          "content_hash": "sha256:7fb12cd7a0e293d536ae3cd94018a2fecf3f40b46b0f75102b159f00df41cdc7"
+        },
+        {
+          "asset_version_id": "5874cc1b-e532-45e1-867c-ad1696f69032",
+          "output_key": "production_execution.contract.model_profile.511ae88844e0b07e3ec8",
+          "content_hash": "sha256:d969fd17aabf95d90f0e72570b08e40b77aa816ec803218ca98780d863deed65"
+        },
+        {
+          "asset_version_id": "773d8781-00e9-4c88-a409-9228e64ce6f8",
+          "output_key": "production_execution.contract.fallback_policy.e87514c1c03ff5ff0d03",
+          "content_hash": "sha256:0c900fd098b4f31713a0bc3098f19e9019b479875e352f6481562a75400ef329"
+        },
+        {
+          "asset_version_id": "d18ea38f-663c-46ae-9225-2964db86e376",
+          "output_key": "production_execution.contract.route_policy.cf5c301f116fff15fb60",
+          "content_hash": "sha256:ef65fc6529c3c96268ac0b92c25b23eb5be6cb23255676c85642a3c5832d794c"
+        },
+        {
+          "asset_version_id": "01c5bfa6-b061-4c1d-b7cf-5deda969218e",
+          "output_key": "production_execution.contract.input_manifest.d4057a1bf5a8dcceaceb",
+          "content_hash": "sha256:41a4d626370cefa2f850d9ab90cf4db556d5b23f24e24222045b7175aa485045"
+        },
+        {
+          "asset_version_id": "58832a8a-54a6-48cf-b81f-eef979fdd40e",
+          "output_key": "production_execution.contract.route_snapshot.be3921e6b059362ed74b",
+          "content_hash": "sha256:1fbb510e214accbc136b595e6f9f58436d1b5fdd73496673174715752bb27826"
+        },
+        {
+          "asset_version_id": "002cbf33-98f3-4948-936b-a56fe7bb3ebd",
+          "output_key": "production_execution.recovery.19b1279d68d617eeccd6f13c",
+          "content_hash": "sha256:3cbb141ce445690708c11fb0a9b6f26555db36145ee4774714a29117bbad4ea2"
+        },
+        {
+          "asset_version_id": "c6a48b1a-1b4e-4997-9ae3-640dc39ae42f",
+          "output_key": "production_execution.evidence.raw-output.19b1279d68d617eeccd6f13c.56e990f8a97b",
+          "content_hash": "sha256:c37b7100a859da8dd6053ec113976fc58b126755c0fa54c86b185066e778c5e0"
+        },
+        {
+          "asset_version_id": "f740a03c-d652-4cbe-a3ad-11a24d0ce355",
+          "output_key": "production_execution.evidence.normalized-output.19b1279d68d617eeccd6f13c.409cde542376",
+          "content_hash": "sha256:d4fbc4722a713acd8262630f35602197ffb7535c2783f94ad49da7b404e6c74b"
+        },
+        {
+          "asset_version_id": "1793b800-eb65-47b3-822c-9d4c2047a069",
+          "output_key": "production_execution.evidence.output-manifest.19b1279d68d617eeccd6f13c.f6c5b5f8ff9a",
+          "content_hash": "sha256:97025b5869caebfa87ea2c7b39c45990360209988a2a961fde83ae4253aef831"
+        },
+        {
+          "asset_version_id": "b4bf9c3e-8b48-474c-9a9b-7e6b7ed80f59",
+          "output_key": "production_execution.evidence.validation-manifest.19b1279d68d617eeccd6f13c.9c99046f0e62",
+          "content_hash": "sha256:1a992832a1ae1ecff1438df6016b2b7b78941b607f87ea2d7188fc9f8aae04ee"
+        },
+        {
+          "asset_version_id": "022e075a-a298-4fd1-bcc8-c557afd2b1a7",
+          "output_key": "production_execution.evidence.usage-receipt.19b1279d68d617eeccd6f13c.fe1793886a77",
+          "content_hash": "sha256:3869f23aaf96e6cbcc07ce7666d38c4315771a02e6d8c0115ca131c617e01e6a"
+        },
+        {
+          "asset_version_id": "76731f4e-d4fc-453b-a6db-7921f7d6e864",
+          "output_key": "production_execution.evidence.cost-receipt.19b1279d68d617eeccd6f13c.8efeb6e29c08",
+          "content_hash": "sha256:90d12b90b9601c6da64bb815b87c5a1c384d1d701569167ccc8bb540f8d36686"
+        },
+        {
+          "asset_version_id": "2a22d736-6f4c-4a04-b637-3b9b00876adc",
+          "output_key": "production_execution.contract.capability_materialization_manifest.4873d69054150beeaa01",
+          "content_hash": "sha256:fe86300dc2e0fd92f8cf39f14e9630ccbea16c92997ca4a4d3c3cc71aca4c7d4"
+        },
+        {
+          "asset_version_id": "42276fd0-b887-499b-8c2b-286851d583be",
+          "output_key": "production_execution.recovery.19b1279d68d617eeccd6f13c",
+          "content_hash": "sha256:f200ae9586429e212dcc7be4caeef2fcaf9d5bce25ee63f3e59d65824ebea181"
+        },
+        {
+          "asset_version_id": "463ff96c-a526-4ad3-ae2b-b13d2ac8b890",
+          "output_key": "model_call.context_compress.8de44b57e5b8780c6dea",
+          "content_hash": "sha256:cfdf3aad05f7751861f2a5b4132ecb6504eaa3f61788e5e0ca9e8ac5128dd24f"
+        },
+        {
+          "asset_version_id": "bd272d3a-e87b-424e-9826-0e36d7ec81f7",
+          "output_key": "cost_ledger.context_compress.8de44b57e5b8780c6dea",
+          "content_hash": "sha256:33587143bad7725cee3b72b25ebd4036e27345559066e467a3a9e077469131ae"
+        },
+        {
+          "asset_version_id": "b0f0d927-35f2-42df-af81-dace80392131",
+          "output_key": "production_execution.contract.capability_materialization_manifest.a4379dfa9ea2b055594f",
+          "content_hash": "sha256:86e76c6709aaef6448040e593df6c66aea76c6677a4032c4d961f293c4a08d9c"
+        },
+        {
+          "asset_version_id": "00ee5bcd-ba1d-42d9-bcee-ca9c4a797822",
+          "output_key": "routing.d7d2298d39a5b8a92a0b91860dfb81ebbf2025e1b9a672cf5e74b7388b2b8731",
+          "content_hash": "sha256:43600fc4ea4a21a68f1a801ff3aecf38de6604585ac5fee61ea4e36d9f2b953b"
+        },
+        {
+          "asset_version_id": "7a7f287e-67b3-4795-a6e0-1598f0306e8d",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.a9a33aa1f5b16b5501a0",
+          "content_hash": "sha256:a78de692ba76e2f66d9ff27291945c71a0adadc8a04ee1215d9a9975f1c3ffcc"
+        },
+        {
+          "asset_version_id": "d4878381-9dbc-4df8-9823-2f7f04acdfc7",
+          "output_key": "production_execution.contract.execution_context_policy.727e01eaadfdb0ec3d4b",
+          "content_hash": "sha256:596d97c987bbf73c3d4aad1f42d13b17f14b7867292e641969429a959000fc5f"
+        },
+        {
+          "asset_version_id": "dc45b0ab-d8ca-49de-9099-9cdc1638e361",
+          "output_key": "production_execution.contract.execution_validation_policy.f526f075211b49f6ce9c",
+          "content_hash": "sha256:093928f252f62ff22a24793042d7b37be31d0e9a26ad261f40da73a39b195418"
+        },
+        {
+          "asset_version_id": "aa2cd11f-6777-42b3-9c56-8dca02f5571f",
+          "output_key": "production_execution.contract.execution_commit_policy.024af1b3218558b3e2fe",
+          "content_hash": "sha256:bc6561b3727658cbe794123f7c2b1e1faa2751969c58315d46e8ca6e378897fa"
+        },
+        {
+          "asset_version_id": "7430494b-825e-437b-acf8-9a3b86843aba",
+          "output_key": "production_execution.contract.tool_permission_snapshot.20c21ebd4e20a53fa140",
+          "content_hash": "sha256:13ab2fb9fce6c0ac5be062a84c79492aff3842cceb11a34471409b25b1e80ee4"
+        },
+        {
+          "asset_version_id": "3bde32d2-b15d-4cc8-9cfc-7b6852be2e11",
+          "output_key": "production_execution.contract.skill_bundle.8c151221d5e2f871bf47",
+          "content_hash": "sha256:7d5c98522896fd55953638c0cab2e436d2277256351c028ff22a1b1e0ee4c841"
+        },
+        {
+          "asset_version_id": "71372906-dc48-4096-9207-737213085e1c",
+          "output_key": "production_execution.contract.prompt_bundle.ed82d71521de27b5ff40",
+          "content_hash": "sha256:11a27084dab6398f6b4e58e763bf7ca62d388d3c4359f18ba3e7b365fb8c02df"
+        },
+        {
+          "asset_version_id": "22d9aa9a-ce87-4196-b64d-7ba383709326",
+          "output_key": "production_execution.contract.model_profile.dec362401c4355812436",
+          "content_hash": "sha256:da0afca4546af867f599c106c65437bac7002f90d6391a25a05b7b9230575b2e"
+        },
+        {
+          "asset_version_id": "1fff2876-57f7-4793-b53f-a06e9883a8df",
+          "output_key": "production_execution.contract.fallback_policy.1bc500823130c5faae67",
+          "content_hash": "sha256:191194715d82ea67aea017fc880a5fdd421cf0206dfb10717a435788754cd142"
+        },
+        {
+          "asset_version_id": "89ba8d1a-aa35-4101-834f-40102b35243e",
+          "output_key": "production_execution.contract.route_policy.ceb6c8762079bd133ad2",
+          "content_hash": "sha256:43e62a7f11b83b9cac79df0e2e67c17b5e398e888dabed08bd5329932cce660f"
+        },
+        {
+          "asset_version_id": "2ffe1f89-74ac-4e84-849a-c0612a110514",
+          "output_key": "production_execution.contract.input_manifest.a4f5722707db02669733",
+          "content_hash": "sha256:74cbdbfbab329801cca29c365c2c61eb82078c7cf188a13896390704e3c34780"
+        },
+        {
+          "asset_version_id": "df411924-800a-4ba5-871f-145e3b38a980",
+          "output_key": "production_execution.contract.route_snapshot.94dccd91c2a41bd2a9f3",
+          "content_hash": "sha256:10023d18efd771aead5a9630803e6c1eb3313c10238cc48390f235e61b9cf717"
+        },
+        {
+          "asset_version_id": "507a9fb3-02cb-41ae-8b0b-64debf0902d5",
+          "output_key": "production_execution.recovery.3df0d42b7d9ff3f0ac030902",
+          "content_hash": "sha256:970bf7dae9a7f137096354baeb4303a5b8a928f0d797880ae7cc242c8675148a"
+        },
+        {
+          "asset_version_id": "c6f092b1-f451-43a6-8d30-24e7d873ebcd",
+          "output_key": "production_execution.evidence.raw-output.3df0d42b7d9ff3f0ac030902.e10e3c1f1415",
+          "content_hash": "sha256:798814d62bb266c3ea3e88e66e27e0d8f9d2d9d5f3bc39a5f27188b4bdb44c64"
+        },
+        {
+          "asset_version_id": "606d5f8e-756c-470b-923a-79d3e6f4d401",
+          "output_key": "production_execution.evidence.normalized-output.3df0d42b7d9ff3f0ac030902.be7f19fbe4c6",
+          "content_hash": "sha256:665b73b545f99050c7a5326ffb928bcdc3e0d8c8db09f0ac1408c7a4df876d2b"
+        },
+        {
+          "asset_version_id": "e9ac6770-f640-4683-ae96-a58a8caf8aff",
+          "output_key": "production_execution.evidence.output-manifest.3df0d42b7d9ff3f0ac030902.b3b94fa0433b",
+          "content_hash": "sha256:a68dfad589ce1d135bc80f3b53ca24340fbb94278b4bd6b9765cf89eadd70179"
+        },
+        {
+          "asset_version_id": "00d8b508-7e25-4701-906b-eef13bce5200",
+          "output_key": "production_execution.evidence.validation-manifest.3df0d42b7d9ff3f0ac030902.c07d3244a5ff",
+          "content_hash": "sha256:863b62994a6bb93de6438670a1804e1f4499e5571c690107e6c97ef793c1d895"
+        },
+        {
+          "asset_version_id": "c01a7069-c2eb-4016-8958-b9508bd5c661",
+          "output_key": "production_execution.evidence.usage-receipt.3df0d42b7d9ff3f0ac030902.fe1793886a77",
+          "content_hash": "sha256:865ba239190c7814b285528475550bd2d239dc5c2804f0a7fce0e2b10f90533c"
+        },
+        {
+          "asset_version_id": "f69d7b9c-328d-485f-b0a3-acffac409686",
+          "output_key": "production_execution.evidence.cost-receipt.3df0d42b7d9ff3f0ac030902.8efeb6e29c08",
+          "content_hash": "sha256:db58134f4b63eee27a8b19b37fd6d1b38554ce8eab9d070bc829e93259ae7530"
+        },
+        {
+          "asset_version_id": "0242400c-fd83-42d6-9e5f-941a572ebf97",
+          "output_key": "production_execution.recovery.3df0d42b7d9ff3f0ac030902",
+          "content_hash": "sha256:0bff5c6834e8e194cb196afab4345843f90e7e028d871eb9a42c7ddf68bcbca1"
+        },
+        {
+          "asset_version_id": "1a75213b-b83f-42ae-99d6-074e19a8f38b",
+          "output_key": "cost_ledger.context_fidelity.dd776e22b862a62c1f84",
+          "content_hash": "sha256:96e469d96855f471528c0765936a6ffcb72729f95aa7e91a7059690fb01a3813"
+        },
+        {
+          "asset_version_id": "e36abe50-9343-4b51-825a-97290fa624cc",
+          "output_key": "routing.9f8faf8990cf198278ea77f68317c5312ec623a9881e4dc6d2ad021afa97c02e",
+          "content_hash": "sha256:50954abaa01248484253d3f0c2318c5ec824dd9876015930d7d677e5e59251a2"
+        },
+        {
+          "asset_version_id": "42107edc-1be1-41c7-91ed-649e8b1c6244",
+          "output_key": "production_execution.contract.execution_commit_policy.9cc1d0c27243366b6d87",
+          "content_hash": "sha256:4a6c14d02e987d9399d4216b9524727d512b616117ecdbae946cc61b4256d4aa"
+        },
+        {
+          "asset_version_id": "443ae3b3-c767-4cc9-ba23-792d4f3b9a9d",
+          "output_key": "production_execution.contract.prompt_bundle.c6bfb0ef66decbcef407",
+          "content_hash": "sha256:12bc9965f70f5ee96c1684a164e711e8e58d1b9d2e2fbe3a8fc705c4bfca0dc1"
+        },
+        {
+          "asset_version_id": "b4a36b9e-bdde-42a3-9bba-d8ab5c8a3cf2",
+          "output_key": "production_execution.recovery.37bc96e37299a4bcd92c761e",
+          "content_hash": "sha256:cfe7fc04ae8d10ebb71b122598977f58bf01689bd2694968ea4881a4e7bf3614"
+        },
+        {
+          "asset_version_id": "7a6c1311-0427-457b-9f56-970b6624de23",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.44c05871a5d2d60196ff",
+          "content_hash": "sha256:9ab9ed0d1280100d6b8dd1b61352fe1e161d6564b73e0e8d0496935057c5ec2d"
+        },
+        {
+          "asset_version_id": "c9ca0ff2-7ee6-4fcb-aaec-8a47e1331229",
+          "output_key": "production_execution.contract.tool_permission_snapshot.e81dc68c555d54b09c14",
+          "content_hash": "sha256:463172481c62ae4c46d06a15005f0553d09fd05c304b26d9d2aff9f2051a7ffc"
+        },
+        {
+          "asset_version_id": "227d171f-4843-44ac-8511-ab017679c0db",
+          "output_key": "production_execution.contract.input_manifest.52277cda655654cc5d8f",
+          "content_hash": "sha256:c9ea6ab07ac00664b6c47657cebce6ba3e3700090dadc0dcada8e168adfeb670"
+        },
+        {
+          "asset_version_id": "faf7571f-0868-47b3-a15e-720c1a193330",
+          "output_key": "production_execution.evidence.raw-output.d01533fcae7a86834c95ec3d.cea635a81db9",
+          "content_hash": "sha256:503d306e95a8ac5a15e4bfff6cc35a6bfbc16bb90498144e08bd6cd24f1e1adf"
+        },
+        {
+          "asset_version_id": "dddcfd08-7ba1-46fe-bb28-52e41dbc7766",
+          "output_key": "production_execution.evidence.normalized-output.d01533fcae7a86834c95ec3d.be7f19fbe4c6",
+          "content_hash": "sha256:a35d77864a259434205b1c0632e6c5e27cc8d19af387b11829463f9791c5c14e"
+        },
+        {
+          "asset_version_id": "003be4cf-f99c-4f72-91ec-0e96d4d910e0",
+          "output_key": "production_execution.evidence.output-manifest.d01533fcae7a86834c95ec3d.2fc316b2d136",
+          "content_hash": "sha256:90871310ac39e8524ab896c17cac8daa57fe4a4e9dfcaf57b279823c680ffbc4"
+        },
+        {
+          "asset_version_id": "aee20908-4573-4188-9dbf-54b91d09b21e",
+          "output_key": "production_execution.evidence.validation-manifest.d01533fcae7a86834c95ec3d.a0d4518891ae",
+          "content_hash": "sha256:e2165831c399a1731f76256d6e0a5e9cc77ceaaf11f19ac11561d36903d7cabe"
+        },
+        {
+          "asset_version_id": "adeb9115-4a19-42f2-89f8-ec4851efaeb8",
+          "output_key": "production_execution.evidence.usage-receipt.d01533fcae7a86834c95ec3d.fe1793886a77",
+          "content_hash": "sha256:0ceb39324c3ff66d6f2cf2bab13c56cbd462ace1e0d192d83d0e0e2ce9274b9d"
+        },
+        {
+          "asset_version_id": "70aa2609-deda-4c55-a098-56d7c10b852a",
+          "output_key": "production_execution.evidence.cost-receipt.d01533fcae7a86834c95ec3d.8efeb6e29c08",
+          "content_hash": "sha256:d95799e5cd68d602d34d118e03fd6d50894b102763038bef7658787ee44fac70"
+        },
+        {
+          "asset_version_id": "db13237a-bb0a-4d25-b83b-e92fc72dc0ed",
+          "output_key": "model_call.context_fidelity.a4066a2cbb54b72916c7",
+          "content_hash": "sha256:723061d2f8aa44b26bb294c86b936ef480b0f1c17ada59005a7c172480958a52"
+        },
+        {
+          "asset_version_id": "27d2e1c2-399e-4bcd-830b-94e3ee45db12",
+          "output_key": "production_execution.contract.capability_materialization_manifest.d60e8c14141317bb3530",
+          "content_hash": "sha256:5d650452659e47a8574bf0462f17aa0996683f8b69ab41ddf460e8d9fe236756"
+        },
+        {
+          "asset_version_id": "4d7a91f2-dc37-4780-bb2c-2f2481b96492",
+          "output_key": "model_call.context_fidelity.dd776e22b862a62c1f84",
+          "content_hash": "sha256:e241948f24107a0c35eb3cfa000f08c28d33951808803dad2a226bce5f5ee14c"
+        },
+        {
+          "asset_version_id": "4b81c6bc-0327-4bcb-9af0-014efa099cb1",
+          "output_key": "production_execution.contract.capability_materialization_manifest.3be279ab2dd12904ffc4",
+          "content_hash": "sha256:5d650452659e47a8574bf0462f17aa0996683f8b69ab41ddf460e8d9fe236756"
+        },
+        {
+          "asset_version_id": "c01e5e55-3ef7-410e-93be-5c876e0ce23d",
+          "output_key": "production_execution.contract.execution_context_policy.80f1f47b8cc826a58e16",
+          "content_hash": "sha256:90bb0df5a3678ba442fe06e24c14fd1885ef961914f4f881a878f0fe0e5e7dc2"
+        },
+        {
+          "asset_version_id": "02c5f473-ff44-4a3f-852b-fa9d584ffaa9",
+          "output_key": "production_execution.contract.execution_validation_policy.4aa08b79c0e514b7e073",
+          "content_hash": "sha256:6170119481ff19edd0139fa66c5ee26e3abfba7a60eeffe48d2d767c84ebf809"
+        },
+        {
+          "asset_version_id": "46e5600c-f3af-4dcf-8af1-359da1115cb9",
+          "output_key": "production_execution.contract.skill_bundle.7b76d79b7b928f64a388",
+          "content_hash": "sha256:f68b2df18c800df3e6228e42c98c1b88e3a882214db27418d32574d2cb2c17db"
+        },
+        {
+          "asset_version_id": "e91c957e-0656-4759-8a87-a6244d90fcd5",
+          "output_key": "production_execution.contract.route_snapshot.88f0b10c05b92772f31b",
+          "content_hash": "sha256:a1d92c552a147a7bd9514683a8299c625e5bf2688b356fbcedb08c8a6f40089e"
+        },
+        {
+          "asset_version_id": "7d94d46f-4ae3-4253-a9fa-574cb1e1b6fb",
+          "output_key": "production_execution.recovery.37bc96e37299a4bcd92c761e",
+          "content_hash": "sha256:15071e1176905ebecac2c991634094b261f4ce5fe666759d367c5900bc482ee3"
+        },
+        {
+          "asset_version_id": "514181fc-fb39-4721-902e-f2475c5af8a7",
+          "output_key": "cost_ledger.context_compress.0566c9c3f37f8d76b333",
+          "content_hash": "sha256:b8bbbbfa5dbb4f249951802bcc4af7d07cd5085b5d65b1827f337a6ebfbd08c0"
+        },
+        {
+          "asset_version_id": "f70393a3-c1b0-4862-aca7-0733fd80aff1",
+          "output_key": "routing.35f5e43e43f49411f324840bfffbc8919bc67dcc4b52c7bc7fb58c95c19774bc",
+          "content_hash": "sha256:7fac6d80dbabb73e5afad4d7a42072a9c6db2b603fa980f1a33ac974c52c16bd"
+        },
+        {
+          "asset_version_id": "3f23a1b9-62aa-451e-a298-1c14b2359cbe",
+          "output_key": "production_execution.contract.execution_commit_policy.786f42f75adf7eb53227",
+          "content_hash": "sha256:e85e111c76e3e47d9c4946d04dedf9fa1fd7a5a8155f2d1ce4a0277992928032"
+        },
+        {
+          "asset_version_id": "f4950c8e-e518-4aeb-bf5f-3a43fdd803b9",
+          "output_key": "production_execution.contract.prompt_bundle.0a37a438307a3d361c8d",
+          "content_hash": "sha256:3999325d2f93fc341e75094fabe5031e397fac5c0be2e9264fb8b880517dee98"
+        },
+        {
+          "asset_version_id": "b95bd740-0c4c-4953-b009-79f2bc705e4d",
+          "output_key": "production_execution.recovery.d01533fcae7a86834c95ec3d",
+          "content_hash": "sha256:2548a784c3a4f48911b1ee24dada3f58eae9867c3e2b7a2ca8d7804c18150bcb"
+        },
+        {
+          "asset_version_id": "83b8c5ef-7a4b-437a-803f-d7d9e3789578",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.f5c695695a51cf77e463",
+          "content_hash": "sha256:7dc85c5724bc6f8fd5574faeaa640402e495419dbb7bf19092353b2c2596a50c"
+        },
+        {
+          "asset_version_id": "0fe5469c-4148-4cb7-a595-1f2745c4cd2d",
+          "output_key": "production_execution.contract.tool_permission_snapshot.87bc6d14adf09efde0a6",
+          "content_hash": "sha256:4bb442af06b9ce9a2a1c2f8bb44ce0def985b51351e27cbfc88f6a7aba149903"
+        },
+        {
+          "asset_version_id": "706feb53-111a-4458-a78c-b30ff51875a3",
+          "output_key": "production_execution.contract.input_manifest.e65738f1b8cec5048cfe",
+          "content_hash": "sha256:62ec11b215cf53558f0125cb199266493c41a4df1f386c0d7ac84a21188c3231"
+        },
+        {
+          "asset_version_id": "3a5537ac-dffd-4077-a4f6-8bfb7f94dd71",
+          "output_key": "production_execution.evidence.raw-output.37bc96e37299a4bcd92c761e.2f318e554da1",
+          "content_hash": "sha256:1d8ad866f1fe2be76b74fc67c05eadbba2e7bdd682e7f1c96492bcbe3f7df21e"
+        },
+        {
+          "asset_version_id": "e02a3b26-ca9f-4b8e-b8ce-ef464fb04d0d",
+          "output_key": "production_execution.evidence.normalized-output.37bc96e37299a4bcd92c761e.409cde542376",
+          "content_hash": "sha256:9888b4cbf237052c879452497a46427362de580c3eb6c5ab32aa454650a8d855"
+        },
+        {
+          "asset_version_id": "a06766cc-397a-4c8a-8912-769639a11491",
+          "output_key": "production_execution.evidence.output-manifest.37bc96e37299a4bcd92c761e.26bd969a7db9",
+          "content_hash": "sha256:16c4c1aaf881e9fcc67eb927ced0dc8f9a3474c480d9a1a39b7ce71151e7bcb2"
+        },
+        {
+          "asset_version_id": "ccb05da8-4eb9-4c93-b972-59ed400a86db",
+          "output_key": "production_execution.evidence.validation-manifest.37bc96e37299a4bcd92c761e.8af0c48dde7c",
+          "content_hash": "sha256:908aec0544fe9d30600f4ef1a1706ece8d20b10f9948851ec25d19591a04e682"
+        },
+        {
+          "asset_version_id": "453e2d0d-0308-497b-a761-482f65c5e45b",
+          "output_key": "production_execution.evidence.usage-receipt.37bc96e37299a4bcd92c761e.fe1793886a77",
+          "content_hash": "sha256:bd792d97e509cd748cc2698ddd51e67f3a2a4ca30132bf133b8fff85381ca171"
+        },
+        {
+          "asset_version_id": "8295c75e-b583-4ba3-a2e4-f0eb3fb74ad8",
+          "output_key": "production_execution.evidence.cost-receipt.37bc96e37299a4bcd92c761e.8efeb6e29c08",
+          "content_hash": "sha256:4445739de1c41b2e77d28d8392c0bf69852d404c125b1eadaeaa08c5d3fc2496"
+        },
+        {
+          "asset_version_id": "64a5bfb7-3da6-43ec-bfd6-f59e00e16a36",
+          "output_key": "model_call.context_compress.0566c9c3f37f8d76b333",
+          "content_hash": "sha256:53c7a5cec11ccab35b4b48c1f7e89d36a57bd181daa64ec019612acc2dbf8ffb"
+        },
+        {
+          "asset_version_id": "630c07e5-7229-464e-b0f6-ebb6fb2faf55",
+          "output_key": "production_execution.contract.capability_materialization_manifest.dc705f2a44a8ce82e2be",
+          "content_hash": "sha256:86e76c6709aaef6448040e593df6c66aea76c6677a4032c4d961f293c4a08d9c"
+        },
+        {
+          "asset_version_id": "29936fad-4f42-4c33-9bcc-af4f542849cd",
+          "output_key": "production_execution.contract.execution_context_policy.69b288e151a797203620",
+          "content_hash": "sha256:2975d76ec91fc01aacf48a4a9ae43f4677ea56e3f95e36df7aaee4f1563af5d7"
+        },
+        {
+          "asset_version_id": "1f62255a-e390-4ee8-9db3-4450cc9fc883",
+          "output_key": "production_execution.contract.execution_validation_policy.ec212e8807c33121eb44",
+          "content_hash": "sha256:dc7a9b611704e0c8423081b940b7d66e19e5e8539766c306e38c656a23725915"
+        },
+        {
+          "asset_version_id": "73411fd3-ed16-45d7-85d6-a29542048587",
+          "output_key": "production_execution.contract.skill_bundle.cb6ac5b33c62001e4b6c",
+          "content_hash": "sha256:dc5570fe676806b4a49dae60b3be316471435029758960b84e82e6604d8a7b6e"
+        },
+        {
+          "asset_version_id": "76bdbdbe-ed01-4d98-91fb-fe2c465d5d2f",
+          "output_key": "production_execution.contract.route_snapshot.e6adc08ff9f56516ca56",
+          "content_hash": "sha256:019eb5704d77d054e356d1cf68f771d96223fe0961b2601d45a3c6b5cd222241"
+        },
+        {
+          "asset_version_id": "839ed047-780e-4c66-848b-b6f2bdbb2021",
+          "output_key": "production_execution.recovery.d01533fcae7a86834c95ec3d",
+          "content_hash": "sha256:ee3d7de7e1247ebbb304728e93db95cd38ee580c19a96e17d010900bff0e4fed"
+        },
+        {
+          "asset_version_id": "e1621c92-68ae-458e-bbeb-fb2ff2192434",
+          "output_key": "cost_ledger.context_fidelity.a4066a2cbb54b72916c7",
+          "content_hash": "sha256:20e232b3a3501aea6d27141702c03d3b07227dc7d01a5e825279b79ab917ba9d"
+        },
+        {
+          "asset_version_id": "9ab90de0-ac88-4348-b956-5bf6cfaf10d1",
+          "output_key": "routing.559c4435304895f25417fb06415574d216a2aeb47be47cb1abc9be9e4f52f847",
+          "content_hash": "sha256:2aac7ce614c8836481186ec3826312cf8087429f2d02c6625b669816ebb58b6c"
+        },
+        {
+          "asset_version_id": "3d276383-d30c-4fa4-8ce8-4a50a79a1741",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.90cc02151f5d669f58a6",
+          "content_hash": "sha256:3ff605e63fadf8a25f8b5f8ea6b0fdb945ca47700dfbffd9655f6c58fe35ceed"
+        },
+        {
+          "asset_version_id": "361d9775-b2b3-496c-877e-b29573b2876a",
+          "output_key": "production_execution.contract.execution_context_policy.e0373e0577f5ddb794bf",
+          "content_hash": "sha256:da493ff6ecf0ab6cc88fef07857569b0012dde626fa96c89b0c8f10d0ec57cfd"
+        },
+        {
+          "asset_version_id": "1e61bb12-dfef-421e-accd-a6e870eec80f",
+          "output_key": "production_execution.contract.execution_validation_policy.22f4892f9202266dda95",
+          "content_hash": "sha256:4153b5a7d44e274581cc9124ce0e5adcb9c297140e5b05314a62aad032232d45"
+        },
+        {
+          "asset_version_id": "efcd3ca8-8656-4f23-ac7f-b0b8055243f2",
+          "output_key": "production_execution.contract.execution_commit_policy.69ef40ada42c2499aa89",
+          "content_hash": "sha256:bb657099c2d5a144ad23c3648ab2a95fcf1a5621af046b9f086bfd977e42969e"
+        },
+        {
+          "asset_version_id": "850b211f-00d6-4ae0-a69b-70740325ba4a",
+          "output_key": "production_execution.contract.tool_permission_snapshot.7098caeab53b81668d40",
+          "content_hash": "sha256:b9164aa3d973cc43908012741713b1e59959b1bd221daea2547fffee3e14a8b4"
+        },
+        {
+          "asset_version_id": "d1b87df9-310c-4e9a-9085-82d2651830e7",
+          "output_key": "production_execution.contract.skill_bundle.d745e1f71112c04cbadc",
+          "content_hash": "sha256:314d49f740537243d2530e5d895e5147ccb0e1a86ac5474396e95b13444f2b0f"
+        },
+        {
+          "asset_version_id": "3bda45a4-302c-49bd-8316-7a854248661f",
+          "output_key": "production_execution.contract.prompt_bundle.55df548b82618fd8ca85",
+          "content_hash": "sha256:73154af4fccfd93bc6de0a627700a409b2faca62b1d5ba776ba28a80349ecc70"
+        },
+        {
+          "asset_version_id": "dbb5a8d7-436b-4b45-bf4f-3905054b2235",
+          "output_key": "production_execution.recovery.b064c30fca287df7f044a2ec",
+          "content_hash": "sha256:4d8c81c8b6fe95dfab42e7e48ae2366148f95e162f7be684b0ad5252d9b2ab00"
+        },
+        {
+          "asset_version_id": "8944d96b-ef7d-4d6d-b0d6-0860a54b8fd8",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.7a4194a9273afeb0bfed",
+          "content_hash": "sha256:49867d424deb4b12334e223e3f5496c644a55b0a396de27099dc5727a1c8283e"
+        },
+        {
+          "asset_version_id": "5fc16f0b-54ef-43eb-a867-ff33061c02bd",
+          "output_key": "production_execution.contract.tool_permission_snapshot.d53f0f8866c54bd530c9",
+          "content_hash": "sha256:3c0e8ecf0bdd8e83c80e4660de05cfbaba17363ce906cf456fee32ac66965231"
+        },
+        {
+          "asset_version_id": "a713f318-ae33-49e7-aee1-74808d75d126",
+          "output_key": "production_execution.contract.input_manifest.579d2aa10c27a5a8fea4",
+          "content_hash": "sha256:c6d40f0441fc8edaf3ac8d5ac064ee7cbccf68cefb927c6a701c76de1bd112e6"
+        },
+        {
+          "asset_version_id": "d2afed0b-23ba-4082-951f-9899dbe63b90",
+          "output_key": "production_execution.evidence.raw-output.92a63fb196bccf68766011f5.f884c21dc9e0",
+          "content_hash": "sha256:c1ac39e8d69661081575713676aae04df4be9b36d9e1b2a74114dd4780d02a8e"
+        },
+        {
+          "asset_version_id": "144afd7b-89c4-44ab-b06e-0832d6262470",
+          "output_key": "production_execution.evidence.normalized-output.92a63fb196bccf68766011f5.be7f19fbe4c6",
+          "content_hash": "sha256:6b4b75b85554e9277eacfa6edc3ef914d83fbba81e6d86840372ff8ac88da5b9"
+        },
+        {
+          "asset_version_id": "f9e745da-2b58-4cef-b8c8-c1e097bc7f65",
+          "output_key": "production_execution.evidence.output-manifest.92a63fb196bccf68766011f5.8f11c6039b95",
+          "content_hash": "sha256:d1a491e0cc078e022321030ced578e1e492940f779da43a189224b36ce7c6d17"
+        },
+        {
+          "asset_version_id": "c75f6077-3d2c-478e-9d84-073083029cf1",
+          "output_key": "production_execution.evidence.validation-manifest.92a63fb196bccf68766011f5.bdeb9f832fb3",
+          "content_hash": "sha256:5c6427ba0353a5a9700a7d26809160c05be6a2c576e4ae24b70dc83cf010ddc0"
+        },
+        {
+          "asset_version_id": "984de16d-f7c3-493d-be59-5d161116f571",
+          "output_key": "production_execution.evidence.usage-receipt.92a63fb196bccf68766011f5.fe1793886a77",
+          "content_hash": "sha256:2a912a48882d1fd871ea8666689960ef468186448e0ebe32a30e5cdb46977403"
+        },
+        {
+          "asset_version_id": "9554c3b1-3173-4f65-aa51-b08dca5e63c3",
+          "output_key": "production_execution.evidence.cost-receipt.92a63fb196bccf68766011f5.8efeb6e29c08",
+          "content_hash": "sha256:f2565f9111cc559ed5b1285cbef279c30abd463a521776bab7c92cb6947a2715"
+        },
+        {
+          "asset_version_id": "d426d94f-36f7-4cc7-86b0-a61ec7cba3db",
+          "output_key": "model_call.context_fidelity.61e3206713dd9d79b98f",
+          "content_hash": "sha256:bbc6e8fb51925af80e59885c344f41a250879e5677edf4d5160fbaef6758d73f"
+        },
+        {
+          "asset_version_id": "0fbbb0cf-6b3d-41d1-a005-7b9402c3793e",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.102d1090e88b35c03a6e",
+          "content_hash": "sha256:14f5019c23b91265e959238e27e3c2a6eaf24087711fae593837d8859b026d18"
+        },
+        {
+          "asset_version_id": "0931f1b1-22ce-420d-99ba-92b3d5c811ac",
+          "output_key": "production_execution.contract.execution_source_policy.6ded09216340e2592d6c",
+          "content_hash": "sha256:488844276b51b14f98a5f40b0aebfb9eec89a560ce24e2da1fe5606ec5660979"
+        },
+        {
+          "asset_version_id": "d75a7459-2243-4721-bbbc-1306a356d447",
+          "output_key": "production_execution.contract.tool_permission_snapshot.88ae6ea56dda63475b1a",
+          "content_hash": "sha256:84cd3773635bf342a2eafa761416c733a19cf51aa26d4d103f6bd88f1bd2ae4d"
+        },
+        {
+          "asset_version_id": "5ea7b9d3-39c0-4324-b03f-6f80aff97b92",
+          "output_key": "production_execution.contract.model_profile.66ea5041953fb2567483",
+          "content_hash": "sha256:800a473c68c8d1d59e5bb6d5fccfc589b033c58718373584cd3579950f674bca"
+        },
+        {
+          "asset_version_id": "7ae11920-ba56-40af-89f6-9f029331ee14",
+          "output_key": "production_execution.contract.input_manifest.178109f7804971762f71",
+          "content_hash": "sha256:2ded13eb60b2cea441914036f8cadfceee1d51e7c00ca940480b60436ac6c27e"
+        },
+        {
+          "asset_version_id": "595636f4-986e-4a7d-bdbe-6476655a8fa0",
+          "output_key": "production_execution.evidence.raw-output.d31695a6c305d2a5fbfe463a.ba1b68d24f1e",
+          "content_hash": "sha256:3ac9a2a185ae589a6f4ad93ff2c7e3aa81acbb415548900e63942865e13e7999"
+        },
+        {
+          "asset_version_id": "e2f8a525-f7c9-4d23-b953-2463e8211360",
+          "output_key": "production_execution.evidence.normalized-output.d31695a6c305d2a5fbfe463a.63393bd4682c",
+          "content_hash": "sha256:17593adce156ec980aa1b953add6c35de85283244decb922624b77c07d2f3a2f"
+        },
+        {
+          "asset_version_id": "4552ea16-28a0-44ef-91a8-960bb1e67bda",
+          "output_key": "production_execution.evidence.output-manifest.d31695a6c305d2a5fbfe463a.f3ad493d2554",
+          "content_hash": "sha256:db4328264c506b3099c8b14b21873a57ced8d40d29962f68503addd33682cf48"
+        },
+        {
+          "asset_version_id": "254ba200-642c-400a-aa59-1e428d304c68",
+          "output_key": "production_execution.evidence.validation-manifest.d31695a6c305d2a5fbfe463a.2b0c9f4258da",
+          "content_hash": "sha256:1fea79238e768230beb24cc9d3f50dd8806557db6d3debe048396318fbb73d4a"
+        },
+        {
+          "asset_version_id": "b052b41a-3a9b-4f1c-aebb-3a7400606ac4",
+          "output_key": "production_execution.evidence.usage-receipt.d31695a6c305d2a5fbfe463a.fe1793886a77",
+          "content_hash": "sha256:2e1845b3ee48b5385fe80e155ec253a50f8a2b45a1cd73eeba1914edf6104038"
+        },
+        {
+          "asset_version_id": "330cbd8e-c5ef-4ea9-bce1-9a7ac3eecdbd",
+          "output_key": "production_execution.evidence.cost-receipt.d31695a6c305d2a5fbfe463a.8efeb6e29c08",
+          "content_hash": "sha256:8ba8ba10e03a6e6f5c6c1ab895a6981fdf006ff966c89a47b24739a34733ce45"
+        },
+        {
+          "asset_version_id": "ef053b39-d8db-449e-8a50-d57545ed188e",
+          "output_key": "model_call.draft.3b5c3733af0316f36b2a",
+          "content_hash": "sha256:cbc93368d55d7071b5364b1c5a8245d8c71cb80cfc1d80618d45ca16a8daf4cc"
+        },
+        {
+          "asset_version_id": "b8d2014a-7b8c-42e6-83ee-806aace96ad9",
+          "output_key": "production_execution.contract.input_manifest.453930c6e648c05bed3e",
+          "content_hash": "sha256:6e5134fe03df5ec05ea804465c0edd021d2418c7078e74c0060147ac207df09b"
+        },
+        {
+          "asset_version_id": "9994505c-0cca-45b3-b9d8-382b78c798a8",
+          "output_key": "production_execution.evidence.raw-output.b064c30fca287df7f044a2ec.efbb0a3f4c00",
+          "content_hash": "sha256:c27c44dda15f20d827553c486e06d0987a0f5595bc2f6d80ca7465334531a1d0"
+        },
+        {
+          "asset_version_id": "ec2446e6-d562-4f99-a0d8-60926aa966d0",
+          "output_key": "production_execution.evidence.normalized-output.b064c30fca287df7f044a2ec.409cde542376",
+          "content_hash": "sha256:0404900b3d2f88fc3ff12fc7d9da74709478374e5f7cb9912a208192def20a6a"
+        },
+        {
+          "asset_version_id": "6c634699-f518-444d-9061-8627410eada9",
+          "output_key": "production_execution.evidence.output-manifest.b064c30fca287df7f044a2ec.9f366038d17d",
+          "content_hash": "sha256:931e816bc99ad002385af604f6492f3cb89a068b569170a0cf6139397a3b87e3"
+        },
+        {
+          "asset_version_id": "0dcd108a-62aa-49cc-b1b0-7fbc6832a24f",
+          "output_key": "production_execution.evidence.validation-manifest.b064c30fca287df7f044a2ec.b7f289405bce",
+          "content_hash": "sha256:4290344903ec56f016984c1f34683a3374520a0e18c3d6d00a78618db97232f0"
+        },
+        {
+          "asset_version_id": "da4204ce-5296-45e2-85a8-4a24a4f544e1",
+          "output_key": "production_execution.evidence.usage-receipt.b064c30fca287df7f044a2ec.fe1793886a77",
+          "content_hash": "sha256:f91a9b80d8a51cd2fb61540c42aeba7d2bbe1b9b411319c9f14249eb2dab7a00"
+        },
+        {
+          "asset_version_id": "18a33afa-6fdd-4606-8f4e-78b82773d7a0",
+          "output_key": "production_execution.evidence.cost-receipt.b064c30fca287df7f044a2ec.8efeb6e29c08",
+          "content_hash": "sha256:088ae46921e71deaec584a2afc4799ace9ee9595167353840475bee0da226be1"
+        },
+        {
+          "asset_version_id": "5c61b4a6-2574-4675-b5b6-32f1be1f8e03",
+          "output_key": "model_call.context_compress.58dc6229bbf66d579f3a",
+          "content_hash": "sha256:242721dd2391284bb998e9dea748f7df71ea26c48f7d420e4bac5d2ed0fec43c"
+        },
+        {
+          "asset_version_id": "915335c1-b806-4531-a7e3-ceeb47014b87",
+          "output_key": "production_execution.contract.capability_materialization_manifest.d566ebb17f9a7f7e869c",
+          "content_hash": "sha256:86e76c6709aaef6448040e593df6c66aea76c6677a4032c4d961f293c4a08d9c"
+        },
+        {
+          "asset_version_id": "c266dc41-091f-4b3c-a096-f0bc8e36b661",
+          "output_key": "production_execution.contract.execution_context_policy.bfdb9400d5511119c481",
+          "content_hash": "sha256:2f87c0c9769c81cd415de8338a70fe18912525ffe52304c10204ae7602444b00"
+        },
+        {
+          "asset_version_id": "7a3576ce-7d05-4e68-825f-0a211a380437",
+          "output_key": "production_execution.contract.execution_validation_policy.04b54678232140bc8c0d",
+          "content_hash": "sha256:66213838037800d051cb3efa64d790d47a06f88d25d5e46926ebea471c119626"
+        },
+        {
+          "asset_version_id": "514d8e11-0c9d-418c-92dc-2b4951e4fa7b",
+          "output_key": "production_execution.contract.skill_bundle.5eb651a562b7f046359b",
+          "content_hash": "sha256:9d8998d8c8127fcc82e15988fbbe9fc3f075ec0ca7c59d770f69818055235536"
+        },
+        {
+          "asset_version_id": "6e984854-f747-404a-9678-828d96f34ba6",
+          "output_key": "production_execution.contract.route_snapshot.07b241e2682e5fc4ac56",
+          "content_hash": "sha256:fcaaf406cba4cfb517599025db8f6c2941df41e0db742457ec45f0e39abe214b"
+        },
+        {
+          "asset_version_id": "97a5aa9b-4071-4af1-8be3-e717ab06b081",
+          "output_key": "production_execution.recovery.92a63fb196bccf68766011f5",
+          "content_hash": "sha256:5c2e1fbe51d05a2ffdbf9f7c1a486b4653813f20e58ba104cba643d702e978b2"
+        },
+        {
+          "asset_version_id": "284b4ab7-f9f0-471e-81f4-f6c0bc07a431",
+          "output_key": "cost_ledger.context_fidelity.61e3206713dd9d79b98f",
+          "content_hash": "sha256:35fec7bae1f4fd6ced32e71825ef1a3235a184548367f8907ddedf9b8ac116a1"
+        },
+        {
+          "asset_version_id": "dd08b79e-1883-4edc-a283-fb256cebc9ae",
+          "output_key": "production_execution.contract.execution_validation_policy.cabfe84b32cc999eac94",
+          "content_hash": "sha256:7d2341affa6893e701cf65cf96019ceb0eb48e6d903ec7f7e174ee742ea9862c"
+        },
+        {
+          "asset_version_id": "d7f31a1b-f60e-478b-b16f-e56f36f27089",
+          "output_key": "production_execution.contract.skill_bundle.2362050de0e3e3d9b592",
+          "content_hash": "sha256:9ca61008c9fc53d317bd21944fb3862c10c83ab32fde5f7238d4248f804265d6"
+        },
+        {
+          "asset_version_id": "e11e0f7d-8d6b-4df4-8cac-da8ba5831243",
+          "output_key": "production_execution.contract.fallback_policy.c620d02338ca1355ee51",
+          "content_hash": "sha256:8ea36806eb62c4ec65c1c2a590cde039354866cf55626be404619b9378812784"
+        },
+        {
+          "asset_version_id": "e939e743-b3b8-4b5d-a8ad-fac1e55a048c",
+          "output_key": "production_execution.contract.route_snapshot.5b769feb5f4d41b00755",
+          "content_hash": "sha256:3c2315895499674ad5db0512b31fc743a4515e0d2fc447d0f2bd0474cce0918a"
+        },
+        {
+          "asset_version_id": "06b559a9-52e4-42b1-b037-794def938ba6",
+          "output_key": "production_execution.recovery.d31695a6c305d2a5fbfe463a",
+          "content_hash": "sha256:0a24b8e12cb6686608bc9028180c2a75790b77fae9e51834a17e9738335736e3"
+        },
+        {
+          "asset_version_id": "9ff5a5e7-718e-4770-8b17-9b68a119c195",
+          "output_key": "cost_ledger.draft.3b5c3733af0316f36b2a",
+          "content_hash": "sha256:15f9379a0b7e0643716bc15ccc7af24583eb63d0c2ada86d515fc602403bb1bb"
+        },
+        {
+          "asset_version_id": "581197c2-f8c1-48db-ac91-ed70bb353409",
+          "output_key": "production_execution.contract.route_snapshot.1a40ff663d822d2e649b",
+          "content_hash": "sha256:262e0615e52976c4ce3c25822fef001c81b63f5203448c777b9dd12c3d79f64e"
+        },
+        {
+          "asset_version_id": "4f82ab9b-c7b4-432a-b6dc-b16b541b7881",
+          "output_key": "production_execution.recovery.b064c30fca287df7f044a2ec",
+          "content_hash": "sha256:43df5785691cf3669554cffe0657405b6d42cbeebff1d111c97bd285fdfe3acc"
+        },
+        {
+          "asset_version_id": "0acdf375-48fa-46c1-8f8c-64d7890ce376",
+          "output_key": "cost_ledger.context_compress.58dc6229bbf66d579f3a",
+          "content_hash": "sha256:b61b64cffd522ccd66bb95e65cfc85fef19887a0e2cf7a2382da381924fa5830"
+        },
+        {
+          "asset_version_id": "d4a32e63-7188-4b97-8639-10c38d4b7dbf",
+          "output_key": "routing.a8f8350008960da7aed7e610e3897a2821611c501067f5ae013766a28b2243e1",
+          "content_hash": "sha256:59e85ae56ea9e523696617599249f32e772b86bc90283e670b41f794d8820397"
+        },
+        {
+          "asset_version_id": "5c30a9a6-f514-4275-99d4-f1379877330f",
+          "output_key": "production_execution.contract.execution_commit_policy.a0d71b9996bc1a200e02",
+          "content_hash": "sha256:94b9649b02c8e6dade8f40f4581cfce25015c9ecd8ebf67cb52a4963dc8fd32b"
+        },
+        {
+          "asset_version_id": "c006cd47-471e-474a-a185-97b9070266b3",
+          "output_key": "production_execution.contract.prompt_bundle.6de8d6bb39c7034a5b4e",
+          "content_hash": "sha256:e10b120e20d4898dd71f2a85840046ffd9528d30043d7a7ea32682e31ebb0c3e"
+        },
+        {
+          "asset_version_id": "8f7a2e6b-7780-4708-b102-ba12485e7da1",
+          "output_key": "production_execution.recovery.92a63fb196bccf68766011f5",
+          "content_hash": "sha256:3555197ef509aa5d8fd016439ce6d1aa5f111d14f87f1fc5618bfed7ea072665"
+        },
+        {
+          "asset_version_id": "83114177-6e74-418a-a7f6-346a1c49a529",
+          "output_key": "routing.ac2bec392d1cec325f0dce1514440b2c142d7e5d6b582bce1fe3fc441e0201ca",
+          "content_hash": "sha256:026dcdf248fb76b4f67fa28937800ba3fd65d0812d658d907a166ba0f9971e2f"
+        },
+        {
+          "asset_version_id": "92bfa165-b3b8-4921-952b-3a152015ebf8",
+          "output_key": "production_execution.contract.execution_context_policy.7a763c3e0c6cfda82623",
+          "content_hash": "sha256:bd7ec50cf30e8ff70aa1488819c02e720bc7584a6abe6c692fb911e22a05b4ba"
+        },
+        {
+          "asset_version_id": "f7d9b474-ad9e-4825-ad14-3f731d6f85bc",
+          "output_key": "production_execution.contract.execution_commit_policy.6154f7f084dd34c1cb24",
+          "content_hash": "sha256:b813cbbedd672150cf1cc1c8e9c315a7b57eee36e6a6038f92e5ecd6e0da7512"
+        },
+        {
+          "asset_version_id": "075e1670-47c1-4709-a5a1-dd69169c3ae0",
+          "output_key": "production_execution.contract.prompt_bundle.2463a28edccc01b0df9b",
+          "content_hash": "sha256:f83d2fb3a8d197caca322c99248e4b87e5c34e413aeca6f369950f724c2c1b0f"
+        },
+        {
+          "asset_version_id": "394ddd8a-8e79-4054-8241-fa741f5509a0",
+          "output_key": "production_execution.contract.route_policy.5cfb834b78bba615f522",
+          "content_hash": "sha256:50e48d58d4c86f79b111a8de6b531a6e374cb8efaa95046b3218cf007cb16a42"
+        },
+        {
+          "asset_version_id": "ec4f07c3-882b-480c-a084-f70f5eb4b91c",
+          "output_key": "production_execution.recovery.d31695a6c305d2a5fbfe463a",
+          "content_hash": "sha256:f46f8bb61fe8b8f4bc066c8224c091e45ceaf2be4a5b4d0f32969a4b87fc1f18"
+        },
+        {
+          "asset_version_id": "authority-output:abb08ee4-2127-4182-821e-59cce3d3425b:chapter.draft:v1",
+          "output_key": "chapter.draft",
+          "content_hash": "sha256:9f7bf253667badd3979e35a97b60419259eeee6547a4d0005854dad9935f54e9"
+        },
+        {
+          "asset_version_id": "authority-output:abb08ee4-2127-4182-821e-59cce3d3425b:chapter.draft.execution_commit_manifest:v1",
+          "output_key": "chapter.draft.execution_commit_manifest",
+          "content_hash": "sha256:9c567b2b276daf3077d7abe0b1ff8e30a18416755ac37cdd0b920ca688cd9a65"
+        }
+      ]
+    },
+    {
+      "source_boundary": {
+        "kind": "FROZEN_STAGE_INPUTS",
+        "book_id": "book:project-0657ac2a3d05496ca5b28702eb19df7b",
+        "sources": [
+          {
+            "content_hash": "sha256:847e63be2c11f543bf85f7bee23cfb4bd6e4af36adbb9f07328c8445ffb2c797",
+            "asset_version_id": "authority-output:4498328e-6b66-47d6-9285-1c216af17b09:chapter.context:v1"
+          }
+        ],
+        "project_id": "project-0657ac2a3d05496ca5b28702eb19df7b",
+        "pack_snapshot_hash": "sha256:2cfdc106151aff761bc43547c4e6197b470d9ee4f26779ec212a30f39c7b6358"
+      },
+      "original_provider_projection_hash": "sha256:d4f12c144db8e04cc358a151b33d67ed710a2d7df52d6c7a8b631c5c94e0ca8c",
+      "derived_provider_projection_hash": "sha256:ee1525e7483a4eeea90dc0125a3500544986f28b0b2452974901c9720f63efd3",
+      "compression_and_check_effects": [
+        {
+          "effect_id": "69b85ed3-ed93-4d28-a613-5afd8eda00db",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:4c8dfab818832e0229a58660976d8eb0715bb36f24d7ace2735235c83da0fb85",
+          "task_fingerprint": "sha256:d4f12c144db8e04cc358a151b33d67ed710a2d7df52d6c7a8b631c5c94e0ca8c",
+          "source_binding": {
+            "content_hash": "sha256:847e63be2c11f543bf85f7bee23cfb4bd6e4af36adbb9f07328c8445ffb2c797",
+            "asset_version_id": "authority-output:4498328e-6b66-47d6-9285-1c216af17b09:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "11a9c441-650e-4583-ba21-1d5067c8205b",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:c6c6332b0bc9302ce426b7c0484d600df5919bf4d63e1b9a70a8c639fd22cde7",
+          "task_fingerprint": "sha256:d4f12c144db8e04cc358a151b33d67ed710a2d7df52d6c7a8b631c5c94e0ca8c",
+          "source_binding": {
+            "content_hash": "sha256:847e63be2c11f543bf85f7bee23cfb4bd6e4af36adbb9f07328c8445ffb2c797",
+            "asset_version_id": "authority-output:4498328e-6b66-47d6-9285-1c216af17b09:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "92ec87dc-a09e-4e30-b66a-9cbf9d27bf98",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:34598e08d268c5a774087d6c73f3b4ad54a07816b87e2af3eaf71e82eed2ad51",
+          "task_fingerprint": "sha256:d4f12c144db8e04cc358a151b33d67ed710a2d7df52d6c7a8b631c5c94e0ca8c",
+          "source_binding": {
+            "content_hash": "sha256:847e63be2c11f543bf85f7bee23cfb4bd6e4af36adbb9f07328c8445ffb2c797",
+            "asset_version_id": "authority-output:4498328e-6b66-47d6-9285-1c216af17b09:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "3c5f0b64-dc29-49d8-858a-9bdcadac4842",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:feafeeef6867618d3fdb8b3955aaba012df178cda3a7adec561bbce4861eabab",
+          "task_fingerprint": "sha256:d4f12c144db8e04cc358a151b33d67ed710a2d7df52d6c7a8b631c5c94e0ca8c",
+          "source_binding": {
+            "content_hash": "sha256:847e63be2c11f543bf85f7bee23cfb4bd6e4af36adbb9f07328c8445ffb2c797",
+            "asset_version_id": "authority-output:4498328e-6b66-47d6-9285-1c216af17b09:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "9c611e0c-791b-4d31-909f-e94295c9c4b9",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:30b634d3fc2d29e35023788d74506d417de560c89336d1e481caa4f3f1917b39",
+          "task_fingerprint": "sha256:d4f12c144db8e04cc358a151b33d67ed710a2d7df52d6c7a8b631c5c94e0ca8c",
+          "source_binding": {
+            "content_hash": "sha256:847e63be2c11f543bf85f7bee23cfb4bd6e4af36adbb9f07328c8445ffb2c797",
+            "asset_version_id": "authority-output:4498328e-6b66-47d6-9285-1c216af17b09:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "1891dd6b-6cfc-4a83-b252-2ea62953a894",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:207f0fba33838649463eac69867741a155ca710db15e2c02634814d7b6e849b6",
+          "task_fingerprint": "sha256:d4f12c144db8e04cc358a151b33d67ed710a2d7df52d6c7a8b631c5c94e0ca8c",
+          "source_binding": {
+            "content_hash": "sha256:847e63be2c11f543bf85f7bee23cfb4bd6e4af36adbb9f07328c8445ffb2c797",
+            "asset_version_id": "authority-output:4498328e-6b66-47d6-9285-1c216af17b09:chapter.context:v1"
+          }
+        }
+      ],
+      "replacements": [
+        {
+          "path": [
+            "context_bundle",
+            "segments",
+            6,
+            "safe_summary"
+          ],
+          "ranges": [],
+          "source_text_hash": "sha256:8a13b16fbe7092eaaa9700af263fb699c8b931a5aae835e3503d2e581a23c794"
+        }
+      ],
+      "final_composition": null,
+      "measurement": {
+        "limit": 262144,
+        "token_method": "",
+        "after_reserved": 56970,
+        "before_reserved": 466771,
+        "actual_provider_tokens": null
+      },
+      "main_effect_id": "3f80dea1-5bc7-4ef3-9497-02e0ec70ee76",
+      "main_effect_status": "SUCCEEDED",
+      "frozen_effect_request_hash": "sha256:0870d524af230ac99ce0d41c889d2a0a62d40425e0e1b62ec16c39a8e53a59a3",
+      "provider_request_envelope_hash": "sha256:30eb3c6cb66bad3f8f32c82f264a587a5cf9ff1d989e693ed72377f4e46368e9",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "measurement": {
+          "model": "scripted_provider_v2-draft",
+          "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "precision": "FIXTURE_BYTES_EXACT",
+          "utf8_bytes": 40314,
+          "input_tokens": 40314,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": null,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "envelope_hash": "sha256:30eb3c6cb66bad3f8f32c82f264a587a5cf9ff1d989e693ed72377f4e46368e9",
+        "total_reserved": 56970,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 16384,
+          "provider_input": 40314,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-draft",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 16384,
+          "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:2cfdc106151aff761bc43547c4e6197b470d9ee4f26779ec212a30f39c7b6358",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 441222,
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+          "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:7ec115f047a4aefb2e608c54ce1b77753b9647094f4c278df6489e30b7675754",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:76a47a9e8058bb607911941293bbf5d241f284ae1e5790d330ac410a93a92ded",
+          "provider_context_view": "sha256:bd6724c33b43bbabb39157994a760ee25ea34b81692953c373e1b4fa44437f6a",
+          "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "frozen_pack_snapshot_hash": "sha256:2cfdc106151aff761bc43547c4e6197b470d9ee4f26779ec212a30f39c7b6358",
+      "operation_outputs": [
+        {
+          "asset_version_id": "f276a961-fa62-4742-8b84-13471dbff710",
+          "output_key": "production_execution.contract.capability_materialization_manifest.636d0d2002fffe36a31f",
+          "content_hash": "sha256:d168091711d50b76286e6428663b04a708924d5d67457ed7f03ab758a93f86c5"
+        },
+        {
+          "asset_version_id": "dba373da-d443-4ea2-b770-917bd9c2d9e2",
+          "output_key": "production_execution.contract.capability_materialization_manifest.1b22616e56848fea5d01",
+          "content_hash": "sha256:cf768d21a48b33f9b14fac0f67f2690198731a9b33921a4bff773c40b89aa513"
+        },
+        {
+          "asset_version_id": "5be62329-759c-499b-8424-d17753611560",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.a677eed5de1806805b49",
+          "content_hash": "sha256:a0c323861635f4d7bd2e10fca9f8b78114ea9d8bde731109a61a94059270d036"
+        },
+        {
+          "asset_version_id": "4c300030-be99-4b7d-bafd-e5898b2f7569",
+          "output_key": "production_execution.contract.execution_context_policy.eabe04cb9ea902cf84ec",
+          "content_hash": "sha256:f3ea031bbd9d5ff301a3b1f445f77d68d535ab285e05f80319d8e4d8e6b69840"
+        },
+        {
+          "asset_version_id": "7ebc9002-72eb-4f07-bd8b-fc29962b55bf",
+          "output_key": "production_execution.contract.execution_source_policy.0519363bde8a7a46c7e9",
+          "content_hash": "sha256:bb1196c1ba0b87780732621dfc1a38ab761306637bf7632a099f42b5f6a4b49d"
+        },
+        {
+          "asset_version_id": "c98278a2-9590-44e9-acd4-76b30292fa47",
+          "output_key": "production_execution.contract.execution_validation_policy.463db1a3ea978f020132",
+          "content_hash": "sha256:61e18150653eaa2d450707592e0ed93d3b2776d983b1910822695ea204518cf0"
+        },
+        {
+          "asset_version_id": "5fccb8c0-0b71-46dc-bb70-16229b138a26",
+          "output_key": "production_execution.contract.execution_commit_policy.a8fcf877c7507c46e6ee",
+          "content_hash": "sha256:a0083c8af787045ebb6d09d08a2b85f299d3d71a0765240d13715a5f167187b4"
+        },
+        {
+          "asset_version_id": "af8fc01f-3ab4-4304-a511-8b2c24d1d673",
+          "output_key": "production_execution.contract.tool_permission_snapshot.c0fb6b329ebc527ae7dc",
+          "content_hash": "sha256:94f39e5641a6f78751ec3cb221c7af43b07195eabdd25b54c2fb98f5c6c9bc22"
+        },
+        {
+          "asset_version_id": "26e4cf03-7b52-4524-b0c0-9b6f2463722e",
+          "output_key": "production_execution.contract.skill_bundle.613c3e2db19188cc74fd",
+          "content_hash": "sha256:bd8483f8d0ab604eebfc5eefebd1e7454558116450eb3beca360bcd8de9fc04a"
+        },
+        {
+          "asset_version_id": "583f37f5-42bd-4afa-9640-005fdc8d4a4a",
+          "output_key": "production_execution.contract.prompt_bundle.08cacdd875902277b151",
+          "content_hash": "sha256:f3b54415f0628de659804ee1d9d0a8349292a8c3bbb87e947ae05579fb373dd3"
+        },
+        {
+          "asset_version_id": "ad205cab-4eee-4e41-8928-a173c28d27e4",
+          "output_key": "production_execution.contract.model_profile.b1a61441cbcb7838160a",
+          "content_hash": "sha256:4b20bd44189be575ca58ee723c96e1e3b5cf75ac430f1e2cd2878263fefede11"
+        },
+        {
+          "asset_version_id": "23c6cbb2-2a6e-4ea1-869d-ed91c9817faa",
+          "output_key": "production_execution.contract.fallback_policy.2db301180c7b83817fad",
+          "content_hash": "sha256:0c900fd098b4f31713a0bc3098f19e9019b479875e352f6481562a75400ef329"
+        },
+        {
+          "asset_version_id": "f6e5a265-9dc3-4a18-9c24-7fd5f7c98891",
+          "output_key": "production_execution.contract.route_policy.ca264bf167ade1a0f219",
+          "content_hash": "sha256:46519a3ad6db4ebe248ee57cabc13b2fa5571d22c75dcefd5dfea2aa0d5fbd29"
+        },
+        {
+          "asset_version_id": "867a5415-4649-46ed-a728-7ef8c4aee22a",
+          "output_key": "production_execution.contract.input_manifest.46867f2fb378b97dee40",
+          "content_hash": "sha256:dbe32f94da249a5c7649cd95121476b7f851fe44486da6b8a7aa03374a361aed"
+        },
+        {
+          "asset_version_id": "365ad329-159a-4d77-979a-cc36021a061b",
+          "output_key": "production_execution.contract.route_snapshot.934551f3dfeff15b4201",
+          "content_hash": "sha256:3b8a358f492633337235e034d735dc7da508ba638829a3b2fac86ff9849ab343"
+        },
+        {
+          "asset_version_id": "2b058c52-4364-4e99-86a0-3983e0d7a185",
+          "output_key": "production_execution.evidence.raw-output.fc032420a40a046e226cbac6.725da8117a94",
+          "content_hash": "sha256:70f2b6861ce5a5d0fbb0a63d3e16723d7a2046fc0ffcc448f0320974dae736fa"
+        },
+        {
+          "asset_version_id": "402cab6b-bda1-496c-ba24-fa5e5d7a2154",
+          "output_key": "production_execution.evidence.output-manifest.fc032420a40a046e226cbac6.909e7bd5283b",
+          "content_hash": "sha256:f625628eb4494b8ad6e119fab9c05551906f8a11e76df2627278f39c850420ee"
+        },
+        {
+          "asset_version_id": "22ab01c5-4ae8-438d-baf8-561c7216fc6d",
+          "output_key": "production_execution.evidence.usage-receipt.fc032420a40a046e226cbac6.fe1793886a77",
+          "content_hash": "sha256:7af29ddfe08692938362e0410d207679b9f8196af751d0929818dedd9e24df82"
+        },
+        {
+          "asset_version_id": "5da3e2ac-4332-4ad9-93ba-b5f369d305d3",
+          "output_key": "model_call.context_compress.d37dc109a11211b49ff3",
+          "content_hash": "sha256:d5ea7ce10b834b36622a536bf66dcdc5fab4080a25fa5cfe565aa32d100f2624"
+        },
+        {
+          "asset_version_id": "b9693c00-76ae-4e5b-9c34-d4a4282073bd",
+          "output_key": "cost_ledger.context_compress.d37dc109a11211b49ff3",
+          "content_hash": "sha256:0c46cc621c33d8826f38e64ed4afc18740e476ae64e1a315c42ab4b9c84dd00d"
+        },
+        {
+          "asset_version_id": "2ff19a52-2be5-421b-ba2d-5f29babdd2fc",
+          "output_key": "production_execution.recovery.fc032420a40a046e226cbac6",
+          "content_hash": "sha256:572841cac3cbe99738158886cb6a6a97f9ee50a43e479dee4bdd02c59ac83de2"
+        },
+        {
+          "asset_version_id": "9925a920-27af-49d1-9729-4dbf764865d9",
+          "output_key": "production_execution.evidence.normalized-output.fc032420a40a046e226cbac6.409cde542376",
+          "content_hash": "sha256:7f1c6a88ccb10a79ee11b36a1994a2472bfa25a6e2eaae3f7238fb5def68f9a3"
+        },
+        {
+          "asset_version_id": "5710fdab-884b-4e24-9458-5d2cf3b51210",
+          "output_key": "production_execution.evidence.validation-manifest.fc032420a40a046e226cbac6.8dca13439b78",
+          "content_hash": "sha256:48d5d2f80633306a7156c150b74f714e936a7f79cc134cc76fd75b65ef52d43c"
+        },
+        {
+          "asset_version_id": "3e27f278-2ca4-4da0-843e-1fe0af5515cd",
+          "output_key": "production_execution.evidence.cost-receipt.fc032420a40a046e226cbac6.8efeb6e29c08",
+          "content_hash": "sha256:90e061ad705e9b77487a82abf891a801e346907f2a50c97e6b53508ddc22672f"
+        },
+        {
+          "asset_version_id": "ccc61803-ea1a-45fb-9e26-90c11680006b",
+          "output_key": "production_execution.recovery.fc032420a40a046e226cbac6",
+          "content_hash": "sha256:f60eee9dadc5be5de18c4798897653db43ee8a8ad5432226a3d3522ce9a6836b"
+        },
+        {
+          "asset_version_id": "0e493987-9817-4248-b3e7-cda74c2e65c8",
+          "output_key": "production_execution.contract.capability_materialization_manifest.78a4fe1a0dcfb9a3b421",
+          "content_hash": "sha256:f3d9ce2ca91cea364d6faa33229ed61c23e9cf29fa11b35740ed1f86f2318e1a"
+        },
+        {
+          "asset_version_id": "b94f3436-a1d5-4e02-a1cc-7b7d4a042a12",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.45414918f139089d2bb7",
+          "content_hash": "sha256:92b3efddd0ee485218c4f10643a51acf5f100f602edff444601fa665f7e445c4"
+        },
+        {
+          "asset_version_id": "edd4a230-4c26-4f15-b27f-deca81ecf355",
+          "output_key": "production_execution.contract.execution_context_policy.e2c8a0eb840838f46e20",
+          "content_hash": "sha256:bf6b2fe5f669b79c6b1cd14a20b957ca412a301fc92c455ca14c0ea7b0c1c582"
+        },
+        {
+          "asset_version_id": "e1ff38cc-1b1e-4fd0-b4eb-ff96bc162564",
+          "output_key": "production_execution.contract.execution_validation_policy.b6e845507267832becd5",
+          "content_hash": "sha256:9446ed1986db792fd8bad34559dcad12be34ba0856452ab84894751efe520a6f"
+        },
+        {
+          "asset_version_id": "f23f4ce4-ddb0-41c5-9f29-e94e97bb61fb",
+          "output_key": "production_execution.contract.execution_commit_policy.ea6438668a2ea57d549c",
+          "content_hash": "sha256:6355d4471646dbbfa0dccf465a93465d27a3c431e1a57a1023f0002457b4716a"
+        },
+        {
+          "asset_version_id": "cb051839-40f3-40eb-9b10-e06a452f2098",
+          "output_key": "production_execution.contract.tool_permission_snapshot.212524097f77294c0c80",
+          "content_hash": "sha256:cff350e8933e723f6dbb44188111361e482ca44da4c5a4722272b24249c2d364"
+        },
+        {
+          "asset_version_id": "d82b7682-9bfd-4fc6-b228-e219371adbd9",
+          "output_key": "production_execution.contract.skill_bundle.addb49051a53add5eaa8",
+          "content_hash": "sha256:0d001b50b4abd2a43dbbda58f4c15f481a76b85732303632e4716db0f3121e5c"
+        },
+        {
+          "asset_version_id": "84222708-15a6-4b6a-9712-b026faacd699",
+          "output_key": "production_execution.contract.prompt_bundle.fe42e72fb421e9f128a2",
+          "content_hash": "sha256:f8f76d7eda991f5069bf9ae9d746ea9cf0bd42552d5eef46003abb3aca71c6a1"
+        },
+        {
+          "asset_version_id": "1205a2bd-d67d-4b55-ae1f-f246a07e655a",
+          "output_key": "production_execution.contract.model_profile.bde954a79c98ec29f15c",
+          "content_hash": "sha256:e207a089d143e0a569830c76bf29e0958e9c5bec3ac4ffe709fb02c594089446"
+        },
+        {
+          "asset_version_id": "b8be0529-8e24-4027-97bd-bcea150ef8ae",
+          "output_key": "production_execution.contract.fallback_policy.73df737638df8006fe3c",
+          "content_hash": "sha256:191194715d82ea67aea017fc880a5fdd421cf0206dfb10717a435788754cd142"
+        },
+        {
+          "asset_version_id": "fb793950-c2cb-4d83-8975-911d6421a05f",
+          "output_key": "production_execution.contract.route_policy.2de7b9a71b56c95ad5d1",
+          "content_hash": "sha256:2b7bbf058e79ad73b1ca1059c6a0a8e01769908aca554d1097416ea11ad95f87"
+        },
+        {
+          "asset_version_id": "d72de862-4678-421f-99a2-e715205f933c",
+          "output_key": "production_execution.contract.input_manifest.ba521be506c5cf0b2cb7",
+          "content_hash": "sha256:d8d8d81737474d68a427b30fa039c8c0d6191c9d26e76fd9c2af201906fed9da"
+        },
+        {
+          "asset_version_id": "27fddbb1-584b-4689-8fd1-fff1310075d6",
+          "output_key": "production_execution.contract.route_snapshot.98d34a551f47c35758d0",
+          "content_hash": "sha256:cb198f5db2a0dd362eeaa89a35e66cf76d41287c3ded5b62091037eda828f02f"
+        },
+        {
+          "asset_version_id": "69d0a98a-3cae-45dc-98d1-22a998878bf1",
+          "output_key": "production_execution.recovery.131f92a299a618d3d54f01d4",
+          "content_hash": "sha256:17fd94b3214d605d1d26f1e3ebd96c96448da14fdedba178a4424aefd64731bb"
+        },
+        {
+          "asset_version_id": "b277351d-ed63-42e7-8f2d-1c99bae0ab67",
+          "output_key": "production_execution.evidence.raw-output.131f92a299a618d3d54f01d4.52692855da3f",
+          "content_hash": "sha256:986e9b7facea2a4e794bb7eb74abeb2f736bfb025563047d16575b10c2b9fe0d"
+        },
+        {
+          "asset_version_id": "2d81e79f-7f15-4d6c-a15f-e2533b2f33d6",
+          "output_key": "production_execution.evidence.output-manifest.131f92a299a618d3d54f01d4.70615e2768bf",
+          "content_hash": "sha256:f8b9f4aaf9082e9c97a189070a3813bc17336d922f700251cee011287a8a48d4"
+        },
+        {
+          "asset_version_id": "d9fd036e-a4fd-48e8-a1f1-659ca5271961",
+          "output_key": "production_execution.evidence.usage-receipt.131f92a299a618d3d54f01d4.fe1793886a77",
+          "content_hash": "sha256:b23873faea299b09fb9065913d64bdb8df4814ee1c17d09188e7fefa484b4493"
+        },
+        {
+          "asset_version_id": "043dd64b-8a28-474f-aa48-db85c16787bb",
+          "output_key": "model_call.context_fidelity.d2666218bae103bda425",
+          "content_hash": "sha256:96a1b466fa32f8f8d03a90c581199eb5f6ba978928b3be77fd3633f7ed5b0c0d"
+        },
+        {
+          "asset_version_id": "06a39f94-9096-4c7d-a794-d2d5aeb72813",
+          "output_key": "cost_ledger.context_fidelity.d2666218bae103bda425",
+          "content_hash": "sha256:8c75c6e810a6da9973a846c7f5a3915dac790b765358f8cb1fed82f5b9a845b2"
+        },
+        {
+          "asset_version_id": "da80edc9-e864-472e-9061-f94dd02cf230",
+          "output_key": "production_execution.contract.execution_validation_policy.076a7d4329af9b114942",
+          "content_hash": "sha256:e3d75277c129ddabc761a73409a0a2142eb326e1808241c117810a8df19ace81"
+        },
+        {
+          "asset_version_id": "ff358a20-3dce-4e1e-acc0-7fcf91022d2f",
+          "output_key": "production_execution.contract.execution_commit_policy.d0c3b5e3c38539ff0cce",
+          "content_hash": "sha256:dd19fd3d7a048944b095748daf4a6a9e5d87f40696e323cf71f91f8f050e647b"
+        },
+        {
+          "asset_version_id": "709a2224-8c2c-4857-8a77-ff4711324178",
+          "output_key": "production_execution.contract.tool_permission_snapshot.a5fdc5f5764e6f067b91",
+          "content_hash": "sha256:0796d4ed44fbe92b2fbda5e0317cb9d9dd3964b848336bf3f46be85f7f5457b4"
+        },
+        {
+          "asset_version_id": "6cdd4e22-4bbd-4c22-ab74-c908f621d1ce",
+          "output_key": "production_execution.contract.skill_bundle.04933e484db767477405",
+          "content_hash": "sha256:29d73fe44ca8c29437eb5026011ecbc02d1b25c1c3328a6fe86cc9521105b23f"
+        },
+        {
+          "asset_version_id": "cd06a53f-1432-4604-8449-727e493396c0",
+          "output_key": "production_execution.contract.prompt_bundle.b72f00c2a1492a85ad36",
+          "content_hash": "sha256:37ea308bcc66b355e816ad2af4365677de2ddb57f4680cd643169c2a1d41400b"
+        },
+        {
+          "asset_version_id": "b1acaeb2-4e03-4a2f-9e79-45656af2160b",
+          "output_key": "production_execution.recovery.72816a2a622d78d02009fbdf",
+          "content_hash": "sha256:ce78ef788232fe3c920a43d124fbefa5b6d8cdb9ab0e4b76577ee83903b88ff9"
+        },
+        {
+          "asset_version_id": "0966d946-dc0a-4533-a474-2d539cc5619e",
+          "output_key": "production_execution.evidence.normalized-output.72816a2a622d78d02009fbdf.409cde542376",
+          "content_hash": "sha256:c88b2ffcfc39fd922177d25e0a3e372fd8f6ccd8e188ec6c7d8652d2fc6dbc1a"
+        },
+        {
+          "asset_version_id": "96b00ef8-abad-49d6-8566-9224e35c7865",
+          "output_key": "production_execution.evidence.validation-manifest.72816a2a622d78d02009fbdf.c56d7e9d2a21",
+          "content_hash": "sha256:34c5fd652e8b4c95ef5ed6ee930d0e76a9e909fef93343f18a041d4f29e41518"
+        },
+        {
+          "asset_version_id": "53b1b90e-8fe3-4b16-9448-e7610c9ffe99",
+          "output_key": "production_execution.evidence.cost-receipt.72816a2a622d78d02009fbdf.8efeb6e29c08",
+          "content_hash": "sha256:816d057fceadae1174b089513b3a4e91810bbcf13512d18600ee5d7cfcaea865"
+        },
+        {
+          "asset_version_id": "ccf158b9-50d0-4b0d-b504-707f06b1715b",
+          "output_key": "production_execution.recovery.72816a2a622d78d02009fbdf",
+          "content_hash": "sha256:00f655d5e6d7a077ad003991a5ce41fc79b2cee93b88f9352ba77e40f46d6edc"
+        },
+        {
+          "asset_version_id": "66f93b9f-7682-4c6c-b00e-953279dc57e1",
+          "output_key": "production_execution.contract.capability_materialization_manifest.433610bdece476d0845e",
+          "content_hash": "sha256:f3d9ce2ca91cea364d6faa33229ed61c23e9cf29fa11b35740ed1f86f2318e1a"
+        },
+        {
+          "asset_version_id": "da81129b-7fb9-4671-8e33-2b6144cd15bd",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.c2eb09f2bccc8f197afd",
+          "content_hash": "sha256:89b1633e17a5a43cbc40034a1cd39f57744719bb5e56e3497e97ee62ec158881"
+        },
+        {
+          "asset_version_id": "fc3b4c33-3b1f-42fb-b409-8a6e989ce271",
+          "output_key": "production_execution.contract.execution_context_policy.ba354c59473f263ace26",
+          "content_hash": "sha256:cc4f152c09cb9ccd1f7d8f9aaa68f90f01c706de0a667034fa106b5c323034d3"
+        },
+        {
+          "asset_version_id": "79aea426-1764-4c63-9f5c-bc9f4558a9f7",
+          "output_key": "production_execution.contract.input_manifest.7483bd82302d02fb4420",
+          "content_hash": "sha256:894cafa29a5291c262d6426a5ede139eff15e416d25a820069463894f4374978"
+        },
+        {
+          "asset_version_id": "637d025b-dcd8-4246-945f-b4af05e95560",
+          "output_key": "production_execution.contract.route_snapshot.aebcf7a5b606f43df84e",
+          "content_hash": "sha256:efaa96fe01dbfafc6d207bd52251940f40a6c1f08050eb019c27a3c07ee0013a"
+        },
+        {
+          "asset_version_id": "50acd194-920b-4126-bbaf-8a21e3ffdd16",
+          "output_key": "production_execution.evidence.raw-output.5575f23336dd46af24a5eb1d.0b3186c92e8d",
+          "content_hash": "sha256:7d5fbe4640017e437f69563b88d543756b5dfb060ec4e5a143396317a6d3fd4b"
+        },
+        {
+          "asset_version_id": "2efcdb12-23cd-40c8-981f-20b62416cc07",
+          "output_key": "production_execution.evidence.output-manifest.5575f23336dd46af24a5eb1d.ea3a186b5d24",
+          "content_hash": "sha256:7b17d1acf1625a15645c5caf474bcf5a7cf0f7190eacd75282222fe6ea018d5c"
+        },
+        {
+          "asset_version_id": "ea735cbb-5489-4c03-a7d8-b4ce9fd9772e",
+          "output_key": "production_execution.evidence.usage-receipt.5575f23336dd46af24a5eb1d.fe1793886a77",
+          "content_hash": "sha256:847d7d4ad313a55e74ce9735261f4b4b7e2c802bb3e6800179b0f1aa3495f864"
+        },
+        {
+          "asset_version_id": "3fc3ce9a-e46b-4df6-bba5-6e91e7d1e52c",
+          "output_key": "model_call.context_fidelity.041cd38813eea46badfb",
+          "content_hash": "sha256:a640a32fce676ef596839e8f95eac1c2c099ecda7f16eb94654d6f07ba406c09"
+        },
+        {
+          "asset_version_id": "ee546884-6aa8-4e30-8135-d8bcedbd30c4",
+          "output_key": "production_execution.evidence.normalized-output.131f92a299a618d3d54f01d4.be7f19fbe4c6",
+          "content_hash": "sha256:059e84a1994fe73cfd7741d1879168be8afb8bac3bf5e92a1da6aa64960f522c"
+        },
+        {
+          "asset_version_id": "3ee3bca0-d8f3-4807-961e-ceb110f97605",
+          "output_key": "production_execution.evidence.validation-manifest.131f92a299a618d3d54f01d4.3af64c0e5039",
+          "content_hash": "sha256:7fb5909e51f0da403ea970b9782be09bcec4c13edaaf722c8f15cc6694df043f"
+        },
+        {
+          "asset_version_id": "03db4a55-c599-46a7-aba5-ea33bde4f410",
+          "output_key": "production_execution.evidence.cost-receipt.131f92a299a618d3d54f01d4.8efeb6e29c08",
+          "content_hash": "sha256:9d89892dda711dcb13f45633366048941f8de26f98a8ac01419dd607751c8e8e"
+        },
+        {
+          "asset_version_id": "edbafc2b-b855-402d-a02e-93cda49f36be",
+          "output_key": "production_execution.recovery.131f92a299a618d3d54f01d4",
+          "content_hash": "sha256:64a4c1007a0177743556f7bbaad10b1fe9fd5a16636db5c7c4d26e30640a8e04"
+        },
+        {
+          "asset_version_id": "3c2c28b5-30f3-43dc-b4f8-3bfa5ef5c7f6",
+          "output_key": "production_execution.contract.capability_materialization_manifest.f058e504071cd14a583b",
+          "content_hash": "sha256:cf768d21a48b33f9b14fac0f67f2690198731a9b33921a4bff773c40b89aa513"
+        },
+        {
+          "asset_version_id": "d8588675-7d96-482d-b9d4-376049e76acb",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.1f7c0ce91758c36457af",
+          "content_hash": "sha256:422a784db3fd2388ef535d4271177d288af26bcf874bce6fc5767d448b2fadd6"
+        },
+        {
+          "asset_version_id": "5e45ff4a-b88e-4b53-991e-ea9ce592cbd0",
+          "output_key": "production_execution.contract.execution_context_policy.7f7daa273c7b1dcd1265",
+          "content_hash": "sha256:b216c67f68a84b4ce50bf9bd9f7069059383e2876bc46d482913dc4d6b948991"
+        },
+        {
+          "asset_version_id": "8d39fa6c-0263-42ca-af0a-812daf9ee658",
+          "output_key": "production_execution.contract.input_manifest.40d682ecd0cb82d5c3af",
+          "content_hash": "sha256:93a0d46836338d781bc993cf5072ad4239bd7e9f04f47e867bf2fcadacd9f7c0"
+        },
+        {
+          "asset_version_id": "4ea99632-7e6f-41a9-b554-a4f08c8494ce",
+          "output_key": "production_execution.contract.route_snapshot.702eca08fc5839d7804d",
+          "content_hash": "sha256:a8d4aaa1cd2d444fabedbfc0acd09eb33a3b59abebb6e85c9a1047f9dadd62ed"
+        },
+        {
+          "asset_version_id": "5071af7f-23d2-4044-999f-e299de2c0e9d",
+          "output_key": "production_execution.evidence.raw-output.72816a2a622d78d02009fbdf.806c80735497",
+          "content_hash": "sha256:49b547b57e2ffa78e6a048602ca3ee2f4808bcca05d8f6ae05b789d0db49e846"
+        },
+        {
+          "asset_version_id": "e3fe98a7-c36c-43d0-80f2-66669bac304c",
+          "output_key": "production_execution.evidence.output-manifest.72816a2a622d78d02009fbdf.2d31c0a21995",
+          "content_hash": "sha256:1290b25f0a713a02903f5322e61c62b7a174614659ebe6c6200964a3107181ec"
+        },
+        {
+          "asset_version_id": "877519c4-7fc5-480f-8d21-0556ff21549b",
+          "output_key": "production_execution.evidence.usage-receipt.72816a2a622d78d02009fbdf.fe1793886a77",
+          "content_hash": "sha256:9377f1bd749fc6e7c086b5d1319cdaba12320f6df178f54cdcabe7efbd6a160b"
+        },
+        {
+          "asset_version_id": "93f24f09-bd0c-4ba6-a85f-59ef96feae5e",
+          "output_key": "model_call.context_compress.11e839c510a2b2ea6b54",
+          "content_hash": "sha256:09a1f8b917a7f13140ce15638d6fd1c8ada5db7adf23fb4cb74a2c955a10a029"
+        },
+        {
+          "asset_version_id": "ac9ab28d-2c2d-4cf3-b382-e9ee957bbfd5",
+          "output_key": "cost_ledger.context_compress.11e839c510a2b2ea6b54",
+          "content_hash": "sha256:1514475a0b1437a74831914448afab0f7069907ea5bb2b99215a12c02efa6f22"
+        },
+        {
+          "asset_version_id": "9b05f6d9-3794-4db3-834f-a84f7a8bbf03",
+          "output_key": "production_execution.contract.execution_validation_policy.ece28dcb01e6d87639bb",
+          "content_hash": "sha256:ba010b9763e5dba4c8e1fec710c82e1e6fa163af326cb9acbb9a8178f655dabb"
+        },
+        {
+          "asset_version_id": "d2a45867-9ce9-4e0a-bad5-e72b337d6ea8",
+          "output_key": "production_execution.contract.execution_commit_policy.ada3fd722b30f483ea04",
+          "content_hash": "sha256:9e3387ca8850bed61f8a5983e390839508aafb201e8be5d9db762f588e2a1176"
+        },
+        {
+          "asset_version_id": "13b0efb1-7947-49f5-9713-2b66a60572ff",
+          "output_key": "production_execution.contract.tool_permission_snapshot.aa58206afdb0cbd6ebb7",
+          "content_hash": "sha256:7c8d7d1d25fdb23c71afce82bceb616163a1ece4dc0d9051aafe81bf37e81022"
+        },
+        {
+          "asset_version_id": "2f82e945-8a4f-4227-89d3-b711d314e563",
+          "output_key": "production_execution.contract.skill_bundle.6f01058b7c8cfaea053f",
+          "content_hash": "sha256:951e333928c0c52c5aa4e6ffbe8516bd0479e11fd2c08b254870177407497ccf"
+        },
+        {
+          "asset_version_id": "c23caccf-10fb-463b-8204-efa18048fd9c",
+          "output_key": "production_execution.contract.prompt_bundle.a5edfeba9cf5da615538",
+          "content_hash": "sha256:25873edcbf3e5225e8026a49f03dc0142839656061b89cccd887545c1f66d3c2"
+        },
+        {
+          "asset_version_id": "4ca3e15c-25bf-484d-95b6-ceaaa58e372b",
+          "output_key": "production_execution.recovery.5575f23336dd46af24a5eb1d",
+          "content_hash": "sha256:50f5764837dfa7bf0fbb79e54f6b0baac3435027648f8eee75029baf90ac08ec"
+        },
+        {
+          "asset_version_id": "36d2644c-1f75-4316-942b-eecaedd7da8c",
+          "output_key": "production_execution.evidence.normalized-output.5575f23336dd46af24a5eb1d.be7f19fbe4c6",
+          "content_hash": "sha256:2b9bb47d191036e5037eb7c78f836096edd495ee4ad07855b8fb8b66157133f1"
+        },
+        {
+          "asset_version_id": "c6069efc-c074-45de-bb74-2d98a8310a10",
+          "output_key": "production_execution.evidence.validation-manifest.5575f23336dd46af24a5eb1d.8ef04179fb86",
+          "content_hash": "sha256:3867c83348a11bfae76f5aca816daac28e657fd0793782f5445138557451363c"
+        },
+        {
+          "asset_version_id": "30225f63-a1e9-4628-956a-8bf45d577c4b",
+          "output_key": "production_execution.evidence.cost-receipt.5575f23336dd46af24a5eb1d.8efeb6e29c08",
+          "content_hash": "sha256:dd9674b53d13bbc60b7857fcfba3eaada0a47193a82670f8e5fbbc59046bcaa9"
+        },
+        {
+          "asset_version_id": "fdaffa6f-5837-4d7e-9289-1974beed6e28",
+          "output_key": "production_execution.recovery.5575f23336dd46af24a5eb1d",
+          "content_hash": "sha256:8312aa0226a2423a73894f6592207bc7fe89100b0bf0f8ba30cfcfd528fefd9e"
+        },
+        {
+          "asset_version_id": "6ec81edc-5a7d-47d6-8a48-5d6713fe884b",
+          "output_key": "cost_ledger.context_fidelity.041cd38813eea46badfb",
+          "content_hash": "sha256:d245115abca07c17fb35c4005588e41b490fb3522597aa54adbb8aa7e1cba6cc"
+        },
+        {
+          "asset_version_id": "af5b483d-6177-4e69-b74f-7cb860c2fde7",
+          "output_key": "production_execution.contract.execution_validation_policy.af962d8f0e59adad95f0",
+          "content_hash": "sha256:c088dcb53e180657ec7fd303c8343f6f8b81dba204fa14cf7efe4a5249e52189"
+        },
+        {
+          "asset_version_id": "52040aff-7fe3-47d4-bf3b-6ccdd6a2f0a0",
+          "output_key": "production_execution.contract.execution_commit_policy.4c704d3bacac112887e9",
+          "content_hash": "sha256:b48bbbcce0616a1a2676ad21e74bee7720d824871ca63995b49c71a0ac061be4"
+        },
+        {
+          "asset_version_id": "dcebf16e-233b-479c-8073-f5a9743f3fe1",
+          "output_key": "production_execution.contract.tool_permission_snapshot.c4db12d967162109dafe",
+          "content_hash": "sha256:362c714d5e776820b6044a0ef3c9b6fecc622fad402595e84af71075d879b6aa"
+        },
+        {
+          "asset_version_id": "fcec275a-79e2-4c75-affd-ee2da462beec",
+          "output_key": "production_execution.contract.skill_bundle.c72e4166a955989b025b",
+          "content_hash": "sha256:0850ac978ae2bda6b1a6c7e3ad0b8d06a80e97d3f55a1cfa3702392f2d82ecd9"
+        },
+        {
+          "asset_version_id": "8d0fd483-b008-459b-9c0d-4e755bb99bfc",
+          "output_key": "production_execution.contract.prompt_bundle.aa742a32758180c7ee44",
+          "content_hash": "sha256:7a5ccd3de3f2aa0569f29ef20884ed6fa59de4f35870a8f904af2f2175c596aa"
+        },
+        {
+          "asset_version_id": "ce7a80fa-ba9f-488f-a080-d962391e585c",
+          "output_key": "production_execution.recovery.ec2928f5cc71862fa9b547cb",
+          "content_hash": "sha256:402310c11472bae52d7e322fef3e1ad562d489e063bf4c5303e1fa89a8dc19bc"
+        },
+        {
+          "asset_version_id": "436ddcd9-a59e-4c7f-bc9c-13635eb06afe",
+          "output_key": "production_execution.evidence.normalized-output.ec2928f5cc71862fa9b547cb.409cde542376",
+          "content_hash": "sha256:3e54fecd5ea129b13cfd7b7f5eb16eace4e5e7e3662840547e276d2b7749374f"
+        },
+        {
+          "asset_version_id": "bcbb916f-9318-4478-81b3-fe271fd5f517",
+          "output_key": "production_execution.evidence.validation-manifest.ec2928f5cc71862fa9b547cb.6c7bcf02ba10",
+          "content_hash": "sha256:77cc7d15f40200a1db710ea976fabe60759660c71594e1afd99f98434d92a836"
+        },
+        {
+          "asset_version_id": "2f603bdd-18c4-4287-b8aa-110875199b69",
+          "output_key": "production_execution.evidence.cost-receipt.ec2928f5cc71862fa9b547cb.8efeb6e29c08",
+          "content_hash": "sha256:eb6a7e9719a63865ce930d657730da4f09e7b3c0e8eae3df1eba280ec8fe6c16"
+        },
+        {
+          "asset_version_id": "e080f7fe-daae-426d-a25b-6b3c0e551a16",
+          "output_key": "production_execution.recovery.ec2928f5cc71862fa9b547cb",
+          "content_hash": "sha256:7fd9f027cbc6bccfba9bfeef613358219a71f87153f5c8a5342e4a1d0cf7bdd5"
+        },
+        {
+          "asset_version_id": "6cae9832-b55b-4161-8dff-021cf71151a9",
+          "output_key": "production_execution.contract.capability_materialization_manifest.7a333ffa7dbf51e9783a",
+          "content_hash": "sha256:f3d9ce2ca91cea364d6faa33229ed61c23e9cf29fa11b35740ed1f86f2318e1a"
+        },
+        {
+          "asset_version_id": "a9027b6d-7110-4c5c-b57d-e2aadd4fc88a",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.e2ac869a62cc50fa8952",
+          "content_hash": "sha256:07655308f1d423b9c50a98d24cf88e9709b65a39b6e71ff5c6b603e9da62b572"
+        },
+        {
+          "asset_version_id": "059d3694-aae3-40e7-96e4-9e23a9f728d5",
+          "output_key": "production_execution.contract.execution_context_policy.80f7d67e83ad2cd56f16",
+          "content_hash": "sha256:c810fc377bba97fd975a8ff4c793997acaf4b95899e2375556a3444d714e33d0"
+        },
+        {
+          "asset_version_id": "74f857cc-d3f7-4cd8-b773-f076e1d0e9b7",
+          "output_key": "production_execution.contract.input_manifest.5021e34c7d03485fe9e6",
+          "content_hash": "sha256:ff1e2a2982b02bef2e7f9defd6702ff0d0a7fe74670578b7b7f391b831a8ef1d"
+        },
+        {
+          "asset_version_id": "24b98b0b-cc5c-4a94-aa18-dff901635526",
+          "output_key": "production_execution.contract.route_snapshot.0056cd80974783de5be5",
+          "content_hash": "sha256:de69d8dfc77aba74e6a8efd817fbd62c35bf137ecdba82b4e144beae52cd3dfa"
+        },
+        {
+          "asset_version_id": "a116385c-190c-4972-a73e-c55a4cfb38c6",
+          "output_key": "production_execution.evidence.raw-output.49f880aa134be84925b9fbc8.274542f72348",
+          "content_hash": "sha256:a9dd1b707356c11cb37f65e3cb0a2d7daeead14a76273bd57b75590524148344"
+        },
+        {
+          "asset_version_id": "05de3772-09de-4d02-b4aa-32db2fdec037",
+          "output_key": "production_execution.evidence.output-manifest.49f880aa134be84925b9fbc8.f1a210073c6f",
+          "content_hash": "sha256:5d6f8d7d854b523b80ac4c034477bed65298890879e8c7b3c33c8054d63a3d95"
+        },
+        {
+          "asset_version_id": "e4e79792-c8c5-4ba3-bbfd-944d4b5916ee",
+          "output_key": "production_execution.evidence.usage-receipt.49f880aa134be84925b9fbc8.fe1793886a77",
+          "content_hash": "sha256:48cdbfe22b8cda51c81d88a7e5f1d9dd671c6c690511a340beb32c59c8d0fad8"
+        },
+        {
+          "asset_version_id": "635fc87d-c6ec-4d96-849a-8c44d05fbd88",
+          "output_key": "model_call.context_fidelity.013463b081733c79285e",
+          "content_hash": "sha256:5132a8ea69312b2cf9bf5b094f9a225376b4971b18fddc05de1f5805ed093981"
+        },
+        {
+          "asset_version_id": "f26d608b-2bd0-4523-a3b1-12d1bdc6f970",
+          "output_key": "cost_ledger.context_fidelity.013463b081733c79285e",
+          "content_hash": "sha256:808daf47dfc07d034348311310fdb3eae03885af12a2f8af26091b7d48694575"
+        },
+        {
+          "asset_version_id": "99ec7039-4df1-4867-9fad-7ebf344508bf",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.f103c72f55b4cde58b16",
+          "content_hash": "sha256:581d13a3d53d78c4ae610743f71f79ab241a75c777afffb37afea2a1ccfbd26e"
+        },
+        {
+          "asset_version_id": "be2fe4d5-38fe-4c85-bf68-a9bfb740a038",
+          "output_key": "production_execution.recovery.1809602bc91093aa54b8a28d",
+          "content_hash": "sha256:3e4f337b75a6785e620739f51f22f475e5ca83a02defc3800004026076ce7d23"
+        },
+        {
+          "asset_version_id": "3e981c1a-9a86-4c41-81cf-e2dfced5a123",
+          "output_key": "production_execution.evidence.normalized-output.1809602bc91093aa54b8a28d.63393bd4682c",
+          "content_hash": "sha256:2f9cf967ff3999b3a12e95a18d6cf2275e9fd0b6c67d9ebcb83e66be96416a07"
+        },
+        {
+          "asset_version_id": "b6fbc7f1-05f5-4ea9-bf21-f3a2a70a5585",
+          "output_key": "production_execution.contract.capability_materialization_manifest.7d3f1565b0756a5f26d0",
+          "content_hash": "sha256:cf768d21a48b33f9b14fac0f67f2690198731a9b33921a4bff773c40b89aa513"
+        },
+        {
+          "asset_version_id": "3bad9c70-7b91-48ac-987e-c344e9ebe5da",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.0b057866b7059fa57cd4",
+          "content_hash": "sha256:1a2493febbffef1a4c57e237635a10f09c36c638d4c95f06ba09622255961171"
+        },
+        {
+          "asset_version_id": "4e636752-5d72-403f-a84a-06af36e40871",
+          "output_key": "production_execution.contract.execution_context_policy.18f627e7803e3bd8ae88",
+          "content_hash": "sha256:ec9c021bf0a023953dfeb2e8799dad5ca329cf80f869176a127698b17a675537"
+        },
+        {
+          "asset_version_id": "d595fd78-331f-47d7-b140-a92957ba3fb9",
+          "output_key": "production_execution.contract.input_manifest.24dba26d5aabcc495e1f",
+          "content_hash": "sha256:70b1d6024487a2eaa4e47082294165da0a5d2a5b262e5c2dc9c36497acf19518"
+        },
+        {
+          "asset_version_id": "ff1413a2-99c5-4d6b-b40b-a876ddce139c",
+          "output_key": "production_execution.contract.route_snapshot.62f58e5967f5f405a815",
+          "content_hash": "sha256:c32db4dcf9127d0101ed198e35d9d44d16212611194a9d7bcfdc8765681be350"
+        },
+        {
+          "asset_version_id": "0c7f06b0-82c8-4fd8-a74e-ae8be192084a",
+          "output_key": "production_execution.evidence.raw-output.ec2928f5cc71862fa9b547cb.c746f60a439c",
+          "content_hash": "sha256:8d79a13cd7e1daafb3859591510f3d49052f9980d4350c98e8214bd1bc751336"
+        },
+        {
+          "asset_version_id": "a7111007-aa3c-4c11-86f9-4eb97908e479",
+          "output_key": "production_execution.evidence.output-manifest.ec2928f5cc71862fa9b547cb.5cc9b9c6a726",
+          "content_hash": "sha256:e97abf4e02ff55c6339b52d4347790dc21bd72d976b110124c709e8d0da442fb"
+        },
+        {
+          "asset_version_id": "0ddee7de-993c-4f03-a15c-d0fc9f09d8a5",
+          "output_key": "production_execution.evidence.usage-receipt.ec2928f5cc71862fa9b547cb.fe1793886a77",
+          "content_hash": "sha256:32608ee1f16062b3969e08568035e288fd60b1b7ec19a40611ddef5badbd9f34"
+        },
+        {
+          "asset_version_id": "05393e8c-3649-4948-8e7a-714ce499f0c2",
+          "output_key": "model_call.context_compress.3b94fb967dc2171b45f9",
+          "content_hash": "sha256:f70460b60a1a561410e2e4d56e1c26e702b4479c1e09ffbb9054053c51cc7500"
+        },
+        {
+          "asset_version_id": "9c48d147-3c07-4743-88fa-a910a0f64fff",
+          "output_key": "cost_ledger.context_compress.3b94fb967dc2171b45f9",
+          "content_hash": "sha256:3eb5495eac4046afd4f618095dac5489b8541e2783b14e8f65d11ac2f29779fd"
+        },
+        {
+          "asset_version_id": "c167ff47-bd22-42e5-8e2d-7cefce646083",
+          "output_key": "production_execution.contract.execution_validation_policy.b36322ce0b7a47e32431",
+          "content_hash": "sha256:fb75bee884c5eea9e66c8c97c1ff7df170a511fb8f6ba1144e2991585f89d66d"
+        },
+        {
+          "asset_version_id": "9a79306d-8a6e-4805-b1d8-8c9ee5602e3b",
+          "output_key": "production_execution.contract.execution_commit_policy.8858ba2f0a6648472e18",
+          "content_hash": "sha256:f975174255a050336ee892a302cc7efe4c9a959410e860c595ac6f4a42e92ad0"
+        },
+        {
+          "asset_version_id": "796f25fb-a49b-4dc4-85a2-3b5c6c166949",
+          "output_key": "production_execution.contract.tool_permission_snapshot.feb431ac817dc0c6fbf1",
+          "content_hash": "sha256:8d797322d9fbbd9fe37769d2ae2bf8e6b7e251b1bab75f4323f301a58496ae7a"
+        },
+        {
+          "asset_version_id": "27db2ddb-c450-4e37-9126-1f24e292c8d5",
+          "output_key": "production_execution.contract.skill_bundle.ec1bb9ab7dc1b6747fff",
+          "content_hash": "sha256:af8aaf4211424ef828b1ff99825f27cb96846271e224db240bf0003f75f1694f"
+        },
+        {
+          "asset_version_id": "bdd98c7d-7901-4b2d-8ef6-d08963d1be32",
+          "output_key": "production_execution.contract.prompt_bundle.e38c8ac7264f09700e1b",
+          "content_hash": "sha256:d44a3739e247b71e91e488309a1acd9389aa1a4fc2890aa203d5b2e72cd01caa"
+        },
+        {
+          "asset_version_id": "3a531a34-041e-4460-b598-14e1a3755aaa",
+          "output_key": "production_execution.recovery.49f880aa134be84925b9fbc8",
+          "content_hash": "sha256:a2d0851ed1e97074fa2aa001ce01edd5b5f38de3cce46e69b5401db2ad64f8c0"
+        },
+        {
+          "asset_version_id": "955347ea-f31f-40e4-bfa9-75a55b551a47",
+          "output_key": "production_execution.evidence.normalized-output.49f880aa134be84925b9fbc8.be7f19fbe4c6",
+          "content_hash": "sha256:eef5c00df8d9ba64273399778ff3bfcdfe43a37278c837fd9b946a01ed20d776"
+        },
+        {
+          "asset_version_id": "70b27670-fa3f-488d-9b6d-1dcfe6a817db",
+          "output_key": "production_execution.evidence.validation-manifest.49f880aa134be84925b9fbc8.681a1f73414b",
+          "content_hash": "sha256:e76569296bc4433d01c8ec169f7bd1da32e00dc723e1b2f644a9e5849d2be6cc"
+        },
+        {
+          "asset_version_id": "daf50d8e-aecb-4bf4-a2ba-c05af8c2b571",
+          "output_key": "production_execution.evidence.cost-receipt.49f880aa134be84925b9fbc8.8efeb6e29c08",
+          "content_hash": "sha256:f5c3afbb8f43d16184d1caa84ad6e8cd0ff68df9bfea88ceb78881a36643d3da"
+        },
+        {
+          "asset_version_id": "d386da7b-50bc-4bda-ace0-7071d1aefa37",
+          "output_key": "production_execution.recovery.49f880aa134be84925b9fbc8",
+          "content_hash": "sha256:eb58da9699b7a1bc49a4b399e7ad0778c7d7cd8cabdde0d2f7cbc8148711c8b3"
+        },
+        {
+          "asset_version_id": "156f04f1-72d3-4e93-aab2-977a60aafede",
+          "output_key": "production_execution.contract.execution_context_policy.fe4334ff52b2b5dc0c64",
+          "content_hash": "sha256:a81281dec4ab5a7c9508012777f42320450779c3e0ca2892da25f726734d466c"
+        },
+        {
+          "asset_version_id": "6b8ebc6f-143c-45d4-a6fc-0910b484439c",
+          "output_key": "production_execution.contract.execution_source_policy.f71b9f8eb508846af07b",
+          "content_hash": "sha256:488844276b51b14f98a5f40b0aebfb9eec89a560ce24e2da1fe5606ec5660979"
+        },
+        {
+          "asset_version_id": "b4973c8a-5d84-4173-bfcd-e5303b39bdff",
+          "output_key": "production_execution.contract.execution_validation_policy.c5cfc4ee654cf7ccb540",
+          "content_hash": "sha256:865da98be555eb0ff3f4400b0fe0e5fd6db1c37d132b4c67e16b122c3cf4dd99"
+        },
+        {
+          "asset_version_id": "afa6b267-4d81-4713-8ee9-694ce66fe857",
+          "output_key": "production_execution.contract.execution_commit_policy.2fa1cd89fba3902a9806",
+          "content_hash": "sha256:dc42da4b06a37883bfd4fd1959ad535950234df1c036a6bb50395a553651cedd"
+        },
+        {
+          "asset_version_id": "18c2240c-8906-44c2-ad65-2793e9b67481",
+          "output_key": "production_execution.contract.tool_permission_snapshot.c5d10e506f92c238b3bb",
+          "content_hash": "sha256:079826d58c4bcc0b08626b968d535701afe2f9e9a9e466d92833d4791d09f9f7"
+        },
+        {
+          "asset_version_id": "681f3b56-7f64-49bd-a2d3-f54bdac59a1f",
+          "output_key": "production_execution.contract.skill_bundle.edc50a27fc882be90742",
+          "content_hash": "sha256:2c8af6144429a3ca2fc17191926e9049e7c9eb68907023fd57c0dc7c5b7fd3e3"
+        },
+        {
+          "asset_version_id": "efaebe51-42d8-49f4-8427-bcf60eb42417",
+          "output_key": "production_execution.contract.prompt_bundle.4fb5ffecabbe85a4297f",
+          "content_hash": "sha256:d9495bbbb49decba600bf2d083a0cb8e78fe44c3e6a026c3fb4a2d017d01bb71"
+        },
+        {
+          "asset_version_id": "a7bed05f-e681-4770-be28-e2c850e5c6ef",
+          "output_key": "production_execution.contract.model_profile.095d4abfc2017a7b4b8a",
+          "content_hash": "sha256:1d9bdedb8fac08638f31b30a9fabddf6d19e81f652afe4b857634e363e8b8771"
+        },
+        {
+          "asset_version_id": "4c966222-9159-4f62-b728-9a5154990812",
+          "output_key": "production_execution.contract.fallback_policy.0f4e05d28e966daaa579",
+          "content_hash": "sha256:8ea36806eb62c4ec65c1c2a590cde039354866cf55626be404619b9378812784"
+        },
+        {
+          "asset_version_id": "d5c89793-303c-4c73-a788-59d41c2a1dae",
+          "output_key": "production_execution.contract.route_policy.b3a1f0296794650666c7",
+          "content_hash": "sha256:1f88594e62e1d2405dc623b487c2e26cd22047036770642154f5e9f970f85715"
+        },
+        {
+          "asset_version_id": "2113a2e6-1288-48b3-8c1b-a69ed849e95c",
+          "output_key": "production_execution.contract.input_manifest.31f2ade21fb7a7c7905f",
+          "content_hash": "sha256:221ec6a85ebae885177818be7db1ad589d1a69b0a090eb02e8aa4a39fc49a18a"
+        },
+        {
+          "asset_version_id": "e25fca3d-bdd2-457f-9262-48ac41587581",
+          "output_key": "production_execution.contract.route_snapshot.690cf1534bb9b3ab43ee",
+          "content_hash": "sha256:6fc05a257edaf1ff622cecfdfde3607016a0fb2e77ded858309595598a279593"
+        },
+        {
+          "asset_version_id": "272bf971-d20c-4b6d-a231-c4ec31f5a068",
+          "output_key": "production_execution.evidence.raw-output.1809602bc91093aa54b8a28d.baa5f9919fa9",
+          "content_hash": "sha256:574c45303c497a2193a9b128e21a775b70d7a0b276080f37c27cfd014d1d0104"
+        },
+        {
+          "asset_version_id": "6285b261-34bf-4223-9d10-5afd5045f661",
+          "output_key": "production_execution.evidence.output-manifest.1809602bc91093aa54b8a28d.e20a465737be",
+          "content_hash": "sha256:690f2a459a05f1ef7cbf8477d2e0a840b4695cf15bd677794233009239215209"
+        },
+        {
+          "asset_version_id": "82f0de91-60b9-4284-935e-bf53c9a066c5",
+          "output_key": "production_execution.evidence.usage-receipt.1809602bc91093aa54b8a28d.fe1793886a77",
+          "content_hash": "sha256:ff227e795283b1c8bb3bd34528509b6c3b20ea4de3397214f01d46804270732b"
+        },
+        {
+          "asset_version_id": "d850eff4-aaed-42e9-9304-49c2c63891eb",
+          "output_key": "model_call.draft.dc08267bf19077f2a685",
+          "content_hash": "sha256:7ea3cfc9eeda4570aaa3ea91a5782c131533b1c3f7e0efb5e4a6b97d8f0bb806"
+        },
+        {
+          "asset_version_id": "e50b43aa-b157-4328-82d2-4a321e47aac5",
+          "output_key": "cost_ledger.draft.dc08267bf19077f2a685",
+          "content_hash": "sha256:4919a3c7be616732571d331d3d95d00f9e4e8c18a4203a4e83d2d55e56df19a4"
+        },
+        {
+          "asset_version_id": "authority-output:363e1a36-ef18-4e46-a7cd-0d407aecad9e:chapter.draft:v1",
+          "output_key": "chapter.draft",
+          "content_hash": "sha256:b9e43aa483176c00e606753d2abbdae8418278336970d700b1c12ada70f50917"
+        },
+        {
+          "asset_version_id": "authority-output:363e1a36-ef18-4e46-a7cd-0d407aecad9e:chapter.draft.execution_commit_manifest:v1",
+          "output_key": "chapter.draft.execution_commit_manifest",
+          "content_hash": "sha256:792f236e261df79d5f28fcf05f9da485474bd8009cd7dcc6c1af7784c67e98a0"
+        },
+        {
+          "asset_version_id": "b32caa7f-2609-42f7-85d4-e0e12cb48e3a",
+          "output_key": "production_execution.evidence.validation-manifest.1809602bc91093aa54b8a28d.24cb5a5eeedd",
+          "content_hash": "sha256:7cde05e837863af00468376718626d4640ef447523ba50c63bb04ee301c008d6"
+        },
+        {
+          "asset_version_id": "9b070ed3-5024-40e6-a64c-f646bc62e78d",
+          "output_key": "production_execution.evidence.cost-receipt.1809602bc91093aa54b8a28d.8efeb6e29c08",
+          "content_hash": "sha256:d58e7fd14f6963b4000b5f9291d42ee1acd286cfcf083dad056d6519287293bd"
+        },
+        {
+          "asset_version_id": "05cf34aa-056f-4df9-b303-a2dedc5452d9",
+          "output_key": "production_execution.recovery.1809602bc91093aa54b8a28d",
+          "content_hash": "sha256:152dca06fc01b70d52cb0ea25181524c4adb92b7695606f77cf3858ebf96f0b8"
+        }
+      ]
+    },
+    {
+      "source_boundary": {
+        "kind": "FROZEN_STAGE_INPUTS",
+        "book_id": "book:project-2b56b97abcf34579b3a0b644604133a4",
+        "sources": [
+          {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        ],
+        "project_id": "project-2b56b97abcf34579b3a0b644604133a4",
+        "pack_snapshot_hash": "sha256:279ef78a500c4b1efddcfc08b15c1ef2641fecd5ba6a1d874616cac35d9ad04d"
+      },
+      "original_provider_projection_hash": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+      "derived_provider_projection_hash": "sha256:cd04a44537223728b7843d213204cd42f17ea6b75e7f53e100bfa578f23563ad",
+      "compression_and_check_effects": [
+        {
+          "effect_id": "d8bf819f-320b-4af2-ac99-9f33d857d7a6",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:31df4f56bb6ad62017913af1a10853a0dbfcf02600115db61d7e0f3ccc378e09",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "04bc1a82-f095-411f-9232-cf9dfbddbe8b",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:5ef9628768d015744f6509fd1971acf62972d0f6864c787870720bf036c9c31f",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "f3da94c1-731b-4917-8f9b-7bbf915b945a",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:90391cde30d8a99f35b34d5feb4ead30600f425d7f07801dc6b0380d44866a88",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "dae46d26-24f7-45ea-8431-13bd29a1b75c",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:3d1e8ae6586b54a5417b30ef87d3e78a158d4fdddcb2daca673bb4603de2595d",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "367bd891-a826-4427-ae54-c057c8910d66",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:523814d8d948e6b0ebccbad309e62cd0a13494dbfc27fb802051fb93583f571b",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "9b4be334-9905-42ba-8fab-b5da9c282b00",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:8eb2b81b69baa4c9f92297e92c90753243eda1b6deeaed591a491090e9dc7ea6",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "0b726ab0-825a-4496-8e13-75d1e3223b7f",
+          "capability": "model.context_compress",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:9bffca9f64fbebeabc39e3983dc4d8c5b67c0be7cea3086cdafdd208e44344cc",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        },
+        {
+          "effect_id": "543b9e43-700d-4c47-bd5e-f43a278b9bd4",
+          "capability": "model.context_fidelity",
+          "status": "SUCCEEDED",
+          "request_hash": "sha256:ca5f27fa077a736989fd00996692a3fbd804a30028c532e992cf7ae9a643d2e1",
+          "task_fingerprint": "sha256:664ac273fa3fb0a79f2a30a3f61be2157f4fb3f147ab0885af235933f5097d15",
+          "source_binding": {
+            "content_hash": "sha256:57e4470341608820bfb71fe01eae5b65d44b4663ff5f4e788ed34dd904e3cad2",
+            "asset_version_id": "authority-output:888ae372-ceef-4deb-a191-16e2b44e4735:chapter.context:v1"
+          }
+        }
+      ],
+      "replacements": [
+        {
+          "path": [
+            "context_bundle",
+            "segments",
+            6,
+            "safe_summary"
+          ],
+          "ranges": [],
+          "source_text_hash": "sha256:d32e6963c4ca980f5a2bf77c1037bdc36680ac89339fce010047778d6a8fdc5e"
+        }
+      ],
+      "final_composition": null,
+      "measurement": {
+        "limit": 512000,
+        "token_method": "",
+        "after_reserved": 56970,
+        "before_reserved": 690871,
+        "actual_provider_tokens": null
+      },
+      "main_effect_id": "d0103abc-d822-4d6b-8025-7b5d526370ab",
+      "main_effect_status": "SUCCEEDED",
+      "frozen_effect_request_hash": "sha256:82b0597851556f218b6edd7e2d11066e8a07885c46f6e498912a0e0b15932326",
+      "provider_request_envelope_hash": "sha256:78f2947156c85feb6d824b5f5343d42c09517a2eda7101b96e719e7daa51b249",
+      "provider_admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "measurement": {
+          "model": "scripted_provider_v2-draft",
+          "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "precision": "FIXTURE_BYTES_EXACT",
+          "utf8_bytes": 40314,
+          "input_tokens": 40314,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": null,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "envelope_hash": "sha256:78f2947156c85feb6d824b5f5343d42c09517a2eda7101b96e719e7daa51b249",
+        "total_reserved": 56970,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 16384,
+          "provider_input": 40314,
+          "request_framing": 16
+        },
+        "applicable_limit": 512000,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-draft",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 16384,
+          "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:279ef78a500c4b1efddcfc08b15c1ef2641fecd5ba6a1d874616cac35d9ad04d",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 512000,
+          "execution_token_limit": 512000,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 665322,
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+          "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:85045faa975c548910eacf9e273e0903de81d1f17bcc34abf2f22fdc99bbc5e6",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:4081700d6a7839b9ac27c6af16576807f548f423dc3f83142ec0d79367d39deb",
+          "provider_context_view": "sha256:e8fcff742640d35576755363bbaeb3ba675dab33ec1c87f46ac8a4e87ef4f8b4",
+          "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "frozen_pack_snapshot_hash": "sha256:279ef78a500c4b1efddcfc08b15c1ef2641fecd5ba6a1d874616cac35d9ad04d",
+      "operation_outputs": [
+        {
+          "asset_version_id": "23913639-aafe-4ee4-abf2-33f2678e828f",
+          "output_key": "production_execution.contract.capability_materialization_manifest.f449ccd7afff50ea88ea",
+          "content_hash": "sha256:a13eb7a33c25f1fa3245b8903f0ffbe4bd43dbdfd69f6a05681dbf9fffbdd4b1"
+        },
+        {
+          "asset_version_id": "28054524-5fdb-442a-87b5-c9126bcddf33",
+          "output_key": "production_execution.contract.capability_materialization_manifest.20d760a15336dd5575d5",
+          "content_hash": "sha256:88ab4b219835e60b22788c2ae0bdc826bfe3f69a6e4715c7c3298bf3ca6a925b"
+        },
+        {
+          "asset_version_id": "a31a8020-b72d-4d9c-b812-f421fc0deda2",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.deb92767c109b812d1bd",
+          "content_hash": "sha256:84f0e56953084e1dc5b58bd199d1e54897ca06750a21569cec020b37614e1c6a"
+        },
+        {
+          "asset_version_id": "3ea48834-08ab-4ca8-95eb-f5ac1c069a77",
+          "output_key": "production_execution.contract.execution_context_policy.d1b8ff6028192dcd8d04",
+          "content_hash": "sha256:4213751d2758e58578af51f682e7f8ef53e8439b8bd89b563c963e9701de4c9b"
+        },
+        {
+          "asset_version_id": "e07ba762-6b9b-425a-9f2d-98a97e7150c8",
+          "output_key": "production_execution.contract.execution_source_policy.ba44a21fd8abace5e7fd",
+          "content_hash": "sha256:bb1196c1ba0b87780732621dfc1a38ab761306637bf7632a099f42b5f6a4b49d"
+        },
+        {
+          "asset_version_id": "b6de825b-cf3e-44f5-a977-d26a7a15b40b",
+          "output_key": "production_execution.contract.execution_validation_policy.73f95865e1e30e9275d4",
+          "content_hash": "sha256:e7cade1baef1b04b3c78d814dd243138458f6a0b435798c32535640e8f96ccb0"
+        },
+        {
+          "asset_version_id": "80e4f5d3-188f-4322-aac0-ee066b93180a",
+          "output_key": "production_execution.contract.execution_commit_policy.e2336642f8ad70e244fb",
+          "content_hash": "sha256:1627bdd2a2145b9d34bfb107fdab1e8bde9f787358302dfab6d06c92caee7fea"
+        },
+        {
+          "asset_version_id": "aad1f1a8-504a-4b09-9b58-8d4ab82d7260",
+          "output_key": "production_execution.contract.tool_permission_snapshot.c88b291c14c6d80f5f80",
+          "content_hash": "sha256:29587b64ab35f0b54c735546bd602e5376691c574f4d7fae24077b541ed80134"
+        },
+        {
+          "asset_version_id": "24ee7203-4523-41dd-a415-d7d60965e75a",
+          "output_key": "production_execution.contract.skill_bundle.da57e3570d9b7ac9ddd6",
+          "content_hash": "sha256:266a235b8ecdd00ff880ecadfd47bb08a1593763aaa374a46aec502790a2ad52"
+        },
+        {
+          "asset_version_id": "06aa6244-8b67-492b-aaea-7a7944b10ace",
+          "output_key": "production_execution.contract.prompt_bundle.58dd4c54a1e79dcfb8fa",
+          "content_hash": "sha256:a0846b233f2051203c627d0b39499ed11f08bb0e16e5e289d700e4304dc6fa3a"
+        },
+        {
+          "asset_version_id": "d229bf00-ecce-48e8-9318-eb896664d172",
+          "output_key": "production_execution.contract.model_profile.1b23bc5d710d957933a3",
+          "content_hash": "sha256:4b20bd44189be575ca58ee723c96e1e3b5cf75ac430f1e2cd2878263fefede11"
+        },
+        {
+          "asset_version_id": "dbc40ffc-6e25-464c-8a90-df51f6e7ed8b",
+          "output_key": "production_execution.contract.fallback_policy.4500dc686463882c68b4",
+          "content_hash": "sha256:0c900fd098b4f31713a0bc3098f19e9019b479875e352f6481562a75400ef329"
+        },
+        {
+          "asset_version_id": "7b16e6bd-f4d8-4bc2-be42-e2c10c9273f1",
+          "output_key": "production_execution.contract.route_policy.63b01ed8153e7ad5f2e8",
+          "content_hash": "sha256:46519a3ad6db4ebe248ee57cabc13b2fa5571d22c75dcefd5dfea2aa0d5fbd29"
+        },
+        {
+          "asset_version_id": "3e536771-ec03-4a65-a9d5-cddd67ad872a",
+          "output_key": "production_execution.contract.input_manifest.83118e96fe42d4a7fae0",
+          "content_hash": "sha256:8ca554e02a92359a9a1b6833b0e03c1293c52ea1dcba6cf647144afb78749e2d"
+        },
+        {
+          "asset_version_id": "b3c1397e-6bba-489f-a88f-83b983815bb6",
+          "output_key": "production_execution.contract.route_snapshot.3d8d66c2b249b043b225",
+          "content_hash": "sha256:2559e452117cfa0ec61de4b5f05fd8a5eb0c674a6cd4eb016b705c5d9e8233eb"
+        },
+        {
+          "asset_version_id": "72250df9-d798-4538-8d16-78209b3b79e7",
+          "output_key": "production_execution.recovery.6e19b0420e11fcea251e00f0",
+          "content_hash": "sha256:a58164edd0c550aebe41100ae3578c7bffc7de11e3167a457c1e202d86c38909"
+        },
+        {
+          "asset_version_id": "bde467c1-f7d2-4b31-a56b-0f6a9d8bf37c",
+          "output_key": "production_execution.evidence.raw-output.6e19b0420e11fcea251e00f0.4fa7c369b951",
+          "content_hash": "sha256:611a3adb47671bbf622beb4d87b88d109e44732455007000bf515e3dd19a8786"
+        },
+        {
+          "asset_version_id": "d208b497-e010-40a5-b22b-a49193442c2d",
+          "output_key": "production_execution.evidence.normalized-output.6e19b0420e11fcea251e00f0.409cde542376",
+          "content_hash": "sha256:a3176b1b7cb6657b3518f1594fddb3e3ac939f814eeb39e1a67c58e399530302"
+        },
+        {
+          "asset_version_id": "2f0cb3e5-5a0b-47a6-b858-07233b3ce0ef",
+          "output_key": "production_execution.evidence.output-manifest.6e19b0420e11fcea251e00f0.5b8d46108576",
+          "content_hash": "sha256:4a68aa5043c496c4239856b9fec59ab7870a326f0e2f91ac898b25eb48f2c57d"
+        },
+        {
+          "asset_version_id": "b44eb3b8-74d0-454b-953a-4cc6416f47b7",
+          "output_key": "production_execution.evidence.validation-manifest.6e19b0420e11fcea251e00f0.3dd441fb58cf",
+          "content_hash": "sha256:36e3c7fad3a7a114bb2d5515e971d1f3b0bb69841e31dc8668ac72ffb8dd8d45"
+        },
+        {
+          "asset_version_id": "b0c28342-8704-466f-add9-fb4a55f71b2c",
+          "output_key": "production_execution.evidence.usage-receipt.6e19b0420e11fcea251e00f0.fe1793886a77",
+          "content_hash": "sha256:ebebdbc4e9742e038d027b2895dcff732870486e69c35e69dd8c03d5bc29437d"
+        },
+        {
+          "asset_version_id": "78415960-9457-4eda-bfcf-8dd74d266fe9",
+          "output_key": "production_execution.evidence.cost-receipt.6e19b0420e11fcea251e00f0.8efeb6e29c08",
+          "content_hash": "sha256:e8b36dfeafb242fe9d3903dc6cb1e132ac41a438a116ad359ea18d1545b18454"
+        },
+        {
+          "asset_version_id": "83156d78-e34b-4b00-b059-a53bf9c67ecc",
+          "output_key": "production_execution.recovery.6e19b0420e11fcea251e00f0",
+          "content_hash": "sha256:d383642f858d0aa4c7f8e1c1e579577bb4cdf73bb005eeed823e72ff6dc5d55e"
+        },
+        {
+          "asset_version_id": "9002d93c-f8f8-4205-bad7-13d7ae86f621",
+          "output_key": "production_execution.contract.capability_materialization_manifest.df6f566876ab39787c1f",
+          "content_hash": "sha256:805c5fd404ba803fa89be82ef8a9fe2dcf7d07bdf534d0599cb41e2ceaef64d3"
+        },
+        {
+          "asset_version_id": "1ee72ffa-9e2b-474a-9a6c-2387b1e81c05",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.5818f587e44996423836",
+          "content_hash": "sha256:4adaa24dd8b580e359ca5ec83519489ada4868d0350950e7974a52dc9fb55526"
+        },
+        {
+          "asset_version_id": "4f21749f-ab4f-4077-ad16-c76983ed30d0",
+          "output_key": "production_execution.contract.execution_context_policy.b205630244ee1237aeea",
+          "content_hash": "sha256:1b7e84d218a65cbe4e6328938b7ef8846dd9954243a041ed0aff8f16d727a7d3"
+        },
+        {
+          "asset_version_id": "ae9be3fe-c690-4d77-8dbd-5d5d727e855e",
+          "output_key": "production_execution.recovery.62c2f054f79deb0b2ccd865f",
+          "content_hash": "sha256:70858fd0c4c20b0736026984f870ace123c3307e70237c8c82282a8594f8ef80"
+        },
+        {
+          "asset_version_id": "94804ef3-f0f2-4684-a6dd-befb54a5953c",
+          "output_key": "production_execution.evidence.normalized-output.62c2f054f79deb0b2ccd865f.be7f19fbe4c6",
+          "content_hash": "sha256:e8347b7d46a9039d4d4419c833a15335461505a1f8ad7acde6ae31b7421b6dd1"
+        },
+        {
+          "asset_version_id": "1e6408f9-ee0d-47d9-8cb6-efbaea61da4e",
+          "output_key": "production_execution.evidence.validation-manifest.62c2f054f79deb0b2ccd865f.daab339c3850",
+          "content_hash": "sha256:d68bb9d5003eaab671a98adf73cd4c55c59dd4a1a52afa7d16d22a22a22b469b"
+        },
+        {
+          "asset_version_id": "578231b1-9278-4cd7-bb25-e38da015243a",
+          "output_key": "production_execution.evidence.cost-receipt.62c2f054f79deb0b2ccd865f.8efeb6e29c08",
+          "content_hash": "sha256:f86ef62117081048f96c5a126b5516ca3bb6f9971469fada5706a210f198fee8"
+        },
+        {
+          "asset_version_id": "1c831129-f349-4ed0-94d4-aa7455698987",
+          "output_key": "production_execution.recovery.62c2f054f79deb0b2ccd865f",
+          "content_hash": "sha256:74729865daf72c986a3c3e1c9c114f0350c68327818c84c1eefb7374256fc0b5"
+        },
+        {
+          "asset_version_id": "be8dd5fe-512a-407e-a4c8-7e103abc36f1",
+          "output_key": "production_execution.contract.capability_materialization_manifest.3b21ca7f12951eb688ed",
+          "content_hash": "sha256:88ab4b219835e60b22788c2ae0bdc826bfe3f69a6e4715c7c3298bf3ca6a925b"
+        },
+        {
+          "asset_version_id": "be6e3b0d-2e58-4bed-b8d3-9dcb96bdeb68",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.4ac3b35df1553dca1cd3",
+          "content_hash": "sha256:f2adc093d989e2f910ad2404afcf731ccf2c7c17b7f9ef69eb62d43b106d8c4f"
+        },
+        {
+          "asset_version_id": "8a4bcd7a-289f-417d-9e69-98819928ab87",
+          "output_key": "production_execution.contract.execution_context_policy.6b8759b32799dfe513a9",
+          "content_hash": "sha256:f8288ab106849cf8361837212063c12b7f6730d11d2c1bc3ee7c8c505a24cdff"
+        },
+        {
+          "asset_version_id": "642e641f-de1e-4b90-8498-214846c1f5de",
+          "output_key": "production_execution.contract.input_manifest.0f69ee45eab80c7785d0",
+          "content_hash": "sha256:330364d3921fa04e20ecb3abca06a390f97d6712c9e7e7c9bc3c440c41174c52"
+        },
+        {
+          "asset_version_id": "394adefb-40d6-4e50-87d8-ea4e37703c88",
+          "output_key": "production_execution.contract.route_snapshot.430d0ee6455def05695e",
+          "content_hash": "sha256:528925d22c8ceb36e234500dadbffa58924f56f7984adc847ed795a48884bef0"
+        },
+        {
+          "asset_version_id": "fd652e3c-922f-4455-b765-ad1a23d0aeca",
+          "output_key": "production_execution.evidence.raw-output.dcd1f213d8f9d20f4198dea5.a514b1cdc458",
+          "content_hash": "sha256:ea7c7f46ef5fb06066de2d28ac39ac244ab7216d51977392a82e6c8dfadc1ef2"
+        },
+        {
+          "asset_version_id": "2b736d69-7f17-450f-b281-22859da91cee",
+          "output_key": "production_execution.evidence.output-manifest.dcd1f213d8f9d20f4198dea5.8166fc4da5b7",
+          "content_hash": "sha256:db75956496fb4e241957617c1a86774d0e0993cd4afe4e371d84424a3b336c29"
+        },
+        {
+          "asset_version_id": "9dc78242-4b7e-4964-a153-271321531cea",
+          "output_key": "production_execution.evidence.usage-receipt.dcd1f213d8f9d20f4198dea5.fe1793886a77",
+          "content_hash": "sha256:d2823cc95442d3442c99c7eb6e5bd33f24dc188b1b17b7d84502ff52392aed55"
+        },
+        {
+          "asset_version_id": "4e237093-9d8c-435f-a072-0cc4360fcce8",
+          "output_key": "model_call.context_compress.1d254a146620ceafcc40",
+          "content_hash": "sha256:1083ba883d224c8e34edcbd3fb90a3a4c1debb8d7b8f2585c99c1a43fa55df4e"
+        },
+        {
+          "asset_version_id": "a55d4d32-74b7-4956-8c62-41d4e7cfe6a6",
+          "output_key": "model_call.context_compress.0123bb603e1007adb237",
+          "content_hash": "sha256:36d3a558e9b27d26fd6d3a2bfcc1d81b3c85ddb33aef0ac5d79645e6648e6027"
+        },
+        {
+          "asset_version_id": "cc647fd0-24e4-40da-b828-77228b84f314",
+          "output_key": "cost_ledger.context_compress.0123bb603e1007adb237",
+          "content_hash": "sha256:fb599488fcc08225113ca0ca59a9fc34351b6de0ddaa3fe6921cb1ef23d497b9"
+        },
+        {
+          "asset_version_id": "b44f09e7-7416-4c2d-9d38-e5a491390574",
+          "output_key": "production_execution.contract.execution_validation_policy.63b8476e5a2894dd5179",
+          "content_hash": "sha256:275068d85015a9a5e496b1864122ddbd0bc81c70b019e32268380262f2dd8717"
+        },
+        {
+          "asset_version_id": "dc883230-ecd2-415f-a552-c539915a27a9",
+          "output_key": "production_execution.contract.execution_commit_policy.a36e8c413f2b2d85b115",
+          "content_hash": "sha256:ba6f3f51dd0538e69aa94a207cbe8073babbf2d0aa08b7b5f7c2d19f4ad28801"
+        },
+        {
+          "asset_version_id": "7d5cecc3-4240-4e15-ad5d-2aca5f642d4f",
+          "output_key": "production_execution.contract.tool_permission_snapshot.79a59802541c7e7bd0d4",
+          "content_hash": "sha256:5d337592f55904b555c99a649fa2dbd0188ac9fb0b6d8ca7c0cd9f99a1ac4364"
+        },
+        {
+          "asset_version_id": "8b06688e-13c7-4320-bedd-71dafab42c39",
+          "output_key": "production_execution.contract.skill_bundle.d5ed039dcf68a26f4fc7",
+          "content_hash": "sha256:c750fac6a07ca73b6456b813223b1456ed7bc14d066f90fe7f7b483eed4bd864"
+        },
+        {
+          "asset_version_id": "f69efcad-e8aa-46ca-8d7a-0913518520ae",
+          "output_key": "production_execution.contract.prompt_bundle.db485f688fe2ecd0af2d",
+          "content_hash": "sha256:2233316bd6695393c6c178a8bc5983f543b9f8a3b3efa7cf4fe8b7311db057ec"
+        },
+        {
+          "asset_version_id": "333c81d2-5f2c-4b61-9966-83f7486748f2",
+          "output_key": "production_execution.contract.model_profile.d1f1be4979a2b1e3fdbc",
+          "content_hash": "sha256:e207a089d143e0a569830c76bf29e0958e9c5bec3ac4ffe709fb02c594089446"
+        },
+        {
+          "asset_version_id": "853e503a-4001-4308-8991-16b94ba7057c",
+          "output_key": "production_execution.contract.fallback_policy.a9d2a9fee9e58f13ba46",
+          "content_hash": "sha256:191194715d82ea67aea017fc880a5fdd421cf0206dfb10717a435788754cd142"
+        },
+        {
+          "asset_version_id": "22314272-7d14-465c-b1d5-bc18cd39fe92",
+          "output_key": "production_execution.contract.route_policy.d27c14e9006aa3fb8eb7",
+          "content_hash": "sha256:2b7bbf058e79ad73b1ca1059c6a0a8e01769908aca554d1097416ea11ad95f87"
+        },
+        {
+          "asset_version_id": "7365eac9-63dd-4264-8f87-104dcae1c031",
+          "output_key": "production_execution.contract.input_manifest.1d605a969047eb85202e",
+          "content_hash": "sha256:6f2a75acc4f1efa8341a692d421cdbb80084f18cacae07f3c12e20d63808ce1b"
+        },
+        {
+          "asset_version_id": "ec04809c-5f19-4c1f-965e-b515393ff0db",
+          "output_key": "production_execution.contract.route_snapshot.01d8383fb8f5d95d0485",
+          "content_hash": "sha256:328c91440195ffde360c1c6bed19ecd88e6c424c4fe05b44185514d23d153f13"
+        },
+        {
+          "asset_version_id": "a42c9c08-5940-46d3-9bdc-3f53ecc1d3fa",
+          "output_key": "production_execution.evidence.raw-output.62c2f054f79deb0b2ccd865f.c997814cd6a8",
+          "content_hash": "sha256:0ca5a3e0073913292cae138567026d2f06a42300a66c49eeacfa6f231f189d69"
+        },
+        {
+          "asset_version_id": "2f6b4db1-d5bf-479b-9a42-7e4cc6d8019e",
+          "output_key": "production_execution.evidence.output-manifest.62c2f054f79deb0b2ccd865f.d8dc92ea628b",
+          "content_hash": "sha256:61fa869116303421a4c14bbe0e3ab03bec13f9490a1d4f98cc20db9edb3288be"
+        },
+        {
+          "asset_version_id": "5a4e3f50-0459-4a15-aeb4-79e9c10e0893",
+          "output_key": "production_execution.evidence.usage-receipt.62c2f054f79deb0b2ccd865f.fe1793886a77",
+          "content_hash": "sha256:fbe83bf5054b7d98121097b80ee2a467cad42ad8e28581ffdb4dd03a05ff1d45"
+        },
+        {
+          "asset_version_id": "f8e20132-2b49-4e83-9a26-1ab8c4750aad",
+          "output_key": "model_call.context_fidelity.0a5569204bd7452545c0",
+          "content_hash": "sha256:492392ab03fca103a0fe780de7597fa30b5fe9117a5b0045558d0bc757588dc1"
+        },
+        {
+          "asset_version_id": "70e90329-42d0-45c8-bd02-385101a107d8",
+          "output_key": "cost_ledger.context_fidelity.0a5569204bd7452545c0",
+          "content_hash": "sha256:53513c2b08285b855d7f2219292e1e7f2837015253084eda648ec42d3e5e2914"
+        },
+        {
+          "asset_version_id": "08ad61ca-ea2f-4d3f-aede-a80345c4212e",
+          "output_key": "production_execution.contract.execution_validation_policy.9d8e5eb775e34fcb4b5b",
+          "content_hash": "sha256:14b52371b61a1a3240820676408634a214e9f7eb7f6fa92e3cd29419a88eb4e2"
+        },
+        {
+          "asset_version_id": "752389c6-5dc5-4590-a335-8d9be7492d9a",
+          "output_key": "production_execution.contract.execution_commit_policy.88f48ab9f71dc4ee6ee4",
+          "content_hash": "sha256:79737b9e2b211c7d8f7ac646ed835d5d3c7a530308525281cac75cfcd850e7e2"
+        },
+        {
+          "asset_version_id": "d69664b4-e9e8-4cc2-9fa2-b7bcbb6996f5",
+          "output_key": "production_execution.contract.tool_permission_snapshot.771be681f7d46684d507",
+          "content_hash": "sha256:6bcdb54461ca49fe79ec4440858e89db18eb2ffdcd2f5778086327c92b108fc9"
+        },
+        {
+          "asset_version_id": "93149302-5716-4463-9ae9-f1e6db875470",
+          "output_key": "production_execution.contract.skill_bundle.7b8a9f270eaeeac5a35a",
+          "content_hash": "sha256:6cce200ea0d8b5831e733da6313d77c383275e745e0bafe6ae9f91ee274543b1"
+        },
+        {
+          "asset_version_id": "7e5d0409-5b32-4d36-90c0-20f9dbae5dc3",
+          "output_key": "production_execution.contract.prompt_bundle.9c42dbbee1f2d2aa2e4e",
+          "content_hash": "sha256:eff4734ea19797ef358d9f9196471e65df5f6fb1e0b954a79f71fb5183c32a66"
+        },
+        {
+          "asset_version_id": "15577824-a761-4f81-9254-b154cd2441a8",
+          "output_key": "production_execution.recovery.dcd1f213d8f9d20f4198dea5",
+          "content_hash": "sha256:84c33e5675855fc4f2e9f02c91a3a61844a9815be85c0689a0a728f92a10d763"
+        },
+        {
+          "asset_version_id": "cf17b0f8-36c1-403a-aae5-f1b8571d8556",
+          "output_key": "production_execution.evidence.normalized-output.dcd1f213d8f9d20f4198dea5.409cde542376",
+          "content_hash": "sha256:514be5f24fc9c99fffa41041afaceb83036a6de14c252baef78900a9193b04c7"
+        },
+        {
+          "asset_version_id": "b0ee95ad-210a-466f-8a46-4412f27da5ea",
+          "output_key": "production_execution.evidence.validation-manifest.dcd1f213d8f9d20f4198dea5.6a1394e0b659",
+          "content_hash": "sha256:44978f72a23ed7e520d761d74b23fc57a00148698eb385be43f1e3af146296d1"
+        },
+        {
+          "asset_version_id": "61440d50-6924-4348-9921-40ca3310aea1",
+          "output_key": "production_execution.evidence.cost-receipt.dcd1f213d8f9d20f4198dea5.8efeb6e29c08",
+          "content_hash": "sha256:a0cbab6282f18df881df333d907bd2fa56e79f85c9cfab0b57cab9123bf09b2e"
+        },
+        {
+          "asset_version_id": "cc0e3e90-9a05-4d42-81e7-2460ef704dbf",
+          "output_key": "production_execution.recovery.dcd1f213d8f9d20f4198dea5",
+          "content_hash": "sha256:76ae2da39820009b768d80fb45d96d0825625c2cc4e1d41e0507c58acd550ad7"
+        },
+        {
+          "asset_version_id": "c8080998-f2d1-4592-875e-5a28fec90659",
+          "output_key": "cost_ledger.context_compress.1d254a146620ceafcc40",
+          "content_hash": "sha256:9edb5206923e03e46efa25527d329276eb7346de0af30d0bbcb7522778dc8520"
+        },
+        {
+          "asset_version_id": "abf3f110-24eb-40ad-ad2b-c17e64f86b3b",
+          "output_key": "production_execution.contract.capability_materialization_manifest.a495e893f987b3ebd7da",
+          "content_hash": "sha256:805c5fd404ba803fa89be82ef8a9fe2dcf7d07bdf534d0599cb41e2ceaef64d3"
+        },
+        {
+          "asset_version_id": "275a7bd1-0f93-4e54-98dc-3f6a7e8ca63e",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.1bcd09c551d26a631c09",
+          "content_hash": "sha256:a75fe0681eae21034a6035f90a3834bbea2da4dea0cccc9706459ee6da2958d6"
+        },
+        {
+          "asset_version_id": "8de222b8-5dc2-4e09-bce0-03a1f7dd7b2a",
+          "output_key": "production_execution.contract.execution_context_policy.a078a7bdf6db7f7c54c6",
+          "content_hash": "sha256:018e5bb2570b50dc0b25ee7a3c2db4bd6379596c51165c372a7055d0745f638b"
+        },
+        {
+          "asset_version_id": "ad517010-6d73-4ea2-b032-9dbb8e24a26d",
+          "output_key": "production_execution.contract.execution_validation_policy.69774634bdae09379307",
+          "content_hash": "sha256:af605e8c7ef5fbf3b45b0222bb4deb5095137196dbfa26cc38e313040eb47073"
+        },
+        {
+          "asset_version_id": "da7013a7-d9b5-440b-901e-608ecee0327a",
+          "output_key": "production_execution.contract.execution_commit_policy.cac5892fe78b32a6bac8",
+          "content_hash": "sha256:40372ac6485005b7e8de9be52d5c89b382ea337b06799e590ef6e5868efdb826"
+        },
+        {
+          "asset_version_id": "06c6b73d-165d-455e-ba79-0cb7e2222c3c",
+          "output_key": "production_execution.contract.tool_permission_snapshot.33cbd450693fa8879c75",
+          "content_hash": "sha256:e1ea3f9f043d3c15e5d8d484e5ec89afff2417ebd4f57eb28ece6e1efabfa5da"
+        },
+        {
+          "asset_version_id": "a215e6c7-8acb-4d9c-b807-1093c052ea97",
+          "output_key": "production_execution.contract.skill_bundle.dffe9a1d4d46fc176596",
+          "content_hash": "sha256:2433f2ccb2d6e65e484fcf7428e1b1512b2d2468ecbaeabff9cb6c4d98013b24"
+        },
+        {
+          "asset_version_id": "eef4d5b6-9fe3-4d5d-aeff-a7a97ba27e0f",
+          "output_key": "production_execution.contract.prompt_bundle.7524b7dff4050c5d0eb0",
+          "content_hash": "sha256:76f97fa018fb0c576a647991bb6289e7ca5a015d94a8ee606e14d809ac8a8ac2"
+        },
+        {
+          "asset_version_id": "3c9cd89b-a9a6-446f-ba06-544bb135518c",
+          "output_key": "production_execution.contract.input_manifest.37aa38ebac5ff8a51dfc",
+          "content_hash": "sha256:41f433084e27e2efabcbd74ec78cf6006da993fb2c74144419363ffc3b9fbc4f"
+        },
+        {
+          "asset_version_id": "12b7c6cf-f940-495a-8107-1180ccd37791",
+          "output_key": "production_execution.contract.route_snapshot.4610600e90a557eb1293",
+          "content_hash": "sha256:a23c34b33810e10cc5106f0ad9683448e6ba4ee93c2cbf3aa9da2ab17aa689f4"
+        },
+        {
+          "asset_version_id": "a8edd160-8b51-49c6-98fe-d4ab054d57a1",
+          "output_key": "production_execution.recovery.6d0d793a7f41c60434f2ed18",
+          "content_hash": "sha256:3be072b8770edc1feac41a9c7699cd63858f7ec94ccdef42afb7cb215f60f31a"
+        },
+        {
+          "asset_version_id": "5b7ed01b-9639-40de-9130-3a217034ec3f",
+          "output_key": "production_execution.evidence.raw-output.6d0d793a7f41c60434f2ed18.63cc9716d933",
+          "content_hash": "sha256:af9887c90d0e90172d145e561eab485e303c386e6a6159d91996813429474450"
+        },
+        {
+          "asset_version_id": "a77b3358-a878-445a-9677-e26292b9acb1",
+          "output_key": "production_execution.evidence.normalized-output.6d0d793a7f41c60434f2ed18.be7f19fbe4c6",
+          "content_hash": "sha256:a8319dc47ce69ba9f5c27ce5e3119ec7cf21f9b2a8308bf5ca9d81da41684948"
+        },
+        {
+          "asset_version_id": "758d12e0-7b90-4bb6-9855-f3f61ff0fb78",
+          "output_key": "production_execution.evidence.output-manifest.6d0d793a7f41c60434f2ed18.bcfe1c6c0338",
+          "content_hash": "sha256:f1d7f24d9bb9a45838abc1712416afa00b51eccd6104345ff99023887dd7deb0"
+        },
+        {
+          "asset_version_id": "f14bfca4-bea8-4a1f-ac2f-c8792e267845",
+          "output_key": "production_execution.evidence.validation-manifest.6d0d793a7f41c60434f2ed18.1c8a25d70833",
+          "content_hash": "sha256:e3dd28a047826bea7ac3e9cf19e1965cf6d9f6f1abbfea24386450ae3db0bb6c"
+        },
+        {
+          "asset_version_id": "65b489fb-009e-4ecc-8853-e95279981316",
+          "output_key": "production_execution.evidence.usage-receipt.6d0d793a7f41c60434f2ed18.fe1793886a77",
+          "content_hash": "sha256:5bffb0043116a9000f4db64ff74e7cb47d8a5165323eec3cfc666e6ed35cf531"
+        },
+        {
+          "asset_version_id": "8dcb6a97-ecd0-4caf-b4fd-f20845e95ef5",
+          "output_key": "production_execution.evidence.cost-receipt.6d0d793a7f41c60434f2ed18.8efeb6e29c08",
+          "content_hash": "sha256:8f8fd0e3e9986560a7ebbd30b93afb640ed419cea3ad5dd27f5658e509747d5c"
+        },
+        {
+          "asset_version_id": "ef9eb0ef-3ae7-44f2-b87f-21a5ec9d2f3c",
+          "output_key": "production_execution.recovery.6d0d793a7f41c60434f2ed18",
+          "content_hash": "sha256:06621658ddd858ab56800e27805c794a99bac1d263160434714258273e614d3a"
+        },
+        {
+          "asset_version_id": "06b32c38-a547-433f-bd63-ce6ef579f8d1",
+          "output_key": "model_call.context_fidelity.35459121bcdc9c8da747",
+          "content_hash": "sha256:691c607965be6f7ae15490163129c815078185710f3682d61a8b31b0ecb4a2f0"
+        },
+        {
+          "asset_version_id": "cef5b31a-e495-4479-936e-a1dbb0cc2d18",
+          "output_key": "cost_ledger.context_fidelity.35459121bcdc9c8da747",
+          "content_hash": "sha256:e5a82847d8348a9423e3a6dbce85d3af2118033cca782928391ce00de261af4c"
+        },
+        {
+          "asset_version_id": "ad100317-a83f-4c83-b2df-3abf66ff5e32",
+          "output_key": "production_execution.contract.capability_materialization_manifest.63f15da172f979975cde",
+          "content_hash": "sha256:88ab4b219835e60b22788c2ae0bdc826bfe3f69a6e4715c7c3298bf3ca6a925b"
+        },
+        {
+          "asset_version_id": "288a03ad-a574-4f82-8404-0ac17d63da0e",
+          "output_key": "production_execution.contract.tool_permission_snapshot.417b30969fe1770aea52",
+          "content_hash": "sha256:7c0a1a1751e6df104f89402bd96d25e8ca2e29f8f0e88827f2c7292ba07f9b12"
+        },
+        {
+          "asset_version_id": "49b076cb-1baf-41ce-bfd5-914f5256ce9b",
+          "output_key": "production_execution.contract.input_manifest.4df064cc5342561f612d",
+          "content_hash": "sha256:48db5864386626fa86ce49a28f9fa7b84b8704af43ce4d193d2177066b73b914"
+        },
+        {
+          "asset_version_id": "50770e4a-0f4f-4fa3-a19b-6db9f1c0e6d7",
+          "output_key": "production_execution.evidence.raw-output.3465e9a840ceded9815815e5.c9f424e3dee8",
+          "content_hash": "sha256:1b0c27e135dfdfd03faba56c5e38b7807000c8992239242c4e9756e7d2e969ec"
+        },
+        {
+          "asset_version_id": "6320e612-95f0-4ee1-8797-3e7288fd3d0e",
+          "output_key": "production_execution.evidence.normalized-output.3465e9a840ceded9815815e5.409cde542376",
+          "content_hash": "sha256:e02417fa8dbe0b44519c8bf30da4db4cc513c83a0ac3adb1645b1216a9bb81ec"
+        },
+        {
+          "asset_version_id": "16864cec-e386-441c-a19d-50e7eca53b3a",
+          "output_key": "production_execution.evidence.output-manifest.3465e9a840ceded9815815e5.321af2f1be71",
+          "content_hash": "sha256:a70fe64f4dbd0ab6ac4a19d323a7d98f1088a5055d3b4f0b315ce3d589d57996"
+        },
+        {
+          "asset_version_id": "4bceb717-cc5a-4417-bc71-ee8a5b392535",
+          "output_key": "production_execution.evidence.validation-manifest.3465e9a840ceded9815815e5.7e4552d42178",
+          "content_hash": "sha256:1d90bd335ca6f8e7420c3023d4ca3f723084c653d037741a6c66246fdd670890"
+        },
+        {
+          "asset_version_id": "67a37457-b777-4639-8c1c-75dd958a6322",
+          "output_key": "production_execution.evidence.usage-receipt.3465e9a840ceded9815815e5.fe1793886a77",
+          "content_hash": "sha256:08e00ff54dacc344666a5e78f0655371b263b90200911e75a9d108e9a364131c"
+        },
+        {
+          "asset_version_id": "a32cd115-996c-4074-8665-25b0e6ddc49d",
+          "output_key": "production_execution.evidence.cost-receipt.3465e9a840ceded9815815e5.8efeb6e29c08",
+          "content_hash": "sha256:7d0b1443d31da9bf8186dbe8e7693a890999ffe42d1a7d2ab2419d207a9e95f8"
+        },
+        {
+          "asset_version_id": "08c97290-c175-47fb-96ec-a7a128ffc9ce",
+          "output_key": "model_call.context_compress.368f8119503a6891cc44",
+          "content_hash": "sha256:2128c41bc4c845eae887450559ee0fd690b47395e772bec461ccff3bc38eb564"
+        },
+        {
+          "asset_version_id": "d82224f5-1f18-4e96-8884-8fb24796201d",
+          "output_key": "production_execution.contract.capability_materialization_manifest.cb2a17314bb346bad5dd",
+          "content_hash": "sha256:805c5fd404ba803fa89be82ef8a9fe2dcf7d07bdf534d0599cb41e2ceaef64d3"
+        },
+        {
+          "asset_version_id": "ff7c36cf-e5ab-455c-9630-a8c200c8b131",
+          "output_key": "production_execution.contract.tool_permission_snapshot.127536e4a456d833f03e",
+          "content_hash": "sha256:cba23165681d4d64432854ee3c1ff4f5a32c55f86ef7b64bbc55f2cbda16cbb5"
+        },
+        {
+          "asset_version_id": "3519b769-68d9-4fa6-815f-e4ec4395d3a0",
+          "output_key": "production_execution.contract.input_manifest.1ba53ff483da1e2f18a4",
+          "content_hash": "sha256:b4c5ee8e796e87301207f621742f612a0961206cd043bf4b0077b93195a8976a"
+        },
+        {
+          "asset_version_id": "436b7584-8f31-4ce3-936e-ec805d2097f9",
+          "output_key": "production_execution.evidence.raw-output.4c0664626eee24f889c8af0d.f7201ee2af22",
+          "content_hash": "sha256:5ab727b3469425effe650a182855b773a6cbf122340b678257c5b972205e2837"
+        },
+        {
+          "asset_version_id": "ec2811e8-ab0e-4440-aee3-d8eea705e397",
+          "output_key": "production_execution.evidence.normalized-output.4c0664626eee24f889c8af0d.be7f19fbe4c6",
+          "content_hash": "sha256:95fa33e563ba57e290c8915eff48ede9a907d10d943fb5a128a82932c7855fec"
+        },
+        {
+          "asset_version_id": "abde8b39-59bd-4cb8-8ba8-f86f1e5e217b",
+          "output_key": "production_execution.evidence.output-manifest.4c0664626eee24f889c8af0d.49650c346700",
+          "content_hash": "sha256:acf6a03df3fa7301b7d5d2c9d33915d1722932f88f2bdfa68d5237be5dbb14ca"
+        },
+        {
+          "asset_version_id": "5b6104fe-1460-4c81-98b5-55b16a719df0",
+          "output_key": "production_execution.evidence.validation-manifest.4c0664626eee24f889c8af0d.54122652b4f9",
+          "content_hash": "sha256:05a40c2bf0b63833f4297a7f5a2bceca44db2b5957438b8e0163a01c9aae031f"
+        },
+        {
+          "asset_version_id": "41ca4834-890d-4305-af11-76847ff2948d",
+          "output_key": "production_execution.evidence.usage-receipt.4c0664626eee24f889c8af0d.fe1793886a77",
+          "content_hash": "sha256:3c88e903772c3620f22be13ec7e0c0846eeb6a031a96cd1b158247955431e33a"
+        },
+        {
+          "asset_version_id": "f5a293b8-adf4-490e-a063-a7a24ee4a12d",
+          "output_key": "production_execution.evidence.cost-receipt.4c0664626eee24f889c8af0d.8efeb6e29c08",
+          "content_hash": "sha256:7ec671641d5f2a30d5010aec0bc4ff75fd680cd2fc6f9ce71c0630fd316c42ad"
+        },
+        {
+          "asset_version_id": "424c3080-8b19-4b11-87c1-88ebd381fcbd",
+          "output_key": "model_call.context_fidelity.4c90a62dd4681da209fc",
+          "content_hash": "sha256:f4a92d8c5c5c2d174ad8bd64a9b0860bf30e42adc4d11b33f4bc87849accda7c"
+        },
+        {
+          "asset_version_id": "bfb70a35-4241-4b4b-b552-dd27c45c5119",
+          "output_key": "production_execution.contract.capability_materialization_manifest.3397cded635f88da7db3",
+          "content_hash": "sha256:88ab4b219835e60b22788c2ae0bdc826bfe3f69a6e4715c7c3298bf3ca6a925b"
+        },
+        {
+          "asset_version_id": "a92fc58f-d35f-4201-b187-178d375dc957",
+          "output_key": "production_execution.contract.tool_permission_snapshot.f0ae7ab0a001afa3f81d",
+          "content_hash": "sha256:89c6d2624f97827d88f34db9c01e5f4691528345cdd4145e54567654a685d34c"
+        },
+        {
+          "asset_version_id": "b710c170-6591-4e2a-9b02-0a3c3589bee3",
+          "output_key": "production_execution.contract.input_manifest.9693f8bf4ec52fd84bf2",
+          "content_hash": "sha256:f16b69464759a0d7516b761694b2fa5206f0d27ea98c3b02ceebbd1241106046"
+        },
+        {
+          "asset_version_id": "1198f99a-5546-49e9-a572-650128dd7ace",
+          "output_key": "production_execution.evidence.raw-output.251de0e1f2e412afc2aa4674.184ed1d84676",
+          "content_hash": "sha256:e7e689f8a503aff7965f17380d290177d18817eb30ce6f8edc6ebdd08fdcb748"
+        },
+        {
+          "asset_version_id": "af326e49-8ea3-4085-833f-f01e75391ac6",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.18e2fbe6a186bbd0da92",
+          "content_hash": "sha256:67494c07ed0560ab7df9261ba0c7d49b0ce0307a82336effcee880ff28022337"
+        },
+        {
+          "asset_version_id": "5f3ca749-54e4-4630-86c2-9349991e668b",
+          "output_key": "production_execution.contract.execution_context_policy.985e932af96f1ff36a42",
+          "content_hash": "sha256:0e6fbc2d4a148116abc30d59eb42d95be4af822eaabc79fef003d9ebf6b840d1"
+        },
+        {
+          "asset_version_id": "879e8dd1-bdb7-4533-8118-d03d004e1d06",
+          "output_key": "production_execution.contract.execution_validation_policy.048e74901162e611005c",
+          "content_hash": "sha256:8bb05db9d0e5af777566aaa62624e18d13b2edbf1807639c6ce05003f61c9f83"
+        },
+        {
+          "asset_version_id": "dd6a3612-e5f2-4258-a55c-613c72d93659",
+          "output_key": "production_execution.contract.skill_bundle.61d850237c20526ab733",
+          "content_hash": "sha256:908c62fa39b30d2488099dbba7301913fc06b21b1ae4c98e2130b7f52b340783"
+        },
+        {
+          "asset_version_id": "e8a8142c-e025-48fb-886e-de67ee7ae70f",
+          "output_key": "production_execution.contract.route_snapshot.1ab7bf7da45294d09bdf",
+          "content_hash": "sha256:86b6a193b9be2706b256a63d1c8440ed6569d94876b280c05b000545c00870b5"
+        },
+        {
+          "asset_version_id": "36067f10-9e85-4902-a195-0215f66d012c",
+          "output_key": "production_execution.recovery.3465e9a840ceded9815815e5",
+          "content_hash": "sha256:5d3a5258968b95674565db312e9337724b48e084cafa88825e140cfe7fdc8e9b"
+        },
+        {
+          "asset_version_id": "d0fb8523-8499-42fd-ba80-b488e88e9916",
+          "output_key": "cost_ledger.context_compress.368f8119503a6891cc44",
+          "content_hash": "sha256:c8326abf2141feebb93afd9053a5a363b5c332f685367e9cd5bb26e6b0717509"
+        },
+        {
+          "asset_version_id": "5a809033-71b7-4a78-9aab-05290cfc082a",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.c92715b9185e27758d78",
+          "content_hash": "sha256:6735fafff7798010dfbd4706f45ceef004e6d09f3307dcb81bb6658768593d88"
+        },
+        {
+          "asset_version_id": "54b1faac-5833-4889-a1b0-456d1fcbd386",
+          "output_key": "production_execution.contract.execution_context_policy.939c9672f731cf7bcf08",
+          "content_hash": "sha256:e330e9794e97aecba2a7c7714e580cbe2e1bd9d6fed24b836ebfc150dcafdb13"
+        },
+        {
+          "asset_version_id": "135e577d-6218-4fa7-8fba-4291185f581b",
+          "output_key": "production_execution.contract.execution_validation_policy.1fa407ceaaee3ba49b9d",
+          "content_hash": "sha256:88a6e0c534341a9734df59b9a706c8c86637d94b54d76f1f625ebf46ee6de702"
+        },
+        {
+          "asset_version_id": "ccd7251f-9846-4e8e-92b2-c5b893679cd1",
+          "output_key": "production_execution.contract.skill_bundle.82d8d556839ee6b572a9",
+          "content_hash": "sha256:2e528400f662d4f9134cd755b4d29eb5c7d1d0cfdc903d8b798c4890c33ee6c8"
+        },
+        {
+          "asset_version_id": "51b3d798-ec77-4970-b147-07134bbbc193",
+          "output_key": "production_execution.contract.route_snapshot.a91c1841e1a8a9ebc6b7",
+          "content_hash": "sha256:718c46cf1482151e28c6b9b9c164199a6867d29b234565103ea5c0d9f96321bf"
+        },
+        {
+          "asset_version_id": "47d3c68c-250e-41b6-b3ce-0eee4908c231",
+          "output_key": "production_execution.recovery.4c0664626eee24f889c8af0d",
+          "content_hash": "sha256:2146e7f8941cc9150cc5deaa72ceb3ed57fb3e555593bfd887a55e2a79fc6ad0"
+        },
+        {
+          "asset_version_id": "3f336862-30d2-4251-b234-c36399f87f3c",
+          "output_key": "cost_ledger.context_fidelity.4c90a62dd4681da209fc",
+          "content_hash": "sha256:23ed708ccc32a0a7e6b4e3405aceb93cd48d6c2b3d4ab9f7c87ce05e48363234"
+        },
+        {
+          "asset_version_id": "a68b1586-a51f-4443-9617-2bd900bbfc91",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.5c9bc2228cf9b05c47d5",
+          "content_hash": "sha256:8c74a423077dfc6fc9c547739e7842fccb7a515f2693c426dd7f5153fa61725e"
+        },
+        {
+          "asset_version_id": "2aaccdcf-2e1a-471b-8f14-1e2497034a6b",
+          "output_key": "production_execution.contract.execution_context_policy.9138480b4838a52e9352",
+          "content_hash": "sha256:42f0f1bad59afd9580acaa19e18d606b345f2de7adcada266d369c2fd6b52ff6"
+        },
+        {
+          "asset_version_id": "fd5e8f75-221e-4487-b1b3-9e119c3adbae",
+          "output_key": "production_execution.contract.execution_validation_policy.aef9cdce325aa4862575",
+          "content_hash": "sha256:539db0f3ceece5bc3e09b3cd10f55e53e54e00ed79fa9119161df337e95beff9"
+        },
+        {
+          "asset_version_id": "a5b8c0c6-c236-4936-b244-c837c8610836",
+          "output_key": "production_execution.contract.skill_bundle.f03682dcf163af5c8862",
+          "content_hash": "sha256:25f7817f746d4351e9cdd3513e3a7033fc947ef9b96d98012332f6b66324f584"
+        },
+        {
+          "asset_version_id": "5a2f360c-3878-42b8-83fe-3bce8f26efd7",
+          "output_key": "production_execution.contract.route_snapshot.1fa72b6bcffee8dead22",
+          "content_hash": "sha256:f009e0db9f8233c0a41970940872bfe9130055bbdd354b1ed37d3362b83123e0"
+        },
+        {
+          "asset_version_id": "5b8cb05b-7966-42fd-a66f-20d94a3f7875",
+          "output_key": "production_execution.recovery.251de0e1f2e412afc2aa4674",
+          "content_hash": "sha256:edad4c5e7f7120fa7cce0255855b859e57b94c64a616dcb4b8c293154cef3354"
+        },
+        {
+          "asset_version_id": "3261ab85-3ee1-489b-bc10-f781d441fd03",
+          "output_key": "cost_ledger.context_compress.d5f2cb2f1a5cdeea9379",
+          "content_hash": "sha256:6f45b926aee95ba32be7a192e613825581b217b94d8519e76935fbeb0252a36a"
+        },
+        {
+          "asset_version_id": "828fbf08-e073-49b8-a7db-3e2599df4841",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.6fa8f137ec2a1d92e959",
+          "content_hash": "sha256:cd1026e53cd0925a1490413c66090f03b72e78f90f146363885b4e73d6bd6562"
+        },
+        {
+          "asset_version_id": "b28fe7ee-ff6c-494d-a763-85f4ca5dee99",
+          "output_key": "production_execution.contract.execution_context_policy.476b1c6508f4d706ab73",
+          "content_hash": "sha256:2058c7005544e8e97ae5e2561d554cba37626a70114f48b48458508503b3928f"
+        },
+        {
+          "asset_version_id": "e514e5ab-6630-48a4-8dc8-02b082abafa0",
+          "output_key": "production_execution.contract.execution_validation_policy.4cdd7dcff691eb86551e",
+          "content_hash": "sha256:9d3d391540f2e41d3bb71df3720caa0ad0f39de77e5d72d8fe5b7fb393b80eda"
+        },
+        {
+          "asset_version_id": "e98997b4-9d0c-4478-a1c2-ed1647ef5f20",
+          "output_key": "production_execution.contract.execution_commit_policy.bf9a024c96a63cc6e62b",
+          "content_hash": "sha256:10cfee0327bee41d81ad5e12d214699e639fc360b72259ef9654cae4ce998eac"
+        },
+        {
+          "asset_version_id": "a33be33f-d118-4456-b0e5-11cef3970516",
+          "output_key": "production_execution.contract.prompt_bundle.e8a88305a4af5083a363",
+          "content_hash": "sha256:a7d6d0dccb99bb6bd43c0f7b1ee266a3b9b7eb4c6e9a6e771e005667daee52ba"
+        },
+        {
+          "asset_version_id": "9b35065e-1489-4f96-a50b-67a0e5ff7805",
+          "output_key": "production_execution.recovery.3465e9a840ceded9815815e5",
+          "content_hash": "sha256:2a665f5b8302e1bd99e29999382b8cd1dcae6c0215a8e7541108ce455f715edd"
+        },
+        {
+          "asset_version_id": "76d65861-43f8-4ec2-9882-6619759259a3",
+          "output_key": "production_execution.contract.execution_commit_policy.60c370c2a844fd663de8",
+          "content_hash": "sha256:b21ae11234381be99f6704bf352b80c7586e2838c0b3c7ceede083f65ee7f4f3"
+        },
+        {
+          "asset_version_id": "26b52d0f-c4de-4fcd-b2a6-3e0eb326ff13",
+          "output_key": "production_execution.contract.prompt_bundle.401cc3e491fa99755ba1",
+          "content_hash": "sha256:6e60abc5f5f25de6a3d5d5d450d222250de61534d1de89da47dabdb3dbfb87e5"
+        },
+        {
+          "asset_version_id": "cbdcc68c-8c1d-419d-9759-6dc452c69ee3",
+          "output_key": "production_execution.recovery.4c0664626eee24f889c8af0d",
+          "content_hash": "sha256:21291a327c0216a18f9659a066a2a73c69d352aa03f80dac6681320dd0f0af48"
+        },
+        {
+          "asset_version_id": "f0e707b7-276b-419b-9278-acf9419c343d",
+          "output_key": "production_execution.contract.execution_commit_policy.907913b1682901792a4b",
+          "content_hash": "sha256:d0a2c944ce8ddefce30f8574b09f660f177a40395abb3281350bd702475c1e6e"
+        },
+        {
+          "asset_version_id": "0cc9f77e-d6d3-4b93-ad40-0fb22d1b86dc",
+          "output_key": "production_execution.contract.prompt_bundle.a1ed1602c019d6647add",
+          "content_hash": "sha256:bcf5b96352c71b4c1a23afce85700429de2fcda8cdb1b1c2135fa6c2c3522e8c"
+        },
+        {
+          "asset_version_id": "8310b122-4829-4410-8aaa-cfe1a823b100",
+          "output_key": "production_execution.recovery.251de0e1f2e412afc2aa4674",
+          "content_hash": "sha256:95629d7d165cb317eda012b3f2d8e9960f5fb8ad23271b69c027fb95ea278f9f"
+        },
+        {
+          "asset_version_id": "2bd5a919-439e-4760-9bbf-aa9183b4bfbe",
+          "output_key": "production_execution.contract.execution_commit_policy.45b6b0bf6fca9394f4da",
+          "content_hash": "sha256:4a84db873f50761590a48d38dd30d05defe5913d2e9421050133a831b487933a"
+        },
+        {
+          "asset_version_id": "186a8657-7dd9-48dd-9592-a9b9cdac04fa",
+          "output_key": "production_execution.contract.prompt_bundle.d01d0f8a28316e694371",
+          "content_hash": "sha256:1a31bf0531b5cfc1c3719a19a33008046a8462ff51efab5e1c31c5d111126d2e"
+        },
+        {
+          "asset_version_id": "d859e4a1-36ad-4597-a39d-f209d8bd913f",
+          "output_key": "production_execution.recovery.09aba6502f365574e4f5af55",
+          "content_hash": "sha256:8e553fbe4be6a17cb77c1c300553d4dfb906619359ce971eef87423a95c3963c"
+        },
+        {
+          "asset_version_id": "f9ff8807-5a06-4b5e-9049-181f6f1c250c",
+          "output_key": "production_execution.contract.provider_request_admission_manifest.8504c730141b268fb2d6",
+          "content_hash": "sha256:67ec091588eff8efb006e4a1c32c09792e78ff2f302aa3882b071814906965d5"
+        },
+        {
+          "asset_version_id": "ab4b72de-a154-4f3e-9d3b-8781c4f5f2fc",
+          "output_key": "production_execution.contract.execution_validation_policy.60adbc383e2225859128",
+          "content_hash": "sha256:5d438028677a524ac805628ea96f92fd5f8443466e4829d15beea3ee3bed91a3"
+        },
+        {
+          "asset_version_id": "d9575fda-71fe-43cf-8986-4b8370013897",
+          "output_key": "production_execution.contract.skill_bundle.6b611634fbd697108acf",
+          "content_hash": "sha256:2fdc87cdfd2e58c8f5b26de595af922e4e1ee50ea2d1e382697751eac5ae5d37"
+        },
+        {
+          "asset_version_id": "336f2719-dd58-4016-a9e7-b70a89d05021",
+          "output_key": "production_execution.contract.fallback_policy.7b42251d49b5a3a10f72",
+          "content_hash": "sha256:8ea36806eb62c4ec65c1c2a590cde039354866cf55626be404619b9378812784"
+        },
+        {
+          "asset_version_id": "f65f0720-f524-4832-be30-153111852183",
+          "output_key": "production_execution.contract.route_snapshot.549e66f1ff1eced8c604",
+          "content_hash": "sha256:7d269e8676bb55f1d4d9589dedd3d6cc98fbdc690aa2b14c7ebfdce3639f1f97"
+        },
+        {
+          "asset_version_id": "dbea2b6c-a197-4841-843c-529cf325d43b",
+          "output_key": "production_execution.recovery.82154e2dd026e3a017074f8f",
+          "content_hash": "sha256:fe449b0ba47d62cfdb7f809a73e99d973ef94cee37d4842ee716a7fb53a989dd"
+        },
+        {
+          "asset_version_id": "aba593ed-62ac-41fa-b6c7-909947a1a7d3",
+          "output_key": "cost_ledger.draft.e0192dd75487a016b0ee",
+          "content_hash": "sha256:f247b623cbe280f1a1fb84eebcef60f6847bf7cea192a308fa425d7dc703d418"
+        },
+        {
+          "asset_version_id": "6c25bf7f-783d-44c4-8d55-533f7fa2d7c1",
+          "output_key": "production_execution.evidence.normalized-output.251de0e1f2e412afc2aa4674.409cde542376",
+          "content_hash": "sha256:fd49c8f7461341dad3629c6349daf422f718502a543b8f8627704858f295ac0f"
+        },
+        {
+          "asset_version_id": "e85d995a-bb80-4fc6-8597-37550f5284eb",
+          "output_key": "production_execution.evidence.output-manifest.251de0e1f2e412afc2aa4674.a643ee7574ce",
+          "content_hash": "sha256:d8a68c7da081c023d2bd49b0ff093103c4eaf9be0e446a6c728b76b00c2466a9"
+        },
+        {
+          "asset_version_id": "0840f7e9-03e8-42f9-8f24-737f40eb798b",
+          "output_key": "production_execution.evidence.validation-manifest.251de0e1f2e412afc2aa4674.fd426791043f",
+          "content_hash": "sha256:a288c26c2392aaffc5c36b877877a6bb234ed1174ddb61fcd16c5d0431dcc7cb"
+        },
+        {
+          "asset_version_id": "97d884a2-0aaf-4c10-a8cc-4d6285d83a4c",
+          "output_key": "production_execution.evidence.usage-receipt.251de0e1f2e412afc2aa4674.fe1793886a77",
+          "content_hash": "sha256:dc23990e52119b4edd7e29369083bbb90321d738fd53d37779400d6ac1efd52b"
+        },
+        {
+          "asset_version_id": "c0b14b68-728c-4a1f-be9d-4242f90f9e2c",
+          "output_key": "production_execution.evidence.cost-receipt.251de0e1f2e412afc2aa4674.8efeb6e29c08",
+          "content_hash": "sha256:eb9cb567ac38d09a1372154dc7251c9dbb0c18c419db5bd333e06ba8392ce62b"
+        },
+        {
+          "asset_version_id": "70db0e98-902b-47fe-9e3d-372b52302902",
+          "output_key": "model_call.context_compress.d5f2cb2f1a5cdeea9379",
+          "content_hash": "sha256:8fbc1bd63bb92b7422841d430bfe0e343d5000aa3f198c013e5c11d596c44b75"
+        },
+        {
+          "asset_version_id": "098e9b9d-dc4d-45c1-9585-f779ca738bb9",
+          "output_key": "production_execution.contract.capability_materialization_manifest.57ab701abd8969bdf300",
+          "content_hash": "sha256:805c5fd404ba803fa89be82ef8a9fe2dcf7d07bdf534d0599cb41e2ceaef64d3"
+        },
+        {
+          "asset_version_id": "353e58ba-578e-46ad-9d08-a9c6527046af",
+          "output_key": "production_execution.contract.tool_permission_snapshot.8e45935e74fd01411214",
+          "content_hash": "sha256:8a84f88f7068d46bcfd922f2ca579b709af298877719d5e2442199061dfaf3e2"
+        },
+        {
+          "asset_version_id": "661dcf47-e4cf-4add-803f-0c133cc6a1ef",
+          "output_key": "production_execution.contract.input_manifest.7ae12f4b2809be1ec42d",
+          "content_hash": "sha256:841d5d8e05662e6dc534697620eb6cd6643d6e7461df50b457231be8dbb0f84a"
+        },
+        {
+          "asset_version_id": "4e2ba102-13fd-4092-a3ff-6ac439cd264b",
+          "output_key": "production_execution.evidence.raw-output.09aba6502f365574e4f5af55.aac35a5f1826",
+          "content_hash": "sha256:41a3dc1899999c1bb463d62b61e0e921bffb7d2414c7a7f4029230dcfc0d3b71"
+        },
+        {
+          "asset_version_id": "324b1a1e-37af-423f-84c6-5e4f31347505",
+          "output_key": "production_execution.evidence.normalized-output.09aba6502f365574e4f5af55.be7f19fbe4c6",
+          "content_hash": "sha256:3f71cc52ad8ef438f138efe929d63fb1634860b52914cc5c53665a46a4a8463b"
+        },
+        {
+          "asset_version_id": "4a251d0b-576a-47de-a5dc-653d83157448",
+          "output_key": "production_execution.evidence.output-manifest.09aba6502f365574e4f5af55.c343b5920fb2",
+          "content_hash": "sha256:34e4ea92bcce755df9726070996f1aff5bf7f27a3d7fb2e4652b7e927182f94f"
+        },
+        {
+          "asset_version_id": "a4d8df3d-e37f-4c37-bb9b-8df413a51b3f",
+          "output_key": "production_execution.evidence.validation-manifest.09aba6502f365574e4f5af55.96c538cf4562",
+          "content_hash": "sha256:6148ce1d98145f6c3ae2bbb0e2bca478775562c66903f56d76bfc29dc518945f"
+        },
+        {
+          "asset_version_id": "dd15a9b2-7725-47f9-bfff-09c7aaca903f",
+          "output_key": "production_execution.evidence.usage-receipt.09aba6502f365574e4f5af55.fe1793886a77",
+          "content_hash": "sha256:ed1fcb08145e9f0c9e9bf482181c5ee5f547e29d9cd44194b703c936172a8f54"
+        },
+        {
+          "asset_version_id": "5473819d-55a9-4e07-adae-f0d13496d3c7",
+          "output_key": "production_execution.evidence.cost-receipt.09aba6502f365574e4f5af55.8efeb6e29c08",
+          "content_hash": "sha256:ba37a2b2c18a60d70b83fd43e8424646b5ca45b87a5b5e84550d0130ab41374f"
+        },
+        {
+          "asset_version_id": "93e6fa43-5eaa-4730-8c51-9db8d449f3fb",
+          "output_key": "model_call.context_fidelity.1767d14890cfd0a68732",
+          "content_hash": "sha256:4456cb82b94923ad89027c5e7181dc359217df3c9bb968d77725daa0ba32a557"
+        },
+        {
+          "asset_version_id": "46b13519-6ae2-45a7-bc7f-e9cc12f5acee",
+          "output_key": "production_execution.contract.execution_context_policy.b4d06642d3160ed26c49",
+          "content_hash": "sha256:db18586cea54a5ff0434e7cf0e381631f4a9e67cd771fe35111c622fffea42dd"
+        },
+        {
+          "asset_version_id": "c03da179-15c4-4919-9d65-9a3c6229e45e",
+          "output_key": "production_execution.contract.execution_commit_policy.ff670015e440ff65aab5",
+          "content_hash": "sha256:28e6688ff65319a901668aa080f81813ec64a11aec812fe64663c316745c2d9d"
+        },
+        {
+          "asset_version_id": "1518fd4a-ef0e-4d44-9616-064ce451b407",
+          "output_key": "production_execution.contract.prompt_bundle.841884aae7df08a81aca",
+          "content_hash": "sha256:78c9632a6cb0ee684c327f14fe662b7736d20944a9aa0c63dea60d805ec2a945"
+        },
+        {
+          "asset_version_id": "230ce180-4935-41af-a893-d7a1ae4b357c",
+          "output_key": "production_execution.contract.route_policy.47730d0857065063b70c",
+          "content_hash": "sha256:1f88594e62e1d2405dc623b487c2e26cd22047036770642154f5e9f970f85715"
+        },
+        {
+          "asset_version_id": "e82777f5-aa71-4a63-a22a-2aee8759fb29",
+          "output_key": "production_execution.recovery.82154e2dd026e3a017074f8f",
+          "content_hash": "sha256:4fff9c7b0cd6cd2324fd32e6419dc0fa3b1df9889b86c11c3fb68bcddbf9a57a"
+        },
+        {
+          "asset_version_id": "4c20b18e-b3c9-46d7-b0ea-e6057c643629",
+          "output_key": "production_execution.contract.skill_bundle.fe5c4292da0a2018c8ba",
+          "content_hash": "sha256:c2ee0175933313e4df20f3d5556bc2e283899dccbcd00c9aad62870e679cd47c"
+        },
+        {
+          "asset_version_id": "bbab34a0-99b6-4f8c-af6c-924d8187b2ef",
+          "output_key": "production_execution.contract.route_snapshot.7a4cef17a244737a45ed",
+          "content_hash": "sha256:b61c7d3de6fb6903c58e81ca64ef17605553ce0e1f15b20f69ba5855c5154595"
+        },
+        {
+          "asset_version_id": "d6b6355e-9b93-4ba4-a45f-c4ca143ca3e9",
+          "output_key": "production_execution.recovery.09aba6502f365574e4f5af55",
+          "content_hash": "sha256:ee41115730606b8a61d19b0e128178acfba6bbe4bc6c955fb494c074c38f092f"
+        },
+        {
+          "asset_version_id": "55611495-ade4-4b54-ac52-5fbe74b256d7",
+          "output_key": "cost_ledger.context_fidelity.1767d14890cfd0a68732",
+          "content_hash": "sha256:953f39a0e1d8601f2ed1c3d7141d509dd310f50f1a671a3c0e63753dd49d8a96"
+        },
+        {
+          "asset_version_id": "c354d608-4a6f-4286-92f6-b847a63189fc",
+          "output_key": "production_execution.contract.execution_source_policy.c7a08c6d5ef3990981dc",
+          "content_hash": "sha256:488844276b51b14f98a5f40b0aebfb9eec89a560ce24e2da1fe5606ec5660979"
+        },
+        {
+          "asset_version_id": "67929e7a-e097-4ec7-a200-266472174cd6",
+          "output_key": "production_execution.contract.tool_permission_snapshot.ffcabc1437c8d444191c",
+          "content_hash": "sha256:7903c2e7468f086db010ec46327ea6d4322e5daaebcf1543ed9ad96fec2ce6bd"
+        },
+        {
+          "asset_version_id": "1d9b38fc-6b12-47ab-87ab-75a3439eba6c",
+          "output_key": "production_execution.contract.model_profile.82559bee03070721696c",
+          "content_hash": "sha256:1d9bdedb8fac08638f31b30a9fabddf6d19e81f652afe4b857634e363e8b8771"
+        },
+        {
+          "asset_version_id": "d8ecd816-b10a-468b-a5a8-93120d002b6b",
+          "output_key": "production_execution.contract.input_manifest.287134a1a0c1d5351e21",
+          "content_hash": "sha256:1fa9dd465331d0a3f0d3a4dec888148beda920a3d36b8994518179777bab9a67"
+        },
+        {
+          "asset_version_id": "5dbb3004-77fd-4449-b441-ab83800f9072",
+          "output_key": "production_execution.evidence.raw-output.82154e2dd026e3a017074f8f.facbd0c4ef57",
+          "content_hash": "sha256:4dc97602f17f93f6374c92ccfcca5f588ffb1249aa1203ffead3d4a91d30b908"
+        },
+        {
+          "asset_version_id": "4298c189-b2c1-45ef-b78a-592666366912",
+          "output_key": "production_execution.evidence.normalized-output.82154e2dd026e3a017074f8f.63393bd4682c",
+          "content_hash": "sha256:165d4fc19923f67be7d729db527f773e5848c753a12fa4fa75bda6abf0f5cd4b"
+        },
+        {
+          "asset_version_id": "3d5e98cd-18ec-4074-93c5-18c87f3ffb08",
+          "output_key": "production_execution.evidence.output-manifest.82154e2dd026e3a017074f8f.721fde0043e0",
+          "content_hash": "sha256:0819ce245606bcadf680ad25008c353a74d1886b485377331579b6fa8b517e7f"
+        },
+        {
+          "asset_version_id": "ee6fbd4b-684c-43d4-9fdd-e073d5dbf55a",
+          "output_key": "production_execution.evidence.validation-manifest.82154e2dd026e3a017074f8f.93b7abaced29",
+          "content_hash": "sha256:4992823332cb508859c7f2a493f87ebdf12cf03f9b0d875490f4a868c4a9a348"
+        },
+        {
+          "asset_version_id": "33d96b77-9414-47be-88aa-7c08075ee764",
+          "output_key": "production_execution.evidence.usage-receipt.82154e2dd026e3a017074f8f.fe1793886a77",
+          "content_hash": "sha256:082acdcda7356911f50c87c9eb07f843f06fe4ec705b90ad327c63c6d90b3d4d"
+        },
+        {
+          "asset_version_id": "f7bc29d4-0842-4d39-a92a-ccc2d45d23da",
+          "output_key": "production_execution.evidence.cost-receipt.82154e2dd026e3a017074f8f.8efeb6e29c08",
+          "content_hash": "sha256:a552934de70afbabe7ced51d8fc5b9ce384b8dd5d2d62bc809ec2bdce26f0f65"
+        },
+        {
+          "asset_version_id": "5b321964-d27e-4cdb-b4e2-4aa46968910a",
+          "output_key": "model_call.draft.e0192dd75487a016b0ee",
+          "content_hash": "sha256:e71f0d15b6492d41d075dcbde47923c82889ff68efc8adde7cbdec34f37fccc3"
+        },
+        {
+          "asset_version_id": "authority-output:a1ba084d-9b03-4875-89a9-25f462dffbf0:chapter.draft:v1",
+          "output_key": "chapter.draft",
+          "content_hash": "sha256:f66360c7675e320e204f7f645ce16fba98cfb3b58b4c165fb198539ca02f9160"
+        },
+        {
+          "asset_version_id": "authority-output:a1ba084d-9b03-4875-89a9-25f462dffbf0:chapter.draft.execution_commit_manifest:v1",
+          "output_key": "chapter.draft.execution_commit_manifest",
+          "content_hash": "sha256:256dfed16919f89e443aaab6ccd54cc15eda9e206244e7ef7b387931b62fe234"
+        }
+      ]
+    }
+  ],
+  "evidence_scope": "CONTROLLED_NATIVE_ENGINEERING_NOT_REAL_PROVIDER_OR_LITERARY_PROOF"
+}

@@ -7551,6 +7551,10 @@
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/model_reference_execution.py",
           "symbol": "ModelReferenceExecutionContractBinder.freeze_before_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/receipt_recovery.py",
+          "symbol": "retained_owner_context"
         }
       ],
       "domain_symbols": [
@@ -7752,6 +7756,10 @@
         {
           "path": "tests/unit/test_context_capacity_owner_contracts.py",
           "symbol": "test_real_recursive_model_envelope_carries_owner_created_context_and_reference"
+        },
+        {
+          "path": "tests/integration/test_book_followup_authority_postgres.py",
+          "symbol": "BookFollowupAuthorityPostgresTests.test_reader_new_attempt_reuses_original_context_receipt_and_accounting"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -10529,7 +10537,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:9365fbf4ec96f4b8336e138b71d54dd327521a3e9f60760dd211f123e77b4869"
+    "implementation_tree_sha": "sha256:47e8d24edd9ab54a6fc47a9d4ce465cfadde7a8ab8f78cb3d16cf664e8acc343"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

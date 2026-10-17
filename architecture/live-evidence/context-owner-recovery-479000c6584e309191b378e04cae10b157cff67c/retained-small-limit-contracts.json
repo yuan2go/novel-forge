@@ -1,0 +1,23 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "classification": "HISTORICAL_COMPATIBILITY",
+  "retained_paths": [
+    {
+      "path": "src/novel_forge/modules/book_authority/production.py:SubmitBookChapterCommand.context_token_budget",
+      "meaning": "Low-level historical submission default; ordinary new native Creation freezes explicit current production-profile policy before submission"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/supervisor.py:_chapter_preparation_request",
+      "meaning": "Frozen production profile chapter_context_policy overrides historical supervisor fallback; original no-policy/v2 callers retain old contract"
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/domain.py:build_authority_context_bundle",
+      "meaning": "Explicit v3 profile keeps24000; v4 accepts512000 and defers full-request admission under current policy"
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+      "meaning": "24000 maxLength is a typed output field schema constraint, not input history quota"
+    }
+  ],
+  "proof_scope": "Static entry/contract tracing; no claim that historical production tasks already selected the new profile"
+}

@@ -1275,8 +1275,8 @@ selection with an explicit evidence-budget error, never a claim of no legal cont
 Only the matching mechanism history is copied into each candidate's phase evidence.
 Plan/Intent/Memo retain complete immutable strategies. A typed Memo's Context projection
 may replace an identical strategy with its exact protected ExecutionIntent reference; it
-cannot omit the only copy or change the existing Context maximum. Historical requests can
-explicitly freeze `draft-context-profile-v3`, whose Context owner ceiling is 24,000 tokens;
+cannot omit the only copy or change the existing Context maximum. Historical requests
+frozen with `draft-context-profile-v3` retain their 24,000-token Context owner ceiling;
 the approved Pack and request may impose smaller limits. The profile is frozen in the
 Chapter preparation report. The author production page writes an explicit
 `book-author-configuration.v1` through `book.production_profile.author`; its
@@ -1295,7 +1295,7 @@ Provider views retain their fixed 65,536-character bound and representation. The
 local estimates remain separate from actual Provider token accounting.
 
 
-New Chapter Generation Pack `2.7.0` supports explicit `draft-context-profile-v4`
+The current Chapter Generation Pack supports `draft-context-profile-v4`
 and `world-production-policy.v4`. The system maximum is **512,000 tokens**.
 This is `CONFIGURABLE_POLICY`, not a target per call or proof that any selected
 model has that window. The author production profile, Chapter preparation report,
@@ -1446,8 +1446,13 @@ Working passages batch within their original Chapter source, retaining per-passa
 coordinates. Identical wrappers of the same source version share one extract; another
 Chapter or changed source hash cannot borrow that identity.
 Detailed path/range mappings and fidelity receipts remain in the frozen Effect
-request. The sent view carries stable derivation hashes and an omission explanation;
-it does not repeat the potentially larger audit mapping in the Prompt. Source hashes
+request. New capacity derivations freeze `provider_extract_transport` as
+`capacity-story-extract.v1` in both the empty probe and final projection. Their sent
+extract notice contains story interpretation only; derivation hashes, receipt hashes
+and custody records remain in the host projection and Prompt evidence. Missing display
+versions retain the historical byte representation, and unknown versions fail closed.
+This display version does not change source selection or the frozen capacity policy.
+Source hashes
 and original passage bounds continue to identify the complete source, not the extract.
 Canonical working passages use `capacity-historical-passages.v1` after extraction:
 only supplied original Unicode ranges become passages, with hashes of their actual
@@ -1474,6 +1479,13 @@ Owner ContextBundle as their frozen source. Foreign Owner, source or Attempt bin
 are rejected. Vector projection retains its separate physical admission protocol.
 Native small-request adapter verification and Chapter overflow execution do not qualify
 all specialized Owner overflow paths or the complete PostgreSQL acceptance matrix.
+Same-Attempt takeover and retryable new Attempts retain the original immutable Owner
+Context from durable invocation bindings. Reuse requires the same Operation and exact
+canonical content apart from Attempt provenance; source, task, policy or value-type
+changes fail closed. Narrative and Model Reference adapters retain the receipt-query
+database binding. Unknown Effects retain source custody but require outcome reconciliation;
+they cannot supply a successful result. Specialized overflow replay still requires its
+own native evidence before qualification.
 
 Compression and fidelity calls use existing Chapter Provider Runtime, Pack/PEP,
 Kernel ExternalEffect, cost reservation, Lease/Fence and durable result reconciliation.
@@ -1500,12 +1512,12 @@ These are engineering contracts;
 fixture execution does not establish real Provider capacity or literary improvement.
 
 Persistent Actor intentions use `world-actor-experiment.v2` and
-`world-actor-task.v3`. A newly approved `world-production-policy.v3` may bound its
-complete World role projection at up to 24,000 estimated tokens; v1/v2 retain their
-16,000-token ceiling. This is a versioned configuration policy, not a change to the
-number of actors, simulation rounds, actions, or accepted facts. The normal Pack,
-Router, paid spending authorization and physical request gates still apply, and qualification must cover
-the frozen input policy actually used.
+`world-actor-task.v3`. Older frozen `world-production-policy.v3` requests retain their
+24,000-token material policy; v1/v2 retain 16,000. These are historical compatibility
+contracts. Ordinary new v4 requests use complete-request capacity instead of these
+material ceilings. Actor, round, action and accepted-fact boundaries remain unchanged.
+Pack, Router, paid spending authorization and physical request gates still apply;
+qualification must cover the policy actually frozen by the request.
 
 The canonical consumer chain is:
 
@@ -2934,8 +2946,8 @@ ambiguous external effect, candidate/accepted-actual separation, raw-source isol
 and Arc identity independent of Volume containment. The typed planning levels, planning
 horizons, five Book Opening layers and the minimum evaluator behavior are current runtime
 facts, not claims of final design. Quality thresholds and context capacities are configurable policies. Persisted
-generation retry counts and automatic deadlines are current runtime facts, not
-literary invariants. Historical failures and accounting uncertainty cannot establish
+generation retry counts and automatic deadlines are retained runtime observations, not
+active cumulative-call or elapsed-time vetoes for pure generation or literary invariants. Historical failures and accounting uncertainty cannot establish
 a contradiction in prose or justify rejecting a readable candidate. The pre-hierarchy import flag is compatibility-only.
 
 ChapterGroup now requires only positive ordered bounds at the domain boundary. Maximum

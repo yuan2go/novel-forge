@@ -1,0 +1,16 @@
+{
+  "source_sha": "8b1acb0d5548d1823dffada3b3df93f90d3f0890",
+  "base_sha": "e92297509d1c0e0cb3720cc21af278e83048e595",
+  "standards": {
+    "status": "NO_NEW_CONFIRMED_BLOCKER",
+    "closed": [
+      "ModelReference original Context validation uses same cursor durable binding",
+      "canonical complete-content hash rejects bool/int and int/float drift"
+    ]
+  },
+  "spec": {
+    "status": "NO_NEW_CONFIRMED_BLOCKER",
+    "unknown": "Source custody does not provide successful outcome; existing verified receipt gate retained"
+  },
+  "scope": "READ_ONLY_STATIC_REVIEW; neither reviewer reran tests or touched database/provider"
+}

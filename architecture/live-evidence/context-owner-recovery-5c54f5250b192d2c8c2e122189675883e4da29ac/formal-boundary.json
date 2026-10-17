@@ -1,0 +1,91 @@
+{
+  "source_sha": "5c54f5250b192d2c8c2e122189675883e4da29ac",
+  "status": "FAIL",
+  "successor_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "interruption": {
+    "status": "INTERRUPTED_SUPERSEDED_BY_CONFIRMED_PROVIDER_AUDIT_VISIBILITY_REPAIR",
+    "source_sha": "5c54f5250b192d2c8c2e122189675883e4da29ac",
+    "successor_source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+    "reason": "Current source exposes compression derivation audit in actual Writer Context. Versioned Provider display repair preserves historical frozen format; final current-source formal matrix must run independently.",
+    "completed": "governance44focused;backend6375+1537subtests;freshmigrationPASS",
+    "partial_phase": "migration-compatibility",
+    "pytest_pid": 30429,
+    "command": "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python -m pytest tests/integration/test_account_entitlement_budget_upgrade_postgres.py tests/integration/test_corpus_migrations_postgres.py tests/integration/test_authority_migrations_postgres.py tests/integration/test_authority_schema_postgres.py tests/integration/test_authority_legacy_migration_postgres.py tests/integration/test_book_opening_branch_reconciliation_upgrade_postgres.py tests/integration/test_book_opening_legacy_reconciliation_postgres.py tests/integration/test_book_opening_recovery_regression_postgres.py tests/integration/test_book_opening_runtime_hardening_postgres.py tests/integration/test_book_opening_workflow_upgrade_postgres.py tests/integration/test_book_projection_repair_upgrade_postgres.py tests/integration/test_source_analysis_dimension_upgrade_postgres.py tests/integration/test_source_market_migration_postgres.py tests/integration/test_world_causal_migrations_postgres.py tests/integration/test_narrative_craft_migration_upgrade_postgres.py tests/integration/test_author_supervision_migration_postgres.py tests/integration/test_creative_resource_migration_postgres.py tests/integration/test_creative_validation_integration_upgrade_postgres.py tests/unit/test_migration_history_admission.py tests/integration/test_migration_history_admission_postgres.py tests/integration/test_world_contract_migration_guards_postgres.py tests/integration/test_craft_scope_migration_postgres.py tests/unit/test_craft_migration_convergence.py tests/integration/test_migration_executor_safety_postgres.py tests/integration/test_zero_send_context_guards_postgres.py tests/integration/test_planning_public_dispatch_postgres.py -q --junitxml=/private/tmp/nf-compression-final-5c54f525/novel-forge-p0-5c54f5250b19-2411416f7e814ec69261cbb73f68ab89/migration-compatibility-pytest.xml -p novel_forge.tools.pytest_collection_evidence --novel-forge-collection-report=/private/tmp/nf-compression-final-5c54f525/novel-forge-p0-5c54f5250b19-2411416f7e814ec69261cbb73f68ab89/migration-compatibility-collection.json",
+    "time": "2026-10-17T01:48:54.142033+00:00",
+    "termination_followup": {
+      "reason": "SIGINT has not ended superseded migration child; TERM exact child only to allow official runner archive and owned cleanup",
+      "time": "2026-10-17T01:52:28.784178+00:00",
+      "command": "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python -m pytest tests/integration/test_account_entitlement_budget_upgrade_postgres.py tests/integration/test_corpus_migrations_postgres.py tests/integration/test_authority_migrations_postgres.py tests/integration/test_authority_schema_postgres.py tests/integration/test_authority_legacy_migration_postgres.py tests/integration/test_book_opening_branch_reconciliation_upgrade_postgres.py tests/integration/test_book_opening_legacy_reconciliation_postgres.py tests/integration/test_book_opening_recovery_regression_postgres.py tests/integration/test_book_opening_runtime_hardening_postgres.py tests/integration/test_book_opening_workflow_upgrade_postgres.py tests/integration/test_book_projection_repair_upgrade_postgres.py tests/integration/test_source_analysis_dimension_upgrade_postgres.py tests/integration/test_source_market_migration_postgres.py tests/integration/test_world_causal_migrations_postgres.py tests/integration/test_narrative_craft_migration_upgrade_postgres.py tests/integration/test_author_supervision_migration_postgres.py tests/integration/test_creative_resource_migration_postgres.py tests/integration/test_creative_validation_integration_upgrade_postgres.py tests/unit/test_migration_history_admission.py tests/integration/test_migration_history_admission_postgres.py tests/integration/test_world_contract_migration_guards_postgres.py tests/integration/test_craft_scope_migration_postgres.py tests/unit/test_craft_migration_convergence.py tests/integration/test_migration_executor_safety_postgres.py tests/integration/test_zero_send_context_guards_postgres.py tests/integration/test_planning_public_dispatch_postgres.py -q --junitxml=/private/tmp/nf-compression-final-5c54f525/novel-forge-p0-5c54f5250b19-2411416f7e814ec69261cbb73f68ab89/migration-compatibility-pytest.xml -p novel_forge.tools.pytest_collection_evidence --novel-forge-collection-report=/private/tmp/nf-compression-final-5c54f525/novel-forge-p0-5c54f5250b19-2411416f7e814ec69261cbb73f68ab89/migration-compatibility-collection.json"
+    }
+  },
+  "gates": [
+    {
+      "id": "source-preflight",
+      "status": "PASS"
+    },
+    {
+      "id": "documentation-reality",
+      "status": "PASS"
+    },
+    {
+      "id": "static-and-manifests",
+      "status": "PASS"
+    },
+    {
+      "id": "pytest-backend",
+      "status": "PASS"
+    },
+    {
+      "id": "postgresql-start",
+      "status": "PASS"
+    },
+    {
+      "id": "migration-fresh",
+      "status": "PASS"
+    },
+    {
+      "id": "migration-compatibility",
+      "status": "FAIL"
+    },
+    {
+      "id": "pytest-postgresql-integration",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "migration-head",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "query-plan-release",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "compose-runtime",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "resource-cleanup",
+      "status": "PASS"
+    },
+    {
+      "id": "evidence-finalization",
+      "status": "NOT_RUN"
+    }
+  ],
+  "cleanup": {
+    "phases": [
+      {
+        "compose_project": "nf-p0-2411416f7e814ec69261cbb73f68ab89",
+        "phase": "postgresql",
+        "receipt": "compose-resource-ownership-nf-p0-2411416f7e814ec69261cbb73f68ab89.json",
+        "remaining_resource_count": 0,
+        "resource_count": 2,
+        "run_id": "p0-2411416f7e814ec69261cbb73f68ab89",
+        "status": "PASS"
+      }
+    ],
+    "remaining_resource_count": 0,
+    "status": "PASS"
+  },
+  "scope": "Known display audit visibility repair superseded this source. Completed backend and fresh migrations remain component evidence. Whole matrix did not PASS."
+}

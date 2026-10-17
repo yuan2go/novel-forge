@@ -203,17 +203,23 @@ def test_rendered_extract_keeps_large_host_mapping_out_of_prompt_and_stays_froze
         "tool_permissions": {"allowed": ["model.provider.invoke"]},
         "output_schema": {"ref": "schema:fixture", "content": {"type": "object"}}}
     materialization["pack_artifacts"]["prompt_template"].update(ref="prompt-template:chapter-generation-pack", version="v13")
+    rendered_evidence = []
     def render(projection=None, capture=None):
-        return gateway._materialize_production_codex_prompt(stage="draft",
+        text, evidence = gateway._materialize_production_codex_prompt(stage="draft",
             target_scope={"scope_kind": "book", "scope_id": "b", "project_id": "p", "book_id": "b"},
             inputs={"_context_capacity_projection": projection} if projection else {},
-            materialization=materialization, provider_data_capture=capture)[0]
+            materialization=materialization, provider_data_capture=capture)
+        rendered_evidence.append(evidence)
+        return text
     original = {}
     before = render(capture=original)
     measured = []
+    measured_transports = []
     def measure(projection):
         text = render(projection)
         measured.append(text)
+        if projection is not None:
+            measured_transports.append(projection.get("provider_extract_transport"))
         return len(text.encode()), 30000
     projection = prepare_request_capacity(original=original, stage="draft", route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture"),
         source_boundary={"kind": "FROZEN_STAGE_INPUTS", "project_id": "p", "book_id": "b", "sources": [{"asset_version_id": "context:one", "content_hash": "sha256:fixture"}]},
@@ -224,7 +230,19 @@ def test_rendered_extract_keeps_large_host_mapping_out_of_prompt_and_stays_froze
     assert final == measured[-1]
     assert len(final.encode()) < 30000 < len(before.encode())
     assert len(projection["replacements"]) == 1200
-    assert '"historical_expressions"' not in final and '"derivation_hash"' in final
+    from novel_forge.modules.context_builder.request_capacity import STORY_EXTRACT_TRANSPORT
+    assert set(measured_transports) == {STORY_EXTRACT_TRANSPORT}
+    assert projection["provider_extract_transport"] == STORY_EXTRACT_TRANSPORT
+    assert rendered_evidence[-1]["provider_view"]["capacity_projection"]["original_hash"] == projection["original_hash"]
+    for internal in ("historical_expressions", "source_projection_hash", "result_projection_hash",
+                     "supplied_projection_hash", "derivation_hash", "mapping_custody", "final_composition_hash"):
+        assert '"' + internal + '"' not in final
+    legacy = deepcopy(projection)
+    legacy.pop("provider_extract_transport")
+    assert '"derivation_hash"' in render(legacy) and '"mapping_custody"' in render(legacy)
+    unsupported = {**projection, "provider_extract_transport": "unsupported-future-format"}
+    with pytest.raises(KernelError, match="CONTEXT_EXTRACT_TRANSPORT_INVALID"):
+        render(unsupported)
     assert "chapter:one" in final and "sha256:original" in final and '"historical_extract":' in final
     from novel_forge.modules.context_builder.request_capacity import project_capacity_passages
     supplied = project_capacity_passages(original, apply_capacity_projection(original, projection), projection)

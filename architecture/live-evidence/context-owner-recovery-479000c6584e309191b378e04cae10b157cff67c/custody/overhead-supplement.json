@@ -1,0 +1,36 @@
+{
+  "status": "PASS_DUMP_AND_LOSSLESS_READBACK_ONLY",
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "container_id": "eeb98832a809c649dee5b6d5ee75675fb001f9b029203d02c88119d01f4f2265",
+  "completed_at": "2026-10-17T02:22:45.370843+00:00",
+  "delivery_prior_receipts": [
+    "../../context-owner-recovery-5c54f5250b192d2c8c2e122189675883e4da29ac/custody/complete-owned-cluster.json",
+    "../../context-owner-recovery-5c54f5250b192d2c8c2e122189675883e4da29ac/custody/reader-retry-supplement.json",
+    "supplements.json"
+  ],
+  "scope": "One additional4790 material-overhead diagnostic database after task-owned cluster restart. Prior receipt references resolve from final delivery custody directory. No historical UNKNOWN task resumed or replaced. Archive only; actual PostgreSQL restore NOT_RUN.",
+  "supplements": [
+    {
+      "label": "semantic-479000c6-native-overhead",
+      "database": "nf_p0_9a793903fbff48f2bea8abd145602e1c_test",
+      "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+      "command": [
+        "docker",
+        "exec",
+        "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665-authority-postgres-test-1",
+        "pg_dump",
+        "-U",
+        "novel_forge",
+        "--create",
+        "nf_p0_9a793903fbff48f2bea8abd145602e1c_test"
+      ],
+      "exit_code": 0,
+      "archive": "semantic-479000c6-native-overhead.sql.xz",
+      "raw_bytes": 32426490,
+      "raw_sha256": "691955a9a915dcb7439948619b30a0b935b43d17b1e54367aa2f70a6a30a9e37",
+      "storage_bytes": 531292,
+      "storage_sha256": "25da96cb4e90d651f456acd15ca6ca7f7b9d4f8913dbf3dff664412f41518fa0",
+      "decompression_verified": true
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "source_sha": "8b1acb0d5548d1823dffada3b3df93f90d3f0890",
+  "formal_status": "FAIL",
+  "cause": "Four in-memory Narrative unit fixtures omitted database_url and durable source store; fixed in5c54f525 with unchanged production recovery guards. Later phases NOT_RUN by dependency gate.",
+  "real_provider": "NOT_RUN",
+  "real_512000_token_boundary": "NOT_RUN",
+  "free_text_semantic_equivalence": "NOT_VERIFIED",
+  "gold_sample": "Fixed original question/support checks only; host preservation increased13/13 from12/13 with21 vs12 controlled model calls, not model comprehension or literary scoring",
+  "full_acceptance": "Earlier35a complete matrix FAIL; current source5c54f525 formal in progress at record creation; do not infer current overall PASS",
+  "pilot": "Read-only frozen2.3.13 release1f3da4ee Context10000 persists; current application process version UNVERIFIED; no deployment or author acceptance",
+  "unrepresentable_json_numbers": "Protected complete original object retained; partial extraction of unrepresentable numeric structure is unsupported. Progress/representation limitation is distinct from irreducible factual capacity.",
+  "oom": "Raw OOM and uncertain/partial native task histories preserved; fresh diagnostic task reruns do not reconcile or resend their old UNKNOWN Effects"
+}

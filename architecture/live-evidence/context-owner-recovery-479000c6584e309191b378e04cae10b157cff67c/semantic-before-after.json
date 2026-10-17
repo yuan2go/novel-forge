@@ -1,0 +1,26 @@
+{
+  "current_source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "prior_source_sha": "844aa07671059f645278a263e102ce3704952b3f",
+  "fixed_gold_sha256": "76e54664a68db8076685b3590e354c950bc3b350499a9a091c654a28fa3b4fde",
+  "same_originals_task_and_capacity": true,
+  "capacity_unit": "CONTROLLED_SERIALIZED_UTF8_BYTES_NOT_REAL_MODEL_TOKENS",
+  "current": {
+    "source_support": 13,
+    "questions": 13,
+    "explicit_quotes": 2,
+    "before_bytes": 25925,
+    "after_bytes": 8269,
+    "controlled_model_calls": 21
+  },
+  "prior": {
+    "source_support": 12,
+    "questions": 13,
+    "explicit_quotes": 1,
+    "before_bytes": 25925,
+    "after_bytes": 7890,
+    "controlled_model_calls": 12
+  },
+  "free_text_semantic_comprehension": "NOT_VERIFIED",
+  "semantic_error_count": null,
+  "meaning": "Predefined original source support and quote preservation; controlled model proposes required IDs. Not an independently demonstrated model answer/comprehension improvement or literary score."
+}

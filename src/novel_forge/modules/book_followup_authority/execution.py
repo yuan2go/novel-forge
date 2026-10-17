@@ -241,6 +241,11 @@ class PostgresReaderOutcomeExecutionContractBinder(
             "source_isolation": "EXACT_ACCEPTED_SOURCE_AND_AUTHORIZED_INELIGIBLE_SAMPLE" if any(item["asset_type"] == "screenplay_provider_sample" for item in selected) else "ACCEPTED_AUTHORITY_ASSETS_ONLY",
             "selected_inputs": selected,
         }
+        from novel_forge.modules.chapter_authority.receipt_recovery import retained_owner_context
+        retained = retained_owner_context(self.database_url, project_id=project_id, operation_id=operation_id,
+            owner_stage=self.stage_name, current_content=content)
+        if retained is not None:
+            return retained
         try:
             existing = self.reader_query.require(
                 project_id=project_id, logical_ref=logical_ref

@@ -400,6 +400,11 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
                 for role, source, qualification in dependencies
             ],
         }
+        from novel_forge.modules.chapter_authority.receipt_recovery import retained_owner_context
+        retained = retained_owner_context(self.database_url, project_id=project_id, operation_id=operation_id,
+            owner_stage=NARRATIVE_EVALUATION_STAGE, current_content=content)
+        if retained is not None:
+            return retained
         try:
             existing = self.evaluation_query.require(
                 project_id=project_id,
@@ -621,6 +626,7 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             attempt_id=request.attempt_id,
             fencing_token=request.fencing_token,
             worker_id=request.worker_id,
+            database_url=self.database_url,
         )
         binder = self.model_port.capability_binder
         binder_assertion = getattr(binder, "assert_before_provider_send", None)

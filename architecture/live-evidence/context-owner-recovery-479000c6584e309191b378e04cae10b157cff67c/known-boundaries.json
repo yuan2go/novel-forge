@@ -1,0 +1,17 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "formal_status": "FAIL",
+  "evidence_ceiling": "EXECUTABLE",
+  "real_provider": "NOT_RUN",
+  "real_512000_token_boundary": "NOT_RUN",
+  "reason": "No qualified native route currently binds confirmed real capacity, matching complete protocol meter and authorized execution; local CLI cache advertises500000 at95percent effective with output limit unknown, not current Provider qualification",
+  "free_text_semantic_equivalence": "NOT_VERIFIED",
+  "literary_quality": "NOT_RUN",
+  "long_book_stability": "NOT_RUN",
+  "production": "NOT_RUN",
+  "pilot": "Read-only observed frozen Pack2.3.13 release1f3da4ee Context10000; activated2.3.15 does not mutate it. Running application/worker release UNVERIFIED; no deployment or original task upgrade executed.",
+  "full_pg_restore": "NOT_RUN; all task-owned DB dump archives losslessly decompressed and hash verified, but custody is not a PostgreSQL restore proof",
+  "unknown_inflight_process_kill": "NOT_RUN; process proof exits only after durable success and known retryable checkpoint",
+  "unrepresentable_json_numbers": "Whole original structure retained when partial host reconstruction cannot represent values; this progress/representation limitation is distinct from irreducible necessary facts",
+  "stage_specific_overflow": "Only entries explicitly backed by native raw runs are EXECUTABLE. Other stage overflow is WIRED and requires native stage-specific validation; vector protocol is separately inapplicable."
+}

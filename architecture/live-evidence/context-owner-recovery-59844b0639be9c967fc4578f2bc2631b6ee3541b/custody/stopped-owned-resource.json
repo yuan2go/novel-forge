@@ -1,0 +1,58 @@
+{
+  "source_sha": "59844b0639be9c967fc4578f2bc2631b6ee3541b",
+  "observed_at_utc": "2026-10-17T06:16:44.541686+00:00",
+  "container_id": "eeb98832a809c649dee5b6d5ee75675fb001f9b029203d02c88119d01f4f2265",
+  "compose_project": "nf-p0-85fa5a57fdd44ad6ae1d8d79bbd2b665",
+  "action": "STOPPED_EXACT_OWNED_CLUSTER_AFTER_VERIFIED_ADDITIONAL_DATABASE_ARCHIVE",
+  "state": {
+    "Status": "exited",
+    "Running": false,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "Pid": 0,
+    "ExitCode": 0,
+    "Error": "",
+    "StartedAt": "2026-10-17T06:14:46.162868291Z",
+    "FinishedAt": "2026-10-17T06:16:44.385299638Z",
+    "Health": {
+      "Status": "unhealthy",
+      "FailingStreak": 0,
+      "Log": [
+        {
+          "Start": "2026-10-17T06:16:35.197698009Z",
+          "End": "2026-10-17T06:16:35.2555068Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T06:16:37.25614301Z",
+          "End": "2026-10-17T06:16:37.298499968Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T06:16:39.300255761Z",
+          "End": "2026-10-17T06:16:39.356414594Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T06:16:41.357571803Z",
+          "End": "2026-10-17T06:16:41.414746678Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        },
+        {
+          "Start": "2026-10-17T06:16:43.415559679Z",
+          "End": "2026-10-17T06:16:43.466685179Z",
+          "ExitCode": 0,
+          "Output": "/var/run/postgresql:5432 - accepting connections\n"
+        }
+      ]
+    }
+  },
+  "volumes_preserved": true,
+  "unrelated_resources_modified": false
+}

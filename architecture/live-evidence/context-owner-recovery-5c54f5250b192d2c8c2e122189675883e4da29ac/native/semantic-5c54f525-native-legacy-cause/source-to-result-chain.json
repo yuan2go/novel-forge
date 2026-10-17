@@ -1,0 +1,8 @@
+{
+  "source_sha": "5c54f5250b192d2c8c2e122189675883e4da29ac",
+  "implementation_tree_sha": "sha256:1999d0d752d204b353fd84e1772b8b42cb3874f92b8b59d525402635ed9cdfa1",
+  "scope": "CONTROLLED_NATIVE_ENGINEERING; exact source and raw PostgreSQL JSON retain full evidence. Synthetic capacity is not actual Provider token capacity.",
+  "serialization": "Summary identity fields only; original precision/text are retained in PostgreSQL-to-JSONL XZ exports",
+  "compression_chains": [],
+  "known_receipt_recovery": []
+}

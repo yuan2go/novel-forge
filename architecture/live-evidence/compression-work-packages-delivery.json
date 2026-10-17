@@ -1,0 +1,124 @@
+{
+  "schema_version": "novel-forge.compression-work-packages-delivery.v1",
+  "work_packages": [
+    "WP-NF-CONTEXT-512K-COMPRESSION-END-TO-END-01",
+    "WP-NF-SEMANTIC-CONTEXT-COMPRESSION-01"
+  ],
+  "reference_baseline": "6b69b22b331191331292a51a905833871b17b283",
+  "observed_main": "e92297509d1c0e0cb3720cc21af278e83048e595",
+  "business_source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "latest_test_source_sha": "59844b0639be9c967fc4578f2bc2631b6ee3541b",
+  "implementation_tree_sha": "sha256:47e8d24edd9ab54a6fc47a9d4ce465cfadde7a8ab8f78cb3d16cf664e8acc343",
+  "recorded_at_utc": "2026-10-17T06:18:19.848673+00:00",
+  "delivery_status": "IMPLEMENTED_WITH_OPEN_VALIDATION_FAILURES",
+  "evidence_ceiling": "EXECUTABLE",
+  "release_qualification": "FAIL; keep Draft, do not deploy or silently merge",
+  "production": "NOT_RUN",
+  "current_formal": {
+    "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+    "status": "FAIL",
+    "backend_tests": 6375,
+    "backend_subtests": 1537,
+    "migration_compatibility_tests": 958,
+    "migration_compatibility_subtests": 13,
+    "postgresql_failures": 243,
+    "postgresql_errors": 11,
+    "dependent_gates": "NOT_RUN",
+    "cleanup": "PASS",
+    "raw": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/formal-qualification.json"
+  },
+  "latest_correction": {
+    "source_sha": "59844b0639be9c967fc4578f2bc2631b6ee3541b",
+    "scope": "Historical v2-to-v3 Planning capacity fixture only; production source unchanged",
+    "native_upgrade": "PASS_1_TEST_20.95_SECONDS",
+    "formal_whole_latest_source": "NOT_RUN; do not relabel parent FAIL or component PASS as whole-source qualification",
+    "evidence": "context-owner-recovery-59844b0639be9c967fc4578f2bc2631b6ee3541b/validation.json"
+  },
+  "entry_coverage": {
+    "file": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/entry-coverage.json",
+    "entries": 41,
+    "states": {
+      "WIRED": 36,
+      "EXECUTABLE": 4,
+      "CODE_EXISTS": 1
+    },
+    "limit": "Specialized ordinary execution, controlled stage-specific overflow, real Provider and production are separate. WIRED entries still need native stage-specific overflow verification."
+  },
+  "capacity_evidence": {
+    "file": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/capacity-and-chain-index.json",
+    "system_tokens": 512000,
+    "protocol": "SCRIPTED_UTF8_BYTES_EXACT_V1 for native controlled boundary samples only",
+    "complete_request_overhead": "Materials443506 + same reserve16656 =460162 <=460500, complete request466771 >460500, final56523 actually consumed and prose saved/read back",
+    "synthetic512000": "690871 ->56523 fixture protocol units; not real512000 model tokens",
+    "real_provider_token_boundary": "NOT_RUN",
+    "actual_tokens": null
+  },
+  "semantic_comparison": {
+    "file": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/semantic-before-after.json",
+    "original_source_gold_support": "13/13 versus prior12/13; explicit quotes2/2 versus1/2",
+    "controlled_bytes": "25925 ->8269 versus prior7890",
+    "controlled_calls": "21 versus prior12",
+    "free_text_equivalence": "NOT_VERIFIED",
+    "literary_quality": "NOT_RUN"
+  },
+  "source_to_prose": {
+    "index": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/capacity-and-chain-index.json",
+    "process_chain": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/native/semantic-479000c6-process-restart/source-to-result-chain.json",
+    "readback": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/native/semantic-479000c6-process-restart/native-prose-readback.txt",
+    "readback_identity": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/native/semantic-479000c6-process-restart/prose-readback-identity.json",
+    "scope": "Small controlled original fixture prose, saved and read via native persistence; no author acceptance or long-book/literary proof"
+  },
+  "recovery_entrypoints": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/recovery-entrypoints.json",
+  "cleanup_and_preservation": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/cleanup-and-compatibility.json",
+  "remaining_work": [
+    {
+      "item": "Full PostgreSQL formal failures",
+      "state": "UNRESOLVED",
+      "evidence": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/checks/postgresql-failure-comparison.json",
+      "rule": "No weakening Style/accepted State/source/UNKNOWN gates; remaining failures not all attributed to baseline."
+    },
+    {
+      "item": "Exact latest SHA full release matrix and dependent migration-head/query-plan/Compose/finalization",
+      "state": "NOT_RUN",
+      "rule": "Parent full matrix failed; component correction and evidence governance cannot qualify release."
+    },
+    {
+      "item": "Each WIRED specialized stage native overflow and recovery",
+      "state": "NOT_RUN",
+      "evidence": "context-owner-recovery-479000c6584e309191b378e04cae10b157cff67c/entry-coverage.json"
+    },
+    {
+      "item": "Qualified real Provider complete protocol meter and512000-token boundary",
+      "state": "NOT_RUN",
+      "reason": "No current native route combines confirmed physical capacity, matched full protocol meter and authorized execution. Existing local membership credential presence is not absent credentials or route qualification."
+    },
+    {
+      "item": "Actual pilot frozen2.3.13/10000 Context upgrade and current running app/worker release",
+      "state": "NOT_RUN_OR_UNVERIFIED",
+      "rule": "Read-only observation only; no production migration/deploy, manuscript overwrite or author acceptance."
+    },
+    {
+      "item": "Independent free-text semantic question answering, realistic long-book memory, literary quality",
+      "state": "NOT_VERIFIED",
+      "rule": "Deterministic original support and controlled proposals are not model comprehension or quality proof."
+    },
+    {
+      "item": "Actual PostgreSQL restore of archived cluster and unknown-inflight crash rehearsal",
+      "state": "NOT_RUN",
+      "rule": "Lossless archive verification and known settled-checkpoint restart remain narrower evidence."
+    }
+  ],
+  "pull_requests": {
+    "capacity": "https://github.com/yuan2go/novel-forge/pull/178",
+    "semantic": "https://github.com/yuan2go/novel-forge/pull/180",
+    "recovery_draft": "https://github.com/yuan2go/novel-forge/pull/181",
+    "first_two": "Externally merged; this task did not merge/deploy main"
+  },
+  "preserved": [
+    "Original sources/manuscripts and all historical frozen versions",
+    "Failed, UNKNOWN, unsettled usage and cost facts",
+    "Source/Pack/task/route binding, leases/fence/cancel and real paid authorization",
+    "Published migration bytes"
+  ],
+  "migrations": "NONE"
+}

@@ -1,0 +1,25 @@
+{
+  "source_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "status": "PASS_COPIED_ARCHIVE_DECOMPRESSION_AND_RESOLVABLE_PRIOR_REFERENCES",
+  "archives": [
+    {
+      "archive": "semantic-479000c6-native-core-r2.sql.xz",
+      "status": "PASS_COPIED_STORAGE_AND_RAW_SHA",
+      "raw_bytes": 128872878,
+      "raw_sha256": "17ea526bd2b8f9ced88b71e09fe65b442c5890d3c6cf3575f6bac98a4187f11d"
+    },
+    {
+      "archive": "semantic-479000c6-process-restart.sql.xz",
+      "status": "PASS_COPIED_STORAGE_AND_RAW_SHA",
+      "raw_bytes": 35357243,
+      "raw_sha256": "3c16dbeb8aa67957956cf17875294d0d8722ad4757b1abf6ca42135d53f5b537"
+    },
+    {
+      "archive": "semantic-479000c6-native-overhead.sql.xz",
+      "status": "PASS_COPIED_STORAGE_AND_RAW_SHA",
+      "raw_bytes": 32426490,
+      "raw_sha256": "691955a9a915dcb7439948619b30a0b935b43d17b1e54367aa2f70a6a30a9e37"
+    }
+  ],
+  "postgresql_restore": "NOT_RUN"
+}

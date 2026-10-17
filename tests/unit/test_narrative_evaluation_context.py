@@ -22,6 +22,13 @@ FOUNDATION_TYPES = {
 }
 
 
+@pytest.fixture(autouse=True)
+def empty_durable_context_store(monkeypatch):
+    from novel_forge.modules.chapter_authority import receipt_recovery
+
+    monkeypatch.setattr(receipt_recovery, "_owner_context_sources", lambda *_args, **_kwargs: ())
+
+
 def _document(
     *,
     asset_version_id: str,
@@ -153,6 +160,7 @@ def _binder_fixture(*, generated: bool = False) -> tuple[
     )
     documents[candidate.asset_version_id] = candidate
     binder = object.__new__(PostgresNarrativeEvaluationExecutionContractBinder)
+    binder.database_url = "in-memory-unit-store"
     binder.evaluation_query = _Query(documents)
     writer = _Writer()
     binder.evaluation_writer = writer
