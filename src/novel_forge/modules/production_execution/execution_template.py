@@ -139,6 +139,15 @@ def validate_templates(content: Mapping[str, Any]) -> None:
 
 
 
+def planning_repair_evidence_version(template: Mapping[str, Any] | None) -> str:
+    routing = (template or {}).get("repair_routing") or {}
+    return {
+        None: "native-planning-repair-evidence.v2",
+        "native-repair-routing.v1": "native-planning-repair-evidence.v2",
+        "native-repair-routing.v2": "native-planning-repair-evidence.v3",
+    }[routing.get("version")]
+
+
 def selected_template(policy: Mapping[str, Any], book_id: str) -> dict[str, Any] | None:
     validate_templates(policy)
     return next((dict(value) for value in policy.get("execution_templates", [])

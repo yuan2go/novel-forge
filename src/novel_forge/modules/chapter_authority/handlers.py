@@ -3005,9 +3005,10 @@ class _ExportHandler:
         publish_gate = request.require_input("publish_gate_report")
         restored = None
         if request.definition_version == "3.10.0" and publish_gate.content.get("gate") == "PUBLISH_GATE_BLOCKED":
-            from .publication_recovery import revalidate_frozen_publication
-            restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
-            publish_gate = restored
+            from .publication_recovery import has_publication_successor, revalidate_frozen_publication
+            if has_publication_successor(request):
+                restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
+                publish_gate = restored
         output = _output(
             ChapterNode.EXPORT,
             build_export_package(

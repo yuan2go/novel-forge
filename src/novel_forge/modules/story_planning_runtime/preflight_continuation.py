@@ -122,11 +122,11 @@ def require_capacity_target(source, target):
 
 
 def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
-    from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair, REPAIR_VERSION, STAGE_REPAIR_VERSION
-    from novel_forge.modules.production_execution.execution_template import selected_book_template, decision_template
+    from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+    from novel_forge.modules.production_execution.execution_template import selected_book_template, decision_template, planning_repair_evidence_version
     admission = selected_book_template(uow.cursor, project_id=command.project_id, book_id=command.book_id)
     template = decision_template({"task": {"work_id": command.book_id, "policy_snapshot": admission["policy_snapshot"]}}) if admission else None
-    version = STAGE_REPAIR_VERSION if template and template["version"] in {"creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", "creative-execution-template.v7", "creative-execution-template.v8", "creative-execution-template.v9", "creative-execution-template.v10", "creative-execution-template.v11"} else REPAIR_VERSION
+    version = planning_repair_evidence_version(template)
     return native_planning_repair(uow.cursor, project_id=command.project_id, book_id=command.book_id,
         operation_id=source_operation_id, task_type=command.generator_operation_name, lineage=lineage, evidence_version=version)
 

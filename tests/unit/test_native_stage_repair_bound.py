@@ -97,7 +97,7 @@ def test_stage_route_requires_exact_prior_dispatch_without_inventing_first_stage
     from types import SimpleNamespace
     from novel_forge.modules.story_planning_runtime import stage_repairs
 
-    template = {"version": "creative-execution-template.v6", "mode": "CREATIVE_VALIDATION", "require_literary_qualification": False}
+    template = {"version": "creative-execution-template.v6", "mode": "CREATIVE_VALIDATION", "require_literary_qualification": False, "repair_routing": {"version": "native-repair-routing.v2"}}
     monkeypatch.setattr(stage_repairs, "selected_book_template", lambda *args, **kwargs: {"policy_snapshot": {}})
     monkeypatch.setattr(stage_repairs, "decision_template", lambda *args: template)
     monkeypatch.setattr(stage_repairs, "stage_ordinal", lambda *args, **kwargs: pytest.fail("No unique prior stage dispatch may spend stage allowance"))
@@ -124,7 +124,7 @@ def test_stage_route_counts_only_an_exact_prior_same_stage_dispatch(monkeypatch)
     from novel_forge.modules.story_planning_runtime import stage_repairs
 
     template = {"version": "creative-execution-template.v6", "mode": "CREATIVE_VALIDATION", "require_literary_qualification": False,
-        "member_authorization_ref": "member:one", "require_independent_review": True, "repair_routing": {"max_same_route_repairs": 2}}
+        "member_authorization_ref": "member:one", "require_independent_review": True, "repair_routing": {"version": "native-repair-routing.v2", "max_same_route_repairs": 2}}
     admission = {"policy_snapshot": {}}
     monkeypatch.setattr(stage_repairs, "selected_book_template", lambda *args, **kwargs: admission)
     monkeypatch.setattr(stage_repairs, "decision_template", lambda *args: template)
@@ -146,3 +146,30 @@ def test_stage_route_counts_only_an_exact_prior_same_stage_dispatch(monkeypatch)
     command = SimpleNamespace(project_id="project", book_id="book", repair_of_operation_id="source", repair_of_candidate_id="")
     assert stage_repairs.routing_repair_bound(RouteCursor(), command=command, lineage=("source", "successor"), stage="world_candidates.evaluate", maximum=3) == {
         "stage_repair_number": 2, "maximum_repairs": 2, "policy_admission": admission}
+
+
+@pytest.mark.parametrize("version", range(4, 13))
+def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+    from novel_forge.modules.production_execution import execution_template
+
+    import json
+    from pathlib import Path
+    frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+    frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+    frozen["version"] = f"creative-execution-template.v{version}"
+    for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                       ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                       ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+        if version < first:
+            frozen.pop(key, None)
+    if version < 9 and version >= 7:
+        frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+    execution_template.validate_templates({"execution_templates": [frozen]})
+    admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+    monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+    monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+    command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+    assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+        command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION

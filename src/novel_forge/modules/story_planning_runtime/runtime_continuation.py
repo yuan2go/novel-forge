@@ -1585,8 +1585,7 @@ def require_route_evidence(
             template = decision_template({"task":{"work_id":source["command"]["book_id"],
                 "policy_snapshot":admission["policy_snapshot"]}}) if admission else None
             repair = source["preflight_failure"]["blocked_decision"]["native_repair_evidence"]
-            if (not template or template['version'] not in {'creative-execution-template.v2','creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7','creative-execution-template.v8','creative-execution-template.v9','creative-execution-template.v10','creative-execution-template.v11'}
-                    or not template.get('repair_routing')
+            if (not template or not template.get('repair_routing')
                     or repair.get('stage_repair_number', repair['repair_number']) > template['repair_routing']['max_same_route_repairs']
                     or repair['repair_number'] > 4
                     or repair['parent_candidate_id'] not in template['allowed_candidates']):

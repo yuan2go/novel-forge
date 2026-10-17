@@ -382,6 +382,14 @@ Without original evidence this endpoint rejects resolution and never redispatche
 
 ## Validation matrix
 
+Scoped author-first continuation and recovery work uses impact-driven checks: frozen
+Planning repair dispatch, Book/cast provenance, pre-send capacity snapshots, retained
+results and isolation, joint quality/publication boundaries, and the native Creation
+manuscript chain across a ChapterGroup with exact export readback. Preserve historical
+failure records and record unrun checks as `NOT_RUN`. This scoped evidence does not
+replace the complete exact-revision P0 required by formal PR/release governance.
+
+
 For the Craft convergence upgrade, active migrations 0213-0220 append Source generation
 isolation, proven Book namespaces, planning point reads, evidence indexes, combined method
 Context recovery, retained-working source schema, exact World accounting and Chapter

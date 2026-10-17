@@ -3282,3 +3282,9 @@ matching zero-send continuation to reuse its original World source and request.
 Migration 0220 adds the distinct Chapter prior-method-audit continuation. Both append
 to main's existing guard dispatch; neither replaces the combined capacity predicate,
 rewrites published migration identities, or qualifies an installed database.
+
+The default author-first continuation/recovery closure is not yet qualified. Frozen
+Planning repair dispatch, generated cast consumption, pre-send capacity preparation,
+and historical retained Memo/publication recovery require directed verification before
+claiming an uninterrupted Creation-to-manuscript chain. Saved working prose remains
+separate from author selection, formal acceptance and publication qualification.
