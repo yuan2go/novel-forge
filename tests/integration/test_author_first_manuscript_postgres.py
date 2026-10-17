@@ -244,6 +244,15 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.api import authority_dependencies
     build_book = authority_dependencies.build_book_production_composition
     interruptions = []
+    opening_window_expired = False
+    if default_template:
+        from novel_forge.modules.book_authority import creation_runtime
+        clock = creation_runtime.monotonic
+        monkeypatch.setattr(creation_runtime, "monotonic", lambda: clock() + (args.work_window_seconds + 1 if opening_window_expired else 0))
+    def expire_after_opening_node(checkpoint):
+        nonlocal opening_window_expired
+        if default_template and checkpoint == "after_workflow_node_payload" and not opening_window_expired:
+            opening_window_expired = True
     def fail_delivery_once(checkpoint):
         if checkpoint == "after_manuscript_delivery" and not interruptions:
             interruptions.append(checkpoint)
@@ -251,8 +260,29 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     def with_interrupt(*values, **options):
         composition = build_book(*values, **options)
         composition.authority.failure_injector = fail_delivery_once
+        if default_template:
+            composition.opening.fault_injector = expire_after_opening_node
         return composition
     monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+    initial_book_plan_versions = []
+    if default_template:
+        args.yield_after_window = True
+        checkpoint = run_creation_command(settings, args)
+        assert checkpoint["stop_reason"] == "YIELDED_CHECKPOINT", checkpoint
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT project_id,workspace_id,book_id FROM authority_story_formation_run WHERE formation_run_id=%s",
+                [checkpoint["formation_run_id"]])
+            args.project_id, args.workspace_id, args.book_id = uow.cursor.fetchone()
+            uow.cursor.execute("""SELECT generator_operation_name,count(*) FROM authority_story_planning_generation
+                WHERE project_id=%s AND generator_operation_name IN ('book_plan.generate','volume_plan.generate','arc_plan.generate')
+                GROUP BY generator_operation_name""", [args.project_id])
+            assert dict(uow.cursor.fetchall()) == {"book_plan.generate": 3}
+            uow.cursor.execute("""SELECT candidate_asset_version_id,input_snapshot_hash FROM authority_story_planning_generation
+                WHERE project_id=%s AND generator_operation_name='book_plan.generate' ORDER BY operation_id""", [args.project_id])
+            initial_book_plan_versions = uow.cursor.fetchall()
+            assert all(row[0] for row in initial_book_plan_versions)
+        args.action, args.formation_run_id = "continue", checkpoint["formation_run_id"]
+        args.yield_after_window = False
     with pytest.raises(RuntimeError, match="controlled interruption"):
         started = run_creation_command(settings, args)
         raise AssertionError({key: started.get(key) for key in ("stop_reason", "reason_code", "reason")})
@@ -544,6 +574,10 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [project])
         assert uow.cursor.fetchone()[0] == 8 + int(default_template)
+        if default_template:
+            uow.cursor.execute("""SELECT candidate_asset_version_id,input_snapshot_hash FROM authority_story_planning_generation
+                WHERE project_id=%s AND generator_operation_name='book_plan.generate' ORDER BY operation_id""", [project])
+            assert uow.cursor.fetchall() == initial_book_plan_versions
     if not completed_sibling and not recoverable_result:
         from tests.integration.migration_window_postgres_support import restored_generation_backup
         with restored_generation_backup(DATABASE_URL, backup_root=tmp_path / "chapter-joint-backup",

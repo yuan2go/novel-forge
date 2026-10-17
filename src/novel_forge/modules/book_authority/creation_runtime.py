@@ -285,7 +285,7 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
                       formation_worker: Any, book_worker: Any, maximum_ticks: int,
                       deadline: float, creation_policy: dict[str, Any] | None = None, execution_probe: Callable[[], object] = lambda: None,
                       creation_job_id: str = "") -> dict[str, Any]:
-    from novel_forge.workers.book_authority import execute_story_formation_claim, execute_book_opening_claim
+    from novel_forge.workers.book_authority import execute_story_formation_claim, execute_claimed_book_opening_execution
     from .creation_inputs import prepare_creation_inputs
     from .opening import OpenBookProductionRequest, _OPENING_INPUT_ROLES
 
@@ -458,7 +458,7 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             if claim is None or claim.subject_id != opening[0]:
                 return {"opening_run_id": opening[0], "stop_reason": "WAITING_OPENING_DEPENDENCY"}
             try:
-                execute_book_opening_claim(jobs, composition.opening, composition.principal, claim, lease_seconds=60)
+                execute_claimed_book_opening_execution(jobs, composition.opening, composition.principal, claim, lease_seconds=60)
             except KernelError as error:
                 from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
                 try:

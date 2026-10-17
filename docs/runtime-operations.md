@@ -1248,6 +1248,10 @@ An optional `author_creative_foundation` binds the exact asset version/hash of a
 approved original author direction. Native validation verifies its active receipt; no
 creative candidate generation occurs on that path. The existing author page offers both. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
+Creation dispatches one claimed Opening node per tick and checks its scheduling window
+before claiming the next. The compatibility executor still drains the frozen five-node
+graph for its legacy callers. Completed node receipts and planning versions survive
+yield/resume; a running Provider request is not interrupted to enforce the window.
 
 Foundation candidates with `UNDETERMINED` applicability retain their exact field diagnosis
 and use the existing bounded Planning repair before approval. A historical Story Design
