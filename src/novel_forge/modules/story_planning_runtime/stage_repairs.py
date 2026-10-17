@@ -47,8 +47,15 @@ def stage_ordinal(cursor, *, lineage, stage):
     )
 
 
-def routing_repair_bound(cursor, *, command, lineage, stage, maximum):
-    admission = selected_book_template(cursor, project_id=command.project_id, book_id=command.book_id)
+def routing_repair_bound(cursor, *, command, lineage, stage, maximum, frozen_repair=None):
+    if frozen_repair is not None:
+        if frozen_repair.get("contract_version") == "planning-route-repair.v1":
+            return None
+        if frozen_repair.get("contract_version") != "planning-route-repair.v2" or not frozen_repair.get("policy_admission"):
+            raise KernelError("PLANNING_ROUTING_REPAIR_EVIDENCE_MISSING", "Stage replay requires its frozen policy admission")
+        admission = frozen_repair["policy_admission"]
+    else:
+        admission = selected_book_template(cursor, project_id=command.project_id, book_id=command.book_id)
     template = decision_template({"task": {"work_id": command.book_id, "policy_snapshot": admission["policy_snapshot"]}}) if admission else None
     if (not template or planning_repair_evidence_version(template) != "native-planning-repair-evidence.v3"
             or template["mode"] != "CREATIVE_VALIDATION" or template["require_literary_qualification"]):

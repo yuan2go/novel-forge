@@ -282,4 +282,5 @@ def test_current_contract_receipt_is_rechecked_by_the_native_dispatch_owner_befo
         ProductionProviderRouter._selected_route(owner, None, snapshot)
     assert calls == [{"project_id": snapshot["task"]["project_id"], "book_id": snapshot["task"]["work_id"],
         "operation_id": snapshot["task"]["operation_id"], "task_type": snapshot["task"]["task_type"],
-        "input_hash": snapshot["task"]["input_hash"], "lineage": tuple(snapshot["task"]["lineage_operation_ids"])}]
+        "input_hash": snapshot["task"]["input_hash"], "lineage": tuple(snapshot["task"]["lineage_operation_ids"]),
+        "frozen_repair": receipt}]

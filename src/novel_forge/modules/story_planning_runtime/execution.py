@@ -341,6 +341,7 @@ def planning_repair_route_receipt(
     task_type: str,
     input_hash: str,
     lineage: tuple[str, ...],
+    frozen_repair: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
     from .application import _command_from_payload
@@ -372,7 +373,8 @@ def planning_repair_route_receipt(
             definition.maximum_structural_regenerations,
         )
         from .stage_repairs import routing_repair_bound
-        stage_bound = routing_repair_bound(uow.cursor, command=command, lineage=lineage, stage=task_type, maximum=maximum)
+        stage_bound = routing_repair_bound(uow.cursor, command=command, lineage=lineage, stage=task_type, maximum=maximum,
+            frozen_repair=frozen_repair)
         ordinal = stage_bound["stage_repair_number"] if stage_bound else command.repair_number
         maximum = stage_bound["maximum_repairs"] if stage_bound else maximum
         if (

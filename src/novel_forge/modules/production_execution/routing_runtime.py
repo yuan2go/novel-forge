@@ -741,6 +741,7 @@ class PostgresRoutingRegistry:
         task_type: str,
         input_hash: str,
         lineage: tuple[str, ...],
+        frozen_repair: Mapping[str, Any] | None = None,
     ) -> dict[str, Any] | None:
         if self.planning_repair_resolver is None:
             return None
@@ -751,6 +752,7 @@ class PostgresRoutingRegistry:
             task_type=task_type,
             input_hash=input_hash,
             lineage=lineage,
+            **({"frozen_repair": frozen_repair} if frozen_repair is not None else {}),
         )
 
     def save(
@@ -1287,6 +1289,7 @@ class ProductionProviderRouter:
                 task_type=task["task_type"],
                 input_hash=task["input_hash"],
                 lineage=tuple(task["lineage_operation_ids"]),
+                frozen_repair=repair,
             )
             if repair != expected:
                 raise KernelError(

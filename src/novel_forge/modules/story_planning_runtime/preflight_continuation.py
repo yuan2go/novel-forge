@@ -123,9 +123,33 @@ def require_capacity_target(source, target):
 
 def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
     from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
-    from novel_forge.modules.production_execution.execution_template import selected_book_template, decision_template, planning_repair_evidence_version
-    admission = selected_book_template(uow.cursor, project_id=command.project_id, book_id=command.book_id)
-    template = decision_template({"task": {"work_id": command.book_id, "policy_snapshot": admission["policy_snapshot"]}}) if admission else None
+    from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+    uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a ON a.asset_id=v.asset_id
+        WHERE o.operation_id=%s AND a.project_id=%s AND a.asset_type='routing_decision'""",
+        [source_operation_id, command.project_id])
+    decisions = uow.cursor.fetchall()
+    if not decisions:
+        from .execution import require_candidate_repair_operation
+        parent = command.repair_of_operation_id
+        if command.repair_of_candidate_id:
+            parent = require_candidate_repair_operation(uow.cursor, candidate_asset_version_id=command.repair_of_candidate_id,
+                project_id=command.project_id, book_id=command.book_id,
+                generator_operation_name=command.generator_operation_name, logical_key=command.logical_key)
+        result_id = command.repair_of_candidate_id or command.repair_result_asset_version_id
+        uow.cursor.execute("""SELECT e.request_payload #> '{_production_execution,capability_runtime,routing_decision}'
+            FROM authority_external_effect e JOIN authority_asset_version v ON v.asset_version_id=%s
+            WHERE e.operation_id=%s AND e.project_id=%s AND e.request_payload->>'stage'=%s
+              AND e.status IN ('SUCCEEDED','FAILED_FINAL')
+              AND e.external_effect_id=COALESCE(v.content #>> '{execution_evidence,external_receipt_ref}',
+                  v.content->>'external_effect_id',v.content #>> '{contract,evidence,external_receipt_ref}')""",
+            [result_id, parent, command.project_id, command.generator_operation_name])
+        decisions = uow.cursor.fetchall()
+    if len(decisions) != 1 or not decisions[0][0]:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_INVALID", "Preflight requires its exact recorded route or native parent route")
+    template = verify_template_provenance(uow.cursor, decisions[0][0])
+    if not template or template["book_id"] != command.book_id:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_INVALID", "Preflight must retain this Book's frozen creative template")
     version = planning_repair_evidence_version(template)
     return native_planning_repair(uow.cursor, project_id=command.project_id, book_id=command.book_id,
         operation_id=source_operation_id, task_type=command.generator_operation_name, lineage=lineage, evidence_version=version)

@@ -290,8 +290,12 @@ Frozen `repair_routing` contracts select Planning repair evidence and stage allo
 consistently in normal dispatch, preflight continuation and result recovery. Routing v1
 retains cumulative interpretation; v2 uses separate stage ordinals while preserving the
 monotonic lineage counter and its four-repair bound. A newly selected template cannot
-grant stage allowances to an older frozen source contract. Replay verifies the original
-evidence version rather than reading the latest template file.
+grant stage allowances to an older frozen source contract. Preflight reads its recorded
+route decision; when input-order preparation failed before routing, it uses the exact
+native parent result's Effect decision. Missing or ambiguous source evidence fails closed.
+Governed-repair replay carries the saved receipt and its original policy admission;
+legacy cumulative receipts retain that interpretation. New successors still require
+current authorization and cannot change the source's frozen repair protocol.
 
 A complete-request capacity failure retains its Attempt snapshot, frozen inputs and
 preparation outputs. Such preparation is work: it excludes the zero-work Opening budget
