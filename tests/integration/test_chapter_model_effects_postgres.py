@@ -1294,7 +1294,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         def fixture(stage, inputs):
             if stage in {"context_compress", "context_fidelity"}:
                 semantic_dispatches.append(stage)
-            output = default_chapter_fixture_response(stage, inputs)
+            if stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1":
+                from tests.integration.synthesis_production_support import scripted_chapter_response
+                output = scripted_chapter_response(stage, inputs)
+            else:
+                output = default_chapter_fixture_response(stage, inputs)
             if stage in {"review", "rereview"}:
                 text = inputs["draft" if stage == "review" else "revision"]["text"]
                 quote = text if stage == "review" else "The protagonist gives up the only safe route home before the witnesses leave."
@@ -1400,17 +1404,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             }
             candidates = self._release_evidence(
                 project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id,
-                current_contract_inputs=True, extra_context_candidates=(history, *(
-                    {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
-                     "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
-                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary",
-                     "content": {"project_id": project_id, "book_id": f"book:{project_id}",
-                                 "contract_version": "story-state-snapshot-v2" if kind == "story_state_snapshot" else "canon-snapshot-v2",
-                                 "accepted_state_only": True, "accepted_through_chapter": 0,
-                                 "current_state": {}, "structured_facts": [],
-                                 "safe_summary": "Explicit fixture genesis boundary"}}
-                    for kind in ("story_state_snapshot", "canon_snapshot")
-                )),
+                current_contract_inputs=True, extra_context_candidates=(history,),
             )
             self._seed_intrinsic_semantic_commit_policy(project_id)
             request = SingleChapterRequest(
@@ -1419,8 +1413,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 trace_id=identifier("trace"), correlation_id=identifier("correlation"),
                 application_build_id="context-semantic-test", commit_sha="e" * 40,
                 context_candidates=candidates, context_token_budget=32_768,
-                context_version_refs={"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
-                                      "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"},
+                context_version_refs={"story_state_snapshot_version": f"{project_id}:state-fixture:story_state_snapshot:v1",
+                                      "canon_snapshot_version": f"{project_id}:state-fixture:canon_snapshot:v1"},
                 preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
             )
             with patch.object(_ContextHandler, "execute", execute_with_semantic_subeffects), patch.object(
@@ -1443,9 +1437,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     self.assertEqual(seen, [node.value for node in ChapterNode][:seen.index(ChapterNode.REVIEW.value) + 1])
                     self.assertIn(ChapterNode.CONTEXT.value, seen)
                 else:
-                    with self.assertRaises(KernelError) as unresolved:
-                        application.run(request)
-                    self.assertEqual(unresolved.exception.code, "CHAPTER_QUALITY_GATE_BLOCKED")
+                    completed = application.run(request)
+                    self.assertEqual(completed.root_status, "SUCCEEDED")
+                    self.assertEqual(completed.saga_status, "SUCCEEDED")
         self.assertEqual(semantic_dispatches, ["context_compress", "context_fidelity"] * 2)
         self.assertEqual(len(semantic_results), 2)
         with transaction() as connection, connection.cursor() as cursor:
@@ -1480,8 +1474,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(context_artifact["content_hash"], context_hash)
             cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [runtime["provider_admission_asset_version_id"]])
             admission = cursor.fetchone()[0]["contract"]
-            self.assertEqual(len(draft_prompts), 1)
-            prompt, prompt_evidence = draft_prompts[0]
+            self.assertGreaterEqual(len(draft_prompts), 1)
+            cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch d JOIN authority_external_effect e USING(external_effect_id) WHERE e.project_id=%s AND e.capability='model.draft'", [project_id])
+            self.assertEqual(cursor.fetchone()[0], 1)
+            prompt, prompt_evidence = next(item for item in draft_prompts
+                if item[1]["fully_rendered_prompt_hash"] == admission["provider_request_identity"]["input_text_hash"])
             self.assertIn(history["structured_facts"][0]["value"], prompt)
             self.assertEqual(prompt_evidence["fully_rendered_prompt_hash"], admission["provider_request_identity"]["input_text_hash"])
             self.assertEqual(admission["provider_admission"]["status"], "ADMITTED")
@@ -1490,6 +1487,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(memo_boundary["accepted_through_chapter"], context_boundary["accepted_through_chapter"])
             self.assertEqual(memo_boundary["story_state_asset_version_id"], context_boundary["story_state_snapshot_version"])
             self.assertEqual(memo_boundary["canon_snapshot_asset_version_id"], context_boundary["canon_snapshot_version"])
+            for kind, boundary_key in (("story_state_snapshot", "story_state_snapshot_version"), ("canon_snapshot", "canon_snapshot_version")):
+                frozen_state = next(item for item in candidates if item["asset_type"] == kind)
+                self.assertEqual(frozen_state["asset_version_id"], context_boundary[boundary_key])
+                self.assertIn(frozen_state["asset_version_id"], prompt)
+                self.assertIn(frozen_state["content_hash"], prompt)
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute("""
                 SELECT effect.capability, effect.status, effect.request_payload,
@@ -1522,8 +1524,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name IN ('chapter.draft.generate','chapter.review.evaluate') AND status='SUCCEEDED'", [project_id])
             self.assertEqual(cursor.fetchone()[0], 2)
             if not native_through_review:
-                cursor.execute("SELECT content->'blocking_dimensions' FROM authority_asset_version JOIN authority_asset USING(asset_id) WHERE project_id=%s AND asset_type='quality_score_report'", [project_id])
-                self.assertTrue(cursor.fetchone()[0])
+                cursor.execute("SELECT content->>'gate',content->'blocking_dimensions',content->'uncalibrated_dimensions',content->'production_verified' FROM authority_asset_version JOIN authority_asset USING(asset_id) WHERE project_id=%s AND asset_type='quality_score_report'", [project_id])
+                gate, blocking, uncalibrated, production_verified = cursor.fetchone()
+                self.assertEqual(gate, "PASSED_WITH_UNCALIBRATED")
+                self.assertEqual(blocking, [])
+                self.assertTrue(uncalibrated)
+                self.assertFalse(production_verified)
 
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,
@@ -1591,7 +1597,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 self.assertIsNotNone(effect_guard._failure)
             from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
 
-            output = default_chapter_fixture_response(stage, inputs)
+            if stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1":
+                from tests.integration.synthesis_production_support import scripted_chapter_response
+                output = scripted_chapter_response(stage, inputs)
+            else:
+                output = default_chapter_fixture_response(stage, inputs)
             if capacity_overflow and stage in {"draft", "revision"}:
                 for scene in output.get("scene_artifacts", []):
                     scene["text"] += "承诺已经当众立下，归家的退路就此断绝。"
@@ -1649,16 +1659,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "retrieval_reasons": ["task_related_episodic_history"]}
             context_candidates = self._release_evidence(project_id, with_mkaos=True, scope_preseeded=True,
                 workspace_id=harness.workspace_id, current_contract_inputs=capacity_overflow,
-                extra_context_candidates=(history, *(
-                    {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
-                     "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
-                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary",
-                     "content": {"project_id": project_id, "book_id": f"book:{project_id}",
-                                 "contract_version": "story-state-snapshot-v2" if kind == "story_state_snapshot" else "canon-snapshot-v2",
-                                 "accepted_state_only": True, "accepted_through_chapter": 0,
-                                 "current_state": {}, "structured_facts": [],
-                                 "safe_summary": "Explicit fixture genesis boundary"}}
-                    for kind in ("story_state_snapshot", "canon_snapshot"))) if capacity_overflow else ())
+                extra_context_candidates=(history,) if capacity_overflow else ())
             self._seed_intrinsic_semantic_commit_policy(project_id)
             chapter_request = SingleChapterRequest(
                 project_id=project_id,
@@ -1673,8 +1674,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 commit_sha="e" * 40,
                 context_candidates=context_candidates,
                 context_token_budget=512_000 if capacity_overflow else 64_000,
-                **({"context_version_refs": {"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
-                    "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"}} if capacity_overflow else {}),
+                **({"context_version_refs": {"story_state_snapshot_version": f"{project_id}:state-fixture:story_state_snapshot:v1",
+                    "canon_snapshot_version": f"{project_id}:state-fixture:canon_snapshot:v1"}} if capacity_overflow else {}),
                 **({"preparation_report": {"stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
                     **({"context_capacity_policy": "complete-request-capacity.v1"} if capacity_overflow else {})}}
                    if task_scoped else {}),

@@ -43,6 +43,7 @@ from novel_forge.modules.story_planning_runtime.search_application import (
     DEFAULT_SEARCH_DIRECTIVES,
 )
 from novel_forge.modules.story_design_authority import scripted_qualification
+from novel_forge.modules.story_design_authority.qualification import qualification_profile_options
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.workers.book_authority import execute_book_opening_claim
 from tests.integration.authority_postgres_support import (
@@ -442,7 +443,6 @@ def create_legacy_book_opening_orphan(
         hard_constraints=(
             "preserve the approved Creative Foundation",
             "protect reader promise and ending direction",
-            "do not convert future intent into accepted reality",
         ),
         accepted_through_chapter=0,
         parent_state_asset_version_id=generic["initial_story_state"],
@@ -498,7 +498,8 @@ def create_legacy_book_opening_orphan(
         generator_operation_name="book_plan.generate",
         candidate_content_hash=str(candidate_row["content_hash"]),
         evaluator_execution_class=evaluator_execution_class,
-        evaluation=(scripted_qualification("book_plan.generate") if scripted else None),
+        evaluation=(scripted_qualification("book_plan.generate",
+            **qualification_profile_options(candidate_row["content"])) if scripted else None),
         idempotency_key=f"{generation_command.idempotency_key}:semantic-evaluation",
         trace_id=generation_command.trace_id,
         correlation_id=generation_command.correlation_id,

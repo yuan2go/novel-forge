@@ -2009,6 +2009,10 @@ class StoryPlanningGenerationApplication:
                 "PLANNING_BOOTSTRAP_REPAIR_REQUIRES_AUTHORIZATION",
                 "invalid bootstrap output is retained; a new challenger requires explicit authorization",
             )
+        from .result_recovery import completed_result_repair_command
+        completed = completed_result_repair_command(self.database_url, command=command, operation_id=operation_id)
+        if completed is not None:
+            return self.generate(completed, principal=principal, execution_probe=execution_probe)
         maximum = min(MAXIMUM_RESULT_REPAIRS, GENERATOR_CATALOG[command.generator_operation_name].maximum_structural_regenerations)
         from .stage_repairs import repair_bound
         bound=repair_bound(self,command=command,operation_id=operation_id,maximum=maximum)

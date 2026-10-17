@@ -8,12 +8,12 @@ from novel_forge.modules.chapter_group_authority.application import PostgresChap
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL
-from tests.integration.test_chapter_group_authority_postgres import ChapterGroupAuthorityPostgresTests
+from tests.integration import test_chapter_group_authority_postgres as group_support
 
 
 @pytest.mark.parametrize("crash_boundary", ["before_admission", "before_group_link", "reserved_pause_resume", "before_book_link_alternate_actor"])
 def test_native_reserved_group_dispatch_recovers_same_request_root_and_delegation(crash_boundary):
-    harness = ChapterGroupAuthorityPostgresTests()
+    harness = group_support.ChapterGroupAuthorityPostgresTests()
     fixture = harness._fixture()
     try:
         authority, principal, book = fixture["group_authority"], fixture["principal"], fixture["book_authority"]

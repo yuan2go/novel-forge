@@ -1,4 +1,5 @@
 from copy import deepcopy
+from tests.integration.capability_pack_postgres_support import frozen_provider_task_view
 
 from psycopg.types.json import Jsonb
 import pytest
@@ -66,7 +67,11 @@ class ProseTransport:
 
     def __call__(self, stage, inputs):
         self.calls.append((stage, deepcopy(inputs)))
-        result = default_chapter_fixture_response(stage, inputs)
+        if stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1":
+            from tests.integration.synthesis_production_support import scripted_chapter_response
+            result = scripted_chapter_response(stage, inputs)
+        else:
+            result = default_chapter_fixture_response(stage, inputs)
         if stage == "draft":
             sentence = HISTORY if inputs["plan"]["chapter"] == 1 else BROKEN
             result["scene_artifacts"][-1]["text"] += " " + sentence
@@ -243,7 +248,7 @@ def make_book(tmp_path, transport, *, prepare_plans=None):
         authentication_source="integration-test",
     )
     candidates = list(
-        chapter_support.PostgreSQLOnlyChapterSliceTests.release_evidence(project)
+        chapter_support.PostgreSQLOnlyChapterSliceTests.release_evidence(project, current_state_contract=True)
     )
     plan_transform = prepare_plans(project, harness.workspace_id, candidates) if prepare_plans else None
     plans = helper._seed_two_chapter_plans(
@@ -329,11 +334,13 @@ def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
             premise="A choice has an irreversible cost.",
             chapter_plan_asset_version_id=plan["asset_version_id"],
             chapter_plan_content_hash=plan["content_hash"],
+            context_token_budget=64000,
             context_candidates=tuple(
                 plan if item["asset_type"] == "chapter_plan" else item
                 for item in candidates
             ),
             preparation_report={
+                "stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
                 "stage_context_token_budgets": {
                     "review": 64000,
                     "rereview": 64000,
@@ -468,7 +475,7 @@ def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
         assert len(effects) == 2
         effect_id, payload, receipt = effects[-1]
         binding = payload["_production_execution"]["capability_runtime"]
-        assert binding["output_schema_ref"].endswith("cross-chapter-v3")
+        assert binding["output_schema_ref"] == "schema:chapter-provider-output:review:cross-chapter-v6:delivered-card-scope-v1:repair-scope-v1"
         assert binding["provider_admission"]["total_reserved"] > len(HISTORY.encode())
         from novel_forge.modules.chapter_authority.provider_views import (
             build_provider_task_view,
@@ -482,12 +489,12 @@ def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
             "component_hashes"
         ]
         assert hashes["provider_task_view"] == digest(
-            build_provider_task_view("review", payload["input"])
+            frozen_provider_task_view(uow, project, payload)
         )
         changed = deepcopy(payload["input"])
         changed.pop("cross_chapter_window")
         assert hashes["provider_task_view"] != digest(
-            build_provider_task_view("review", changed)
+            build_provider_task_view("review", changed, compact_contract=True, project_methods=True, instruction_cleanup=True, work_requirements=True)
         )
         assert (
             payload["input"]["cross_chapter_window"] == review["cross_chapter_window"]
@@ -541,11 +548,13 @@ def test_cross_chapter_context_overflow_keeps_candidate_and_creates_no_review_ef
             premise="A choice costs a safe exit.",
             chapter_plan_asset_version_id=plan["asset_version_id"],
             chapter_plan_content_hash=plan["content_hash"],
+            context_token_budget=64000,
             context_candidates=tuple(
                 plan if item["asset_type"] == "chapter_plan" else item
                 for item in candidates
             ),
-            preparation_report={"stage_context_token_budgets": {"review": 1}},
+            preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
+                "stage_context_token_budgets": {"review": 1}},
         ),
         principal=principal,
     )

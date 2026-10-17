@@ -363,11 +363,13 @@ def test_model_and_author_edited_sources_use_native_router_effect_and_distinct_h
     app._model_port.max_cost_per_call = "1"
     worker = replace(author, principal_id="source-model-worker", principal_type=PrincipalType.WORKER)
     scheduler = app.scheduler(principal=worker)
-    plan = h._chapter_plan_candidate(2)
+    context_candidates = h._chapter_context_candidates(1)
+    plan = next(item for item in context_candidates if item["asset_type"] == "chapter_plan")
     request = SingleChapterRequest(project_id=h.project_id, workspace_id=h.workspace_id, book_id=h.book_ids[0],
-        actor_id=author.principal_id, chapter=2, title="Exact simulated model source", premise="Preserve the costly public choice.",
+        actor_id=author.principal_id, chapter=1, title="Exact simulated model source", premise="Preserve the costly public choice.",
         trace_id=identifier("trace"), correlation_id=identifier("correlation"), application_build_id=h.application_build_id,
-        commit_sha=h.release_sha, idempotency_key=identifier("source-model-chapter"), context_candidates=(plan,))
+        commit_sha=h.release_sha, idempotency_key=identifier("source-model-chapter"), context_candidates=context_candidates, context_token_budget=32_768,
+        preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}})
     root = app.admit(request, principal=author).root_operation_id
     for node in ("plan", "execution_intent", "memo", "retrieval", "context"):
         tick = scheduler.tick(project_id=h.project_id, root_operation_id=root)
@@ -413,7 +415,7 @@ def test_model_and_author_edited_sources_use_native_router_effect_and_distinct_h
     assert original_contract["required_reviewer_provider"] == "codex-cli"
     assert reviewer_rejection(original_contract, {"provider": model.provider, "model": "different-name"})
     editor = ChapterAuthorEditingApplication(DATABASE_URL, application_build_id=h.application_build_id, commit_sha=h.release_sha)
-    payload = dict(project_id=h.project_id, workspace_id=h.workspace_id, book_id=h.book_ids[0], chapter=2,
+    payload = dict(project_id=h.project_id, workspace_id=h.workspace_id, book_id=h.book_ids[0], chapter=1,
         base_asset_version_id=source.asset_version_id, base_asset_hash=source.content_hash, base_text_hash=text_hash(source.content["text"]),
         expected_version=0, text=source.content["text"] + " The witness kept the signed record.", rights_basis="ORIGINAL_AUTHOR_INPUT")
     saved = editor.execute(action="save", payload=payload, idempotency_key=identifier("model-author-save"), principal=author)
@@ -422,7 +424,7 @@ def test_model_and_author_edited_sources_use_native_router_effect_and_distinct_h
         idempotency_key=identifier("model-author-accept"), principal=author)
     adoption = freeze_author_adoption(DATABASE_URL, **{key: payload[key] for key in ("project_id", "workspace_id", "book_id", "chapter")},
         candidate_asset_version_id=saved["candidate_asset_version_id"], decision_asset_version_id=accepted["decision_asset_version_id"], principal=author)
-    edited_request = replace(request, idempotency_key=identifier("model-author-adoption"), preparation_report={"author_draft_adoption": adoption},
+    edited_request = replace(request, idempotency_key=identifier("model-author-adoption"), preparation_report={**request.preparation_report, "author_draft_adoption": adoption},
         chapter_plan_asset_version_id=plan["asset_version_id"], chapter_plan_content_hash=plan["content_hash"])
     edited_root = app.admit(edited_request, principal=author).root_operation_id
     for node in ("plan", "execution_intent", "memo", "retrieval", "context", "draft", "review"):
@@ -451,10 +453,10 @@ def test_model_and_author_edited_sources_use_native_router_effect_and_distinct_h
     review_args = dict(task_type="review", project_id=h.project_id, work_id=h.book_ids[0], operation_id=edited_review,
         attempt_id=identifier("review-preflight"), stable_key=identifier("review-preflight"), input_tokens=1000, output_tokens=1000,
         trace_id="source-test", correlation_id="source-test", dry_run=True, request_input=review_request.get("input", {}),
-        producer_contract=review_producer, chapter=2)
+        producer_contract=review_producer, chapter=1)
     _, blocked = router.select(execution.gateway.routes["review"], **review_args)
     assert blocked["status"] == "BLOCKED"
-    assert "CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED" in blocked["candidates"][0]["rejected_reasons"]
+    assert "AUTHOR_SUPERVISION_TASK_AUTHORIZATION_REQUIRED" in blocked["candidates"][0]["rejected_reasons"]
     review_grant = {**grant, "authorization_id": identifier("source-review-grant"), "task_type": "review",
                     "producer_contract_hash": snapshot_hash(review_producer)}
     configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=h.project_id,

@@ -1,0 +1,103 @@
+{
+  "schema_version": "postgresql-native-repair-readbacks.v1",
+  "records": [
+    {
+      "test": "tests/integration/test_core_functional_loops_postgres.py::test_five_planning_generators_repair_activate_and_replay_in_postgres",
+      "source_sha": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "working_diff_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+      "cluster": "7697555674554005288",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/413c315a5607b873.json.gz",
+      "sha256": "sha256:48f609d1669fc311b88be9ad1ae9eedebf76fa22b8edf623bd9754fd835c81ad",
+      "prose": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/413c315a5607b873-prose.json",
+      "prose_sha256": "sha256:dbaebb7d1454a22f44d52d4f637a2b5ca088d5a0aa169ed5cc6295fb64050f88",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "real_provider": "NOT_RUN",
+      "formal_qualification": "NOT_RUN"
+    },
+    {
+      "test": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_to_chapter_two_chapter_vertical_postgres",
+      "source_sha": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "working_diff_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+      "cluster": "7697555674554005288",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/1f9be85c97dba3ba.json.gz",
+      "sha256": "sha256:a429741f9650d0febd27900ee939763c7ae14fcdb40d229dd5b5d54bb0b19dd8",
+      "prose": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/1f9be85c97dba3ba-prose.json",
+      "prose_sha256": "sha256:c0d2e8495accc6c0272d1debd6910b8e76f3135a0e46cd98ad48e2ba89db3b6d",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "real_provider": "NOT_RUN",
+      "formal_qualification": "NOT_RUN"
+    },
+    {
+      "test": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_to_chapter_two_chapter_vertical_postgres",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "working_diff_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+      "cluster": "7697555674554005288",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/062302692f21765d.json.gz",
+      "sha256": "sha256:fe2a200f9c26aa94e0bb7d2086409c1166c51561a633583e231083c60e4bb894",
+      "prose": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/062302692f21765d-prose.json",
+      "prose_sha256": "sha256:1930fce60f99d570c13cdfa3c4bb1651622b65200e80d93497306d40cb56cb81",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "real_provider": "NOT_RUN",
+      "formal_qualification": "NOT_RUN"
+    },
+    {
+      "test": "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "working_diff_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+      "cluster": "7697555674554005288",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/2630b08a36bd3136.json.gz",
+      "sha256": "sha256:a0472896c9d4d0f08c113eb6e61d90f1c164a1c27a420765d7c850bf61ef8986",
+      "prose": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/2630b08a36bd3136-prose.json",
+      "prose_sha256": "sha256:3c4d47e8462296dff3bc0d75b0c604eb4ba56652aca16eea5caa8bd7335d2f92",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "real_provider": "NOT_RUN",
+      "formal_qualification": "NOT_RUN"
+    },
+    {
+      "test": "tests/integration/test_core_functional_loops_postgres.py::test_five_planning_generators_repair_activate_and_replay_in_postgres",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "working_diff_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+      "cluster": "7697555674554005288",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/fb9f0335730ed9c2.json.gz",
+      "sha256": "sha256:f5df4349d00d15c13984c00523fb410eadabf417eb7f55a081b61a9545e9c791",
+      "prose": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/fb9f0335730ed9c2-prose.json",
+      "prose_sha256": "sha256:dbaebb7d1454a22f44d52d4f637a2b5ca088d5a0aa169ed5cc6295fb64050f88",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "real_provider": "NOT_RUN",
+      "formal_qualification": "NOT_RUN"
+    },
+    {
+      "test": "tests/integration/test_synthesis_formation_postgres.py::test_native_world_identifier_checkpoint_recovers_settled_effect_without_resend",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "working_diff_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+      "cluster": "7697555674554005288",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/726327b212ce587c.json.gz",
+      "sha256": "sha256:4f45159d1f4fa9a4c501d3e9837e49739996157f466422aa332072bff2463303",
+      "prose": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/726327b212ce587c-prose.json",
+      "prose_sha256": "sha256:c3d484c6d677473f35a83b18038a980b09015c87fe678e7947c8e12e21773379",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "real_provider": "NOT_RUN",
+      "formal_qualification": "NOT_RUN"
+    },
+    {
+      "test": "tests/integration/test_synthesis_formation_postgres.py::test_native_world_raw_result_repair_preserves_world_source_and_reaches_acceptance",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "working_diff_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+      "cluster": "7697555674554005288",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/23103cb1745f5ae5.json.gz",
+      "sha256": "sha256:5203ed1404e6868914de4327e935c595018b1e7d7d232ee59d963745061c52ab",
+      "prose": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/23103cb1745f5ae5-prose.json",
+      "prose_sha256": "sha256:0b15b291c416a98e5a19d4634bce0c7cf2cb0fbe45847e288ee37e390b85b4ed",
+      "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+      "real_provider": "NOT_RUN",
+      "formal_qualification": "NOT_RUN"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from tests.integration.capability_pack_postgres_support import frozen_provider_task_view
 import json
 import os
 from pathlib import Path
@@ -232,7 +233,11 @@ class CraftTransport:
 
     def __call__(self, stage, inputs):
         self.calls.append((stage, deepcopy(inputs)))
-        result = default_chapter_fixture_response(stage, inputs)
+        if stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1":
+            from tests.integration.synthesis_production_support import scripted_chapter_response
+            result = scripted_chapter_response(stage, inputs)
+        else:
+            result = default_chapter_fixture_response(stage, inputs)
         if stage == "draft":
             assert inputs["realization_contract"]["craft_strategy"] == self.strategies[inputs["plan"]["chapter"]]
             result["scene_artifacts"][-1]["text"] += " " + self.broken
@@ -252,9 +257,14 @@ class CraftTransport:
                         "severity": "minor",
                         "message": "Repeated evaluation obscures the chosen character effect",
                         "category": "CRAFT_EFFECT",
-                        "judgment_kind": "AESTHETIC_SUGGESTION",
-                        "confidence": "MEDIUM",
-                        "interpretation": "UNCERTAIN",
+                        "judgment_kind": "SEMANTIC_CONFLICT",
+                        "confidence": "HIGH",
+                        "interpretation": "CONTINUITY_PROBLEM",
+                        "repair": {"root_cause": "LANGUAGE", "problem_owner": "PROSE",
+                            "repair_scope": "LOCAL_PROSE",
+                            "revision_goal": "Realize the adopted use_site at the located span",
+                            "preserve": ["Frozen scene choices, facts and all other prose"],
+                            "resolution_criteria": ["The selected mechanism is visible in its frozen use_site"]},
                         "lineage_code": None,
                         "supporting_evidence": [],
                         "evidence": {
@@ -264,7 +274,7 @@ class CraftTransport:
                             ],
                             "text_hash": prose_hash(draft["text"]),
                         },
-                        "violated_constraint": "Adopted choice effect",
+                        "violated_constraint": "Frozen adopted Craft use: " + craft_review_targets(draft)[0]["use_id"],
                         "revision_goal": "Replace evaluation with the already planned cost",
                         "preserve": [
                             "Planned choice, facts, POV, voice, knowledge and all other prose"
@@ -354,12 +364,14 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
         premise="A choice has an irreversible cost.",
         chapter_plan_asset_version_id=plan["asset_version_id"],
         chapter_plan_content_hash=plan["content_hash"],
+        context_token_budget=64000,
         context_candidates=tuple(
             plan if item["asset_type"] == "chapter_plan" else item
             for item in candidates
         ),
         preparation_report={
-            "stage_context_token_budgets": {
+            "stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
+                "stage_context_token_budgets": {
                 stage: 64000
                 for stage in ("memo", "draft", "review", "revision", "rereview")
             }
@@ -459,14 +471,14 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
         if receipt_loss:
             assert effect == interrupted
         binding = effect[1]["_production_execution"]["capability_runtime"]
-        assert binding["output_schema_ref"].endswith(":cross-chapter-v3:narrative-craft-v2")
+        assert binding["output_schema_ref"] == "schema:chapter-provider-output:review:cross-chapter-v6:narrative-craft-v2:delivered-card-scope-v1:repair-scope-v1"
         admission = uow.repositories.asset_documents.require(
             project_id=project,
             asset_version_id=binding["provider_admission_asset_version_id"],
         ).content["contract"]
         assert admission["prompt_materialization"]["provider_view"]["component_hashes"][
             "provider_task_view"
-        ] == craft_hash(build_provider_task_view("review", effect[1]["input"]))
+        ] == craft_hash(frozen_provider_task_view(uow, project, effect[1]))
         uow.cursor.execute(
             "SELECT capability, request_payload FROM authority_external_effect WHERE project_id=%s AND capability IN ('model.memo','model.draft','model.revision','model.rereview')",
             [project],
@@ -480,17 +492,7 @@ def test_native_craft_card_chapter_provider_targeted_repair_acceptance_and_recei
                     "provider_admission_asset_version_id"
                 ],
             ).content["contract"]
-            task_view = build_provider_task_view(
-                stage,
-                payload["input"],
-                compact_contract=True,
-                targeted_edits_only=(
-                    stage == "revision"
-                    and ":cross-chapter-v4" in admitted_binding["output_schema_ref"]
-                ),
-                project_methods=(admitted["prompt_materialization"]["provider_prompt_projection_version"]
-                                 in {"authority-projection-task-provider-v3", "authority-projection-task-provider-v4"}),
-            )
+            task_view = frozen_provider_task_view(uow, project, payload)
             assert admitted["prompt_materialization"]["provider_view"][
                 "component_hashes"
             ]["provider_task_view"] == craft_hash(task_view), (
@@ -596,10 +598,11 @@ def test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_a
             assert budget["creative_benefit"] == "NOT_PROVEN"
         plan = plans[number]
         dispatched = authority.submit_chapter(SubmitBookChapterCommand(
-            book_run_id=book.book_run_id, chapter_number=number, title="双源修订", premise="既定代价不可无因消失。",
+            context_token_budget=128000, book_run_id=book.book_run_id, chapter_number=number, title="双源修订", premise="既定代价不可无因消失。",
             chapter_plan_asset_version_id=plan["asset_version_id"], chapter_plan_content_hash=plan["content_hash"],
             context_candidates=tuple(plan if item["asset_type"] == "chapter_plan" else item for item in candidates),
-            preparation_report={"stage_context_token_budgets": {stage: 64000 for stage in ("memo", "draft", "review", "revision", "rereview")}},
+            preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
+                "stage_context_token_budgets": {stage: 64000 for stage in ("memo", "draft", "review", "revision", "rereview")}},
         ), principal=principal)
         for _ in range(len(ChapterNode) * 3):
             tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
@@ -632,7 +635,7 @@ def test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_a
         assert task["craft_review_targets"] and task["cross_chapter_window"]["sources"]
         binding = payload["_production_execution"]["capability_runtime"]
         admission = uow.repositories.asset_documents.require(project_id=project, asset_version_id=binding["provider_admission_asset_version_id"]).content["contract"]
-        assert admission["prompt_materialization"]["provider_view"]["component_hashes"]["provider_task_view"] == craft_hash(task)
+        assert admission["prompt_materialization"]["provider_view"]["component_hashes"]["provider_task_view"] == craft_hash(frozen_provider_task_view(uow, project, payload))
 
 
 class JointQualityCorrectionTransport(JointCraftTransport):
@@ -674,10 +677,11 @@ def test_joint_quality_correction_uses_selected_original_frozen_ranges_and_expli
     project, authority, chapter, principal, worker, book, candidates, plans, _ = make_book(tmp_path, transport, prepare_plans=transport.prepare)
     for number in (1, 2):
         plan = plans[number]
-        dispatched = authority.submit_chapter(SubmitBookChapterCommand(book_run_id=book.book_run_id, chapter_number=number,
+        dispatched = authority.submit_chapter(SubmitBookChapterCommand(context_token_budget=128000, book_run_id=book.book_run_id, chapter_number=number,
             title="Quality 双源修订", premise="对既定代价作局部澄清。", chapter_plan_asset_version_id=plan["asset_version_id"],
             chapter_plan_content_hash=plan["content_hash"], context_candidates=tuple(plan if item["asset_type"] == "chapter_plan" else item for item in candidates),
-            preparation_report={"stage_context_token_budgets": {stage: 64000 for stage in ("memo", "draft", "review", "revision", "rereview")}}), principal=principal)
+            preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
+                "stage_context_token_budgets": {stage: 64000 for stage in ("memo", "draft", "review", "revision", "rereview")}}), principal=principal)
         for _ in range(len(ChapterNode) * 5):
             tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
             if tick.saga_status == "SUCCEEDED":

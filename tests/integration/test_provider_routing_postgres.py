@@ -228,10 +228,10 @@ def test_registry_projects_existing_model_and_quality_evidence_without_forging_a
     assert benchmark["generator_score_basis"] is None
 
 
-def test_cold_start_persists_block_and_never_dispatches(scope):
+def test_unavailable_channel_persists_block_and_never_dispatches(scope):
     router = ProductionProviderRouter(
         DATABASE_URL,
-        candidates=deepseek_candidates(available=True),
+        candidates=deepseek_candidates(available=False),
         task_money_limit="1",
         task_token_limit=1000,
     )
@@ -897,8 +897,8 @@ def test_mixed_entitlement_and_priced_usage_share_lock(scope, dimension):
     "limits,error",
     [
         ({"money": ".01"}, "BUDGET_CAP_EXCEEDED"),
-        ({"tokens": 150}, "BUDGET_TOKEN_CAP_EXCEEDED"),
-        ({"attempts": 1}, "ROUTING_CHAIN_ATTEMPTS_EXHAUSTED"),
+        ({"tokens": 150}, "ROUTING_CHAIN_RECONCILIATION_REQUIRED"),
+        ({"attempts": 1}, "ROUTING_CHAIN_RECONCILIATION_REQUIRED"),
     ],
 )
 def test_frozen_chain_decisions_cannot_oversubscribe(scope, limits, error):
@@ -912,7 +912,7 @@ def test_frozen_chain_decisions_cannot_oversubscribe(scope, limits, error):
         )
 
 
-def test_same_effect_reservation_generation_consumes_chain_attempt(scope):
+def test_released_same_effect_reservation_can_continue_with_frozen_attempt_observation(scope):
     from novel_forge.modules.command_kernel.budget_runtime import (
         resolve_provider_budget_failure,
     )
@@ -924,7 +924,7 @@ def test_same_effect_reservation_generation_consumes_chain_attempt(scope):
     )
     assert (
         reserve_outcome(replace(request, stable_idempotency_key=identifier("retry")))
-        == "ROUTING_CHAIN_ATTEMPTS_EXHAUSTED"
+        == "RESERVED"
     )
 
 
@@ -959,7 +959,7 @@ def test_entitlement_settlement_reconstructs_model_and_work(scope, legacy):
     assert result["entitlement_usage_reconciled"] is True
 
 
-def test_codex_quota_counts_paid_retries_of_same_effect(scope):
+def test_codex_retry_records_usage_without_obsolete_call_quota(scope):
     from novel_forge.modules.command_kernel.budget_runtime import settle_provider_budget
 
     request = budget_request(
@@ -978,7 +978,7 @@ def test_codex_quota_counts_paid_retries_of_same_effect(scope):
     )
     assert (
         reserve_outcome(replace(request, stable_idempotency_key=identifier("retry")))
-        == "BUDGET_CALL_CAP_EXCEEDED"
+        == "RESERVED"
     )
 
 
@@ -1022,7 +1022,7 @@ def test_priced_route_requires_positive_frozen_money_limit(scope, money):
     assert reserve_outcome(request) == "ROUTING_BUDGET_CONTRACT_REQUIRED"
 
 
-def test_chain_entitlement_actual_usage_cannot_exceed_frozen_task_budget(scope):
+def test_chain_entitlement_settles_observed_usage_beyond_historical_task_estimate(scope):
     from novel_forge.modules.command_kernel.budget_runtime import settle_provider_budget
 
     request = replace(
@@ -1034,28 +1034,28 @@ def test_chain_entitlement_actual_usage_cannot_exceed_frozen_task_budget(scope):
         token_caps={"project_total": 200},
     )
     reservation = reserve_provider_budget(DATABASE_URL, request)
-    with pytest.raises(KernelError, match="BUDGET_ACTUAL_EXCEEDS_RESERVATION"):
-        settle_provider_budget(
-            DATABASE_URL,
-            reservation_id=reservation["reservation_id"],
-            project_id=scope[0],
-            actual_amount=None,
-            actual_tokens=150,
-            evidence={
-                "token_accounting_precision": "APPLICATION_VISIBLE_UPPER_BOUND",
-                "actual_token_source": "PROVIDER_USAGE_RECEIPT",
-            },
-        )
+    settled = settle_provider_budget(
+        DATABASE_URL,
+        reservation_id=reservation["reservation_id"],
+        project_id=scope[0],
+        actual_amount=None,
+        actual_tokens=150,
+        evidence={
+            "token_accounting_precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "actual_token_source": "PROVIDER_USAGE_RECEIPT",
+        },
+    )
     with transaction() as connection, connection.cursor() as cursor:
         cursor.execute(
-            "SELECT status FROM authority_budget_reservation WHERE reservation_id=%s",
+            "SELECT status,actual_tokens FROM authority_budget_reservation WHERE reservation_id=%s",
             [reservation["reservation_id"]],
         )
-        assert cursor.fetchone()[0] == "HELD_UNKNOWN"
+        assert cursor.fetchone() == ("SETTLED", 150)
+    assert settled["status"] == "SETTLED"
 
 
 @pytest.mark.parametrize("roles", [("LEGACY", "LEGACY"), ("PRIMARY", "REFERENCE")])
-def test_codex_quota_serializes_independent_frozen_chains(scope, roles):
+def test_codex_independent_chains_do_not_share_obsolete_call_quota(scope, roles):
     first = frozen_budget_decision(
         scope, provider="codex-cli", chain="chain:first", quota=1
     )
@@ -1079,7 +1079,7 @@ def test_codex_quota_serializes_independent_frozen_chains(scope, roles):
     ]
     with ThreadPoolExecutor(max_workers=2) as pool:
         assert sorted(pool.map(reserve_outcome, requests)) == [
-            "BUDGET_CALL_CAP_EXCEEDED",
+            "RESERVED",
             "RESERVED",
         ]
 
@@ -1113,7 +1113,7 @@ def test_entitlement_authorization_must_match_selected_candidate(scope):
     )
 
 
-def test_chain_escalation_limit_applies_to_same_effect_retry(scope):
+def test_settled_escalation_can_continue_past_historical_observation(scope):
     from novel_forge.modules.command_kernel.budget_runtime import settle_provider_budget
 
     request = budget_request(
@@ -1134,7 +1134,7 @@ def test_chain_escalation_limit_applies_to_same_effect_retry(scope):
     )
     assert (
         reserve_outcome(replace(request, stable_idempotency_key=identifier("retry")))
-        == "ROUTING_ESCALATION_LIMIT_REACHED"
+        == "RESERVED"
     )
 
 
@@ -1939,8 +1939,8 @@ def test_source_feedback_projects_target_acceptance_not_reviewer_quality(
 
 @pytest.mark.parametrize("limits,error", [
     ({"money": ".01"}, "BUDGET_CAP_EXCEEDED"),
-    ({"tokens": 150}, "BUDGET_TOKEN_CAP_EXCEEDED"),
-    ({"attempts": 1}, "ROUTING_CHAIN_ATTEMPTS_EXHAUSTED"),
+    ({"tokens": 150}, "RESERVED"),
+    ({"attempts": 1}, "RESERVED"),
 ])
 def test_repair_successor_cannot_reset_frozen_lineage_budget(scope, limits, error):
     from novel_forge.modules.command_kernel.budget_runtime import settle_provider_budget

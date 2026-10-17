@@ -501,8 +501,11 @@ continuous membership creation with no external intent or reservation may
 append a capacity successor; a retained Arc Context additionally requires its native typed-volume
 projection evidence. Both use the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
-reserves the configured model output and framing margin, and requires each capacity allocation
-to increase within the actual model ceiling. Historical continuation depth is retained as
+reserves the configured model output and framing margin, and requires a capacity recovery
+allocation to increase within the actual model ceiling. Input-order and blocked-route
+recovery instead retain the exact frozen Context policy, including a selected
+`complete-request-capacity.v1` policy; their repair does not itself require more capacity.
+Historical continuation depth is retained as
 an observation; it does not impose a lifetime recovery limit.
 For Foundation capacity recovery, the Creator's original operator authorization registers
 the existing Planning continuation for the latest failed generation of the current role.
@@ -518,6 +521,12 @@ exercises internal acceptance and component reconstruction without repeated call
 accepted chapters. Its ceiling is `EXECUTABLE`; real Provider operation, long-form
 literary quality and strict production certification remain unproven. See the executable
 commands and focused matrix in `docs/runtime-operations.md`.
+
+A completed raw-result repair replays through its exact persisted source edge and frozen
+command before checking whether the old World frontier is still current. Reuse requires
+a successful active successor, a verified main completion and settled usage, with no
+unresolved source or successor effects. This does not authorize a fresh call from an old
+frontier; incomplete or conflicting repairs retain the normal recovery checks.
 
 ### Bounded creative recovery contracts
 
@@ -747,7 +756,9 @@ Review and ReReview sampling at definition version `1.1.0` can instead bind an e
 draft or revision generator sample and its original generator Operation. They reuse the
 native review task constructor, original Context, Narrative Craft and cross-chapter
 frontier checks. The approved reviewer Pack supplies its own Skill and Schema; the
-preflight producer hash is checked again by Router before any Effect. The target keeps
+preflight producer hash is checked again by Router before any Effect. Preflight uses the
+original source Definition, the frozen sampling Definition and that Pack's Prompt version
+for the same native review input and output Schema as dispatch. The target keeps
 its physical sample type and ineligible state. Replay uses the existing Attempt Pack
 snapshot. Quality-group sampling still requires a frozen native Quality task and target.
 The sampling result cannot activate a Quality profile or qualify itself. Router policy
@@ -2607,6 +2618,10 @@ Candidate transitions declare on-camera, off-camera or undercurrent effects, exa
 story time, actor, changes and accepted causes. Known Character actions require their
 own accepted knowledge or belief predicates. The world
 clock advances from accepted world transitions, independently of narrative flashforwards.
+
+Book Design binds each newly materialized Foundation output to its owning Book and
+rejects conflicting supplied ownership. Existing frozen output bodies and hashes retain
+their historical identity.
 
 Native Book supervision requests world preparation before Chapter planning. The
 Planning operation freezes the approved Foundation set, current Intent, Book input

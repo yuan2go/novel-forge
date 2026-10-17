@@ -323,7 +323,7 @@ def test_rollout_and_rollback_do_not_reassign_historical_runtime_evidence() -> N
         harness.resolution_request()
     )
     assert canary.deployment_id == candidate.deployment_id
-    candidate_runtime = harness.run_draft_attempt(chapter_number=2)
+    candidate_runtime = harness.run_draft_attempt(request_key="candidate-deployment")
     assert candidate_runtime["deployment_id"] == candidate.deployment_id
     assert candidate_runtime["binding_set_hash"] == candidate.binding_set_hash
     assert candidate_runtime["draft_content"] != historical["draft_content"]

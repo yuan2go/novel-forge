@@ -47,7 +47,9 @@ def native_reviewer_source(h, tmp_path, original, stage):
     env = {"NOVEL_FORGE_ENVIRONMENT": "development", "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
            "NOVEL_FORGE_COMMIT_SHA": h.release_sha, "NOVEL_FORGE_APPLICATION_BUILD_ID": h.application_build_id,
            "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": h.pack_id, "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path)}
-    app = build_chapter_authority_application(settings, execution=build_production_execution_composition(settings, env=env), env=env)
+    from tests.integration.synthesis_production_support import scripted_chapter_response
+    app = build_chapter_authority_application(settings, execution=build_production_execution_composition(
+        settings, env=env, chapter_fixture_factory=scripted_chapter_response), env=env)
     scheduler = app.scheduler(principal=Principal(principal_id="reference-source-fixture-worker", principal_type=PrincipalType.WORKER,
         permissions=frozenset({"chapter.authority.execute"}), project_scope=frozenset({h.project_id}), authentication_source="integration-fixture"))
     for _ in range(20):

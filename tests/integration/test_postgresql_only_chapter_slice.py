@@ -298,6 +298,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
     ) -> None:
         project_id = identifier("chapter-project")
         request = SingleChapterRequest(
+            context_token_budget=16_000,
             project_id=project_id,
             workspace_id=f"workspace:{project_id}",
             actor_id="chapter-slice-worker",
@@ -435,6 +436,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")
         request = SingleChapterRequest(
+            context_token_budget=16_000,
             project_id=project_id,
             workspace_id=f"workspace:{project_id}",
             actor_id="chapter-slice-worker",

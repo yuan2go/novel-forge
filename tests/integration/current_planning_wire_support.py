@@ -188,7 +188,16 @@ def current_world_fixture_classification(transition):
 
 def current_planning_fixture_inputs(inputs, database_url):
     command = inputs.get("planning_command") or {}
-    if command.get("execution_contract_version") != "1.21.0" or "realization_reference_contract" in inputs:
+    version = command.get("execution_contract_version")
+    if version is None and database_url and inputs.get("stage") in {"chapter_group_plan.generate", "chapter_plan.generate"}:
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("SELECT definition_version FROM authority_operation WHERE operation_id=%s AND project_id=%s AND definition_name='story_planning.generate'", [command["generation_operation_id"], command["project_id"]])
+            row = uow.cursor.fetchone()
+            version = row[0] if row else None
+    if version not in {"1.18.0", "1.21.0"} or "realization_reference_contract" in inputs:
+        return inputs
+    if version == "1.18.0" and inputs.get("stage") not in {"chapter_group_plan.generate", "chapter_plan.generate"}:
         return inputs
     if not database_url:
         raise ValueError("current fixture requires its actual frozen Context view")
@@ -214,4 +223,6 @@ def current_planning_fixture_inputs(inputs, database_url):
             if cast.content_hash != binding["content_hash"]:
                 raise ValueError("Chapter fixture cast must match the frozen content hash")
             frozen_cast = {"controlled_frozen_cast": deepcopy(cast.content)}
+    if version == "1.18.0":
+        return {**inputs, **frozen_cast, "controlled_execution_contract_version": version}
     return {**inputs, **frozen_cast, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}

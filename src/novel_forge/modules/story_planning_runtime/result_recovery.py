@@ -23,6 +23,46 @@ RESULT_FAILURE_TYPE = "planning_generation_result_failure"
 MAXIMUM_RESULT_REPAIRS = 2
 
 
+def completed_result_repair_command(database_url, *, command, operation_id):
+    from dataclasses import replace
+    from .application import _command_from_payload, _command_payload
+
+    key = f"{command.idempotency_key}:result-repair:{command.repair_number + 1}"
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT o.command_payload->'payload' FROM authority_story_planning_generation g
+            JOIN authority_operation o USING(operation_id)
+            JOIN authority_story_design_version_state s ON s.asset_version_id=g.candidate_asset_version_id
+                AND s.project_id=g.project_id AND s.book_id=g.book_id
+            WHERE g.project_id=%s AND g.book_id=%s AND g.repair_of_operation_id=%s
+              AND o.status='SUCCEEDED' AND s.lifecycle='ACTIVE'
+              AND o.idempotency_scope='book:story-planning-generation' AND o.idempotency_key=%s
+              AND EXISTS(SELECT 1 FROM authority_external_effect e
+                  JOIN authority_external_effect_dispatch d USING(external_effect_id)
+                  JOIN authority_external_receipt receipt USING(dispatch_id)
+                  JOIN authority_budget_reservation r USING(external_effect_id)
+                  WHERE e.operation_id=o.operation_id AND e.status='SUCCEEDED'
+                    AND e.request_payload->>'stage'=g.generator_operation_name
+                    AND d.status='SUCCEEDED' AND receipt.status='VERIFIED' AND r.status='SETTLED')
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect e
+                  WHERE e.operation_id IN (%s,o.operation_id) AND e.status<>'SUCCEEDED')
+              AND NOT EXISTS(SELECT 1 FROM authority_budget_reservation r
+                  WHERE r.operation_id IN (%s,o.operation_id) AND r.status<>'SETTLED')""",
+            [command.project_id, command.book_id, operation_id, key, operation_id, operation_id])
+        rows = uow.cursor.fetchall()
+    if not rows:
+        return None
+    if len(rows) != 1:
+        raise KernelError("PLANNING_RESULT_REPAIR_LINEAGE_INVALID", "Completed repair must have one exact successor")
+    successor = _command_from_payload(rows[0][0])
+    expected = replace(command, runtime_continuation_id="", repair_of_candidate_id="",
+        repair_of_operation_id=operation_id, repair_result_asset_version_id=successor.repair_result_asset_version_id,
+        repair_result_diagnostic=successor.repair_result_diagnostic, repair_reason=successor.repair_reason,
+        repair_number=command.repair_number + 1, parent_agent_session_operation_id="", idempotency_key=key)
+    if not successor.repair_result_asset_version_id or not successor.repair_result_diagnostic or _command_payload(expected) != rows[0][0]:
+        raise KernelError("PLANNING_RESULT_REPAIR_LINEAGE_INVALID", "Completed repair must retain its exact frozen source command")
+    return successor
+
+
 class PlanningResultValidationError(KernelError):
     def __init__(
         self,

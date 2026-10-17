@@ -180,18 +180,17 @@ class _MeasuredPlanningAndEvaluationTransport:
         self.stages.append(request.stage)
         self.idempotency_keys.add(request.stable_idempotency_key)
         input_text = str(request.request_payload["input_text"])
-        contract_offset = input_text.find("provider-task-view-v1")
+        contract_offset = input_text.find("provider-task-view-v")
         task_line_start = input_text.rfind("\n", 0, contract_offset) + 1
         task_offset = input_text.find("{", task_line_start, contract_offset)
-        if request.stage != "narrative_semantic_evaluation":
-            assert contract_offset >= 0 and task_offset >= 0
+        assert contract_offset >= 0 and task_offset >= 0
+        task = json.JSONDecoder().raw_decode(input_text[task_offset:])[0]
         result = (
-            scripted_qualification("book_plan.generate")
+            scripted_qualification("book_plan.generate",
+                work_requirements="-work-v" in task["qualification_profiles"][0]["profile_id"],
+                profile_version=task["qualification_profiles"][0]["profile_version"])
             if request.stage == "narrative_semantic_evaluation"
-            else planning_fixture_response(
-                request.stage,
-                json.JSONDecoder().raw_decode(input_text[task_offset:])[0],
-            )
+            else self.planning_result(request.stage, task)
         )
         return {
             "outcome": "success",
@@ -210,6 +209,13 @@ class _MeasuredPlanningAndEvaluationTransport:
 
     def query(self, request):  # type: ignore[no-untyped-def]
         raise AssertionError("synchronous proof must not query")
+
+    @staticmethod
+    def planning_result(stage, task):
+        from tests.integration.current_planning_wire_support import current_planning_fixture_inputs, current_planning_wire_result
+
+        inputs = current_planning_fixture_inputs({**task, "stage": stage}, DATABASE_URL)
+        return current_planning_wire_result(planning_fixture_response(stage, inputs), inputs)
 
     def cancel(self, request):  # type: ignore[no-untyped-def]
         raise AssertionError("completed proof must not cancel")
@@ -528,6 +534,7 @@ def _planning_contract(
             command.generator_operation_name,
             {
                 "planning_command": {
+                    "execution_contract_version": command.execution_contract_version,
                     "project_id": command.project_id,
                     "book_id": command.book_id,
                     "generation_operation_id": operation_id,
@@ -1537,6 +1544,10 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         "reader_promise",
     }
 
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        for version in activated["foundation_asset_versions"].values():
+            assert uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=version).content["book_id"] == book_id
+
     from tests.integration.narrative_reality_vertical_support import (
         compiled_world_fixture,
     )
@@ -1676,11 +1687,17 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         if autonomous_world in {"operator_plan_change", "long_novel_pilot"}:
             from tests.integration.operator_plan_change_support import OperatorPlanChangeTransport
             native_transport = OperatorPlanChangeTransport(long_novel=autonomous_world == "long_novel_pilot")
+        native_transport.database_url = DATABASE_URL
+        def native_planning(stage, inputs):
+            from tests.integration.current_planning_wire_support import current_planning_fixture_inputs, current_planning_wire_result
+
+            frozen = current_planning_fixture_inputs({**inputs, "stage": stage}, DATABASE_URL)
+            return current_planning_wire_result(native_transport.planning(stage, frozen), frozen)
         execution = build_production_execution_composition(
             settings,
             env=env,
             chapter_fixture_factory=native_transport,
-            planning_fixture_factory=native_transport.planning,
+            planning_fixture_factory=native_planning,
         )
         chapter_application = build_chapter_authority_application(
             settings, execution=execution, env=env

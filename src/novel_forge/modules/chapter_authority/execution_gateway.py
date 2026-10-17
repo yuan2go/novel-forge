@@ -3162,7 +3162,7 @@ def default_chapter_fixture_response(
         }
     if stage == "draft":
         plan = inputs.get("plan") if isinstance(inputs.get("plan"), Mapping) else {}
-        text = f"{plan.get('premise') or 'The chapter objective advances.'} The choice is public, and the irreversible cost is witnessed."
+        text = f"{plan.get('premise') or 'The chapter objective advances.'} The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。"
         contract = inputs.get("realization_contract") or {}
         artifacts = [
             {

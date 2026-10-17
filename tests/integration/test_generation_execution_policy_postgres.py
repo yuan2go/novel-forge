@@ -131,13 +131,12 @@ def test_recovery_finds_each_completed_context_chunk_before_selecting_latest(mon
     from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
     ensure_migrated()
     with transaction() as connection, connection.cursor() as cursor:
-        cursor.execute('CREATE TEMP TABLE authority_operation (operation_id text, workspace_id text, actor_id text, trace_id text, correlation_id text)')
-        cursor.execute('CREATE TEMP TABLE authority_attempt (attempt_id text, attempt_number int, status text)')
-        cursor.execute('CREATE TEMP TABLE authority_external_effect (external_effect_id text, request_hash text, request_payload jsonb, operation_id text, project_id text, status text, effect_type text, created_at int)')
-        cursor.execute("INSERT INTO authority_operation VALUES ('op','w','actor','trace','root')")
-        cursor.execute("INSERT INTO authority_attempt VALUES ('old',1,'FAILED_RETRYABLE')")
+        for table in ('authority_operation', 'authority_attempt', 'authority_external_effect'):
+            cursor.execute(f'CREATE TEMP TABLE {table} AS SELECT * FROM public.{table} WITH NO DATA')
+        cursor.execute("INSERT INTO authority_operation(operation_id,project_id,workspace_id,actor_id,trace_id,correlation_id) VALUES ('op','p','w','actor','trace','root')")
+        cursor.execute("INSERT INTO authority_attempt(attempt_id,operation_id,attempt_number,status) VALUES ('old','op',1,'FAILED_RETRYABLE')")
         for index in (1, 2):
-            cursor.execute("INSERT INTO authority_external_effect VALUES (%s,'hash',%s,'op','p','SUCCEEDED','model.invoke',%s)",
+            cursor.execute("INSERT INTO authority_external_effect(external_effect_id,request_hash,request_payload,operation_id,project_id,status,effect_type,created_at) VALUES (%s,'hash',%s,'op','p','SUCCEEDED','model.invoke',to_timestamp(%s))",
                 ['chunk'+str(index), Jsonb({'stage': 'context_compress', 'input': {'chunk': index},
                     '_production_execution': {'attempt_id': 'old', 'book_id': 'book'}}), index])
         uow = SimpleNamespace(cursor=cursor, repositories=SimpleNamespace(external_effects=None))
@@ -145,9 +144,11 @@ def test_recovery_finds_each_completed_context_chunk_before_selecting_latest(mon
         seen = []
         def verified(_uow, _repository, _context, effect_id, **kwargs):
             seen.append(effect_id)
-            return {'budget_reservation_status': 'HELD_UNKNOWN', 'provider_evidence': {
+            return {'budget_reservation_status': 'HELD_UNKNOWN', 'budget_reservation_id': 'reservation:' + effect_id,
+                'budget_reserved_amount': None, 'budget_estimated_tokens': 0, 'provider_capability_profile': {}, 'provider_evidence': {
                 'result': {'text': effect_id}, 'provider_id': 'fixture', 'model_id': 'fixture',
                 'prompt_version': 'fixture', 'skill_version': 'fixture', 'real_model_call': False,
+                'usage': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN'},
                 'cost': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN', 'currency': 'UNKNOWN'}}}
         monkeypatch.setattr(receipt_recovery, '_read_verified_success', verified)
         request = ChapterHandlerRequest('op', 'p', 'w', 'trace', 'root', {'book_id': 'book'}, (), attempt_id='new', database_url=DATABASE_URL)

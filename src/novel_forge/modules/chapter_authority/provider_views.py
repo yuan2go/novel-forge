@@ -1740,7 +1740,10 @@ def build_provider_context_view(
         projection_version = context_bundle.get("craft_history_projection_version")
         if projection_version or task_view.get("craft_history_projection_version") or "planning_history_projection" in projected_selection:
             from novel_forge.modules.mkaos_authority.craft_context_projection import project_planning_craft_histories
-            expected = project_planning_craft_histories(_compact(_project_denied_planning_selection(context_bundle.get("narrative_intelligence", {}))))
+            expected = project_planning_craft_histories(_compact(_project_denied_planning_selection(
+                context_bundle.get("narrative_intelligence", {}),
+                empty_query=context_bundle.get("planning_empty_query_projection_version") == "planning-empty-query-projection.v1",
+            )))
             if method_scope:
                 expected = project_planning_craft_histories(_compact(project_book_method_scope(context_bundle["narrative_intelligence"])))
             if group_scope:

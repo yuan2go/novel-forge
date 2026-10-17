@@ -1,0 +1,47 @@
+{
+  "test": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_to_chapter_two_chapter_vertical_postgres",
+  "prose": [
+    {
+      "asset_type": "draft_chapter",
+      "asset_version_id": "authority-output:f6b31310-8107-440e-a238-fe03412084fc:chapter.draft:v1",
+      "content_hash": "sha256:7329ba841cdc4ef41fdf692d7c94eeb7d70c711cea60aaf5a6dc9321b3b5a8ce",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。",
+      "text_sha256": "sha256:999d2e3112af2681c0d42d11609dbbf215b593030ad23976fc06718a69b4fec7"
+    },
+    {
+      "asset_type": "draft_version",
+      "asset_version_id": "authority-output:90ad9e06-d0c6-4bc4-9888-2915b7b78579:chapter.revision:v1",
+      "content_hash": "sha256:13cf8f487f55ecb5907354cd9e116574a63b6dd74e6c00cd3d335278a8fce82c",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec"
+    },
+    {
+      "asset_type": "best_draft_candidate",
+      "asset_version_id": "authority-output:e635d81a-6646-442c-8b41-ca2c960698bf:chapter.best_candidate:v1",
+      "content_hash": "sha256:2bb3f1fadde9008e95912bdab70dc881996884abf1f303ad438f5a5792d51589",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec"
+    },
+    {
+      "asset_type": "draft_chapter",
+      "asset_version_id": "authority-output:47445f06-5f29-48c2-9c9a-42e3dcdc5ef8:chapter.draft:v1",
+      "content_hash": "sha256:b596a3419f66ace18aea09770263c7cdd7089f6be2619ddda46c146b1987e772",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。",
+      "text_sha256": "sha256:999d2e3112af2681c0d42d11609dbbf215b593030ad23976fc06718a69b4fec7"
+    },
+    {
+      "asset_type": "draft_version",
+      "asset_version_id": "authority-output:1e53cec6-2ef0-4d02-a89c-506d5f5d49b7:chapter.revision:v1",
+      "content_hash": "sha256:327a44bfb14c41623ed4dcbf483a045344bb5f031f72bdaff4e92d97cf4ca66b",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec"
+    },
+    {
+      "asset_type": "best_draft_candidate",
+      "asset_version_id": "authority-output:b9f8d919-5d58-4672-aab1-6f7a039d0731:chapter.best_candidate:v1",
+      "content_hash": "sha256:99ce5037e7d08c00365aaf60842675c0b597eb5500c6573c6719ca89cd049ed5",
+      "text": "The protagonist must pay a visible cost to keep a promise. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec"
+    }
+  ]
+}

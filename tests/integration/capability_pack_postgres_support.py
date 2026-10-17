@@ -647,10 +647,10 @@ class CapabilityPackPostgresHarness:
             runtime.execute_admin(activate, principal=self.agent_admin)
 
     def run_draft_attempt(
-        self, *, chapter_number: int = 1,
+        self, *, chapter_number: int = 1, request_key: str = "",
         extra_context_candidates: tuple[dict[str, Any], ...] = (),
     ) -> dict[str, Any]:
-        chapter_plan = self._chapter_plan_candidate(chapter_number)
+        context_candidates = self._chapter_context_candidates(chapter_number)
         with tempfile.TemporaryDirectory(prefix="novel-forge-pack-snapshot-") as root:
             settings = IndustrialSettings(
                 root=Path(root),
@@ -686,10 +686,11 @@ class CapabilityPackPostgresHarness:
                     commit_sha=self.release_sha,
                     idempotency_key=(
                         f"{self.project_id}:capability-pack-snapshot:"
-                        f"chapter-{chapter_number}"
+                        f"chapter-{chapter_number}:{request_key}"
                     ),
-                    preparation_report={"decision": "READY", "fixture": True},
-                    context_candidates=(chapter_plan, *extra_context_candidates),
+                    context_candidates=(*context_candidates, *extra_context_candidates),
+                    context_token_budget=32_768,
+                    preparation_report={"decision": "READY", "fixture": True, "stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
                 ),
                 principal=operator,
             )
@@ -810,10 +811,6 @@ class CapabilityPackPostgresHarness:
         ):
             original = by_identity[(kind, prompt[ref_key], prompt[version_key])]
             if kind == "PROMPT_TEMPLATE":
-                alternative = by_identity.get((kind, prompt[ref_key], f"v{generation}"))
-                if alternative is not None:
-                    prompt[version_key] = alternative["version"]
-                    prompt[hash_key] = alternative["content_hash"]
                 continue
             new_version = f"{original['version']}-fixture-{generation}"
             original["version"] = new_version
@@ -892,7 +889,7 @@ class CapabilityPackPostgresHarness:
                     ],
                 )
 
-    def _chapter_plan_candidate(self, chapter_number: int) -> dict[str, Any]:
+    def _chapter_context_candidates(self, chapter_number: int) -> tuple[dict[str, Any], ...]:
         arc_plan_version_id = f"{self.project_id}:fixture-arc-plan-v1"
         content = {
             "project_id": self.project_id,
@@ -931,38 +928,30 @@ class CapabilityPackPostgresHarness:
             ],
             "chapter_hook": "Recovery proves the choice was not re-resolved.",
         }
-        content_hash = canonical_hash(content)
-        asset_id = identifier("pack-snapshot-chapter-plan-asset")
-        asset_version_id = identifier("pack-snapshot-chapter-plan")
+        from tests.integration.quality_context_state_fixture import current_state_inputs
+
+        candidates = current_state_inputs(self.project_id, [{
+            "asset_version_id": identifier("pack-snapshot-chapter-plan"),
+            "asset_type": "chapter_plan", "project_id": self.project_id,
+            "content": content, "estimated_tokens": 500, "allowed_use": "generation",
+            "source_use_mode": "generation", "narrative_function": "chapter_plan",
+        }])
         with transaction() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT INTO authority_asset(asset_id, project_id, asset_type)
-                VALUES (%s, %s, 'chapter_plan')
-                """,
-                [asset_id, self.project_id],
-            )
-            cursor.execute(
-                """
-                INSERT INTO authority_asset_version(
-                    asset_version_id, asset_id, version_number, lifecycle,
-                    eligibility, governance, content, content_hash, schema_version
-                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR',
-                          %s, %s, 'chapter-plan-authority.v1')
-                """,
-                [asset_version_id, asset_id, Jsonb(content), content_hash],
-            )
-        return {
-            "asset_version_id": asset_version_id,
-            "asset_type": "chapter_plan",
-            "project_id": self.project_id,
-            "content_hash": content_hash,
-            "estimated_tokens": 50,
-            "allowed_use": "generation",
-            "source_use_mode": "generation",
-            **content,
-            "narrative_function": "chapter_plan",
-        }
+            for item in candidates:
+                digest = canonical_hash(item["content"])
+                item["content_hash"] = digest
+                identity = item["asset_version_id"]
+                cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
+                    [identity, self.project_id, item["asset_type"]])
+                cursor.execute("""INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,
+                    lifecycle,eligibility,governance,content,content_hash,schema_version)
+                    VALUES(%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'pack-snapshot-context.v1')
+                    ON CONFLICT DO NOTHING""", [identity, identity, Jsonb(item["content"]), digest])
+                cursor.execute("SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s", [identity])
+                if cursor.fetchone() != (digest,):
+                    raise AssertionError("Frozen snapshot fixture cannot replace existing source content")
+        return candidates
+
 
 
 __all__ = [
@@ -973,3 +962,19 @@ __all__ = [
     "PackVersionProof",
     "RELEASE_SHA",
 ]
+
+
+def frozen_provider_task_view(uow, project_id, payload):
+    from novel_forge.modules.chapter_authority.execution_gateway import _materialize_production_codex_prompt
+
+    metadata = payload["_production_execution"]
+    binding = metadata["capability_runtime"]
+    materialization = uow.repositories.asset_documents.require(project_id=project_id,
+        asset_version_id=binding["materialization_asset_version_id"]).content["contract"]
+    prompt, _ = _materialize_production_codex_prompt(target_scope={"scope_kind": "chapter",
+        "scope_id": str(metadata["chapter"]), "project_id": project_id, "book_id": metadata["book_id"]},
+        stage=payload["stage"], inputs=payload["input"], materialization=materialization,
+    )
+    marker = "Authorized task and story data: "
+    envelope, _ = json.JSONDecoder().raw_decode(prompt.split(marker, 1)[1])
+    return envelope["input_manifest"]

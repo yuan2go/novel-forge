@@ -2237,18 +2237,23 @@ class _CanonProposalHandler:
                 context = request.require_input("context_bundle")
                 comparison = comparison_input(planned=(effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
                     extraction=extraction.content, text=str(revision.content.get("text") or ""))
-            if request.effective_definition_version in {"3.10.0", "3.10.1"} and request.database_url:
+            if request.definition_version == "3.10.0" and request.database_url:
                 from .canon_support_coverage import retained_review
                 retained = retained_review(request)
-            generated = self.provider.invoke(request, stage="canon_support", payload={
+            support_payload = {
                 "revision": revision.content, "grounding": extraction.content["grounding"],
                 **({"realization_comparison": comparison} if comparison is not None else {}),
                 "claims": retained[0]["unresolved_claims"] if retained else grounded_claims(extraction.content),
                 **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.effective_definition_version) in {"3.9.8", "3.10.0"} else {}),
-            })
+            }
+            generated = self.provider.invoke(request, stage="canon_support", payload=support_payload)
             if request.command.get("chapter_sampling"):
                 from novel_forge.modules.chapter_quality_authority.canon_support_reference import validate_sample_result
-                validate_sample_result(extraction.content, revision.content, revision.asset_version_id, generated.output)
+                from .execution_gateway import PostgresChapterExecutionContractBinder
+                sample_schema, _ = PostgresChapterExecutionContractBinder._provider_output_contract(
+                    stage="canon_support", request_payload={"input": support_payload})
+                validate_sample_result(extraction.content, revision.content, revision.asset_version_id, generated.output,
+                    output_schema=sample_schema, realization_comparison=comparison)
                 return replace(_model_output(ChapterNode.CANON_PROPOSAL, dict(generated.output),
                     request=request, generated=generated), asset_type="canon_support_review")
             support = generated.output

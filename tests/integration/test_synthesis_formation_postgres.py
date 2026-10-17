@@ -64,6 +64,9 @@ def test_native_formation_generates_foundation_from_author_brief(
 ):
     if memo_timeout_prefix_recovery:
         memo_timeout_recovery = True
+    if memo_timeout_recovery or scene_core_recovery or scene_information_recovery or review_knowledge_recovery or length_scope_recovery:
+        from tests.integration.synthesis_production_support import freeze_current_chapter_bundle
+        freeze_current_chapter_bundle(monkeypatch)
     if scene_core_recovery or scene_information_recovery or review_knowledge_recovery or length_scope_recovery:
         from novel_forge.modules.chapter_authority import definitions as scene_definitions
         saved_draft_version = scene_definitions.CHAPTER_DRAFT_DEFINITION_VERSION
@@ -94,6 +97,13 @@ def test_native_formation_generates_foundation_from_author_brief(
             return json.dumps(value)
         monkeypatch.setattr(Path, 'read_text', legacy_scene_manifest)
     if memo_timeout_recovery:
+        import sys
+        current_chapter_builder = build_chapter_authority_application
+        def historical_chapter_builder(*args, **kwargs):
+            application = current_chapter_builder(*args, **kwargs)
+            application.registry.coordinated_contract = False
+            return application
+        monkeypatch.setattr(sys.modules[__name__], "build_chapter_authority_application", historical_chapter_builder)
         from novel_forge.modules.chapter_authority import execution_gateway as memo_gateway
         from novel_forge.modules.capability_packs import operation_catalog as memo_catalog
         from novel_forge.modules.production_execution import CapabilityId
@@ -149,7 +159,7 @@ def test_native_formation_generates_foundation_from_author_brief(
     chapter_pack.pack_id += "-chapter"
     if creative_validation:
         from tests.integration.creative_validation_production_support import prepare_native_template
-        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation,world_disabled=world_disabled,contract_recovery=scene_information_recovery or review_knowledge_recovery or length_scope_recovery)
+        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation,world_disabled=world_disabled,contract_recovery=scene_information_recovery or review_knowledge_recovery or length_scope_recovery,optional_memo=memo_timeout_recovery)
     else:
         approved_chapter = chapter_pack.register_compile_approve(
             "1.0.0",
@@ -1310,10 +1320,19 @@ def test_native_formation_generates_foundation_from_author_brief(
                 return
             if route_continuation or input_order_continuation:
                 from novel_forge.modules.command_kernel.errors import KernelError
-                with pytest.raises(KernelError, match="NATIVE_PLANNING_REPAIR_SOURCE_INVALID" if input_order_continuation else "PROVIDER_ROUTING_BLOCKED"):
-                    continue_creation(composition=composition, content=content, chapter=chapter,
-                        formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
-                        book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+                with monkeypatch.context() as historical_route:
+                    if route_continuation:
+                        from novel_forge.modules.production_execution.cost_routing import CostAwareRouter
+                        current_explain = CostAwareRouter.explain
+                        def frozen_legacy_explain(router, task, *args, **kwargs):
+                            if task.task_type == "chapter_group_plan.generate" and task.history:
+                                task = replace(task, declared_requirements={key: value for key, value in task.declared_requirements.items() if key not in {"pure_generation", "governed_repair"}})
+                            return current_explain(router, task, *args, **kwargs)
+                        historical_route.setattr(CostAwareRouter, "explain", frozen_legacy_explain)
+                    with pytest.raises(KernelError, match="NATIVE_PLANNING_REPAIR_SOURCE_INVALID" if input_order_continuation else "PROVIDER_ROUTING_BLOCKED"):
+                        continue_creation(composition=composition, content=content, chapter=chapter,
+                            formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                            book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
                 execution.close()
                 formation, execution, chapter, composition = _recover_capacity_formation(harness=harness,
                     chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings,
@@ -1631,14 +1650,14 @@ def test_native_formation_generates_foundation_from_author_brief(
                 creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                     formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                     book_worker=worker, maximum_ticks=80, deadline=time.monotonic()+240, creation_policy=policy)
-            if creation_result['stop_reason'] == 'WAITING_LEASE_OR_DEPENDENCY' and (world_optional_recovery or input_order_continuation or route_continuation or gateway_null_recovery):
+            if creation_result['stop_reason'] == 'WAITING_LEASE_OR_DEPENDENCY' and (world_optional_recovery or world_result_repair or input_order_continuation or route_continuation or gateway_null_recovery):
                 assert wait_facts() == before_native_wait
                 original_book_run = creation_result['book_run_id']
                 assert original_book_run == before_native_wait[0][0]
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT runtime_job_id,dedupe_key,input_hash,attempt_count,available_at-clock_timestamp(),last_error->>'code' FROM authority_runtime_job WHERE project_id=%s AND subject_id=%s AND job_kind='BOOK_COORDINATION_TICK' AND status='RETRY_WAIT' ORDER BY available_at LIMIT 1", [harness.project_id,original_book_run])
                     waiting_job = uow.cursor.fetchone()
-                    assert waiting_job and waiting_job[5] in {'PLANNING_RESULT_REPAIR_BOUND_EXCEEDED','NATIVE_PLANNING_REPAIR_SOURCE_INVALID','PROVIDER_ROUTING_BLOCKED','MODEL_EFFECT_FINAL_PLANNING'}
+                    assert waiting_job and waiting_job[5] in ({'PLANNING_RESULT_REPAIR_BOUND_EXCEEDED','NATIVE_PLANNING_REPAIR_SOURCE_INVALID','PROVIDER_ROUTING_BLOCKED','MODEL_EFFECT_FINAL_PLANNING'} | ({'PLANNING_RESULT_REPAIR_SOURCE_INVALID'} if world_result_repair else set()))
                     delay = max(0.0,waiting_job[4].total_seconds())
                     assert delay <= 30
                 time.sleep(min(30,delay+0.05))
@@ -1814,7 +1833,11 @@ def test_native_formation_generates_foundation_from_author_brief(
                     world_original = uow.cursor.fetchone()[0]
                 from novel_forge.modules.story_planning_runtime.application import _command_from_payload
                 world_call_count = len(transport.calls), len(transport.chapter.calls)
-                world_replay = formation.generation.planning.generate(_command_from_payload(world_original), principal=worker)
+                original_world_command = _command_from_payload(world_original)
+                from novel_forge.modules.command_kernel.errors import KernelError
+                with pytest.raises(KernelError, match="PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT"):
+                    formation.generation.planning.generate(replace(original_world_command, execution_contract_version="1.19.0"), principal=worker)
+                world_replay = formation.generation.planning.generate(original_world_command, principal=worker)
                 assert world_replay.candidate_asset_version_id == world_generations[1][2]
                 assert world_call_count == (len(transport.calls), len(transport.chapter.calls))
             if semantic_repair:
@@ -2180,7 +2203,9 @@ def _recover_runtime_profile_formation(*, harness, chapter_pack, formation, prin
     from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
     from novel_forge.modules.agent_runtime.definitions import agent_runtime_operation_definitions
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        for item in (*chapter_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha,model_effects_required=True),*agent_runtime_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha)):
+        for item in (*chapter_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha,model_effects_required=True),
+                     *chapter_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha,model_effects_required=True,coordinated_contract=True),
+                     *agent_runtime_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha)):
             uow.repositories.definitions.register(item)
         uow.commit()
     chapter_pack.release_sha=new_sha

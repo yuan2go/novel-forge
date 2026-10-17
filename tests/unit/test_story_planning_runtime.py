@@ -3054,6 +3054,7 @@ def test_result_repair_command_keeps_historical_identity_and_bounded_new_causati
     diagnostic = {"error_code": "WORLD_FOUNDATION_SCHEMA_INVALID", "fields": [{"field_path": "$.compiled_scope"}]}
     source = {"asset_version_id": "result:failed", "diagnostic": diagnostic}
     monkeypatch.setattr(result_recovery, "require_result_repair_source", lambda *args, **kwargs: source)
+    monkeypatch.setattr(result_recovery, "completed_result_repair_command", lambda *args, **kwargs: None)
     application = object.__new__(StoryPlanningGenerationApplication)
     application.database_url = "isolated-test"
     calls = []
@@ -3328,3 +3329,20 @@ def test_chapter_projection_cannot_reinterpret_another_frozen_mission(monkeypatc
     monkeypatch.setattr(contracts, "require_chapter_contracts", lambda candidate: None)
     with pytest.raises(KernelError, match="CHAPTER_PROJECTION_CONTRACT_MISMATCH"):
         planning_application._chapter_runtime_projection({"chapter_contract_schema_version": mission}, projection_version=projection)
+
+
+def test_completed_result_repair_replays_without_revalidating_old_world_frontier(monkeypatch):
+    from novel_forge.modules.story_planning_runtime import result_recovery
+
+    original = _command("chapter_plan.generate")
+    completed = replace(original, repair_of_operation_id="original", repair_result_asset_version_id="retained-result",
+        repair_result_diagnostic={"error_code": "WORLD_PROVIDER_TRANSITION_INVALID"}, repair_reason="known diagnostic",
+        repair_number=1, idempotency_key=original.idempotency_key + ":result-repair:1")
+    monkeypatch.setattr(result_recovery, "completed_result_repair_command", lambda *args, **kwargs: completed)
+    def stale_source(*args, **kwargs):
+        raise AssertionError("A completed successor must not need the old current Book frontier")
+    monkeypatch.setattr(result_recovery, "require_result_repair_source", stale_source)
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.database_url = "isolated-test"
+    application.generate = lambda command, **kwargs: command
+    assert application._repair_unmaterialized_result(original, operation_id="original", principal=object()) == completed

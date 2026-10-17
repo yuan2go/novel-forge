@@ -5217,6 +5217,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/resource_route_recovery.py",
           "symbol": "cancel_unreserved_paid_intent"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/sampling.py",
+          "symbol": "reference_sample_producer_identity"
         }
       ],
       "domain_symbols": [
@@ -5503,7 +5507,7 @@
         },
         {
           "path": "tests/integration/test_provider_routing_postgres.py",
-          "symbol": "test_cold_start_persists_block_and_never_dispatches"
+          "symbol": "test_unavailable_channel_persists_block_and_never_dispatches"
         },
         {
           "path": "tests/integration/test_provider_routing_postgres.py",
@@ -6189,6 +6193,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
           "symbol": "execute_creation_command"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/application.py",
+          "symbol": "BookDesignAuthorityApplication._write_foundation_outputs"
         }
       ],
       "domain_symbols": [
@@ -9914,6 +9922,10 @@
         {
           "path": "src/novel_forge/modules/book_replan/auto_authorization.py",
           "symbol": "require_auto_replan_proof"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+          "symbol": "completed_result_repair_command"
         }
       ],
       "domain_symbols": [
@@ -10537,7 +10549,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:47e8d24edd9ab54a6fc47a9d4ce465cfadde7a8ab8f78cb3d16cf664e8acc343"
+    "implementation_tree_sha": "sha256:efa3039ed3b015e717e66a4e737e74dcc88d781060331e500c0c6a8058179d09"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
