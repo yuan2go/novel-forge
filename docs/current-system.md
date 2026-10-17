@@ -963,7 +963,10 @@ that stdout may omit. It uses the existing Tool authorization boundary and prese
 legacy route hashes when absent. Local configuration is not remote execution evidence.
 New default Creation inputs freeze this policy. CLI continuation, manuscript work and
 workers restore it from the original Formation; absence in historical inputs retains
-the original route behavior. New invocations bind the intended instruction hash and
+the original route behavior. A refused worker-scope restoration closes an already claimed
+RuntimeJob through its owning failure path. Opening uses the Opening Authority to
+converge its execution and job atomically; an inner execution failure remains owned
+by that phase's recovery coordinator. New invocations bind the intended instruction hash and
 compare it with the invocation's own persisted base instructions, rather than treating
 a configuration argument as proof that the model received those instructions.
 Default author-first Creation does not require Reader deployment preparation before

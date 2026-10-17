@@ -46,7 +46,7 @@ def test_creation_worker_records_setup_refusal_before_any_provider_dispatch(monk
     monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
     dispatch = Mock(side_effect=AssertionError("setup refusal cannot build a Provider"))
     monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
-    claim = SimpleNamespace(project_id="project", subject_id="formation", runtime_job_id="job", input_snapshot={"operator_id": "operator"})
+    claim = SimpleNamespace(project_id="project", subject_id="formation", runtime_job_id="job", job_kind="BOOK_COORDINATION_TICK", input_snapshot={"operator_id": "operator"})
     with pytest.raises(KernelError) as stopped:
         if entry == "creation":
             worker.execute_creation_worker_claim(SimpleNamespace(database_url="unused"), claim)
@@ -67,14 +67,33 @@ def test_book_scope_failure_records_only_a_still_claimed_job(monkeypatch, status
     from novel_forge.modules.command_kernel.errors import KernelError
     jobs = SimpleNamespace(get=Mock(return_value={"status": status}), fail=Mock())
     monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
-    legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=lambda **_: None))
-    claim = SimpleNamespace(project_id="project", subject_id="book", runtime_job_id="job")
     failure = KernelError("PHASE_FAILED", "Original owner failure")
-    execute = Mock(side_effect=failure)
+    legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=Mock(side_effect=failure)))
+    claim = SimpleNamespace(project_id="project", subject_id="book", runtime_job_id="job", job_kind="BOOK_COORDINATION_TICK")
+    execute = Mock()
     with pytest.raises(KernelError, match="PHASE_FAILED"):
         worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy, execute)
     assert jobs.fail.call_count == (1 if status == "CLAIMED" else 0)
+    execute.assert_not_called()
 
+
+
+def test_book_scope_preserves_inner_owner_failure_without_terminalizing_again(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.workers import book_authority as worker
+    from novel_forge.modules.command_kernel.errors import KernelError
+    jobs = SimpleNamespace(get=Mock(), fail=Mock())
+    monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+    legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=lambda **_: None))
+    claim = SimpleNamespace(project_id="project", subject_id="book")
+    failure = KernelError("OWNER_RECONCILIATION_REQUIRED", "Retain the durable owner outcome")
+    with pytest.raises(KernelError) as stopped:
+        worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy,
+            Mock(side_effect=failure))
+    assert stopped.value is failure
+    jobs.get.assert_not_called()
+    jobs.fail.assert_not_called()
 
 def test_recovery_versions_and_isolation_counts_are_not_material_progress():
     from copy import deepcopy

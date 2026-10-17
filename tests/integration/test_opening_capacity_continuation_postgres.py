@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import replace
+from pathlib import Path
 
 import psycopg
 import pytest
@@ -108,6 +109,32 @@ def _historical_zero_work_failure(fixture, monkeypatch):
         claim = fixture.claim(fixture.principal.principal_id)
         with pytest.raises(KernelError, match="PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
             fixture.execute(claim)
+
+
+def test_creation_scope_refusal_uses_opening_authority_before_dispatch(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.infrastructure.settings import IndustrialSettings
+    from novel_forge.workers import book_authority as worker
+    fixture = build_workflow_fixture(target_chapter_count=6)
+    admitted = fixture.admit()
+    claim = fixture.claim(fixture.principal.principal_id)
+    monkeypatch.setenv("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY", "")
+    query = SimpleNamespace(creation_executor_binding=lambda **_: {"codex_input_only_policy": "codex-input-only.v2"})
+    legacy = SimpleNamespace(query=query, principal=fixture.principal, opening=fixture.opening)
+    dispatch = Mock(side_effect=AssertionError("configuration refusal cannot dispatch"))
+    monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
+    with pytest.raises(KernelError, match="CREATION_RUNTIME_POLICY_DRIFT"):
+        worker.execute_book_phase_with_creation_scope(IndustrialSettings(root=Path(__file__).resolve().parents[2], database_url=DATABASE_URL), claim, legacy, dispatch)
+    dispatch.assert_not_called()
+    failed = fixture.opening.require(admitted.opening_run_id)
+    assert failed["lifecycle"] == "FAILED"
+    assert failed["failure"]["code"] == "CREATION_RUNTIME_POLICY_DRIFT"
+    job = fixture.runtime_jobs.get(claim.runtime_job_id)
+    assert job["status"] != "CLAIMED"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [fixture.project_id])
+        assert uow.cursor.fetchone() == (0,)
 
 
 @pytest.mark.parametrize("resource_successor", [False, True])

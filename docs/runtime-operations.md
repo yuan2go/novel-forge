@@ -3744,7 +3744,11 @@ mode. Local configuration and tool policy are part of route identity; changed bi
 require a new governed request. Returned tool-use evidence remains checked independently.
 Local checks do not establish remote availability or bound unobserved CLI overhead.
 Default Creation inputs freeze `codex-input-only.v2` and restore it for native workers
-and manuscript continuation. Other new structured routes may explicitly set
+and manuscript continuation. A conflicting restored policy fails before Provider dispatch.
+For already claimed work, scope initialization refusals retain the original error and
+close the claim through its owner; Opening also records its governed failure and
+execution fence in the same UoW. Phase execution errors keep their existing reconciliation
+path and are not terminalized again by scope initialization. Other new structured routes may explicitly set
 `NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY=codex-input-only.v2` before freezing to bind
 generation-specific model instructions. This policy
 also checks the invocation's own durable transcript, identified by its exact thread ID
