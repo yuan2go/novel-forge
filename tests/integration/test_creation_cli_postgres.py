@@ -873,7 +873,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         from threading import Event
         from novel_forge.modules.story_planning_runtime import application as planning_module
         from novel_forge.modules.story_planning_runtime.application import _command_from_payload
-        old_values=creation_runtime_environment(project)
+        old_values=creation_runtime_environment(project,
+            input_only_policy=frozen_policy["creation_input_policy"].get("codex_input_only_policy"))
         old_execution=dependencies.build_production_execution_composition(settings,env=old_values)
         old_chapter=dependencies.build_chapter_authority_application(settings,execution=old_execution,env=old_values)
         old_native=dependencies.build_book_production_composition(settings,principal=author,execution=old_execution,chapter_application=old_chapter,env=old_values)
@@ -891,7 +892,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert old_preflight.wait(30), "old worker did not finish frozen deployment preflight"
         target_sha="d"*40
         monkeypatch.setenv("NOVEL_FORGE_COMMIT_SHA", target_sha)
-        values=creation_runtime_environment(project)
+        values=creation_runtime_environment(project,
+            input_only_policy=frozen_policy["creation_input_policy"].get("codex_input_only_policy"))
         hashes=register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=target_sha)
         path=creation_narrative_execution(frozen_policy["creation_input_policy"])
         pack=values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"]
