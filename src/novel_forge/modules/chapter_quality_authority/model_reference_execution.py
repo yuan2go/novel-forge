@@ -270,9 +270,14 @@ def validate_model_reference_effect_inputs(cursor: Any, *, project_id: str,
         or content.get("source_bindings") != sources
         or content.get("source_isolation") != "FROZEN_MODEL_REFERENCE_ONLY"
         or (operation_id and content.get("operation_id") != operation_id)
-        or (attempt_id and content.get("attempt_id") != attempt_id)
         or (operation_id and native_context["operation_id"] != operation_id)):
         raise _invalid("Provider ContextBundle ownership or source isolation differs")
+    if attempt_id and content.get("attempt_id") != attempt_id:
+        from novel_forge.modules.chapter_authority.receipt_recovery import require_retained_owner_context_binding
+        require_retained_owner_context_binding("", project_id=project_id, operation_id=operation_id,
+            owner_stage=MODEL_REFERENCE_STAGE[MODEL_REFERENCE_EVALUATE
+                if frozen["role"] == "BLIND_EVALUATION" else MODEL_REFERENCE_ADJUDICATE],
+            source=context, cursor=cursor)
     projection = native_context["content"].get("provider_context_view")
     if context["projection"] != projection:
         raise _invalid("Provider Context projection differs from frozen ContextBundle")
@@ -306,9 +311,12 @@ def prepare_model_reference_inputs(database_url: str, *, project_id: str, book_i
         "source_bindings": source_bindings, "provider_context_view": projection}
     logical_ref = f"model_reference/context/{operation_id}/{attempt_id}"
     query = AuthorityAssetQuery(database_url)
+    from novel_forge.modules.chapter_authority.receipt_recovery import retained_owner_context
+    retained = retained_owner_context(database_url, project_id=project_id, operation_id=operation_id,
+        owner_stage=stage, current_content=content)
     try:
-        context = query.require(project_id=project_id, logical_ref=logical_ref)
-        if context.content != content or context.content_hash != authorization_hash(content):
+        context = retained if retained is not None else query.require(project_id=project_id, logical_ref=logical_ref)
+        if retained is None and (context.content != content or context.content_hash != authorization_hash(content)):
             raise _invalid("ContextBundle changed inside the same Attempt")
     except KernelError as exc:
         if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
@@ -611,7 +619,7 @@ class ModelReferenceExecutionPort:
                 "generator_operation_name": stage, "model_reference": dict(frozen),
                 "context_token_budget": int(payload["context_token_budget"])}},
             inputs=(context_input,), attempt_id=request.attempt_id,
-            fencing_token=request.fencing_token, worker_id=request.worker_id)
+            fencing_token=request.fencing_token, worker_id=request.worker_id, database_url=self.database_url)
         binder = self.model_port.capability_binder
         result = self.model_port.invoke(chapter_request, stage=stage, payload=provider_input,
             pre_send_assertion=lambda: binder.assert_before_provider_send(

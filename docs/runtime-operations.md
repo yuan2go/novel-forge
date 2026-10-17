@@ -2883,8 +2883,8 @@ by default: set `world_production_policy.version` to `world-production-policy.v2
 count, and `max_paths_per_candidate`, `max_preparation_steps`,
 `planning_window_chapters` to one. Set `world_actor_experiment` to
 `{"version":"world-actor-experiment.v1","actor_ids":["<approved-character-id>"],
-"max_rounds":1,"max_actions_per_actor":1}`. Keep the existing bounded Context and native
-budget limits. Each actor needs its own knowledge/belief entry in the frozen initial
+"max_rounds":1,"max_actions_per_actor":1}`. Keep the actor source boundary, cancellation and paid-spend authorization
+limits. Each actor needs its own knowledge/belief entry in the frozen initial
 StoryState or accepted reality, plus its approved goal. Missing private evidence blocks
 before any actor call; another actor's knowledge cannot substitute. Actor source/proposal receipts persist under the same World Preparation
 operation; resume that operation after reconciliation. Changing to unified generation
@@ -2894,13 +2894,14 @@ allowance are needed to assess benefit, leakage, naturalness, cost and latency.
 For accepted-state persistent intentions, freeze `world-actor-experiment.v2`; its
 `world-actor-task.v3` keeps goals, steps and commitments across accepted windows. Only
 Book acceptance completes an observed step. Deferred or abandoned commitments retain
-their disposition lineage. If the complete required private/World projection exceeds
-the v2 policy's 16,000-token ceiling, a new approved profile may explicitly select
-`world-production-policy.v3`, with a context budget no greater than 24,000 tokens.
-This changes only the configurable context ceiling: actor, round, action and window
-bounds remain enforced. It does not change old frozen v1/v2 requests, add allowance to
-their ledgers, or establish model qualification for the new input contract. The joint
-engineering scenario freezes 20,000 tokens; Provider usage is still settled from receipts.
+their disposition lineage. Older frozen v1/v2 World material policies retain 16,000
+tokens and v3 retains 24,000. Ordinary new `world-production-policy.v4` requests
+measure the complete request against 512,000 and the selected interface's smaller
+confirmed capacity, using the existing compression path when applicable. An old
+request retains its frozen policy; a native continuation requires an admitted compatible
+Pack and source binding. Actor, round, action and window bounds remain enforced.
+The historical joint engineering scenario freezes 20,000 tokens; it does not establish
+current model capacity, and actual Provider usage remains receipt-backed.
 
 ## Failure and recovery procedure
 

@@ -806,9 +806,12 @@ class PostgresChapterExecutionContractBinder:
             raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "Owner compression requires its exact persisted ContextBundle")
         document = self.query.require(project_id=metadata["project_id"], asset_version_id=pointers[0].asset_version_id)
         if (document.content_hash != source["content_hash"]
-                or document.content.get("operation_id") != metadata.get("operation_id")
-                or document.content.get("attempt_id") != metadata.get("attempt_id")):
+                or document.content.get("operation_id") != metadata.get("operation_id")):
             raise KernelError("CONTEXT_COMPRESSION_OWNER_DRIFT", "ContextBundle belongs to another owning Attempt")
+        if document.content.get("attempt_id") != metadata.get("attempt_id"):
+            from .receipt_recovery import require_retained_owner_context_binding
+            require_retained_owner_context_binding(self.database_url, project_id=metadata["project_id"],
+                operation_id=metadata["operation_id"], owner_stage=owner_stage, source=source)
         return True
 
     def freeze_before_external_effect(

@@ -17,6 +17,7 @@ from novel_forge.modules.book_followup_authority.application import (
     BookFollowupCommand,
 )
 from novel_forge.modules.book_followup_authority.reader_policy import ReaderProxyPolicy
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.book_followup_authority.contracts import (
     BOOK_FOLLOWUP_DEFINITION_VERSION,
     LONGFORM_RECAP_DEFINITION,
@@ -287,6 +288,12 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         )  # query type is production-wired; link view is Book-owned
 
     def test_reader_outcome_freezes_its_own_governed_pack_snapshot(self) -> None:
+        self._assert_reader_pack_and_receipt_recovery(retry_after_receipt=False)
+
+    def test_reader_new_attempt_reuses_original_context_receipt_and_accounting(self) -> None:
+        self._assert_reader_pack_and_receipt_recovery(retry_after_receipt=True)
+
+    def _assert_reader_pack_and_receipt_recovery(self, *, retry_after_receipt: bool) -> None:
         harness = CapabilityPackPostgresHarness("reader_outcome")
         _activate_reader_outcome_pack(harness)
         self.project_id = harness.project_id
@@ -322,6 +329,15 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         reader_port = build_reader_outcome_model_port(
             settings, execution=execution, env=env
         )
+        interrupted = False
+
+        def interrupt_after_receipt(checkpoint):
+            nonlocal interrupted
+            if retry_after_receipt and checkpoint == "after_provider_success" and not interrupted:
+                interrupted = True
+                raise KernelError("MODEL_EFFECT_RETRYABLE_HOST_INTERRUPTION", "Known completed fixture receipt before host commit")
+
+        reader_port.fault_injector = interrupt_after_receipt
         app = BookFollowupAuthorityApplication(
             DATABASE_URL,
             application_build_id="reader-outcome-pack-fixture",
@@ -351,6 +367,12 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             principal=principal,
         )
 
+        original = None
+        if retry_after_receipt:
+            with self.assertRaisesRegex(KernelError, "MODEL_EFFECT_RETRYABLE_HOST_INTERRUPTION"):
+                app.run_or_recover(admission)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                original = uow.cursor.execute("SELECT external_effect_id,request_hash,request_payload FROM authority_external_effect WHERE operation_id=%s", [admission.operation_id]).fetchone()
         result = app.run_or_recover(admission)
 
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -391,6 +413,19 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(report["mode"], "SHADOW")
         self.assertEqual(report["evidence_class"], "READER_PROXY_ADVISORY")
         self.assertEqual(report["confidence_status"], "NOT_MEASURED")
+        if retry_after_receipt:
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                effects = uow.cursor.execute("SELECT external_effect_id,request_hash,request_payload FROM authority_external_effect WHERE operation_id=%s", [admission.operation_id]).fetchall()
+                attempts = uow.cursor.execute("SELECT attempt_id,status FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [admission.operation_id]).fetchall()
+                reservations = uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE operation_id=%s", [admission.operation_id]).fetchall()
+            self.assertEqual(effects, [original])
+            self.assertEqual([row[1] for row in attempts], ["FAILED_RETRYABLE", "SUCCEEDED"])
+            self.assertEqual(reservations, [("SETTLED",)])
+            context_pointer = next(item for item in original[2]["_production_execution"]["input_artifacts"] if item["artifact_type"] == "context_bundle")
+            retained = reader_port.capability_binder._reader_context_bundle(operation_id=admission.operation_id,
+                attempt_id=attempts[-1][0], project_id=harness.project_id, trace_id="source-retention", correlation_id="source-retention",
+                artifacts=[item for item in original[2]["_production_execution"]["input_artifacts"] if item["artifact_type"] in {"draft_version", "canon_snapshot"}])
+            self.assertEqual((retained.asset_version_id, retained.content_hash), (context_pointer["asset_version_id"], context_pointer["content_hash"]))
         self.assertFalse(report["publish_blocking"])
         self.assertTrue(result.output.asset_version_id)
 

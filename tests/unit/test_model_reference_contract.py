@@ -181,6 +181,22 @@ def test_blind_provider_projection_rejects_peer_report_and_stale_author_baseline
     with pytest.raises(KernelError, match="MODEL_REFERENCE_INPUT_INVALID"):
         model_reference_execution.validate_model_reference_effect_inputs(None, project_id="project:1",
             frozen=frozen, provider_input={**provider_input, "author_baseline": {**baseline, "content": {"intent": "old"}}})
+    native_context = {"asset_type": "context_bundle", "operation_id": "operation:1", "content": {
+        "operation_id": "operation:1", "attempt_id": "old-attempt", "provider_context_view": context["projection"],
+        "model_reference": frozen, "source_bindings": [frozen["subject"], frozen["author_baseline"]],
+        "source_isolation": "FROZEN_MODEL_REFERENCE_ONLY"}}
+    monkeypatch.setattr(model_reference_execution, "_native_asset", lambda *args, **kwargs: native_context)
+    original = {"stage": "model_reference_evaluate", "_production_execution": {"input_artifacts": [
+        {**{key: context[key] for key in ("asset_version_id", "content_hash")}, "artifact_type": "context_bundle"}]}}
+    model_reference_execution.validate_model_reference_effect_inputs(Rows([(original,)]), project_id="project:1",
+        frozen=frozen, provider_input=provider_input, operation_id="operation:1", attempt_id="new-attempt")
+    with pytest.raises(KernelError, match="CONTEXT_COMPRESSION_OWNER_DRIFT"):
+        model_reference_execution.validate_model_reference_effect_inputs(Rows([]), project_id="project:1",
+            frozen=frozen, provider_input=provider_input, operation_id="operation:1", attempt_id="new-attempt")
+    native_context["content"]["operation_id"] = "another-operation"
+    with pytest.raises(KernelError, match="MODEL_REFERENCE_INPUT_INVALID"):
+        model_reference_execution.validate_model_reference_effect_inputs(Rows([(original,)]), project_id="project:1",
+            frozen=frozen, provider_input=provider_input, operation_id="operation:1", attempt_id="new-attempt")
 
 
 def test_model_record_rejects_human_identity_spoof_and_changed_model_result(monkeypatch):

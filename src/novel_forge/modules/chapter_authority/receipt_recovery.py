@@ -658,6 +658,60 @@ def completed_result_proof(request):
         "strict_certification_eligible": False, "completed_model_effects": policy["completed_model_effects"]}
 
 
+def _owner_context_sources(database_url, *, project_id, operation_id, owner_stage, cursor=None):
+    if cursor is None:
+        with AuthorityUnitOfWork(database_url) as uow:
+            return _owner_context_sources(database_url, project_id=project_id, operation_id=operation_id,
+                owner_stage=owner_stage, cursor=uow.cursor)
+    cursor.execute("""SELECT request_payload FROM authority_external_effect
+            WHERE project_id=%s AND operation_id=%s AND effect_type='model.invoke'
+              AND (request_payload->>'stage'=%s
+                OR request_payload#>>'{input,context_compression_task,task,stage}'=%s)
+            ORDER BY created_at,external_effect_id""", [project_id, operation_id, owner_stage, owner_stage])
+    rows = cursor.fetchall()
+    sources = {}
+    for (payload,) in rows:
+        if payload.get("stage") == owner_stage:
+            bindings = [item for item in payload.get("_production_execution", {}).get("input_artifacts", [])
+                        if item.get("artifact_type") == "context_bundle"]
+        else:
+            chunk = payload.get("input", {}).get("context_compression_task", {})
+            if chunk.get("contract_version") != "task-context-compression.v2" or chunk.get("task", {}).get("capacity_policy") != "complete-request-capacity.v1":
+                continue
+            bindings = [chunk.get("source_binding") or {}]
+        for binding in bindings:
+            version, digest = binding.get("asset_version_id"), binding.get("content_hash")
+            if not version or not digest:
+                raise KernelError("CONTEXT_CAPACITY_SOURCE_DRIFT", "Retained Owner invocation has an incomplete source binding")
+            sources[(version, digest)] = {"asset_version_id": version, "content_hash": digest}
+    return tuple(sources.values())
+
+
+def retained_owner_context(database_url, *, project_id, operation_id, owner_stage, current_content):
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    sources = _owner_context_sources(database_url, project_id=project_id, operation_id=operation_id, owner_stage=owner_stage)
+    if not sources:
+        return None
+    if len(sources) != 1:
+        raise KernelError("CONTEXT_CAPACITY_SOURCE_DRIFT", "One owning Operation cannot replace its retained Context sources")
+    source = sources[0]
+    document = AuthorityAssetQuery(database_url).require(project_id=project_id, asset_version_id=source["asset_version_id"])
+    if (document.asset_type != "context_bundle" or document.content_hash != source["content_hash"]
+            or document.governance != "CLEAR" or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+            or document.content.get("operation_id") != operation_id
+            or snapshot_hash({key: value for key, value in document.content.items() if key != "attempt_id"})
+                != snapshot_hash({key: value for key, value in current_content.items() if key != "attempt_id"})):
+        raise KernelError("CONTEXT_CAPACITY_SOURCE_DRIFT", "Retained Context must preserve every original field, source and Owner")
+    return document
+
+
+def require_retained_owner_context_binding(database_url, *, project_id, operation_id, owner_stage, source, cursor=None):
+    bindings = _owner_context_sources(database_url, project_id=project_id, operation_id=operation_id,
+        owner_stage=owner_stage, cursor=cursor)
+    if not any(item == {key: source.get(key) for key in ("asset_version_id", "content_hash")} for item in bindings):
+        raise KernelError("CONTEXT_COMPRESSION_OWNER_DRIFT", "Another Attempt Context requires its original durable Owner invocation")
+
+
 def retained_capacity_bindings(database_url, *, project_id, operation_id, source_hash, source_boundary, stage):
     from novel_forge.modules.narrative_state.reality import narrative_hash
     with AuthorityUnitOfWork(database_url) as uow:
