@@ -456,7 +456,7 @@ def test_model_and_author_edited_sources_use_native_router_effect_and_distinct_h
         producer_contract=review_producer, chapter=1)
     _, blocked = router.select(execution.gateway.routes["review"], **review_args)
     assert blocked["status"] == "BLOCKED"
-    assert "CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED" in blocked["candidates"][0]["rejected_reasons"]
+    assert "AUTHOR_SUPERVISION_TASK_AUTHORIZATION_REQUIRED" in blocked["candidates"][0]["rejected_reasons"]
     review_grant = {**grant, "authorization_id": identifier("source-review-grant"), "task_type": "review",
                     "producer_contract_hash": snapshot_hash(review_producer)}
     configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=h.project_id,

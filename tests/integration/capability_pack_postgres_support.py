@@ -811,10 +811,6 @@ class CapabilityPackPostgresHarness:
         ):
             original = by_identity[(kind, prompt[ref_key], prompt[version_key])]
             if kind == "PROMPT_TEMPLATE":
-                alternative = by_identity.get((kind, prompt[ref_key], f"v{generation}"))
-                if alternative is not None:
-                    prompt[version_key] = alternative["version"]
-                    prompt[hash_key] = alternative["content_hash"]
                 continue
             new_version = f"{original['version']}-fixture-{generation}"
             original["version"] = new_version

@@ -352,6 +352,7 @@ def test_native_gateway_callback_reuses_frozen_contract_after_local_failure(tmp_
         "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path),
         "NOVEL_FORGE_DRAFT_PROVIDER": "openai", "NOVEL_FORGE_DRAFT_MODEL": "gpt-4o",
         "NOVEL_FORGE_DRAFT_MODEL_CONTEXT_LIMIT": "100000",
+        "NOVEL_FORGE_DRAFT_MODEL_OUTPUT_LIMIT": "4096",
         "NOVEL_FORGE_DRAFT_TOKEN_ACCOUNTING_METHOD": "OPENAI_UTF8_BYTES_UPPER_BOUND_V1",
         "NOVEL_FORGE_DRAFT_TOKEN_ACCOUNTING_EVIDENCE_REF": "fixture:openai-byte-upper-bound:v1",
     }
