@@ -75,8 +75,12 @@ def prepare_context_model_stages(transport, monkeypatch):
     monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
 
 
-@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory"), (False, False, "progression")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption", "working-progression-interruption"])
-def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working):
+@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working,default_template", [
+    (False, False, False, False), (True, False, False, False), (False, True, False, False),
+    (False, False, True, False), (False, False, "memory", False), (False, False, "progression", False),
+    (False, False, False, True),
+], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption", "working-progression-interruption", "default-author-first"])
+def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working, default_template):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
@@ -141,7 +145,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         current_project[:] = [request.project_id]
         if request.stage in {"context_compress", "context_fidelity"}:
             compression_calls.append((request.operation_id, request.stage))
-        failure_stage = "context_fidelity" if completed_sibling else "memo"
+        failure_stage = "context_fidelity" if completed_sibling else "draft" if default_template else "memo"
         if not recoverable_result and request.stage == failure_stage and not stream_failures:
             layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
             layout.result_path("interrupt-stream").write_text("controlled fault")
@@ -177,7 +181,8 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
                     JOIN authority_external_effect e USING(operation_id)
-                    WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    WHERE o.project_id=%s AND o.definition_name=%s AND e.status='UNKNOWN'""",
+                    [book["project_id"], "chapter.draft.generate" if default_template else "chapter.memo.generate"])
                 original = uow.cursor.fetchone()
             if original is None:
                 return native_recovery(authority, **options)
@@ -219,10 +224,11 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
         "--repository-root", str(root), "--maximum-ticks", "100",
         "--foreground"])
-    template = json.loads((root / args.execution_template_file).read_text())
-    template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
-    args.execution_template_file = tmp_path / "memo-enhanced-template.json"
-    args.execution_template_file.write_text(json.dumps(template))
+    if not default_template:
+        template = json.loads((root / args.execution_template_file).read_text())
+        template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+        args.execution_template_file = tmp_path / "memo-enhanced-template.json"
+        args.execution_template_file.write_text(json.dumps(template))
     if enhanced_working:
         creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
         creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
@@ -310,7 +316,20 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         assert book["accepted_through_chapter"] == 0
         uow.cursor.execute("SELECT definition_name,count(*) FROM authority_operation WHERE project_id=%s GROUP BY definition_name", [project])
         counts = dict(uow.cursor.fetchall())
-        assert counts["chapter.draft.generate"] == 6
+        assert counts["chapter.draft.generate"] == 6 + int(default_template)
+        if default_template:
+            uow.cursor.execute("""SELECT count(*) FROM authority_external_effect
+                WHERE project_id=%s AND request_payload->>'stage'='memo'""", [project])
+            assert uow.cursor.fetchone() == (0,)
+            uow.cursor.execute("""SELECT memo.content->>'enhancement_status',count(*)
+                FROM authority_operation operation JOIN authority_operation_output_asset output USING(operation_id)
+                JOIN authority_asset_version memo USING(asset_version_id)
+                WHERE operation.project_id=%s AND operation.definition_name='chapter.memo.generate'
+                  AND output.role='primary' AND memo.content->>'qualification'='INPUT_FALLBACK'
+                  AND memo.content #>> '{execution_evidence,source}'='FROZEN_EXECUTION_INTENT'
+                  AND memo.content #>> '{execution_evidence,model_call}'='NOT_RUN'
+                GROUP BY memo.content->>'enhancement_status'""", [project])
+            assert uow.cursor.fetchall() == [("NOT_REQUESTED", 6)]
         assert not any(count for name, count in counts.items() if name.startswith(("chapter.review.", "chapter.quality.", "chapter.canon.", "chapter.revision.")))
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
     principal = build_trusted_principal_resolver().resolve_api_principal()
@@ -524,7 +543,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert [unit["chapter"] for unit in exported.json()["units"]] == [2]
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [project])
-        assert uow.cursor.fetchone()[0] == 8
+        assert uow.cursor.fetchone()[0] == 8 + int(default_template)
     if not completed_sibling and not recoverable_result:
         from tests.integration.migration_window_postgres_support import restored_generation_backup
         with restored_generation_backup(DATABASE_URL, backup_root=tmp_path / "chapter-joint-backup",

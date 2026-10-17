@@ -393,6 +393,10 @@ even when the CLI prefixes it with a stream-disconnect message. Preserve its unk
 remote outcome and usage; correct the output capacity or generation contract before
 an authorized linked successor. Removing a local allowance cannot remove a Provider's
 physical response limit and does not establish the numeric limit of an unobserved HTTP request.
+The unchanged default template projects Memo locally from its frozen ExecutionIntent;
+record that source and `model_call=NOT_RUN`. An explicitly enabled Memo enhancement
+has separate Provider dispatch and interruption evidence. Do not relabel the enhanced
+sample as the unchanged default.
 For those checks, native capacity injection must run snapshot preparation and full rendered
 request accounting before failing. Record the measured capacity diagnostic and retain
 preparation hashes across recovery. Historical zero-work and calibrated-Quality fixtures
