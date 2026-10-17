@@ -210,19 +210,8 @@ def test_native_formation_generates_foundation_from_author_brief(
         operation_definition_hash=digest,
         pack_id=harness.pack_id,
         execution_contract_version=selected_planning_version,
+        **({"complete_request_capacity": False, "semantic_context_compression": False} if capacity_policy_upgrade else {}),
     )
-    if capacity_policy_upgrade:
-        from copy import deepcopy
-        profile = replace(profile, manifest=deepcopy(profile.manifest), artifact_catalog=deepcopy(profile.artifact_catalog))
-        profile.manifest["context_sources"]["policy_id"] = "context-policy:chapter-generation-pack:v2"
-        for key in ("planning_task_token_budget", "capacity_policy", "context_substage_method"):
-            profile.manifest["context_sources"].pop(key, None)
-        profile.manifest["tool_permissions"]["external_models"].pop("context_substages")
-        from novel_forge.modules.capability_packs.artifacts import artifact_content_hash
-        for item in profile.artifact_catalog["artifacts"]:
-            if item["ref"] == "context-policy:chapter-generation-pack:v2":
-                item["content"]["allowed_asset_types"] = list(profile.manifest["context_sources"]["allowed_asset_types"])
-                item["content_hash"] = artifact_content_hash(item["content"])
     harness._base_manifest, harness._base_catalog = (
         profile.manifest,
         profile.artifact_catalog,
@@ -733,7 +722,9 @@ def test_native_formation_generates_foundation_from_author_brief(
             book_id=harness.book_ids[0],
             stable_idempotency_key=formation_key,
         )
-        capacity_profiles = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())
+        # COMPATIBILITY: This successor proves the original v2-to-v3 capacity upgrade, with its frozen input policy.
+        capacity_policy_path = "tests/fixtures/creation/frozen-capacity-policy-6b69b22.json" if capacity_policy_upgrade else "config/execution_templates/creation_inputs.json"
+        capacity_profiles = json.loads((Path(__file__).resolve().parents[2] / capacity_policy_path).read_text())
         capacity_profiles["profiles"]["production_profile"]["content"]["language_contract"] = {"required_language": "zh-CN"}
         admitted = formation.admit(
             StartStoryFormationCommand(
@@ -2352,7 +2343,8 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
     if policy_upgrade:
         from novel_forge.modules.capability_packs.validation_deployment import install_longform_validation_pack
         profile = build_story_planning_pack_profile(Path(__file__).resolve().parents[2],
-            operation_definition_hash=hashes["planning"], pack_id=harness.pack_id)
+            operation_definition_hash=hashes["planning"], pack_id=harness.pack_id,
+            semantic_context_compression=False)
         install_longform_validation_pack(DATABASE_URL, profile=profile, pack_version="1.2.0", agent_generation=2,
             expected_activation_version=1, project_id=harness.project_id, workspace_id=harness.workspace_id,
             book_id=harness.book_ids[0], application_build_id=harness.application_build_id, commit_sha=sha,
