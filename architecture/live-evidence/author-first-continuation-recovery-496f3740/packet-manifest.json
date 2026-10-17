@@ -444,8 +444,8 @@
     },
     {
       "path": "real-provider/frozen-contract-identities.json",
-      "bytes": 5942,
-      "sha256": "sha256:1f450bfdf492148577071cb9e8c5008213ea5996f85138bbf4bb086fd09336ad"
+      "bytes": 7739,
+      "sha256": "sha256:b3f4dbc87ddf37d97baa97cacdde0eb702c60c40d0b88d35883cf08256a0c845"
     },
     {
       "path": "real-provider/native-checkpoint.json.gz",

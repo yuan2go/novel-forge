@@ -1,5 +1,53 @@
 {
-  "templates": [],
+  "templates": [
+    {
+      "asset_version_id": "b786eece-a634-40a4-94b4-53ce8f0c2c23",
+      "content_hash": "sha256:2a0cf798bdae8ad4f90100fc94c7c1cb7da5b1fff1f308e3e0fa99df10f9505a",
+      "json_path": "/task/policy_snapshot/policy/execution_templates/0",
+      "frozen_template": {
+        "mode": "CREATIVE_VALIDATION",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "version": "creative-execution-template.v12",
+        "deepseek": null,
+        "repair_routing": {
+          "version": "native-repair-routing.v2",
+          "max_same_route_repairs": 2
+        },
+        "author_workflow": {
+          "mode": "AUTHOR_FIRST",
+          "version": "author-workflow.v1",
+          "deep_review": false
+        },
+        "allowed_candidates": [
+          "codex-cli:gpt-6.1-sol:high"
+        ],
+        "quality_corrections": {
+          "version": "quality-correction-control.v1",
+          "maximum_passes": 4,
+          "maximum_unchanged_candidates": 2
+        },
+        "optional_enhancements": [
+          "review",
+          "rereview",
+          "canon_extraction",
+          "canon_support",
+          "quality_structural",
+          "quality_commercial",
+          "quality_source_originality",
+          "quality_longform",
+          "quality_platform"
+        ],
+        "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+        "member_authorization_ref": "user-authorization:WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+        "world_future_preparation": "DISABLED",
+        "canon_validation_contract": "grounded-canon-validation.v2",
+        "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+        "require_independent_review": false,
+        "require_pack_human_approval": false,
+        "require_literary_qualification": false
+      }
+    }
+  ],
   "pack_materializations": [
     {
       "asset_version_id": "7d98a84c-9112-4f5d-a31d-b7de00ee9d3a",
