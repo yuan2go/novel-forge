@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import replace
 
+import psycopg
 import pytest
 
 from novel_forge.modules.book_authority.opening import PostgresBookOpeningApplication
@@ -97,6 +98,61 @@ def _fail_before_result(fixture, monkeypatch):
                     fixture.execute(claim)
         finally:
             execution.close()
+
+
+def _historical_zero_work_failure(fixture, monkeypatch):
+    def fail(*_args, **_):
+        raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "historical zero-preparation compatibility fixture")
+    with monkeypatch.context() as fault:
+        fault.setattr(fixture.opening.narrative_search, "explore", fail)
+        claim = fixture.claim(fixture.principal.principal_id)
+        with pytest.raises(KernelError, match="PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"):
+            fixture.execute(claim)
+
+
+@pytest.mark.parametrize("resource_successor", [False, True])
+def test_historical_zero_work_capacity_preserves_budget_and_predecessor_fences(monkeypatch, resource_successor):
+    fixture, original, successor_app = _capacity_fixture(resource_successor=resource_successor)
+    _historical_zero_work_failure(fixture, monkeypatch)
+    failed = fixture.opening.require(original.opening_run_id)
+    usage = get_creative_budget(DATABASE_URL, fixture.project_id)
+    excess = deepcopy(fixture.opening.provider_budget_policy)
+    excess["token_limit"] = 15_000_000
+    excess["per_call_token_limit"] = 160_000
+    app = PostgresBookOpeningApplication(DATABASE_URL, narrative_search=fixture.opening.narrative_search,
+        input_resolver=fixture.opening.input_resolver, application_build_id="capacity-continuation-test",
+        commit_sha=RELEASE_SHA, provider_budget_policy=excess)
+    with pytest.raises(KernelError, match="CONTINUATION_BUDGET_EXHAUSTED"):
+        app.continue_unstarted_with_budget(original.opening_run_id, expected_version=failed["version"],
+            reason="Historical frozen cumulative authorization remains bounded", principal=fixture.principal)
+    kwargs = dict(expected_version=failed["version"], reason="Historical zero-work capacity successor", principal=fixture.principal)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(lambda _: successor_app.continue_unstarted_with_budget(original.opening_run_id, **kwargs), range(2)))
+    assert len({item.opening_run_id for item in outcomes}) == 1
+    successor = successor_app.require(outcomes[0].opening_run_id)
+    assert successor["lifecycle"] == "ADMITTED"
+    assert fixture.opening.require(original.opening_run_id) == failed
+    assert get_creative_budget(DATABASE_URL, fixture.project_id) == usage
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT frozen_request,budget_scope_id FROM authority_book_opening_run WHERE opening_run_id=ANY(%s) ORDER BY opening_run_id",
+            [[original.opening_run_id, successor["opening_run_id"]]])
+        rows = uow.cursor.fetchall()
+        assert rows[0][1] != rows[1][1]
+        assert {key: value for key, value in rows[0][0].items() if key != "idempotency_key"} == {
+            key: value for key, value in rows[1][0].items() if key != "idempotency_key"}
+        uow.cursor.execute("SELECT causation_operation_id FROM authority_operation WHERE operation_id=%s", [successor["root_operation_id"]])
+        assert uow.cursor.fetchone() == (failed["root_operation_id"],)
+        uow.cursor.execute("SELECT count(*) FROM authority_book_opening_capacity_continuation WHERE source_opening_run_id=%s", [original.opening_run_id])
+        assert uow.cursor.fetchone() == (1,)
+    with pytest.raises(KernelError, match="CAPACITY_PREDECESSOR_FENCED"):
+        fixture.opening.recovery.assess_recovery(original.opening_run_id, idempotency_key="historical-fenced-source", principal=fixture.principal)
+    for sql in ("UPDATE authority_book_opening_run SET updated_at=NOW() WHERE opening_run_id=%s",
+                "DELETE FROM authority_book_opening_run WHERE opening_run_id=%s"):
+        with pytest.raises(psycopg.errors.CheckViolation, match="CAPACITY_PREDECESSOR_FENCED"):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(sql, [original.opening_run_id])
+    assert successor_app.claim_next_node_execution(worker_id=fixture.principal.principal_id, project_id=fixture.project_id,
+        lease_seconds=30, expected_opening_run_id=successor["opening_run_id"]) is not None
 
 
 

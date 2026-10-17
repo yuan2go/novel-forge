@@ -24,6 +24,36 @@ def test_creation_distinguishes_waits_without_a_new_business_state(reason, expec
     assert creation_wait_class(reason) == expected
 
 
+@pytest.mark.parametrize("failure_point", ["binding", "policy", "principal"])
+def test_creation_worker_records_setup_refusal_before_any_provider_dispatch(monkeypatch, failure_point):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.workers import book_authority as worker
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    failure = KernelError("CREATION_EXECUTOR_BINDING_CONFLICT", "unavailable original binding")
+    binding = Mock(return_value={"codex_input_only_policy": "codex-input-only.v2"})
+    if failure_point == "binding":
+        binding.side_effect = failure
+    monkeypatch.setattr(worker, "PostgresBookProductionQuery", lambda _: SimpleNamespace(creation_executor_binding=binding))
+    monkeypatch.setenv("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY", "" if failure_point == "policy" else "codex-input-only.v2")
+    principal = Mock()
+    if failure_point == "principal":
+        principal.side_effect = failure
+    monkeypatch.setattr(worker, "build_trusted_principal_resolver", lambda **_: SimpleNamespace(resolve_api_principal=principal))
+    jobs = SimpleNamespace(get=Mock(return_value={"status": "CLAIMED"}), fail=Mock())
+    monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+    dispatch = Mock(side_effect=AssertionError("setup refusal cannot build a Provider"))
+    monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
+    claim = SimpleNamespace(project_id="project", subject_id="formation", runtime_job_id="job", input_snapshot={"operator_id": "operator"})
+    with pytest.raises(KernelError) as stopped:
+        worker.execute_creation_worker_claim(SimpleNamespace(database_url="unused"), claim)
+    assert stopped.value.code == ("CREATION_RUNTIME_POLICY_DRIFT" if failure_point == "policy" else failure.code)
+    jobs.fail.assert_called_once()
+    assert jobs.fail.call_args.args[:2] == (claim, {"code": stopped.value.code, "message": str(stopped.value)})
+    dispatch.assert_not_called()
+
+
 def test_recovery_versions_and_isolation_counts_are_not_material_progress():
     from copy import deepcopy
     from novel_forge.modules.book_authority.creation_runtime import creation_material_progress

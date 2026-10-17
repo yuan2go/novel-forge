@@ -51,15 +51,15 @@ from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
 def execute_creation_worker_claim(settings: IndustrialSettings, claim: RuntimeJobClaim) -> dict[str, object]:
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment, execute_creation_claim
 
-    binding = PostgresBookProductionQuery(settings.database_url).creation_executor_binding(
-        project_id=claim.project_id, subject_id=claim.subject_id)
-    values = creation_runtime_environment(claim.project_id,
-        input_only_policy=binding.get("codex_input_only_policy") if binding else None)
-    resolver = build_trusted_principal_resolver(env=values)
-    operator = resolver.resolve_api_principal()
     jobs = RuntimeJobAuthority(settings.database_url)
     execution = None
     try:
+        binding = PostgresBookProductionQuery(settings.database_url).creation_executor_binding(
+            project_id=claim.project_id, subject_id=claim.subject_id)
+        values = creation_runtime_environment(claim.project_id,
+            input_only_policy=binding.get("codex_input_only_policy") if binding else None)
+        resolver = build_trusted_principal_resolver(env=values)
+        operator = resolver.resolve_api_principal()
         if operator.principal_id != claim.input_snapshot["operator_id"]:
             raise KernelError("CREATION_EXECUTOR_BINDING_CONFLICT", "Configured operator differs from admitted creation")
         operator.require("book.authority.execute", claim.project_id)
