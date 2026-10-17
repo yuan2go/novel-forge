@@ -128,6 +128,7 @@ class BookOpeningWorkflowPostgresFixture:
     request: OpenBookProductionRequest
     binder: CountingPlanningBinder
     target_chapter_count: int
+    planning_pack_id: str
 
     def admit(self) -> Any:
         return self.opening.admit(self.request, principal=self.principal)
@@ -346,6 +347,7 @@ def build_workflow_fixture(
         runtime_jobs=RuntimeJobAuthority(DATABASE_URL),
         request=request,
         binder=binder,
+        planning_pack_id=harness.pack_id,
         target_chapter_count=target_chapter_count,
     )
 

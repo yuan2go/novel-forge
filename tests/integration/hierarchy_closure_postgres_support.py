@@ -163,13 +163,16 @@ def _payload(
 def _candidate_content(
     *,
     project_id: str,
+    book_id: str,
     generator: str,
     logical_key: str,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     return {
+        **payload,
         "schema_version": "story_design.authority.v1",
         "project_id": project_id,
+        "book_id": book_id,
         "generator_operation_name": generator,
         "planning_scope": PlanningScope.NOT_APPLICABLE.value,
         "logical_key": logical_key,
@@ -180,6 +183,7 @@ def _candidate_content(
 def _seed_candidate_and_evaluation(
     *,
     project_id: str,
+    book_id: str,
     role: FoundationRole,
     label: str,
     alternate: bool,
@@ -190,6 +194,7 @@ def _seed_candidate_and_evaluation(
     logical_key = f"foundation:{role.value.lower()}:{label}"
     content = _candidate_content(
         project_id=project_id,
+        book_id=book_id,
         generator=generator,
         logical_key=logical_key,
         payload=_payload(
@@ -460,14 +465,17 @@ def _activate_story_design(
                 """
                 INSERT INTO authority_story_design_active_version(
                     project_id,logical_key,asset_version_id,
-                    activated_by_operation_id
-                ) VALUES (%s,%s,%s,%s)
+                    activated_by_operation_id,book_id,scope_layer
+                ) SELECT %s,%s,%s,%s,book_id,scope_layer
+                  FROM authority_story_design_version_state WHERE project_id=%s AND asset_version_id=%s
                 """,
                 [
                     project_id,
                     candidate["logical_key"],
                     candidate["asset_version_id"],
                     activation_operation_id,
+                    project_id,
+                    candidate["asset_version_id"],
                 ],
             )
         uow.commit()
@@ -528,6 +536,7 @@ def seed_ready_story_foundation(
     for role in FoundationRole:
         candidate = _seed_candidate_and_evaluation(
             project_id=project_id,
+            book_id=book_id,
             role=role,
             label="selected",
             alternate=False,
@@ -548,6 +557,7 @@ def seed_ready_story_foundation(
         alternates[role] = (candidate["asset_version_id"],)
     alternate = _seed_candidate_and_evaluation(
         project_id=project_id,
+        book_id=book_id,
         role=FoundationRole.CREATIVE_FOUNDATION,
         label="alternate",
         alternate=True,

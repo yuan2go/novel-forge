@@ -1426,9 +1426,12 @@ def _activate_plan_chain(
 def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
     request: pytest.FixtureRequest, autonomous_world: bool | str, craft_budget_policy: dict | None = None,
     runtime_environment_overrides: dict[str, str] | None = None,
+    craft_writing_problem: str = "",
 ) -> None:
     test_case = request.node
-    harness = CapabilityPackPostgresHarness("narrative-evolution-opening", production_profile={"craft_budget_policy": craft_budget_policy} if craft_budget_policy else None)
+    profile = {**({"craft_budget_policy": craft_budget_policy} if craft_budget_policy else {}),
+        **({"writing_problem": craft_writing_problem} if craft_writing_problem else {})}
+    harness = CapabilityPackPostgresHarness("narrative-evolution-opening", production_profile=profile or None)
     chapter_pack_id = ""
     if autonomous_world:
         from copy import copy

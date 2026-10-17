@@ -286,6 +286,22 @@ Its v3 windows bind current selected unreviewed prose; accepted-state relation e
 not available on that source contract. An optional outage retains the manuscript and does
 not mutate Book completion. Review currentness is invalidated by changed author sources.
 Strict acceptance, Edition validation and external publication retain their own conditions.
+Frozen `repair_routing` contracts select Planning repair evidence and stage allowances
+consistently in normal dispatch, preflight continuation and result recovery. Routing v1
+retains cumulative interpretation; v2 uses separate stage ordinals while preserving the
+monotonic lineage counter and its four-repair bound. A newly selected template cannot
+grant stage allowances to an older frozen source contract. Replay verifies the original
+evidence version rather than reading the latest template file.
+
+A complete-request capacity failure retains its Attempt snapshot, frozen inputs and
+preparation outputs. Such preparation is work: it excludes the zero-work Opening budget
+successor and uses the original Opening recovery protocol. Sent calls, unresolved commit
+rights and active Attempts remain outside that unsent path. Retained-graph scanning only
+handles its declared 3.9/3.10 roots; older roots keep their owning receipt/isolation and
+acceptance boundaries. Publication revalidation requires a registered exact native step
+successor. An ordinary blocked publish gate remains blocked and does not acquire recovery
+permissions from its current definition version.
+
 
 Existing production may select a traceable author workflow policy asset at a settled idle
 Book checkpoint. The native routing owner selects the successor template, inheriting any
@@ -3282,9 +3298,3 @@ matching zero-send continuation to reuse its original World source and request.
 Migration 0220 adds the distinct Chapter prior-method-audit continuation. Both append
 to main's existing guard dispatch; neither replaces the combined capacity predicate,
 rewrites published migration identities, or qualifies an installed database.
-
-The default author-first continuation/recovery closure is not yet qualified. Frozen
-Planning repair dispatch, generated cast consumption, pre-send capacity preparation,
-and historical retained Memo/publication recovery require directed verification before
-claiming an uninterrupted Creation-to-manuscript chain. Saved working prose remains
-separate from author selection, formal acceptance and publication qualification.

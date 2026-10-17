@@ -68,7 +68,8 @@ class NativeRealityTransportFixture:
         if stage == "world_candidates.generate":
             return {"disposition": "NO_OP", "reason": "This retained manual-direction fixture supplies no autonomous world advancement.", "candidates": []}
         if stage == "world_candidates.evaluate":
-            return {"evaluations": []}
+            return {"evaluations": [], **({"action_classifications": []}
+                if (inputs.get("world_preparation") or {}).get("epistemic_contract") == "world-agency.v2" else {})}
         result = planning_fixture_response(stage, inputs)
         if stage == "chapter_plan.generate" and not self.rejected_scene:
             result["character_participation"][0]["known_fact_ids"] = [

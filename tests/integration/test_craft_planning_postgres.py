@@ -202,6 +202,7 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
         candidate = assets.require(project_id=snapshot.project_id, asset_version_id=candidate_version)
         strategy = candidate.content["craft_strategy"]
         assert strategy == candidate.content["candidate_payload"]["craft_strategy"]
+        assert candidate.content["book_id"] == snapshot.book_id
         assert len(strategy["uses"]) == 1
         assert strategy["uses"][0]["mechanism_id"] in ({"choice-exposes-value", "spatial-anchor"} if reselect else {"choice-exposes-value"})
         execution_plan = composition.query.require_chapter_execution_plan(candidate_version)
@@ -348,7 +349,8 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
     monkeypatch.setattr(core, "_seed_inputs", seed_with_approved_craft)
     monkeypatch.setattr(native, "NativeRealityTransportFixture", CraftPlanningTransport)
     monkeypatch.setattr(native, "execute_native_reality_vertical", drive_native_planning)
-    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy,
+        craft_writing_problem="人物价值观只存在于宣言，需要通过已经规划的真实取舍呈现价值和代价。")
     assert state["native_proof"]["budget_exhaustion" if budget_stop else "candidate_asset_version_id"]
     if budget_probe_result is not None:
         budget_probe_result.update(state["native_proof"])

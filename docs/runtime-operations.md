@@ -388,6 +388,16 @@ results and isolation, joint quality/publication boundaries, and the native Crea
 manuscript chain across a ChapterGroup with exact export readback. Preserve historical
 failure records and record unrun checks as `NOT_RUN`. This scoped evidence does not
 replace the complete exact-revision P0 required by formal PR/release governance.
+For those checks, native capacity injection must run snapshot preparation and full rendered
+request accounting before failing. Record the measured capacity diagnostic and retain
+preparation hashes across recovery. Historical zero-work and calibrated-Quality fixtures
+have separate ceilings: an uncalibrated failure must preserve its candidate and block
+strict publication, not manufacture a local-repair task. The historical Memo timeout
+case may isolate the original call and create its authorized successor; UNKNOWN usage
+and its stricter acceptance refusal remain observable. Repeating the stopped checkpoint
+must not invoke Writer again. Frozen cast fixtures must declare their Book scope and
+current envelope/projection, without altering historical stored assets.
+
 
 
 For the Craft convergence upgrade, active migrations 0213-0220 append Source generation

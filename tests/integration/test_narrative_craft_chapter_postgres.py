@@ -672,9 +672,9 @@ class JointQualityCorrectionTransport(JointCraftTransport):
 
 
 def test_joint_quality_correction_uses_selected_original_frozen_ranges_and_explicit_quality_checks(tmp_path):
-    from tests.integration.test_cross_chapter_prose_review_postgres import REPAIRED as CONTINUITY_REPAIRED
     transport = JointQualityCorrectionTransport()
     project, authority, chapter, principal, worker, book, candidates, plans, _ = make_book(tmp_path, transport, prepare_plans=transport.prepare)
+    from novel_forge.modules.command_kernel.errors import KernelError
     for number in (1, 2):
         plan = plans[number]
         dispatched = authority.submit_chapter(SubmitBookChapterCommand(context_token_budget=128000, book_run_id=book.book_run_id, chapter_number=number,
@@ -683,23 +683,36 @@ def test_joint_quality_correction_uses_selected_original_frozen_ranges_and_expli
             preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
                 "stage_context_token_budgets": {stage: 64000 for stage in ("memo", "draft", "review", "revision", "rereview")}}), principal=principal)
         for _ in range(len(ChapterNode) * 5):
-            tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+            try:
+                tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+            except KernelError as error:
+                assert number == 2 and error.code == "CHAPTER_QUALITY_GATE_BLOCKED"
+                break
             if tick.saga_status == "SUCCEEDED":
                 break
-        assert tick.saga_status == "SUCCEEDED", tick
-        authority.reconcile_chapter(dispatched["chapter_request_id"])
-        authority.accept_chapter(dispatched["chapter_request_id"], principal=principal)
-    correction_inputs = next(inputs for stage, inputs in transport.calls if stage == "revision" and inputs.get("quality_edit_contract"))
-    after_inputs = next(inputs for stage, inputs in transport.calls if stage == "rereview" and inputs["revision"].get("quality_edit_contract"))
-    assert after_inputs["original_draft"]["text"] == correction_inputs["draft"]["text"]
-    assert REPAIRED in after_inputs["original_draft"]["text"] and CONTINUITY_REPAIRED in after_inputs["original_draft"]["text"]
-    assert after_inputs["review"]["cross_chapter_window"] == correction_inputs["review"]["cross_chapter_window"]
-    assert after_inputs["review"]["craft_checks"] == correction_inputs["review"]["craft_checks"]
-    task = build_provider_task_view("revision", correction_inputs)
-    assert task["quality_targeted_repair"]["permitted_ranges"]
+        if number == 1:
+            assert tick.saga_status == "SUCCEEDED"
+            authority.reconcile_chapter(dispatched["chapter_request_id"])
+            authority.accept_chapter(dispatched["chapter_request_id"], principal=principal)
+        else:
+            assert tick.saga_status != "SUCCEEDED"
+    assert not any(inputs.get("quality_edit_contract") for stage, inputs in transport.calls if stage == "revision")
+    assert authority.require(book.book_run_id)["accepted_through_chapter"] == 1
     workspace = chapter.query.require_workspace(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
-    accepted_id = workspace["acceptance"]["outcome"]["content"]["accepted_draft_asset_version_id"]
-    selected = next(item for item in workspace["artifacts"]["candidates"] if item["asset_version_id"] == accepted_id)
-    assert "（原地付出代价）" in selected["content"]["text"]
-    assert selected["content"]["selected_review"]["quality_resolution_checks"][0]["status"] == "SATISFIED"
-    assert transport.quality_calls == 2
+    selected = next(item for item in workspace["artifacts"]["candidates"] if item["asset_type"] == "best_draft_candidate")
+    from tests.integration.test_cross_chapter_prose_review_postgres import REPAIRED as CONTINUITY_REPAIRED
+    assert REPAIRED in selected["content"]["text"] and CONTINUITY_REPAIRED in selected["content"]["text"]
+    revision_inputs = next(inputs for stage, inputs in transport.calls if stage == "revision" and inputs["draft"]["chapter"] == 2)
+    rereview_inputs = next(inputs for stage, inputs in transport.calls if stage == "rereview" and inputs["revision"]["chapter"] == 2)
+    assert rereview_inputs["original_draft"]["text"] == revision_inputs["draft"]["text"]
+    assert rereview_inputs["review"]["cross_chapter_window"] == revision_inputs["review"]["cross_chapter_window"]
+    assert rereview_inputs["review"]["craft_checks"] == revision_inputs["review"]["craft_checks"]
+    assert transport.quality_calls == 1
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o JOIN authority_asset_version v USING(asset_version_id)
+            WHERE o.operation_id IN (SELECT operation_id FROM authority_operation WHERE root_operation_id=%s)
+              AND o.output_key='chapter.publish_gate'""", [dispatched["chapter_root_operation_id"]])
+        gate = uow.cursor.fetchone()[0]
+        assert {"all_blocking_dimensions_passed", "quality_evidence_current"} <= set(gate["failed_checks"])
+        uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.root_operation_id=%s", [dispatched["chapter_root_operation_id"]])
+        assert uow.cursor.fetchone() == (0,)
