@@ -85,23 +85,25 @@ def execute_book_phase_with_creation_scope(settings: IndustrialSettings, claim: 
         legacy: BookProductionComposition, execute: Callable[[BookProductionComposition], dict[str, Any]]) -> dict[str, Any]:
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
 
-    binding = legacy.query.creation_executor_binding(
-        project_id=claim.project_id, subject_id=claim.subject_id
-    )
-    if not binding:
-        return execute(legacy)
-    legacy.principal.require("book.authority.execute", claim.project_id)
-    values = creation_runtime_environment(claim.project_id,
-        input_only_policy=binding.get("codex_input_only_policy"))
-    operator = build_trusted_principal_resolver(env=values).resolve_api_principal()
-    if operator.principal_id != binding["operator_id"]:
-        raise KernelError(
-            "CREATION_EXECUTOR_BINDING_CONFLICT",
-            "Configured operator differs from the original creation actor",
-        )
-    operator.require("book.authority.execute", claim.project_id)
-    execution = build_production_execution_composition(settings, env=values)
+    jobs = RuntimeJobAuthority(settings.database_url)
+    execution = None
     try:
+        binding = legacy.query.creation_executor_binding(
+            project_id=claim.project_id, subject_id=claim.subject_id
+        )
+        if not binding:
+            return execute(legacy)
+        legacy.principal.require("book.authority.execute", claim.project_id)
+        values = creation_runtime_environment(claim.project_id,
+            input_only_policy=binding.get("codex_input_only_policy"))
+        operator = build_trusted_principal_resolver(env=values).resolve_api_principal()
+        if operator.principal_id != binding["operator_id"]:
+            raise KernelError(
+                "CREATION_EXECUTOR_BINDING_CONFLICT",
+                "Configured operator differs from the original creation actor",
+            )
+        operator.require("book.authority.execute", claim.project_id)
+        execution = build_production_execution_composition(settings, env=values)
         chapter = build_chapter_authority_application(settings, execution=execution, env=values)
         scoped = build_book_production_composition(
             settings,
@@ -111,8 +113,14 @@ def execute_book_phase_with_creation_scope(settings: IndustrialSettings, claim: 
             env=values,
         )
         return execute(scoped)
+    except Exception as error:
+        if jobs.get(claim.runtime_job_id)["status"] == "CLAIMED":
+            jobs.fail(claim, {"code": getattr(error, "code", type(error).__name__), "message": str(error)},
+                      retry_delay_seconds=30, cause=error)
+        raise
     finally:
-        execution.close()
+        if execution is not None:
+            execution.close()
 
 
 def schedule_book_coordination_jobs(
