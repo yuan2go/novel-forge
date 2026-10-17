@@ -1,0 +1,351 @@
+{
+  "schema_version": "postgresql-native-repair-work-pack.v1",
+  "work_package": "WP-NF-POSTGRESQL-ROOT-CAUSE-AND-NATIVE-PRODUCTION-REPAIR-01",
+  "source_sha": "595f42aab240411f6e974090bbf4cb4381d61adf",
+  "base_sha": "51dc5b3d14e706ffab341f9abd510d6a2d919d94",
+  "historical_formal_failure_sha": "479000c6584e309191b378e04cae10b157cff67c",
+  "related_merged_prs": {
+    "178": {
+      "merge_sha": "c9743199292966121fa066b2f88a683c5612f5c0",
+      "head_sha": "844aa07671059f645278a263e102ce3704952b3f"
+    },
+    "180": {
+      "merge_sha": "e92297509d1c0e0cb3720cc21af278e83048e595",
+      "head_sha": "be1418df7c241620c367b96096e80aff51d79a19"
+    },
+    "181": {
+      "merge_sha": "51dc5b3d14e706ffab341f9abd510d6a2d919d94",
+      "head_sha": "e0777d541786579757e45d852c9627a3080eefc8"
+    }
+  },
+  "database": {
+    "ownership": "TASK_OWNED_DISPOSABLE_UTF8_CLUSTER",
+    "database": "nf_p0_b3ad6c5524af45c6b9b8c5d39eb17d12_test",
+    "cluster_system_identifier": "7697555674554005288",
+    "port": 55473,
+    "encoding": "UTF8",
+    "applied_migrations": 223,
+    "migration_head": "20261016_0222_planning_host_frozen_definition",
+    "published_migrations_modified": false,
+    "production_database_access": "NOT_RUN",
+    "runtime_after_checks": "STOPPED; task-owned cluster files retained at /tmp/nf-postgres-native-repair-01/pgdata-utf8"
+  },
+  "evidence_ceiling": "EXECUTABLE",
+  "provider_evidence": "SCRIPTED_NATIVE_POSTGRESQL / CONTROLLED_LOCAL_PROCESS; not real Provider",
+  "formal_current_matrix": "NOT_RUN",
+  "production_qualification": "NOT_RUN",
+  "real_provider": "NOT_RUN",
+  "literary_or_human_acceptance": "NOT_RUN",
+  "original254_comparison": "failure-comparison.json",
+  "directed_runs": "test-runs.json",
+  "readbacks": "native-readbacks.json",
+  "root_causes": [
+    {
+      "id": "same-capacity-native-continuation",
+      "classification": "PRODUCTION_DEFECT",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "preflight_continuation.py",
+      "resolution": "Same-capacity route/input-order successors retain complete-request-capacity.v1; growth remains a separate transition.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c"
+      ]
+    },
+    {
+      "id": "world-frozen-decoder",
+      "classification": "PRODUCTION_DEFECT",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "world_result_recovery.py; world_optional.py",
+      "resolution": "Recovery inherits frozen world-agency.v2 decoder in both decode paths.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c"
+      ]
+    },
+    {
+      "id": "planning-bounded-repair-reachability",
+      "classification": "PRODUCTION_DEFECT",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "gateway_result_recovery.py",
+      "resolution": "Local candidate selector/content revalidation failure falls through to existing bounded repair; receipt, source, Pack, hash and fence guards remain outside.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c"
+      ]
+    },
+    {
+      "id": "completed-repair-after-frontier-advance",
+      "classification": "PRODUCTION_DEFECT",
+      "repair_commit": "1435f5eb81dd1eddc1d9529c27d53cc71878cc77",
+      "files": "result_recovery.py; application.py",
+      "resolution": "Replay exact persisted successful ACTIVE repair before old World frontier validation; require full command equality, exact lineage, verified completion, settled usage and no unresolved effects.",
+      "repair_commits": [
+        "1435f5eb81dd1eddc1d9529c27d53cc71878cc77"
+      ]
+    },
+    {
+      "id": "craft-empty-projection",
+      "classification": "PRODUCTION_DEFECT",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "chapter_authority/provider_views.py",
+      "resolution": "Revalidation passes the frozen planning-empty-query-projection.v1 marker; absent marker retains historical interpretation.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c"
+      ]
+    },
+    {
+      "id": "book-design-output-book-scope",
+      "classification": "PRODUCTION_DEFECT",
+      "repair_commit": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "files": "book_design_authority/application.py",
+      "resolution": "New Foundation outputs inherit owning Book at its UoW write; explicit conflicting Book rejected; no historical bodies rewritten.",
+      "repair_commits": [
+        "27c9ef31ffcb1b2458be0846749a204d880ed423"
+      ]
+    },
+    {
+      "id": "sampling-frozen-output-contract",
+      "classification": "PRODUCTION_DEFECT",
+      "repair_commit": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "files": "chapter_authority/sampling.py; handlers.py; chapter_quality_authority/canon_support_reference.py",
+      "resolution": "Reference preflight uses frozen source/sampler Definition and Pack Prompt version. Canon sampler uses the host output Schema and exact comparison coverage; cannot consume production retained-graph privileges.",
+      "repair_commits": [
+        "27c9ef31ffcb1b2458be0846749a204d880ed423"
+      ]
+    },
+    {
+      "id": "planning-catalog-state-envelope",
+      "classification": "FIXTURE_MISMATCH",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "story_planning_runtime/execution.py; current_planning_wire_support.py; synthesis_production_support.py",
+      "resolution": "Scripted current selectors use frozen asset-version IDs, typed state increment/applicability, RFC6901 paths and correct transport envelope; historical 1.18 retains its own wire/actor binding.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c"
+      ]
+    },
+    {
+      "id": "style-genesis-state-and-canon-spans",
+      "classification": "FIXTURE_MISMATCH",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "quality_context_state_fixture.py; book/chapter/capability fixtures",
+      "resolution": "Use current Style release/source/Book binding and existing initial State/Canon authoring codecs; freeze exact IDs/hashes and verify admitted Writer prompt, literal Canon spans and readback.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+        "27c9ef31ffcb1b2458be0846749a204d880ed423"
+      ]
+    },
+    {
+      "id": "legacy-definition-and-release-identity",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "synthesis_production_support.py; test_synthesis_formation_postgres.py",
+      "resolution": "Freeze coordinated current Definition bundle before historical constants; register target-release coordinated definitions; historical Memo uses its own workflow/Pack and explicitly selected enhancement.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+        "27c9ef31ffcb1b2458be0846749a204d880ed423"
+      ]
+    },
+    {
+      "id": "capacity-temp-receipt-render-count",
+      "classification": "FIXTURE_MISMATCH",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "scheduler/provider budget/generation policy/model effects fixtures",
+      "resolution": "Finite positive fixture capacity covers exact current inputs; retain dedicated tiny-capacity zero-dispatch refusal; TEMP schema copies public columns; complete verified receipt fields; Provider dispatch counted from durable dispatch rows.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+        "27c9ef31ffcb1b2458be0846749a204d880ed423",
+        "595f42aab240411f6e974090bbf4cb4381d61adf"
+      ]
+    },
+    {
+      "id": "obsolete-cumulative-budget-expectations",
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "repair_commit": "39a3e20c92243c76d06c25569ee63b882d5e4d4c",
+      "files": "provider budget/routing tests",
+      "resolution": "Main had already removed lifetime call/token and cold-start vetoes. Align tests to current policy; budget_runtime.py unchanged, explicit money and UNKNOWN reservations retained.",
+      "repair_commits": [
+        "39a3e20c92243c76d06c25569ee63b882d5e4d4c"
+      ]
+    },
+    {
+      "id": "duplicate-collection",
+      "classification": "FIXTURE_MISMATCH",
+      "repair_commit": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "files": "test_chapter_group_authority_postgres.py; test_chapter_dispatch_recovery_postgres.py",
+      "resolution": "Module imports retain original tests without duplicate unittest class collection; original254 imported aliases remain separate NOT_RUN entries.",
+      "repair_commits": [
+        "27c9ef31ffcb1b2458be0846749a204d880ed423"
+      ]
+    },
+    {
+      "id": "joint-quality-automatic-correction",
+      "classification": "UNRESOLVED_HISTORICAL_COMPATIBILITY",
+      "repair_commit": null,
+      "files": "test_narrative_craft_chapter_postgres.py::test_joint_quality_correction_uses_selected_original_frozen_ranges_and_explicit_quality_checks",
+      "resolution": "FAIL: uncalibrated scripted Quality observation requests EVIDENCE_REASSESSMENT under work-quality.v2, not automatic prose permission. Export additionally reports PUBLICATION_RECOVERY_SOURCE_INVALID for blocked Gate without a replacement edge. No fake calibration or acceptance bypass applied.",
+      "repair_commits": []
+    }
+  ],
+  "constraint_classification": {
+    "frozen_source_hash_identity_and_fencing": "CURRENT_PROVEN_INVARIANT; focused native/unit guards, no global qualification claim",
+    "complete_request_capacity_and_authorized_money": "CONFIGURABLE_POLICY",
+    "historical_Definition_Prompt_Pack_bytes": "HISTORICAL_COMPATIBILITY",
+    "bounded_repair_counter_and_runtime_decoder": "CURRENT_RUNTIME_FACT; no claim of final architecture"
+  },
+  "acceptance_limits": [
+    "Original254 is preserved byte-for-byte; unexecuted names stay NOT_RUN.",
+    "Directed runs are not the full PostgreSQL matrix.",
+    "No production database or original manuscript was modified; internal fixture acceptance is not user author acceptance.",
+    "Joint Quality fixture/blocked Export diagnostics remain FAIL and block claiming a clean formal matrix."
+  ],
+  "primary_tested_production_source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+  "production_source_config_unchanged_since_primary_proof": true,
+  "remaining_known_failures": [
+    {
+      "test": "test_joint_quality_correction_uses_selected_original_frozen_ranges_and_explicit_quality_checks",
+      "status": "FAIL",
+      "classification": "HISTORICAL_COMPATIBILITY / blocked Export diagnostic",
+      "error": "PUBLICATION_RECOVERY_SOURCE_INVALID",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "test": "test_native_started_memo_timeout_is_unknown_and_refuses_new_send",
+      "status": "FAIL",
+      "classification": "HISTORICAL_COMPATIBILITY / 3.8 retained graph frontier",
+      "error": "RETAINED_GRAPH_BOOK_CONFLICT",
+      "observed": "Controlled process timeout and UNKNOWN checkpoint were persisted; full ordinary continuation assertion did not pass.",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "test": "test_provider_context_fact_limit_blocks_before_durable_dispatch[33]",
+      "status": "FAIL",
+      "classification": "HISTORICAL_COMPATIBILITY / fixed cardinality versus current complete-request-capacity contract",
+      "error": "DID NOT RAISE CONTEXT_PROJECTION_TOO_BROAD; no 32-fact production ceiling was reintroduced",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "test": "test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-False]",
+      "status": "FAIL",
+      "classification": "FIXTURE_MISMATCH / legacy StoryDesign envelope used as current frozen cast",
+      "error": "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID",
+      "detail": "The selected frozen cast is a legacy story_design.authority.v1 candidate_payload envelope without current top-level Book/cast data; current provenance guard remains unchanged.",
+      "frozen_final_source_status": "FAIL"
+    }
+  ],
+  "formal_readiness": "BLOCKED_BY_KNOWN_DIRECTED_FAILURES_AND_NOT_RUN_MATRIX",
+  "unclosed_last_observed_failures_in_current_collection": [
+    {
+      "original_id": "tests.integration.test_capability_pack_runtime_snapshot_postgres::test_provider_context_fact_limit_blocks_before_durable_dispatch[33]",
+      "last_run": "clean-source-recovery",
+      "last_message": "Failed: DID NOT RAISE KernelError",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-False]",
+      "last_run": "clean-source-fixture-regressions",
+      "last_message": "novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance",
+      "frozen_final_source_status": "FAIL"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-False]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-True]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-reselection]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "novel_forge.modules.command_kernel.errors.KernelError: CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_craft_reselection_preserves_cumulative_campaign_budget[calls]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'SCRIPTED_CALIBRATION_BOUNDARY_REACHED'\n  Actual message: 'CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_craft_reselection_preserves_cumulative_campaign_budget[tokens]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'SCRIPTED_CALIBRATION_BOUNDARY_REACHED'\n  Actual message: 'CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_craft_reselection_blocks_original_insufficient_request_budget[calls]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'CREATIVE_BUDGET_EXHAUSTED'\n  Actual message: 'CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_craft_planning_postgres::test_pg_craft_reselection_blocks_original_insufficient_request_budget[tokens]",
+      "last_run": "shared-fixture-targets-2",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'CREATIVE_BUDGET_EXHAUSTED'\n  Actual message: 'CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID: Require exact Book-scoped frozen cast provenance'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_narrative_craft_chapter_postgres::test_joint_quality_correction_uses_selected_original_frozen_ranges_and_explicit_quality_checks",
+      "last_run": "remaining-native-contracts",
+      "last_message": "novel_forge.modules.command_kernel.errors.KernelError: PUBLICATION_RECOVERY_SOURCE_INVALID: One immutable native replacement is required",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_opening_capacity_continuation_postgres::test_capacity_continuation_is_causal_idempotent_and_fences_failed_source[False]",
+      "last_run": "targeted-infrastructure",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'\n  Actual message: 'PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING: Capacity failure must retain its native Pack snapshot'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_opening_capacity_continuation_postgres::test_capacity_continuation_is_causal_idempotent_and_fences_failed_source[True]",
+      "last_run": "targeted-infrastructure",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'\n  Actual message: 'PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING: Capacity failure must retain its native Pack snapshot'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_opening_capacity_continuation_postgres::test_capacity_continuation_rejects_unfailed_changed_scope_stale_and_unfunded",
+      "last_run": "targeted-infrastructure",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'\n  Actual message: 'PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING: Capacity failure must retain its native Pack snapshot'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_opening_capacity_continuation_postgres::test_capacity_continuation_cannot_resend_after_provider_intent",
+      "last_run": "targeted-infrastructure",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'\n  Actual message: 'PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE: Capacity continuation requires an unsent main call, verified completed preparation and no active Attempt'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_opening_capacity_continuation_postgres::test_resource_policy_successor_preserves_completed_nodes_and_historical_scope",
+      "last_run": "targeted-infrastructure",
+      "last_message": "AssertionError: Regex pattern did not match.\n  Expected regex: 'PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'\n  Actual message: 'PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING: Capacity failure must retain its native Pack snapshot'",
+      "frozen_final_source_status": "NOT_RUN"
+    },
+    {
+      "original_id": "tests.integration.test_synthesis_formation_postgres::test_native_started_memo_timeout_is_unknown_and_refuses_new_send",
+      "last_run": "final-uncovered-guards",
+      "last_message": "novel_forge.modules.command_kernel.errors.KernelError: RETAINED_GRAPH_BOOK_CONFLICT: Retain the exact original actor and live unaccepted Book frontier",
+      "frozen_final_source_status": "NOT_RUN"
+    }
+  ],
+  "comparison_interpretation": "Last observed work-pack status retains intermediate FAIL even after a related repair; frozen_final_source_status credits only exact original IDs rerun at source_sha. Renamed tests and removed duplicate aliases do not gain PASS credit.",
+  "automatic_ci": "Existing push/pull_request workflow invokes Repository PR Governance independently; no local full formal matrix was run.",
+  "reviews": {
+    "standards": {
+      "source_sha": "595f42aab240411f6e974090bbf4cb4381d61adf",
+      "result": "NO_ACTIONABLE_NEW_FINDINGS"
+    },
+    "spec": {
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "result": "P2_COMPARISON_COVERAGE_CLOSED; no further known new code findings"
+    },
+    "scope": "Known directed failures remain open; review is not qualification"
+  },
+  "readback_summary": "native-proof-summary.json"
+}

@@ -1,0 +1,26 @@
+{
+  "test": "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay",
+  "prose": [
+    {
+      "asset_type": "best_draft_candidate",
+      "asset_version_id": "authority-output:1bb12a0a-83e0-4dd8-ae16-2a9ca9879a7f:chapter.best_candidate:v1",
+      "content_hash": "sha256:dfd5f85eb9d1f2a6e46c5558452c22c5e7827b03fb59e683f3d1982feab18554",
+      "text": "A public promise becomes irreversible. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:a86abfc1fdfe7b6d684d807481c9784a54160d951d764daa6e352a5b8e6a8d83"
+    },
+    {
+      "asset_type": "draft_chapter",
+      "asset_version_id": "authority-output:3698d462-b49f-4e37-811a-650548c7b18a:chapter.draft:v1",
+      "content_hash": "sha256:775fc1c967dbc6df9882ac6d0249d94eac65a1c86873e49a962866169d19211e",
+      "text": "A public promise becomes irreversible. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。",
+      "text_sha256": "sha256:5573967364c19429a2359543248fcf43f77cf2c96f43790000d1fedace1d1c9f"
+    },
+    {
+      "asset_type": "draft_version",
+      "asset_version_id": "authority-output:5bbf67cd-5ea5-4964-8dd0-57f812545235:chapter.revision:v1",
+      "content_hash": "sha256:f711654a632ca578996f568338c0c39f7332903ad52c80fe327b53a2ff2e6e0c",
+      "text": "A public promise becomes irreversible. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:a86abfc1fdfe7b6d684d807481c9784a54160d951d764daa6e352a5b8e6a8d83"
+    }
+  ]
+}

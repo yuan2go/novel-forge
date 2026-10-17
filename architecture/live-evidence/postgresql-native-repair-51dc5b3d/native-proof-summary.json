@@ -1,0 +1,426 @@
+{
+  "schema_version": "native-repair-proof-summary.v1",
+  "source_sha": "595f42aab240411f6e974090bbf4cb4381d61adf",
+  "records": [
+    {
+      "test": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_to_chapter_two_chapter_vertical_postgres",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/062302692f21765d.json.gz",
+      "provider_effect_counts": {
+        "model.memo": 2,
+        "model.draft": 2,
+        "model.review": 2,
+        "model.revision": 2,
+        "model.rereview": 2,
+        "model.canon_extraction": 2,
+        "model.canon_support": 2,
+        "model.quality_structural": 2,
+        "model.quality_commercial": 2,
+        "model.quality_source_originality": 2,
+        "model.quality_longform": 2,
+        "model.quality_platform": 2,
+        "object_store.put": 2,
+        "model.retrieval": 7
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 33
+      },
+      "declared_fixture_operation_release_shas": {
+        "MISSING": 1,
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": 66
+      },
+      "contexts": [
+        {
+          "context_asset_version_id": "authority-output:0b0f9cc6-5397-47d4-a5de-a5a61fa030fe:chapter.context:v1",
+          "frozen_boundary": {
+            "canon_snapshot_version": "authority-output:47abf575-73c9-42c4-b8ae-5183f88d395b:chapter.canon.current:v1",
+            "accepted_through_chapter": 1,
+            "story_state_snapshot_version": "authority-output:47abf575-73c9-42c4-b8ae-5183f88d395b:chapter.story_state:v1"
+          },
+          "readback_sources": [
+            {
+              "role": "story_state_snapshot_version",
+              "asset_version_id": "authority-output:47abf575-73c9-42c4-b8ae-5183f88d395b:chapter.story_state:v1",
+              "content_hash": "sha256:a51e0f910367315d38303922bb7887fd886980074fceffc04a971b70547910c8",
+              "readback_canonical_hash": "sha256:a51e0f910367315d38303922bb7887fd886980074fceffc04a971b70547910c8",
+              "content_hash_matches": true
+            },
+            {
+              "role": "canon_snapshot_version",
+              "asset_version_id": "authority-output:47abf575-73c9-42c4-b8ae-5183f88d395b:chapter.canon.current:v1",
+              "content_hash": "sha256:a8981391316a6af8bee5cfb6e0cbcadada83e126682a0ef6cfd922a4813b2f16",
+              "readback_canonical_hash": "sha256:a8981391316a6af8bee5cfb6e0cbcadada83e126682a0ef6cfd922a4813b2f16",
+              "content_hash_matches": true
+            }
+          ]
+        },
+        {
+          "context_asset_version_id": "authority-output:9d47a691-afa8-41a3-810c-d81c5914f13b:chapter.context:v1",
+          "frozen_boundary": {
+            "canon_snapshot_version": "book-two-chapter-vertical-e9d64c3a-6fd9-4bf5-b4a2-36ad5f4b75a9:state-fixture:canon_snapshot:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "book-two-chapter-vertical-e9d64c3a-6fd9-4bf5-b4a2-36ad5f4b75a9:state-fixture:story_state_snapshot:v1"
+          },
+          "readback_sources": [
+            {
+              "role": "story_state_snapshot_version",
+              "asset_version_id": "book-two-chapter-vertical-e9d64c3a-6fd9-4bf5-b4a2-36ad5f4b75a9:state-fixture:story_state_snapshot:v1",
+              "content_hash": "sha256:8b4d11e11948eb9be29bce78b432e81af4f8e1119d630296fbcd9fb320f1fee3",
+              "readback_canonical_hash": "sha256:8b4d11e11948eb9be29bce78b432e81af4f8e1119d630296fbcd9fb320f1fee3",
+              "content_hash_matches": true
+            },
+            {
+              "role": "canon_snapshot_version",
+              "asset_version_id": "book-two-chapter-vertical-e9d64c3a-6fd9-4bf5-b4a2-36ad5f4b75a9:state-fixture:canon_snapshot:v1",
+              "content_hash": "sha256:779cb7b858d74c76da28893ab4b9b4b891c27e4a876d54c7b3ae5524b58e62e8",
+              "readback_canonical_hash": "sha256:779cb7b858d74c76da28893ab4b9b4b891c27e4a876d54c7b3ae5524b58e62e8",
+              "content_hash_matches": true
+            }
+          ]
+        }
+      ],
+      "prose": [
+        {
+          "asset_type": "draft_version",
+          "asset_version_id": "authority-output:09562672-3014-4a66-9e0a-4ffc8ea9b8aa:chapter.revision:v1",
+          "chapter": 2,
+          "content_hash": "sha256:1f87a62f61651bc0d9a9cff9609e7a8a32dc8dc5c8f684b57e8bba280435bb45",
+          "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec",
+          "unicode_codepoints": 228,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "best_draft_candidate",
+          "asset_version_id": "authority-output:3d8c6cff-a88d-4df5-9871-5f70d765407c:chapter.best_candidate:v1",
+          "chapter": 1,
+          "content_hash": "sha256:ff5714dea4223edcc224f227d3ffef8cbd05e0eb5daad0b8347c74f7be29e09a",
+          "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec",
+          "unicode_codepoints": 228,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "draft_chapter",
+          "asset_version_id": "authority-output:4819ec32-60e8-492e-bd71-f8ead5d525f7:chapter.draft:v1",
+          "chapter": 1,
+          "content_hash": "sha256:c06bd518a0a07d1c7f3a95938ef0ef077e4ea05fa61deceee938a3e702c7c00c",
+          "text_sha256": "sha256:999d2e3112af2681c0d42d11609dbbf215b593030ad23976fc06718a69b4fec7",
+          "unicode_codepoints": 150,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "best_draft_candidate",
+          "asset_version_id": "authority-output:86e3396d-6815-4d6b-8535-284e375da8f8:chapter.best_candidate:v1",
+          "chapter": 2,
+          "content_hash": "sha256:a91081ef97c86b7a70c0beb0e7d53cc5808eef8db8b71ecbf1ac24285c4662ef",
+          "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec",
+          "unicode_codepoints": 228,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "draft_chapter",
+          "asset_version_id": "authority-output:875e6786-02d2-4fad-b501-8bbbeb4e7d01:chapter.draft:v1",
+          "chapter": 2,
+          "content_hash": "sha256:3368625919de9cda56f4cf07d959a886d9daf0680ca51f498b2945bc4dce50c9",
+          "text_sha256": "sha256:999d2e3112af2681c0d42d11609dbbf215b593030ad23976fc06718a69b4fec7",
+          "unicode_codepoints": 150,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "draft_version",
+          "asset_version_id": "authority-output:9fdefdee-e0bc-4a96-b3b6-e4b7fe4ebacc:chapter.revision:v1",
+          "chapter": 1,
+          "content_hash": "sha256:f2c7ff5ed32173c48402bd1a527d44d08aefe8455324993bd886c8b084c8854b",
+          "text_sha256": "sha256:eeb07b87e72c74eab39d594882c6f4721f1e492cffa28c6a9b9c79f0c181e1ec",
+          "unicode_codepoints": 228,
+          "han_codepoints": 26
+        }
+      ],
+      "scope": "Source SHA identifies executed checkout; declared fixture release hashes are synthetic test bindings. Scripted/native persistence and exact bindings only; short fixture text is not long-form or real-Provider prose qualification"
+    },
+    {
+      "test": "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/2630b08a36bd3136.json.gz",
+      "provider_effect_counts": {
+        "model.memo": 1,
+        "model.context_compress": 2,
+        "model.context_fidelity": 2,
+        "model.draft": 1,
+        "model.review": 1,
+        "model.revision": 1,
+        "model.rereview": 1,
+        "model.canon_extraction": 1,
+        "model.canon_support": 1,
+        "model.quality_structural": 1,
+        "model.quality_commercial": 1,
+        "model.quality_source_originality": 1,
+        "model.quality_longform": 1,
+        "model.quality_platform": 1,
+        "object_store.put": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 17
+      },
+      "declared_fixture_operation_release_shas": {
+        "MISSING": 2,
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": 28
+      },
+      "contexts": [
+        {
+          "context_asset_version_id": "authority-output:c11df39a-afe1-4ec8-b2a9-1f52c77ee270:chapter.context:v1",
+          "frozen_boundary": {
+            "canon_snapshot_version": "project-d543fcb134fb49d1a93b3bce2c8862fe:state-fixture:canon_snapshot:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "project-d543fcb134fb49d1a93b3bce2c8862fe:state-fixture:story_state_snapshot:v1"
+          },
+          "readback_sources": [
+            {
+              "role": "story_state_snapshot_version",
+              "asset_version_id": "project-d543fcb134fb49d1a93b3bce2c8862fe:state-fixture:story_state_snapshot:v1",
+              "content_hash": "sha256:2d720498f498365e110e697f1e11dd94dd1dacedb3312599ee52b186b8a83e8d",
+              "readback_canonical_hash": "sha256:2d720498f498365e110e697f1e11dd94dd1dacedb3312599ee52b186b8a83e8d",
+              "content_hash_matches": true
+            },
+            {
+              "role": "canon_snapshot_version",
+              "asset_version_id": "project-d543fcb134fb49d1a93b3bce2c8862fe:state-fixture:canon_snapshot:v1",
+              "content_hash": "sha256:289588280f80877a68840ca831160e5c0b9861abbcabe9a0cf3e30b8a7613537",
+              "readback_canonical_hash": "sha256:289588280f80877a68840ca831160e5c0b9861abbcabe9a0cf3e30b8a7613537",
+              "content_hash_matches": true
+            }
+          ]
+        }
+      ],
+      "prose": [
+        {
+          "asset_type": "best_draft_candidate",
+          "asset_version_id": "authority-output:1bb12a0a-83e0-4dd8-ae16-2a9ca9879a7f:chapter.best_candidate:v1",
+          "chapter": 1,
+          "content_hash": "sha256:dfd5f85eb9d1f2a6e46c5558452c22c5e7827b03fb59e683f3d1982feab18554",
+          "text_sha256": "sha256:a86abfc1fdfe7b6d684d807481c9784a54160d951d764daa6e352a5b8e6a8d83",
+          "unicode_codepoints": 208,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "draft_chapter",
+          "asset_version_id": "authority-output:3698d462-b49f-4e37-811a-650548c7b18a:chapter.draft:v1",
+          "chapter": 1,
+          "content_hash": "sha256:775fc1c967dbc6df9882ac6d0249d94eac65a1c86873e49a962866169d19211e",
+          "text_sha256": "sha256:5573967364c19429a2359543248fcf43f77cf2c96f43790000d1fedace1d1c9f",
+          "unicode_codepoints": 130,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "draft_version",
+          "asset_version_id": "authority-output:5bbf67cd-5ea5-4964-8dd0-57f812545235:chapter.revision:v1",
+          "chapter": 1,
+          "content_hash": "sha256:f711654a632ca578996f568338c0c39f7332903ad52c80fe327b53a2ff2e6e0c",
+          "text_sha256": "sha256:a86abfc1fdfe7b6d684d807481c9784a54160d951d764daa6e352a5b8e6a8d83",
+          "unicode_codepoints": 208,
+          "han_codepoints": 26
+        }
+      ],
+      "scope": "Source SHA identifies executed checkout; declared fixture release hashes are synthetic test bindings. Scripted/native persistence and exact bindings only; short fixture text is not long-form or real-Provider prose qualification"
+    },
+    {
+      "test": "tests/integration/test_core_functional_loops_postgres.py::test_five_planning_generators_repair_activate_and_replay_in_postgres",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/fb9f0335730ed9c2.json.gz",
+      "provider_effect_counts": {},
+      "dispatch_status_counts": {},
+      "declared_fixture_operation_release_shas": {
+        "MISSING": 22,
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": 92
+      },
+      "contexts": [],
+      "prose": [],
+      "scope": "Source SHA identifies executed checkout; declared fixture release hashes are synthetic test bindings. Scripted/native persistence and exact bindings only; short fixture text is not long-form or real-Provider prose qualification"
+    },
+    {
+      "test": "tests/integration/test_synthesis_formation_postgres.py::test_native_world_identifier_checkpoint_recovers_settled_effect_without_resend",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/726327b212ce587c.json.gz",
+      "provider_effect_counts": {
+        "creative.proposal.generate": 2,
+        "theme.question.generate": 1,
+        "ending.intent.generate": 1,
+        "reader.promise.generate": 1,
+        "world.design.generate": 1,
+        "character.cast.generate": 1,
+        "planning.book.generate": 3,
+        "planning.volume.generate": 3,
+        "planning.arc.generate": 6,
+        "planning.chapter_group.generate": 3,
+        "planning.story_chapter.generate": 4,
+        "model.draft": 1,
+        "model.review": 1,
+        "model.revision": 1,
+        "model.rereview": 1,
+        "model.canon_extraction": 1,
+        "model.canon_support": 1,
+        "model.quality_structural": 1,
+        "model.quality_commercial": 1,
+        "model.quality_source_originality": 1,
+        "model.quality_longform": 1,
+        "model.quality_platform": 1,
+        "object_store.put": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 38
+      },
+      "declared_fixture_operation_release_shas": {
+        "MISSING": 1,
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": 247
+      },
+      "contexts": [
+        {
+          "context_asset_version_id": "authority-output:154f8d53-628b-4f54-ad56-f056dbd28314:chapter.context:v1",
+          "frozen_boundary": {
+            "canon_snapshot_version": "authority-output:8d44f4bb-9f49-41ba-bea5-8ba4e1d3ab30:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:5e34a927-8532-4c82-a579-336e0a383247:book.bootstrap.initial_story_state:v1"
+          },
+          "readback_sources": [
+            {
+              "role": "story_state_snapshot_version",
+              "asset_version_id": "authority-output:5e34a927-8532-4c82-a579-336e0a383247:book.bootstrap.initial_story_state:v1",
+              "content_hash": "sha256:5811e8cbf8fd7619a3cc6a51f03ec3cb4cfef3dec997955525c7c9d8b5a711bf",
+              "readback_canonical_hash": "sha256:5811e8cbf8fd7619a3cc6a51f03ec3cb4cfef3dec997955525c7c9d8b5a711bf",
+              "content_hash_matches": true
+            },
+            {
+              "role": "canon_snapshot_version",
+              "asset_version_id": "authority-output:8d44f4bb-9f49-41ba-bea5-8ba4e1d3ab30:book.bootstrap.initial_canon:v1",
+              "content_hash": "sha256:4ef59336e5f067077fd1f14c2a80d57de8817636dc31b32238f069ecb2e7bea0",
+              "readback_canonical_hash": "sha256:4ef59336e5f067077fd1f14c2a80d57de8817636dc31b32238f069ecb2e7bea0",
+              "content_hash_matches": true
+            }
+          ]
+        }
+      ],
+      "prose": [
+        {
+          "asset_type": "draft_chapter",
+          "asset_version_id": "authority-output:475966c1-5fd7-48c2-8b15-7c73f3bfd3e2:chapter.draft:v1",
+          "chapter": 1,
+          "content_hash": "sha256:87a3568e6e4bd2e6f2d7fcb20bbc8eb2ee013c9648e031eb2db5c98460ce4ce2",
+          "text_sha256": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "unicode_codepoints": 149,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "draft_version",
+          "asset_version_id": "authority-output:4dd4671d-b895-4b01-9cb3-0694d02e241a:chapter.revision:v1",
+          "chapter": 1,
+          "content_hash": "sha256:6dd6c09c6cb9a0358e0f1e960543e7fc9148c1de3f3a43d3b392a5f6898d6453",
+          "text_sha256": "sha256:69a76b19ecde6ae980a70d13bb465cb7c43cfb27c57bda509c16ed63a1cbbe76",
+          "unicode_codepoints": 227,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "best_draft_candidate",
+          "asset_version_id": "authority-output:58a9daaf-399a-46da-ab5b-6c6045625811:chapter.best_candidate:v1",
+          "chapter": 1,
+          "content_hash": "sha256:746831406a539fc93830d368c10d6a6ce635a853719977513d4d0982344acee3",
+          "text_sha256": "sha256:69a76b19ecde6ae980a70d13bb465cb7c43cfb27c57bda509c16ed63a1cbbe76",
+          "unicode_codepoints": 227,
+          "han_codepoints": 26
+        }
+      ],
+      "scope": "Source SHA identifies executed checkout; declared fixture release hashes are synthetic test bindings. Scripted/native persistence and exact bindings only; short fixture text is not long-form or real-Provider prose qualification"
+    },
+    {
+      "test": "tests/integration/test_synthesis_formation_postgres.py::test_native_world_raw_result_repair_preserves_world_source_and_reaches_acceptance",
+      "source_sha": "27c9ef31ffcb1b2458be0846749a204d880ed423",
+      "readback": "architecture/live-evidence/postgresql-native-repair-51dc5b3d/checks/23103cb1745f5ae5.json.gz",
+      "provider_effect_counts": {
+        "creative.proposal.generate": 2,
+        "theme.question.generate": 1,
+        "ending.intent.generate": 1,
+        "reader.promise.generate": 1,
+        "world.design.generate": 1,
+        "character.cast.generate": 1,
+        "planning.book.generate": 3,
+        "planning.volume.generate": 3,
+        "planning.arc.generate": 6,
+        "planning.chapter_group.generate": 3,
+        "planning.story_chapter.generate": 4,
+        "model.draft": 1,
+        "model.review": 1,
+        "model.revision": 1,
+        "model.rereview": 1,
+        "model.canon_extraction": 1,
+        "model.canon_support": 1,
+        "model.quality_structural": 1,
+        "model.quality_commercial": 1,
+        "model.quality_source_originality": 1,
+        "model.quality_longform": 1,
+        "model.quality_platform": 1,
+        "object_store.put": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 38
+      },
+      "declared_fixture_operation_release_shas": {
+        "MISSING": 1,
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": 247
+      },
+      "contexts": [
+        {
+          "context_asset_version_id": "authority-output:63fb5462-5cf7-4b1b-ab3a-a5a682555737:chapter.context:v1",
+          "frozen_boundary": {
+            "canon_snapshot_version": "authority-output:8fe353ed-a6b4-4000-a294-d176152c6b17:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:65d96414-72bf-4fdc-9177-5023fe041af0:book.bootstrap.initial_story_state:v1"
+          },
+          "readback_sources": [
+            {
+              "role": "story_state_snapshot_version",
+              "asset_version_id": "authority-output:65d96414-72bf-4fdc-9177-5023fe041af0:book.bootstrap.initial_story_state:v1",
+              "content_hash": "sha256:a363781f01ba9fdb88302ffdf2032ab43ba1fb4ecb6cbbe61d34778b0f3a2ab5",
+              "readback_canonical_hash": "sha256:a363781f01ba9fdb88302ffdf2032ab43ba1fb4ecb6cbbe61d34778b0f3a2ab5",
+              "content_hash_matches": true
+            },
+            {
+              "role": "canon_snapshot_version",
+              "asset_version_id": "authority-output:8fe353ed-a6b4-4000-a294-d176152c6b17:book.bootstrap.initial_canon:v1",
+              "content_hash": "sha256:c7abcc84c0a7732697e13ee2bc668fce0c57e3d8edebaac0e7da04644377ee3d",
+              "readback_canonical_hash": "sha256:c7abcc84c0a7732697e13ee2bc668fce0c57e3d8edebaac0e7da04644377ee3d",
+              "content_hash_matches": true
+            }
+          ]
+        }
+      ],
+      "prose": [
+        {
+          "asset_type": "draft_chapter",
+          "asset_version_id": "authority-output:95c91608-49f2-4104-afbc-08c7b84211a7:chapter.draft:v1",
+          "chapter": 1,
+          "content_hash": "sha256:cc1b09b13dfe9eaa09b3d2760ef17cfdcd1ee17b15f57a64793fde8873a54522",
+          "text_sha256": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "unicode_codepoints": 149,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "draft_version",
+          "asset_version_id": "authority-output:1072cbeb-e9fa-4f79-afa7-f486c4c6001f:chapter.revision:v1",
+          "chapter": 1,
+          "content_hash": "sha256:7fa2e8ed490574dc3f9d56cd9ab3363878496ecb33af39ec01b5f9ab6201e836",
+          "text_sha256": "sha256:69a76b19ecde6ae980a70d13bb465cb7c43cfb27c57bda509c16ed63a1cbbe76",
+          "unicode_codepoints": 227,
+          "han_codepoints": 26
+        },
+        {
+          "asset_type": "best_draft_candidate",
+          "asset_version_id": "authority-output:5373fe85-cf6f-4cf6-85fd-a2837a6fd206:chapter.best_candidate:v1",
+          "chapter": 1,
+          "content_hash": "sha256:7ecbd95ff9355105e134dccda29d1859f4538e803cb06eb622d795636bc70145",
+          "text_sha256": "sha256:69a76b19ecde6ae980a70d13bb465cb7c43cfb27c57bda509c16ed63a1cbbe76",
+          "unicode_codepoints": 227,
+          "han_codepoints": 26
+        }
+      ],
+      "scope": "Source SHA identifies executed checkout; declared fixture release hashes are synthetic test bindings. Scripted/native persistence and exact bindings only; short fixture text is not long-form or real-Provider prose qualification"
+    }
+  ]
+}
