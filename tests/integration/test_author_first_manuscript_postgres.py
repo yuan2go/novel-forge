@@ -117,6 +117,10 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         env["NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"] = "codex-cli-context-headroom.v1"
         env.pop("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", None)
         monkeypatch.delenv("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", raising=False)
+        from novel_forge.modules.book_authority import reader_pack
+        def unavailable_optional_reader(*_args, **_kwargs):
+            raise RuntimeError("optional Reader deployment is unavailable")
+        monkeypatch.setattr(reader_pack, "ensure_creation_reader_pack", unavailable_optional_reader)
     executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
     executable.write_text(executable.read_text().replace(
         ' target.write_bytes(',

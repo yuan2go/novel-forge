@@ -1211,11 +1211,15 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             return {"stop_reason": "CANCELLED", **creation_status(settings.database_url,
                 project_id=args.project_id, formation_run_id=formation_id, principal=principal)}
         from .reader_pack import ensure_creation_reader_pack
+        from .manuscript import author_first
 
-        ensure_creation_reader_pack(settings, SimpleNamespace(project_id=run["project_id"],
-            workspace_id=run["workspace_id"], book_id=run["book_id"],
-            repository_root=args.repository_root), principal=principal, build_id=build_id, sha=sha,
-            pack_id=runtime_values["NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID"])
+        generation_policy = composition.formation.frozen_input(formation_id).generation_policy or {}
+        creation_profile = generation_policy.get("creation_input_policy", {}).get("profiles", {}).get("production_profile", {}).get("content", {})
+        if not author_first(creation_profile):
+            ensure_creation_reader_pack(settings, SimpleNamespace(project_id=run["project_id"],
+                workspace_id=run["workspace_id"], book_id=run["book_id"],
+                repository_root=args.repository_root), principal=principal, build_id=build_id, sha=sha,
+                pack_id=runtime_values["NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID"])
         if args.action == "recover":
             if not args.reason.strip():
                 raise ValueError("Recovery requires a reason describing the resolved blocker")

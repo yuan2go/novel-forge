@@ -961,6 +961,9 @@ The opt-in `codex-input-only.v2` route policy binds structured generation instru
 at the model control layer and checks its own complete durable transcript for tool calls
 that stdout may omit. It uses the existing Tool authorization boundary and preserves
 legacy route hashes when absent. Local configuration is not remote execution evidence.
+Default author-first Creation does not require Reader deployment preparation before
+Formation, Planning or manuscript recovery. Reader dispatch still requires its own
+exact active deployment and source checks when that optional work is requested.
 Reconciliation reads original process/receipt evidence
 and may recover a complete validated turn without another model request. Verified original
 remote receipts can append a Kernel reconciliation while preserving terminal history.
