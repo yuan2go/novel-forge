@@ -1184,13 +1184,18 @@ Planning CLI timeouts are uncertain external outcomes, not permission to resubmi
 Historical `FAILED_RETRYABLE` CLI timeout records use this same isolation path only
 with the original dispatch, stopped process receipt, unmeasured usage and frozen pure
 Tool boundary. Their failed Attempt and Effect status remain in history; the native
-isolation journal revokes their commit rights before a bounded successor is registered.
+isolation journal revokes their commit rights before a linked successor is registered.
 The successor retains previously admitted per-task Context capacity. A typed pre-send
 capacity-inheritance continuation may restore that exact allocation without increasing it.
 Opening, Chapter, Book coordination, delivery windows and budget lineage consume this same
 disposition; paid reservations
-remain conservative exposure. Two continuations bound one logical task. Exhaustion
-returns `GENERATION_RECOVERY_EXHAUSTED`; it does not impose a Book-wide membership quota.
+remain conservative exposure. Historical two-continuation ceilings and
+`GENERATION_RECOVERY_EXHAUSTED` records remain frozen evidence; current pure-generation
+continuation does not apply that cumulative ban or reset its recorded failure counter.
+Current transport availability, scheduling checkpoints, cancellation, live leases,
+recoverable complete results and actual capacity still govern the next action.
+This does not change Planning's frozen stage-repair allowances or authorize resending
+a live request.
 Schema/semantic-invalid or complete locally available results require native result
 validation/reuse, and irreversible Tool work retains its original reconciliation owner.
 Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool
