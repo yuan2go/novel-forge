@@ -207,13 +207,19 @@ class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinde
         request_payload: Mapping[str, Any],
         snapshot_fencing_token: int,
         snapshot_worker_id: str,
+        context_model_call: Any = None,
+        capacity_probe: bool = False,
     ) -> Any:
         preflight = super().freeze_before_external_effect(
             capability=capability,
             request_payload=request_payload,
             snapshot_fencing_token=snapshot_fencing_token,
             snapshot_worker_id=snapshot_worker_id,
+            context_model_call=context_model_call,
+            capacity_probe=capacity_probe,
         )
+        if capacity_probe:
+            return preflight
         metadata = request_payload.get("_production_execution")
         contract = (
             dict(metadata.get("agent_execution_contract") or {})
