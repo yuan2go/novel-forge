@@ -1,0 +1,200 @@
+{
+  "implementation_source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+  "focused": {
+    "status": "PASS",
+    "passed": 640
+  },
+  "compatibility_regression": {
+    "status": "PASS",
+    "passed": 95,
+    "subtests": 8
+  },
+  "actual_native_snapshot_binding_replay": {
+    "status": "PASS",
+    "cases": 2,
+    "verifier_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "native_execution_sha": "ad83125992b1b4c7ab8abe4b8de6b7e565e8ef45"
+  },
+  "owner_rebuild_diagnostic": {
+    "status": "PASS",
+    "cases": 2,
+    "model_calls": 0,
+    "native_admission": "NOT_RUN"
+  },
+  "native_core": {
+    "status": "PASS",
+    "passed": 4,
+    "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "seconds": 333.95
+  },
+  "native_old_context_continuation": {
+    "status": "PASS",
+    "passed": 2,
+    "source_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "seconds": 387.39
+  },
+  "formal_current_source": {
+    "base_implementation_tree_sha": "sha256:b9a921d0be5b128b54e2ab421ac6f748dbc4d698e3daf86b9cde84446da5def7",
+    "base_sha": "6b69b22b331191331292a51a905833871b17b283",
+    "changed_implementation_paths": [
+      "architecture/manifests/test-manifest.yaml",
+      "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
+      "config/capability_packs/chapter_generation_pack.json",
+      "config/capability_packs/historical/chapter_generation_pack_3_0_2.json",
+      "config/execution_templates/creation_inputs.json",
+      "pyproject.toml",
+      "src/novel_forge/api/authority_dependencies.py",
+      "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "src/novel_forge/modules/book_authority/manuscript.py",
+      "src/novel_forge/modules/book_authority/production_policy.py",
+      "src/novel_forge/modules/book_authority/supervisor.py",
+      "src/novel_forge/modules/book_authority/working_prose.py",
+      "src/novel_forge/modules/capability_packs/longform_profiles.py",
+      "src/novel_forge/modules/capability_packs/protocol.py",
+      "src/novel_forge/modules/capability_packs/schema.py",
+      "src/novel_forge/modules/capability_packs/semantic.py",
+      "src/novel_forge/modules/capability_packs/validation_deployment.py",
+      "src/novel_forge/modules/capability_packs/validator.py",
+      "src/novel_forge/modules/chapter_authority/author_draft.py",
+      "src/novel_forge/modules/chapter_authority/capacity_continuation.py",
+      "src/novel_forge/modules/chapter_authority/context_compression_provider.py",
+      "src/novel_forge/modules/chapter_authority/context_transport_recovery.py",
+      "src/novel_forge/modules/chapter_authority/contracts.py",
+      "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+      "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "src/novel_forge/modules/chapter_authority/handlers.py",
+      "src/novel_forge/modules/chapter_authority/model_effects.py",
+      "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+      "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "src/novel_forge/modules/chapter_authority/realization_composition.py",
+      "src/novel_forge/modules/chapter_authority/receipt_recovery.py",
+      "src/novel_forge/modules/chapter_authority/retained_draft_validation.py",
+      "src/novel_forge/modules/chapter_authority/review_window.py",
+      "src/novel_forge/modules/chapter_authority/runtime.py",
+      "src/novel_forge/modules/chapter_authority/scene_receipt_recovery.py",
+      "src/novel_forge/modules/command_kernel/context_transport_recovery.py",
+      "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+      "src/novel_forge/modules/command_kernel/step_successor_v2.py",
+      "src/novel_forge/modules/context_builder/domain.py",
+      "src/novel_forge/modules/context_builder/request_capacity.py",
+      "src/novel_forge/modules/context_builder/task_compression.py",
+      "src/novel_forge/modules/longform_narrative/scheduling.py",
+      "src/novel_forge/modules/production_execution/backends.py",
+      "src/novel_forge/modules/production_execution/cost_routing.py",
+      "src/novel_forge/modules/production_execution/provider_admission.py",
+      "src/novel_forge/modules/production_execution/routing_runtime.py",
+      "src/novel_forge/modules/production_execution/token_meter.py",
+      "src/novel_forge/modules/story_planning_runtime/execution.py",
+      "src/novel_forge/modules/story_planning_runtime/preflight_continuation.py",
+      "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+      "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+      "src/novel_forge/modules/worldbuilding/production_planning.py",
+      "src/novel_forge/storage/authority_asset_store.py",
+      "src/novel_forge/storage/external_effect_repositories.py",
+      "src/novel_forge/storage/world_preparation_repositories.py",
+      "tests/fixtures/creation_capacity_legacy_contract_hashes.json",
+      "tests/integration/test_chapter_capacity_continuation_postgres.py",
+      "tests/integration/test_chapter_model_effects_postgres.py",
+      "tests/integration/test_cli_effect_reconciliation_postgres.py",
+      "tests/integration/test_external_effect_admission_contract_postgres.py",
+      "tests/integration/test_synthesis_formation_postgres.py",
+      "tests/integration/test_world_working_continuity_postgres.py",
+      "tests/unit/test_capability_pack_validator.py",
+      "tests/unit/test_chapter_authority_dependencies.py",
+      "tests/unit/test_chapter_capacity_continuation.py",
+      "tests/unit/test_complete_request_capacity.py",
+      "tests/unit/test_completed_generation_recovery.py",
+      "tests/unit/test_context_compression_provider.py",
+      "tests/unit/test_creation_coordination.py",
+      "tests/unit/test_longform_capability_pack_profiles.py",
+      "tests/unit/test_longform_working_history.py",
+      "tests/unit/test_planning_coordinated_contracts.py",
+      "tests/unit/test_planning_gateway_recovery.py",
+      "tests/unit/test_planning_runtime_continuation.py",
+      "tests/unit/test_prompt_skill_calibration.py",
+      "tests/unit/test_prose_reviewer_sampling.py",
+      "tests/unit/test_reader_forward_contract.py",
+      "tests/unit/test_routing_bootstrap.py",
+      "tests/unit/test_work_intent_residuals.py"
+    ],
+    "checks": [
+      {
+        "exit_code": 0,
+        "gate": "repository-governance"
+      },
+      {
+        "exit_code": 0,
+        "gate": "focused-tests"
+      },
+      {
+        "exit_code": 2,
+        "gate": "canonical-exact-sha-p0"
+      }
+    ],
+    "error": "canonical exact-SHA P0 failed",
+    "focused_test_paths": [
+      "tests/integration/test_chapter_capacity_continuation_postgres.py",
+      "tests/integration/test_chapter_model_effects_postgres.py",
+      "tests/integration/test_cli_effect_reconciliation_postgres.py",
+      "tests/integration/test_external_effect_admission_contract_postgres.py",
+      "tests/integration/test_synthesis_formation_postgres.py",
+      "tests/integration/test_world_working_continuity_postgres.py",
+      "tests/unit/test_capability_pack_validator.py",
+      "tests/unit/test_chapter_authority_dependencies.py",
+      "tests/unit/test_chapter_capacity_continuation.py",
+      "tests/unit/test_complete_request_capacity.py",
+      "tests/unit/test_completed_generation_recovery.py",
+      "tests/unit/test_context_compression_provider.py",
+      "tests/unit/test_creation_coordination.py",
+      "tests/unit/test_longform_capability_pack_profiles.py",
+      "tests/unit/test_longform_working_history.py",
+      "tests/unit/test_planning_coordinated_contracts.py",
+      "tests/unit/test_planning_gateway_recovery.py",
+      "tests/unit/test_planning_runtime_continuation.py",
+      "tests/unit/test_prompt_skill_calibration.py",
+      "tests/unit/test_prose_reviewer_sampling.py",
+      "tests/unit/test_reader_forward_contract.py",
+      "tests/unit/test_routing_bootstrap.py",
+      "tests/unit/test_work_intent_residuals.py"
+    ],
+    "head_sha": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab",
+    "implementation_changed": true,
+    "implementation_tree_sha": "sha256:5bb5a55fe0ede4008ce37241fc73efc54f6bd4b78127de6aa549c1757b4aca2a",
+    "provider_evidence": [
+      {
+        "identity_status": "STALE",
+        "path": "architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+        "qualification_authority": "GOVERNED_PROVIDER_QUALIFICATION"
+      }
+    ],
+    "provider_qualification": "NOT_ASSESSED_BY_PR_GATE",
+    "qualification": "REQUIRED_EXACT_SHA_P0",
+    "qualification_reason": "IMPLEMENTATION_CHANGED",
+    "schema_version": "novel-forge.pr-governance.v1",
+    "status": "FAIL"
+  },
+  "configured_backend": {
+    "status": "PASS",
+    "passed": 6258,
+    "subtests": 1532
+  },
+  "migration_configuration_negative": {
+    "older_6ba": "FAIL after missing backup configuration and 3600-second gate timeout",
+    "current_unconfigured": "FAIL_INTERRUPTED_AFTER_MISSING_BACKUP_DIAGNOSIS",
+    "diagnostic_reproduction": "MIGRATION_BACKUP_REQUIRED",
+    "configured_diagnostic": "1 PASS with documented private backup directory and PG16 clients; complete configured matrix still reported independently"
+  },
+  "negative_backend_ad": {
+    "status": "FAIL",
+    "failed": 3,
+    "passed": 6254,
+    "subtests": 1532,
+    "fixed_in": "35a7b26eaaa165fea9c16c782e1a31b25a6196ab"
+  },
+  "real_provider": "NOT_RUN",
+  "real_512k": "NOT_RUN",
+  "draft_revision_native_upgrade": "NOT_RUN",
+  "long_form_memory_quality": "NOT_RUN",
+  "literary_quality": "NOT_RUN"
+}

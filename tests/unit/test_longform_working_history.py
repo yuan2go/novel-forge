@@ -181,7 +181,8 @@ def test_longform_neutral_guidance_preserves_author_scope():
         assert historical_requirement not in instruction
     template = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())
     policy = template["profiles"]["production_profile"]["content"]["working_prose_policy"]
-    assert policy["version"] == LONGFORM_POLICY_VERSION and policy["history_chapters"] == 128
+    assert policy["version"] == "working-prose-projection.v6" and policy["history_chapters"] == 128
+    assert policy["max_characters"] is None
 
 
 @pytest.mark.parametrize("change", ["draft", "selection_receipt"])
@@ -210,3 +211,14 @@ def test_earlier_unrendered_selection_change_invalidates_downstream_dependencies
     _, changed = dependency_changes(uow, book)
     assert changed[130] == [expected]
     assert changed[131] == [{**expected, "via_chapter": 130}]
+
+
+def test_capacity_policy_keeps_native_source_lineage_and_uses_existing_lossless_transport(monkeypatch):
+    from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
+    uow, book, _ = _native_history(monkeypatch, 130, tiny=True)
+    snapshot = manuscript.freeze_working_context(uow, book, 130,
+        projection_policy=_policy(version="working-prose-projection.v6", max_characters=None))
+    delivered, receipt = compile_working_history_transport(snapshot)
+    assert snapshot["source_history"]["source_count"] == 129
+    assert delivered["source_history"]["contract_version"] == "working-source-history-reference.v1"
+    assert receipt["projections"] and delivered["sources"] == snapshot["sources"]

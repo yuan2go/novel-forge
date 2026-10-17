@@ -705,14 +705,14 @@ recovery results; global backend qualification and literary proof remain separat
 For future Chapter work, author `book-chapter-context.v1` with
 `draft_profile: draft-context-profile-v4`, a positive `draft_token_budget` at most
 512,000, and the desired quality task budget. World/Director roles may use
-`world-production-policy.v4` with independently chosen Context allocation. The v4
+`world-production-policy.v5`; its role selection is followed by full request admission. The v4
 Context profile was introduced in Chapter Generation Pack `2.7.0`; new work must
 deploy and select the current `config/capability_packs/chapter_generation_pack.json`
-(candidate Pack `3.0.2`, Chapter workflow `3.10.0`) through the existing Pack Authority;
+(candidate Pack `3.1.0`, Chapter workflow `3.10.0`) through the existing Pack Authority;
 then verify its compiled snapshot and the Chapter preparation report's
-`stage_context_profile_versions.draft`. Its frozen Context policy explicitly sets
-the Planning task target to 64,000 tokens; this does not increase the authorized
-Provider token or money ledger. Changing process defaults does not update
+`stage_context_profile_versions.draft`. Its v3 Context policy defers lossy capacity decisions until the full request is
+rendered and sets the Planning support target to 512,000 tokens. This does not
+grant paid spending authorization or change the selected model's physical capacity. Changing process defaults does not update
 an old Book, Pack, preparation report or sent request. Old frozen contracts recover
 with their original hashes and semantics.
 
@@ -725,7 +725,7 @@ use their stage output target, bounded by confirmed model capacity and enforced
 in the sent request. OpenAI reasoning shares that output reserve; DeepSeek uses
 its supported reasoning budget semantics. Codex CLI has no enforced per-request
 output ceiling, so new task contracts reserve the full confirmed model output
-capacity, including reasoning once. Unknown CLI output capacity, insufficient
+capacity, including reasoning once. Unknown CLI output capacity without a frozen headroom policy, insufficient
 authorization or a final route whose output capacity exceeds the frozen reserve
 blocks before dispatch. CLI admission labels application-visible coverage.
 A static Planning model may inherit capacity evidence only when it uses the
@@ -734,7 +734,94 @@ the existing router with that candidate's own verified capacity and permission;
 changing only its model identifier leaves capacity unknown and blocks new work.
 Missing capacity, unsupported reasoning or an unqualified route blocks before
 external dispatch. Context compression uses the same authorized Provider and
-cumulative cost/token ledger; it does not grant extra calls or silently change models.
+ExternalEffect ledger. Membership token/call observations do not impose cumulative
+writing limits; paid spend authorization remains binding. Compression does not
+silently change models or grant a paid spending authorization.
+
+New `complete-request-capacity.v1` requests render and meter the full Prompt, System,
+Skill, materials and output schema before capacity-driven extraction. DeepSeek strict
+tool transport is counted in addition to the visible schema once. The separately
+passed Codex CLI output-schema file is also frozen, metered and checked before send;
+it does not stand in for the schema already present in the Prompt. Protocol framing,
+safety, output and reasoning reservations are recorded separately. After independent
+fidelity checking and necessary restoration, the owner renders again and freezes the
+derived request actually dispatched. A fitting full request makes no compression call.
+Source batches retain each original passage coordinate and expose the original Chapter
+version/hash to both model stages. Duplicate wrappers of that same source share the
+extract. Initial targets use the full rendered removable contribution, rather than
+subtracting repeated request overhead from one deduplicated source. The host-only empty
+expression probe is never sent or accepted; fidelity and final full-request admission
+still decide whether an actual extract can be used.
+Canonical working passages are rebuilt as explicitly attributed sparse source ranges;
+empty original wrappers are not sent. Whole-source identity and working/knowledge
+status remain unchanged; each supplied fragment has its exact original Unicode bounds
+and actual text hash. `omitted_ranges` includes earlier selection gaps as well as new
+capacity omissions. Their original reasons and the detailed mapping remain in the
+frozen Context and Effect projection. Rich semantic passage fields retain their
+original representation. Compare raw derivation and supplied-view hashes separately.
+Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
+new ordinary creation uses v3 Context and v6 working prose. Explicit legacy Planning
+without the narrative intent boundary retains Pack 2.13.0 and Context v2; selecting
+that contract does not opt into the new capacity policy. Relevant history selection
+is still bounded by its Book/task policy, independently of physical capacity.
+Explicit Creation v1/v2 installers read the preserved Chapter 3.0.2 base and omit
+the later Context v3 catalog entry; their Planning profile explicitly retains the
+pre-capacity Pack 2.15 binding. An existing Formation continues from its frozen
+deployment without reinstalling either Pack.
+
+Use `MODEL_TOKENIZER_V1` only for an exact model supported by the installed tiktoken
+mapping; preinstall its official hash-checked cache at `TIKTOKEN_CACHE_DIR` on every
+worker. Use `PINNED_TOKENIZER_JSON_V1` with evidence
+`tokenizer-json:<sha256>:<absolute-path>` for an independently verified matching
+model tokenizer (including DeepSeek). Install the `provider-tokenization` extra for
+standalone deployments; `industrial` and `test` include these dependencies. Tokenizer
+files are local immutable dependencies, never downloaded in a business transaction.
+The meter records UTF-8 bytes, tokenized text and estimated framing separately; only
+Provider receipts establish actual usage. Codex CLI coverage is application-visible.
+An overflowing byte upper bound reports `PROVIDER_CONTEXT_CAPACITY_UNCERTAIN`; supply
+a matched tokenizer rather than treating bytes as proven token overflow. Official
+references: [OpenAI token counting](https://developers.openai.com/api/docs/guides/token-counting)
+and [DeepSeek tokenizer](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/).
+
+Inspect `_context_capacity_projection` in the main Effect input, its original/result
+hashes, source ranges, restored/retained fidelity traces and complete measurement.
+Compression tasks retain all stage bindings in `task.capacity_bindings`; retry must
+reuse those exact model, reasoning, tokenizer, window and output policies. Successful
+chunks and original accounting survive worker restart. An unresolved earlier Effect
+requires native reconciliation before another identical call; the presence of a
+compression Effect is never zero-send evidence. Cancellation is rechecked between
+calls and before committing the Draft. Old frozen requests remain immutable; use the
+existing Planning runtime-continuation preflight for the explicitly validated v2→v3
+Pack upgrade, retaining unchanged workflow, Skills, schemas, account and route policy.
+A different creative contract or unresolved outcome cannot borrow that upgrade.
+For an older Chapter Context/Draft/Revision capacity failure, activate the approved
+same-Book v3 Pack for the executable release through the existing Pack Authority,
+then use `authority-creation continue --project-id <project> --formation-run-id <id>
+--repository-root <repository> --foreground`. The native Chapter preflight appends a
+`chapter-complete-request-capacity.v1` failed-step successor only after proving the
+original failure, inputs, source Pack and unchanged non-capacity contracts. The failed
+step must have zero Effects/reservations; earlier Memo or other sibling calls may
+exist and must be reconciled. A legacy Draft/Revision Context is rebuilt from its
+original producer's frozen inputs and recorded as a separate hashed derivation.
+Old 24,000-character preparation selections remain historical source selections;
+this upgrade does not invent omitted history. Inspect `authority_saga_step_successor`
+policy evidence, the original Context source, the Effect's `_context_capacity_rebuild`
+when present, and `prompt_materialization.provider_view.capacity_policy_upgrade`.
+Missing or ambiguous historical Pack/source evidence, a changed creative contract,
+UNKNOWN, cancellation, a live lease or an obsolete Book frontier cannot borrow this
+continuation. Preserve the original root, Attempt, Context and all sibling Effects.
+
+For a retained task, read its original Attempt snapshot and current failure first.
+After the approved same-contract v3 Pack is active for the actual release, the original
+operator registers `POST /product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation`
+with `project_id`, `expected_source_version`, `decision_evidence` (`authorization_ref`,
+`authorized_reasoning_effort`, `reason`), `trace_id` and `correlation_id`. Ordinary
+`authority-creation continue --formation-run-id <id> --foreground` follows the saved
+successor. Chapter Attempt restart follows its original Root and can reuse completed
+compression receipts; `POST /product/production/book-authority/chapter-requests/{chapter_request_id}/reconcile`
+uses the existing Chapter reconciliation owner. Inspect the original Context, projection,
+substage Effects, admission, model-call and cost records together. Unknown external
+results retain their original IDs and native reconciliation path before further calls.
 
 A derived World Context uses its own frozen World policy for the selection budget
 and accounting method. A newer base Planning Pack does not reinterpret the legacy
@@ -2526,8 +2613,12 @@ stolen. Confirmed generation/evaluation receipts are reused, including evaluatio
 candidate has subsequently been approved. New generation under a changed source uses a
 new run; old terminal tasks and accepted history are not reopened.
 For native v5 membership creation, a terminal `PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED`
-with no external intent, reservation or frozen Context uses the existing Planning continuation
-Authority automatically. The retained source remains terminal; a linked successor keeps its exact
+with no external intent or reservation uses the existing Planning continuation Authority.
+An already frozen v2 Context is eligible only for the validated same-Pack v3 upgrade;
+its original version is retained and the successor derives and checks a new Context.
+The allocation distinguishes the preflight identity hash from its versioned semantic
+hash, which ignores only the host `frozen_by_operation_id` value. Final Context and
+request identity hashes still bind the actual successor. The retained source remains terminal; a linked successor keeps its exact
 story inputs and Pack while increasing only the single-task allocation within the configured
 model capacity. Preflight must succeed before registration; no more than two successors are
 allowed. An external intent of any status, including UNKNOWN, excludes this capacity path. Migration 0158 permits reconciliation of a previously admitted capacity successor with its verified candidate-repair cause; it requires the exact registered command and terminal zero-intent source. New successors use the failed capacity Operation as their causal source. Neither path rewrites terminal Operations or candidate provenance.
@@ -2959,7 +3050,7 @@ freezes its template hash and compiler version. Its Provider prompt projects onl
 active stage method; existing v13 schemas, exact reference transport and defaults remain.
 Verify the actual Attempt materialization before attributing a result to this selection.
 
-Current Planning Pack 2.14.0 binds Operation 1.21.0, System v12 and Template v3
+Current Planning Packs 2.16.0/2.17.0 bind Operation 1.21.0, System v12 and Template v3
 with the narrative-intent boundary. Historical Planning Pack 2.13.0 retains
 Operation 1.21.0, System v11 and Template v2,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
@@ -3591,12 +3682,15 @@ This opt-in policy uses the existing ChatGPT account and Codex backend with zero
 and stream retries. Pair it with a one-call native grant per diagnostic sample and stop
 the runner on failure; never change a frozen request to acquire this policy afterward.
 
-For multiple corrected requests under one grant, retain the same project and absolute
+Historical bounded diagnostic grants retain the same project and absolute
 `NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT` / `NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT`.
 The existing budget ledger conservatively includes unknown reservations, and Source uses
 the stricter of those absolute caps and the request ceiling. A new run key does not reset
 those project caps. Supply only the remaining authorized allowance to a corrected request;
 do not increase the project caps to compensate for consumed calls.
+These historical diagnostic caps do not apply to ordinary native writing under
+`billing-channel-resources.v1`; membership usage is observed without an additional
+cumulative call/token veto. Explicit paid spend authorization remains binding.
 
 Codex structured output uses a versioned wire-schema projection: `uniqueItems` remains
 in the frozen local validation Schema and is omitted only from the Provider Schema.
@@ -3629,12 +3723,16 @@ cancellation; missing remote identifiers or receipts can require external eviden
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 `RESUME`; pausing does not clear the unresolved outcome or its budget reservation.
 
-New Book requests needing more than the legacy draft Context ceiling must explicitly set
+For historical or explicitly selected legacy Book policies, an upgrade from the v2
+draft Context profile can explicitly set
 `NOVEL_FORGE_BOOK_DRAFT_CONTEXT_PROFILE_VERSION=draft-context-profile-v3` before
 Supervisor preparation, together with the bounded Book token budget and a compatible
 approved Pack policy. The request freezes that profile; replay without this field stays
 on v2. Increasing an environment budget alone does not upgrade an old frozen request.
 The v3 owner maximum is 24,000 tokens, and effective Pack/request limits still apply.
+Ordinary new creation instead uses the current v4 Draft profile, v3 Context capacity
+policy and v6 working-prose projection described above. Do not choose this legacy
+24,000-token profile to enable the current complete-request capacity chain.
 
 ## Public work discovery
 
@@ -3767,7 +3865,7 @@ add accepted support or relax a causal predicate. The owning Planning result bec
 terminal with `WORLD_PREPARATION_RESULT_INVALID` and can create its diagnosed repair;
 older `WORLD_PREPARATION_BLOCKED` retry checkpoints retain their history and replay
 the original receipt before this classification, without another Provider request.
-Current Planning template v2 compiles input manifest and context together into one
+Planning templates v2/v3 compile input manifest and context together into one
 lossless exact-reference envelope, with reconstruction equality and source/encoded
 hashes retained. Repeated task/context content is serialized once; no constraint or
 repair evidence is omitted and no budget is enlarged. Capacity continuation examines
@@ -4069,12 +4167,12 @@ that Book; creating another Workspace does not create another allowance. Initial
 checks the existing project's active status and workspace ownership and preserves all
 source assets and ledger history. It never reassigns an already bound workspace.
 
-Partition the one authorized total into explicit project sublimits whose sum stays within
-that total. Include Source and A's design/reviews/repairs in A's sublimit, and B's
-corresponding work in B's sublimit. Freeze `NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT` and
-`NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT` for every process in its project. Do not give
-each project the full shared allowance, transfer unused budget automatically, or create a
-replacement project to reset usage. Book-specific ALLOW_ONLY/DENY_ALL separates external
+Historical bounded A/B experiments partition their explicitly authorized total into
+project sublimits, including Source, design, reviews and repairs. Their frozen call/token
+limits remain historical evidence. Ordinary writing under `billing-channel-resources.v1`
+has no additional cumulative call/token limit; paid-channel spending still requires its
+actual authorization. Creating a replacement Project never clears unresolved reservations
+or external outcomes. Book-specific ALLOW_ONLY/DENY_ALL separates external
 knowledge; both Books retain only their own Canon and independently generated upper plans.
 
 For a small real-material catalogue, save original files and individual license evidence,
@@ -4405,10 +4503,12 @@ resume. Historical v1-v3 Formation runs without a frozen creation-input profile 
 `--creation-policy-file "$ORIGINAL_CREATION_POLICY"` on continuation. The current shipped
 default cannot silently replace that historical profile.
 
-Absent an explicit context policy, creation derives its context plan from the authorized
-PRIMARY Codex catalog windows, subtracting each output allowance. World execution uses
-`world-production-policy.v4` within its existing 512000 configurable ceiling. Explicit
-policies remain frozen. These estimates never override complete rendered-request admission.
+Absent an explicit context policy, new creation uses Context policy v3 and World policy
+v5 within the 512000 system ceiling and the selected route's confirmed smaller window.
+The complete rendered request includes its output/reasoning and protocol reservations.
+Historical profiles retain their frozen policies and allocations; ordinary continuation
+does not replace them with current defaults. Selection estimates never override complete
+rendered-request admission.
 
 Native `blob.upload` export uses the Command Kernel's Authority-bound storage admission,
 not a model route or a model budget. The exact built-in MinIO adapter must match the frozen

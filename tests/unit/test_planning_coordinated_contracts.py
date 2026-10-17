@@ -54,11 +54,15 @@ def test_explicit_legacy_planning_contract_keeps_serialization_and_world_schema(
     current = world_generation_schema(WorldProductionPolicy(), agency=True)
     assert "action_mode" in json.loads(current["properties"]["candidates"]["items"]["properties"]["transition"]["properties"]["payload_json"]["description"].split(": ", 1)[1])["properties"]
     assert "action_mode" not in world_transition_schema()["properties"]
+    historical = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64,
+        execution_contract_version="1.21.0", narrative_intent_boundary=False)
+    assert digest(historical.manifest) == "320b8869708a66d66f2fc0387e26d828a0d0af5aa550d295e2ca1c18be21abd9"
+    assert digest(historical.artifact_catalog) == "fe3e7810f8454b14a202b6c5efec3ad7536df928a9fc68d9143cd65712167260"
 
 
 def test_current_default_planning_pack_keeps_new_intent_boundary_separate_from_replay():
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "b" * 64)
-    assert profile.manifest["identity"]["version"] == "2.14.0"
+    assert profile.manifest["identity"]["version"] == "2.16.0"
     assert profile.manifest["prompt_binding"]["system_instruction_version"] == "v12"
     assert profile.manifest["prompt_binding"]["template_version"] == "v3"
     assert any(item["skill_ref"] == "long-outline" and item["version"] == "long-outline-v4"
@@ -272,7 +276,8 @@ def test_current_contract_receipt_is_rechecked_by_the_native_dispatch_owner_befo
         calls.append(arguments)
         return {**receipt, "source_input_hash": "another-native-stage"}
 
-    owner = SimpleNamespace(registry=SimpleNamespace(planning_repair_receipt=changed_receipt))
+    owner = object.__new__(ProductionProviderRouter)
+    owner.registry = SimpleNamespace(planning_repair_receipt=changed_receipt)
     with pytest.raises(KernelError, match="ROUTING_REPAIR_EVIDENCE_DRIFT"):
         ProductionProviderRouter._selected_route(owner, None, snapshot)
     assert calls == [{"project_id": snapshot["task"]["project_id"], "book_id": snapshot["task"]["work_id"],

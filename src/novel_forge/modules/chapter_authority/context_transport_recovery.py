@@ -17,6 +17,9 @@ def recover_unsent_context_transport(authority, *, book_run_id, principal, root_
     if not book.get('active_chapter_request_id'):
         return False
     request = authority.require_chapter_request(book['active_chapter_request_id'])
+    from .capacity_continuation import recover_capacity_continuation
+    if recover_capacity_continuation(authority, book, request, principal):
+        return True
     with AuthorityUnitOfWork(authority.database_url) as u:
         u.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step step USING(operation_id)
             WHERE o.root_operation_id=%s AND o.project_id=%s AND o.status IN ('FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER')

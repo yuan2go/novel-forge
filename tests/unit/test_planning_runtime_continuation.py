@@ -494,10 +494,11 @@ def test_terminal_capacity_continuation_rejects_any_external_intent_or_frozen_co
             {"error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"},
         ),
         (True,),
+        None,
     ]
     with pytest.raises(KernelError, match="DISPATCH_UNSAFE"):
         require_source(uow, source_operation_id="source", project_id="project")
-    assert uow.cursor.execute.call_count == 4
+    assert uow.cursor.execute.call_count == 6
 
 
 def test_terminal_noncapacity_failure_cannot_borrow_cancelled_runtime_continuation():
@@ -623,8 +624,8 @@ def test_world_input_delivery_never_raises_capacity_when_reprojection_still_exce
     from contextlib import nullcontext
     from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
     allocations = []
-    def reproject(content, *, command, task_tokens, projection_contract=None):
-        assert projection_contract is None
+    def reproject(content, *, command, task_tokens, projection_contract=None, capacity_policy_upgrade=None):
+        assert projection_contract is capacity_policy_upgrade is None
         allocations.append(task_tokens)
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "Still does not fit")
     pack = SimpleNamespace(require_attempt_snapshot=lambda **kwargs: "snapshot",

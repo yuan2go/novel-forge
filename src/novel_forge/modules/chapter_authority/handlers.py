@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .capacity_continuation import effective_context_content
+
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from dataclasses import asdict, dataclass, replace
@@ -1379,6 +1381,7 @@ class _ContextHandler:
             context_profile_version=stage_context_profile,
             context_model_call=context_model_call,
             compression_input_tokens=compression_allocation,
+            defer_token_capacity=request.capacity_upgrade is not None or (request.command.get("preparation_report") or {}).get("context_capacity_policy") == "complete-request-capacity.v1",
             book_id=_book_identity(request, plan.content),
             target_capability_id="prose.chapter.draft",
             capability_pack_snapshot_ref=str(
@@ -1405,6 +1408,8 @@ class _ContextHandler:
                              if item["asset_version_id"] in bundle["selected_asset_version_ids"]],
             }
         bundle["production_input_manifest"] = manifest
+        if request.capacity_upgrade is not None:
+            bundle["capacity_policy_upgrade"] = request.capacity_upgrade
         bundle["production_input_manifest_asset_version_id"] = (
             manifest_asset.asset_version_id if manifest_asset is not None else ""
         )
@@ -1531,7 +1536,7 @@ class _DraftHandler:
 
                 authored.content["creative_baseline"] = build_creative_baseline(
                     request.require_input("chapter_plan").content,
-                    request.require_input("context_bundle").content,
+                    effective_context_content(request),
                 )
             return authored
         from .candidate_repair import candidate_repair_payload
@@ -1543,13 +1548,13 @@ class _DraftHandler:
         if request.work_requirements_enabled:
             from .chapter_plan_views import build_creative_baseline
 
-            baseline = build_creative_baseline(plan.content, context.content, contract_version="creative-baseline.v2" if request.effective_definition_version == "3.10.3" else None)
+            baseline = build_creative_baseline(plan.content, effective_context_content(request, context), contract_version="creative-baseline.v2" if request.effective_definition_version == "3.10.3" else None)
         from .realization_composition import compile_realization_contract
         from .craft_execution import require_craft_delivery
 
-        craft_delivery = require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
+        craft_delivery = require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=effective_context_content(request, context))
         style = build_draft_style_view(
-            context.content, work_requirements=request.work_requirements_enabled
+            effective_context_content(request, context), work_requirements=request.work_requirements_enabled
         )
         plan_view = build_draft_plan_view(
             plan.content, work_requirements=request.work_requirements_enabled
@@ -1561,7 +1566,7 @@ class _DraftHandler:
             from .realization_composition import resolve_accepted_realization_sources
             core_policy, information_policy = "continuous-scene.v1", "actor-source-scope.v1"
             source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
-                "world_preparation": context.content.get("chapter_execution_expectations", {}).get("world_preparation", {})}
+                "world_preparation": effective_context_content(request, context).get("chapter_execution_expectations", {}).get("world_preparation", {})}
         realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy, **source_arguments)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
@@ -1581,7 +1586,7 @@ class _DraftHandler:
             plan=plan.content,
             context_asset_version_id=context.asset_version_id,
             context_content_hash=context.content_hash,
-            context_content=context.content,
+            context_content=effective_context_content(request, context),
             result=generated.output,
             provider_evidence=_provider_evidence(generated),
             work_requirements=request.work_requirements_enabled,
@@ -1669,7 +1674,7 @@ class _RevisionHandler:
             length_requirement = None
             if request.effective_definition_version == "3.10.0":
                 from .quality_length_requirement import freeze_requirement
-                length_requirement = freeze_requirement(context.content, context_id=context.asset_version_id)
+                length_requirement = freeze_requirement(effective_context_content(request, context), context_id=context.asset_version_id)
             revised = self.provider.invoke(
                 request,
                 stage="revision",
@@ -1710,7 +1715,7 @@ class _RevisionHandler:
         if request.effective_definition_version in {"3.9.4", "3.10.0"}:
             from novel_forge.modules.revision.domain import freeze_chapter_length_scope
             length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
-                context=context.content, context_asset_version_id=context.asset_version_id)
+                context=effective_context_content(request, context), context_asset_version_id=context.asset_version_id)
         if length_scope is None and request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
             from novel_forge.modules.revision.domain import retain_reviewed_draft
             retained = retain_reviewed_draft(draft=draft.content, draft_id=draft.asset_version_id,
@@ -2009,7 +2014,7 @@ class _CanonHandler:
             project_id=request.project_id,
             context_bundle_version_id=context.asset_version_id,
             extraction=resolved_extraction,
-            context_bundle=context.content,
+            context_bundle=effective_context_content(request, context),
             validation_contract=validation_contract,
             reader_observation_lineage=request.effective_definition_version == "3.10.0",
         )
@@ -2086,10 +2091,10 @@ class _CanonExtractionHandler:
         if request.effective_definition_version == "3.10.0":
             from novel_forge.modules.canon_graph.source_spans import source_spans
             from .domain_handlers import canon_history
-            baselines, _ = canon_history(context.content)
+            baselines, _ = canon_history(effective_context_content(request, context))
             from novel_forge.modules.canon_graph.background import scheduled_world_events
             from novel_forge.modules.worldbuilding.production_schema import world_transition_schema
-            world_binding = (context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}
+            world_binding = (effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("world_preparation") or {}
             world_events = scheduled_world_events(world_binding) if world_binding else []
             recovery_feedback = _canon_recovery_feedback(request)
             span_inputs = {**recovery_feedback, "source_span_table": source_spans(revision.content["text"]),
@@ -2099,7 +2104,7 @@ class _CanonExtractionHandler:
                     for event in world_events if event["camera"] == "ON_CAMERA"],
                 "transition_precondition_contract": "accepted-cas.v1", "accepted_transition_baselines": baselines,
                 "transition_result_contract": "canonical-plan-results.v1",
-                "canonical_transition_results": (context.content.get("chapter_execution_expectations") or {}).get("required_state_transitions") or []}
+                "canonical_transition_results": (effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("required_state_transitions") or []}
         provider_extraction = None
         generated: ModelProviderResult | None = None
         if request.effective_definition_version == "3.10.0":
@@ -2116,7 +2121,7 @@ class _CanonExtractionHandler:
                     "revision": revision.content,
                     **span_inputs,
                     "execution_expectations": dict(
-                        context.content.get("chapter_execution_expectations") or {}
+                        effective_context_content(request, context).get("chapter_execution_expectations") or {}
                     ),
                 },
             )
@@ -2141,7 +2146,7 @@ class _CanonExtractionHandler:
         from novel_forge.modules.canon_graph.background import attach_background_proposals
         content = attach_background_proposals(
             extraction=content,
-            binding=dict((context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}),
+            binding=dict((effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("world_preparation") or {}),
         )
         proof = _retained_result_proof(request)
         if request.effective_definition_version == "3.10.0" and proof and recovery_feedback:
@@ -2176,7 +2181,7 @@ class _CanonProposalHandler:
             if request.effective_definition_version == "3.10.0":
                 from novel_forge.modules.canon_graph.realization_comparison import comparison_input
                 context = request.require_input("context_bundle")
-                comparison = comparison_input(planned=(context.content.get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
+                comparison = comparison_input(planned=(effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
                     extraction=extraction.content, text=str(revision.content.get("text") or ""))
             if request.effective_definition_version in {"3.10.0", "3.10.1"} and request.database_url:
                 from .canon_support_coverage import retained_review
@@ -2232,7 +2237,7 @@ class _QualityGroupHandler:
             for item in request.inputs
             if isinstance(item.content.get("provider_evidence", {}), dict)
         )
-        context_content = dict(context.content)
+        context_content = dict(effective_context_content(request, context))
         generated: ModelProviderResult | None = None
         reference_calibration = None
         if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
@@ -2248,7 +2253,7 @@ class _QualityGroupHandler:
             revision_asset_version_id=revision.asset_version_id,
             chapter_plan=plan.content,
             chapter_plan_asset_version_id=plan.asset_version_id,
-            context_bundle=context.content,
+            context_bundle=effective_context_content(request, context),
             context_bundle_asset_version_id=context.asset_version_id,
             canon=canon.content,
             canon_asset_version_id=canon.asset_version_id,
@@ -2350,7 +2355,7 @@ class _QualityGroupHandler:
                     }
                 )
             context_content["context_segments"] = [
-                *list(context.content.get("context_segments", [])),
+                *list(effective_context_content(request, context).get("context_segments", [])),
                 {
                     "asset_version_id": f"external-effect:{request.operation_id}",
                     "narrative_function": "quality_evidence",
@@ -2536,7 +2541,7 @@ class _QualityHandler:
             review_asset_version_id=review.asset_version_id,
             project_id=request.project_id,
             context_bundle_version_id=context.asset_version_id,
-            context_bundle=context.content,
+            context_bundle=effective_context_content(request, context),
             evidence_reports=group_reports,
         )
         from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
@@ -2651,7 +2656,7 @@ class _QualityHandler:
             if not any(item.asset_type == "revision_task" for item in request.inputs)
             else ()
         )
-        manifest = dict(context.content.get("context_manifest") or {})
+        manifest = dict(effective_context_content(request, context).get("context_manifest") or {})
         authority_boundary = dict(manifest.get("authority_state_boundary") or {})
         provider_usage = _provider_usage_records(request.inputs)
         knowledge_selection = [
@@ -2722,10 +2727,10 @@ class _QualityHandler:
                 ),
                 "state_hash": authority_boundary.get(
                     "story_state_snapshot_version",
-                    context.content.get("story_state_snapshot_version", ""),
+                    effective_context_content(request, context).get("story_state_snapshot_version", ""),
                 ),
             },
-            context_bundle=context.content,
+            context_bundle=effective_context_content(request, context),
             planning_candidate=planning_evidence,
             quality_decision=content,
             mkaos_usage_records=mkaos_usage,
@@ -2761,7 +2766,7 @@ class _QualityHandler:
             ),
             evidence={
                 "proof_status": measurement["proof_status"],
-                "context_digest": context.content.get("actual_context_digest", ""),
+                "context_digest": effective_context_content(request, context).get("actual_context_digest", ""),
                 "production_verified": False,
             },
         )
@@ -2777,10 +2782,10 @@ class _QualityHandler:
             book_id=str(
                 request.command.get("book_id")
                 or plan.content.get("book_id")
-                or context.content.get("book_id")
+                or effective_context_content(request, context).get("book_id")
                 or ""
             ),
-            context_bundle=context.content,
+            context_bundle=effective_context_content(request, context),
             accepted_through_chapter=accepted_through_chapter,
             source_asset_version_ids=(
                 context.asset_version_id,
@@ -2926,7 +2931,7 @@ class _PublishGateHandler:
                 review_asset_version_id=review.asset_version_id,
                 canon=canon.content,
                 canon_asset_version_id=canon.asset_version_id,
-                context_bundle=context.content,
+                context_bundle=effective_context_content(request, context),
                 context_bundle_version_id=context.asset_version_id,
                 project_id=request.project_id,
                 work_admission=request.effective_definition_version == "3.10.0",
@@ -3219,6 +3224,12 @@ def _model_output(
     reused = (generated.execution_evidence or {}).get('completed_attempt_reuse') or (generated.execution_evidence or {}).get('completed_sibling_reuse')
     if reused:
         content = {**content, 'retained_generation_revalidation': reused}
+    if getattr(request, "capacity_context_derivation", None):
+        derivation = request.capacity_context_derivation
+        content = {**content, "context_derivation": {"contract_version": derivation["contract_version"],
+            "source_context_asset_version_id": derivation["source"]["asset_version_id"],
+            "source_context_content_hash": derivation["source"]["content_hash"],
+            "derived_content_hash": derivation["content_hash"], "policy_hash": derivation["policy_hash"]}}
     primary = _output(node, content)
     commit = None if known or reused else _execution_commit_auxiliary(node, request, generated)
     if commit is not None:

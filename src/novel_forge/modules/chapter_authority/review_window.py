@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .capacity_continuation import effective_context_content
+
 from typing import Any
 
 from novel_forge.modules.book_authority.prose_sources import (
@@ -44,7 +46,7 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
             retained = retained_candidate_evidence(incumbent.asset_version_id, incumbent.content)
             draft = replace(draft, asset_version_id=retained.asset_version_id, content=incumbent.content)
             review = replace(review, asset_version_id=retained.review_asset_version_id, content=dict(incumbent.content["selected_review"]))
-    targets = knowledge_review_targets(context.content)
+    targets = knowledge_review_targets(effective_context_content(request, context))
     window = prepare_review_window(request, target, context, review.content if review else None)
     payload = {**({"cross_chapter_window": window, "target_candidate_asset_version_id": target.asset_version_id} if window is not None else {}),
         "draft": target.content, "knowledge_review_targets": targets,
@@ -137,5 +139,5 @@ def prepare_review_window(
             request.command, "review"
         ),
         protected_context=protected,
-        required_context=build_provider_context_view("review", context.content, {}),
+        required_context=build_provider_context_view("review", effective_context_content(request, context), {}),
     )

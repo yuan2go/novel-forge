@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .capacity_continuation import effective_context_content
+
 from types import SimpleNamespace
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -98,21 +100,21 @@ def revalidate_applicability_scope(source, result, *, asset_reader):
     request = draft_receipt_inputs(source, asset_reader=asset_reader)
     plan, context = request.require_input("chapter_plan"), request.require_input("context_bundle")
     try:
-        build_creative_baseline(plan.content, context.content, contract_version="creative-baseline.v1")
+        build_creative_baseline(plan.content, effective_context_content(request, context), contract_version="creative-baseline.v1")
     except KernelError as error:
         if error.code != "QUALITY_APPLICABILITY_CONFLICT":
             raise
     else:
         raise KernelError("DRAFT_SCOPE_RECOVERY_NOT_APPLICABLE", "Require the original deterministic cross-scope conflict")
-    baseline = build_creative_baseline(plan.content, context.content, contract_version="creative-baseline.v2")
+    baseline = build_creative_baseline(plan.content, effective_context_content(request, context), contract_version="creative-baseline.v2")
     require_craft_delivery(plan=plan.content, intent=request.require_input("chapter_execution_intent").content,
-        memo=request.require_input("chapter_memo").content, context=context.content)
-    contract = compile_realization_contract(plan.content, build_draft_style_view(context.content, work_requirements=True),
+        memo=request.require_input("chapter_memo").content, context=effective_context_content(request, context))
+    contract = compile_realization_contract(plan.content, build_draft_style_view(effective_context_content(request, context), work_requirements=True),
         core_policy="continuous-scene.v1", information_policy="actor-source-scope.v1",
         accepted_sources=resolve_accepted_realization_sources(request, asset_reader=asset_reader, verify_content_hash=True),
-        world_preparation=context.content.get("chapter_execution_expectations", {}).get("world_preparation", {}))
+        world_preparation=effective_context_content(request, context).get("chapter_execution_expectations", {}).get("world_preparation", {}))
     content = normalize_draft_result(plan=plan.content, context_asset_version_id=context.asset_version_id,
-        context_content_hash=context.content_hash, context_content=context.content, result=result.output,
+        context_content_hash=context.content_hash, context_content=effective_context_content(request, context), result=result.output,
         provider_evidence=result.to_evidence(), work_requirements=True,
         core_policy="continuous-scene.v1", information_policy="actor-source-scope.v1", realization_contract=contract,
         enforce_voice_contract=not bool((request.command.get("preparation_report") or {}).get("author_workflow")))
@@ -462,15 +464,28 @@ def consume_completed_generation_result(request, *, stage, payload):
     from dataclasses import replace
     from psycopg.types.json import Jsonb
     with AuthorityUnitOfWork(request.database_url) as u:
+        u.cursor.execute("""SELECT e.external_effect_id FROM authority_external_effect e
+            WHERE e.operation_id=%s AND e.project_id=%s AND e.request_payload->>'stage'=%s
+              AND (e.request_payload->'input'=%s OR (e.request_payload->'input')-'_context_capacity_projection'=%s)
+              AND e.status IN ('DISPATCHING','UNKNOWN','RECONCILIATION_REQUIRED')
+              AND e.request_payload#>>'{_production_execution,attempt_id}'<>%s
+              AND NOT authority_generation_isolated(e.external_effect_id) LIMIT 1""",
+            [request.operation_id, request.project_id, stage, Jsonb(payload), Jsonb(payload), request.attempt_id])
+        unresolved = u.cursor.fetchone()
+        if unresolved:
+            raise KernelError("MODEL_EFFECT_RECONCILIATION_REQUIRED", "reconcile the original invocation before resuming identical stage input",
+                              details={"external_effect_id": unresolved[0]})
         u.cursor.execute("""SELECT e.external_effect_id,e.request_hash,e.request_payload,o.actor_id,o.trace_id,o.correlation_id
             FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
             JOIN authority_attempt a ON a.attempt_id=e.request_payload#>>'{_production_execution,attempt_id}'
             WHERE e.operation_id=%s AND e.project_id=%s AND o.workspace_id=%s AND e.status='SUCCEEDED' AND e.effect_type='model.invoke'
-              AND e.request_payload->>'stage'=%s AND e.request_payload->'input'=%s AND a.status IN ('FAILED_RETRYABLE','FAILED_FINAL')
+              AND e.request_payload->>'stage'=%s
+              AND (e.request_payload->'input'=%s OR (e.request_payload->'input')-'_context_capacity_projection'=%s)
+              AND a.status IN ('FAILED_RETRYABLE','FAILED_FINAL')
               AND a.attempt_id<>%s ORDER BY a.attempt_number DESC,e.created_at DESC LIMIT 1""",
-            [request.operation_id, request.project_id, request.workspace_id, stage, Jsonb(payload), request.attempt_id])
+            [request.operation_id, request.project_id, request.workspace_id, stage, Jsonb(payload), Jsonb(payload), request.attempt_id])
         own = u.cursor.fetchone()
-        if own and own[2].get('input') == payload:
+        if own and {key: value for key, value in own[2].get('input', {}).items() if key != '_context_capacity_projection'} == {key: value for key, value in payload.items() if key != '_context_capacity_projection'}:
             expected_book = request.command.get('book_id')
             original_book = (own[2].get('_production_execution') or {}).get('book_id')
             if expected_book and original_book != expected_book:
@@ -484,7 +499,11 @@ def consume_completed_generation_result(request, *, stage, payload):
             return replace(result, execution_evidence={**(result.execution_evidence or {}),
                 'completed_attempt_reuse': {'contract_version': 'chapter-completed-attempt-reuse.v1',
                     'source_operation_id': request.operation_id, 'source_effect_id': own[0], 'source_request_hash': own[1],
-                    'stage': stage, 'provider_invoked': False, 'accounting_status': verified['budget_reservation_status']}})
+                    'source_attempt_id': own[2]['_production_execution']['attempt_id'],
+                    'stage': stage, 'provider_invoked': False, 'accounting_status': verified['budget_reservation_status'],
+                    **({'pending_settlement': {key: verified[key] for key in (
+                        'budget_reservation_id', 'budget_reserved_amount', 'budget_estimated_tokens', 'provider_capability_profile')}}
+                       if verified['budget_reservation_status'] != 'SETTLED' else {})}})
         u.cursor.execute("""SELECT journal.policy_evidence,journal.source_failure_snapshot,
             current.command_payload,current.input_asset_snapshot,current.actor_id,current.definition_version
             FROM authority_saga_step_successor journal JOIN authority_operation current
@@ -637,3 +656,24 @@ def completed_result_proof(request):
         "source_operation_id": frozen["operation"]["operation_id"],
         "successor_operation_id": request.operation_id, "provider_invoked": False,
         "strict_certification_eligible": False, "completed_model_effects": policy["completed_model_effects"]}
+
+
+def retained_capacity_bindings(database_url, *, project_id, operation_id, source_hash, source_boundary, stage):
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT request_payload#>'{input,context_compression_task,task}'
+            FROM authority_external_effect WHERE operation_id=%s AND project_id=%s
+              AND request_payload#>>'{input,context_compression_task,task,source_projection_hash}'=%s
+              AND request_payload#>>'{input,context_compression_task,task,stage}'=%s""",
+            [operation_id, project_id, source_hash, stage])
+        rows = uow.cursor.fetchall()
+    bindings = {}
+    for (task,) in rows:
+        if task.get("frozen_input_boundary") != source_boundary:
+            raise KernelError("CONTEXT_CAPACITY_SOURCE_DRIFT", "Retained compression belongs to another frozen source boundary")
+        value = task.get("capacity_bindings")
+        if value:
+            bindings[narrative_hash(value)] = value
+    if len(bindings) > 1:
+        raise KernelError("ROUTING_CAPACITY_BINDING_DRIFT", "Retained chunks disagree on their prepared route identities")
+    return next(iter(bindings.values()), {})

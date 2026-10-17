@@ -22,11 +22,15 @@ identity changes without a corresponding projection update.
 ## Ordinary author writing
 
 New Creation requests select `config/execution_templates/author_first.json` (v12).
-The default creation-input policy freezes `native-narrative-execution.v2`: Chapter Pack
-3.0.4 with prose Skill v5 and Template v15, event-first Planning Pack 2.15.0, and
-working-prose projection v5, Craft budget v5 and selected-working delivery v2.
+The default creation-input policy freezes `native-narrative-execution.v3`: Chapter Pack
+3.1.0 with prose Skill v5 and Template v15, event-first Planning Pack 2.17.0, and
+working-prose projection v6, Craft budget v5 and selected-working delivery v2.
 The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
+Creation v1/v2 installation uses the preserved Chapter 3.0.2 base manifest and Context
+v2 catalog, then its original Skill/template bindings. Its event-first Planning
+profile remains Pack 2.15 with Context v2. Replaying a version name never relabels
+the current capacity contract as an older Pack.
 These native bindings do not establish literary effectiveness.
 Fresh work-requirements Contexts derive `chapter-generation-length.v1` from the exact
 visible frozen Platform profile. Writer receives its Han bounds, unit and source hashes;
@@ -314,7 +318,7 @@ execution controls and selection metadata remain host evidence. Legacy frozen Fo
 and Content replay retain their original inputs and identities. These executable input
 boundaries do not establish literary conformity or longform quality.
 
-New Story Planning Pack 2.14 binds System v12, template v3 and stage-specific Skill
+New Story Planning Packs 2.16/2.17 bind System v12, template v3 and stage-specific Skill
 versions to `planning-narrative-intent-projection.v1`. The existing generation
 preparer versions the sent output Schema instructions without changing the domain
 JSON shape or storage contract. The gateway first verifies the frozen Task/Context
@@ -1268,7 +1272,7 @@ selection with an explicit evidence-budget error, never a claim of no legal cont
 Only the matching mechanism history is copied into each candidate's phase evidence.
 Plan/Intent/Memo retain complete immutable strategies. A typed Memo's Context projection
 may replace an identical strategy with its exact protected ExecutionIntent reference; it
-cannot omit the only copy or change the existing Context maximum. A new request can
+cannot omit the only copy or change the existing Context maximum. Historical requests can
 explicitly freeze `draft-context-profile-v3`, whose Context owner ceiling is 24,000 tokens;
 the approved Pack and request may impose smaller limits. The profile is frozen in the
 Chapter preparation report. The author production page writes an explicit
@@ -1280,7 +1284,7 @@ Book Design's exact Character Cast binding; World preparation still verifies eac
 approved identity and private knowledge. Saving a configuration neither grants model
 calls nor changes a previously frozen Chapter command. Project editorial ControlMode
 is a separate native versioned policy: the UI identifies its project-wide future scope
-and shows the current selection separately from an existing chapter's frozen binding. Requests without the field retain v2 and its 16,000-token
+and shows the current selection separately from an existing chapter's frozen binding. Historical requests without the field retain v2 and its 16,000-token
 ceiling, even if they previously requested a larger budget. The corresponding v3 Provider
 view enforces the frozen token budget times four as its serialized-character bound,
 retains all selected facts, and omits their duplicate generated JSON summary. Legacy
@@ -1317,13 +1321,84 @@ and accepted boundary, select relevant inputs with bounded auxiliary history, cl
 explicit dependencies, deduplicate, and compare that workset with the task target.
 A fitting workset follows a deterministic path without semantic calls. Overflow may
 use host-bound extractive semantic compression of original historical projections.
-Complete paragraphs and causal/state units remain whole. The host binds source
+Causal/state units remain whole; oversized historical paragraphs can be split at
+verified source coordinates without changing protected quotations. The host binds source
 version/hash, unit positions, task and policy; the compressor selects units rather
 than inventing prose facts or computing source offsets. Exact drafts, Review/Revision
 objects, required facts and preserved voice quotes remain intact. A separate bounded
 semantic check assesses missing or changed meaning; uncertain results restore the
-local original units. A faithful result that still exceeds its target blocks. A
+local original units. Historical material-target contracts retain their target gate;
+the complete-request policy admits only after rebuilding and measuring the full request. A
 compressed derivative never mutates Canon and is not unconditionally recompressed.
+
+The author capacity policy is one complete request of at most 512,000 tokens,
+further bounded by the selected route's confirmed capacity. Material selection
+targets, historical character allocations and byte upper bounds are not evidence
+that the complete request exceeds that capacity. Ordinary writing has no additional
+cumulative token/call or local generation time veto. Paid spend authorization,
+physical interface limits, cancellation and execution identity still apply.
+New Chapter Pack `3.1.0` and current intent-boundary Planning profiles freeze
+`context-policy:chapter-generation-pack:v3` and `complete-request-capacity.v1`.
+Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and
+Context v2, including its original manifest and artifact catalog identities.
+Creation continuation also reaches Chapter's capacity-specific use of the existing
+failed-step successor. It requires an exact old capacity failure, a failed step with
+no Effect or reservation, reconciled sibling calls and the approved same-Book v3
+Pack. Only the three Context capacity fields and the explicit capacity artifact
+delta may change; source rules, workflow, Skills, Prompt, Schema and routes remain
+exact. Original commands, source versions and terminal history are retained. A local
+Context without a model Snapshot requires its earlier successful same-Book activation
+evidence; repository defaults cannot prove that identity. Draft/Revision continuation
+rebuilds Context through its original producer's frozen inputs before further
+compression, rather than extracting an old summary again. The derived content and
+its original source proof are frozen in the existing Effect and checked at rendering.
+The Context owner retains relevance, deduplication and source eligibility while
+deferring capacity eviction to the fully rendered request. Book's
+`working-prose-projection.v6` retains the selected historical passages without the
+legacy 24,000-character allocation; source identity and lossless history references
+remain separate from delivered expression. Older frozen policies retain their limits.
+
+Chapter's binder and Planning's preparer coordinate capacity within their existing
+Owners before planning the main Effect. Eligible older historical expression is
+extracted from the original frozen projection, independently checked, restored as
+needed, rebuilt and measured again. Current prose, facts, recent complete chapters
+and source boundaries remain exact. Compressor chunks are sized against both fully
+rendered substage requests and have no eight-chunk lifetime limit. Oversized text
+uses original Unicode coordinates and preserves quoted spans. Verified restoration
+can reallocate other compressible history. Each completed chunk retains its original
+ExternalEffect; retry reuses matching source, task, Pack and route bindings.
+Working passages batch within their original Chapter source, retaining per-passage
+coordinates. Identical wrappers of the same source version share one extract; another
+Chapter or changed source hash cannot borrow that identity.
+Detailed path/range mappings and fidelity receipts remain in the frozen Effect
+request. The sent view carries stable derivation hashes and an omission explanation;
+it does not repeat the potentially larger audit mapping in the Prompt. Source hashes
+and original passage bounds continue to identify the complete source, not the extract.
+Canonical working passages use `capacity-historical-passages.v1` after extraction:
+only supplied original Unicode ranges become passages, with hashes of their actual
+text and explicit omitted ranges. Whole-source version, hash and working/knowledge
+status stay intact; rich semantic passage fields cannot enter this compact form.
+This prevents empty original wrappers from disabling lossless packing and consuming
+more capacity than the original text. Host derivation and supplied-view hashes remain
+separate and both bind the final request. Upstream overflow execution still requires
+its native evidence.
+
+The preparation Router selects an authorized physical route without rejecting the
+uncompressed input first. Its final decision narrows to that prepared candidate and
+rechecks authorization, cost and capacity. Compression and fidelity each bind their
+own selected route and meter. A changed binding requires a versioned native request;
+it cannot silently change an already executed chunk's identity. Native scripted
+Chapter tests establish executable engineering control flow and saved Draft readback.
+Real Provider 512K capacity, upstream overflow execution, literary fidelity and
+long-form stability require their own evidence and are not implied by these tests.
+
+Specialized Agent, Reader, Narrative Evaluation and Model Reference binders explicitly
+forward the complete-request callback. Context substages retain the original Owner node
+and Pack permissions, use the Context output schema and receive the exact persisted
+Owner ContextBundle as their frozen source. Foreign Owner, source or Attempt bindings
+are rejected. Vector projection retains its separate physical admission protocol.
+Native small-request adapter verification and Chapter overflow execution do not qualify
+all specialized Owner overflow paths or the complete PostgreSQL acceptance matrix.
 
 Compression and fidelity calls use existing Chapter Provider Runtime, Pack/PEP,
 Kernel ExternalEffect, cost reservation, Lease/Fence and durable result reconciliation.
@@ -1336,12 +1411,15 @@ Skill, Schema, protocol, output reserve and safety margin pass Provider admissio
 The new accounting contract caps the window at the minimum of 512,000, the confirmed
 model window and authorized execution limit. Unknown capacity blocks. UTF-8 byte
 upper bounds are explicitly conservative token estimates, not exact tokenization;
-the independent 8 MiB serialization guard is a byte limit. Provider-specific output
+historical serialization guards remain separate byte limits and do not veto new
+complete-request preparation before token admission. Provider-specific output
 and reasoning accounting avoid treating the Context target as output reserve or
 charging the same reasoning reservation twice. API stage output targets are
 enforced in the sent request. Since Codex CLI does not enforce a per-request output
 ceiling, new task contracts reserve its full confirmed model output capacity,
-including reasoning once; unknown capacity or insufficient frozen reservation blocks.
+including reasoning once. An explicitly frozen CLI headroom policy can instead reserve
+the entire remaining confirmed window when the output maximum is unknown; unknown
+context capacity or insufficient frozen reservation blocks.
 Successful frozen requests recover under their original contract without new I/O.
 These are engineering contracts;
 fixture execution does not establish real Provider capacity or literary improvement.
@@ -1351,7 +1429,7 @@ Persistent Actor intentions use `world-actor-experiment.v2` and
 complete World role projection at up to 24,000 estimated tokens; v1/v2 retain their
 16,000-token ceiling. This is a versioned configuration policy, not a change to the
 number of actors, simulation rounds, actions, or accepted facts. The normal Pack,
-Router and cumulative native budget gates still apply, and qualification must cover
+Router, paid spending authorization and physical request gates still apply, and qualification must cover
 the frozen input policy actually used.
 
 The canonical consumer chain is:
@@ -2125,8 +2203,8 @@ assessment separately from the Chapter's selected methods. Book serial potential
 does not require a hook or serial function in every chapter, and a finite work's
 next-chapter continuity does not contradict its lack of long-serial potential.
 Quality recompiles the candidate's declared baseline version from the same exact inputs.
-Normal Creation v2 uses Chapter Pack 3.0.4 and the scoped Style compiler; v1 retains
-its Pack 3.0.3 binding. At a native Creation checkpoint without an active Chapter
+New Creation v3 uses Chapter Pack 3.1.0 and the scoped Style compiler. Frozen v2
+retains Pack 3.0.4 and v1 retains Pack 3.0.3. At a native Creation checkpoint without an active Chapter
 request or unresolved unisolated generation, the original Creator may derive v5
 from the same Foundation inputs through Content Authority. Normal preparation then
 freezes that eligible Style for future Chapter work. Existing Chapter inputs remain frozen.

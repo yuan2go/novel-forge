@@ -1,0 +1,326 @@
+{
+  "evidence_ceiling": "EXECUTABLE",
+  "actual_provider_token_boundary": "NOT_RUN",
+  "cases": [
+    {
+      "case": "complete-request-262144",
+      "tested_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+      "measurement": {
+        "limit": 262144,
+        "token_method": "",
+        "after_reserved": 56970,
+        "before_reserved": 466771,
+        "actual_provider_tokens": null
+      },
+      "original_projection_hash": "sha256:547bc8ac77a0d33307b1e3f458ba0a8c36b8a98b7e99050505870b97967c1610",
+      "derived_projection_hash": "sha256:9752b0b0f7f67b157f5cb359c7003d893b15b95a65accef523969cf2b6192be4",
+      "source_boundary": {
+        "kind": "FROZEN_STAGE_INPUTS",
+        "book_id": "book:project-30e581a4278549e4b6b27dcc0ec9a114",
+        "sources": [
+          {
+            "content_hash": "sha256:1e20a9eb045be968e0769346a072fe1562bbcbadfa8200e0ec117c2cbb5ce137",
+            "asset_version_id": "authority-output:bd2c3f9d-b420-40ac-8e1b-01ba6cae2e06:chapter.context:v1"
+          }
+        ],
+        "project_id": "project-30e581a4278549e4b6b27dcc0ec9a114",
+        "pack_snapshot_hash": "sha256:1cd30425942ccf39de103477c13fff42981cf96d4aa3d0ea29bc39de60c4939e"
+      },
+      "admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "measurement": {
+          "model": "scripted_provider_v2-draft",
+          "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "precision": "FIXTURE_BYTES_EXACT",
+          "utf8_bytes": 40314,
+          "input_tokens": 40314,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": null,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "envelope_hash": "sha256:56e0170a8f6af07097f244a2be29d71fe62c40aa6374e40bec669de577fe005e",
+        "total_reserved": 56970,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 16384,
+          "provider_input": 40314,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-draft",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 16384,
+          "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:1cd30425942ccf39de103477c13fff42981cf96d4aa3d0ea29bc39de60c4939e",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 441222,
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+          "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:797b744e893c15d658cb8cee89faf09c7850d9c55732766bbaf80fb9fce482ca",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:57d06a4af257b7dd0ec62f1f8edb00616be5f821b6f01ca39494d659a28d91fa",
+          "provider_context_view": "sha256:2e0f328d51d9af1d9c89c4f8ae318ad42562f9238416ec64b77ab382c873480b",
+          "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "effect_stages": [
+        "memo",
+        "context_compress",
+        "context_fidelity",
+        "context_compress",
+        "context_fidelity",
+        "context_compress",
+        "context_fidelity",
+        "draft"
+      ],
+      "native_prose_sha256": "554fc39396b0008b9b55f4dab3fb2b9eb621434f154d9686637ec7b16481d37a"
+    },
+    {
+      "case": "complete-request-262144-routed-restart",
+      "tested_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+      "measurement": {
+        "limit": 262144,
+        "token_method": "",
+        "after_reserved": 56970,
+        "before_reserved": 466771,
+        "actual_provider_tokens": null
+      },
+      "original_projection_hash": "sha256:0398992e0acfe82896176c51707e461417f90eed9cb0fba5515fab5bdac42bd9",
+      "derived_projection_hash": "sha256:817d7cc64c937a32fef94edd45d1a50ad03449b2078f8f21c4b0fbabf3319a66",
+      "source_boundary": {
+        "kind": "FROZEN_STAGE_INPUTS",
+        "book_id": "book:project-8b641df468484989af41ad69cfaba19c",
+        "sources": [
+          {
+            "content_hash": "sha256:2708b4b1ec2fc9ceaef06f4f02f354f5b31cc2d4d0700e8eea47fb1687f15e87",
+            "asset_version_id": "authority-output:12a722a2-0445-4260-ac3f-25bc9ed202ad:chapter.context:v1"
+          }
+        ],
+        "project_id": "project-8b641df468484989af41ad69cfaba19c",
+        "pack_snapshot_hash": "sha256:1b8f5e027830f253f024316120dc430fa4b132e02ecadd520727292c544a05bc"
+      },
+      "admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "measurement": {
+          "model": "synthesis-scripted",
+          "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "precision": "FIXTURE_BYTES_EXACT",
+          "utf8_bytes": 40314,
+          "input_tokens": 40314,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": null,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "envelope_hash": "sha256:273f79af898dd69d7cc2dbb5cd0b269b7abb3725b64c7e42fb9f741d270fd40f",
+        "total_reserved": 56970,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 16384,
+          "provider_input": 40314,
+          "request_framing": 16
+        },
+        "applicable_limit": 262144,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "synthesis-scripted",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 16384,
+          "route_identity": "routing-decision:bc04e365bb0481fcc3c6e3073db358b8664647169345885a45a07c9128030652",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 262144,
+          "execution_token_limit": 262144,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 441222,
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+          "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:d67900dd220e9032988eb26d226c244ecb8066abdb2b58566287753ab3469932",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:90ce94203c7a8eabd8f4296c6ae67b79b26185bbcaed203ce403b83b3daabf6b",
+          "provider_context_view": "sha256:24e7d8d38a2b4c833a64a869fbc774004f6777ddeba71633fa01addc28c1470e",
+          "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "effect_stages": [
+        "memo",
+        "context_compress",
+        "context_fidelity",
+        "context_compress",
+        "context_fidelity",
+        "context_compress",
+        "context_fidelity",
+        "draft"
+      ],
+      "native_prose_sha256": "554fc39396b0008b9b55f4dab3fb2b9eb621434f154d9686637ec7b16481d37a"
+    },
+    {
+      "case": "complete-request-512000",
+      "tested_source_sha": "a1c30020ddade323ce12b9796c568a3748c4633a",
+      "evidence_class": "NATIVE_SCRIPTED_ENGINEERING_ONLY",
+      "measurement": {
+        "limit": 512000,
+        "token_method": "",
+        "after_reserved": 56970,
+        "before_reserved": 690871,
+        "actual_provider_tokens": null
+      },
+      "original_projection_hash": "sha256:0062881de7a3519dbc06931d6851c4bf51f4f5e92c4fff2c4f95e2a36ba7c708",
+      "derived_projection_hash": "sha256:11c8b917b7730efce9bc0dd63053babc2c1e05ca272c3994ce13dfde0b611dcf",
+      "source_boundary": {
+        "kind": "FROZEN_STAGE_INPUTS",
+        "book_id": "book:project-5c63ef93975c4ba6a19381283a14352c",
+        "sources": [
+          {
+            "content_hash": "sha256:52fa6b186f65f125cf8b9d045d584bde9142d03b406c78cd02bec846af41f456",
+            "asset_version_id": "authority-output:f7afe3ba-d121-4363-b3b1-d1d5d418af20:chapter.context:v1"
+          }
+        ],
+        "project_id": "project-5c63ef93975c4ba6a19381283a14352c",
+        "pack_snapshot_hash": "sha256:b9a66ecf54109dbdf63e84da4ae8b2a86f8446be7715cadf6362dd2f3c1c531a"
+      },
+      "admission": {
+        "reason": "ADMITTED",
+        "status": "ADMITTED",
+        "precision": "EXACT",
+        "measurement": {
+          "model": "scripted_provider_v2-draft",
+          "method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "precision": "FIXTURE_BYTES_EXACT",
+          "utf8_bytes": 40314,
+          "input_tokens": 40314,
+          "system_context_limit": 512000,
+          "tokenized_text_tokens": null,
+          "input_token_upper_bound": null,
+          "actual_provider_input_tokens": null,
+          "protocol_framing_tokens_estimate": 16
+        },
+        "envelope_hash": "sha256:87345c9e812354eebb681fe9565c4d25d2f9ad97f044d5396eaa59e4b84f8e17",
+        "total_reserved": 56970,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 16384,
+          "provider_input": 40314,
+          "request_framing": 16
+        },
+        "applicable_limit": 512000,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "scripted_provider_v2-draft",
+          "provider": "scripted_provider_v2",
+          "precision": "EXACT",
+          "evidence_ref": "fixture-protocol:scripted-byte-meter:v1",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "scripted-byte-token-meter",
+          "output_reserve": 16384,
+          "route_identity": "draft:scripted_provider_v2:scripted_provider_v2-draft:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:sha256:b9a66ecf54109dbdf63e84da4ae8b2a86f8446be7715cadf6362dd2f3c1c531a",
+          "contract_version": "provider-token-accounting-v4",
+          "framing_overhead": 16,
+          "accounting_method": "SCRIPTED_UTF8_BYTES_EXACT_V1",
+          "model_context_limit": 512000,
+          "execution_token_limit": 512000,
+          "serialization_contract": "scripted-responses-text-envelope-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 665322,
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:246dc7abdcae869023c28f7fd7df8aa0aa0adff1a6404e11253ff8543b4aca05",
+          "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:25a75002b5ff54b7f55366e6dd8c63262f58c186a8d556ba62393d12cf49a68f",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:b9529799e70219584ccecc2e435257b88c8de7110c17607839a40298341a34e9",
+          "provider_context_view": "sha256:52aedf61ccdaebf8ef78f66edda84e3ab8f1e692e5fca8c8a105c904b0ab79a3",
+          "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      },
+      "effect_stages": [
+        "memo",
+        "context_compress",
+        "context_fidelity",
+        "context_compress",
+        "context_fidelity",
+        "context_compress",
+        "context_fidelity",
+        "context_compress",
+        "context_fidelity",
+        "draft"
+      ],
+      "native_prose_sha256": "554fc39396b0008b9b55f4dab3fb2b9eb621434f154d9686637ec7b16481d37a"
+    }
+  ]
+}

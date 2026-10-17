@@ -12,6 +12,7 @@ from novel_forge.modules.book_followup_authority.contracts import (
 from novel_forge.modules.chapter_authority.execution_gateway import (
     PostgresChapterExecutionContractBinder,
 )
+from novel_forge.modules.chapter_authority.context_compression_provider import CONTEXT_MODEL_STAGES
 from novel_forge.modules.chapter_authority.provider_views import (
     project_reader_outcome_context_input,
 )
@@ -51,7 +52,14 @@ class PostgresReaderOutcomeExecutionContractBinder(
         request_payload: Mapping[str, Any],
         snapshot_fencing_token: int,
         snapshot_worker_id: str,
+        context_model_call: Any = None,
+        capacity_probe: bool = False,
     ):
+        if self._require_capacity_context_owner(request_payload, owner_stage=self.stage_name):
+            return super().freeze_before_external_effect(
+                capability=capability, request_payload=request_payload,
+                snapshot_fencing_token=snapshot_fencing_token, snapshot_worker_id=snapshot_worker_id,
+                context_model_call=context_model_call, capacity_probe=capacity_probe)
         if capability != f"model.{self.stage_name}" or str(
             request_payload.get("stage") or ""
         ) != self.stage_name:
@@ -102,6 +110,8 @@ class PostgresReaderOutcomeExecutionContractBinder(
             request_payload=request_payload,
             snapshot_fencing_token=snapshot_fencing_token,
             snapshot_worker_id=snapshot_worker_id,
+            context_model_call=context_model_call,
+            capacity_probe=capacity_probe,
         )
 
     def _resolve_pack_snapshot(
@@ -120,7 +130,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
         graph: Mapping[str, str],
         route: Any,
     ):
-        if stage != self.stage_name:
+        if stage != self.stage_name and stage not in CONTEXT_MODEL_STAGES:
             raise KernelError(
                 "READER_OUTCOME_STAGE_INVALID",
                 "Reader Pack cannot bind another model stage",

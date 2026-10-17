@@ -1,0 +1,16 @@
+{
+  "source_sha": "ad83125992b1b4c7ab8abe4b8de6b7e565e8ef45",
+  "native_entry": "authority-creation continue --project-id <project> --formation-run-id <original-id> --repository-root <repository> --foreground",
+  "conditions": [
+    "Original failed-step capacity cause",
+    "Same-Book approved active Pack; only exact capacity delta",
+    "Immutable original command and input/source hashes",
+    "Prior model Snapshot or exact historical same-Book activation evidence",
+    "Kernel frontier, actor, cancellation, lease and UNKNOWN protections"
+  ],
+  "context_preparation_failure": "EXECUTABLE_CONTROLLED_TWO_NATIVE_CASES",
+  "draft_revision_legacy_full_request_failure": "WIRED_AND_UNIT_VERIFIED_ONLY",
+  "receipt_context_reuse": "Original verified settled Effect; request hash + successor journal + source + derived content checked; UNKNOWN stops without another model call",
+  "history_scope": "Original producer input versions retained. An old 24000-character preparation selection is not silently replaced by new default history.",
+  "source_status": "A FAILED_RETRYABLE predecessor may be sealed DEAD_LETTER by the existing successor owner; original Attempt result, command and inputs are preserved."
+}

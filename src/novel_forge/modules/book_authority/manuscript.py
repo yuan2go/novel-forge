@@ -467,7 +467,7 @@ def _selected_working_dependencies(uow, book, source):
 
 
 def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any], dict[int, list[dict[str, Any]]]]:
-    from .working_prose import LONGFORM_POLICY_VERSION, working_source_rows
+    from .working_prose import LONGFORM_POLICY_VERSIONS, working_source_rows
     uow.cursor.execute("""SELECT DISTINCT ON (r.chapter_number) r.chapter_number, output.asset_version_id,
             COALESCE(d.context_snapshot,r.command_payload #> '{preparation_report,working_manuscript}','{\"sources\":[]}'::jsonb)
             FROM authority_book_chapter_request r
@@ -494,7 +494,7 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
             predecessor = row["chapter"]
             current_id = selected.get(predecessor)
             lineage_changed = False
-            if (dependencies.get("projection_policy") or {}).get("version") == LONGFORM_POLICY_VERSION:
+            if (dependencies.get("projection_policy") or {}).get("version") in LONGFORM_POLICY_VERSIONS:
                 if predecessor not in resolutions:
                     resolutions[predecessor] = resolve_working_source(uow, book, predecessor)
                 current, resolution = resolutions[predecessor]
@@ -513,7 +513,7 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
 
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                            projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None) -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSION, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
 
     schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
@@ -531,7 +531,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     history = projection_policy["history_chapters"] if projection_policy else 4
     if projection_policy and projection_policy["version"] == PROGRESSION_POLICY_VERSION and chapter - 1 > history:
         raise KernelError("WORKING_PROSE_HISTORY_INCOMPLETE", "Progression requires every predecessor source within its declared history allocation")
-    longform = bool(projection_policy and projection_policy["version"] == LONGFORM_POLICY_VERSION)
+    longform = bool(projection_policy and projection_policy["version"] in LONGFORM_POLICY_VERSIONS)
     for number in range(1 if longform else max(1, chapter - history), chapter):
         resolution = None
         if projection_policy and projection_policy["version"] in RESOLVED_POLICY_VERSIONS:
@@ -556,7 +556,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     if memory_enabled:
         from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
         memory_packet = compile_working_memory(rows, queries=projection_policy["queries"],
-                                               max_characters=projection_policy["max_characters"] // 3)
+                                               max_characters=projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)))
     source_history = None
     if projection_policy:
         rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)

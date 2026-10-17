@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -8,6 +8,7 @@ import math
 from typing import Any, Mapping, Protocol
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRequest,
+    ChapterInputAsset,
     resolve_stage_context_token_budget,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
@@ -412,6 +413,14 @@ class ExternalEffectChapterModelPort:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
+        capacity_upgrade = getattr(request, "capacity_upgrade", None)
+        if capacity_upgrade and stage not in CONTEXT_MODEL_STAGES:
+            if payload.get("_context_capacity_upgrade") not in (None, capacity_upgrade):
+                raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_DRIFT", "Provider input cannot replace its registered capacity derivation")
+            payload = {**payload, "_context_capacity_upgrade": capacity_upgrade}
+            derivation = getattr(request, "capacity_context_derivation", None)
+            if derivation:
+                payload = {**payload, "_context_capacity_rebuild": derivation}
         business_payload = (
             request.command.get("payload")
             if isinstance(request.command.get("payload"), dict)
@@ -426,8 +435,34 @@ class ExternalEffectChapterModelPort:
             from .receipt_recovery import consume_completed_generation_result
             retained = consume_completed_generation_result(request, stage=stage, payload=payload)
             if retained is not None:
+                from novel_forge.modules.production_execution.postgres import PostgresAttemptFenceVerifier
+                from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+                try:
+                    PostgresAttemptFenceVerifier(self.database_url).assert_recovery_current(request.operation_id,
+                        request.attempt_id, request.fencing_token, request.worker_id or self.worker_id)
+                except ValueError as error:
+                    raise KernelError("MODEL_EFFECT_EXECUTION_IDENTITY_INVALID", "Receipt consumption requires the current native Attempt lease") from error
+                probe_operation_execution(self.database_url, operation_id=request.operation_id, project_id=request.project_id)
                 if pre_send_assertion is not None:
                     pre_send_assertion()
+                reuse = dict((retained.execution_evidence or {}).get("completed_attempt_reuse") or {})
+                pending = reuse.get("pending_settlement")
+                if pending:
+                    amount, tokens, basis = _model_budget_settlement(retained,
+                        reserved_amount=pending["budget_reserved_amount"], reserved_tokens=pending["budget_estimated_tokens"],
+                        frozen_capability_profile=pending["provider_capability_profile"])
+                    settle_provider_budget(self.database_url, reservation_id=pending["budget_reservation_id"],
+                        project_id=request.project_id, actual_amount=amount, actual_tokens=tokens, evidence={**basis, "retained_success": True})
+                    reuse.pop("pending_settlement")
+                    retained = replace(retained, execution_evidence={**retained.execution_evidence,
+                        "completed_attempt_reuse": {**reuse, "accounting_status": "SETTLED"}})
+                if reuse.get("source_attempt_id"):
+                    original_request = replace(request, attempt_id=reuse["source_attempt_id"])
+                    original_result = replace(retained, execution_evidence={key: value for key, value in (retained.execution_evidence or {}).items() if key != "completed_attempt_reuse"})
+                    self._record_model_call(original_request, stage, original_result,
+                        _model_log_ref(request.operation_id, original_request.attempt_id, stage, reuse["source_effect_id"]),
+                        external_effect_id=reuse["source_effect_id"])
+                    self._ensure_cost_evidence(original_request, stage, original_result, external_effect_id=reuse["source_effect_id"])
                 return retained
         context = EffectCommandContext(
             operation_id=request.operation_id,
@@ -561,6 +596,7 @@ class ExternalEffectChapterModelPort:
             "correlation_id": request.correlation_id,
             "workspace_id": request.workspace_id,
             "_production_execution": {
+                **({"context_capacity_upgrade": capacity_upgrade} if capacity_upgrade else {}),
                 **({"creative_requirements_contract": "work-requirements.v1"}
                    if isinstance(request, ChapterHandlerRequest) and request.work_requirements_enabled else {}),
                 "operation_id": request.operation_id,
@@ -603,7 +639,10 @@ class ExternalEffectChapterModelPort:
                     business_payload.get("generator_operation_name") or ""
                 ),
                 **({"model_reference": dict(business_payload["model_reference"])}
-                   if stage in {"model_reference_evaluate", "model_reference_adjudicate"}
+                   if (stage in {"model_reference_evaluate", "model_reference_adjudicate"}
+                       or (stage in CONTEXT_MODEL_STAGES and self.execution_binding_domain == "model_reference"
+                           and request.command.get("_context_capacity_owner_stage") == business_payload.get("generator_operation_name")
+                           and business_payload.get("generator_operation_name") in {"model_reference_evaluate", "model_reference_adjudicate"}))
                    and isinstance(business_payload.get("model_reference"), Mapping) else {}),
                 "route_provider": str(
                     getattr(
@@ -642,6 +681,8 @@ class ExternalEffectChapterModelPort:
                     }
                     for item in request.inputs
                 ],
+                **({"context_capacity_owner_stage": request.command["_context_capacity_owner_stage"]}
+                   if stage in CONTEXT_MODEL_STAGES and request.command.get("_context_capacity_owner_stage") else {}),
             },
         }
         binder = self.capability_binder or getattr(self.adapter, "binder", None)
@@ -673,6 +714,9 @@ class ExternalEffectChapterModelPort:
                 for key, value in frozen_payload.items()
                 if key != "_production_execution"
             }
+            projection = dict(frozen_payload.get("input") or {}).get("_context_capacity_projection")
+            if projection is not None and "_context_capacity_projection" not in dict(expected_outer.get("input") or {}):
+                expected_outer["input"] = {**expected_outer["input"], "_context_capacity_projection": projection}
             frozen_metadata = frozen_payload.get("_production_execution")
             if (
                 json.dumps(
@@ -719,11 +763,34 @@ class ExternalEffectChapterModelPort:
                     "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",
                     "Chapter contract binder cannot freeze Capability before effect",
                 )
+            def require_context_execution():
+                from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+                probe_operation_execution(self.database_url, operation_id=request.operation_id, project_id=request.project_id)
+                if pre_send_assertion is not None:
+                    pre_send_assertion()
+
+            def context_model_call(substage, task):
+                require_context_execution()
+                sources = []
+                for pointer in effect_request_payload["_production_execution"]["input_artifacts"]:
+                    document = self.query.require(project_id=request.project_id, asset_version_id=pointer["asset_version_id"])
+                    if document.content_hash != pointer["content_hash"] or document.asset_type != pointer["artifact_type"]:
+                        raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "Owner input changed before Context execution")
+                    sources.append(ChapterInputAsset(asset_version_id=document.asset_version_id, asset_type=document.asset_type,
+                        content_hash=document.content_hash, content=document.content))
+                nested = replace(request, inputs=tuple(sources), command={**request.command,
+                    "_context_capacity_owner_stage": stage,
+                    "_effect_instance": hashlib.sha256(json.dumps({"stage": substage, "task": task}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()})
+                result = self.invoke(nested, stage=substage, payload={"context_compression_task": task},
+                                     pre_send_assertion=require_context_execution)
+                return {**result.output, "_execution_evidence": dict(result.execution_evidence or {})}
+
             preflight = freeze_capability(
                 capability=f"model.{stage}",
                 request_payload=effect_request_payload,
                 snapshot_fencing_token=request.fencing_token,
                 snapshot_worker_id=request.worker_id or self.worker_id,
+                **({"context_model_call": context_model_call} if getattr(binder, "supports_request_capacity", False) else {}),
             )
             if provider_admission_required and (
                 preflight is None or preflight.provider_admission_artifact is None

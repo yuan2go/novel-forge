@@ -11,7 +11,7 @@ class ExternalEffectRepository:
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
 
-    def require_operation(self, operation_id: str, project_id: str) -> None:
+    def require_operation(self, operation_id: str, project_id: str, *, receipt_only: bool = False) -> None:
         self.cursor.execute(
             """
             SELECT status FROM authority_operation
@@ -23,7 +23,7 @@ class ExternalEffectRepository:
         row = self.cursor.fetchone()
         if row is None:
             raise KernelError("OPERATION_NOT_FOUND", "effect operation does not exist")
-        if row[0] != "EXECUTING":
+        if row[0] != "EXECUTING" and not (receipt_only and row[0] == "CANCELLATION_REQUESTED"):
             raise KernelError("OPERATION_STATUS_CONFLICT", "effect operation is not EXECUTING")
 
     def plan(self, row: dict[str, Any]) -> dict[str, Any]:
@@ -271,7 +271,7 @@ class ExternalEffectRepository:
                    effect.status, effect.max_attempts, effect.project_id,
                    effect.effect_type, effect.request_payload,
                    effect.completion_policy, effect.capability,
-                   effect.compensates_effect_id
+                   effect.compensates_effect_id, effect.operation_id
             FROM authority_external_effect_dispatch AS dispatch
             JOIN authority_external_effect AS effect
               ON effect.external_effect_id = dispatch.external_effect_id
@@ -299,6 +299,7 @@ class ExternalEffectRepository:
             "completion_policy",
             "capability",
             "compensates_effect_id",
+            "operation_id",
         )
         return dict(zip(fields, row, strict=True))
 

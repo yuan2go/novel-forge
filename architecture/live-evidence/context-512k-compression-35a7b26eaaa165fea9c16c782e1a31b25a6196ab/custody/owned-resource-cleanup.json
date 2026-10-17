@@ -1,0 +1,17 @@
+{
+  "scope": "Only the task-owned disposable native PostgreSQL container and exact registered obsolete test databases",
+  "initial_cluster_dump": {
+    "status": "FAIL_PARTIAL_NOT_A_COMPLETE_BACKUP",
+    "local_path": "/tmp/nf-context-512k-native-cluster-before-owned-db-cleanup.sql.gz",
+    "sha256": "3fea6d18267d7f808af3236ff45e9a20ce81087584577418a12f799d69b0e61a",
+    "bytes": 61452373,
+    "reason": "Owned tmpfs exhausted; pg_dumpall exited nonzero while creating a database init file."
+  },
+  "per_database_archives": {
+    "status": "VERIFIED_BEFORE_DROP",
+    "local_directory": "/tmp/nf-context-512k-owned-database-archives",
+    "receipt": "verified-owned-database-archives.jsonl.gz",
+    "verification": "Every pg_dump exit code and SQL completion footer checked; compressed bytes SHA recorded before dropping that exact owned database."
+  },
+  "production_or_author_database_modified": false
+}

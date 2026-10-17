@@ -855,6 +855,8 @@ class ProductionProviderRouter:
         risk: str = "",
         quality_floor: float = 0,
         dry_run: bool = False,
+        prepare_capacity: bool = False,
+        capacity_binding: Mapping[str, Any] | None = None,
         cache_prefix: bytes = b"",
         input_hash: str = "",
         request_input: Mapping[str, Any] | None = None,
@@ -862,6 +864,8 @@ class ProductionProviderRouter:
         lineage_operation_ids: Sequence[str] = (),
         producer_contract: Mapping[str, Any] | None = None,
     ) -> tuple[Any, dict[str, Any]]:
+        if prepare_capacity and not dry_run:
+            raise KernelError("ROUTING_CAPACITY_PREPARATION_ONLY", "capacity preparation cannot freeze a routing decision or authorize an Effect")
         lineage = _routing_operation_lineage(operation_id, lineage_operation_ids)
         contract = dict(producer_contract or {})
         contract_hash = snapshot_hash(contract) if contract else ""
@@ -916,6 +920,7 @@ class ProductionProviderRouter:
                         "declared_requirements": {
                             **({"pure_generation": original["declared_requirements"]["pure_generation"]}
                                if "pure_generation" in original.get("declared_requirements", {}) else {}),
+                            **({"capacity_route_binding": dict(capacity_binding)} if capacity_binding else {}),
                             "risk": risk,
                             "quality_floor": quality_floor,
                             "chapter": chapter,
@@ -1083,6 +1088,8 @@ class ProductionProviderRouter:
             else "",
             stable_key=stable_key,
             declared_requirements={
+                **({"capacity_preparation": True} if prepare_capacity else {}),
+                **({"capacity_route_binding": dict(capacity_binding)} if capacity_binding else {}),
                 "pure_generation": True,
                 "risk": risk,
                 "quality_floor": quality_floor,
@@ -1151,7 +1158,7 @@ class ProductionProviderRouter:
                 )
             )
         )
-        if dry_run and snapshot["status"] != "SELECTED":
+        if dry_run and not snapshot.get("selected"):
             return base_route, snapshot
         return self._selected_route(base_route, snapshot), snapshot
 
@@ -1256,6 +1263,15 @@ class ProductionProviderRouter:
         return budgets
 
     def _selected_route(self, base: Any, snapshot: Mapping[str, Any]) -> Any:
+        route = self._materialize_selected_route(base, snapshot)
+        binding = snapshot["task"].get("declared_requirements", {}).get("capacity_route_binding")
+        if binding:
+            from .token_meter import capacity_route_contract
+            if binding.get("route") != capacity_route_contract(route):
+                raise KernelError("ROUTING_CAPACITY_BINDING_DRIFT", "The selected route no longer matches its frozen request meter and capacity")
+        return route
+
+    def _materialize_selected_route(self, base: Any, snapshot: Mapping[str, Any]) -> Any:
         template = None
         task = snapshot["task"]
         repair = task.get("declared_requirements", {}).get("governed_repair")
@@ -1400,15 +1416,17 @@ class ProductionProviderRouter:
                 raise KernelError("PROVIDER_AUTH_PROFILE_REQUIRED", candidate["provider"])
             changes["auth_profile_ref"] = auth_profile
         if hasattr(base, "model_context_limit"):
+            matched_meter = base.token_accounting_method in {"MODEL_TOKENIZER_V1", "PINNED_TOKENIZER_JSON_V1"} and candidate["provider"] == base.model_profile.model_provider and (
+                base.token_accounting_method == "MODEL_TOKENIZER_V1" or candidate["model"] == base.model_profile.model_id)
             changes.update(
                 model_context_limit=candidate["context_limit"],
                 **({"model_output_limit": candidate["output_limit"]} if hasattr(base, "model_output_limit") else {}),
-                token_accounting_method="DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
+                token_accounting_method=base.token_accounting_method if matched_meter else "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
                 if candidate["provider"] == "deepseek"
                 else "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
                 if candidate["provider"] == "codex-cli"
                 else base.token_accounting_method,
-                token_accounting_evidence_ref=candidate["capability_version"],
+                token_accounting_evidence_ref=base.token_accounting_evidence_ref if matched_meter else candidate["capability_version"],
             )
         return replace(base, **changes)
 

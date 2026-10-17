@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .capacity_continuation import effective_context_content
+
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import AdmissionContext
 from novel_forge.modules.command_kernel.step_successor_v2 import replace_failed_step, has_domain_outputs
@@ -24,23 +26,25 @@ def draft_receipt_inputs(source, *, asset_reader):
                 or asset.eligibility != "ELIGIBLE" or asset.governance != "CLEAR"):
             raise KernelError("DRAFT_RECOVERY_INPUT_DRIFT", "Retain exact governed inputs")
         assets.append(ChapterInputAsset(asset.asset_version_id, asset.asset_type, asset.content_hash, asset.content))
-    return ChapterHandlerRequest(source["operation_id"], source["project_id"], source["workspace_id"], source["trace_id"], source["correlation_id"], source["command_payload"], tuple(assets), definition_version="3.10.0")
+    request = ChapterHandlerRequest(source["operation_id"], source["project_id"], source["workspace_id"], source["trace_id"], source["correlation_id"], source["command_payload"], tuple(assets), definition_version="3.10.0")
+    from .capacity_continuation import bind_retained_capacity_context
+    return bind_retained_capacity_context(request, asset_reader=asset_reader)
 
 
 def revalidate_scene_receipt(source, result, *, asset_reader):
     request = draft_receipt_inputs(source, asset_reader=asset_reader)
     plan, context = request.require_input("chapter_plan"), request.require_input("context_bundle")
     require_craft_delivery(plan=plan.content, intent=request.require_input("chapter_execution_intent").content,
-        memo=request.require_input("chapter_memo").content, context=context.content)
-    contract = compile_realization_contract(plan.content, build_draft_style_view(context.content, work_requirements=True),
+        memo=request.require_input("chapter_memo").content, context=effective_context_content(request, context))
+    contract = compile_realization_contract(plan.content, build_draft_style_view(effective_context_content(request, context), work_requirements=True),
         core_policy="continuous-scene.v1", information_policy="actor-source-scope.v1",
         accepted_sources=resolve_accepted_realization_sources(request, asset_reader=asset_reader, verify_content_hash=True),
-        world_preparation=context.content.get("chapter_execution_expectations", {}).get("world_preparation", {}))
+        world_preparation=effective_context_content(request, context).get("chapter_execution_expectations", {}).get("world_preparation", {}))
     normalized, changes = normalize_scene_source_union(contract, result.output.get("scene_artifacts"))
     if not changes:
         raise KernelError("DRAFT_RECOVERY_NOT_APPLICABLE", "Require a deterministic legal evidence union correction")
     content = normalize_draft_result(plan=plan.content, context_asset_version_id=context.asset_version_id,
-        context_content_hash=context.content_hash, context_content=context.content, result=result.output,
+        context_content_hash=context.content_hash, context_content=effective_context_content(request, context), result=result.output,
         provider_evidence=result.to_evidence(), work_requirements=True,
         core_policy="continuous-scene.v1", information_policy="actor-source-scope.v1", realization_contract=contract,
         enforce_voice_contract=not bool((request.command.get("preparation_report") or {}).get("author_workflow")))

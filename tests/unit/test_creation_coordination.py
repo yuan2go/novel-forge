@@ -94,19 +94,24 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
         **path["planning"])
     skill = next(item for item in planning.manifest["skill_binding"]["skills"] if item["skill_ref"] == "long-outline")
     assert skill["version"] == "long-outline-v5"
-    assert planning.manifest["identity"]["version"] == "2.15.0"
-    assert path["chapter"] == {"pack_version_override": "3.0.4", "prose_skill_version": "prose-generation-v5",
+    assert planning.manifest["identity"]["version"] == "2.17.0"
+    assert path["chapter"] == {"pack_version_override": "3.1.0", "prose_skill_version": "prose-generation-v5",
         "prompt_template_version": "v15"}
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v1"})["chapter"]["pack_version_override"] == "3.0.3"
+    assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v2"})["chapter"]["pack_version_override"] == "3.0.4"
     profile = policy["profiles"]["production_profile"]["content"]
     current = working_prose_policy(profile)
-    assert current["version"] == "working-prose-projection.v5"
+    assert current["version"] == "working-prose-projection.v6"
+    assert current["max_characters"] is None
+    assert planning.manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:v3"
     assert "No fixed number of turns" in working_instruction(current)
     assert profile["craft_budget_policy"]["schema_version"] == "narrative-craft-budget.v5"
     assert profile["working_craft_history_policy"] == {"version": "working-craft-delivery.v2", "use": "SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}
     historical = deepcopy(policy)
+    historical["narrative_execution_contract"] = "native-narrative-execution.v2"
     historical_profile = historical["profiles"]["production_profile"]["content"]
     historical_profile["working_prose_policy"]["version"] = "working-prose-projection.v4"
+    historical_profile["working_prose_policy"]["max_characters"] = 24_000
     historical_profile["craft_budget_policy"] = {"schema_version": "narrative-craft-budget.v4"}
     historical_profile["working_craft_history_policy"] = {"version": "working-craft-delivery.v1", "use": "SOFT_SELECTION_CAUTION"}
     historical_profile["language_contract"] = {"required_language": "zh-CN"}
@@ -131,6 +136,35 @@ def test_generated_title_request_is_explicit_and_preserves_author_title():
         creation_title({"version": "creation-request.v1"})
     with pytest.raises(ValueError, match="author title"):
         creation_title({"version": "creation-request.v2", "title": ""})
+
+
+@pytest.mark.parametrize("version,chapter_version", [("v1", "3.0.3"), ("v2", "3.0.4"), ("v3", "3.1.0")])
+def test_creation_installer_uses_actual_versioned_capacity_contract(monkeypatch, version, chapter_version):
+    import hashlib
+    from novel_forge.modules.capability_packs import validation_deployment as installer
+    from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+    from novel_forge.modules.book_authority.creation_runtime import creation_narrative_execution
+
+    root = Path(__file__).resolve().parents[2]
+    frozen = json.loads((root / "tests/fixtures/creation_capacity_legacy_contract_hashes.json").read_text())["contracts"]
+    def digest(value):
+        return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    monkeypatch.setattr(installer, "_install_validation_manifest", lambda *args, **kwargs: kwargs)
+    bindings = creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution." + version})
+    installed = installer.install_chapter_validation_pack("not-connected", repository_root=root,
+        project_id="p", workspace_id="w", book_id="b", application_build_id="fixture", commit_sha="a" * 40,
+        compiler=None, approver=None, agent_admin=None, pack_id_override="legacy-probe", **bindings["chapter"])
+    manifest, catalog = installed["manifest"], installed["artifact_catalog"]
+    assert manifest["identity"]["version"] == chapter_version
+    context_version = "v3" if version == "v3" else "v2"
+    assert manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:" + context_version
+    assert (manifest["context_sources"].get("capacity_policy") == "complete-request-capacity.v1") == (version == "v3")
+    planning = build_story_planning_pack_profile(root, operation_definition_hash="sha256:" + "a" * 64, **bindings["planning"])
+    if version != "v3":
+        assert {"manifest": digest(manifest), "catalog": digest(catalog)} == frozen[chapter_version]
+        assert {"manifest": digest(planning.manifest), "catalog": digest(planning.artifact_catalog)} == frozen["planning_2.15"]
+    else:
+        assert planning.manifest["identity"]["version"] == "2.17.0"
 
 
 def test_creation_job_is_an_operational_envelope_with_stable_takeover_identity():

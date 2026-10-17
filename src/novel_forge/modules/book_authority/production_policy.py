@@ -49,6 +49,6 @@ def validate_author_configuration(content: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(actor, dict):
             raise KernelError("WORLD_ACTOR_POLICY_INVALID", "Actor policy must be an object")
         result["world_actor_experiment"] = validate_actor_policy(actor, character_ids=actor.get("actor_ids", []), policy=world)
-    elif world.version not in {"world-production-policy.v1", "world-production-policy.v4"}:
+    elif world.version not in {"world-production-policy.v1", "world-production-policy.v4", "world-production-policy.v5"}:
         raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "Actor World policy requires explicit bounded Actor selection")
     return result

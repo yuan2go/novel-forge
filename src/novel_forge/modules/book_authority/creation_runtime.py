@@ -636,11 +636,11 @@ def creation_narrative_execution(policy: dict[str, Any]) -> dict[str, dict[str, 
     version = policy.get("narrative_execution_contract")
     if version is None:
         return {"chapter": {}, "planning": {}}
-    if version not in {"native-narrative-execution.v1", "native-narrative-execution.v2"}:
+    if version not in {"native-narrative-execution.v1", "native-narrative-execution.v2", "native-narrative-execution.v3"}:
         raise KernelError("CREATION_NARRATIVE_EXECUTION_INVALID", "Unknown frozen narrative execution contract")
-    return {"chapter": {"pack_version_override": "3.0.4" if version == "native-narrative-execution.v2" else "3.0.3", "prose_skill_version": "prose-generation-v5",
+    return {"chapter": {"pack_version_override": "3.1.0" if version == "native-narrative-execution.v3" else "3.0.4" if version == "native-narrative-execution.v2" else "3.0.3", "prose_skill_version": "prose-generation-v5",
                         "prompt_template_version": "v15"},
-            "planning": {"event_first_planning": True}}
+            "planning": {"event_first_planning": True, "complete_request_capacity": version == "native-narrative-execution.v3"}}
 
 
 def creation_title(inputs: dict[str, Any]) -> tuple[str, bool]:
@@ -1082,8 +1082,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 raise ValueError("AUTHOR_WORKFLOW_INVALID")
             profile_content["author_workflow"] = dict(AUTHOR_WORKFLOW)
         profile_content.setdefault("chapter_context_policy", {"version": "book-chapter-context.v1",
-            "draft_profile": "draft-context-profile-v4", "draft_token_budget": max(windows), "quality_token_budget": max(windows)})
-        profile_content.setdefault("world_production_policy", {"version": "world-production-policy.v4",
+            "draft_profile": "draft-context-profile-v4", "draft_token_budget": min(512000, max(windows)), "quality_token_budget": min(512000, max(windows))})
+        profile_content.setdefault("world_production_policy", {"version": "world-production-policy.v5",
             "max_provider_stages": 2, "context_token_budget": min(512000, max(windows))})
         profiles["profiles"]["production_profile"]["content"].update(
             target_chapter_count=inputs["target_chapters"], language_contract=inputs["language_contract"])

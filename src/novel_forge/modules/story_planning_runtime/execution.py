@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
+from novel_forge.modules.production_execution.token_meter import route_protocol_schema
 from novel_forge.modules.capability_pack_authority import (
     CapabilityPackAttemptSnapshot,
 )
@@ -2479,6 +2480,17 @@ def _canonical_narrative_provider_properties(
     }
 
 
+def stage_schema_evidence_identity(stage, schema, schema_ref, *, world_stage=False):
+    if stage in {"context_compress", "context_fidelity"}:
+        root = Path(__file__).resolve().parents[1]
+        paths = ("chapter_authority/provider_output_contracts.py", "chapter_authority/context_compression_provider.py")
+        return {"ref": schema_ref, "identity_version": "context-schema-factory.v1",
+                "content_hash": canonical_hash(dict(schema)),
+                "factory_hash": canonical_hash({path: hashlib.sha256((root / path).read_bytes()).hexdigest() for path in paths})}
+    factory = world_schema_evidence_identity if world_stage else planning_schema_evidence_identity
+    return factory(schema, schema_ref)
+
+
 def planning_schema_evidence_identity(
     schema: Mapping[str, Any], schema_ref: str
 ) -> dict[str, Any]:
@@ -4062,22 +4074,15 @@ class _PlanningPepPort:
         recovered_completion: bool,
         failure: Mapping[str, Any] | None = None,
     ) -> None:
-        self._record_evidence(
-            "model_call_log",
-            {
+        model_content = {
                 **dict(evidence),
                 "candidate_accepted": accepted_candidate,
                 "provider_invoked_this_attempt": not recovered_completion,
                 "recovered_external_effect_success": recovered_completion,
                 "post_provider_failure": dict(failure or {}),
                 "candidate_validation_status": "FAILED" if failure else "PENDING_DOMAIN_VALIDATION",
-            },
-        )
-        if recovered_completion:
-            return
-        self._record_evidence(
-            "cost_ledger",
-            {
+            }
+        cost_content = {
                 "availability": "UNAVAILABLE" if amount is None else "AVAILABLE",
                 "measurement": "UNKNOWN" if amount is None else "MEASURED",
                 "amount": amount,
@@ -4095,14 +4100,30 @@ class _PlanningPepPort:
                 "provider_invoked_this_attempt": True,
                 "recovered_external_effect_success": False,
                 "post_provider_failure": dict(failure or {}),
-            },
-        )
+            }
+        if recovered_completion and self.binding.request.stage in {"context_compress", "context_fidelity"}:
+            request = self.binding.request
+            original = dict(evidence["production_execution"]["execution_request"])
+            if (original.get("operation_id") != request.operation_id or original.get("project_id") != request.project_id
+                    or original.get("stage") != request.stage or original.get("external_effect_id") != self.effect_id
+                    or not original.get("attempt_id") or not isinstance(original.get("fencing_token"), int)):
+                raise KernelError("PLANNING_RECOVERY_RECEIPT_DRIFT", "Original Context accounting requires its verified Effect execution identity")
+            self._record_evidence("model_call_log", {**model_content, "provider_invoked_this_attempt": True,
+                "recovered_external_effect_success": False}, original_identity=original)
+            self._record_evidence("cost_ledger", cost_content, original_identity=original)
+        self._record_evidence("model_call_log", model_content)
+        if not recovered_completion:
+            self._record_evidence("cost_ledger", cost_content)
 
     @execution_step("story_planning_runtime._PlanningPepPort._record_evidence")
-    def _record_evidence(self, asset_type: str, content: dict[str, Any]) -> None:
+    def _record_evidence(self, asset_type: str, content: dict[str, Any], *, original_identity: dict | None = None) -> None:
         request = self.binding.request
+        attempt_id = original_identity["attempt_id"] if original_identity else request.attempt_id
         receipt_consumption = asset_type == "model_call_log" and content.get("recovered_external_effect_success") is True
         suffix = f":receipt-consumption:{request.fencing_token}" if receipt_consumption else ""
+        if request.stage in {"context_compress", "context_fidelity"}:
+            suffix = f":effect:{self.effect_id}" + suffix
+            content = {**content, "source_external_effect_id": self.effect_id}
         if receipt_consumption:
             content = {
                 **content,
@@ -4112,14 +4133,14 @@ class _PlanningPepPort:
                 "source_external_effect_id": self.effect_id,
             }
         logical_ref = (
-            f"runs/{asset_type}s/{request.operation_id}-{request.attempt_id}-"
+            f"runs/{asset_type}s/{request.operation_id}-{attempt_id}-"
             f"{request.stage}{suffix}.json"
         )
         command = AuthorityAssetWriteCommand(
             operation_id=request.operation_id,
             project_id=request.project_id,
             asset_id=(
-                f"{asset_type}:{request.operation_id}:{request.attempt_id}"
+                f"{asset_type}:{request.operation_id}:{attempt_id}"
                 + (
                     f":{request.stage}"
                     if request.stage.startswith("world_candidates.")
@@ -4149,11 +4170,18 @@ class _PlanningPepPort:
         try:
             self.writer.materialize_output(command)
         except KernelError as error:
-            if not receipt_consumption or error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":
+            if not (receipt_consumption or original_identity) or error.code != "AUTHORITY_ASSET_VERSION_CONFLICT":
                 raise
             existing = AuthorityAssetQuery(self.database_url).require(
                 project_id=request.project_id, logical_ref=logical_ref
             )
+            if original_identity:
+                if (existing.asset_id != command.asset_id or existing.asset_type != asset_type
+                        or existing.content_hash != canonical_hash(existing.content)
+                        or any(existing.content.get(key) != command.content[key] for key in
+                               ("operation_id", "project_id", "stage", "source_external_effect_id"))):
+                    raise KernelError("PLANNING_ORIGINAL_ACCOUNTING_CONFLICT", "Original Context accounting belongs to a different Effect") from error
+                return
             if (existing.asset_id != command.asset_id or existing.asset_type != asset_type
                     or existing.content_hash != canonical_hash(command.content) or existing.content != command.content):
                 raise KernelError("PLANNING_RECEIPT_CONSUMPTION_CONFLICT", "Original receipt consumption changed within the same consumer fence") from error
@@ -4294,13 +4322,18 @@ class PostgresPlanningExecutionPreparer:
         provider_stage: Any = None,
         world_action: AuthorityAssetDocument | None = None,
         frozen_world_sample: Any = None,
+        capacity_task: tuple[str, dict] | None = None,
+        capacity_source: tuple[Any, tuple] | None = None,
+        capacity_probe: bool = False,
     ) -> PreparedPlanningExecution:
         stage_name = (
+            capacity_task[0] if capacity_task else
             provider_stage.name
             if provider_stage is not None
             else command.generator_operation_name
         )
         stage_identity = (
+            capacity_task[0] + ":" + canonical_hash(capacity_task[1]).split(":")[-1] if capacity_task else
             provider_stage.name if provider_stage is not None else "planning"
         )
         if worker_id != self.worker_id:
@@ -4320,7 +4353,9 @@ class PostgresPlanningExecutionPreparer:
                 "Planning Pack capability differs from the Generator",
             )
         pack_materialization = self.pack_runtime.materialize_attempt_artifacts(attempt_snapshot)
-        if frozen_world_sample is not None:
+        if capacity_source is not None:
+            context_document, input_documents = capacity_source
+        elif frozen_world_sample is not None:
             from .world_sampling import require_frozen_world_execution
 
             require_frozen_world_execution(self.database_url, operation_id=operation_id, command=command,
@@ -4342,7 +4377,7 @@ class PostgresPlanningExecutionPreparer:
                 world_exact_prompt=(pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version),
                 planning_task_token_budget=json.loads(frozen.context_policy_payload_json).get("planning_task_token_budget", pack_materialization.context_policy.content.get("planning_task_token_budget")),
             )
-        if provider_stage is not None and frozen_world_sample is None:
+        if provider_stage is not None and frozen_world_sample is None and capacity_source is None:
             context_document, source_document = self._world_context_bundle(
                 operation_id=operation_id,
                 command=command,
@@ -4378,6 +4413,9 @@ class PostgresPlanningExecutionPreparer:
                 ) from exc
         tools = json.loads(frozen.tool_policy_payload_json)
         allowed_tools = self._allowed_tools(tools, stage_name if frozen_world_sample is not None else command.generator_operation_name)
+        if capacity_task:
+            if stage_name not in dict(tools.get("external_models") or {}).get("context_substages", []):
+                raise KernelError("PLANNING_CAPABILITY_TOOL_UNAUTHORIZED", "Frozen Planning policy must explicitly permit this Context substage")
         if allowed_tools != ("model.provider.invoke",):
             raise KernelError(
                 "PLANNING_CAPABILITY_TOOL_UNAUTHORIZED",
@@ -4500,7 +4538,7 @@ class PostgresPlanningExecutionPreparer:
         if (context_document.content.get("world_protected_context_accounting_version") == "world-protected-context-accounting.v1"
                 and (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) != ("prompt-template:story-planning-pack", "v3")):
             raise KernelError("WORLD_EXACT_ACCOUNTING_TRANSPORT_DRIFT", "Frozen exact accounting requires the original structured Planning transport")
-        if (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
+        if not capacity_task and (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
             from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
 
             progression = provider_stage is None and command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} and (((context_document.content.get("arc_working_set") or {}).get("working_manuscript") or {}).get("projection_policy") or {}).get("version") == "working-prose-projection.v4"
@@ -4513,6 +4551,10 @@ class PostgresPlanningExecutionPreparer:
             output_schema_ref += ":narrative-intent-v1"
             if progression:
                 output_schema_ref += ":narrative-progression-v1"
+        if capacity_task:
+            from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema, chapter_provider_output_schema_ref
+            output_schema = chapter_provider_output_schema(stage_name)
+            output_schema_ref = chapter_provider_output_schema_ref(stage_name)
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",
@@ -4608,7 +4650,7 @@ class PostgresPlanningExecutionPreparer:
             correlation_id=command.correlation_id,
         )
         stable_key = f"{operation_id}:{definition.capability}:planning-pep-v2"
-        if provider_stage is not None:
+        if provider_stage is not None or capacity_task:
             stable_key = f"{operation_id}:{definition.capability}:{stage_identity}:v1"
         if getattr(self.execution_transport, "resource_control_version", "") == "billing-channel-resources.v1":
             from novel_forge.modules.command_kernel.resource_route_recovery import next_resource_effect_key
@@ -4776,7 +4818,9 @@ class PostgresPlanningExecutionPreparer:
             "correlation_id": command.correlation_id,
             "operation_id": operation_id,
         }
-        if provider_stage is not None:
+        if capacity_task:
+            stable_request_payload["input"] = {"context_compression_task": capacity_task[1]}
+        elif provider_stage is not None:
             stable_request_payload["input"] = {
                 "world_preparation": dict(provider_stage.task)
             }
@@ -4797,8 +4841,129 @@ class PostgresPlanningExecutionPreparer:
         existing_intent = read_external_effect_intent(
             self.database_url, effect_context, effect_type="model.invoke", stable_idempotency_key=stable_key,
         )
+        complete_capacity = context_policy.get("capacity_policy") == "complete-request-capacity.v1"
+        capacity_binding = dict((capacity_task[1].get("task") or {}).get("capacity_bindings") or {}).get(stage_name) if capacity_task else None
+        if complete_capacity and (existing_intent is None or capacity_probe):
+            from novel_forge.modules.chapter_authority.context_compression_provider import task_provider_output_reserve
+            from novel_forge.modules.production_execution.token_meter import route_request_size, route_input_tokens, capacity_route_binding, capacity_route_contract
+            from novel_forge.modules.context_builder.request_capacity import prepare_request_capacity, protected_expression_quotes
+            target_scope = TargetScope(scope_kind=command.planning_scope.value.lower(), scope_id=command.logical_key,
+                                       project_id=command.project_id, book_id=command.book_id).to_dict()
+            capture = {}
+            prompt, preparation_prompt_evidence = _materialize_production_codex_prompt(target_scope=target_scope, stage=stage_name,
+                inputs=stable_request_payload["input"], materialization=materialization, provider_data_capture=capture)
+            reserve = task_provider_output_reserve(stage_name, planning_route, router_binding_pending=provider_router is not None)
+            def transport_schema(route):
+                mode = dict(dict(context_policy.get("provider_output_modes") or {}).get(stage_name) or {}).get("deepseek")
+                return json.dumps(output_schema, sort_keys=True, ensure_ascii=False) if mode and route.model_profile.model_provider == "deepseek" else ""
+            source_boundary = {"kind": "FROZEN_STAGE_INPUTS", "project_id": command.project_id, "book_id": command.book_id,
+                "pack_snapshot_hash": attempt_snapshot.snapshot_hash,
+                "sources": [{"asset_version_id": context_document.asset_version_id, "content_hash": context_document.content_hash}]}
+            capacity_bindings = {}
+            if not capacity_task:
+                from novel_forge.modules.chapter_authority.receipt_recovery import retained_capacity_bindings
+                from novel_forge.modules.narrative_state.reality import narrative_hash
+                capacity_bindings = retained_capacity_bindings(self.database_url, project_id=command.project_id,
+                    operation_id=operation_id, source_hash=narrative_hash(capture), source_boundary=source_boundary, stage=stage_name)
+                capacity_binding = capacity_bindings.get(stage_name)
+            if provider_router is not None:
+                prepared_route, preparation = provider_router.select(planning_route, task_type=stage_name,
+                    project_id=command.project_id, work_id=command.book_id, operation_id=operation_id,
+                    attempt_id=attempt_id, stable_key=stable_key,
+                    input_tokens=route_input_tokens(planning_route, prompt, output_schema_json=transport_schema(planning_route), protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref)),
+                    output_tokens=1 if planning_route.output_reservation_policy else reserve,
+                    trace_id=command.trace_id, correlation_id=command.correlation_id,
+                    request_input=stable_request_payload["input"], input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
+                    producer_contract=producer_contract_identity(preparation_prompt_evidence, materialization,
+                        schema_identity=stage_schema_evidence_identity(stage_name, output_schema, output_schema_ref, world_stage=provider_stage is not None)),
+                    dry_run=True, prepare_capacity=True, capacity_binding=capacity_binding)
+                if not preparation.get("selected"):
+                    from novel_forge.modules.production_execution.routing_runtime import routing_failure_details
+                    raise KernelError("PROVIDER_ROUTING_BLOCKED", str(preparation.get("decision_id")), details=routing_failure_details(preparation))
+                planning_route = prepared_route
+                reserve = task_provider_output_reserve(stage_name, planning_route, router_binding_pending=True, system_limit=512_000)
+            elif capacity_binding and capacity_binding["route"] != capacity_route_contract(planning_route):
+                raise KernelError("ROUTING_CAPACITY_BINDING_DRIFT", "Retained Planning request must retain its prepared route")
+            capacity_binding = capacity_route_binding(planning_route, preparation if provider_router is not None else None)
+            capacity_bindings[stage_name] = capacity_binding
+            if capacity_probe:
+                total, limit = route_request_size(planning_route, prompt, output_reserve=reserve, output_schema_json=transport_schema(planning_route), protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref))
+                return total <= limit
+            if not capacity_task:
+                arguments = dict(operation_id=operation_id, attempt_id=attempt_id, fencing_token=fencing_token,
+                    worker_id=worker_id, command=command, inputs=inputs, definition=definition, attempt_snapshot=attempt_snapshot,
+                    capacity_source=(context_document, input_documents))
+
+                def model_call(substage, task):
+                    from novel_forge.modules.production_execution.domain_execution import DomainModelOperation
+                    prepared = self._prepare_stage(**arguments, capacity_task=(substage, task))
+                    candidate = prepared.execution_port.execute(DomainExecutionCommand(capability=definition.capability,
+                        operation=DomainModelOperation.GENERATE, candidate_kind=CandidateKind.GENERATION,
+                        prompt=substage, context=task))
+                    from dataclasses import asdict
+                    return {**candidate.raw_output, "_execution_evidence": asdict(candidate.evidence)}
+
+                subroutes = {}
+
+                def chunk_fits(task):
+                    from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema, chapter_provider_output_schema_ref
+                    for substage in ("context_compress", "context_fidelity"):
+                        chunk = {**task, **({"selected_unit_ids": [unit["unit_id"] for unit in task["units"]]} if substage == "context_fidelity" else {})}
+                        schema = chapter_provider_output_schema(substage)
+                        sub_contract = {**materialization, "stage": substage,
+                            "output_schema": {"ref": chapter_provider_output_schema_ref(substage), "content": schema, "content_hash": canonical_hash(schema)}}
+                        rendered, sub_evidence = _materialize_production_codex_prompt(target_scope=target_scope, stage=substage,
+                            inputs={"context_compression_task": chunk}, materialization=sub_contract)
+                        if substage not in subroutes:
+                            subroute = self.planning_route
+                            sub_binding = capacity_bindings.get(substage)
+                            if provider_router is not None:
+                                subroute, decision = provider_router.select(subroute, task_type=substage,
+                                    project_id=command.project_id, work_id=command.book_id, operation_id=operation_id,
+                                    attempt_id=attempt_id, stable_key=stable_key + ":capacity-probe:" + substage,
+                                    input_tokens=route_input_tokens(subroute, rendered, protocol_schema_json=route_protocol_schema(subroute, schema, chapter_provider_output_schema_ref(substage))),
+                                    output_tokens=1 if subroute.output_reservation_policy else task_provider_output_reserve(substage, subroute, router_binding_pending=True),
+                                    trace_id=command.trace_id, correlation_id=command.correlation_id,
+                                    producer_contract=producer_contract_identity(sub_evidence, sub_contract,
+                                        schema_identity=stage_schema_evidence_identity(substage, schema, chapter_provider_output_schema_ref(substage))),
+                                    request_input={"context_compression_task": chunk}, input_hash="sha256:" + hashlib.sha256(rendered.encode()).hexdigest(),
+                                    dry_run=True, prepare_capacity=True, capacity_binding=sub_binding)
+                                if not decision.get("selected"):
+                                    raise KernelError("PROVIDER_ROUTING_BLOCKED", "No authorized Planning compression route is available")
+                            else:
+                                decision = None
+                                if sub_binding and sub_binding["route"] != capacity_route_contract(subroute):
+                                    raise KernelError("ROUTING_CAPACITY_BINDING_DRIFT", "Retained Planning compression route changed")
+                            capacity_bindings[substage] = capacity_route_binding(subroute, decision)
+                            subroutes[substage] = subroute
+                        subroute = subroutes[substage]
+                        submode = dict(dict(context_policy.get("provider_output_modes") or {}).get(substage) or {}).get("deepseek")
+                        schema_json = json.dumps(schema, sort_keys=True, ensure_ascii=False) if submode and subroute.model_profile.model_provider == "deepseek" else ""
+                        total, limit = route_request_size(subroute, rendered,
+                            protocol_schema_json=route_protocol_schema(subroute, schema, chapter_provider_output_schema_ref(substage)),
+                            output_reserve=task_provider_output_reserve(substage, subroute, router_binding_pending=provider_router is not None, system_limit=512_000),
+                            output_schema_json=schema_json)
+                        if total > limit:
+                            return False
+                    return True
+
+                def measure(projection):
+                    rendered, _ = _materialize_production_codex_prompt(target_scope=target_scope, stage=stage_name,
+                        inputs={**stable_request_payload["input"], **({"_context_capacity_projection": projection} if projection else {})},
+                        materialization=materialization)
+                    return route_request_size(planning_route, rendered, output_reserve=reserve, output_schema_json=transport_schema(planning_route), protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref))
+
+                projection = prepare_request_capacity(original=capture, stage=stage_name, route=planning_route,
+                    source_boundary=source_boundary, capacity_bindings=capacity_bindings,
+                    preserve_quotes=protected_expression_quotes(capture), measure=measure, model_call=model_call, chunk_fits=chunk_fits)
+                if projection:
+                    stable_request_payload["input"]["_context_capacity_projection"] = projection
+        if existing_intent is not None:
+            frozen_projection = dict(existing_intent["request_payload"].get("input") or {}).get("_context_capacity_projection")
+            if frozen_projection is not None:
+                stable_request_payload["input"]["_context_capacity_projection"] = frozen_projection
         requested_output_token_ceiling = None
-        if existing_intent is None and frozen.context_policy_ref == "context-policy:chapter-generation-pack:v2":
+        if existing_intent is None and frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}:
             target_scope = TargetScope(
                 scope_kind=command.planning_scope.value.lower(),
                 scope_id=command.logical_key,
@@ -4815,8 +4980,12 @@ class PostgresPlanningExecutionPreparer:
                 transport_schema = ""
             components = provider_request_token_components(
                 complete_prompt, output_schema_json=transport_schema,
+                protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref) if complete_capacity else "",
                 output_reserve=1, safety_margin=planning_route.token_safety_margin,
                 framing_overhead=planning_route.token_framing_overhead,
+                accounting_method=planning_route.token_accounting_method if complete_capacity else "",
+                model=planning_route.model_profile.model_id,
+                accounting_evidence_ref=planning_route.token_accounting_evidence_ref,
             )
             frozen_request_token_ceiling = sum(components.values()) - 1
             if frozen_request_token_ceiling > int(context_policy["max_tokens"]):
@@ -4826,6 +4995,7 @@ class PostgresPlanningExecutionPreparer:
             requested_output_token_ceiling = task_provider_output_reserve(
                 stage_name, planning_route, router_binding_pending=provider_router is not None,
                 input_tokens=frozen_request_token_ceiling,
+                system_limit=512_000 if complete_capacity else None,
             )
         if existing_intent is not None:
             provider_token_contract = dict(existing_intent["request_payload"].get("provider_token_contract") or {})
@@ -4904,9 +5074,13 @@ class PostgresPlanningExecutionPreparer:
             token_components = provider_request_token_components(
                 prompt,
                 output_schema_json=transport_schema_json,
+                protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref) if complete_capacity else "",
                 output_reserve=output_reserve,
                 safety_margin=planning_route.token_safety_margin,
                 framing_overhead=planning_route.token_framing_overhead,
+                accounting_method=planning_route.token_accounting_method if complete_capacity else "",
+                model=planning_route.model_profile.model_id,
+                accounting_evidence_ref=planning_route.token_accounting_evidence_ref,
             )
             if provider_router is not None:
                 if frozen_world_sample is not None:
@@ -4940,27 +5114,21 @@ class PostgresPlanningExecutionPreparer:
                     producer_contract=producer_contract_identity(
                         prompt_evidence,
                         materialization,
-                        schema_identity=(
-                            planning_schema_evidence_identity(
-                                output_schema, output_schema_ref
-                            )
-                            if provider_stage is None
-                            else world_schema_evidence_identity(
-                                output_schema, output_schema_ref
-                            )
-                        ),
+                        schema_identity=stage_schema_evidence_identity(stage_name, output_schema, output_schema_ref,
+                            world_stage=provider_stage is not None),
                     ),
                     request_input=stable_request_payload["input"],
                     input_hash="sha256:" + hashlib.sha256(prompt.encode()).hexdigest(),
-                    lineage_operation_ids=routing_lineage,
+                    lineage_operation_ids=routing_lineage, capacity_binding=capacity_binding,
                 )
-            if frozen.context_policy_ref == "context-policy:chapter-generation-pack:v2":
+            if frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}:
                 from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning, require_task_output_reserve
 
                 require_task_reasoning(planning_route, task_scoped=True)
                 require_task_output_reserve(
                     stage_name, planning_route, output_reserve, capacity_error_code="TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_EXCEEDED",
                     input_tokens=sum(token_components.values()) - output_reserve,
+                    system_limit=512_000 if complete_capacity else None,
                 )
             route_identity = ":".join(
                 (
@@ -4992,6 +5160,7 @@ class PostgresPlanningExecutionPreparer:
                 if planning_route.model_profile.model_provider == "deepseek"
                 else "",
                 input_text=prompt,
+                protocol_schema_json=route_protocol_schema(planning_route, output_schema, output_schema_ref) if complete_capacity else "",
                 max_output_tokens=output_reserve,
                 timeout_seconds=_provider_process_timeout_seconds(
                     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
@@ -5000,6 +5169,7 @@ class PostgresPlanningExecutionPreparer:
                 stable_idempotency_key=stable_key,
             )
             token_contract = build_route_token_accounting_contract(
+                contract_version="provider-token-accounting-v4" if complete_capacity else "provider-token-accounting-v3",
                 serialization_contract=envelope.protocol,
                 provider=planning_route.model_profile.model_provider,
                 model=planning_route.model_profile.model_id,
@@ -5177,7 +5347,7 @@ class PostgresPlanningExecutionPreparer:
 
             routing_decision = request_payload["_production_execution"]["capability_runtime"]["routing_decision"]
             planning_route, routing_decision = provider_router.select_for_payload(self.planning_route, request_payload)
-            if frozen.context_policy_ref == "context-policy:chapter-generation-pack:v2":
+            if frozen.context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}:
                 from novel_forge.modules.chapter_authority.context_compression_provider import require_task_reasoning
 
                 require_task_reasoning(planning_route, task_scoped=True)
@@ -5267,7 +5437,8 @@ class PostgresPlanningExecutionPreparer:
                 return self._prepare_stage(operation_id=operation_id, attempt_id=attempt_id,
                     fencing_token=fencing_token, worker_id=worker_id, command=command, inputs=inputs,
                     definition=definition, attempt_snapshot=attempt_snapshot, provider_stage=provider_stage,
-                    world_action=world_action, frozen_world_sample=frozen_world_sample)
+                    world_action=world_action, frozen_world_sample=frozen_world_sample,
+                    capacity_task=capacity_task, capacity_source=capacity_source, capacity_probe=capacity_probe)
             if not bool(reservation.get("execution_authorized")):
                 raise KernelError(
                     "BUDGET_RESERVATION_EXECUTION_NOT_AUTHORIZED",
@@ -5415,6 +5586,7 @@ class PostgresPlanningExecutionPreparer:
     ) -> tuple[_PlanningExecutionBinding, dict[str, AuthorityAssetDocument]]:
         graph = self._operation_graph(operation_id, command.project_id)
         suffix = (
+            stage_name if stage_name in {"context_compress", "context_fidelity"} else
             FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()
             if command.generator_operation_name in FOUNDATION_GENERATORS
             else command.planning_scope.value.lower()
@@ -5837,8 +6009,9 @@ class PostgresPlanningExecutionPreparer:
             if command.runtime_continuation_id and command.execution_contract_version == "1.21.0" and not preflight_only:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
+                upgrade = runtime.get("planning_capacity", {}).get("capacity_policy_upgrade")
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}
+                if proof and (upgrade or runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}
                     or (proof.get("contract_version") == "planning-exact-value-reference.v1" and proof.get("world_input_delivery", {}).get("contract_version") == "world-input-delivery-revalidation.v1")):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
@@ -5848,9 +6021,16 @@ class PostgresPlanningExecutionPreparer:
                         if len(original_order) != len(original.content["input_versions"]) or any(item["role"] not in original_order for item in selected):
                             raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Context successor role identities changed")
                         selected = sorted(selected,key=lambda item:original_order[item["role"]])
-                    self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected, context_policy_ref=context_policy_ref)
+                    self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected,
+                        context_policy_ref=upgrade["source_context_policy_ref"] if upgrade else context_policy_ref)
                     self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
-                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"))
+                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"), capacity_policy_upgrade=upgrade)
+                    if upgrade:
+                        from .runtime_continuation import capacity_upgrade_projection_hash
+                        allocation = runtime["planning_capacity"]
+                        if (allocation.get("projection_hash_policy") != "capacity-upgrade-semantic-owner.v1"
+                                or allocation["projection_hash"] != capacity_upgrade_projection_hash(content)):
+                            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Derived Context must match its registered semantic projection")
                     return self._materialize_planning_context(operation_id=operation_id, command=command, logical_ref=logical_ref, documents=documents, content=content), tuple(documents)
         else:
             self._validate_frozen_context_retry(
@@ -5976,7 +6156,7 @@ class PostgresPlanningExecutionPreparer:
             selected_inputs=selected,
             knowledge_access_policy=knowledge_access_policy,
         )
-        if context_policy_ref == "context-policy:chapter-generation-pack:v2" and (
+        if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"} and (
             isinstance(planning_task_token_budget, bool)
             or not isinstance(planning_task_token_budget, int)
             or not 0 < planning_task_token_budget <= 512_000
@@ -6087,11 +6267,11 @@ class PostgresPlanningExecutionPreparer:
             ),
             **({"repair_context": repair_context} if repair_context else {}),
             "token_budget": planning_task_token_budget
-            if context_policy_ref == "context-policy:chapter-generation-pack:v2"
+            if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
             else 16000,
             **(
                 {"planning_context_policy_version": context_policy_ref}
-                if context_policy_ref == "context-policy:chapter-generation-pack:v2"
+                if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
                 else {}
             ),
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
@@ -6166,11 +6346,18 @@ class PostgresPlanningExecutionPreparer:
 
 
 
-    def _reproject_frozen_context(self, source, *, command, task_tokens, operation_id=None, projection_contract=None):
+    def _reproject_frozen_context(self, source, *, command, task_tokens, operation_id=None, projection_contract=None, capacity_policy_upgrade=None):
         from copy import deepcopy
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if capacity_policy_upgrade:
+            if (capacity_policy_upgrade.get("contract_version") != "complete-request-capacity-upgrade.v1"
+                    or source.get("planning_context_policy_version") != capacity_policy_upgrade["source_context_policy_ref"]
+                    or capacity_policy_upgrade["target_context_policy_ref"] != "context-policy:chapter-generation-pack:v3"):
+                raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Capacity upgrade must derive from its verified frozen policy")
+            content["planning_context_policy_version"] = capacity_policy_upgrade["target_context_policy_ref"]
+            content["capacity_policy_upgrade"] = deepcopy(capacity_policy_upgrade)
         if projection_contract == "world-protected-context-accounting.v1":
             if content.get("world_method_scope_projection_version") != "world-method-scope-projection.v1":
                 raise KernelError("WORLD_CONTEXT_SOURCE_DRIFT", "Exact World accounting requires the already frozen method projection")
@@ -6412,9 +6599,9 @@ class PostgresPlanningExecutionPreparer:
         )
         token_budget = int(content.get("token_budget") or 0)
         task_byte_accounting = (
-            dict(provider_stage.task.get("policy") or {}).get("version") == "world-production-policy.v4"
+            dict(provider_stage.task.get("policy") or {}).get("version") in {"world-production-policy.v4", "world-production-policy.v5"}
             if provider_stage is not None
-            else content.get("planning_context_policy_version") == "context-policy:chapter-generation-pack:v2"
+            else content.get("planning_context_policy_version") in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"}
         )
         if provider_stage is None:
             provider_view, projection_audit = compile_planning_provider_context(stage_name, content)
@@ -6709,6 +6896,7 @@ class PostgresPlanningExecutionPreparer:
             token_budget=token_budget,
             effective_policy=compilation.effective_policy,
             authority_state_boundary=accepted_state_boundary,
+            defer_token_capacity=content.get("planning_context_policy_version") == "context-policy:chapter-generation-pack:v3",
         )
         if len(selection.selected) != len(candidates):
             raise KernelError(
@@ -6874,7 +7062,7 @@ class PostgresPlanningExecutionPreparer:
             or content.get("arc_working_set") != dict(command.arc_working_set or {})
             or content.get("narrative_search") != command.narrative_search_snapshot
             or str(content.get("planning_context_policy_version") or "") != (
-                context_policy_ref if context_policy_ref == "context-policy:chapter-generation-pack:v2" else ""
+                context_policy_ref if context_policy_ref in {"context-policy:chapter-generation-pack:v2", "context-policy:chapter-generation-pack:v3"} else ""
             )
             or not isinstance(frozen_inputs, list)
             or frozen_inputs[: len(selected_inputs)] != selected_inputs

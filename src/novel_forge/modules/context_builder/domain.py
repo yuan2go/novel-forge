@@ -681,6 +681,7 @@ def select_context_candidates(
     token_budget: int,
     effective_policy: EffectiveContextPolicy | None = None,
     authority_state_boundary: dict[str, Any] | None = None,
+    defer_token_capacity: bool = False,
 ) -> ContextSelection:
     if not project_id.strip():
         raise ValueError("project_id is required")
@@ -767,7 +768,9 @@ def select_context_candidates(
             used=used,
             usage=usage,
         )
-        if not required:
+        if defer_token_capacity:
+            available, budget_reason = candidate.estimated_tokens, "COMPLETE_REQUEST_MEASUREMENT_REQUIRED"
+        if not required and not defer_token_capacity:
             required_used = sum(
                 item.estimated_tokens
                 for item in selected
@@ -830,7 +833,7 @@ def select_context_candidates(
                 "reason": (
                     "STRUCTURED_TRUNCATION"
                     if decision == "TRUNCATED_THEN_SELECTED"
-                    else "ELIGIBLE_AND_BUDGETED"
+                    else "ELIGIBLE_CAPACITY_DEFERRED" if defer_token_capacity else "ELIGIBLE_AND_BUDGETED"
                 ),
             }
         )
@@ -847,6 +850,7 @@ def select_context_candidates(
         if item.required or item.logical_context_kind in required_kinds
     )
     accounting = {
+        **({"capacity_admission": "DEFERRED_TO_COMPLETE_REQUEST"} if defer_token_capacity else {}),
         "accounting_method": "declared-candidate-estimate-v1",
         "precision": "ESTIMATE_ONLY",
         "total_candidate_tokens": sum(
@@ -1042,6 +1046,7 @@ def build_authority_context_bundle(
     required_long_distance_fact_ids: Iterable[str] = (),
     knowledge_access_policy: dict[str, Any] | None = None,
     task_context_receipt: dict[str, Any] | None = None,
+    defer_token_capacity: bool = False,
 ) -> dict[str, Any]:
     scoped_book_id = book_id or f"book:{project_id}"
     access = (
@@ -1094,6 +1099,7 @@ def build_authority_context_bundle(
         token_budget=token_budget,
         effective_policy=compilation.effective_policy,
         authority_state_boundary=dict(authority_state_boundary or {}),
+        defer_token_capacity=defer_token_capacity,
     )
     selection = replace(selection, policy_compilation=dict(compilation.receipt))
     exact_accounting = (task_context_receipt or {}).get("protected_exact_accounting")

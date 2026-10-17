@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .capacity_continuation import effective_context_content
+
 from typing import Any
 
 from novel_forge.modules.authority_security import Principal
@@ -74,12 +76,12 @@ def adopted_author_draft(request) -> ChapterHandlerOutput | None:
     if adoption.get("source_chapter_plan_asset_version_id") and adoption["source_chapter_plan_asset_version_id"] != plan.content.get("source_chapter_plan_asset_version_id"):
         raise KernelError("AUTHOR_PLAN_DRIFT", "Author candidate must retain its exact originating Chapter Plan")
     intent, memo = request.require_input("chapter_execution_intent"), request.require_input("chapter_memo")
-    require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
+    require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=effective_context_content(request, context))
     content = normalize_draft_result(
         plan=plan.content,
         context_asset_version_id=context.asset_version_id,
         context_content_hash=context.content_hash,
-        context_content=context.content,
+        context_content=effective_context_content(request, context),
         result=candidate.content["draft_content"],
         provider_evidence={
             "source": "HUMAN_AUTHOR_INPUT",

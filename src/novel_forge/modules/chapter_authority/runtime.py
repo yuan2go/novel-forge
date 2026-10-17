@@ -161,6 +161,9 @@ class _ChapterHandlerAdapter:
             source_definition_version=source_version,
         )
         chapter_request = bind_working_revision_inputs(chapter_request)
+        from .capacity_continuation import bind_context_capacity_upgrade, rebuild_frozen_capacity_context
+        chapter_request = bind_context_capacity_upgrade(chapter_request)
+        chapter_request = rebuild_frozen_capacity_context(chapter_request, self.registry)
         reference = None
         if snapshot is not None and snapshot["authorization"]["purpose"] == "REFERENCE_EVALUATION":
             from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference

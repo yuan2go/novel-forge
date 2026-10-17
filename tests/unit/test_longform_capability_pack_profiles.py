@@ -33,8 +33,8 @@ def test_event_first_pack_is_explicit_and_freezes_only_the_planning_method():
     legacy = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
     current = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64,
                                               event_first_planning=True)
-    assert legacy.manifest["identity"]["version"] == "2.14.0"
-    assert current.manifest["identity"]["version"] == "2.15.0"
+    assert legacy.manifest["identity"]["version"] == "2.16.0"
+    assert current.manifest["identity"]["version"] == "2.17.0"
     old = next(row for row in legacy.artifact_catalog["artifacts"] if row["kind"] == "SKILL" and row["ref"] == "long-outline")
     new = next(row for row in current.artifact_catalog["artifacts"] if row["kind"] == "SKILL" and row["ref"] == "long-outline")
     assert old["version"] == "long-outline-v4"
@@ -284,7 +284,7 @@ def test_planning_context_target_is_frozen_in_manifest_and_resolved_policy():
     assert context["planning_task_token_budget"]==239232
     artifact=next(a for a in profile.artifact_catalog["artifacts"] if a["ref"]==context["policy_id"])
     assert artifact["content"]["planning_task_token_budget"]==239232
-    old=build_story_planning_pack_profile(ROOT,operation_definition_hash="sha256:"+"a"*64).manifest["context_sources"]
+    old=build_story_planning_pack_profile(ROOT,operation_definition_hash="sha256:"+"a"*64,execution_contract_version="1.19.0").manifest["context_sources"]
     assert "planning_task_token_budget" not in old
     source={"snapshot":{"context_policy_payload_json":json.dumps(old)},"original_context_target":64000}
     target={"pack_snapshot":{"context_policy_payload_json":json.dumps(context)}}

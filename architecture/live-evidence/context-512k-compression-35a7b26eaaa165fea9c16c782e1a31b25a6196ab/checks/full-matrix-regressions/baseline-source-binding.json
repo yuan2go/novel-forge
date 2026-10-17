@@ -1,0 +1,15 @@
+{
+  "source_sha": "6b69b22b331191331292a51a905833871b17b283",
+  "verified_git_blobs": {
+    "src/novel_forge/modules/story_planning_runtime/execution.py": "d9096c28c5a9c04e7f4a719ddba9ca59bbdfb958",
+    "src/novel_forge/modules/chapter_authority/provider_views.py": "71a891030a10dc24c25cff98d81918946a5ffb61",
+    "tests/integration/test_book_to_chapter_authority_vertical_postgres.py": "2e16de725e8e6954b845c5e2093bdbc2551bf4c8",
+    "tests/integration/test_author_book_replacement_postgres.py": "e71e28f96a899d6380291045c8e20677f833a856",
+    "tests/integration/test_author_reading_checkpoints_postgres.py": "59090dfe88cf844650933efec39295534ba81caa",
+    "tests/integration/test_craft_planning_postgres.py": "20d7d4772dd3e82acc48e9817f554299a11596cc",
+    "tests/integration/test_agent_harness_scheduler_postgres.py": "e6329cf2bd46fc1df6ccb3fe0dc2e2c39d57d0f2"
+  },
+  "evidence": "baseline-five-pytest.xml.gz",
+  "status": "4_FAILED_1_PASSED",
+  "scope": "Representative families only; no claim all262 baseline failures match."
+}

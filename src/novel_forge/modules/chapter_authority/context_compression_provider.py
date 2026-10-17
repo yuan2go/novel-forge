@@ -31,27 +31,36 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "frozen compression task is required")
     units = task.get("units")
     required = task.get("required_unit_ids")
+    stage_sources = task.get("contract_version") == "task-context-compression.v2"
     reference = (task.get("task") or {}).get("stage") == "reference_analysis"
-    boundary_key = "observation_boundary" if reference else "accepted_boundary"
+    boundary_key = "frozen_input_boundary" if stage_sources else "observation_boundary" if reference else "accepted_boundary"
     boundary = task.get(boundary_key)
-    if reference:
+    fingerprint_key = "task_fingerprint" if stage_sources else "memo_fingerprint"
+    if stage_sources:
+        sources = boundary.get("sources") if isinstance(boundary, Mapping) else None
+        if (not isinstance(sources, list) or not sources or boundary.get("kind") != "FROZEN_STAGE_INPUTS"
+                or not boundary.get("project_id") or not boundary.get("book_id")
+                or any(not row.get("asset_version_id") or not row.get("content_hash") for row in sources)
+                or task.get("source_binding") not in sources):
+            raise KernelError("CONTEXT_COMPRESSION_BOUNDARY_TYPE", "stage compression requires the original source versions and hashes")
+    elif reference:
         from novel_forge.modules.source_authority.observation import observation_boundary
         observation_boundary(boundary)
         if task.get("accepted_boundary"):
             raise KernelError("CONTEXT_COMPRESSION_BOUNDARY_TYPE", "reference cannot claim accepted Canon")
     if (
-        task.get("contract_version") != "task-context-compression.v1"
+        task.get("contract_version") not in {"task-context-compression.v1", "task-context-compression.v2"}
         or not isinstance(boundary, Mapping)
         or not isinstance(units, list)
         or not units
         or len(units) > 256
         or not isinstance(required, list)
-        or not str(task.get("memo_fingerprint") or "")
+        or not str(task.get(fingerprint_key) or "")
         or not str(task.get("policy_version") or "")
         or not 1 <= int(task.get("target_tokens") or 0) <= 512_000
     ):
         raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "compression needs a bounded source chunk and frozen task boundary")
-    if not reference:
+    if not reference and not stage_sources:
         compression_boundary_identity(boundary, strict=True)
     ids = []
     projected = []
@@ -70,7 +79,15 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
     from novel_forge.modules.canon_graph.background import without_private_world
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     host_task = dict(task.get("task") or {})
-    semantic_task = {key: deepcopy(value) for key, value in host_task.items() if key in {"stage", "chapter", "goal", "preserve_quotes"}}
+    semantic_task = {key: deepcopy(value) for key, value in host_task.items() if key in {"stage", "chapter", "goal", "preserve_quotes", "task_context"}}
+    expression = host_task.get("source_expression")
+    if stage_sources and expression is not None:
+        if (not isinstance(expression, Mapping) or set(expression) - {"asset_version_id", "content_hash", "chapter"}
+                or not isinstance(expression.get("asset_version_id"), str) or not expression["asset_version_id"]
+                or not isinstance(expression.get("content_hash"), str) or not expression["content_hash"]
+                or ("chapter" in expression and (type(expression["chapter"]) is not int or expression["chapter"] <= 0))):
+            raise KernelError("CONTEXT_COMPRESSION_SOURCE_EXPRESSION_INVALID", "Source expression identity must retain its original version, hash and Chapter")
+        semantic_task["source_expression"] = dict(expression)
     if isinstance(host_task.get("plan"), dict):
         from .chapter_plan_views import build_draft_plan_view
         plan = dict(host_task["plan"])
@@ -82,7 +99,7 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         "contract_version": task["contract_version"],
         "stage": stage,
         boundary_key: deepcopy(dict(boundary)),
-        "memo_fingerprint": task["memo_fingerprint"],
+        fingerprint_key: task[fingerprint_key],
         "policy_version": task["policy_version"],
         "task": semantic_task,
         "units": projected,
@@ -124,12 +141,14 @@ def requires_full_output_reserve(route: Any) -> bool:
 CLI_CONTEXT_HEADROOM_POLICY = "codex-cli-context-headroom.v1"
 
 
-def context_headroom_output_reserve(route: Any, input_tokens: int) -> int:
+def context_headroom_output_reserve(route: Any, input_tokens: int, *, system_limit: int | None = None) -> int:
     if not requires_full_output_reserve(route) or input_tokens <= 0:
         raise KernelError("PROVIDER_OUTPUT_POLICY_INVALID", "Context headroom requires a complete Codex CLI input reservation")
-    remaining = int(route.model_context_limit) - input_tokens
+    remaining = min(int(route.model_context_limit), system_limit or int(route.model_context_limit)) - input_tokens
     if remaining <= 0:
         raise KernelError("CONTEXT_CAPACITY_EXCEEDED", "Complete input leaves no model context for generation")
+    if system_limit is not None and int(route.model_output_limit) > 0:
+        remaining = min(remaining, int(route.model_output_limit))
     return remaining
 
 
@@ -138,9 +157,9 @@ def planning_input_capacity(route: Any) -> int:
     return min(512_000, route.model_context_limit - output_floor - route.token_safety_margin - route.token_framing_overhead)
 
 
-def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pending: bool = False, input_tokens: int | None = None) -> int:
+def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pending: bool = False, input_tokens: int | None = None, system_limit: int | None = None) -> int:
     if getattr(route, "output_reservation_policy", "") == CLI_CONTEXT_HEADROOM_POLICY:
-        return context_headroom_output_reserve(route, input_tokens) if input_tokens is not None else int(route.model_context_limit)
+        return context_headroom_output_reserve(route, input_tokens, system_limit=system_limit) if input_tokens is not None else min(int(route.model_context_limit), system_limit or int(route.model_context_limit))
     target = 4096 if stage == "context_compress" else 2048 if stage == "context_fidelity" else 16_384 if stage in {
         "draft", "revision", "review", "rereview", "screenplay_generate", "screenplay_revision",
     } else 8192
@@ -156,8 +175,9 @@ def task_provider_output_reserve(stage: str, route: Any, *, router_binding_pendi
 
 def require_task_output_reserve(
     stage: str, route: Any, output_reserve: int, *, capacity_error_code: str, input_tokens: int | None = None,
+    system_limit: int | None = None,
 ) -> None:
-    required_reserve = task_provider_output_reserve(stage, route, input_tokens=input_tokens)
+    required_reserve = task_provider_output_reserve(stage, route, input_tokens=input_tokens, system_limit=system_limit)
     if getattr(route, "output_reservation_policy", "") == CLI_CONTEXT_HEADROOM_POLICY:
         if input_tokens is None or output_reserve != required_reserve:
             raise KernelError("PROVIDER_OUTPUT_POLICY_DRIFT", "Output reservation must equal the frozen complete-input context headroom")

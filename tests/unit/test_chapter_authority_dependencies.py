@@ -772,3 +772,18 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_mixed_router_preserves_explicit_global_tokenizer_for_stage_preparation(tmp_path):
+    env = _mixed_router_environment(tmp_path)
+    env.update(NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD="PINNED_TOKENIZER_JSON_V1",
+        NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF="tokenizer-json:" + "a" * 64 + ":/fixture/tokenizer.json")
+    with patch("novel_forge.storage.object_store.MinioObjectStore", return_value=SimpleNamespace(client=object())):
+        execution = build_production_execution_composition(IndustrialSettings(root=Path(__file__).resolve().parents[2],
+            database_url="postgresql://authority"), env=env)
+    try:
+        for stage in ("memo", "draft", "review", "revision", "context_compress", "context_fidelity"):
+            assert execution.gateway.routes[stage].token_accounting_method == "PINNED_TOKENIZER_JSON_V1"
+            assert execution.gateway.routes[stage].token_accounting_evidence_ref == env["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"]
+    finally:
+        execution.close()

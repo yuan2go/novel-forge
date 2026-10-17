@@ -29,15 +29,15 @@ def test_retry_reuses_exact_verified_result_without_new_dispatch_or_settlement(m
     payload = {'draft': {'text': '完整真实输入'}}
     cursor = Mock()
     original = {'input': {'changed': True} if fault == 'changed-input' else payload,
-        '_production_execution': {'book_id': 'other' if fault == 'foreign-book' else 'book'}}
-    cursor.fetchone.side_effect = [('effect', 'request-hash', original, 'actor', 'trace', 'correlation'), None]
+        '_production_execution': {'book_id': 'other' if fault == 'foreign-book' else 'book', 'attempt_id': 'old-attempt'}}
+    cursor.fetchone.side_effect = [None, ('effect', 'request-hash', original, 'actor', 'trace', 'correlation'), None]
     uow = SimpleNamespace(cursor=cursor, repositories=SimpleNamespace(external_effects=Mock()))
     monkeypatch.setattr(receipt_recovery, 'AuthorityUnitOfWork', lambda *args: nullcontext(uow))
     evidence = {'result': {'edits': [], 'resolved_issue_codes': []}, 'provider_id': 'fixture', 'model_id': 'fixture',
         'prompt_version': 'fixture', 'skill_version': 'fixture', 'real_model_call': False,
         'usage': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN'},
         'cost': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN', 'currency': 'UNKNOWN'}}
-    verified = Mock(return_value=None if fault == 'unverified' else {'provider_evidence': evidence, 'budget_reservation_status': 'HELD_UNKNOWN'})
+    verified = Mock(return_value=None if fault == 'unverified' else {'provider_evidence': evidence, 'budget_reservation_status': 'SETTLED'})
     monkeypatch.setattr(receipt_recovery, '_read_verified_success', verified)
     request = ChapterHandlerRequest('op', 'p', 'w', 'trace', 'root', {'book_id': 'book'}, (),
         attempt_id='new-attempt', database_url='fixture-only')
@@ -51,12 +51,29 @@ def test_retry_reuses_exact_verified_result_without_new_dispatch_or_settlement(m
         return
     adapter = SimpleNamespace(cost_accounting_basis='ACCOUNT_ENTITLEMENT', account_authorization_ref='fixture-grant', invoke=Mock())
     port = model_effects.ExternalEffectChapterModelPort('fixture-only', adapter=adapter, worker_id='worker')
+    record = Mock()
+    cost = Mock()
+    settlement = Mock()
+    monkeypatch.setattr(port, '_record_model_call', record)
+    monkeypatch.setattr(port, '_ensure_cost_evidence', cost)
+    monkeypatch.setattr(model_effects, 'settle_provider_budget', settlement)
+    fence = SimpleNamespace(assert_recovery_current=Mock())
+    probe = Mock()
+    from novel_forge.modules.production_execution import postgres
+    from novel_forge.modules.command_kernel import deadline_runtime
+    monkeypatch.setattr(postgres, 'PostgresAttemptFenceVerifier', lambda _: fence)
+    monkeypatch.setattr(deadline_runtime, 'probe_operation_execution', probe)
     result = port.invoke(request, stage='revision', payload=payload)
     adapter.invoke.assert_not_called()
     assert result.output == evidence['result']
     assert result.to_evidence()['cost'] == evidence['cost']
     assert result.to_evidence()['usage'] == evidence['usage']
-    assert result.execution_evidence['completed_attempt_reuse']['accounting_status'] == 'HELD_UNKNOWN'
+    assert result.execution_evidence['completed_attempt_reuse']['accounting_status'] == 'SETTLED'
+    settlement.assert_not_called()
+    fence.assert_recovery_current.assert_called_once_with('op', 'new-attempt', request.fencing_token, 'worker')
+    probe.assert_called_once_with('fixture-only', operation_id='op', project_id='p')
+    assert record.call_args.args[0].attempt_id == cost.call_args.args[0].attempt_id == 'old-attempt'
+    assert record.call_args.kwargs['external_effect_id'] == cost.call_args.kwargs['external_effect_id'] == 'effect'
     from novel_forge.modules.chapter_authority.handlers import _model_output
     from novel_forge.modules.chapter_authority.contracts import ChapterNode
     output = _model_output(ChapterNode.REVISION, {'text': '原文'}, request=request, generated=result)

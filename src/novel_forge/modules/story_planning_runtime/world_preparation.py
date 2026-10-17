@@ -548,7 +548,7 @@ class PlanningProviderStage:
             if self.task["policy"].get("version") in {"world-production-policy.v2", "world-production-policy.v3", "world-production-policy.v4"}
             else (len(serialized) + 3) // 4
         )
-        if estimated_tokens > self.task["policy"]["context_token_budget"]:
+        if self.task["policy"].get("version") != "world-production-policy.v5" and estimated_tokens > self.task["policy"]["context_token_budget"]:
             raise KernelError(
                 "WORLD_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
                 f"{self.name} requires {estimated_tokens} estimated tokens but its frozen Context budget is {self.task['policy']['context_token_budget']}; resume with an explicitly approved smaller scope or new bounded policy",

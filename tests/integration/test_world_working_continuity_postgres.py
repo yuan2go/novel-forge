@@ -300,3 +300,111 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
     run_creation_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), cancellation)
     retained = require_manuscript(DATABASE_URL, project_id=book["project_id"], book_run_id=book["book_run_id"], principal=principal)
     assert retained["text_digest"] == current["text_digest"] and retained["units"][0]["asset_version_id"] == candidate
+
+
+def test_native_upstream_complete_request_overflow_consumes_checked_history_extract(tmp_path, monkeypatch):
+    import hashlib
+    from tokenizers import Tokenizer, models, pre_tokenizers
+    from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+
+    harness = CapabilityPackPostgresHarness("upstream-capacity")
+    root = Path(__file__).resolve().parents[2]
+    transport = SynthesisTransport()
+    class HistoryTransport(AdviceOnlySynthesisChapterTransport):
+        def __call__(self, stage, inputs):
+            if stage in {"context_compress", "context_fidelity"}:
+                return default_chapter_fixture_response(stage, inputs)
+            output = super().__call__(stage, inputs)
+            if stage == "draft":
+                chapter = inputs["plan"]["chapter"]
+                text = "\n\n".join(f"第{chapter}章记录第{index}次查验。" + "她停在门外，听见木轮碾过石板，仍不敢替证人确认消息。" * 3 for index in range(600))
+                from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+                output["scene_artifacts"][0]["text"] = text + "\n\n" + output["scene_artifacts"][0]["text"]
+                output["text"] = serialize_realization(output["scene_artifacts"])
+            return output
+    transport.chapter = HistoryTransport()
+    transport.database_url = DATABASE_URL
+    env = controlled_member_environment(tmp_path, {
+        "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+        "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+        "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+        "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+        "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": "native-planning-evaluator",
+        "NOVEL_FORGE_ENVIRONMENT": "production",
+    }, monkeypatch, transport)
+    env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+    original_resolve = PostgresProductionExecutionPayloadResolver.resolve
+    sent_requests = {}
+    def capture_sent_request(resolver, request, admission):
+        payload = original_resolve(resolver, request, admission)
+        sent_requests[request.external_effect_id] = payload.input_text
+        return payload
+    monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_sent_request)
+    tokenizer = Tokenizer(models.WordLevel({"[UNK]": 0}, unk_token="[UNK]"))
+    tokenizer.pre_tokenizer = pre_tokenizers.Split("", behavior="isolated")
+    path = tmp_path / "synthetic-character-meter.json"
+    tokenizer.save(str(path))
+    env.update(NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD="PINNED_TOKENIZER_JSON_V1",
+        NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF="tokenizer-json:" + hashlib.sha256(path.read_bytes()).hexdigest() + ":" + str(path))
+    candidates = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+    for model in candidates["models"]:
+        model["context_limit"] = 310000
+    env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(candidates)
+    env["NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT"] = "310000"
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    request = tmp_path / "capacity-request.json"
+    request.write_text(json.dumps({"version": "creation-request.v1", "title": harness.project_id,
+        "target_chapters": 4, "chapter_length": {"minimum": 800, "maximum": 80000},
+        "language_contract": {"required_language": "zh-CN"},
+        "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+            "genre": "social mystery", "audience": "adult readers", "constraints": ["Keep the witness's limited viewpoint"], "source_boundaries": ["Original work"]}}))
+    args = _authority_parser().parse_args(["authority-creation", "start", "--input-file", str(request),
+        "--repository-root", str(root), "--maximum-ticks", "250", "--foreground"])
+    result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT capability,status,request_payload,external_effect_id FROM authority_external_effect WHERE project_id=%s ORDER BY created_at", [result["project_id"]])
+        effects = uow.cursor.fetchall()
+        failures = uow.cursor.execute("SELECT definition_name,status FROM authority_operation WHERE project_id=%s AND status IN ('FAILED_FINAL','FAILED_RETRYABLE')", [result["project_id"]]).fetchall()
+    assert result["stop_reason"] == "MANUSCRIPT_READY", (result, failures)
+    compression = [row for row in effects if row[2].get("stage") in {"context_compress", "context_fidelity"}]
+    assert compression and all(row[1] == "SUCCEEDED" for row in compression)
+    compression_proofs = []
+    for _, status, payload, effect_id in compression:
+        expression = payload["input"]["context_compression_task"]["task"].get("source_expression")
+        if expression:
+            assert '"source_expression"' in sent_requests[effect_id]
+            assert expression["asset_version_id"] in sent_requests[effect_id]
+            assert expression["content_hash"] in sent_requests[effect_id]
+        compression_proofs.append({"effect_id": effect_id, "stage": payload["stage"], "status": status,
+            "source_expression": expression, "sent_request_sha256": hashlib.sha256(sent_requests[effect_id].encode()).hexdigest()})
+    derived = [row for row in effects if row[2].get("input", {}).get("_context_capacity_projection")]
+    assert derived
+    assert any(row[0].startswith("planning.") for row in derived), [row[0] for row in derived]
+    proofs = []
+    for capability, _, payload, effect_id in derived:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        runtime = payload["_production_execution"]["capability_runtime"]
+        admission = AuthorityAssetQuery(DATABASE_URL).require(project_id=result["project_id"],
+            asset_version_id=runtime["provider_admission_asset_version_id"]).content
+        admission = admission.get("contract", admission)
+        assert admission["provider_request_identity"]["input_text_hash"] == "sha256:" + hashlib.sha256(sent_requests[effect_id].encode()).hexdigest()
+        projection = payload["input"]["_context_capacity_projection"]
+        assert projection["original_hash"] != projection["result_hash"]
+        assert projection["measurement"]["after_reserved"] <= projection["measurement"]["limit"]
+        proofs.append({"effect_id": effect_id, "capability": capability, "projection": projection,
+            "admission": admission, "sent_request_sha256": hashlib.sha256(sent_requests[effect_id].encode()).hexdigest()})
+    import os
+    import gzip
+    evidence_root = os.environ.get("NOVEL_FORGE_POSTGRES_EVIDENCE_DIR")
+    if evidence_root:
+        destination = Path(evidence_root) / "upstream-complete-request"
+        destination.mkdir(parents=True, exist_ok=True)
+        (destination / "receipts.json").write_text(json.dumps({"evidence_class": "NATIVE_SYNTHETIC_CHARACTER_METER_ONLY",
+            "result": result, "proofs": proofs, "compression_effects": compression_proofs}, ensure_ascii=False, indent=2))
+        for effect_id in {proof["effect_id"] for proof in proofs + compression_proofs}:
+            (destination / (effect_id + "-sent.txt.gz")).write_bytes(gzip.compress(sent_requests[effect_id].encode(), mtime=0))

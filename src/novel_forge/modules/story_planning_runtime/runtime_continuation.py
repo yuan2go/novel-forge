@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from pathlib import Path
 from dataclasses import replace
+import json
 from typing import Any
 from uuid import uuid4
 
@@ -31,6 +32,18 @@ OUTPUT_KEY = "story_planning.runtime_continuation"
 def _context_projection_hash(context):
     content = context if isinstance(context, Mapping) else context.content
     return canonical_hash(content["context_manifest"]["provider_context_view"])
+
+
+def capacity_upgrade_projection_hash(context):
+    content = context if isinstance(context, Mapping) else context.content
+    def semantic(value):
+        if isinstance(value, dict):
+            return {key: ("SUCCESSOR_OPERATION" if key == "frozen_by_operation_id" else semantic(item))
+                    for key, item in value.items()}
+        if isinstance(value, list):
+            return [semantic(item) for item in value]
+        return value
+    return canonical_hash(semantic(content["context_manifest"]["provider_context_view"]))
 
 
 def runtime_continuation_definition(
@@ -979,6 +992,28 @@ def _pre_send_capacity_source(
         [source_operation_id] * 3,
     )
     unsafe = uow.cursor.fetchone()[0]
+    if unsafe and not any((protected_world_failure, route_preflight, rendered_chapter_capacity_failure,
+                           world_capacity_failure, rendered_capacity_failure)):
+        uow.cursor.execute("SELECT snapshot_payload->>'context_policy_ref' FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1", [source_operation_id])
+        policy = uow.cursor.fetchone()
+        uow.cursor.execute("SELECT asset_version_id,content_hash FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle'", [source_operation_id])
+        contexts = uow.cursor.fetchall()
+        if policy and policy[0] == "context-policy:chapter-generation-pack:v2" and len(contexts) == 1:
+            original = AuthorityAssetQuery(uow.database_url).require(project_id=frozen["project_id"], asset_version_id=contexts[0][0])
+            if (original.content_hash != contexts[0][1] or original.asset_type != "context_bundle"
+                    or original.content.get("book_id") != frozen["book_id"]
+                    or original.content.get("planning_context_policy_version") != policy[0]):
+                raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Capacity upgrade requires its exact frozen v2 Context")
+            uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key<>'planning.context_bundle')
+                OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status IN ('LEASED','RUNNING','CHECKPOINTED','RESULT_SUBMITTED'))
+                OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+                    WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id]*5)
+            unsafe = uow.cursor.fetchone()[0]
+            if not unsafe:
+                projection_revalidation = {"contract_version": "complete-request-capacity-context.v1",
+                    "context_asset_version_id": original.asset_version_id, "context_content_hash": original.content_hash}
     if protected_world_failure:
         uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
             OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
@@ -1174,6 +1209,55 @@ def _require_version_only_pack_successor(uow, *, project_id, original, target):
         "target_manifest_hash": target["manifest_hash"], "retained_contract_hash": canonical_hash(retained[0])}
 
 
+def _require_complete_capacity_pack_successor(uow, *, project_id, source, target):
+    from .preflight_continuation import require_capacity_target
+    from novel_forge.storage.capability_pack_authority_repositories import CapabilityPackAuthorityRepository
+    original = source["snapshot"]
+    successor = target["pack_snapshot"]
+    if not original.get("context_policy_payload_json") or not successor.get("context_policy_payload_json"):
+        return None
+    old = json.loads(original["context_policy_payload_json"])
+    new = json.loads(successor["context_policy_payload_json"])
+    if new.get("capacity_policy") != "complete-request-capacity.v1" or old.get("capacity_policy"):
+        return None
+    if "planning_task_token_budget" not in old and source.get("original_context_target") is None:
+        repository = CapabilityPackAuthorityRepository(uow.cursor)
+        version = repository.require_version(original["pack_id"], original["pack_version"], project_id=project_id)
+        if (version["manifest_hash"] != original["manifest_hash"]
+                or canonical_hash(version["artifact_catalog"]) != version["artifact_catalog_hash"]):
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Original capacity must come from the frozen Pack catalog")
+        policies = [item for item in version["artifact_catalog"]["artifacts"]
+                    if item["kind"] == "CONTEXT_POLICY" and item["ref"] == original["context_policy_ref"]]
+        if len(policies) != 1:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Original Context policy must have one frozen artifact")
+        source = {**source, "original_context_target": policies[0]["content"].get("planning_task_token_budget")}
+    capacity = require_capacity_target(source, target)
+    if not capacity.get("capacity_policy_upgrade") or original.get("pack_id") != successor.get("pack_id"):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Capacity migration requires the same owning Pack and an explicit known policy upgrade")
+    old_tools = json.loads(original["tool_policy_payload_json"])
+    new_tools = json.loads(successor["tool_policy_payload_json"])
+    expected_tools = deepcopy(old_tools)
+    expected_tools.setdefault("external_models", {})["context_substages"] = ["context_compress", "context_fidelity"]
+    if new_tools != expected_tools:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Only the existing Context substages may be added to the frozen tool policy")
+    repository = CapabilityPackAuthorityRepository(uow.cursor)
+    manifests = []
+    for snapshot in (original, successor):
+        version = repository.require_version(snapshot["pack_id"], snapshot["pack_version"], project_id=project_id)
+        manifest = deepcopy(version["manifest"])
+        if canonical_hash(manifest) != snapshot["manifest_hash"] or version["manifest_hash"] != snapshot["manifest_hash"]:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Capacity migration requires both persisted Pack manifests")
+        manifest["identity"].pop("version")
+        manifests.append(manifest)
+    normalized = deepcopy(manifests[1])
+    normalized["context_sources"] = manifests[0]["context_sources"]
+    normalized["tool_permissions"] = manifests[0]["tool_permissions"]
+    if normalized != manifests[0]:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Capacity migration cannot change workflow, Skills, schemas, model routes or quality gates")
+    return {"contract_version": "complete-request-capacity-upgrade.v1", **capacity,
+        "source_manifest_hash": original["manifest_hash"], "target_manifest_hash": successor["manifest_hash"]}
+
+
 def _capacity_authorization(
     uow: Any,
     *,
@@ -1238,8 +1322,9 @@ def _capacity_authorization(
     if source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}:
         _require_world_agency_pack(uow, source=source, successor=successor, target=target)
     version_successor = None
+    capacity_upgrade = _require_complete_capacity_pack_successor(uow, project_id=successor.project_id, source=source, target=target)
     strict_pack = source.get("mode") not in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"} and not source.get("capacity_inheritance")
-    if strict_pack and source["snapshot"].get("manifest_hash") != target["pack_snapshot"].get("manifest_hash"):
+    if strict_pack and not capacity_upgrade and source["snapshot"].get("manifest_hash") != target["pack_snapshot"].get("manifest_hash"):
         version_successor = _require_version_only_pack_successor(uow, project_id=successor.project_id,
             original=source["snapshot"], target=target["pack_snapshot"])
     if any(
@@ -1247,9 +1332,8 @@ def _capacity_authorization(
         for key in (
             *(("prompt_bundle_hash",) if strict_pack else ()),
             "route_policy_hash",
-            "context_policy_hash",
+            *(() if capacity_upgrade else ("context_policy_hash", "tool_policy_hash")),
             "skill_bundle_hash",
-            "tool_policy_hash",
         )
     ):
         raise KernelError(
@@ -1267,6 +1351,7 @@ def _capacity_authorization(
         "template_policy_hash": template_binding["policy_snapshot"]["policy_hash"],
         "independent_human_review": "NOT_REVIEWED",
         "capacity_only": True,
+        **({"capacity_policy_upgrade": capacity_upgrade} if capacity_upgrade else {}),
         **({"world_runtime_identity": world_identity} if world_identity else {}),
         **({"pack_version_successor": version_successor} if version_successor else {}),
         **({"capacity_inheritance": "generation-capacity-inheritance.v1"} if source.get("capacity_inheritance") else {}),
@@ -1314,6 +1399,25 @@ def _capacity_target(
     from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
     ceiling = planning_input_capacity(route)
     allocated = min(baseline * 2, ceiling)
+    capacity_upgrade = authorization.get("capacity_policy_upgrade")
+    context_policy_ref = target["pack_snapshot"]["context_policy_ref"] if capacity_upgrade else source.get("snapshot", {}).get("context_policy_ref")
+    if source.get("context_revalidation", {}).get("contract_version") == "complete-request-capacity-context.v1" and not capacity_upgrade:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Frozen v2 Context requires the explicit complete-request policy upgrade")
+    if capacity_upgrade:
+        allocated = ceiling
+        capacity_upgrade = {**capacity_upgrade,
+            "source_context_policy_ref": source["snapshot"]["context_policy_ref"],
+            "target_context_policy_ref": context_policy_ref}
+        try:
+            original = preparer.query.require(project_id=successor.project_id,
+                logical_ref=f"planning/context_bundles/{source['source_operation_id']}.json")
+        except KernelError as error:
+            if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+        else:
+            source = {**source, "context_revalidation": {**source.get("context_revalidation", {}),
+                "contract_version": source.get("context_revalidation", {}).get("contract_version", "complete-request-capacity-context.v1"),
+                "context_asset_version_id": original.asset_version_id, "context_content_hash": original.content_hash}}
     if (source.get("context_revalidation") or {}).get("world_input_delivery"):
         allocated = int(baseline)
     if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}:
@@ -1322,7 +1426,7 @@ def _capacity_target(
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
         if allocated > ceiling:
             raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "Inherited allocation exceeds the current authorized model capacity")
-    if allocated <= baseline and not source.get("context_revalidation"):
+    if allocated <= baseline and not source.get("context_revalidation") and not capacity_upgrade:
         raise KernelError(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
             "No authorized single-request capacity remains",
@@ -1337,14 +1441,20 @@ def _capacity_target(
                     any(original_inputs.get(item["role"], {}).get(key) != item[key] for key in ("asset_version_id","content_hash","asset_type"))
                     for item in source["inputs"]):
                     raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Context successor must retain every original input version")
-                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated, projection_contract=proof.get("contract_version"))
+                if capacity_upgrade:
+                    preparer._context_bundle(operation_id=source["source_operation_id"], attempt_id=source["attempt_id"],
+                        command=successor, inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
+                        context_policy_ref=capacity_upgrade["source_context_policy_ref"], planning_task_token_budget=allocated,
+                        preflight_only=True)
+                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated,
+                    projection_contract=proof.get("contract_version"), capacity_policy_upgrade=capacity_upgrade)
             else:
                 context, _ = preparer._context_bundle(
                 operation_id=source["source_operation_id"],
                 attempt_id=source["attempt_id"],
                 command=successor,
                 inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
-                context_policy_ref=source["snapshot"]["context_policy_ref"],
+                context_policy_ref=context_policy_ref,
                 planning_task_token_budget=allocated,
                 preflight_only=True,
             )
@@ -1361,8 +1471,11 @@ def _capacity_target(
         "prior_task_tokens": baseline,
         "allocated_task_tokens": allocated,
         "single_request_ceiling": ceiling,
-        "projection_hash": _context_projection_hash(context),
+        "projection_hash": capacity_upgrade_projection_hash(context) if capacity_upgrade else _context_projection_hash(context),
+        **({"projection_hash_policy": "capacity-upgrade-semantic-owner.v1",
+            "preflight_projection_identity_hash": _context_projection_hash(context)} if capacity_upgrade else {}),
         "source_failure": source["failure"],
+        **({"capacity_policy_upgrade": capacity_upgrade} if capacity_upgrade else {}),
         "external_intents_at_source": 2 if source.get('retained_world_action', {}).get('source_operation_id') == source['source_operation_id'] else 0,
         **({'retained_world_action': source['retained_world_action']} if source.get('retained_world_action') else {}),
         **({"context_revalidation": source["context_revalidation"]} if source.get("context_revalidation") else {}),

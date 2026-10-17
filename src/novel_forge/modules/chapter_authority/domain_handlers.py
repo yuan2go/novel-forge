@@ -126,6 +126,7 @@ def build_context_bundle(
     knowledge_access_policy: dict[str, Any] | None = None,
     context_model_call: Any = None,
     compression_input_tokens: int = 0,
+    defer_token_capacity: bool = False,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     if context_profile_version not in {"draft-context-profile-v2", "draft-context-profile-v3", "draft-context-profile-v4"}:
@@ -433,6 +434,7 @@ def build_context_bundle(
             required_asset_types=tuple(required_asset_types),
             model_call=context_model_call, compression_input_tokens=compression_input_tokens,
             admitted_source_ids=admitted_source_ids,
+            defer_token_capacity=defer_token_capacity,
         )
     governed = build_authority_context_bundle(
         project_id=project_id,
@@ -463,6 +465,7 @@ def build_context_bundle(
         ),
         knowledge_access_policy=access,
         task_context_receipt=task_receipt,
+        defer_token_capacity=defer_token_capacity,
     )
     if task_receipt is not None:
         selected_ids = set(governed["selected_asset_version_ids"])
@@ -660,7 +663,7 @@ def normalize_draft_result(
     )
     memory = None
     working = (context_content or {}).get("working_manuscript") or {}
-    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5"}:
+    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6"}:
         from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
         memory = optional_draft_memory(result.get("working_memory_json"), text,
             available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})

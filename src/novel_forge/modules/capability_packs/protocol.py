@@ -277,6 +277,8 @@ CAPABILITY_PACK_V1_CONTRACT = _object(
                 "policy_id": STRING,
                 "max_tokens": INTEGER,
                 "planning_task_token_budget": INTEGER,
+                "capacity_policy": STRING,
+                "context_substage_method": STRING,
                 "source_isolation": STRING,
                 "allowed_asset_types": STRING_ARRAY,
                 "forbidden_asset_types": STRING_ARRAY,

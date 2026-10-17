@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .capacity_continuation import effective_context_content
+
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import StrEnum
@@ -578,7 +580,7 @@ def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_c
     from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
     from novel_forge.modules.narrative_state.information import disclosed_fact_projection
 
-    context = request.require_input("context_bundle").content
+    context = effective_context_content(request)
     boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
     version = boundary.get("story_state_snapshot_version")
     rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])

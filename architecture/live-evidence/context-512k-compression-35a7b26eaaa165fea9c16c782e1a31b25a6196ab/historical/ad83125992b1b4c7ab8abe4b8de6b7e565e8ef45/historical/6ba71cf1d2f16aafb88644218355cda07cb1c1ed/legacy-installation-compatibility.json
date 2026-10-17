@@ -1,0 +1,8 @@
+{
+  "baseline_sha": "6b69b22b331191331292a51a905833871b17b283",
+  "corrected_source_sha": "6ba71cf1d2f16aafb88644218355cda07cb1c1ed",
+  "status": "PASS",
+  "baseline_goldens": "tests/fixtures/creation_capacity_legacy_contract_hashes.json",
+  "cases": "Production installer captured at persistence boundary; Chapter3.0.3/3.0.4 manifest+catalog and event-first Planning2.15 hashes equal baseline; new Creationv3 uses Chapter3.1/Planning2.17 with Contextv3.",
+  "prior_regressions": "22 first-package regressions at a1c30020, all absent in baseline409 check; corrected without weakening UNKNOWN, original Attempt, paid budget or Fence rules. Formal current results remain in validation.json."
+}
