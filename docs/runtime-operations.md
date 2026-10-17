@@ -793,8 +793,15 @@ and actual text hash. `omitted_ranges` includes earlier selection gaps as well a
 capacity omissions. Their original reasons and the detailed mapping remain in the
 frozen Context and Effect projection. Rich semantic passage fields retain their
 original representation. Compare raw derivation and supplied-view hashes separately.
+New derivations freeze `provider_extract_transport=capacity-story-extract.v1` in the
+Effect's `_context_capacity_projection`; inspect the same value in host Prompt evidence.
+The supplied extract notice contains story interpretation, while derivation hashes and
+custody remain host evidence. Empty probes and final requests use this same display
+version. An absent version preserves the historical rendering; an unsupported version
+raises `CONTEXT_EXTRACT_TRANSPORT_INVALID`. Preserve the original Effect and reconcile
+its outcome before creating a new derivation; do not patch its frozen display version.
 Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
-new ordinary creation uses v3 Context and v6 working prose. Explicit legacy Planning
+new ordinary creation uses v4 Context and v7 working prose. Explicit legacy Planning
 without the narrative intent boundary retains Pack 2.13.0 and Context v2; selecting
 that contract does not opt into the new capacity policy. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.

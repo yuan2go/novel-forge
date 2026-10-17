@@ -4887,15 +4887,23 @@ def _materialize_production_codex_prompt(
                     or proof["result_hash"] != capacity_projection["result_hash"]):
                 raise KernelError("CONTEXT_FINAL_COMPOSITION_DRIFT", "Final checked source selection differs from the actual supplied Provider projection")
         task_view, context_view = derived_data["input_manifest"], derived_data["context_bundle"]
-        context_view["capacity_extract"] = {"contract_version": "complete-request-capacity.v1",
-            "source_projection_hash": capacity_projection["original_hash"],
-            "result_projection_hash": capacity_projection["result_hash"],
-            "supplied_projection_hash": canonical_hash(derived_data),
-            "derivation_hash": canonical_hash({key: capacity_projection[key] for key in
-                ("contract_version", "original_hash", "result_hash", "source_boundary", "stage", "replacements", "compression_receipt", "retained_fidelity_traces") if key in capacity_projection}),
-            "mapping_custody": "FROZEN_EXTERNAL_EFFECT_REQUEST_CONTEXT_CAPACITY_PROJECTION",
-            **({"semantic_contract": capacity_projection["semantic_contract"], "final_composition_hash": canonical_hash(capacity_projection.get("final_composition"))} if capacity_projection.get("semantic_contract") else {}),
-            "meaning": "Historical text contains fidelity-checked original extracts. Whole-source identity remains unchanged. Explicit historical_extract passages use original Unicode ranges and hashes of supplied text; other source bounds describe the complete original source. Exact derivation and fidelity receipts remain frozen in host custody. Empty or omitted expression is not evidence of absence."}
+        from novel_forge.modules.context_builder.request_capacity import STORY_EXTRACT_TRANSPORT
+        extract_transport = capacity_projection.get("provider_extract_transport")
+        if extract_transport not in (None, STORY_EXTRACT_TRANSPORT):
+            raise KernelError("CONTEXT_EXTRACT_TRANSPORT_INVALID", "The frozen extract Provider display contract is unsupported")
+        if extract_transport == STORY_EXTRACT_TRANSPORT:
+            context_view["capacity_extract"] = {"contract_version": STORY_EXTRACT_TRANSPORT,
+                "meaning": "Historical text contains original source-attributed extracts. Passage and field boundaries retain their story order, working status and knowledge ownership. Omitted expression is not evidence of absence or nonoccurrence. The complete original sources remain retrievable through host context preparation."}
+        else:
+            context_view["capacity_extract"] = {"contract_version": "complete-request-capacity.v1",
+                "source_projection_hash": capacity_projection["original_hash"],
+                "result_projection_hash": capacity_projection["result_hash"],
+                "supplied_projection_hash": canonical_hash(derived_data),
+                "derivation_hash": canonical_hash({key: capacity_projection[key] for key in
+                    ("contract_version", "original_hash", "result_hash", "source_boundary", "stage", "replacements", "compression_receipt", "retained_fidelity_traces") if key in capacity_projection}),
+                "mapping_custody": "FROZEN_EXTERNAL_EFFECT_REQUEST_CONTEXT_CAPACITY_PROJECTION",
+                **({"semantic_contract": capacity_projection["semantic_contract"], "final_composition_hash": canonical_hash(capacity_projection.get("final_composition"))} if capacity_projection.get("semantic_contract") else {}),
+                "meaning": "Historical text contains fidelity-checked original extracts. Whole-source identity remains unchanged. Explicit historical_extract passages use original Unicode ranges and hashes of supplied text; other source bounds describe the complete original source. Exact derivation and fidelity receipts remain frozen in host custody. Empty or omitted expression is not evidence of absence."}
     exact_reference_proof = None
     protected_accounting_version = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version")
     protected_exact_accounting = protected_accounting_version in {"protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"}
@@ -5214,6 +5222,7 @@ def _materialize_production_codex_prompt(
         "provider_view": {
             **({"capacity_policy_upgrade": capacity_upgrade_receipt} if capacity_upgrade_receipt else {}),
             **({"capacity_projection": {"contract_version": capacity_projection["contract_version"],
+                **({"provider_extract_transport": capacity_projection["provider_extract_transport"]} if capacity_projection.get("provider_extract_transport") else {}),
                 "original_hash": capacity_projection["original_hash"], "result_hash": capacity_projection["result_hash"],
                 "receipt_hash": canonical_hash(capacity_projection)}} if capacity_projection else {}),
             **({"working_history_transport": history_transport} if history_transport["projections"] else {}),

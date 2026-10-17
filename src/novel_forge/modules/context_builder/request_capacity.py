@@ -16,6 +16,7 @@ from . import semantic_units
 
 
 CAPACITY_POLICY = "complete-request-capacity.v1"
+STORY_EXTRACT_TRANSPORT = "capacity-story-extract.v1"
 _HISTORY_TYPES = frozenset({"narrative_retrieval_document", "chapter_episodic_summary", "scene_episodic_summary", "character_timeline", "relationship_timeline"})
 
 
@@ -480,7 +481,7 @@ def prepare_request_capacity(
                                "context_limit": route.model_context_limit, "output_limit": route.model_output_limit}}
     original_amount = sum(counter({"safe_summary": item.safe_summary, "structured_facts": []}) for item in candidates)
     empty = deepcopy(original)
-    empty_projection = {"contract_version": CAPACITY_POLICY, "original_hash": narrative_hash(original),
+    empty_projection = {"contract_version": CAPACITY_POLICY, "provider_extract_transport": STORY_EXTRACT_TRANSPORT, "original_hash": narrative_hash(original),
         "source_boundary": source_boundary, "stage": stage, "compression_receipt": {}, "replacements": []}
     if semantic:
         empty_projection["semantic_contract"] = semantic_contract
@@ -512,7 +513,7 @@ def prepare_request_capacity(
                 working = [replace(item, context_class=ContextClass.PROTECTED) if item.asset_version_id in raw_required_ids else item for item in candidates]
                 continue
             raise
-        projection = {"contract_version": CAPACITY_POLICY, "original_hash": narrative_hash(original),
+        projection = {"contract_version": CAPACITY_POLICY, "provider_extract_transport": STORY_EXTRACT_TRANSPORT, "original_hash": narrative_hash(original),
                       "source_boundary": source_boundary, "stage": stage, "replacements": [], "compression_receipt": receipt,
                       "target_basis": {"policy": "FULL_RENDERED_REMOVABLE_EXPRESSION", "empty_reserved": empty_reserved,
                           "expression_paths": len(paths), "unique_expression_sources": len(candidates)},

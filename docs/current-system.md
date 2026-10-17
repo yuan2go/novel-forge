@@ -1446,8 +1446,13 @@ Working passages batch within their original Chapter source, retaining per-passa
 coordinates. Identical wrappers of the same source version share one extract; another
 Chapter or changed source hash cannot borrow that identity.
 Detailed path/range mappings and fidelity receipts remain in the frozen Effect
-request. The sent view carries stable derivation hashes and an omission explanation;
-it does not repeat the potentially larger audit mapping in the Prompt. Source hashes
+request. New capacity derivations freeze `provider_extract_transport` as
+`capacity-story-extract.v1` in both the empty probe and final projection. Their sent
+extract notice contains story interpretation only; derivation hashes, receipt hashes
+and custody records remain in the host projection and Prompt evidence. Missing display
+versions retain the historical byte representation, and unknown versions fail closed.
+This display version does not change source selection or the frozen capacity policy.
+Source hashes
 and original passage bounds continue to identify the complete source, not the extract.
 Canonical working passages use `capacity-historical-passages.v1` after extraction:
 only supplied original Unicode ranges become passages, with hashes of their actual

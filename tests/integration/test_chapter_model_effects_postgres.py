@@ -1791,6 +1791,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 prompt_hash = admission["provider_request_identity"]["input_text_hash"]
                 self.assertIn(prompt_hash, rendered_prompts)
                 self.assertEqual(receipt["component_usage"]["provider_input"], len(rendered_prompts[prompt_hash].encode()))
+                from novel_forge.modules.context_builder.request_capacity import STORY_EXTRACT_TRANSPORT
+                self.assertEqual(projection["provider_extract_transport"], STORY_EXTRACT_TRANSPORT)
+                for host_audit_field in ("derivation_hash", "mapping_custody", "final_composition_hash"):
+                    self.assertNotIn(host_audit_field, rendered_prompts[prompt_hash])
                 import os
                 evidence_root = os.environ.get("NOVEL_FORGE_POSTGRES_EVIDENCE_DIR")
                 if evidence_root:
