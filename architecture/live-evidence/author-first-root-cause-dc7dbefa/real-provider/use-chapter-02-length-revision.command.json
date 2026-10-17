@@ -1,0 +1,22 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "use-working-candidate",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--chapter",
+    "2",
+    "--candidate-version",
+    "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+    "--expected-version",
+    "14",
+    "--idempotency-key",
+    "wp-nf-author-first-20261017:chapter-02:use-length-repair-01",
+    "--reason",
+    "Use the native length-corrected second-chapter work version as continuation basis; preserve original3988Han Draft and formal acceptance0."
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "status": "PASS",
+  "checks": {
+    "units": {
+      "tests": 189,
+      "failures": 0,
+      "skips": 0
+    },
+    "postgres": {
+      "tests": 2,
+      "failures": 0,
+      "skips": 0
+    }
+  },
+  "defects": [
+    "Preflight selected evidence protocol from current Book policy before verifying the old recorded route.",
+    "Governed repair replay recalculated the stage receipt with current policy, falsely blocking a saved result after a policy change."
+  ],
+  "repair": "Use source recorded route, or the exact native parent candidate/raw result Effect route before a routing decision exists. Replay passes saved v1/v2 receipt through the existing resolver; v1 retains cumulative bounds, v2 retains original admission. Native sources and ordinals still revalidate. New successors retain separate current authorization.",
+  "red_evidence": {
+    "frozen-history-red.log": "Two current-policy lookup failures and two new replay interface contract failures before implementation.",
+    "frozen-history-first-green.log": "Intermediate precommit run: existing nine protocol mocks still supplied only current admission; Router mock expected old argument list. Updated to saved route and explicit frozen receipt without removing source-drift refusal."
+  },
+  "differential_units": "Old routing.v1 with a newer current template cannot gain stage protocol; both source route and exact-parent fallback; missing/ambiguous/wrong-Book fail closed; frozen v1 and v2 replay ignore changed current policy; missing/unsupported frozen admission refuses.",
+  "postgres": [
+    {
+      "test": "tests/integration/test_synthesis_formation_postgres.py::test_native_undispatched_route_repair_successor_preserves_candidate_counter_and_acceptance",
+      "readback": "7378391d729b1f60.json.gz",
+      "evidence_class": "HISTORICAL_COMPATIBILITY_SCRIPTED_POSTGRESQL",
+      "actual_process_input_hash_matches": 37,
+      "accepted_through_chapter": [
+        1
+      ],
+      "ordinary_author_first_positive_proof": false,
+      "real_provider": false
+    },
+    {
+      "test": "tests/integration/test_synthesis_formation_postgres.py::test_native_failed_final_input_order_successor_preserves_terminal_history_and_counter",
+      "readback": "a5709745d6b04f86.json.gz",
+      "evidence_class": "HISTORICAL_COMPATIBILITY_SCRIPTED_POSTGRESQL",
+      "actual_process_input_hash_matches": 38,
+      "accepted_through_chapter": [
+        1
+      ],
+      "ordinary_author_first_positive_proof": false,
+      "real_provider": false
+    }
+  ],
+  "reviews": {
+    "spec": "NO_NEW_DEFECT",
+    "standards": "NO_SUBSTANTIVE_FINDING",
+    "world_raw_audit": "Existing World-specific source/capacity paths precede this generic helper; no confirmed ordinary-entry defect or new claimed capability."
+  },
+  "formal_P0": "NOT_RUN",
+  "production_qualification": "NOT_RUN",
+  "literary_qualification": "NOT_RUN",
+  "files": [
+    {
+      "path": "7378391d729b1f60-dispatch.json",
+      "bytes": 19252,
+      "sha256": "sha256:67219e14da1359e1802ce5a2fda5ab8a4ccb9a22e966602a438213deb12fd679"
+    },
+    {
+      "path": "7378391d729b1f60-prose.json",
+      "bytes": 2056,
+      "sha256": "sha256:f6d4245f8d603942a2b547c3d04b8b10c0d8437438bc1b4cbf3bdee4818e947d"
+    },
+    {
+      "path": "7378391d729b1f60.json.gz",
+      "bytes": 10393976,
+      "sha256": "sha256:c4fd0df5e7d5c0d5127d07ec17368e5f3ca626c982b02d3c674557538891e59d"
+    },
+    {
+      "path": "a5709745d6b04f86-dispatch.json",
+      "bytes": 19763,
+      "sha256": "sha256:34933f32b7299d1af2787f2e2b89063d1fe760b81fab61787246a08bbdb5cbbd"
+    },
+    {
+      "path": "a5709745d6b04f86-prose.json",
+      "bytes": 2051,
+      "sha256": "sha256:6a666aaf3e4497afd9584ce452ccb787f13f4a23920cfcc29f6247a3c2ad0782"
+    },
+    {
+      "path": "a5709745d6b04f86.json.gz",
+      "bytes": 10348246,
+      "sha256": "sha256:ff98edb78fe6cc163ff6d8d5a8051d41beab2e9a9c832fc3c7a6a228c6958e35"
+    },
+    {
+      "path": "frozen-history-clean-units.log",
+      "bytes": 260,
+      "sha256": "sha256:722c8635cde61e5a5917c67a1489db8668fb188b8763bf71bbbf75199ad457b9"
+    },
+    {
+      "path": "frozen-history-clean-units.xml",
+      "bytes": 31785,
+      "sha256": "sha256:52e68d20d32d7cb7131e8eb4ec04643b81f5b0c7bb7951506927be4df0cc7b63"
+    },
+    {
+      "path": "frozen-history-documentation.json",
+      "bytes": 771,
+      "sha256": "sha256:feb895a9ba9fdeca056a48fe5fc5a6e18a9f47960cd957fee40d7d606652cf2a"
+    },
+    {
+      "path": "frozen-history-first-green.log",
+      "bytes": 33245,
+      "sha256": "sha256:874aea9f74dacef9b63858b0823c54233b3861cd01d7dcdee5eef1efe9de1329"
+    },
+    {
+      "path": "frozen-history-fitness.json",
+      "bytes": 3192,
+      "sha256": "sha256:8a455d3acfc4112c1f8b0342c2dcedf5923f5ce89757fdc957272e170c21b179"
+    },
+    {
+      "path": "frozen-history-green.log",
+      "bytes": 99,
+      "sha256": "sha256:6b6f61110ad52443c8649854ab4431f09708e5914a7e675e95cfd8ffc3695d0f"
+    },
+    {
+      "path": "frozen-history-postgres.command.json",
+      "bytes": 755,
+      "sha256": "sha256:8e68986cfc910cbb1b6a74d553329098a60bd302b563eda23c2689714344479f"
+    },
+    {
+      "path": "frozen-history-postgres.log",
+      "bytes": 110,
+      "sha256": "sha256:63e12a3951cfdc10acaf979cc342144acebd7b945783c0e174a2fea27b829a2c"
+    },
+    {
+      "path": "frozen-history-postgres.xml",
+      "bytes": 958,
+      "sha256": "sha256:967e5c82d6b9a3f067833c7ee5214cc0a245616666987f067c50e523c33eb973"
+    },
+    {
+      "path": "frozen-history-red.log",
+      "bytes": 11884,
+      "sha256": "sha256:b825a08b5c9ce857555789a2b2c01f98e3ac188920d361538ef314bc6043d506"
+    },
+    {
+      "path": "frozen-history-units.log",
+      "bytes": 260,
+      "sha256": "sha256:f2cadb9390d46c1d34b5b5846281ec853e061876f605245c3552441c2241523e"
+    },
+    {
+      "path": "readback_exporter_review.py",
+      "bytes": 5183,
+      "sha256": "sha256:2c976becc599eeab77d37ddea7f4e99535ad90ace0d10a31b0a9729a525a281c"
+    },
+    {
+      "path": "verify_all_native_dispatch.py",
+      "bytes": 4040,
+      "sha256": "sha256:aa0f43cab66dd434f7c415a9227e4fea0b74dde57e76b9774d2bad84c80ac837"
+    }
+  ]
+}

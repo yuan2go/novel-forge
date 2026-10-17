@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "evidence_class": "LOCAL_MEMO_FROZEN_INPUT_CONSUMPTION_READBACK",
+  "input": "0855ef46248f4589.json.gz",
+  "input_file_sha256": "sha256:36d66c8c4a9367bddfc26c15188d2cbfe20df4674b846fd9c3e8b0cbabbdd7e2",
+  "source_sha": "99358aca42d5a39a2996ef1484357ecf41b37bfa",
+  "identity": [
+    "nf_author_recovery_test",
+    "7697608597895058057",
+    "2026-10-18 01:16:26.682616+08:00"
+  ],
+  "local_memos": 1,
+  "working_source_occurrences": 0,
+  "rows": [
+    {
+      "chapter": 1,
+      "operation_id": "fcddda74-5559-4695-9c05-02f8aa44d369",
+      "memo_asset_version_id": "authority-output:fcddda74-5559-4695-9c05-02f8aa44d369:chapter.memo:v1",
+      "memo_content_hash": "sha256:868f63435eee5cc43430b0927757593bb809bfb0ad959340f7225e2dd054b4e7",
+      "source_intent_asset_version_id": "authority-output:d1f1dae1-de0d-49bf-a73b-0f2fccaa8c09:chapter.execution_intent:v1",
+      "source_intent_content_hash": "sha256:4ec0193bc86d7328c736a3362373823dd3dbf821e7af4f996445d5c9d0c6a178",
+      "model_call": "NOT_RUN",
+      "enhancement_status": "FAILED",
+      "working_sources": []
+    }
+  ]
+}

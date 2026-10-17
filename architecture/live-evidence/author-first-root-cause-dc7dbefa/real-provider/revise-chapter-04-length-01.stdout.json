@@ -1,0 +1,40 @@
+{
+  "contract_version": "chapter-working-revision.v1",
+  "root_operation_id": "9ef7cf6a-cf12-48d0-b8b7-2c1bbfb88d9c",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "chapter": 4,
+  "status": "SUCCEEDED",
+  "stages": [
+    {
+      "operation_id": "12e6bd24-5568-4c89-98ee-1a654f3f3e28",
+      "definition_name": "chapter.review.evaluate",
+      "status": "SUCCEEDED",
+      "asset_version_id": "authority-output:12e6bd24-5568-4c89-98ee-1a654f3f3e28:chapter.review:v1",
+      "output_key": "chapter.review"
+    },
+    {
+      "operation_id": "125e8b24-e343-4990-b307-671f3e48825e",
+      "definition_name": "chapter.revision.apply",
+      "status": "SUCCEEDED",
+      "asset_version_id": "authority-output:125e8b24-e343-4990-b307-671f3e48825e:chapter.revision:v1",
+      "output_key": "chapter.revision"
+    },
+    {
+      "operation_id": "b5215119-2bdf-445b-a162-11aca261569f",
+      "definition_name": "chapter.revision.review",
+      "status": "SUCCEEDED",
+      "asset_version_id": "authority-output:b5215119-2bdf-445b-a162-11aca261569f:chapter.rereview:v1",
+      "output_key": "chapter.rereview"
+    },
+    {
+      "operation_id": "cc458f7d-f5c7-4e5c-914c-454c76a3be2e",
+      "definition_name": "chapter.candidate.select_best",
+      "status": "SUCCEEDED",
+      "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+      "output_key": "chapter.best_candidate"
+    }
+  ],
+  "source_asset_version_id": "authority-output:d80359d5-5bd4-4f03-82b8-2c16628d1168:chapter.draft:v1",
+  "author_selection": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED"
+}

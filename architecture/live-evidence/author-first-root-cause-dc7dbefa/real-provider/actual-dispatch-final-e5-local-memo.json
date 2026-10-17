@@ -1,0 +1,155 @@
+{
+  "status": "PASS",
+  "evidence_class": "LOCAL_MEMO_FROZEN_INPUT_CONSUMPTION_READBACK",
+  "input": "actual-dispatch-final-e5.json.gz",
+  "input_file_sha256": "sha256:0aaacb04cdc392aa67ba872230d55bd322fed62f80572f4067b63028e1df16bd",
+  "source_sha": "MIXED_EXACT_PER_PROCESS_METADATA",
+  "identity": [
+    "nf_author_first_native",
+    "7697608597895058057",
+    "2026-10-18 04:35:57.093770+08:00"
+  ],
+  "local_memos": 5,
+  "working_source_occurrences": 10,
+  "rows": [
+    {
+      "chapter": 1,
+      "operation_id": "f9028e24-72d2-4b23-880d-55168df5bc2d",
+      "memo_asset_version_id": "authority-output:f9028e24-72d2-4b23-880d-55168df5bc2d:chapter.memo:v1",
+      "memo_content_hash": "sha256:ecd529c7c92d1bcbca3751946cc6892cb551348f86c171957037f7daf962aeeb",
+      "source_intent_asset_version_id": "authority-output:98cb29a0-9751-430e-9608-9a1f645233c7:chapter.execution_intent:v1",
+      "source_intent_content_hash": "sha256:59e4fe547696f591675d01c045e7cfd455f1974451115a472235e83bcf6d553f",
+      "model_call": "NOT_RUN",
+      "enhancement_status": "NOT_REQUESTED",
+      "working_sources": []
+    },
+    {
+      "chapter": 2,
+      "operation_id": "647ffdb2-e32a-4a1e-bbe1-4a277f62bb2e",
+      "memo_asset_version_id": "authority-output:647ffdb2-e32a-4a1e-bbe1-4a277f62bb2e:chapter.memo:v1",
+      "memo_content_hash": "sha256:db4a97d530f8144af07d6634853bd35f2c21d9b37dc2b0139d32486334eda496",
+      "source_intent_asset_version_id": "authority-output:8f4bb5f2-3014-4e88-85d2-19b96d057e91:chapter.execution_intent:v1",
+      "source_intent_content_hash": "sha256:39c3a2eb4746fe81983f4b35aa7ef986d955bd9418fd252566f322f653645e28",
+      "model_call": "NOT_RUN",
+      "enhancement_status": "NOT_REQUESTED",
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "chapter": 3,
+      "operation_id": "8c73bbbe-fd0f-4e0a-8b97-0978af1465c7",
+      "memo_asset_version_id": "authority-output:8c73bbbe-fd0f-4e0a-8b97-0978af1465c7:chapter.memo:v1",
+      "memo_content_hash": "sha256:96f76393b86b4b075bb005efc4d4a3c152c54a21b0832afdcc01a3a3ef6daaa1",
+      "source_intent_asset_version_id": "authority-output:b6b18820-3614-4983-9105-43929d055cbf:chapter.execution_intent:v1",
+      "source_intent_content_hash": "sha256:900082288aac02a647c82d8311d46dc97ba6233194bee8c50dd9004c28d16ec9",
+      "model_call": "NOT_RUN",
+      "enhancement_status": "NOT_REQUESTED",
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "chapter": 4,
+      "operation_id": "64582d0c-f898-458c-8c2e-67fbc21a1240",
+      "memo_asset_version_id": "authority-output:64582d0c-f898-458c-8c2e-67fbc21a1240:chapter.memo:v1",
+      "memo_content_hash": "sha256:c44af9833866ea484ffd1b127b3069ac0e1d8786a41afecb1870e8188c28ab6b",
+      "source_intent_asset_version_id": "authority-output:bdef58ee-19e6-4552-ad59-cc53887f1c1c:chapter.execution_intent:v1",
+      "source_intent_content_hash": "sha256:3a90ab20186cf41c558e3e5bb77312c17f343fc43f613113942a926c90dff23a",
+      "model_call": "NOT_RUN",
+      "enhancement_status": "NOT_REQUESTED",
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "chapter": 5,
+      "operation_id": "6b7a0fbd-30c1-483c-900f-995f89055744",
+      "memo_asset_version_id": "authority-output:6b7a0fbd-30c1-483c-900f-995f89055744:chapter.memo:v1",
+      "memo_content_hash": "sha256:6bd6e13c9560ebe238680614db0345687c46a6df2916dde07650b666d0d79f66",
+      "source_intent_asset_version_id": "authority-output:b72c4352-5245-4160-ac2e-1a65eaf1bf28:chapter.execution_intent:v1",
+      "source_intent_content_hash": "sha256:66da97b7f8013f3b7af115aae688156afdf22a322444d5b9acfb8f2591b1d3ca",
+      "model_call": "NOT_RUN",
+      "enhancement_status": "NOT_REQUESTED",
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    }
+  ]
+}

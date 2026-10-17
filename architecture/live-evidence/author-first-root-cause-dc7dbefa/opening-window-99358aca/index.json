@@ -1,0 +1,240 @@
+{
+  "source_sha": "99358aca42d5a39a2996ef1484357ecf41b37bfa",
+  "status": "PASS",
+  "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+  "defect": "Creation used a compatibility drain that consumed all Opening nodes before returning to the scheduling deadline check.",
+  "first_negative_evidence": "At an expired scheduling window, wrong wrapper already dispatched 9 Volume and 6 Arc generations. Preserve red log and patch.",
+  "fix": "Reuse existing single-claim Opening execution dispatcher, leaving historical compatibility drain and in-flight Provider reconciliation unchanged.",
+  "test_boundary": "Only Creation scheduling monotonic reference is advanced after first Opening node. Provider, lease and database clocks are unchanged.",
+  "positive_contract": "YIELD after Book Plan; no Volume or Arc dispatch; resume original Formation; preserve Book Plan generation IDs and input snapshot hashes; complete eight scripted chapters across natural Groups and exact export with accepted cursor zero.",
+  "checks": {
+    "units": {
+      "tests": 50,
+      "failures": 0,
+      "skips": 0
+    },
+    "native": {
+      "tests": 2,
+      "failures": 0,
+      "skips": 0
+    },
+    "historical": {
+      "tests": 1,
+      "failures": 0,
+      "skips": 0
+    }
+  },
+  "native_cases": [
+    {
+      "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[default-author-first]",
+      "readback": "0b1f668658172dc5.json.gz",
+      "saved_chapters": 8,
+      "books": [
+        {
+          "book_run_id": "book-run:0d3717ab-357d-4ec0-9413-dafe2dd1cd73",
+          "state": "READY",
+          "current_chapter": 8,
+          "accepted_through_chapter": 0,
+          "target_chapter_count": 8
+        }
+      ],
+      "actual_process_input_hash_matches": 26,
+      "unknown_result_inputs": 1,
+      "provider_working_source_occurrences": 194,
+      "local_memos": 8,
+      "local_memo_working_source_occurrences": 28,
+      "natural_groups": [
+        {
+          "asset_version_id": "authority-output:34301700-cf31-45a5-940b-a4cda4311c48:story_planning.candidate:v1",
+          "content_hash": "sha256:dca4c504157b1bfaa6dd9f28839174b838989ee0f53f8dfad4af60570b76ade0",
+          "chapter_range": [
+            7,
+            8
+          ]
+        },
+        {
+          "asset_version_id": "authority-output:6e2f3866-b7d2-4764-8a9f-2b77283b722a:story_planning.candidate:v1",
+          "content_hash": "sha256:56219912d748dd19d5a92d19e908485bb393192ad8b98c046338b6cfb44e111d",
+          "chapter_range": [
+            1,
+            3
+          ]
+        },
+        {
+          "asset_version_id": "authority-output:e1a807f3-6a3a-47f0-b0e9-89b538fb0f7c:story_planning.candidate:v1",
+          "content_hash": "sha256:7ffac733aa9c15fed64ce52baca34c2363901aa0edd9b2129c1c7f60edfaad33",
+          "chapter_range": [
+            4,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[single-interruption]",
+      "readback": "0855ef46248f4589.json.gz",
+      "saved_chapters": 8,
+      "books": [
+        {
+          "book_run_id": "book-run:1ee8cc80-4f4d-447e-99e8-e97622bc237a",
+          "state": "READY",
+          "current_chapter": 8,
+          "accepted_through_chapter": 0,
+          "target_chapter_count": 8
+        }
+      ],
+      "actual_process_input_hash_matches": 33,
+      "unknown_result_inputs": 1,
+      "provider_working_source_occurrences": 222,
+      "local_memos": 1,
+      "local_memo_working_source_occurrences": 0,
+      "natural_groups": [
+        {
+          "asset_version_id": "authority-output:bff8510e-ca37-4000-b748-9b0194b25bc0:story_planning.candidate:v1",
+          "content_hash": "sha256:777414d0c5290c502be49692f9d53eea44ad7cc20ccb9593c73fa87248e2c9a2",
+          "chapter_range": [
+            7,
+            8
+          ]
+        },
+        {
+          "asset_version_id": "authority-output:e03e0e49-3d09-42a8-ac6b-d1e97174b066:story_planning.candidate:v1",
+          "content_hash": "sha256:d4b048f59e7e59e88e60a2d670f0bce5f8639041f5c294d1f96c1618f4e9db0e",
+          "chapter_range": [
+            4,
+            6
+          ]
+        },
+        {
+          "asset_version_id": "authority-output:e942d5d2-c507-47c9-8514-f4675310b848:story_planning.candidate:v1",
+          "content_hash": "sha256:3574c4cc43a7def75c02af8382cda0d47011c7ba5c6290c3df72386837a7a938",
+          "chapter_range": [
+            1,
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "reviews": {
+    "spec": "NO_SUBSTANTIVE_FINDING",
+    "standards": "NO_SUBSTANTIVE_FINDING"
+  },
+  "formal_P0": "NOT_RUN",
+  "real_provider": "NOT_RUN",
+  "literary_qualification": "NOT_RUN",
+  "files": [
+    {
+      "path": "0855ef46248f4589-dispatch.json",
+      "bytes": 171505,
+      "sha256": "sha256:6dbe926ad76286c2f4aa3da826effc3bbe328db1ddd53886c3bae637c97a2018"
+    },
+    {
+      "path": "0855ef46248f4589-local-memo.json",
+      "bytes": 1111,
+      "sha256": "sha256:1a3209de1d68f03ef0d18e504426172869e317679e34d8ecb24f3b2ee081c579"
+    },
+    {
+      "path": "0855ef46248f4589-prose.json",
+      "bytes": 4705,
+      "sha256": "sha256:2176f91d20cfad8fabe0e78548a10516981dedc296c15f73a81f39671a9fc186"
+    },
+    {
+      "path": "0855ef46248f4589.json.gz",
+      "bytes": 19755694,
+      "sha256": "sha256:36d66c8c4a9367bddfc26c15188d2cbfe20df4674b846fd9c3e8b0cbabbdd7e2"
+    },
+    {
+      "path": "0b1f668658172dc5-dispatch.json",
+      "bytes": 148554,
+      "sha256": "sha256:7e08d7640abc361dbebb13b14d3a916ea6c700fac2798f3770b47b153c82273b"
+    },
+    {
+      "path": "0b1f668658172dc5-local-memo.json",
+      "bytes": 18080,
+      "sha256": "sha256:aec02c73eacf764ce357db3deaa63f531b446b6956eceecb223f98e2304c73a6"
+    },
+    {
+      "path": "0b1f668658172dc5-prose.json",
+      "bytes": 4706,
+      "sha256": "sha256:d3ada3cd2aaa918f10e87383dc9f3a8445385cfb0ddea734bd8a1bd69e6e4ad8"
+    },
+    {
+      "path": "0b1f668658172dc5.json.gz",
+      "bytes": 18865560,
+      "sha256": "sha256:4fec14cf03a60a30af3adc69dd5edb5171c278bdb90b0032a40693edebb8da20"
+    },
+    {
+      "path": "opening-window-red.patch",
+      "bytes": 5559,
+      "sha256": "sha256:a091e4fec04065097b167fb385cbc56058e57cb8300dec942c695629f0effd50"
+    },
+    {
+      "path": "readback_exporter_review.py",
+      "bytes": 5183,
+      "sha256": "sha256:2c976becc599eeab77d37ddea7f4e99535ad90ace0d10a31b0a9729a525a281c"
+    },
+    {
+      "path": "review-opening-window-red.log",
+      "bytes": 16370,
+      "sha256": "sha256:28812964af2fee8a1fc313ca5e05df3fe65586a0ea26e3aaf86587e7e2e794ed"
+    },
+    {
+      "path": "review-window-historical.log",
+      "bytes": 110,
+      "sha256": "sha256:91e608161de4b057adcce1ccece79e35f27e83e05234659f94855faba619fe33"
+    },
+    {
+      "path": "review-window-historical.xml",
+      "bytes": 430,
+      "sha256": "sha256:eec849c4960db29c44d605f6807fa8cd59068df7b4090edf2b30cda722538e88"
+    },
+    {
+      "path": "review-window-native.log",
+      "bytes": 2174,
+      "sha256": "sha256:121aead6079687ffa1e63e74f181eeeb54162dfdd695db044576ccc4cf95ebc1"
+    },
+    {
+      "path": "review-window-native.xml",
+      "bytes": 942,
+      "sha256": "sha256:dd8e7519b33dc9def078bd426c183e2a6fef364127e13f125d56b538185d3e85"
+    },
+    {
+      "path": "review-window-structure.log",
+      "bytes": 4240,
+      "sha256": "sha256:11fe7a4174c8ec4e16fa566c3e230ef80c03a2c890dfa775cb3fdb86cb2b4ef2"
+    },
+    {
+      "path": "review-window-units.log",
+      "bytes": 99,
+      "sha256": "sha256:67bc66fdd27a7cc7902037e91e20536686e9e81ba51d77c8454e6a926a874cce"
+    },
+    {
+      "path": "review-window-units.xml",
+      "bytes": 8642,
+      "sha256": "sha256:a714156d997ce73dd415dcf37e60c9c71b259092b5fd46913525eaa3931b04b6"
+    },
+    {
+      "path": "verify_dispatch.py",
+      "bytes": 4114,
+      "sha256": "sha256:c59bbccfb75de3cb898dc61e92b9bc7ce37a25c18168d49f335870fc7dfff722"
+    },
+    {
+      "path": "verify_local_memo.py",
+      "bytes": 4104,
+      "sha256": "sha256:e1c17e639dadebb1dee53ec9227cd3a578eec942de9cbccb481a36f5e612c249"
+    }
+  ],
+  "scripted_fixture_scope": {
+    "full_book_target": 8,
+    "initial_delivery_window": 6,
+    "extended_delivery_window": 8,
+    "requested_han_range": [
+      800,
+      4000
+    ],
+    "actual_scripted_original_han": 26,
+    "genre": "social mystery",
+    "purpose": "Deterministic engineering fault coverage only; separate from the real 600-chapter cultivation Book and 100-chapter delivery window."
+  }
+}

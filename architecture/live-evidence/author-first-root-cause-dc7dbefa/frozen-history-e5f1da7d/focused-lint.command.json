@@ -1,0 +1,14 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff",
+    "check",
+    "src/novel_forge/modules/production_execution/routing_runtime.py",
+    "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "src/novel_forge/modules/story_planning_runtime/preflight_continuation.py",
+    "src/novel_forge/modules/story_planning_runtime/stage_repairs.py",
+    "tests/unit/test_native_stage_repair_bound.py",
+    "tests/unit/test_planning_coordinated_contracts.py"
+  ],
+  "exit_code": 0
+}

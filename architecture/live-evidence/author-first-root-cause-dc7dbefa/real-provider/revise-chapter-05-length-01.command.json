@@ -1,0 +1,23 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "revise",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--chapter",
+    "5",
+    "--expected-version",
+    "37",
+    "--idempotency-key",
+    "wp-nf-author-first-20261017:chapter-05:length-repair-01",
+    "--reason",
+    "首稿按HAN_CHARACTERS_V1为3620，未达冻结4000—5000汉字。保留首稿，经原生chapter-length-repair.v1全章修订到4400—4700汉字，冻结上下限不变。承接前章已搭好受限支护、旧口仍封闭、手掌持续酸痛、旧石承托不拆的工作经历。保留本章已经完成首段补强和接缝、下游尚未检查所以仍不放水的明确进展。补足许照川把薄料只抹表面后发现内空并改正的独立判断、师徒交接和具体反馈、加工面落入补处不再可见所带来的成就与责任感；用有后果的行动和反应补足，不复演撤人、搭支护或反复清点擦工具喝水凑字，不引入新人物、未学会修为或提前完成下游检查。只授权技术性工作稿修订使用，不作作者正式选稿或接纳。",
+    "--foreground",
+    "--work-window-seconds",
+    "300"
+  ]
+}

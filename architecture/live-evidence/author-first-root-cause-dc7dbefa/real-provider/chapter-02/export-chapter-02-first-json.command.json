@@ -1,0 +1,18 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "export",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--versions",
+    "authority-output:75403b34-66d4-4f84-9079-daf1caac5a15:chapter.draft:v1",
+    "--chapters",
+    "2",
+    "--output",
+    "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/exports/chapter-02-first-draft.json"
+  ]
+}

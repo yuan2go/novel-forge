@@ -1,0 +1,84 @@
+{
+  "status": "PASS",
+  "evidence_class": "REAL_NATIVE_FOUNDATION_FROZEN_BINDINGS",
+  "book_design_asset_version_id": "34da6069-be79-4f5d-a7d4-64657f410deb",
+  "book_design_content_hash": "sha256:13393151800b5497bdb2c07047c5a40a1a22ea09de1b5d429994c4f560d0fd20",
+  "target_chapters": 600,
+  "foundation_set_digest": "sha256:4d1577c33c6eb79f8635c119f8ed3b9209ae9aeb3b124e9a1c3fc7d27bb5ff3a",
+  "bindings": [
+    {
+      "role": "CREATIVE_FOUNDATION",
+      "asset_version_id": "authority-output:8d12cffb-87c9-4e03-97c7-c967ad899e75:story_planning.candidate:v1",
+      "content_hash": "sha256:ace07289e10bd4382c9e75c777aa4c10bc9a3da22e7910b85ff93835cc8c761c",
+      "identity_fields": {
+        "project_id": "project:wp-nf-author-first-20261017",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "schema_version": "story_design.authority.v1"
+      },
+      "planning_scope": "NOT_APPLICABLE",
+      "same_book_scope": "VERIFIED"
+    },
+    {
+      "role": "THEME_CONTRACT",
+      "asset_version_id": "authority-output:0ca3b751-2790-48e9-9675-ee79da85c508:story_planning.candidate:v1",
+      "content_hash": "sha256:786b9cf8b75430f45ceaaa599565dec907dad07572aa8b76ab7c76d9c2ab8b18",
+      "identity_fields": {
+        "project_id": "project:wp-nf-author-first-20261017",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "schema_version": "story_design.authority.v1"
+      },
+      "planning_scope": "NOT_APPLICABLE",
+      "same_book_scope": "VERIFIED"
+    },
+    {
+      "role": "ENDING_INTENT",
+      "asset_version_id": "authority-output:453afae0-e4c4-4d41-b455-bcc6342ee1e4:story_planning.candidate:v1",
+      "content_hash": "sha256:03e64a1fdc1c117ea3be963a4b65295c7aa232e8e3f4d4ed0e269b418ebd8796",
+      "identity_fields": {
+        "project_id": "project:wp-nf-author-first-20261017",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "schema_version": "story_design.authority.v1"
+      },
+      "planning_scope": "NOT_APPLICABLE",
+      "same_book_scope": "VERIFIED"
+    },
+    {
+      "role": "READER_PROMISE",
+      "asset_version_id": "authority-output:02fc178d-ca18-42e2-95fd-f823d05f50e8:story_planning.candidate:v1",
+      "content_hash": "sha256:850038bc1c9936b3d12a5c5ab38a4f69e6ce72b87b07023d529ff7d52d836fd5",
+      "identity_fields": {
+        "project_id": "project:wp-nf-author-first-20261017",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "schema_version": "story_design.authority.v1"
+      },
+      "planning_scope": "NOT_APPLICABLE",
+      "same_book_scope": "VERIFIED"
+    },
+    {
+      "role": "WORLD_BIBLE",
+      "asset_version_id": "authority-output:ce998818-4ea5-49ab-bf7e-356c6b0089cf:story_planning.candidate:v1",
+      "content_hash": "sha256:60ba471d8ff7b37954f1392008880111271df74e6e8a2248e82ce34328e8b67e",
+      "identity_fields": {
+        "project_id": "project:wp-nf-author-first-20261017",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "schema_version": "story_design.authority.v1"
+      },
+      "planning_scope": "NOT_APPLICABLE",
+      "same_book_scope": "VERIFIED"
+    },
+    {
+      "role": "CHARACTER_CAST",
+      "asset_version_id": "authority-output:712577bf-240d-4e75-ad75-ed0fcd8b24e1:story_planning.candidate:v1",
+      "content_hash": "sha256:8aa26d1258f8275fd9a7e3ac14b971949e78b5b35a264c2591493738ae3bbca4",
+      "identity_fields": {
+        "project_id": "project:wp-nf-author-first-20261017",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "schema_version": "story_design.authority.v1"
+      },
+      "planning_scope": "NOT_APPLICABLE",
+      "same_book_scope": "VERIFIED"
+    }
+  ],
+  "downstream_memo": "NOT_RUN_NO_CHAPTER_YET",
+  "same_book_scope": "VERIFIED_SIX_NATIVE_FOUNDATION_BINDINGS"
+}

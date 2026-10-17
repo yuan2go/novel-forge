@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "evidence_class": "READ_ONLY_EXACT_NATIVE_HISTORY_PRESERVATION",
+  "before": "native-checkpoint-20261017T180149Z.json.gz",
+  "after": "native-checkpoint-20261017T203244Z.json.gz",
+  "before_file_sha256": "sha256:f973315047cdee25b04d193c4b7adf812fb234a9acbb09b7932d3eb24abbdb68",
+  "after_file_sha256": "sha256:02161b6593dbe619122312c4dc45c92590bb0f4fe42ec3829d06a67ea45308ff",
+  "database": "nf_author_first_native",
+  "cluster": "7697608597895058057",
+  "old_asset_versions_compared_without_reduced_denominator": 1594,
+  "old_terminal_effects_compared_without_reduced_denominator": 59,
+  "native_pack_lifecycle_transitions": [
+    {
+      "asset_version_id": "c189bbc4-b194-487f-a864-789aeddd9b34",
+      "change": "ACTIVE_TO_SUPERSEDED",
+      "content_and_other_fields_unchanged": true,
+      "old_compilation": "compilation:quality:story_planning_pack.creative.ce6c639932c945aedd3608cb:e5eaa4dfe83682c93c93",
+      "native_successor_compilation": "compilation:quality:story_planning_pack.creative.ce6c639932c945aedd3608cb:33154dda5ea79bb081de",
+      "compile_operation": "e1540f25-0b63-46b5-abfa-1946c494783a",
+      "activation_operation": "147c0de8-9a64-476e-9bbe-071253ceaabf"
+    },
+    {
+      "asset_version_id": "6c726174-992f-4eb1-9485-1950703407d6",
+      "change": "ACTIVE_TO_SUPERSEDED",
+      "content_and_other_fields_unchanged": true,
+      "old_compilation": "compilation:quality:chapter_generation_pack.creative.ce6c639932c945aedd3608cb:05c20efb435bc103d635",
+      "native_successor_compilation": "compilation:quality:chapter_generation_pack.creative.ce6c639932c945aedd3608cb:79c142284cc605eb1843",
+      "compile_operation": "c2b21e4c-134e-4263-850f-d203df196ac8",
+      "activation_operation": "3881d1ed-f797-4f99-9b76-21fcaf053cf2"
+    }
+  ],
+  "old_asset_content_identity_and_hash_unchanged": true,
+  "old_effect_statuses_unchanged": {
+    "SUCCEEDED": 55,
+    "UNKNOWN": 4
+  },
+  "immutable_table_original_rows_retained": {
+    "authority_external_effect_dispatch": 59,
+    "authority_external_receipt": 55,
+    "authority_generation_isolation": 4
+  },
+  "formation_frozen_stage_inputs_hash": "sha256:63fdf888a605006630b2d06d074e22662b93512850c37124d484b9753d3a7ff0",
+  "formation_original_frozen_identity": {
+    "frozen_input_digest": "sha256:63fdf888a605006630b2d06d074e22662b93512850c37124d484b9753d3a7ff0"
+  },
+  "frozen_book_fields_unchanged": [
+    "book_run_id",
+    "project_id",
+    "workspace_id",
+    "book_id",
+    "book_design_version",
+    "book_plan_version",
+    "production_profile_version",
+    "root_operation_id",
+    "saga_id",
+    "stable_idempotency_key",
+    "target_chapter_count",
+    "input_mode",
+    "input_snapshot_id"
+  ],
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_id": "book:wp-nf-author-first-20261017",
+  "current_chapter": 5,
+  "accepted_through_chapter": 0,
+  "delivery_window": 100,
+  "migration_ids_unchanged": true
+}

@@ -1,0 +1,85 @@
+{
+  "status": "SAVED_READ_EXACT_EXPORT_PASS_LENGTH_UNMET",
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "round_end": 1,
+  "frozen_delivery_window": 100,
+  "full_book_target": 600,
+  "unit": {
+    "chapter": 1,
+    "asset_version_id": "authority-output:d91a49f0-c575-4b37-bc18-8cba8b270895:chapter.draft:v1",
+    "content_hash": "sha256:716166223b169d0408b5159fe553a1f125af0d6804e9f9ddc7c9d30e0a058dc8",
+    "text_hash": "sha256:e947f440ecc3594b2bf502bba1a500e28bdd1a73db31d619c439fc589f79ffe9",
+    "title": "先撤人",
+    "manuscript_status": "SAVED",
+    "quality_status": "NOT_VERIFIED",
+    "requirements_status": "LENGTH_TARGET_UNMET",
+    "length": {
+      "unit": "HAN_CHARACTERS_V1",
+      "actual": 3802,
+      "target": {
+        "maximum": 5000,
+        "minimum": 4000
+      }
+    },
+    "author_selection": "GENERATED_CURRENT",
+    "review_status": "NOT_RUN",
+    "working_selection": {
+      "status": "NOT_SELECTED"
+    }
+  },
+  "accepted_through_chapter": 0,
+  "native_revision": "SUCCEEDED",
+  "original_export_json_sha256": "sha256:e94994447b86579ca2e48e4f5dc59cd2e538e1d25a62b64e022a912075baac58",
+  "original_export_md_sha256": "sha256:e907b0c8f4f33501a3a8c5488a8d1a2968c32c43fa2bd847a7ba66708c8937a6",
+  "native_revision_root": "1cfa9e2e-8514-494e-b611-b2db19b7a6b6",
+  "effective_unit": {
+    "chapter": 1,
+    "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+    "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+    "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+    "title": "先撤人",
+    "manuscript_status": "SAVED",
+    "quality_status": "NOT_VERIFIED",
+    "working_selection": {
+      "status": "SELECTED",
+      "asset_version_id": "4728894f-b757-4f8a-8a21-379d9d828508",
+      "content_hash": "sha256:fa5e3e2822c08c3d911e7361ca26e66490f00eeab1464cd4a09795512a662e1a",
+      "selected_asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+      "selected_content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+      "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+      "author_selection": "NOT_GRANTED",
+      "formal_acceptance": "NOT_GRANTED"
+    },
+    "requirements_status": "PARTIALLY_CHECKED",
+    "voice_observations": [],
+    "length": {
+      "unit": "HAN_CHARACTERS_V1",
+      "actual": 4424,
+      "target": {
+        "maximum": 5000,
+        "minimum": 4000
+      }
+    },
+    "dependency_changes": [],
+    "author_selection": "NOT_GRANTED",
+    "review_status": "COMPLETED",
+    "review_asset_version_id": "authority-output:ce84dc11-ca67-489d-9f39-86e2ce6914fb:chapter.rereview:v1",
+    "unresolved_issue_codes": []
+  },
+  "effective_exact_export_readback": "PASS",
+  "formal_acceptance": "NOT_GRANTED",
+  "author_selection": "NOT_GRANTED",
+  "working_selection_operation": "021cf6f0-9453-4ec2-93dd-44167387eccc",
+  "effective_export_sha256": {
+    ".md": "sha256:9b97cea4556a1cb24f6712fb1e63108b04d304e1bceb924eeca4346b68c03bbc",
+    ".json": "sha256:91178b7f8856a608f9adfacce9a3a19ad141d16522219581178e0a57fbcea5eb"
+  },
+  "prose_readback_observation": {
+    "first_and_effective_full_text_read": true,
+    "action_consequence": "Unsafe dry-looking white stone remains closed; Xu withdraws and later directs retreat from stable ground. Tool retrieval follows evacuation, not instant repair.",
+    "character_reaction": "Workers grip/release rope, make room, inspect Xu knee; Lu corrects force and prioritizes people. Xu changes rope placement and helper instructions.",
+    "continuation_boundary": "Tools recovered and old path closed remain working-prose experience, not accepted Canon or verified character knowledge.",
+    "remaining_literary_concern": "Dense rope/tool procedure and repeated safety actions; no stable long-form or literary qualification."
+  }
+}

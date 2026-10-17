@@ -1,0 +1,21 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "pause",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--reason",
+    "Pause future Book scheduling after two observed same-chapter network stream failures; retain the current in-flight generation and all original UNKNOWN rights/accounting records. No generation deadline or cancellation is requested. Resume coordination from its exact saved result if it completes."
+  ],
+  "before_book_state": "PAUSED",
+  "before_book_version": 35,
+  "before_current_chapter": 5,
+  "current_effect_before": [
+    "2f10604b-da70-49cd-86d6-c187cb32cfad",
+    "SUCCEEDED"
+  ]
+}

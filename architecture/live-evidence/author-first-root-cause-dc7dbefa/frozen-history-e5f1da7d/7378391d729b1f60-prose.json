@@ -1,0 +1,26 @@
+{
+  "test": "tests/integration/test_synthesis_formation_postgres.py::test_native_undispatched_route_repair_successor_preserves_candidate_counter_and_acceptance",
+  "prose": [
+    {
+      "asset_type": "draft_chapter",
+      "asset_version_id": "authority-output:a78cf3b1-a6f4-4091-8a6d-c581be11c7ca:chapter.draft:v1",
+      "content_hash": "sha256:2c64a8b5f5ee7bb5f588ee69b11d7a16df5c306b2446f30bcd1f3fa985a1048d",
+      "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。",
+      "text_sha256": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf"
+    },
+    {
+      "asset_type": "draft_version",
+      "asset_version_id": "authority-output:50becf8b-86cc-4c82-8d5e-b0a5774d4f16:chapter.revision:v1",
+      "content_hash": "sha256:534b108942ffe6c228bc513a670bbc6306809ecc75018a29c3180d9b92b046d5",
+      "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:69a76b19ecde6ae980a70d13bb465cb7c43cfb27c57bda509c16ed63a1cbbe76"
+    },
+    {
+      "asset_type": "best_draft_candidate",
+      "asset_version_id": "authority-output:8f7dc6d1-7553-4930-8a76-be4c1272c404:chapter.best_candidate:v1",
+      "content_hash": "sha256:4fe9ec516784fdedfb35357e4b594c9153ece31e13bbeada7a573f4b32c92500",
+      "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。 The protagonist gives up the only safe route home before the witnesses leave.",
+      "text_sha256": "sha256:69a76b19ecde6ae980a70d13bb465cb7c43cfb27c57bda509c16ed63a1cbbe76"
+    }
+  ]
+}

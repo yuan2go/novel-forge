@@ -1,0 +1,23 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "revise",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--chapter",
+    "1",
+    "--expected-version",
+    "7",
+    "--idempotency-key",
+    "wp-nf-author-first-20261017:chapter-01:length-repair-01",
+    "--reason",
+    "首稿按HAN_CHARACTERS_V1为3802，未达冻结4000—5000汉字。保留原稿，通过原生chapter-length-repair.v1完成全章篇幅修订，目标4400—4700汉字、冻结上下限不变。保留既定场景、动作因果、第三人称有限视角、人物名称和发现渠底错位的结尾。优先补足撤人后的具体人物反应、许照川误判被纠正后的行为变化、封闭旧通道对后续作业的实际约束；避免重复拉绳、工具清点或技术说明填字。不能提前修好渠底、增加未登场人物或授予未经学习的修为。作者仅授权工作稿修订使用，不作正式接纳。",
+    "--foreground",
+    "--work-window-seconds",
+    "300"
+  ]
+}

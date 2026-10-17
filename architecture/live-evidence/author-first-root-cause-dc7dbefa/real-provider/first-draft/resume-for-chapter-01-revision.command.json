@@ -1,0 +1,13 @@
+[
+  "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+  "-m",
+  "novel_forge.cli.authority",
+  "authority-manuscript",
+  "resume",
+  "--book-run-id",
+  "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "--expected-version",
+  "6",
+  "--reason",
+  "Resume this saved first-chapter checkpoint solely for the requested native length correction; retain 600/100 scope and original Draft."
+]

@@ -1,0 +1,482 @@
+........FFFFFFFFF.....................................F                  [100%]
+=================================== FAILURES ===================================
+_______ test_frozen_stage_template_dispatches_same_preflight_protocol[4] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e055b0>
+version = 4
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+_______ test_frozen_stage_template_dispatches_same_preflight_protocol[5] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e06b10>
+version = 5
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+_______ test_frozen_stage_template_dispatches_same_preflight_protocol[6] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e07200>
+version = 6
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+_______ test_frozen_stage_template_dispatches_same_preflight_protocol[7] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e07d10>
+version = 7
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+_______ test_frozen_stage_template_dispatches_same_preflight_protocol[8] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e06e70>
+version = 8
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+_______ test_frozen_stage_template_dispatches_same_preflight_protocol[9] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e162a0>
+version = 9
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+______ test_frozen_stage_template_dispatches_same_preflight_protocol[10] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e15bb0>
+version = 10
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+______ test_frozen_stage_template_dispatches_same_preflight_protocol[11] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107325670>
+version = 11
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+______ test_frozen_stage_template_dispatches_same_preflight_protocol[12] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107326c00>
+version = 12
+
+    @pytest.mark.parametrize("version", range(4, 13))
+    def test_frozen_stage_template_dispatches_same_preflight_protocol(monkeypatch, version):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import preflight_continuation, planning_repair_routing
+        from novel_forge.modules.production_execution import execution_template
+    
+        import json
+        from pathlib import Path
+        frozen = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/author_first.json").read_text())
+        frozen.update(book_id="book", member_authorization_ref="member", allowed_candidates=["member"])
+        frozen["version"] = f"creative-execution-template.v{version}"
+        for key, first in (("author_workflow", 12), ("quality_corrections", 10),
+                           ("canon_evidence_localization", 9), ("chapter_graph_recovery", 7),
+                           ("canon_validation_contract", 6), ("chapter_contract_recovery", 5)):
+            if version < first:
+                frozen.pop(key, None)
+        if version < 9 and version >= 7:
+            frozen["chapter_graph_recovery"] = "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        execution_template.validate_templates({"execution_templates": [frozen]})
+        admission = {"policy_snapshot": {"policy": {"execution_templates": [frozen]}}}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: admission)
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+        command = SimpleNamespace(project_id="project", book_id=frozen["book_id"], generator_operation_name="chapter_plan.generate")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=None),
+            command=command, source_operation_id="repair", lineage=("source", "repair")) == planning_repair_routing.STAGE_REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = namespace(cursor=None)
+command = namespace(project_id='project', book_id='book', generator_operation_name='chapter_plan.generate')
+source_operation_id = 'repair', lineage = ('source', 'repair')
+
+    def _native_preflight_evidence(uow, *, command, source_operation_id, lineage):
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import native_planning_repair
+        from novel_forge.modules.production_execution.execution_template import planning_repair_evidence_version
+>       uow.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+        ^^^^^^^^^^^^^^^^^^
+            JOIN authority_asset_version v USING(asset_version_id) JOIN authority_asset a USING(asset_id)
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.asset_type='routing_decision'""",
+            [source_operation_id, command.project_id])
+E       AttributeError: 'NoneType' object has no attribute 'execute'
+
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: AttributeError
+_ test_current_contract_receipt_is_rechecked_by_the_native_dispatch_owner_before_send _
+
+    def test_current_contract_receipt_is_rechecked_by_the_native_dispatch_owner_before_send():
+        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+    
+        snapshot = contract_route()
+        receipt = snapshot["task"]["declared_requirements"]["governed_repair"]
+        calls = []
+    
+        def changed_receipt(**arguments):
+            calls.append(arguments)
+            return {**receipt, "source_input_hash": "another-native-stage"}
+    
+        owner = object.__new__(ProductionProviderRouter)
+        owner.registry = SimpleNamespace(planning_repair_receipt=changed_receipt)
+        with pytest.raises(KernelError, match="ROUTING_REPAIR_EVIDENCE_DRIFT"):
+            ProductionProviderRouter._selected_route(owner, None, snapshot)
+>       assert calls == [{"project_id": snapshot["task"]["project_id"], "book_id": snapshot["task"]["work_id"],
+            "operation_id": snapshot["task"]["operation_id"], "task_type": snapshot["task"]["task_type"],
+            "input_hash": snapshot["task"]["input_hash"], "lineage": tuple(snapshot["task"]["lineage_operation_ids"])}]
+E       AssertionError: assert [{'project_id...nerate', ...}] == [{'project_id...nerate', ...}]
+E         
+E         At index 0 diff: {'project_id': 'project', 'book_id': 'book', 'operation_id': 'operation', 'task_type': 'world_candidates.generate', 'input_hash': 'current', 'lineage': ('parent', 'operation'), 'frozen_repair': {'accepted_history_mutation_allowed': False, 'authorized_history_operation_ids': ['parent'], 'changed_contract': 'world-agency.v2', 'contract_chain_depth': 1, 'contract_version': 'planning-route-contract-successor.v1', 'input_hash': 'current', 'maximum_repairs': 4, 'operation_id': 'operation', 'repair_number': 0, 'source_input_hash': 'prior', 'source_operation_id...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/unit/test_planning_coordinated_contracts.py:283: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[4]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[5]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[6]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[7]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[8]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[9]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[10]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[11]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_frozen_stage_template_dispatches_same_preflight_protocol[12]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_current_contract_receipt_is_rechecked_by_the_native_dispatch_owner_before_send
+10 failed, 45 passed in 1.12s

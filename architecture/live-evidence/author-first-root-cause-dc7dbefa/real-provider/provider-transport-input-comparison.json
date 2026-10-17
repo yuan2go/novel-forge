@@ -1,0 +1,140 @@
+{
+  "evidence_class": "READ_ONLY_REAL_WRITER_TRANSPORT_CONFIGURATION_COMPARISON",
+  "read_at": "2026-10-17T19:28:45.029402+00:00",
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "all_actual_base_instructions_836_bytes": true,
+  "distinct_schema_hashes": 4,
+  "network_failure_origin": "UNESTABLISHED; only CLI stream decoding error is observed",
+  "no_causal_claim_from_elapsed_time": true,
+  "rows": [
+    {
+      "operation_id": "d91a49f0-c575-4b37-bc18-8cba8b270895",
+      "kernel_status": "SUCCEEDED",
+      "process_status": "SUCCEEDED",
+      "started_at": "2026-10-17T18:16:40.865311Z",
+      "completed_at": "2026-10-17T18:19:03.382525Z",
+      "returncode": 0,
+      "local_termination_signal": null,
+      "input_sha256": "50c5c5004d1ca48a0170d36349defb6771b6a66b56347f4749ad32e3d9b294be",
+      "output_schema_sha256": "sha256:eb3a62433697fde326592a9490e0edfbfcf86c76403ae8e92859728ef7bc41f4",
+      "output_schema_bytes": 8608,
+      "actual_base_instruction_bytes": 836,
+      "actual_base_instruction_hash": "sha256:a787ef41ce9a62af398ecee9ac6e72132678b1223839595ec6bb1f6da3b9a137",
+      "actual_model_context": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "thread_id": "01a14b14-9162-7a90-b8c2-16293dd4d283",
+      "terminal_errors": [],
+      "elapsed_seconds": 142.517214
+    },
+    {
+      "operation_id": "05ec6a47-fb21-4056-86ea-9362d68aebd6",
+      "kernel_status": "FAILED_FINAL",
+      "process_status": "FAILED",
+      "started_at": "2026-10-17T18:29:20.129682Z",
+      "completed_at": "2026-10-17T18:44:26.648147Z",
+      "returncode": 1,
+      "local_termination_signal": null,
+      "input_sha256": "821ac85716146a3fd4b56c54aa9489062dddbddc0dc46100989def49cdaeec19",
+      "output_schema_sha256": "sha256:19b0d58ee4d75b26e0bfdf89f0b123c3cce0f5f66aad1082d627126517e92970",
+      "output_schema_bytes": 8809,
+      "actual_base_instruction_bytes": 836,
+      "actual_base_instruction_hash": "sha256:a787ef41ce9a62af398ecee9ac6e72132678b1223839595ec6bb1f6da3b9a137",
+      "actual_model_context": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "thread_id": "01a14b20-25b5-7c43-92e6-80eac70aa528",
+      "terminal_errors": [
+        "stream disconnected before completion: Transport error: network error: error decoding response body"
+      ],
+      "elapsed_seconds": 906.518465
+    },
+    {
+      "operation_id": "75403b34-66d4-4f84-9079-daf1caac5a15",
+      "kernel_status": "SUCCEEDED",
+      "process_status": "SUCCEEDED",
+      "started_at": "2026-10-17T18:44:59.104347Z",
+      "completed_at": "2026-10-17T18:47:02.439516Z",
+      "returncode": 0,
+      "local_termination_signal": null,
+      "input_sha256": "821ac85716146a3fd4b56c54aa9489062dddbddc0dc46100989def49cdaeec19",
+      "output_schema_sha256": "sha256:19b0d58ee4d75b26e0bfdf89f0b123c3cce0f5f66aad1082d627126517e92970",
+      "output_schema_bytes": 8809,
+      "actual_base_instruction_bytes": 836,
+      "actual_base_instruction_hash": "sha256:a787ef41ce9a62af398ecee9ac6e72132678b1223839595ec6bb1f6da3b9a137",
+      "actual_model_context": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "thread_id": "01a14b2e-82e3-72e3-a4ce-3c0d7feaaff8",
+      "terminal_errors": [],
+      "elapsed_seconds": 123.335169
+    },
+    {
+      "operation_id": "29399f28-10b2-4c58-82b7-e7098daa7081",
+      "kernel_status": "FAILED_FINAL",
+      "process_status": "FAILED",
+      "started_at": "2026-10-17T18:54:12.261617Z",
+      "completed_at": "2026-10-17T19:09:22.339779Z",
+      "returncode": 1,
+      "local_termination_signal": null,
+      "input_sha256": "28451edc1091b773e5e640264c626443a1ece872c96f1a68b515696b4a00d51d",
+      "output_schema_sha256": "sha256:7b9b5da65ee55273e332b35a120495f2568f309a2031fdb95643585cde3ea850",
+      "output_schema_bytes": 11950,
+      "actual_base_instruction_bytes": 836,
+      "actual_base_instruction_hash": "sha256:a787ef41ce9a62af398ecee9ac6e72132678b1223839595ec6bb1f6da3b9a137",
+      "actual_model_context": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "thread_id": "01a14b36-ebd6-71f0-9daf-81eb183d9b46",
+      "terminal_errors": [
+        "stream disconnected before completion: Transport error: network error: error decoding response body"
+      ],
+      "elapsed_seconds": 910.078162
+    },
+    {
+      "operation_id": "2c9bae61-b96d-4a62-befa-9445ce3b424c",
+      "kernel_status": "SUCCEEDED",
+      "process_status": "SUCCEEDED",
+      "started_at": "2026-10-17T19:09:55.372120Z",
+      "completed_at": "2026-10-17T19:11:52.847789Z",
+      "returncode": 0,
+      "local_termination_signal": null,
+      "input_sha256": "28451edc1091b773e5e640264c626443a1ece872c96f1a68b515696b4a00d51d",
+      "output_schema_sha256": "sha256:7b9b5da65ee55273e332b35a120495f2568f309a2031fdb95643585cde3ea850",
+      "output_schema_bytes": 11950,
+      "actual_base_instruction_bytes": 836,
+      "actual_base_instruction_hash": "sha256:a787ef41ce9a62af398ecee9ac6e72132678b1223839595ec6bb1f6da3b9a137",
+      "actual_model_context": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "thread_id": "01a14b45-5717-74b0-8a06-85cf4637698e",
+      "terminal_errors": [],
+      "elapsed_seconds": 117.475669
+    },
+    {
+      "operation_id": "3a90542e-985a-4fbf-96f6-6170bb6970fb",
+      "kernel_status": "EXECUTING",
+      "process_status": "RUNNING",
+      "started_at": "2026-10-17T19:15:41.094916Z",
+      "completed_at": null,
+      "returncode": null,
+      "local_termination_signal": null,
+      "input_sha256": "0795f310ccd74e41acc2352cd9a137a5afdf247be2d3e7320d22e833a0aeec56",
+      "output_schema_sha256": "sha256:d283842efb09a9e16578a5fc186f7d63cf8e613efa93c4df6e7e05c85f61961f",
+      "output_schema_bytes": 11101,
+      "actual_base_instruction_bytes": 836,
+      "actual_base_instruction_hash": "sha256:a787ef41ce9a62af398ecee9ac6e72132678b1223839595ec6bb1f6da3b9a137",
+      "actual_model_context": {
+        "model": "gpt-6.1-sol",
+        "effort": "medium"
+      },
+      "thread_id": "01a14b4a-9658-7123-85cd-5c73a1a38cbf",
+      "terminal_errors": []
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "work_package": "WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+  "baseline_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "current_code_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "scope": "CURRENT_IMPLEMENTATION_AND_SCOPED_EXECUTABLE_EVIDENCE",
+  "issues": [
+    {
+      "id": "A",
+      "classification": "PRODUCTION_DEFECT",
+      "first_failure": "v12 _native_preflight_evidence selected native-planning-repair-evidence.v2; v4-v11 selected stage-aware v3. Same drift existed in both stage bounds and continuation/World reachability checks.",
+      "repair": "Resolve repair evidence from the validated frozen repair_routing contract in execution_template.py; stage limits, preflight and continuation consume that frozen capability. World policy uses its frozen field. No latest-config reinterpretation.",
+      "recheck": "PASS; red v12 case retained; v4-v12 and historical routing/repair unit cases passed. Stage allowance and global monotonic repair sequence remain distinct; no reset or cap growth.",
+      "evidence": [
+        "../author-first-continuation-recovery-496f3740/checks/red-v12.log.gz",
+        "../author-first-continuation-recovery-496f3740/checks/final-unit.xml",
+        "frozen-history-e5f1da7d/index.json"
+      ],
+      "constraint_class": "CONFIGURABLE_POLICY"
+    },
+    {
+      "id": "B",
+      "classification": "OUTDATED_FIXTURE",
+      "first_failure": "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID from synthetic Foundation/cast without the current Book-scoped flattened provenance; fixture activation also omitted scope_layer/book_id.",
+      "repair": "Bring only synthetic Foundation/cast envelopes and scoped activation rows up to the executable contract. Current native generation already binds Book identity, source version and content hash. No broad legacy JSON fallback or historic asset rewrite. Craft fixture now supplies a relevant writing problem in its initial authoritative Book profile; current need-driven Craft refusal stays intact.",
+      "recheck": "PASS current native Creation Book/cast scope, all five local Memo preparations, 126 same-Book past-chapter source resolutions (116 actual Provider occurrences +10 local Memo); exact version/hash/status verified.",
+      "evidence": [
+        "../author-first-continuation-recovery-496f3740/checks/baseline-boundaries.log.gz",
+        "../author-first-continuation-recovery-496f3740/checks/final-boundaries.xml",
+        "../author-first-continuation-recovery-496f3740/checks/final-unit.xml",
+        "../author-first-continuation-recovery-496f3740/readbacks/6dde8be276df6432.json.gz",
+        "real-provider/actual-book-source-resolution.json"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    },
+    {
+      "id": "C",
+      "classification": "OUTDATED_FAULT_INJECTION_AND_CORRECT_REFUSAL",
+      "first_failure": "Old binder.execute monkeypatch failed before real snapshot preparation, so it could only exercise zero-preparation budget succession.",
+      "repair": "Fault synthetic route capacity at the native execution preparer and evaluate the complete rendered request. Actual TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED leaves frozen snapshot/input evidence, no external intent. Preserve failed Attempt and use existing Opening execution recovery; prepared work correctly refuses zero-work capacity replacement. No production change needed.",
+      "recheck": "PASS 10 capacity tests and 6 saved-result/recovery tests. Same-capacity native continuation retains complete-request semantics; after-intent/active/changed identity refusals remain. Two existing fresh/upgrade deletion-fence tests independently retain predecessor protection.",
+      "evidence": [
+        "../author-first-continuation-recovery-496f3740/checks/final-capacity.xml",
+        "../author-first-continuation-recovery-496f3740/checks/final-fence-02.xml"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    },
+    {
+      "id": "D",
+      "classification": "PRODUCTION_SCANNER_DEFECT_AND_OUTDATED_EXPECTATION",
+      "first_failure": "Retained Quality scanner ran current graph frontier validation against historical 3.8 even though that scanner cannot handle 3.8, yielding RETAINED_GRAPH_BOOK_CONFLICT before Memo recovery.",
+      "repair": "An inapplicable Quality scanner returns false before frontier checks; direct applicable recovery still enforces exact actor, current Book boundary, cancellation and replacement guards. Historical Memo test now expects authorized stopped-generation isolation and linked successor, while strict acceptance still rejects UNKNOWN usage.",
+      "recheck": "PASS historical 3.8 Memo and three current native Creation interruption cases. Completed results reused, completed Context sibling reused, saved Draft delivery repaired with no repeat Writer. Original UNKNOWN and HELD_UNKNOWN survive; commit rights revoked before successor; concurrency/rollback/late-result guards retained.",
+      "evidence": [
+        "../author-first-continuation-recovery-496f3740/checks/baseline-quality-memo.log.gz",
+        "../author-first-continuation-recovery-496f3740/checks/final-boundaries.xml",
+        "../author-first-continuation-recovery-496f3740/checks/final-author-sibling.xml",
+        "../author-first-continuation-recovery-496f3740/readbacks/6dde8be276df6432.json.gz",
+        "../author-first-continuation-recovery-496f3740/readbacks/222840b26bcc8a18.json.gz",
+        "real-provider/chapter-02-network-recovery-completed.json.gz",
+        "real-provider/chapter-03-network-recovery-completed.json.gz",
+        "real-provider/unknown-isolation-final.json",
+        "real-provider/history-preservation-final-e5.json"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    },
+    {
+      "id": "E",
+      "classification": "PUBLICATION_DISPATCH_DEFECT_AND_CORRECT_UNCALIBRATED_QUALITY_REFUSAL",
+      "first_failure": "Ordinary blocked export incorrectly invoked specialized native-publication successor revalidation without an immutable successor journal, reporting PUBLICATION_RECOVERY_SOURCE_INVALID. Joint Quality fixture expected uncalibrated observations to authorize correction.",
+      "repair": "Only an actual immutable Saga Step successor invokes publication revalidation; ordinary export reports the owning strict Quality gate. Keep exact-source replacement guards. Update stale uncalibrated Quality expectation to refuse automatic revision/acceptance; preserve original combined Craft/continuity text and exact frozen checks.",
+      "recheck": "PASS; precise source actor/hash/cause/version/failure negatives remain, existing qualified-selection/range units pass. Default author-first graph still has optional review/Canon excluded; complete working prose remains readable and exactly exportable with acceptance 0.",
+      "evidence": [
+        "../author-first-continuation-recovery-496f3740/checks/baseline-quality-memo.log.gz",
+        "../author-first-continuation-recovery-496f3740/checks/final-boundaries.xml",
+        "../author-first-continuation-recovery-496f3740/checks/final-unit.xml",
+        "../author-first-continuation-recovery-496f3740/checks/scripted-export-readback.json.gz",
+        "real-provider/first-draft/index.json",
+        "real-provider/chapter-02/chapter-02-effective.json",
+        "real-provider/final-sample.json",
+        "real-provider/final-exports/native-working-chapters-01-05.json"
+      ],
+      "constraint_class": "CURRENT_PROVEN_INVARIANT"
+    }
+  ],
+  "correction_to_prior_assertion_note": "Historical zero-work predecessor budget/update/delete/assess/concurrent isolation guards were valid and initially removed during injection refactor. Restored at 175d2b23 and verified with 13 capacity/owner PostgreSQL cases on da7acab2. The old packet is preserved unchanged.",
+  "additional_actual_entry_defects": [
+    "Default optional Reader deployment blocked an author-first route that did not request Reader.",
+    "Pure generation input-only policy was not restored consistently through native workers and manuscript entry. Invocation own base instructions are now verified.",
+    "Inherited 32000 output headroom clamp remained in a current provider-capacity path; removed, but not proven causal for upstream World truncation.",
+    "Incomplete upstream max_output_tokens result was incorrectly classified as retryable stream failure.",
+    "Scope initialization refused before claimed worker owner failure coordination; Opening requires its atomic Authority failure boundary.",
+    "Creation called a legacy five-node Opening drain, bypassing its own scheduling window between nodes.",
+    "Frozen-history preflight consulted current Book admission and governed replay rebuilt policy evidence from current policy; fixed at e5f1da7d with exact source route and saved receipt admission."
+  ],
+  "coverage_diagnosis": "All prior six native cases explicitly enabled optional Memo. Their evidence stays enhancement-only; seventh case now verifies unchanged default author-first, local frozen Memo and Writer UNKNOWN.",
+  "real_provider_status": "SCOPED_REAL_NATIVE_SAMPLE_COMPLETE_FIVE_EFFECTIVE_CHAPTERS_CROSS_GROUP_EXPORT_READBACK_ACCEPTED0",
+  "formal_P0": "NOT_RUN",
+  "production_qualification": "NOT_RUN",
+  "literary_qualification": "NOT_RUN",
+  "real_provider_environment_failure": {
+    "classification": "OBSERVED_NETWORK_TRANSPORT_FAILURE",
+    "original_operation": "05ec6a47-fb21-4056-86ea-9362d68aebd6",
+    "successor_operation": "75403b34-66d4-4f84-9079-daf1caac5a15",
+    "error": "stream disconnected before completion: Transport error: network error: error decoding response body",
+    "token_limit_cause": "NOT_OBSERVED",
+    "old_business_commit_right": "REVOKED",
+    "old_remote_outcome_and_usage": "UNKNOWN",
+    "same_root_and_actual_stdin": "VERIFIED",
+    "successor_result": "SUCCEEDED_SAVED_DRAFT_3988_THEN_NATIVE_REVISED_4467",
+    "evidence": "real-provider/chapter-02-network-recovery.json.gz",
+    "latest_source_check": "real-provider/third-chapter-actual-input.json"
+  },
+  "real_provider_network_failures": [
+    {
+      "chapter": 2,
+      "old_operation": "05ec6a47-fb21-4056-86ea-9362d68aebd6",
+      "saved_successor": "75403b34-66d4-4f84-9079-daf1caac5a15",
+      "evidence": "real-provider/chapter-02-network-recovery-completed.json.gz"
+    },
+    {
+      "chapter": 3,
+      "old_operation": "29399f28-10b2-4c58-82b7-e7098daa7081",
+      "saved_successor": "2c9bae61-b96d-4a62-befa-9445ce3b424c",
+      "evidence": "real-provider/chapter-03-network-recovery-completed.json.gz"
+    },
+    {
+      "chapter": 4,
+      "old_operation": "3a90542e-985a-4fbf-96f6-6170bb6970fb",
+      "saved_successor": "d80359d5-5bd4-4f03-82b8-2c16628d1168",
+      "evidence": "real-provider/chapter-04-network-recovery-completed.json.gz"
+    },
+    {
+      "chapter": 5,
+      "old_operations": [
+        "6e6a32f7-cd51-4cdc-bbc5-ca51aa04c9cf",
+        "cf59d8b5-8b5e-4e3f-b884-66b7e238d2a9"
+      ],
+      "saved_successor": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+      "evidence": "real-provider/unknown-isolation-final.json"
+    }
+  ],
+  "operator_document_sha": "ff2049d37d550fd505715e0e6db8d2b4516d6501",
+  "real_provider_final_sample": "real-provider/final-sample.json",
+  "remaining_unresolved": [
+    "Five-chapter sample is not100-chapter delivery.",
+    "Four first Drafts underlength; native revision passed4000–5000, first-pass stability unqualified.",
+    "Actual network transport failures recovered; lower-level network cause unresolved.",
+    "Chapter5 duplicate title and procedural repetition remain in exact model manuscripts.",
+    "Formal P0/full matrix, production and literary qualification NOT_RUN."
+  ]
+}

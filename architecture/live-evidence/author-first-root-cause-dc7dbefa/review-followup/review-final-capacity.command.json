@@ -1,0 +1,13 @@
+{
+  "source_sha": "da7acab23ab65dac4c82de02dd0bbb2e089617b4",
+  "working_tree_diff": "",
+  "database": "nf_author_capacity_test",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/integration/test_opening_capacity_continuation_postgres.py",
+    "--junitxml=/tmp/nf-author-first-20261017/review-final-capacity.xml"
+  ]
+}

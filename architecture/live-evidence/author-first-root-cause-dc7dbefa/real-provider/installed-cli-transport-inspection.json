@@ -1,0 +1,58 @@
+{
+  "evidence_class": "READ_ONLY_INSTALLED_CODEX_TRANSPORT_CONFIGURATION_INSPECTION",
+  "read_at": "2026-10-17T19:55:33.661301+00:00",
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "cli_version": "0.162.0-alpha.17.2",
+  "task_retry_policy": "codex-no-transport-retry.v1",
+  "actual_session_model_provider": "novel_forge_openai_no_retry",
+  "repository_overrides": {
+    "request_max_retries": 0,
+    "stream_max_retries": 0,
+    "stream_idle_timeout_ms": "NOT_OVERRIDDEN"
+  },
+  "global_explicit_timeout_settings": {},
+  "global_explicit_provider_timeout_settings": {},
+  "official_reference": {
+    "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+    "stream_idle_timeout_ms_documented_default": 300000,
+    "applicability_to_installed_alpha_default": "NOT_ESTABLISHED"
+  },
+  "installed_debug_help_has_effective_config_dump": false,
+  "failure_origin": "UNESTABLISHED beyond actual CLI network stream decoding error; elapsed time alone does not prove timeout cause",
+  "local_proxy_observation": "127.0.0.1:1082, Shadowrocket MacPacketTunnel; no causal attribution or global change",
+  "failures": [
+    {
+      "operation_id": "3a90542e-985a-4fbf-96f6-6170bb6970fb",
+      "process_status": "FAILED",
+      "returncode": 1,
+      "termination_signal": null,
+      "started_at": "2026-10-17T19:15:41.094916Z",
+      "completed_at": "2026-10-17T19:30:47.951358Z",
+      "terminal_errors": [
+        "stream disconnected before completion: Transport error: network error: error decoding response body"
+      ]
+    },
+    {
+      "operation_id": "29399f28-10b2-4c58-82b7-e7098daa7081",
+      "process_status": "FAILED",
+      "returncode": 1,
+      "termination_signal": null,
+      "started_at": "2026-10-17T18:54:12.261617Z",
+      "completed_at": "2026-10-17T19:09:22.339779Z",
+      "terminal_errors": [
+        "stream disconnected before completion: Transport error: network error: error decoding response body"
+      ]
+    },
+    {
+      "operation_id": "05ec6a47-fb21-4056-86ea-9362d68aebd6",
+      "process_status": "FAILED",
+      "returncode": 1,
+      "termination_signal": null,
+      "started_at": "2026-10-17T18:29:20.129682Z",
+      "completed_at": "2026-10-17T18:44:26.648147Z",
+      "terminal_errors": [
+        "stream disconnected before completion: Transport error: network error: error decoding response body"
+      ]
+    }
+  ]
+}

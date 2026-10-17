@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/execution-checks/collect_final_sample.py", line 43, in <module>
+    assert contracts and all(c['minimum']==4000 and c['maximum']==5000 for c in contracts)
+AssertionError
