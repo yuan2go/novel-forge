@@ -547,6 +547,9 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
         "--idempotency-key", "durable", "--creative-selection", "AUTHOR_COMPARISON", "--repository-root", str(root),
         "--execution-template-file", str(root / "config/execution_templates/creative_validation.json")])
+    if mode.startswith("capacity-"):
+        # COMPATIBILITY: injected material-budget failures belong to the original frozen 64K Planning policy.
+        args.creation_policy_file = root / "tests/fixtures/creation/frozen-capacity-policy-6b69b22.json"
     if mode.startswith("world-"):
         execution_template = json.loads((root / "config/execution_templates/creative_validation.json").read_text())
         execution_template["world_future_preparation"] = "REQUIRED"
