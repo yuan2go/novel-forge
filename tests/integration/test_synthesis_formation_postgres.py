@@ -64,6 +64,9 @@ def test_native_formation_generates_foundation_from_author_brief(
 ):
     if memo_timeout_prefix_recovery:
         memo_timeout_recovery = True
+    if memo_timeout_recovery or scene_core_recovery or scene_information_recovery or review_knowledge_recovery or length_scope_recovery:
+        from tests.integration.synthesis_production_support import freeze_current_chapter_bundle
+        freeze_current_chapter_bundle(monkeypatch)
     if scene_core_recovery or scene_information_recovery or review_knowledge_recovery or length_scope_recovery:
         from novel_forge.modules.chapter_authority import definitions as scene_definitions
         saved_draft_version = scene_definitions.CHAPTER_DRAFT_DEFINITION_VERSION
@@ -2180,7 +2183,9 @@ def _recover_runtime_profile_formation(*, harness, chapter_pack, formation, prin
     from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
     from novel_forge.modules.agent_runtime.definitions import agent_runtime_operation_definitions
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        for item in (*chapter_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha,model_effects_required=True),*agent_runtime_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha)):
+        for item in (*chapter_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha,model_effects_required=True),
+                     *chapter_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha,model_effects_required=True,coordinated_contract=True),
+                     *agent_runtime_operation_definitions(application_build_id=chapter_pack.application_build_id,commit_sha=new_sha)):
             uow.repositories.definitions.register(item)
         uow.commit()
     chapter_pack.release_sha=new_sha

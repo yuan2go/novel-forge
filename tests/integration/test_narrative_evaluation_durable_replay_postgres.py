@@ -86,8 +86,11 @@ class _SyntheticSemanticProvider:
         generator_operation_name = str(
             metadata.get("generator_operation_name") or "book_plan.generate"
         )
+        from novel_forge.modules.story_design_authority.qualification import qualification_profile_options
+
+        candidate = request_payload["input"]["candidate"]
         result = ModelProviderResult(
-            output=scripted_qualification(generator_operation_name),
+            output=scripted_qualification(generator_operation_name, **qualification_profile_options(candidate)),
             provider_id=self.provider,
             model_id="synthetic-semantic-v1",
             prompt_version="synthetic-semantic-prompt-v1",

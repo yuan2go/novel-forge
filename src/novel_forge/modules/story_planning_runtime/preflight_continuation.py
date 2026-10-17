@@ -95,7 +95,7 @@ def require_capacity_source(uow, *, source_operation_id, project_id, frozen, ver
 def require_capacity_target(source, target):
     old = json.loads(source["snapshot"]["context_policy_payload_json"])
     new = json.loads(target["pack_snapshot"]["context_policy_payload_json"])
-    if (source.get("preflight_failure") or {}).get("contract_version") in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"} and new.get("capacity_policy") != "complete-request-capacity.v1":
+    if (source.get("preflight_failure") or {}).get("contract_version") in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"}:
         if old != new:
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT","Routing recovery retains the exact Context policy")
         return {"context_policy":"UNCHANGED","recovery_kind":"NATIVE_BOUNDED_REPAIR_ROUTE","book_usage_budget":False}

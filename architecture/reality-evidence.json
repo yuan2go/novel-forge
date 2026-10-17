@@ -5503,7 +5503,7 @@
         },
         {
           "path": "tests/integration/test_provider_routing_postgres.py",
-          "symbol": "test_cold_start_persists_block_and_never_dispatches"
+          "symbol": "test_unavailable_channel_persists_block_and_never_dispatches"
         },
         {
           "path": "tests/integration/test_provider_routing_postgres.py",
@@ -10537,7 +10537,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:47e8d24edd9ab54a6fc47a9d4ce465cfadde7a8ab8f78cb3d16cf664e8acc343"
+    "implementation_tree_sha": "sha256:2d9b2253d86e627bdbffe24f0f6aab5aa26f129bc5ff8ec7620dbebf62e0a981"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -445,7 +445,7 @@ def follow_optional_failure(application, *, command, operation_id, principal, ex
                 key: value
                 for key, value in stage_documents[0]["output"].items()
                 if key not in {"knowledge_translations", "actor_adjudications"}
-            }
+            }, agency=source["reality"].get("epistemic_contract") == "world-agency.v2"
         ),
         evaluation=stage_documents[1]["output"],
         policy=WorldProductionPolicy(**source["policy"]),

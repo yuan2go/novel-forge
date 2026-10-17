@@ -55,7 +55,7 @@ from tests.integration.authority_postgres_support import (
     identifier,
 )
 from tests.integration.test_book_to_chapter_authority_vertical_postgres import (
-    BookToChapterAuthorityVerticalPostgresTests,
+    BookToChapterAuthorityVerticalPostgresTests as _BookToChapterAuthorityVerticalPostgresTests,
 )
 from tests.integration.hierarchy_closure_postgres_support import (
     seed_ready_story_foundation,
@@ -810,7 +810,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         candidates = list(
             chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
         )
-        versions = BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
+        versions = _BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
             project_id
         )
         book_id = f"book:{project_id}"

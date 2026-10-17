@@ -13,6 +13,45 @@ from novel_forge.modules.book_design_authority.foundation import FoundationRole
 from tests.integration.hierarchy_closure_postgres_support import _payload
 
 
+def freeze_current_chapter_bundle(monkeypatch):
+    from copy import deepcopy
+    import importlib
+    from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
+
+    bundles = {author: chapter_operation_definitions(
+        application_build_id="frozen-current-fixture", commit_sha="0" * 40,
+        model_effects_required=True, coordinated_contract=True, author_input=author,
+    ) for author in (False, True)}
+
+    def definitions(**options):
+        if not (options.get("model_effects_required") and options.get("coordinated_contract")):
+            return chapter_operation_definitions(**options)
+        result = deepcopy(bundles[bool(options.get("author_input"))])
+        for definition in result:
+            definition.update(application_build_id=options["application_build_id"], commit_sha=options["commit_sha"])
+        return result
+
+    for name in (
+        "novel_forge.modules.chapter_authority.definitions",
+        "novel_forge.modules.chapter_authority.orchestrator",
+        "novel_forge.modules.capability_packs.validation_deployment",
+        "novel_forge.modules.capability_packs.operation_catalog",
+        "novel_forge.modules.chapter_authority.memo_recovery",
+        "novel_forge.modules.chapter_authority.scene_receipt_recovery",
+        "novel_forge.modules.chapter_authority.receipt_recovery",
+        "novel_forge.modules.chapter_authority.working_revision",
+        "tests.integration.capability_pack_postgres_support",
+    ):
+        module = importlib.import_module(name)
+        if getattr(module, "chapter_operation_definitions", None) is chapter_operation_definitions:
+            monkeypatch.setattr(module, "chapter_operation_definitions", definitions)
+
+
+def scripted_chapter_response(stage, inputs):
+    result = SynthesisChapterTransport()(stage, inputs)
+    return json.loads(result["payload_json"]) if set(result) == {"payload_json"} else result
+
+
 class SynthesisTransport(ScriptedProviderAdapterV2):
     def __init__(self):
         super().__init__()

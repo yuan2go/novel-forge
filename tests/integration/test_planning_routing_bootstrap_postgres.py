@@ -282,8 +282,8 @@ def test_semantic_planning_repair_retains_real_authority_candidate_lineage(monke
     principal = _principal(project_id)
     evaluations = []
 
-    def independent_fixture_evaluation(generator):
-        result = scripted_qualification(generator)
+    def independent_fixture_evaluation(generator, **profile_options):
+        result = scripted_qualification(generator, **profile_options)
         if not evaluations:
             criterion = result["evaluations"][0]["criteria"][0]
             criterion.update(verdict="FAIL", repair_directive="Make the causal conflict sustainable")

@@ -307,21 +307,24 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             "PLANNING_GATEWAY_RESULT_CONTEXT_DRIFT",
             "Retain the exact dispatched Context",
         )
-    candidate_result = raw
-    if command.execution_contract_version == "1.21.0" and command.generator_operation_name not in FOUNDATION_GENERATORS:
-        from .execution import bind_provider_realization_selectors
-        candidate_result = bind_provider_realization_selectors(raw, context.content.get("realization_reference_contract") or {})
-    from .result_recovery import validate_raw_result
+    try:
+        candidate_result = raw
+        if command.execution_contract_version == "1.21.0" and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            from .execution import bind_provider_realization_selectors
+            candidate_result = bind_provider_realization_selectors(raw, context.content.get("realization_reference_contract") or {})
+        from .result_recovery import validate_raw_result
 
-    validate_raw_result(
-        command.generator_operation_name,
-        candidate_result,
-        generated_title=context.content.get("generated_title_contract") == "generated-book-title.v1",
-        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
-        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
-        rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
-        narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
-    )
+        validate_raw_result(
+            command.generator_operation_name,
+            candidate_result,
+            generated_title=context.content.get("generated_title_contract") == "generated-book-title.v1",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
+            narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
+        )
+    except KernelError:
+        return None
     inputs = tuple(FrozenPlanningInput(**i) for i in source[2])
     documents = [
         query.require(
@@ -708,6 +711,8 @@ def recover_completed_planning_outputs(application, *, project_id, book_id, prin
                 JOIN authority_story_formation_run formation USING(formation_run_id)
                 WHERE formation.project_id=generation.project_id AND formation.book_id=generation.book_id)""",[project_id,book_id])
         rows=uow.cursor.fetchall()
+    recovered = False
     for operation_id,payload in rows:
-        recover(application, command=_command_from_payload(payload),operation_id=operation_id,principal=principal)
-    return bool(rows)
+        result = recover(application, command=_command_from_payload(payload),operation_id=operation_id,principal=principal)
+        recovered = result is not None or recovered
+    return recovered

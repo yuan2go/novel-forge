@@ -295,6 +295,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         candidates = self._release_evidence(project_id)
         registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
         request = SingleChapterRequest(
+            context_token_budget=16_000,
             project_id=project_id,
             workspace_id=f"workspace:{project_id}",
             actor_id="trusted-operator",
@@ -413,6 +414,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -467,6 +469,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -585,6 +588,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -688,6 +692,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -873,6 +878,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -1002,6 +1008,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -1416,6 +1423,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -1465,6 +1473,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
+                context_token_budget=16_000,
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="trusted-operator",
@@ -1520,6 +1529,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 chapter=1,
+                context_token_budget=16_000,
                 idempotency_key=f"{project_id}:chapter:1",
             )
         )
@@ -1624,6 +1634,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         candidates = self._release_evidence(project_id)
         registry = build_chapter_handler_registry(GroundedHighImpactFixture())
         request = SingleChapterRequest(
+            context_token_budget=16_000,
             project_id=project_id,
             workspace_id=f"workspace:{project_id}",
             actor_id="trusted-operator",
@@ -1892,7 +1903,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 [project_id, admission.root_operation_id],
             )
             governance = cursor.fetchone()
-            self.assertEqual(governance[0], "canon-reextraction-policy-v1")
+            self.assertEqual(governance[0], "canon-reextraction-policy-v2")
             self.assertTrue(
                 all(str(value).startswith("sha256:") for value in governance[1:4])
             )
@@ -1930,6 +1941,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         project_id = identifier(f"{prefix}-project")
         registry = build_chapter_handler_registry(GroundedHighImpactFixture())
         request = SingleChapterRequest(
+            context_token_budget=16_000,
             project_id=project_id,
             workspace_id=f"workspace:{project_id}",
             actor_id="trusted-operator",

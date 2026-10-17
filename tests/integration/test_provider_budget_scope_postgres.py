@@ -210,11 +210,13 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
             )
         self.assertEqual(conflict.exception.code, "BUDGET_SCOPE_IDEMPOTENCY_CONFLICT")
 
-    def test_assessment_counts_scope_reservations_and_fails_closed_at_limit(
+    def test_assessment_counts_scope_reservations_and_fails_closed_at_money_limit(
         self,
     ) -> None:
         fixture = self._opening_scope()
-        scope = self._live_scope(fixture)
+        values = self._request_values(fixture)
+        values["policy_snapshot"]["cost_limit_usd"] = "0.50"
+        scope = self._live_scope(fixture, request=BudgetScopeRequest(**values))
         before = self._assessment(scope)
         context = EffectCommandContext(
             operation_id=fixture["operation_id"],
@@ -263,7 +265,7 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
         self.assertNotEqual(before["snapshot_hash"], after["snapshot_hash"])
         self.assertEqual(after["scope"]["revision"], scope["revision"])
 
-    def test_account_entitlement_scope_enforces_calls_and_tokens_without_cost(
+    def test_account_entitlement_scope_records_usage_without_cumulative_token_gate(
         self,
     ) -> None:
         fixture = self._opening_scope()
@@ -358,7 +360,9 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
                 expected_revision=int(scope["revision"]),
             )
 
-        self.assertEqual(assessment["outcome"], BudgetAssessmentOutcome.EXHAUSTED)
+        self.assertEqual(assessment["outcome"], BudgetAssessmentOutcome.ELIGIBLE)
+        self.assertEqual(assessment["usage"]["committed_tokens"], 1_000)
+        self.assertEqual(assessment["usage"]["provider_call_count"], 1)
         self.assertIsNone(assessment["usage"]["committed_amount"])
         self.assertEqual(assessment["usage"]["cost_status"], "UNKNOWN")
         self.assertIsNone(assessment["headroom"]["cost_amount"])
@@ -368,13 +372,15 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
         self,
     ) -> None:
         fixture = self._opening_scope()
-        scope = self._live_scope(fixture)
+        values = self._request_values(fixture)
+        values["policy_snapshot"]["cost_limit_usd"] = "0.50"
+        scope = self._live_scope(fixture, request=BudgetScopeRequest(**values))
         reservation = self._reserve(fixture, scope)
         settle_provider_budget(
             DATABASE_URL,
             reservation_id=str(reservation["reservation_id"]),
             project_id=fixture["project_id"],
-            actual_amount="0.40",
+            actual_amount="0.50",
             actual_tokens=800,
             evidence={"model_id": "fixture-model", "fixture": True},
         )
@@ -596,7 +602,9 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
 
     def test_scope_lock_prevents_concurrent_reservation_phantoms(self) -> None:
         fixture = self._opening_scope()
-        scope = self._live_scope(fixture)
+        values = self._request_values(fixture)
+        values["policy_snapshot"]["cost_limit_usd"] = "0.75"
+        scope = self._live_scope(fixture, request=BudgetScopeRequest(**values))
         context = EffectCommandContext(
             operation_id=fixture["operation_id"],
             project_id=fixture["project_id"],
@@ -658,7 +666,7 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
             currency="USD",
             frozen_request_token_ceiling=8_000,
         )
-        self.assertEqual(token_contract["estimated_total_tokens"], 20_000)
+        self.assertEqual(token_contract["estimated_total_tokens"], 16_000)
         self.assertEqual(token_contract["input_token_ceiling"], 8_000)
         self.assertEqual(token_contract["max_output_tokens"], 8_000)
         self.assertEqual(token_contract["estimated_cost_amount"], "2")
@@ -675,7 +683,7 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
             requested_output_token_ceiling=800,
         )
         self.assertEqual(task_contract["contract_version"], "provider-token-reservation.v2")
-        self.assertEqual(task_contract["estimated_total_tokens"], 20_000)
+        self.assertEqual(task_contract["estimated_total_tokens"], 2_000)
         self.assertEqual(task_contract["input_token_ceiling"], 1_200)
         self.assertEqual(task_contract["max_output_tokens"], 800)
         self.assertEqual(task_contract["budget_scope_id"], token_contract["budget_scope_id"])
@@ -683,18 +691,15 @@ class ProviderBudgetScopePostgresTests(unittest.TestCase):
         unchanged = create_or_get_budget_scope(DATABASE_URL, self._request(fixture))
         self.assertTrue(unchanged.pop("replayed"))
         self.assertEqual(unchanged, {key: value for key, value in scope.items() if key != "replayed"})
-        with self.assertRaises(KernelError) as insufficient:
-            resolve_provider_token_reservation_contract(
-                DATABASE_URL,
-                operation_id=fixture["operation_id"],
-                project_id=fixture["project_id"],
-                currency="USD",
-                frozen_request_token_ceiling=20_000,
-            )
-        self.assertEqual(
-            insufficient.exception.code,
-            "PROVIDER_TOKEN_RESERVATION_INSUFFICIENT",
+        larger_contract = resolve_provider_token_reservation_contract(
+            DATABASE_URL,
+            operation_id=fixture["operation_id"],
+            project_id=fixture["project_id"],
+            currency="USD",
+            frozen_request_token_ceiling=20_000,
         )
+        self.assertEqual(larger_contract["estimated_total_tokens"], 40_000)
+        self.assertEqual(larger_contract["max_output_tokens"], 20_000)
         context = EffectCommandContext(
             operation_id=fixture["operation_id"],
             project_id=fixture["project_id"],

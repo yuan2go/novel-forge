@@ -1400,17 +1400,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             }
             candidates = self._release_evidence(
                 project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id,
-                current_contract_inputs=True, extra_context_candidates=(history, *(
-                    {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
-                     "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
-                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary",
-                     "content": {"project_id": project_id, "book_id": f"book:{project_id}",
-                                 "contract_version": "story-state-snapshot-v2" if kind == "story_state_snapshot" else "canon-snapshot-v2",
-                                 "accepted_state_only": True, "accepted_through_chapter": 0,
-                                 "current_state": {}, "structured_facts": [],
-                                 "safe_summary": "Explicit fixture genesis boundary"}}
-                    for kind in ("story_state_snapshot", "canon_snapshot")
-                )),
+                current_contract_inputs=True, extra_context_candidates=(history,),
             )
             self._seed_intrinsic_semantic_commit_policy(project_id)
             request = SingleChapterRequest(
@@ -1419,8 +1409,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 trace_id=identifier("trace"), correlation_id=identifier("correlation"),
                 application_build_id="context-semantic-test", commit_sha="e" * 40,
                 context_candidates=candidates, context_token_budget=32_768,
-                context_version_refs={"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
-                                      "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"},
+                context_version_refs={"story_state_snapshot_version": f"{project_id}:state-fixture:story_state_snapshot:v1",
+                                      "canon_snapshot_version": f"{project_id}:state-fixture:canon_snapshot:v1"},
                 preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
             )
             with patch.object(_ContextHandler, "execute", execute_with_semantic_subeffects), patch.object(
@@ -1480,8 +1470,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(context_artifact["content_hash"], context_hash)
             cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [runtime["provider_admission_asset_version_id"]])
             admission = cursor.fetchone()[0]["contract"]
-            self.assertEqual(len(draft_prompts), 1)
-            prompt, prompt_evidence = draft_prompts[0]
+            self.assertGreaterEqual(len(draft_prompts), 1)
+            cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch d JOIN authority_external_effect e USING(external_effect_id) WHERE e.project_id=%s AND e.capability='model.draft'", [project_id])
+            self.assertEqual(cursor.fetchone()[0], 1)
+            prompt, prompt_evidence = next(item for item in draft_prompts
+                if item[1]["fully_rendered_prompt_hash"] == admission["provider_request_identity"]["input_text_hash"])
             self.assertIn(history["structured_facts"][0]["value"], prompt)
             self.assertEqual(prompt_evidence["fully_rendered_prompt_hash"], admission["provider_request_identity"]["input_text_hash"])
             self.assertEqual(admission["provider_admission"]["status"], "ADMITTED")
@@ -1649,16 +1642,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "retrieval_reasons": ["task_related_episodic_history"]}
             context_candidates = self._release_evidence(project_id, with_mkaos=True, scope_preseeded=True,
                 workspace_id=harness.workspace_id, current_contract_inputs=capacity_overflow,
-                extra_context_candidates=(history, *(
-                    {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
-                     "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
-                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary",
-                     "content": {"project_id": project_id, "book_id": f"book:{project_id}",
-                                 "contract_version": "story-state-snapshot-v2" if kind == "story_state_snapshot" else "canon-snapshot-v2",
-                                 "accepted_state_only": True, "accepted_through_chapter": 0,
-                                 "current_state": {}, "structured_facts": [],
-                                 "safe_summary": "Explicit fixture genesis boundary"}}
-                    for kind in ("story_state_snapshot", "canon_snapshot"))) if capacity_overflow else ())
+                extra_context_candidates=(history,) if capacity_overflow else ())
             self._seed_intrinsic_semantic_commit_policy(project_id)
             chapter_request = SingleChapterRequest(
                 project_id=project_id,
@@ -1673,8 +1657,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 commit_sha="e" * 40,
                 context_candidates=context_candidates,
                 context_token_budget=512_000 if capacity_overflow else 64_000,
-                **({"context_version_refs": {"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
-                    "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"}} if capacity_overflow else {}),
+                **({"context_version_refs": {"story_state_snapshot_version": f"{project_id}:state-fixture:story_state_snapshot:v1",
+                    "canon_snapshot_version": f"{project_id}:state-fixture:canon_snapshot:v1"}} if capacity_overflow else {}),
                 **({"preparation_report": {"stage_context_profile_versions": {"draft": "draft-context-profile-v4"},
                     **({"context_capacity_policy": "complete-request-capacity.v1"} if capacity_overflow else {})}}
                    if task_scoped else {}),

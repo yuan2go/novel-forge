@@ -28,7 +28,8 @@ WORLD_CHECKPOINT_ERRORS = frozenset({
 def validate_world_generation_result(raw, source, command):
     from .world_preparation import PlanningWorldPreparation
     decoded = decode_world_generation({key: value for key, value in raw.items()
-        if key not in {"knowledge_translations", "actor_adjudications"}})
+        if key not in {"knowledge_translations", "actor_adjudications"}},
+        agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
     candidates = validate_generated_candidates(decoded, WorldProductionPolicy(**source["policy"]))
     PlanningWorldPreparation._validate_references(source, candidates, command)
     return candidates

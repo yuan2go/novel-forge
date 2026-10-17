@@ -16,6 +16,32 @@ def test_agency_rejection_is_terminal_contract_failure_and_repairable():
     assert WorkerFailureClassifier.classify(KernelError('TEMPORARY_PROVIDER_FAILURE', 'temporary')) == WorkerFailureClass.RETRYABLE
 
 
+def test_world_recovery_decodes_the_frozen_agency_contract_without_changing_result():
+    from copy import deepcopy
+    from dataclasses import asdict
+    import json
+    from novel_forge.modules.story_planning_runtime.world_result_recovery import validate_world_generation_result
+    from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
+    from tests.unit.test_world_initial_agency import genesis, chain
+    from tests.unit.test_world_causal_preparation import generated_paths
+
+    raw = generated_paths()
+    candidate = raw['candidates'][0]
+    candidate.update(transition={'payload_json': json.dumps(chain()[0])},
+        affected_entities=['resource:record'], preparation_paths=[])
+    source = {'reality': genesis(), 'entity_ids': genesis()['approved_entity_ids'],
+        'policy': asdict(WorldProductionPolicy())}
+    command = SimpleNamespace(input_versions={}, related_arc_plan_version_ids=())
+    original = deepcopy(raw)
+    result = validate_world_generation_result(raw, source, command)
+    assert result[0]['transition']['action_mode'] == 'ROUTINE'
+    assert raw == original
+    legacy = deepcopy(source)
+    legacy['reality'].pop('epistemic_contract')
+    with pytest.raises(KernelError, match='WORLD_PROVIDER_TRANSITION_INVALID'):
+        validate_world_generation_result(raw, legacy, command)
+
+
 @pytest.mark.parametrize('accounting', ['SETTLED', 'RESERVED', 'HELD_UNKNOWN'])
 def test_missing_action_still_revalidates_exact_director_receipt(accounting):
     source = SimpleNamespace(asset_version_id='source', content_hash='source-hash', content={'contract': {

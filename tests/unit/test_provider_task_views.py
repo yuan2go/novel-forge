@@ -1822,6 +1822,32 @@ def test_planning_history_projection_requires_exact_frozen_context(drift):
         build_provider_context_view("book_plan.generate", context, task)
 
 
+@pytest.mark.parametrize("empty_query", [False, True])
+def test_empty_planning_craft_selection_round_trips_its_frozen_projection(empty_query):
+    from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
+    from novel_forge.modules.chapter_authority.provider_views import _projection_hash
+
+    inputs = _planning_history_inputs()
+    inputs["narrative_intelligence"] = {
+        **_narrative_intelligence(), "project_id": "project", "selected": [], "rejected": [],
+        "knowledge_access_policy": resolve_book_knowledge_access_policy(
+            production_profile={}, project_id="project", book_id="book:main"),
+        "need": {"recent_craft_usage": [], "query_text": "No selected methods", "required_card_asset_version_ids": []},
+    }
+    selection = inputs["narrative_intelligence"]
+    selection["need"]["need_digest"] = _projection_hash(selection["need"])
+    selection["selection_digest"] = _projection_hash(selection)
+    inputs["craft_history_projection_version"] = "planning-craft-history-projection.v1"
+    if empty_query:
+        inputs["planning_empty_query_projection_version"] = "planning-empty-query-projection.v1"
+    task = build_provider_task_view("book_plan.generate", inputs)
+    assert ("need_receipt" in task["narrative_intelligence"]) is empty_query
+    context = {**inputs, "schema_version": "novelos.planning_context_bundle.v1",
+        "book_id": "book:main", "planning_scope": "BOOK", "logical_key": "book:main",
+        "input_versions": [{"role": "book_design", "asset_version_id": "design:v1", "content": {"premise": "保护证人。"}}]}
+    assert build_provider_context_view("book_plan.generate", context, task)["stage"] == "book_plan.generate"
+
+
 def test_actor_step_support_has_distinct_producer_task_and_keeps_observation_independent():
     from tests.unit.test_world_actor_execution import execution, observation
     from novel_forge.modules.canon_graph.grounding import grounded_claims

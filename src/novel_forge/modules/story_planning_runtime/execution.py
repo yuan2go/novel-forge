@@ -1101,6 +1101,13 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     def authority_ref(
         *, roles: tuple[str, ...], domain_type: str, fallback: str
     ) -> dict[str, str]:
+        catalog = inputs.get("realization_reference_contract") or {}
+        if command.get("execution_contract_version") == "1.21.0" and catalog:
+            references = catalog["references_by_domain"][domain_type]
+            source = next((ref for role in roles for ref in references if ref["authority_role"] == role), None)
+            if source is None:
+                raise ValueError(f"Planning fixture has no frozen {domain_type} source")
+            return {"asset_version_id": source["asset_version_id"]}
         source = next(
             (frozen_by_role[role] for role in roles if role in frozen_by_role),
             None,
@@ -1713,6 +1720,14 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         },
     }
     payload.update(by_type[contract_type])
+    if command.get("execution_contract_version") in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"}:
+        for row in payload.get("chapter_function_matrix", []):
+            row["required_state_delta"]["status"] = "CHANGED"
+        if "required_state_delta" in payload:
+            payload["required_state_delta"]["status"] = "CHANGED"
+        for event in payload.get("narrative_event_chain", []):
+            event["feature_status"] = {name: {"status": "APPLICABLE", "rationale": "Explicit strategy of this synthetic planning fixture"}
+                for name in ("decision", "resistance", "irreversible_change")}
     if parent_version_id:
         payload["parent_version_id"] = parent_version_id
     return payload

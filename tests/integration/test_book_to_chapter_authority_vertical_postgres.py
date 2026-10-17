@@ -52,6 +52,7 @@ from tests.integration.authority_postgres_support import (
     seed_authority_project_book,
 )
 from tests.integration import test_postgresql_only_chapter_slice as chapter_fixture
+from tests.integration.synthesis_production_support import scripted_chapter_response
 
 
 @dataclass
@@ -352,7 +353,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-chapter-pep-worker",
                 "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
             }
-            execution = build_production_execution_composition(settings, env=env)
+            execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=scripted_chapter_response)
             chapter = build_chapter_authority_application(
                 settings, execution=execution, env=env
             )
@@ -425,7 +426,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 item for item in candidates if item["asset_type"] == "chapter_plan"
             )
             chapter_command = SubmitBookChapterCommand(
-                context_token_budget=64_000,
+                context_token_budget=128_000,
                 book_run_id=book.book_run_id,
                 chapter_number=1,
                 title="The Cost of a Promise",
@@ -597,7 +598,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             ):
                 authority.submit_chapter(
                     SubmitBookChapterCommand(
-                context_token_budget=64_000,
+                context_token_budget=128_000,
                         book_run_id=blocked_book.book_run_id,
                         chapter_number=2,
                         title="Out of order",
@@ -627,7 +628,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root) / "objects"),
                 "NOVEL_FORGE_AUTHORITY_WORKER_ID": "two-chapter-pep-worker",
             }
-            execution = build_production_execution_composition(settings, env=env)
+            execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=scripted_chapter_response)
             chapter = build_chapter_authority_application(
                 settings, execution=execution, env=env
             )
@@ -663,7 +664,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             candidates = list(
                 chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
-                    project_id
+                    project_id, current_state_contract=True
                 )
             )
             plans = self._seed_two_chapter_plans(
@@ -699,7 +700,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 )
                 plan = plans[chapter_number]
                 command = SubmitBookChapterCommand(
-                context_token_budget=64_000,
+                context_token_budget=128_000,
                     book_run_id=book.book_run_id,
                     chapter_number=chapter_number,
                     title=f"Chapter {chapter_number}",
@@ -1508,7 +1509,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root.name) / "objects"),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-control-pep-worker",
         }
-        execution = build_production_execution_composition(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=scripted_chapter_response)
         chapter = build_chapter_authority_application(
             settings, execution=execution, env=env
         )
@@ -1582,7 +1583,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         candidates = fixture["candidates"]
         plan = next(item for item in candidates if item["asset_type"] == "chapter_plan")
         return SubmitBookChapterCommand(
-                context_token_budget=64_000,
+                context_token_budget=128_000,
             book_run_id=fixture["book"].book_run_id,
             chapter_number=chapter_number,
             title=f"Chapter {chapter_number}",
@@ -1721,13 +1722,17 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                         "goal": "make the choice unavoidable",
                         "conflict": "silence endangers the witness",
                         "participants": ["protagonist"],
+                        "trajectory_refs": ["character-arc:accountability"],
+                        "obligation_refs": [],
+                        "realization_event_ids": [item["event_id"] for item in first["content"]["narrative_realization_slice"]["events"]],
                         "arc_progress": [f"{project_id}:fixture-arc-plan-v1"],
                         "information_gain": ["fact:hidden-cost"],
                         "state_transitions": ["protagonist:accountability"],
                         "entry_state": "private denial",
                         "exit_state": "public commitment",
                         "reader_effect": "relief becomes anticipation",
-                        "beats": ["pressure", "choice", "cost"],
+                        "beats": [{"beat_id": f"chapter:1:beat:{ordinal}", "ordinal": ordinal, "function": function}
+                                  for ordinal, function in enumerate(("pressure", "choice", "cost"), 1)],
                     }
                 ],
                 "expected_exit_state": {

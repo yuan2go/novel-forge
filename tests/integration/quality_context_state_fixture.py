@@ -141,7 +141,19 @@ def current_state_inputs(project, candidates):
             },
         }
         candidate["content"] = _chapter_runtime_projection(typed)
-    for asset in (creative, cast, design, source("style_policy", style)):
+    from dataclasses import replace
+    from novel_forge.modules.content_authority.codecs import author_initial_story_state, author_initial_canon
+
+    genesis_request = AuthorityHandlerRequest(
+        "offline-state-genesis", project, f"workspace:{project}", "fixture", "fixture-trace",
+        "fixture-correlation", "book.initial_story_state.author", "2.1.0",
+        {"payload": {"book_id": book, "campaign_contract_identity": design.content_hash}}, (),
+    )
+    state = source("story_state_snapshot", author_initial_story_state(genesis_request))
+    canon = source("canon_snapshot", author_initial_canon(replace(
+        genesis_request, definition_name="book.initial_canon.author", inputs=(state,),
+    )))
+    for asset in (creative, cast, design, source("style_policy", style), state, canon):
         result.append(
             {
                 "asset_type": asset.asset_type,
@@ -155,6 +167,10 @@ def current_state_inputs(project, candidates):
                 "narrative_function": asset.asset_type,
                 "allowed_use": "generation",
                 "source_use_mode": "generation",
+                **({"accepted_boundary": {"accepted_through_chapter": 0,
+                    "story_state_snapshot_version": state.asset_version_id,
+                    "canon_snapshot_version": canon.asset_version_id}}
+                   if asset.asset_type in {"story_state_snapshot", "canon_snapshot"} else {}),
             }
         )
     return tuple(result)

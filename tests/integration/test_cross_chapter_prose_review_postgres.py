@@ -243,7 +243,7 @@ def make_book(tmp_path, transport, *, prepare_plans=None):
         authentication_source="integration-test",
     )
     candidates = list(
-        chapter_support.PostgreSQLOnlyChapterSliceTests.release_evidence(project)
+        chapter_support.PostgreSQLOnlyChapterSliceTests.release_evidence(project, current_state_contract=True)
     )
     plan_transform = prepare_plans(project, harness.workspace_id, candidates) if prepare_plans else None
     plans = helper._seed_two_chapter_plans(

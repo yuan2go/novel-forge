@@ -297,6 +297,26 @@ def test_planning_context_target_is_frozen_in_manifest_and_resolved_policy():
             build_story_planning_pack_profile(ROOT,operation_definition_hash="sha256:"+"a"*64,planning_task_token_budget=invalid)
 
 
+def test_route_and_input_order_recovery_retain_complete_request_capacity():
+    import json
+    import pytest
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.story_planning_runtime.preflight_continuation import require_capacity_target
+
+    policy = build_story_planning_pack_profile(
+        ROOT, operation_definition_hash="sha256:" + "a" * 64,
+    ).manifest["context_sources"]
+    assert policy["capacity_policy"] == "complete-request-capacity.v1"
+    for version in ("planning-repair-route-preflight.v1", "planning-input-order-preflight.v1"):
+        source = {"snapshot": {"context_policy_payload_json": json.dumps(policy)},
+                  "preflight_failure": {"contract_version": version}}
+        target = {"pack_snapshot": {"context_policy_payload_json": json.dumps(policy)}}
+        assert require_capacity_target(source, target)["context_policy"] == "UNCHANGED"
+        changed = {**policy, "source_isolation": "UNRESTRICTED"}
+        with pytest.raises(KernelError, match="PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT"):
+            require_capacity_target(source, {"pack_snapshot": {"context_policy_payload_json": json.dumps(changed)}})
+
+
 def test_capacity_continuation_cannot_change_authentication_billing_or_reasoning():
     import pytest
     from novel_forge.modules.command_kernel.errors import KernelError
