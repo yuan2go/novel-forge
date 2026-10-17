@@ -7535,6 +7535,22 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
           "symbol": "PostgresPlanningExecutionPreparer._prepare_stage"
+        },
+        {
+          "path": "src/novel_forge/modules/agent_runtime/production.py",
+          "symbol": "PostgresAgentExecutionContractBinder.freeze_before_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/execution.py",
+          "symbol": "PostgresReaderOutcomeExecutionContractBinder.freeze_before_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/evaluation_execution.py",
+          "symbol": "PostgresNarrativeEvaluationExecutionContractBinder.freeze_before_external_effect"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/model_reference_execution.py",
+          "symbol": "ModelReferenceExecutionContractBinder.freeze_before_external_effect"
         }
       ],
       "domain_symbols": [
@@ -7700,6 +7716,10 @@
         {
           "path": "tests/integration/test_chapter_model_effects_postgres.py",
           "symbol": "ChapterModelEffectsPostgresTests.test_routed_overflow_prepares_before_router_rejection_and_restarts_from_completed_chunk"
+        },
+        {
+          "path": "tests/unit/test_context_capacity_owner_contracts.py",
+          "symbol": "test_real_recursive_model_envelope_carries_owner_created_context_and_reference"
         }
       ],
       "qualification_state": "EXECUTABLE",
