@@ -145,7 +145,7 @@ def prepare_provider_sample(
             reference_samples=command.generation_sample is not None)
     if existing_definition is not None:
         definition_version = existing_definition["definition_version"]
-    producer = reference_sample_producer_identity(app, payload=payload, workspace_id=source[4]) if command.generation_sample else None
+    producer = reference_sample_producer_identity(app, payload=payload, workspace_id=source[4], source_definition_version=source[1]) if command.generation_sample else None
     generator_evaluation = None
     if not reference:
         from novel_forge.modules.chapter_quality_authority.generator_reference import generator_reference_contract
@@ -192,7 +192,7 @@ def _existing_sample_definition(uow: Any, *, project_id: str, idempotency_key: s
     return definition
 
 
-def reference_sample_producer_identity(app: Any, *, payload: dict[str, Any], workspace_id: str) -> dict[str, Any]:
+def reference_sample_producer_identity(app: Any, *, payload: dict[str, Any], workspace_id: str, source_definition_version: str) -> dict[str, Any]:
     from copy import deepcopy
     import json
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
@@ -212,17 +212,17 @@ def reference_sample_producer_identity(app: Any, *, payload: dict[str, Any], wor
     for document, binding in zip(documents, payload["input_versions"], strict=True):
         if document.content_hash != binding["content_hash"] or document.content_hash != authorization_hash(document.content):
             raise KernelError("CHAPTER_SAMPLE_INPUT_DRIFT", "reference preflight requires its unchanged native inputs")
-    request = ChapterHandlerRequest(operation_id=payload["logical_key"], project_id=payload["project_id"], workspace_id=workspace_id,
-        trace_id="reference-preflight", correlation_id="reference-preflight", command=payload, database_url=database_url,
-        inputs=tuple(ChapterInputAsset(asset_version_id=item.asset_version_id, asset_type=item.asset_type,
-            content_hash=item.content_hash, content=item.content) for item in documents))
     stage = payload["generator_operation_name"]
-    _, context, _, _, provider_input = prepare_native_review(request, stage=stage)
-    schema, schema_ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage=stage, request_payload={"input": provider_input})
     with AuthorityUnitOfWork(database_url) as uow:
         existing_definition = _existing_sample_definition(uow, project_id=payload["project_id"],
             idempotency_key=payload["idempotency_key"], definition_name=chapter_sample_definition_name(stage), reference_samples=True)
         definition_version = existing_definition["definition_version"] if existing_definition else CHAPTER_REFERENCE_SAMPLE_VERSION
+        request = ChapterHandlerRequest(operation_id=payload["logical_key"], project_id=payload["project_id"], workspace_id=workspace_id,
+            trace_id="reference-preflight", correlation_id="reference-preflight", command=payload, database_url=database_url,
+            definition_version=definition_version, source_definition_version=source_definition_version,
+            inputs=tuple(ChapterInputAsset(asset_version_id=item.asset_version_id, asset_type=item.asset_type,
+                content_hash=item.content_hash, content=item.content) for item in documents))
+        _, context, _, _, provider_input = prepare_native_review(request, stage=stage)
         uow.cursor.execute("""SELECT operation.operation_id,operation.command_payload->'payload',attempt.attempt_id,operation.definition_version
             FROM authority_operation operation LEFT JOIN authority_attempt attempt USING(operation_id)
             WHERE operation.project_id=%s AND operation.idempotency_scope=%s AND operation.idempotency_key=%s
@@ -257,6 +257,11 @@ def reference_sample_producer_identity(app: Any, *, payload: dict[str, Any], wor
                 operation_definition_ref=operation_ref, pack_id=binder.capability_pack_id + ".reference_samples"))
         version = uow.repositories.capability_packs.require_version(snapshot.pack_id, snapshot.pack_version)
         artifacts = materialize_registered_pack_version(snapshot, version)
+        schema, schema_ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+            stage=stage, request_payload={"input": provider_input},
+            legacy_contract=artifacts.prompt_template.version == "v2",
+            prompt_contract_version=artifacts.prompt_template.version,
+        )
         uow.cursor.execute("""SELECT version.content,version.content_hash FROM authority_operation_output_asset output
             JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
             WHERE output.operation_id=%s AND asset.project_id=%s AND asset.asset_type='capability_materialization_manifest'

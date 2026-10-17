@@ -443,7 +443,6 @@ def create_legacy_book_opening_orphan(
         hard_constraints=(
             "preserve the approved Creative Foundation",
             "protect reader promise and ending direction",
-            "do not convert future intent into accepted reality",
         ),
         accepted_through_chapter=0,
         parent_state_asset_version_id=generic["initial_story_state"],

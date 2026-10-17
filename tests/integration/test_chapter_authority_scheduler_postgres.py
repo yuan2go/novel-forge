@@ -290,6 +290,38 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         shared = resolver.resolve_all_for_book(project_id=project, book_id=foreign, asset_type="style_policy", limit=1000)
         self.assertIn(inserted[1], {item.asset_version_id for item in shared})
 
+    def test_valid_sources_refuse_insufficient_context_before_draft_dispatch(self) -> None:
+        project = identifier("small-context-project")
+        registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
+        request = SingleChapterRequest(
+            project_id=project, workspace_id=f"workspace:{project}",
+            actor_id="trusted-operator", chapter=1, title="A Durable Promise",
+            premise="A promise creates a visible irreversible cost.",
+            trace_id=identifier("trace"), correlation_id=identifier("correlation"),
+            application_build_id="small-context-test", commit_sha="f" * 40,
+            idempotency_key=f"{project}:chapter:1", context_token_budget=1,
+            preparation_report={"decision": "READY", "fixture": True},
+            context_candidates=tuple(self._release_evidence(project)),
+        )
+        admission = admit_single_chapter_saga(
+            DATABASE_URL, request=request, registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL, registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="small-context-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        with self.assertRaisesRegex(ValueError, "PROTECTED_CONTEXT_BUDGET_EXCEEDED"):
+            for _ in ChapterNode:
+                scheduler.tick(project_id=project, root_operation_id=admission.root_operation_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("""SELECT count(*) FROM authority_external_effect e
+                JOIN authority_external_effect_dispatch d USING(external_effect_id)
+                WHERE e.project_id=%s AND e.capability='model.draft'""", [project])
+            self.assertEqual(cursor.fetchone()[0], 0)
+
     def test_admission_does_not_execute_and_ticks_rebuild_full_saga(self) -> None:
         project_id = identifier("async-chapter-project")
         candidates = self._release_evidence(project_id)

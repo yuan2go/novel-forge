@@ -1544,6 +1544,10 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
         "reader_promise",
     }
 
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        for version in activated["foundation_asset_versions"].values():
+            assert uow.repositories.asset_documents.require(project_id=project_id, asset_version_id=version).content["book_id"] == book_id
+
     from tests.integration.narrative_reality_vertical_support import (
         compiled_world_fixture,
     )

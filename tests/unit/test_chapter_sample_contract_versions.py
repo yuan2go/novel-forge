@@ -173,7 +173,7 @@ def test_new_derived_pack_has_an_immutable_exact_semver_identity(
     assert source == frozen_source
 
 
-def reference_preflight(monkeypatch, *, current_attempt, prior_snapshot, legacy_binding=True):
+def reference_preflight(monkeypatch, *, current_attempt, prior_snapshot, legacy_binding=True, prompt_version="v2"):
     from novel_forge.modules.chapter_authority import sampling, execution_gateway, review_window
     from novel_forge.modules.capability_pack_authority import runtime as pack_runtime
     from novel_forge.storage import authority_asset_store
@@ -222,12 +222,12 @@ def reference_preflight(monkeypatch, *, current_attempt, prior_snapshot, legacy_
     monkeypatch.setattr(authority_asset_store, 'AuthorityAssetQuery', lambda _: SimpleNamespace(require=lambda **_: source))
     monkeypatch.setattr(review_window, 'prepare_native_review', lambda *args, **kwargs: (None, source, None, None, {}))
     monkeypatch.setattr(PostgresChapterExecutionContractBinder, '_provider_output_contract', lambda **kwargs: ({}, 'output:v1'))
-    monkeypatch.setattr(pack_runtime, 'materialize_registered_pack_version', lambda selected, _: SimpleNamespace(to_dict=lambda **_: {'version': selected.pack_version}))
+    monkeypatch.setattr(pack_runtime, 'materialize_registered_pack_version', lambda selected, _: SimpleNamespace(prompt_template=SimpleNamespace(version=prompt_version), to_dict=lambda **_: {'version': selected.pack_version}))
     monkeypatch.setattr(execution_gateway, '_stage_tool_permissions', lambda *args: (('model.provider.invoke',), ()))
     monkeypatch.setattr(execution_gateway, '_materialize_production_codex_prompt', lambda **kwargs: ('prompt', kwargs['materialization']))
     monkeypatch.setattr(execution_gateway, 'chapter_producer_contract_identity', lambda evidence, _: evidence['pack_artifacts'])
     app = SimpleNamespace(database_url='unused', _model_port=SimpleNamespace(capability_binder=binder))
-    return lambda: sampling.reference_sample_producer_identity(app, payload=payload, workspace_id='workspace'), binder, uow, original
+    return lambda: sampling.reference_sample_producer_identity(app, payload=payload, workspace_id='workspace', source_definition_version='3.4.1'), binder, uow, original
 
 
 @pytest.mark.parametrize('current_attempt,prior_snapshot', [(None, False), ('new-attempt', True)])
@@ -405,3 +405,22 @@ def test_persisted_sample_contracts_keep_legacy_sources_and_memo_bound(version, 
     if not reference:
         memo = next(d for d in definitions if d["name"] == "chapter.provider.sample.memo")
         assert memo["timeout_policy"]["operation_timeout_seconds"] == 60
+
+
+@pytest.mark.parametrize("prompt_version", ["v2", "v15"])
+def test_reference_preflight_uses_frozen_prompt_output_contract(monkeypatch, prompt_version):
+    actual_contract = PostgresChapterExecutionContractBinder._provider_output_contract
+    invoke, _, _, _ = reference_preflight(monkeypatch, current_attempt="new-attempt",
+        prior_snapshot=True, prompt_version=prompt_version)
+    calls = []
+    def schema_for_frozen_prompt(**kwargs):
+        calls.append(kwargs)
+        return actual_contract(**kwargs)
+    monkeypatch.setattr(PostgresChapterExecutionContractBinder, "_provider_output_contract", schema_for_frozen_prompt)
+    invoke()
+    assert calls == [{"stage": "review", "request_payload": {"input": {}},
+        "legacy_contract": prompt_version == "v2", "prompt_contract_version": prompt_version}]
+    schema, ref = actual_contract(**calls[0])
+    assert ref == ("schema:chapter-provider-output:review:v4" if prompt_version == "v2"
+        else "schema:chapter-provider-output:review:v6:repair-scope-v1")
+    assert schema["type"] == "object"

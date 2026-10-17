@@ -22,10 +22,15 @@ def reference_dimensions(extraction: Mapping[str, Any]) -> tuple[str, ...]:
 
 
 def validate_sample_result(extraction: Mapping[str, Any], revision: Mapping[str, Any], revision_id: str,
-                           result: Mapping[str, Any]) -> None:
+                           result: Mapping[str, Any], *, output_schema: Mapping[str, Any] | None = None,
+                           realization_comparison: Mapping[str, Any] | None = None) -> None:
     from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_schema
 
-    validate_chapter_provider_output_schema("canon_support", dict(result))
+    if output_schema is None:
+        validate_chapter_provider_output_schema("canon_support", dict(result))
+    else:
+        from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+        validate_chapter_provider_output_against_schema("canon_support", output_schema, dict(result))
     binding = extraction.get("grounding") or {}
     if (binding.get("contract_version") != "grounded-canon.v1"
         or binding.get("candidate_asset_version_id") != revision_id
@@ -35,6 +40,12 @@ def validate_sample_result(extraction: Mapping[str, Any], revision: Mapping[str,
     if (result.get("coverage") != "COMPLETE" or len(result["claims"]) != len(expected)
         or {row["claim_id"] for row in result["claims"]} != expected):
         raise KernelError("CANON_GROUNDING_INVALID", "support sample must assess every claim exactly once")
+    if realization_comparison is not None:
+        from novel_forge.modules.canon_graph.realization_comparison import validate_comparisons
+        validate_comparisons(inputs=dict(realization_comparison), result=dict(result),
+            revision_asset_version_id=revision_id, text=str(revision.get("text") or ""))
+    elif "realization_comparisons" in result:
+        raise KernelError("REALIZATION_COMPARISON_COVERAGE_INVALID", "Comparison sample requires its frozen planned events")
     reference_dimensions(extraction)
 
 

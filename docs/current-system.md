@@ -756,7 +756,9 @@ Review and ReReview sampling at definition version `1.1.0` can instead bind an e
 draft or revision generator sample and its original generator Operation. They reuse the
 native review task constructor, original Context, Narrative Craft and cross-chapter
 frontier checks. The approved reviewer Pack supplies its own Skill and Schema; the
-preflight producer hash is checked again by Router before any Effect. The target keeps
+preflight producer hash is checked again by Router before any Effect. Preflight uses the
+original source Definition, the frozen sampling Definition and that Pack's Prompt version
+for the same native review input and output Schema as dispatch. The target keeps
 its physical sample type and ineligible state. Replay uses the existing Attempt Pack
 snapshot. Quality-group sampling still requires a frozen native Quality task and target.
 The sampling result cannot activate a Quality profile or qualify itself. Router policy
@@ -2616,6 +2618,10 @@ Candidate transitions declare on-camera, off-camera or undercurrent effects, exa
 story time, actor, changes and accepted causes. Known Character actions require their
 own accepted knowledge or belief predicates. The world
 clock advances from accepted world transitions, independently of narrative flashforwards.
+
+Book Design binds each newly materialized Foundation output to its owning Book and
+rejects conflicting supplied ownership. Existing frozen output bodies and hashes retain
+their historical identity.
 
 Native Book supervision requests world preparation before Chapter planning. The
 Planning operation freezes the approved Foundation set, current Intent, Book input

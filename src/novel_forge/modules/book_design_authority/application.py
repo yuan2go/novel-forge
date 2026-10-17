@@ -936,6 +936,9 @@ class BookDesignAuthorityApplication:
     def _write_foundation_outputs(uow, *, operation_id, project_id, book_id, design_asset_version_id, trace_id, correlation_id, outputs):
         versions: dict[str, str] = {}
         for asset_type, schema_version, category, output_content in outputs:
+            if output_content.get("book_id", book_id) != book_id:
+                raise KernelError("BOOK_DESIGN_FOUNDATION_SCOPE_CONFLICT", "Foundation output must retain the owning Book")
+            output_content = {**output_content, "book_id": book_id}
             logical_ref = f"books/{book_id}/{asset_type.replace('_', '-')}"
             uow.cursor.execute(
                 """

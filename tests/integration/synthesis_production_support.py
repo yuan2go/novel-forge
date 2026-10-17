@@ -331,6 +331,18 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 else:
                     result["chapter_contract_schema_version"] = "chapter-mission-scene.v3"
                 result["required_state_delta"] = {"status": "CHANGED", **result["required_state_delta"]}
+        if inputs.get("controlled_execution_contract_version") == "1.18.0" and inputs.get("controlled_frozen_cast"):
+            cast = inputs["controlled_frozen_cast"]["candidate_payload"]["characters"]
+            if len(cast) != 1:
+                raise ValueError("Historical synthesis fixture requires one exact frozen protagonist")
+            actor = cast[0]["character_id"]
+            def frozen_actor(value):
+                if isinstance(value, dict):
+                    return {key: frozen_actor(child) for key, child in value.items()}
+                if isinstance(value, list):
+                    return [frozen_actor(child) for child in value]
+                return actor if value == "protagonist" else value
+            result = frozen_actor(result)
         from tests.integration.current_planning_wire_support import current_planning_wire_result
 
         wire = current_planning_wire_result(result, {**inputs, "stage": stage})

@@ -88,3 +88,39 @@ def test_reference_sample_identity_ignores_generated_ids_but_keeps_claim_semanti
     assert sample_identity(original, text="他没有走。") == sample_identity(changed, text="他没有走。")
     changed["canon_assertion_candidates"][0]["claim_kind"] = "HEARSAY"
     assert sample_identity(original, text="他没有走。") != sample_identity(changed, text="他没有走。")
+
+
+def test_current_sample_uses_host_comparison_schema_without_relaxing_legacy_output():
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    from novel_forge.modules.canon_graph.realization_comparison import CONTRACT
+
+    schema, schema_ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_support", request_payload={"input": {
+            "support_kind_contract": "canon-support-kinds.v2",
+            "realization_comparison": {"contract_version": CONTRACT, "events": [], "evidence_quotes": []},
+        }})
+    assert schema_ref == "schema:chapter-provider-output:canon_support:v3"
+    current = {**result(), "realization_comparisons": []}
+    validate_sample_result(source(), {"text": "他没有走。"}, "draft:1", current, output_schema=schema,
+        realization_comparison={"contract_version": CONTRACT, "events": [], "evidence_quotes": []})
+    for output, frozen_schema in ((result(), schema), (current, None)):
+        with pytest.raises(KernelError, match="CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"):
+            validate_sample_result(source(), {"text": "他没有走。"}, "draft:1", output, output_schema=frozen_schema)
+
+
+def test_current_sample_comparisons_require_each_frozen_event_once():
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    from novel_forge.modules.canon_graph.realization_comparison import CONTRACT, DIMENSIONS, VERDICTS
+
+    comparison = {"contract_version": CONTRACT, "events": [
+        {"planned_event_id": identity, "planned_event_hash": "sha256:" + "e" * 64,
+            "observed_claim_id": "claim:1"} for identity in ("event:a", "event:b")],
+        "evidence_quotes": ["他没有走。"]}
+    schema, _ = PostgresChapterExecutionContractBinder._provider_output_contract(stage="canon_support",
+        request_payload={"input": {"support_kind_contract": "canon-support-kinds.v2", "realization_comparison": comparison}})
+    repeated = {"planned_event_id": "event:a", **{key: VERDICTS[0] for key in DIMENSIONS},
+        "reason": "Located scripted evidence", "evidence_quotes": ["他没有走。"]}
+    with pytest.raises(KernelError, match="REALIZATION_COMPARISON_COVERAGE_INVALID"):
+        validate_sample_result(source(), {"text": "他没有走。"}, "draft:1",
+            {**result(), "realization_comparisons": [repeated, repeated]},
+            output_schema=schema, realization_comparison=comparison)

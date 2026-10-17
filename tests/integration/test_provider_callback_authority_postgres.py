@@ -363,8 +363,8 @@ def test_native_gateway_callback_reuses_frozen_contract_after_local_failure(tmp_
         chapter=1, title="Frozen callback fixture", premise="A frozen choice must survive recovery.",
         trace_id=identifier("trace"), correlation_id=identifier("correlation"),
         application_build_id=harness.application_build_id, commit_sha=harness.release_sha,
-        idempotency_key=harness.project_id + ":callback", preparation_report={"decision": "READY", "fixture": True},
-        context_candidates=(harness._chapter_plan_candidate(1),)), principal=operator)
+        idempotency_key=harness.project_id + ":callback", preparation_report={"decision": "READY", "fixture": True, "stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
+        context_candidates=harness._chapter_context_candidates(1), context_token_budget=32_768), principal=operator)
     worker = support.Principal(principal_id="chapter-worker:" + harness.project_id,
         principal_type=support.PrincipalType.WORKER, permissions=frozenset({"chapter.authority.execute"}),
         project_scope=frozenset({harness.project_id}), authentication_source="integration-fixture")

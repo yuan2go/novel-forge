@@ -116,3 +116,27 @@ def test_evolution_world_rules_require_narrative_consequence() -> None:
 
     with pytest.raises(KernelError, match="BOOK_DESIGN_INVALID"):
         BookDesignPayload.from_mapping(payload)
+
+
+def test_foundation_writer_binds_new_output_scope_and_rejects_conflicting_book():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.book_design_authority.application import BookDesignAuthorityApplication
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    writes = []
+    writer = SimpleNamespace(materialize_output=lambda command: writes.append(command) or SimpleNamespace(asset_version_id="cast:v1"))
+    cursor = MagicMock()
+    cursor.fetchone.return_value = None
+    uow = SimpleNamespace(cursor=cursor, repositories=SimpleNamespace(asset_documents=writer))
+    payload = {"characters": []}
+    scope = dict(operation_id="operation", project_id="project", book_id="book", design_asset_version_id="design:v1", trace_id="trace", correlation_id="correlation")
+    result = BookDesignAuthorityApplication._write_foundation_outputs(uow,
+        outputs=(("character_cast", "character-cast.v1", "character-casts", payload),), **scope)
+    assert result == {"character_cast": "cast:v1"}
+    assert writes[0].content == {**payload, "book_id": "book"}
+    assert payload == {"characters": []}
+    with pytest.raises(KernelError, match="BOOK_DESIGN_FOUNDATION_SCOPE_CONFLICT"):
+        BookDesignAuthorityApplication._write_foundation_outputs(uow,
+            outputs=(("character_cast", "character-cast.v1", "character-casts", {"book_id": "foreign"}),), **scope)
+    assert len(writes) == 1

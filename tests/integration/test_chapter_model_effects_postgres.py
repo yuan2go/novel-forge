@@ -1294,7 +1294,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         def fixture(stage, inputs):
             if stage in {"context_compress", "context_fidelity"}:
                 semantic_dispatches.append(stage)
-            output = default_chapter_fixture_response(stage, inputs)
+            if stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1":
+                from tests.integration.synthesis_production_support import scripted_chapter_response
+                output = scripted_chapter_response(stage, inputs)
+            else:
+                output = default_chapter_fixture_response(stage, inputs)
             if stage in {"review", "rereview"}:
                 text = inputs["draft" if stage == "review" else "revision"]["text"]
                 quote = text if stage == "review" else "The protagonist gives up the only safe route home before the witnesses leave."
@@ -1433,9 +1437,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     self.assertEqual(seen, [node.value for node in ChapterNode][:seen.index(ChapterNode.REVIEW.value) + 1])
                     self.assertIn(ChapterNode.CONTEXT.value, seen)
                 else:
-                    with self.assertRaises(KernelError) as unresolved:
-                        application.run(request)
-                    self.assertEqual(unresolved.exception.code, "CHAPTER_QUALITY_GATE_BLOCKED")
+                    completed = application.run(request)
+                    self.assertEqual(completed.root_status, "SUCCEEDED")
+                    self.assertEqual(completed.saga_status, "SUCCEEDED")
         self.assertEqual(semantic_dispatches, ["context_compress", "context_fidelity"] * 2)
         self.assertEqual(len(semantic_results), 2)
         with transaction() as connection, connection.cursor() as cursor:
@@ -1483,6 +1487,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(memo_boundary["accepted_through_chapter"], context_boundary["accepted_through_chapter"])
             self.assertEqual(memo_boundary["story_state_asset_version_id"], context_boundary["story_state_snapshot_version"])
             self.assertEqual(memo_boundary["canon_snapshot_asset_version_id"], context_boundary["canon_snapshot_version"])
+            for kind, boundary_key in (("story_state_snapshot", "story_state_snapshot_version"), ("canon_snapshot", "canon_snapshot_version")):
+                frozen_state = next(item for item in candidates if item["asset_type"] == kind)
+                self.assertEqual(frozen_state["asset_version_id"], context_boundary[boundary_key])
+                self.assertIn(frozen_state["asset_version_id"], prompt)
+                self.assertIn(frozen_state["content_hash"], prompt)
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute("""
                 SELECT effect.capability, effect.status, effect.request_payload,
@@ -1515,8 +1524,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name IN ('chapter.draft.generate','chapter.review.evaluate') AND status='SUCCEEDED'", [project_id])
             self.assertEqual(cursor.fetchone()[0], 2)
             if not native_through_review:
-                cursor.execute("SELECT content->'blocking_dimensions' FROM authority_asset_version JOIN authority_asset USING(asset_id) WHERE project_id=%s AND asset_type='quality_score_report'", [project_id])
-                self.assertTrue(cursor.fetchone()[0])
+                cursor.execute("SELECT content->>'gate',content->'blocking_dimensions',content->'uncalibrated_dimensions',content->'production_verified' FROM authority_asset_version JOIN authority_asset USING(asset_id) WHERE project_id=%s AND asset_type='quality_score_report'", [project_id])
+                gate, blocking, uncalibrated, production_verified = cursor.fetchone()
+                self.assertEqual(gate, "PASSED_WITH_UNCALIBRATED")
+                self.assertEqual(blocking, [])
+                self.assertTrue(uncalibrated)
+                self.assertFalse(production_verified)
 
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,
@@ -1584,7 +1597,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 self.assertIsNotNone(effect_guard._failure)
             from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
 
-            output = default_chapter_fixture_response(stage, inputs)
+            if stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1":
+                from tests.integration.synthesis_production_support import scripted_chapter_response
+                output = scripted_chapter_response(stage, inputs)
+            else:
+                output = default_chapter_fixture_response(stage, inputs)
             if capacity_overflow and stage in {"draft", "revision"}:
                 for scene in output.get("scene_artifacts", []):
                     scene["text"] += "承诺已经当众立下，归家的退路就此断绝。"
