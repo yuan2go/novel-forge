@@ -1,0 +1,188 @@
+{
+  "source_sha": "707356dad005e5e23d020ec8993eb2f4cf1dc62d",
+  "evidence_ceiling": "EXECUTABLE",
+  "files": [
+    {
+      "path": "checks/capture_token_unlimited.py.gz",
+      "bytes": 1524,
+      "sha256": "sha256:05317f7a5ec75bf9246d7e333f3cdec5c28b95cca90b57b1a3d49e52ad82e2d9"
+    },
+    {
+      "path": "checks/token-unlimited-documentation.json.gz",
+      "bytes": 385,
+      "sha256": "sha256:95354aedd5009a85dac991b2bf8822411f9bce13093b638864c36db80d3911de"
+    },
+    {
+      "path": "checks/token-unlimited-instructions.json.gz",
+      "bytes": 14364,
+      "sha256": "sha256:b312987d78599293d89707cfd5357688862e9de0c995f6fdc5c6d5a5e2c91d01"
+    },
+    {
+      "path": "checks/token-unlimited-lint.log.gz",
+      "bytes": 39,
+      "sha256": "sha256:7162964741fdb747d7ab27df2d1a1b64fa0636c4b7fe50ea8493de14cb62cbd4"
+    },
+    {
+      "path": "checks/token-unlimited-native.log.gz",
+      "bytes": 559,
+      "sha256": "sha256:c84b1586509946fa254a90956e5903510a1dee315c34b9ebd7658d52494f0d04"
+    },
+    {
+      "path": "checks/token-unlimited-native.xml.gz",
+      "bytes": 462,
+      "sha256": "sha256:c06929ddd964a954c9e98468ce79d811a04c287b527553f5f6acff6bdde7403f"
+    },
+    {
+      "path": "checks/token-unlimited-red.log.gz",
+      "bytes": 864,
+      "sha256": "sha256:4d525680e0cca0f3dd22a2f3bdbb818b09518d2b7583c663e29303d6d8485993"
+    },
+    {
+      "path": "checks/token-unlimited-unit-final.log.gz",
+      "bytes": 75,
+      "sha256": "sha256:4f611e7943d350c2f6fb65333477c8f2d924163244fb0572714daf5d8c7b002d"
+    },
+    {
+      "path": "checks/token-unlimited-unit-final.xml.gz",
+      "bytes": 2493,
+      "sha256": "sha256:84fc6736812477e8c194645cd970f97bd560e9183b21a42dc0a1de695acefc1c"
+    },
+    {
+      "path": "index.json",
+      "bytes": 4166,
+      "sha256": "sha256:b68b939a6d74e4a9da51741a3d02353c427dd78cd9559da21679fb7c2848e929"
+    },
+    {
+      "path": "readbacks/084bfc1ea5d1eeae.json.gz",
+      "bytes": 478214,
+      "sha256": "sha256:18723294ce969abac1f5f2d02677319a09b0d67fa31e7b54530e19e37e0168da"
+    },
+    {
+      "path": "readbacks/b859384152eb2b1a-dispatch.json",
+      "bytes": 64241,
+      "sha256": "sha256:a1c2566add7d3039dae650acfaa8743507c0a5b3f0a6d62017b35b62ac40864d"
+    },
+    {
+      "path": "readbacks/b859384152eb2b1a.json.gz",
+      "bytes": 19657774,
+      "sha256": "sha256:0fce3f12fa05340db901bb7e4e0013c1538f01aae6a6ffd3a6535484f3861ff6"
+    },
+    {
+      "path": "real-provider/continue-01.exit.json",
+      "bytes": 635,
+      "sha256": "sha256:48b92b8b3817f32325b09cffde3bfa978d556cdc1b59a08406df0bfbe6e0f208"
+    },
+    {
+      "path": "real-provider/continue-01.stdout.json",
+      "bytes": 19034,
+      "sha256": "sha256:1c7a35c299eb00ff27185857217ede086b066ef069cc91fb77f2944b61ac5066"
+    },
+    {
+      "path": "real-provider/creation-request.json",
+      "bytes": 1551,
+      "sha256": "sha256:2571604f926f6d210b81a1ff60eecf48670eca31ecab015853006bde3495d52c"
+    },
+    {
+      "path": "real-provider/native-checkpoint.json.gz",
+      "bytes": 2429217,
+      "sha256": "sha256:dad7f5b89f9cb7f6d7aeba47eaccb0b377f4a12ade1332403e5ec8bb220e528e"
+    },
+    {
+      "path": "real-provider/planning-execution-21aba381-1cea-44f9-b545-6bad4-4a9c14d807471a61/execution-metadata.json.gz",
+      "bytes": 207,
+      "sha256": "sha256:2017e1e79ec5a55a67ad6e6d93bdb665f8d52ac3a73c9c11684137d5316121af"
+    },
+    {
+      "path": "real-provider/planning-execution-21aba381-1cea-44f9-b545-6bad4-4a9c14d807471a61/output.schema.json.gz",
+      "bytes": 1329,
+      "sha256": "sha256:2f3dcdf5028ff2a295ba7a42aa9721f77b57b6b3da63304c6aec6b0425f5b13e"
+    },
+    {
+      "path": "real-provider/planning-execution-21aba381-1cea-44f9-b545-6bad4-4a9c14d807471a61/process-receipt.json.gz",
+      "bytes": 1008,
+      "sha256": "sha256:bdfe67a7523f6a840049908376a701e6102b98bef5f0be779cb0c18e9d28fa3d"
+    },
+    {
+      "path": "real-provider/planning-execution-21aba381-1cea-44f9-b545-6bad4-4a9c14d807471a61/stderr.log.gz",
+      "bytes": 20,
+      "sha256": "sha256:f1b651238a58fe290baec6c5e32f3bdb1943dd2bd582f02569231f7a757c7837"
+    },
+    {
+      "path": "real-provider/planning-execution-21aba381-1cea-44f9-b545-6bad4-4a9c14d807471a61/stdout.log.gz",
+      "bytes": 16759,
+      "sha256": "sha256:d8f44c6cfa759ca1d1e39ddfb61160fe970aa33bfbbf9ca6e707893e21e6c355"
+    },
+    {
+      "path": "real-provider/provider-preflight-02.json",
+      "bytes": 359,
+      "sha256": "sha256:23c30cd9235cbae6a4feef5dd58c25ea612782b3e3d6b23eef06e22dcfd472c7"
+    },
+    {
+      "path": "real-provider/provider-preflight.json",
+      "bytes": 527,
+      "sha256": "sha256:a84cc0d419f3d0992018424ef2b0320240b7a12ae6dbfe4a19a2a293074e6831"
+    },
+    {
+      "path": "real-provider/recover-world-01.command.json",
+      "bytes": 904,
+      "sha256": "sha256:65f002b7cb52901407f225118d00a11ac1d92f663fd8ab26273a1db9d47dd73e"
+    },
+    {
+      "path": "real-provider/recover-world-01.exit.json",
+      "bytes": 16,
+      "sha256": "sha256:124fd50cb6d223cdd18fedc166d00af7254199b6e6dedf9be82f71db87af6d01"
+    },
+    {
+      "path": "real-provider/recover-world-01.stdout.json",
+      "bytes": 19034,
+      "sha256": "sha256:225992bf8482f1530e704597fa02e48b6c1897dc7f35a146b47cbc836733a584"
+    },
+    {
+      "path": "real-provider/retained-execution-files.json",
+      "bytes": 12542,
+      "sha256": "sha256:ceef1a23e51646e0ea7420f88d66341a91cb3eb4e058c53804e3e2e3195344ef"
+    },
+    {
+      "path": "real-provider/start-command.json",
+      "bytes": 864,
+      "sha256": "sha256:f542be0c908a07bbfe015f2c279d04ae2b96774ef3e618c5b931e03b6912de60"
+    },
+    {
+      "path": "real-provider/start.exit.json",
+      "bytes": 16,
+      "sha256": "sha256:124fd50cb6d223cdd18fedc166d00af7254199b6e6dedf9be82f71db87af6d01"
+    },
+    {
+      "path": "real-provider/start.stdout.json",
+      "bytes": 252,
+      "sha256": "sha256:e01b0f450995f6dc3ebf4104fea0d325f798b0c6a66ede06b1ac74b88c55d392"
+    },
+    {
+      "path": "recover-world-02.command.json",
+      "bytes": 958,
+      "sha256": "sha256:bfb3d626a7e360922db1eb0b81939245452f368241f1f245342258bbfc6b2280"
+    },
+    {
+      "path": "recover-world-02.exit.json",
+      "bytes": 16,
+      "sha256": "sha256:124fd50cb6d223cdd18fedc166d00af7254199b6e6dedf9be82f71db87af6d01"
+    },
+    {
+      "path": "recover-world-02.stdout.json",
+      "bytes": 19035,
+      "sha256": "sha256:45e6fea0af674986c1ccca8b6c475d0a82a33b0d8bcdc0096c0e3ecbe77883b4"
+    },
+    {
+      "path": "token-unlimited-actual-process.json",
+      "bytes": 749,
+      "sha256": "sha256:9f6dac4d676b69be824e85e962b5504066dca8d4ea90dedbe5a700c21a7a9306"
+    },
+    {
+      "path": "token-unlimited-resume-01.json",
+      "bytes": 500,
+      "sha256": "sha256:61dc0a820205646b7b69d2ef04404973dee719c761e86779beee7230a33c6d21"
+    }
+  ],
+  "private_runtime_configuration_included": false,
+  "full_formal_matrix": "NOT_RUN"
+}

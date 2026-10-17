@@ -1,0 +1,16 @@
+{
+  "scope": "RUNNING_NATIVE_CODEX_PROCESS_ARGV",
+  "operation_id": "ba8417f0-e016-447b-9b8d-5972c14e1f05",
+  "execution_id": "planning-execution:21aba381-1cea-44f9-b545-6bad444a667b:361fe407-98c9-4032-b4ee-47062172acd6",
+  "process_group": {
+    "pgid": 18507,
+    "pid": 18507,
+    "process_start_token": "Sat Oct 17 22:00:30 2026"
+  },
+  "process_receipt_command_sha256": "8e86ca79f2cd26d764ee2ff74cc2b875316564645b4403b45a3a7a932cc578dd",
+  "observed_ps_command_sha256": "sha256:a938526231777e51757fa55b208e2aed0b1686bd0b298b8a022397b51ddbe422",
+  "forbidden_output_token_arguments": [],
+  "ignores_user_config": true,
+  "http_request_body": "NOT_OBSERVED",
+  "stdin_sha256": "b114d2f3e02b4ad645778dfd0289c114863c902194b47c3c751b891e514df395"
+}

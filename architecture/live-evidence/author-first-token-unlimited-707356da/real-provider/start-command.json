@@ -1,0 +1,28 @@
+{
+  "command": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-creation",
+    "start",
+    "--project-id",
+    "project:wp-nf-author-first-20261017",
+    "--workspace-id",
+    "workspace:wp-nf-author-first-20261017",
+    "--book-id",
+    "book:wp-nf-author-first-20261017",
+    "--idempotency-key",
+    "wp-nf-author-first-20261017:start",
+    "--input-file",
+    "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/creation-request.json",
+    "--repository-root",
+    "/Users/yuan/.codex/worktrees/author-first-continuation/novel-forge",
+    "--maximum-ticks",
+    "100",
+    "--work-window-seconds",
+    "60",
+    "--foreground",
+    "--yield-after-window"
+  ],
+  "source_sha": "809e81f9548fc3bb6ab6bffdb06453aa7506062d"
+}

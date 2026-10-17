@@ -1,0 +1,12 @@
+{
+  "user_instruction": "2026-10-17: cancel token limits; user confirms the limit is now removed",
+  "removed_unused_legacy_field": "NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT",
+  "previous_value": "32000",
+  "frozen_catalog_output_limits": [
+    null
+  ],
+  "transmitted_cli_output_cap": "ABSENT",
+  "historical_private_config_preserved": true,
+  "no_paid_authorization_expansion": true,
+  "original_formation_id": "story-formation:b21252b1bd3fcc4aa608d57686c1f65b0138c638812d3daa1df8f961b02e2bba"
+}
