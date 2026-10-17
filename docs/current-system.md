@@ -501,8 +501,11 @@ continuous membership creation with no external intent or reservation may
 append a capacity successor; a retained Arc Context additionally requires its native typed-volume
 projection evidence. Both use the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
-reserves the configured model output and framing margin, and requires each capacity allocation
-to increase within the actual model ceiling. Historical continuation depth is retained as
+reserves the configured model output and framing margin, and requires a capacity recovery
+allocation to increase within the actual model ceiling. Input-order and blocked-route
+recovery instead retain the exact frozen Context policy, including a selected
+`complete-request-capacity.v1` policy; their repair does not itself require more capacity.
+Historical continuation depth is retained as
 an observation; it does not impose a lifetime recovery limit.
 For Foundation capacity recovery, the Creator's original operator authorization registers
 the existing Planning continuation for the latest failed generation of the current role.
