@@ -129,6 +129,7 @@ def test_cli_output_headroom_follows_complete_input_and_preserves_legacy_reserva
     with pytest.raises(KernelError, match="CONTEXT_CAPACITY_EXCEEDED"):
         context_headroom_output_reserve(route, 258400)
     assert planning_input_capacity(route) == 258127
+    assert context_headroom_output_reserve(route, 20000, system_limit=512000) == 238400
     route.model_output_limit = 0
     assert context_headroom_output_reserve(route, 20000, system_limit=512000) == 238400
     route.model_profile.backend_id = "remote-provider-openai"

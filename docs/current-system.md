@@ -1534,6 +1534,9 @@ ceiling, new task contracts reserve its full confirmed model output capacity,
 including reasoning once. An explicitly frozen CLI headroom policy can instead reserve
 the entire remaining confirmed window when the output maximum is unknown; unknown
 context capacity or insufficient frozen reservation blocks.
+That headroom policy does not apply an independent output-token ceiling from a
+fixed-output route field, including when complete-request admission supplies its
+system window. Fixed-output historical contracts retain their original meaning.
 Successful frozen requests recover under their original contract without new I/O.
 These are engineering contracts;
 fixture execution does not establish real Provider capacity or literary improvement.

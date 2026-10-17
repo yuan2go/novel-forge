@@ -108,6 +108,15 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
     }, monkeypatch, transport)
     env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+    if not completed_sibling and not recoverable_result and not enhanced_working:
+        catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+        catalog["contract_version"] = "codex-router-models.v2"
+        for model in catalog["models"]:
+            model["output_limit"] = None
+        env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+        env["NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"] = "codex-cli-context-headroom.v1"
+        env.pop("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", None)
+        monkeypatch.delenv("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", raising=False)
     executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
     executable.write_text(executable.read_text().replace(
         ' target.write_bytes(',
