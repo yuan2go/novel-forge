@@ -522,6 +522,12 @@ accepted chapters. Its ceiling is `EXECUTABLE`; real Provider operation, long-fo
 literary quality and strict production certification remain unproven. See the executable
 commands and focused matrix in `docs/runtime-operations.md`.
 
+A completed raw-result repair replays through its exact persisted source edge and frozen
+command before checking whether the old World frontier is still current. Reuse requires
+a successful active successor, a verified main completion and settled usage, with no
+unresolved source or successor effects. This does not authorize a fresh call from an old
+frontier; incomplete or conflicting repairs retain the normal recovery checks.
+
 ### Bounded creative recovery contracts
 
 Creative template v12 is the current author-first policy; v2–v11 remain explicit
