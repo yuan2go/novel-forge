@@ -388,6 +388,11 @@ results and isolation, joint quality/publication boundaries, and the native Crea
 manuscript chain across a ChapterGroup with exact export readback. Preserve historical
 failure records and record unrun checks as `NOT_RUN`. This scoped evidence does not
 replace the complete exact-revision P0 required by formal PR/release governance.
+An upstream `max_output_tokens` incomplete response is output capacity exhaustion,
+even when the CLI prefixes it with a stream-disconnect message. Preserve its unknown
+remote outcome and usage; correct the output capacity or generation contract before
+an authorized linked successor. Removing a local allowance cannot remove a Provider's
+physical response limit and does not establish the numeric limit of an unobserved HTTP request.
 For those checks, native capacity injection must run snapshot preparation and full rendered
 request accounting before failing. Record the measured capacity diagnostic and retain
 preparation hashes across recovery. Historical zero-work and calibrated-Quality fixtures
@@ -3738,8 +3743,10 @@ memories, hooks and autonomous agents. Account entitlement also requires ChatGPT
 mode. Local configuration and tool policy are part of route identity; changed bindings
 require a new governed request. Returned tool-use evidence remains checked independently.
 Local checks do not establish remote availability or bound unobserved CLI overhead.
-Set `NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY=codex-input-only.v2` before freezing a new
-structured generation route to bind generation-specific model instructions. This policy
+Default Creation inputs freeze `codex-input-only.v2` and restore it for native workers
+and manuscript continuation. Other new structured routes may explicitly set
+`NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY=codex-input-only.v2` before freezing to bind
+generation-specific model instructions. This policy
 also checks the invocation's own durable transcript, identified by its exact thread ID
 and working directory, for tool calls omitted from CLI stdout. Missing or mismatched
 transcripts fail closed; observed calls still pass through the existing frozen Tool policy.

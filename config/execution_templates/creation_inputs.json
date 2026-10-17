@@ -1,5 +1,6 @@
 {
   "contract_version": "creation-input-policy.v1",
+  "codex_input_only_policy": "codex-input-only.v2",
   "purpose": "Runtime genesis and quality floor; work scope and language supplied by the current Formation request.",
   "profiles": {
     "production_profile": {

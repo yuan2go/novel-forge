@@ -957,10 +957,15 @@ DeepSeek and/or Codex CLI; a configured `openai` adapter is not thereby a Router
 Membership Codex invocations force ChatGPT login and ignore user configuration/rules.
 Initial and explicitly authorized recovered submission share the same command builder.
 New commands retain local session evidence; historical ephemeral requests are unchanged.
-The opt-in `codex-input-only.v2` route policy binds structured generation instructions
+The `codex-input-only.v2` route policy binds structured generation instructions
 at the model control layer and checks its own complete durable transcript for tool calls
 that stdout may omit. It uses the existing Tool authorization boundary and preserves
 legacy route hashes when absent. Local configuration is not remote execution evidence.
+New default Creation inputs freeze this policy. CLI continuation, manuscript work and
+workers restore it from the original Formation; absence in historical inputs retains
+the original route behavior. New invocations bind the intended instruction hash and
+compare it with the invocation's own persisted base instructions, rather than treating
+a configuration argument as proof that the model received those instructions.
 Default author-first Creation does not require Reader deployment preparation before
 Formation, Planning or manuscript recovery. Reader dispatch still requires its own
 exact active deployment and source checks when that optional work is requested.

@@ -133,9 +133,10 @@ def execute_followup_with_creation_scope(settings, scheduler, principal, *, oper
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
 
     query = PostgresBookProductionQuery(settings.database_url)
-    if not query.uses_creation_scope(project_id=project_id, subject_id=operation_id):
+    binding = query.creation_executor_binding(project_id=project_id, subject_id=operation_id)
+    if not binding:
         return scheduler.run_or_recover(operation_id=operation_id, project_id=project_id)
-    values = creation_runtime_environment(project_id)
+    values = creation_runtime_environment(project_id, input_only_policy=binding.get("codex_input_only_policy"))
     execution = build_production_execution_composition(settings, env=values)
     try:
         chapter = build_chapter_authority_application(settings, execution=execution, env=values)

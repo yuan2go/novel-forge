@@ -235,6 +235,27 @@ def test_codex_jsonl_records_and_denies_observed_cli_tools() -> None:
     assert evidence["unauthorized_tools"] == ["codex.command_execution"]
 
 
+def test_owned_trace_verifies_the_actual_base_instructions(tmp_path):
+    from uuid import uuid4
+    from novel_forge.modules.production_execution.codex_configuration import owned_codex_tool_evidence
+    thread = str(uuid4())
+    folder = tmp_path / "sessions/2026/10/17"
+    folder.mkdir(parents=True)
+    instruction = "Frozen generation instructions"
+    rows = [{"type": "session_meta", "payload": {"id": thread, "cwd": str(tmp_path),
+             "base_instructions": {"text": instruction}}},
+            {"type": "response_item", "payload": {"type": "message", "role": "assistant", "phase": "final"}}]
+    (folder / (thread + ".jsonl")).write_text("\n".join(json.dumps(row) for row in rows))
+    stdout = json.dumps({"type": "thread.started", "thread_id": thread})
+    expected = "sha256:" + hashlib.sha256(instruction.encode()).hexdigest()
+    proof = owned_codex_tool_evidence(stdout, codex_home=str(tmp_path), working_directory=str(tmp_path),
+        expected_instructions_hash=expected)
+    assert proof["base_instructions_sha256"] == expected
+    with pytest.raises(ValueError, match="base instructions"):
+        owned_codex_tool_evidence(stdout, codex_home=str(tmp_path), working_directory=str(tmp_path),
+            expected_instructions_hash="sha256:" + "0" * 64)
+
+
 def test_codex_jsonl_requires_completed_terminal_turn() -> None:
     with pytest.raises(ValueError, match="completed terminal turn"):
         parse_codex_jsonl_evidence(
@@ -324,6 +345,9 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retr
     assert "--ephemeral" not in prepared.command
     assert evidence["local_session_persistence"] == "DURABLE"
     assert evidence.get("input_only_policy", "") == input_only_policy
+    if input_only_policy:
+        from novel_forge.modules.production_execution.codex_configuration import CODEX_GENERATION_INSTRUCTIONS
+        assert evidence["generation_instructions_sha256"] == "sha256:" + hashlib.sha256(CODEX_GENERATION_INSTRUCTIONS.encode()).hexdigest()
     assert "features.memories=false" in prepared.command
     assert "features.shell_tool=false" in prepared.command
     assert prepared.environment_overrides["CODEX_HOME"] == str(Path(tmp).resolve())

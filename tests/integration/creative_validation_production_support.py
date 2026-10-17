@@ -95,7 +95,7 @@ def controlled_member_environment(root, env, monkeypatch, transport):
     values.update(NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT="512000", NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT="32000")
     executable = Path(values["NOVEL_FORGE_CODEX_EXECUTABLE"])
     executable.write_text(f'''#!{sys.executable}
-import json,pathlib,sys
+import json,pathlib,sys,uuid,os
 if "--version" in sys.argv:
  print("codex-test 1.0")
 else:
@@ -106,8 +106,15 @@ else:
   print(json.dumps({{"type":"error","message":"stream disconnected before completion: controlled connection interruption"}}))
   print(json.dumps({{"type":"turn.failed","error":{{"message":"stream disconnected before completion: controlled connection interruption"}}}}))
   sys.exit(1)
+ thread=str(uuid.uuid4())
+ instructions=next((value.removeprefix("instructions=") for value in sys.argv if value.startswith("instructions=")),None)
+ if instructions is not None:
+  folder=pathlib.Path(os.environ["CODEX_HOME"])/"sessions"/"2026"/"10"/"17"
+  folder.mkdir(parents=True,exist_ok=True)
+  transcript=[{{"type":"session_meta","payload":{{"id":thread,"cwd":sys.argv[sys.argv.index("--cd")+1],"base_instructions":{{"text":json.loads(instructions)}}}}}},{{"type":"response_item","payload":{{"type":"message","role":"assistant","phase":"final"}}}}]
+  (folder/(thread+".jsonl")).write_text("\\n".join(json.dumps(row) for row in transcript))
  target.write_bytes(target.with_name("fixture-response.json").read_bytes())
- print(json.dumps({{"type":"thread.started","thread_id":"controlled-fixture"}}))
+ print(json.dumps({{"type":"thread.started","thread_id":thread}}))
  print(json.dumps({{"type":"turn.completed","usage":{{"input_tokens":100,"output_tokens":100,"cached_input_tokens":0}}}}))
 ''')
     values["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()

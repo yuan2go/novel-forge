@@ -32,6 +32,12 @@ def observed_provider_failure(stdout: str, *, status: str, request=None) -> dict
     message = " ".join(item["message"] for item in causes).lower()
     rules = (
         (
+            ("max_output_tokens",),
+            "PROVIDER_OUTPUT_CAPACITY_EXHAUSTED",
+            "RESPONSE_GENERATION",
+            False,
+        ),
+        (
             ("stream disconnected", "stream interrupted"),
             "PROVIDER_STREAM_INTERRUPTED",
             "RESPONSE_STREAM",
@@ -112,7 +118,9 @@ def observed_provider_failure(stdout: str, *, status: str, request=None) -> dict
         "causes": causes,
         "identity": identity,
         "retryable": retryable,
-        "recovery_action": "RETRY_CONFIRMED_UNSENT"
+        "recovery_action": "CORRECT_OUTPUT_CAPACITY_OR_CONTRACT"
+        if code == "PROVIDER_OUTPUT_CAPACITY_EXHAUSTED"
+        else "RETRY_CONFIRMED_UNSENT"
         if str(status) == "START_FAILED"
         else "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION"
         if retryable

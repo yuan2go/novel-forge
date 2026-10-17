@@ -184,6 +184,19 @@ def test_worker_and_cli_resolve_the_same_project_pack_without_cross_project_resu
     assert creation_runtime_environment("p", explicit)["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"] == "explicit"
 
 
+def test_creation_freezes_generation_instructions_and_rejects_runtime_policy_drift():
+    import json
+    from pathlib import Path
+    from novel_forge.modules.command_kernel.errors import KernelError
+    policy = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())
+    assert policy["codex_input_only_policy"] == "codex-input-only.v2"
+    key = "NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY"
+    assert key not in creation_runtime_environment("p", {})
+    assert creation_runtime_environment("p", {}, input_only_policy=policy["codex_input_only_policy"])[key] == "codex-input-only.v2"
+    with pytest.raises(KernelError, match="CREATION_RUNTIME_POLICY_DRIFT"):
+        creation_runtime_environment("p", {key: ""}, input_only_policy=policy["codex_input_only_policy"])
+
+
 def test_unknown_capacity_is_an_operator_configuration_wait_not_an_unknown_effect():
     from novel_forge.modules.command_kernel.errors import KernelError
     from novel_forge.modules.command_kernel.worker_execution import WorkerFailureClassifier, WorkerFailureClass

@@ -100,7 +100,7 @@ class PostgresBookProductionQuery:
 
     def creation_executor_binding(
         self, *, project_id: str, subject_id: str
-    ) -> dict[str, str] | None:
+    ) -> dict[str, str | None] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """WITH RECURSIVE subjects(subject_id,depth,path) AS (
@@ -128,7 +128,8 @@ class PostgresBookProductionQuery:
                 WHERE edition.project_id=%s AND subjects.depth<64
                   AND NOT edition.source_book_run_id=ANY(subjects.path)
             ) SELECT run.formation_run_id,run.frozen_input_digest,
-                run.frozen_stage_inputs #>> '{generation_policy,auto_authorization,authorized_by_principal_id}'
+                run.frozen_stage_inputs #>> '{generation_policy,auto_authorization,authorized_by_principal_id}',
+                run.frozen_stage_inputs #>> '{generation_policy,creation_input_policy,codex_input_only_policy}'
                 FROM authority_story_formation_run run
                 WHERE run.project_id=%s AND run.frozen_stage_inputs #>> '{generation_policy,contract_version}' IN ('formation-generation.v5','formation-generation.v7')
                   AND (run.formation_run_id IN (SELECT subject_id FROM subjects) OR EXISTS(SELECT 1 FROM authority_book_opening_run opening
@@ -157,7 +158,7 @@ class PostgresBookProductionQuery:
         return (
             dict(
                 zip(
-                    ("formation_run_id", "frozen_input_digest", "operator_id"),
+                    ("formation_run_id", "frozen_input_digest", "operator_id", "codex_input_only_policy"),
                     rows[0],
                     strict=True,
                 )

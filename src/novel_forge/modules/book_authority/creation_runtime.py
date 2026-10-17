@@ -654,8 +654,14 @@ def creation_title(inputs: dict[str, Any]) -> tuple[str, bool]:
     return title, False
 
 
-def creation_runtime_environment(project_id: str, values: dict[str, str] | None = None) -> dict[str, str]:
+def creation_runtime_environment(project_id: str, values: dict[str, str] | None = None, *, input_only_policy: str | None = None) -> dict[str, str]:
     result = dict(os.environ if values is None else values)
+    if input_only_policy is not None:
+        from novel_forge.modules.production_execution.codex_configuration import CODEX_INPUT_ONLY_POLICY_V2
+        key = "NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY"
+        if input_only_policy != CODEX_INPUT_ONLY_POLICY_V2 or (key in result and result[key] != input_only_policy):
+            raise KernelError("CREATION_RUNTIME_POLICY_DRIFT", "Retain the exact structured generation policy frozen by this Formation")
+        result[key] = input_only_policy
     scope = hashlib.sha256(project_id.encode()).hexdigest()[:24]
     result.setdefault("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID", "chapter_generation_pack.creative." + scope)
     result.setdefault("NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID", "story_planning_pack.creative." + scope)
@@ -1065,6 +1071,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             args.action, args.formation_run_id = "continue", replay_identity
             return execute_creation_command(settings, args)
         profiles = deepcopy(json.loads(args.creation_policy_file.read_text()))
+        runtime_values = creation_runtime_environment(args.project_id, runtime_values,
+            input_only_policy=profiles.get("codex_input_only_policy"))
         from novel_forge.modules.production_execution.codex_model_catalog import parse_codex_model_catalog
         catalog = parse_codex_model_catalog(os.environ.get("NOVEL_FORGE_CODEX_ROUTER_MODELS", ""))
         # CONSTRAINT: Headroom catalogs reserve output from the final Provider envelope instead of a fixed catalog allowance.
@@ -1185,6 +1193,13 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             agent_domain="story_planning", agent_scope_type="BOOK", runtime_environment=settings.environment)
     elif not formation_id:
         raise ValueError("Continue requires the original Formation identity")
+    if args.action != "start":
+        from .queries import PostgresBookProductionQuery
+        binding = PostgresBookProductionQuery(settings.database_url).creation_executor_binding(
+            project_id=args.project_id, subject_id=formation_id)
+        if binding:
+            runtime_values = creation_runtime_environment(args.project_id, runtime_values,
+                input_only_policy=binding.get("codex_input_only_policy"))
     execution = build_production_execution_composition(settings, env=runtime_values)
     try:
         chapter = build_chapter_authority_application(settings, execution=execution, env=runtime_values)

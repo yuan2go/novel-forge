@@ -51,7 +51,10 @@ from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
 def execute_creation_worker_claim(settings: IndustrialSettings, claim: RuntimeJobClaim) -> dict[str, object]:
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment, execute_creation_claim
 
-    values = creation_runtime_environment(claim.project_id)
+    binding = PostgresBookProductionQuery(settings.database_url).creation_executor_binding(
+        project_id=claim.project_id, subject_id=claim.subject_id)
+    values = creation_runtime_environment(claim.project_id,
+        input_only_policy=binding.get("codex_input_only_policy") if binding else None)
     resolver = build_trusted_principal_resolver(env=values)
     operator = resolver.resolve_api_principal()
     jobs = RuntimeJobAuthority(settings.database_url)
@@ -88,7 +91,8 @@ def execute_book_phase_with_creation_scope(settings: IndustrialSettings, claim: 
     if not binding:
         return execute(legacy)
     legacy.principal.require("book.authority.execute", claim.project_id)
-    values = creation_runtime_environment(claim.project_id)
+    values = creation_runtime_environment(claim.project_id,
+        input_only_policy=binding.get("codex_input_only_policy"))
     operator = build_trusted_principal_resolver(env=values).resolve_api_principal()
     if operator.principal_id != binding["operator_id"]:
         raise KernelError(

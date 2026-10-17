@@ -142,7 +142,7 @@ def test_current_v7_creation_binding_retains_original_actor_digest_and_scope(
     cursor = SimpleNamespace(
         execute=Mock(),
         fetchall=Mock(
-            return_value=[("formation", "original-digest", "original-author")]
+            return_value=[("formation", "original-digest", "original-author", None)]
         ),
     )
     monkeypatch.setattr(
@@ -157,6 +157,7 @@ def test_current_v7_creation_binding_retains_original_actor_digest_and_scope(
         "formation_run_id": "formation",
         "frozen_input_digest": "original-digest",
         "operator_id": "original-author",
+        "codex_input_only_policy": None,
     }
     sql, parameters = cursor.execute.call_args.args
     assert "IN ('formation-generation.v5','formation-generation.v7')" in sql

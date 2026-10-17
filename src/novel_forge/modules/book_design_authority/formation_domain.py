@@ -179,6 +179,8 @@ class StoryFormationInput:
                         or not isinstance(creation.get("profiles"), dict)
                         or not creation["profiles"].get("production_profile", {}).get("content", {}).get("language_contract")):
                     raise ValueError("Creation requires frozen profiles and the current input language contract")
+                if creation.get("codex_input_only_policy") not in {None, "codex-input-only.v2"}:
+                    raise ValueError("Creation requires a supported frozen structured generation policy")
                 base_fields.add("creation_input_policy")
             if contract_version == "formation-generation.v5":
                 if policy.get("creative_selection") not in {"AUTHOR_COMPARISON", "AUTHOR_DIRECTION"} or policy.get("approval_mode") != "AUTO":

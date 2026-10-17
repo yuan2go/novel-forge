@@ -34,9 +34,10 @@ def execute_chapter_with_creation_scope(settings, scheduler, worker, *, project_
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
 
     query = PostgresBookProductionQuery(settings.database_url)
-    if not query.uses_creation_scope(project_id=project_id, subject_id=root_operation_id):
+    binding = query.creation_executor_binding(project_id=project_id, subject_id=root_operation_id)
+    if not binding:
         return scheduler.tick(project_id=project_id, root_operation_id=root_operation_id)
-    values = creation_runtime_environment(project_id)
+    values = creation_runtime_environment(project_id, input_only_policy=binding.get("codex_input_only_policy"))
     execution = build_production_execution_composition(settings, env=values)
     try:
         scoped = build_chapter_authority_application(settings, execution=execution, env=values)

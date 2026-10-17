@@ -908,7 +908,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         reader_profile=build_reader_outcome_pack_profile(root,operation_definition_hash=hashes["reader_proxy_current"],pack_id=reader_pack,coordinated_contract=True)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("SELECT activation_version FROM authority_capability_pack_activation WHERE project_id=%s AND book_id=%s AND pack_id=%s", [project,project+"-book",reader_pack])
-            reader_activation=uow.cursor.fetchone()[0]
+            reader_row=uow.cursor.fetchone()
+            reader_activation=reader_row[0] if reader_row else 0
         install_longform_validation_pack(DATABASE_URL,profile=reader_profile,pack_version="1.6.999",agent_generation=1,
             agent_domain="reader_outcome",agent_scope_type="BOOK",project_id=project,workspace_id=harness.workspace_id+"-new",book_id=project+"-book",
             application_build_id=harness.application_build_id,commit_sha=target_sha,compiler=author,approver=author,agent_admin=author,

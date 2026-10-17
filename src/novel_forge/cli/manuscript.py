@@ -8,8 +8,10 @@ from typing import Any
 def _manuscript_runtime_values(settings, *, project_id, book_run_id):
     from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
-    if PostgresBookProductionQuery(settings.database_url).uses_creation_scope(project_id=project_id, subject_id=book_run_id):
-        return creation_runtime_environment(project_id)
+    binding = PostgresBookProductionQuery(settings.database_url).creation_executor_binding(
+        project_id=project_id, subject_id=book_run_id)
+    if binding:
+        return creation_runtime_environment(project_id, input_only_policy=binding.get("codex_input_only_policy"))
     return None
 
 

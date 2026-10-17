@@ -64,6 +64,17 @@ def test_supervisor_phase_has_its_own_code(status, code):
     assert observed_provider_failure("", status=status)["error_code"] == code
 
 
+def test_output_capacity_failure_is_not_a_retryable_transport_disconnect():
+    message = "stream disconnected before completion: Incomplete response returned, reason: max_output_tokens"
+    failure = observed_provider_failure(json.dumps({"type": "turn.failed", "error": {"message": message}}), status="FAILED")
+    assert failure["error_code"] == "PROVIDER_OUTPUT_CAPACITY_EXHAUSTED"
+    assert failure["phase"] == "RESPONSE_GENERATION"
+    assert failure["retryable"] is False
+    assert failure["recovery_action"] == "CORRECT_OUTPUT_CAPACITY_OR_CONTRACT"
+    assert failure["remote_outcome"] == "UNESTABLISHED"
+    assert failure["causes"][0]["message"] == message
+
+
 def test_completed_turn_without_usage_keeps_unknown_accounting_and_valid_tool_boundary():
     stdout = json.dumps({"type": "turn.completed"})
     assert codex_completed_turn(stdout)
