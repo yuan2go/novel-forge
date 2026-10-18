@@ -70,6 +70,31 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
     except _RecoveryCheckpoint as checkpoint:
         return checkpoint.reason
     except KernelError as error:
+        if error.code == "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT":
+            execution_probe()
+            book = composition.authority.require(book_run_id)
+            worker.require("book.authority.execute", book["project_id"])
+            if not continuation_live():
+                composition.authority.cancel(book_run_id, reason="Original creation cancellation", principal=composition.principal)
+                return "CANCELLED"
+            if book["state"] in {"ABORTED", "CANCELLED"}:
+                return "CANCELLED"
+            if book["state"] in {"PAUSED", "COMPLETED"}:
+                return book["state"]
+            if monotonic() >= deadline:
+                return "YIELDED_CHECKPOINT"
+            if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
+                return "WAIT_EXTERNAL_RECONCILIATION"
+            binding = composition.query.creation_executor_binding(project_id=book["project_id"], subject_id=book_run_id)
+            if not binding:
+                raise
+            original = composition.formation.require(binding["formation_run_id"])
+            if any(original[key] != book[key] for key in ("project_id", "workspace_id", "book_id")):
+                raise KernelError("PLANNING_DEPLOYMENT_REVALIDATION_SCOPE_INVALID", "Retain the exact Creation owner of this Book")
+            policy = composition.formation.frozen_input(binding["formation_run_id"]).generation_policy or {}
+            if _recover_pending_planning_deployment(composition, book, policy, execution_probe=execution_probe):
+                return "YIELDED_CHECKPOINT"
+            raise
         if error.code != "GENERATION_RECOVERY_EXHAUSTED":
             raise
         book = composition.authority.require(book_run_id)
@@ -528,12 +553,15 @@ def _recover_pending_planning_deployment(composition, run, policy, *, execution_
               AND target_release_sha<>%s ORDER BY created_at""",
             [run["project_id"], run["book_id"], composition.planning.commit_sha])
         pending = uow.cursor.fetchall()
+    changed = False
     for (identity,) in pending:
         if require_binding(composition.authority.database_url, identity)["target_release_sha"] == composition.planning.commit_sha:
             continue
         register(composition.planning, identity, project_id=run["project_id"], principal=composition.principal,
             authorization_ref=auth["authorization_ref"], reason="Preserve unstarted native task across actual Creator deployment; unchanged story inputs and contracts",
             execution_probe=execution_probe)
+        changed = True
+    return changed
 
 
 def creation_cancellation(database_url: str, formation_run_id: str) -> dict[str, str] | None:

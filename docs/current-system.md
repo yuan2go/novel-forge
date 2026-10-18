@@ -1525,6 +1525,10 @@ Planning dispatch must resolve the owning Book run from its frozen working, Worl
 edition or native search binding. Multiple runs of one Book do not make a cancelled
 sibling the owner. Conflicting, missing or foreign explicit run bindings fail closed;
 an unbound historical request cannot choose an arbitrary live sibling.
+The shared Book driver routes Planning deployment drift from ordinary manuscript
+continuation through the original Creation authorization and existing pending-deployment
+command. It yields after a registered correction; cancellation, pause, foreign ownership,
+unresolved current effects and already started successors retain their existing stops.
 Current author-first routing policy updates need a versioned compare-and-set command
 schema when they supply an expected policy hash. A handler precondition cannot protect
 an update if its closed command schema rejects that field before admission.

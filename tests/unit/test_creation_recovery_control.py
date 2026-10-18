@@ -299,3 +299,34 @@ def test_pause_after_unknown_isolation_prevents_successor_dispatch(drive, monkey
     assert generation_isolation.recover_chapter_generations.call_count == 2
     scheduler.tick.assert_called_once()
     composition.authority.cancel.assert_not_called()
+
+
+@pytest.mark.parametrize('boundary', ['recover', 'cancel', 'paused', 'deadline', 'unresolved', 'unbound', 'foreign', 'unchanged'])
+def test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment(monkeypatch, boundary):
+    from novel_forge.modules.book_authority import creation_runtime as runtime
+    book = dict(book_run_id='book-run', project_id='project', workspace_id='workspace', book_id='book', state='READY')
+    authority = SimpleNamespace(database_url='db', require=Mock(return_value=book), cancel=Mock())
+    binding = None if boundary == 'unbound' else {'formation_run_id':'formation'}
+    formation = dict(project_id='foreign' if boundary == 'foreign' else 'project', workspace_id='workspace', book_id='book')
+    policy = {'auto_authorization': {'authorized_by_principal_id':'author'}}
+    composition = SimpleNamespace(authority=authority, principal=SimpleNamespace(principal_id='author'),
+        query=SimpleNamespace(creation_executor_binding=Mock(return_value=binding), unresolved_chapter_effects=Mock(return_value=boundary=='unresolved')),
+        formation=SimpleNamespace(require=Mock(return_value=formation),frozen_input=Mock(return_value=SimpleNamespace(generation_policy=policy))))
+    error = KernelError('PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT', 'retain original pending successor')
+    monkeypatch.setattr(runtime, '_drive_book', Mock(side_effect=error))
+    recovery = Mock(return_value=boundary != 'unchanged')
+    monkeypatch.setattr(runtime, '_recover_pending_planning_deployment', recovery)
+    if boundary == 'paused':
+        book['state'] = 'PAUSED'
+    arguments = dict(composition=composition, chapter=object(), book_run_id='book-run', worker=Mock(), maximum_ticks=1,
+        deadline=0 if boundary=='deadline' else float('inf'), continuation_live=lambda:boundary!='cancel')
+    if boundary in {'unbound','foreign','unchanged'}:
+        with pytest.raises(KernelError):
+            runtime.drive_book(**arguments)
+    else:
+        assert runtime.drive_book(**arguments) == {'recover':'YIELDED_CHECKPOINT','cancel':'CANCELLED','paused':'PAUSED',
+            'deadline':'YIELDED_CHECKPOINT','unresolved':'WAIT_EXTERNAL_RECONCILIATION'}[boundary]
+    if boundary in {'recover','unchanged'}:
+        recovery.assert_called_once()
+    else:
+        recovery.assert_not_called()
