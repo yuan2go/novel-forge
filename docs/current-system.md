@@ -140,6 +140,18 @@ Stopped isolated pure generation may register its native successor from a Saga's
 Working prose keeps its persisted Asset type and hash when used in the Draft input role;
 the host role projection does not relabel a Revision or author edit as a stored Draft.
 The frozen revision purpose reaches the Review, Revision and ReReview task views.
+ReReview dispositions belong only to its frozen initial Review diagnosis ledger;
+references to older rejected candidates in an author's purpose do not add diagnoses
+to that ledger. New working ReReview execution snapshots bind the exact initial Review
+hash and diagnosis codes in their output Schema and task projection. A required
+`resolution_checks_by_code` object supplies one disposition per frozen diagnosis;
+an empty ledger requires an empty object. The host projects those exact keys to the
+existing domain list, retaining literal evidence and all preservation validation.
+Historical execution snapshots retain their original Schema, task and Effect input.
+A successful model receipt with an explicit `REVIEW_RESOLUTION_CHECKS_REQUIRED`
+validation failure cannot satisfy a fresh current working ReReview Attempt. It stays
+immutable while the remaining native retry allowance creates a new execution snapshot;
+verified completed results and saved Review/Revision stages remain reusable.
 Review distinguishes supporting passages in the exact current candidate from frozen
 earlier prose. Both require literal, unambiguous locations; a current passage is never
 represented as accepted or earlier evidence. After an implementation correction,

@@ -156,6 +156,25 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
 
     def capture_writer_prompt(resolver, request, admission):
         payload = resolve(resolver, request, admission)
+        if request.stage == "rereview":
+            from novel_forge.modules.review.diagnostics import open_diagnoses
+            from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
+            from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+            start = payload.input_text.index('{"context_bundle":')
+            envelope = expand_exact_context_references(json.JSONDecoder().raw_decode(payload.input_text[start:])[0])
+            task = envelope["input_manifest"]
+            scope = task["review_resolution_scope"]
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT input_asset_snapshot FROM authority_operation WHERE operation_id=%s", [request.operation_id])
+                bindings = uow.cursor.fetchone()[0]
+                documents = [uow.repositories.asset_documents.require(project_id=request.project_id, asset_version_id=binding["asset_version_id"]) for binding in bindings]
+                review = next(document.content for document in documents if document.asset_type == "review_report")
+            assert scope["initial_review_content_hash"] == canonical_hash(review)
+            codes = [item["code"] for item in open_diagnoses(review)]
+            assert scope["diagnosis_codes"] == codes
+            checks = payload.output_schema["properties"]["resolution_checks_by_code"]
+            assert set(checks["properties"]) == set(checks["required"]) == set(codes)
+            assert checks["additionalProperties"] is False
         if request.stage in {"draft", "chapter_plan.generate", "world_candidates.generate", "world_candidates.evaluate"}:
             start = payload.input_text.find('{"context_bundle":')
             assert start >= 0
@@ -281,7 +300,10 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
                 stopped = run_manuscript_command(settings, _authority_parser().parse_args([
                     "authority-manuscript", "continue", "--book-run-id", book["book_run_id"],
                     "--stop-after-chapter", "1", "--ensure-chapter-length", "--foreground"]))
-            assert stopped["length_delivery"]["status"] == "REVISED_LENGTH_TARGET_UNMET"
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT last_error FROM authority_external_effect WHERE project_id=%s AND status<>'SUCCEEDED' ORDER BY created_at DESC LIMIT 1", [book["project_id"]])
+                refusal = uow.cursor.fetchone()
+            assert stopped.get("length_delivery", {}).get("status") == "REVISED_LENGTH_TARGET_UNMET", (stopped, refusal)
             old_revision = stopped["length_delivery"]["revision"]
             assert old_revision["status"] == "SUCCEEDED"
             with AuthorityUnitOfWork(DATABASE_URL) as uow:

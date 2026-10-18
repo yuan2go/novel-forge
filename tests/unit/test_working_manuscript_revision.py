@@ -92,6 +92,135 @@ def test_revision_purpose_reaches_rendered_model_task(monkeypatch, stage):
     assert task['working_revision_request']['core_story_change_authorized'] is False
 
 
+@pytest.mark.parametrize('codes', [[], ['CURRENT-1'], ['CURRENT-1', 'CURRENT-2']])
+def test_working_rereview_binds_only_its_initial_diagnosis_ledger(monkeypatch, codes):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority import review_window
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder, _materialize_production_codex_prompt
+    from novel_forge.modules.chapter_authority.provider_output_contracts import initial_review_resolution_scope, _validate
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from novel_forge.modules.review.cross_chapter import resolution_checks
+    from tests.unit.test_capability_pack_artifact_materialization import _prompt_materialization
+
+    initial = {'issues': [{'code': code, 'severity': 'minor'} for code in codes]}
+    purpose = {'contract_version': CONTRACT, 'reason': '旧请求 OLD-1 已拒绝；本次保留原稿并修正篇幅。'}
+    request = ChapterHandlerRequest('rereview', 'p', 'w', 'trace', 'root',
+        {'preparation_report': {'working_revision': purpose}},
+        (ChapterInputAsset('original', 'draft_chapter', 'original-hash', {'text': '原稿'}),
+         ChapterInputAsset('revision', 'draft_version', 'revision-hash', {'text': '新修订'}),
+         ChapterInputAsset('context', 'context_bundle', 'context-hash', {}),
+         ChapterInputAsset('initial-review', 'review_report', canonical_hash(initial), initial)),
+        definition_version='3.10.0')
+    monkeypatch.setattr(review_window, 'prepare_review_window', lambda *args: None)
+    *_, payload = review_window.prepare_native_review(request, stage='rereview')
+    assert 'review_resolution_scope' not in payload
+    scope = initial_review_resolution_scope(initial)
+    assert scope == {'contract_version': 'initial-review-resolution-scope.v1',
+        'initial_review_content_hash': canonical_hash(initial), 'diagnosis_codes': codes}
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage='rereview', request_payload={'input': payload}, prompt_contract_version='v15')
+    checks = schema['properties']['resolution_checks_by_code']
+    assert set(checks['properties']) == set(checks['required']) == set(codes)
+    assert checks['additionalProperties'] is False
+    assert 'resolution_checks' not in schema['properties']
+    from novel_forge.modules.chapter_authority.provider_output_contracts import is_work_review_schema_ref
+    assert is_work_review_schema_ref(ref)
+    assert is_work_review_schema_ref(ref.removesuffix(':initial-review-resolution-scope-v1'))
+    assert not is_work_review_schema_ref(ref + ':unknown')
+    disposition = {'status': 'SATISFIED', 'preservation': 'PRESERVED', 'evidence': {'quote': '新修订'}, 'reason': '已逐项核对'}
+    valid = {code: deepcopy(disposition) for code in codes}
+    _validate(checks, valid, path='checks')
+    for invalid in [{**valid, 'OLD-1': disposition}, *[{key: value for key, value in valid.items() if key != code} for code in codes]]:
+        with pytest.raises(ValueError):
+            _validate(checks, invalid, path='checks')
+    if len(codes) == 2:
+        with pytest.raises(ValueError):
+            _validate(checks, {codes[0]: disposition}, path='checks')
+    normalized = normalize_model_output('rereview', {'score': 40, 'issues': [], 'resolution_checks_by_code': valid}, output_schema_ref=ref)
+    assert normalized['decision'] == 'PASSED'
+    assert [item['code'] for item in normalized['resolution_checks']] == codes
+    assert normalized['resolution_checks'] == [{**disposition, 'code': code} for code in codes]
+    assert normalize_model_output('rereview', normalized, output_schema_ref=ref) == normalized
+    with pytest.raises(KernelError, match='MODEL_RESPONSE_INVALID'):
+        normalize_model_output('rereview', {**normalized, 'resolution_checks': [{'code': 'FOREIGN'}]}, output_schema_ref=ref)
+    materialization = _prompt_materialization({'context_segments': []})
+    materialization['output_schema'] = {'ref': ref, 'content': schema}
+    prompt, _ = _materialize_production_codex_prompt(stage='rereview', inputs=payload, materialization=materialization,
+        target_scope={'scope_kind': 'chapter', 'scope_id': 'chapter-3', 'chapter_number': 3})
+    assert 'initial-review-resolution-scope.v1' in prompt and canonical_hash(initial) in prompt
+    assert 'OLD-1' in prompt
+    assert 'review_resolution_scope' not in payload
+    old_schema, old_ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage='rereview',
+        request_payload={'input': {key: value for key, value in payload.items() if key != 'working_revision_request'}}, prompt_contract_version='v15')
+    assert old_ref == ref.removesuffix(':initial-review-resolution-scope-v1')
+    materialization['output_schema'] = {'ref': old_ref, 'content': old_schema}
+    old_prompt, _ = _materialize_production_codex_prompt(stage='rereview', inputs=payload, materialization=materialization,
+        target_scope={'scope_kind': 'chapter', 'scope_id': 'chapter-3', 'chapter_number': 3})
+    assert 'initial-review-resolution-scope.v1' not in old_prompt
+    assert 'resolution_checks_by_code' not in old_prompt
+    with pytest.raises(KernelError, match='REVIEW_RESOLUTION_CHECKS_REQUIRED'):
+        resolution_checks({'resolution_checks': [{'code': 'OLD-1'}]}, initial, '新修订')
+
+
+@pytest.mark.parametrize('drift', ['changed-review', 'changed-hash', 'foreign-code', 'missing-code'])
+def test_rereview_frozen_resolution_schema_rejects_changed_ledger(drift):
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder, _materialize_production_codex_prompt
+    from tests.unit.test_capability_pack_artifact_materialization import _prompt_materialization
+    review = {'issues': [{'code': 'CURRENT', 'severity': 'minor'}]}
+    payload = {'review': review, 'working_revision_request': {'contract_version': CONTRACT}, 'draft': {'text': '正文'}}
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage='rereview', request_payload={'input': payload}, prompt_contract_version='v15')
+    if drift == 'changed-review':
+        payload['review'] = {'issues': []}
+    elif drift == 'changed-hash':
+        payload['review'] = {**review, 'changed': True}
+    elif drift == 'foreign-code':
+        schema['properties']['resolution_checks_by_code']['properties']['FOREIGN'] = {}
+    else:
+        schema['properties']['resolution_checks_by_code']['properties'].pop('CURRENT')
+    materialization = _prompt_materialization({})
+    materialization['output_schema'] = {'ref': ref, 'content': schema}
+    with pytest.raises(KernelError, match='REVIEW_RESOLUTION_SCOPE_INVALID'):
+        _materialize_production_codex_prompt(stage='rereview', inputs=payload, materialization=materialization,
+            target_scope={'scope_kind': 'chapter', 'scope_id': 'chapter-3', 'chapter_number': 3})
+
+
+@pytest.mark.parametrize('version', ['3.9.3', '3.9.4'])
+def test_historical_working_rereview_keeps_its_original_schema(monkeypatch, version):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority import review_window
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    request = ChapterHandlerRequest('rereview', 'p', 'w', 'trace', 'root',
+        {'preparation_report': {'working_revision': {'contract_version': CONTRACT, 'reason': '旧诊断 OLD-1'}}},
+        (ChapterInputAsset('original', 'draft_chapter', 'hash', {'text': '原稿'}),
+         ChapterInputAsset('revision', 'draft_version', 'hash', {'text': '新稿'}),
+         ChapterInputAsset('context', 'context_bundle', 'hash', {}),
+         ChapterInputAsset('review', 'review_report', 'hash', {'issues': []})),
+        definition_version=version)
+    monkeypatch.setattr(review_window, 'prepare_review_window', lambda *args: None)
+    *_, payload = review_window.prepare_native_review(request, stage='rereview')
+    assert 'review_resolution_scope' not in payload
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage='rereview', request_payload={'input': payload}, legacy_contract=True, prompt_contract_version='v3')
+    assert 'initial-review-resolution-scope' not in ref
+    assert 'minItems' not in schema['properties']['resolution_checks']
+
+
+@pytest.mark.parametrize('suffix', ['', ':initial-review-resolution-scope-v1'])
+def test_current_review_scope_markers_do_not_reintroduce_a_score_gate(suffix):
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    ref = 'schema:chapter-provider-output:rereview:cross-chapter-v6:delivered-card-scope-v1:repair-scope-v1'
+    raw = {'score': 40, 'issues': [], 'resolution_checks': [], 'knowledge_checks': []}
+    wire = {key: value for key, value in raw.items() if key != 'resolution_checks'}
+    current = normalize_model_output('rereview', {**wire, 'resolution_checks_by_code': {}} if suffix else raw, output_schema_ref=ref + suffix)
+    assert current['decision'] == 'PASSED'
+    assert current['score'] == 40
+    assert current['review_decision_contract'] == 'work-review-decision.v1'
+    historical = normalize_model_output('rereview', raw,
+        output_schema_ref='schema:chapter-provider-output:rereview:v4')
+    assert historical['decision'] == 'NEEDS_REVISION'
+
+
 @pytest.mark.parametrize('purpose', ['absent', 'stale', 'current'])
 def test_requested_structural_aesthetic_repair_uses_matching_scope_and_body_contract(purpose):
     from novel_forge.modules.review.diagnostics import structural_repair_scope, validate_prose_repair_scope

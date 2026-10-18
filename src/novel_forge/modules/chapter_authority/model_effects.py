@@ -2075,6 +2075,14 @@ def _normalize_model_output(
     if stage in {"retrieval_query_expansion", *CONTEXT_MODEL_STAGES}:
         return dict(raw)
     if stage in {"review", "rereview"}:
+        if stage == "rereview" and output_schema_ref.endswith(":initial-review-resolution-scope-v1"):
+            checks = raw.get("resolution_checks_by_code")
+            if not isinstance(checks, dict) or any(not isinstance(value, dict) for value in checks.values()):
+                raise KernelError("MODEL_RESPONSE_INVALID", "Scoped ReReview requires its exact keyed resolution protocol")
+            projected = [{**value, "code": code} for code, value in checks.items()]
+            if "resolution_checks" in raw and raw["resolution_checks"] != projected:
+                raise KernelError("MODEL_RESPONSE_INVALID", "Scoped ReReview projection changed its keyed dispositions")
+            raw = {**raw, "resolution_checks": projected}
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):
             raise KernelError(
@@ -2125,6 +2133,8 @@ def _normalize_model_output(
                 if "resolution_checks" in raw
                 else {}
             ),
+            **({"resolution_checks_by_code": raw["resolution_checks_by_code"]}
+               if stage == "rereview" and output_schema_ref.endswith(":initial-review-resolution-scope-v1") else {}),
             **({"knowledge_checks": raw["knowledge_checks"]} if "knowledge_checks" in raw else {}),
             **({"craft_checks": raw["craft_checks"]} if "craft_checks" in raw else {}),
             **({"quality_resolution_checks": raw["quality_resolution_checks"]} if "quality_resolution_checks" in raw else {}),

@@ -1303,6 +1303,19 @@ empty Review cannot establish that a previously reviewed source has no resolved 
 history. Sources with earlier review references require affirmative preservation
 evidence; empty or missing referenced history does not grant inapplicability. Ordinary
 explicit working selection retains its existing contract.
+If ReReview returns `REVIEW_RESOLUTION_CHECKS_REQUIRED`, preserve its successful model
+receipt and failed validation Attempt. A diagnosis cited in a new revision purpose is
+not part of that request's initial Review ledger. New working ReReview snapshots bind
+that exact ledger hash in the Schema description and task projection, and require the
+`resolution_checks_by_code` object to have exactly its diagnosis keys. Only that frozen
+Schema suffix enables projection to the existing domain list. Do not add fields to old
+Effect inputs or reinterpret a historical snapshot. Preserve the invalid result rather
+than removing foreign checks or claiming it passed. On the original current working
+revision Root, this exact validation failure excludes the invalid model receipt from
+completed-result reuse; a remaining native Attempt can freeze the corrected Schema.
+Completed Review/Revision stages and valid unchanged results remain reusable. An
+exhausted allowance, unknown outcome or changed frontier still needs its existing
+recovery path; this correction does not increase allowances or authorize acceptance.
 A saved active Draft finishes its existing Chapter delivery before length repair.
 The next chapter remains blocked until the delivered frontier meets its frozen bounds.
 This deferral uses the Book scheduler's active reconciliation and acceptance states,

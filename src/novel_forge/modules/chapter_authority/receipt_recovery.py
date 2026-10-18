@@ -482,8 +482,11 @@ def consume_completed_generation_result(request, *, stage, payload):
               AND e.request_payload->>'stage'=%s
               AND (e.request_payload->'input'=%s OR (e.request_payload->'input')-'_context_capacity_projection'=%s)
               AND a.status IN ('FAILED_RETRYABLE','FAILED_FINAL')
+              AND NOT (%s AND COALESCE(a.result->>'error_code','')='REVIEW_RESOLUTION_CHECKS_REQUIRED')
               AND a.attempt_id<>%s ORDER BY a.attempt_number DESC,e.created_at DESC LIMIT 1""",
-            [request.operation_id, request.project_id, request.workspace_id, stage, Jsonb(payload), Jsonb(payload), request.attempt_id])
+            [request.operation_id, request.project_id, request.workspace_id, stage, Jsonb(payload), Jsonb(payload),
+             stage == 'rereview' and request.effective_definition_version == '3.10.0'
+             and bool((request.command.get('preparation_report') or {}).get('working_revision')), request.attempt_id])
         own = u.cursor.fetchone()
         if own and {key: value for key, value in own[2].get('input', {}).items() if key != '_context_capacity_projection'} == {key: value for key, value in payload.items() if key != '_context_capacity_projection'}:
             expected_book = request.command.get('book_id')

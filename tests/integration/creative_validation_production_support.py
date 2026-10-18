@@ -183,13 +183,17 @@ else:
             if typed_envelope:
                 result = {"payload_json": json.dumps(result, ensure_ascii=False)}
         if stage in {"review", "rereview"}:
-            if payload.output_schema_version.endswith(":repair-scope-v1"):
+            if "repair" in payload.output_schema["properties"]["issues"]["items"]["properties"]:
                 for diagnosis in result.get("issues", []):
                     diagnosis.setdefault("repair", None)
             for collection in ("issues", "resolution_checks", "knowledge_checks"):
                 for issue in result.get(collection, []):
                     if isinstance(issue.get("evidence"), dict) and "quote" in issue["evidence"]:
                         issue["evidence"] = {"quote": issue["evidence"]["quote"]}
+        if stage == "rereview" and "resolution_checks_by_code" in payload.output_schema.get("properties", {}):
+            result["resolution_checks_by_code"] = {
+                item["code"]: {key: value for key, value in item.items() if key != "code"}
+                for item in result.pop("resolution_checks")}
         if (payload.output_schema and payload.output_schema.get("additionalProperties") is False
                 and payload.output_schema_version != "schema:chapter-provider-output:canon_extraction:v25"):
             result = {key: value for key, value in result.items() if key in payload.output_schema["properties"]}

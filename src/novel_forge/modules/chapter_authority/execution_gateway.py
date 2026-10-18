@@ -1581,6 +1581,10 @@ class PostgresChapterExecutionContractBinder:
                         bind_repair(item)
             bind_repair(schema)
             schema_ref += ":repair-scope-v1"
+        if stage == "rereview" and current_review and inputs.get("working_revision_request"):
+            from .provider_output_contracts import bind_review_resolution_scope
+            schema = bind_review_resolution_scope(schema, inputs["review"])
+            schema_ref += ":initial-review-resolution-scope-v1"
         return schema, schema_ref
 
     def bind(
@@ -4789,6 +4793,14 @@ def _materialize_production_codex_prompt(
         from novel_forge.modules.book_authority.working_prose import PROGRESSION_INSTRUCTION
         progression_overlay = "\nThe selected frozen progression policy governs this new candidate within its fictional constraints.\n" + PROGRESSION_INSTRUCTION
         system_text += progression_overlay
+    if stage == "rereview" and str(schema.get("ref") or "").endswith(":initial-review-resolution-scope-v1"):
+        from .provider_output_contracts import initial_review_resolution_scope
+        resolution_scope = initial_review_resolution_scope(inputs["review"])
+        checks = schema["content"]["properties"]["resolution_checks_by_code"]
+        if (json.loads(checks["description"]) != resolution_scope
+                or set(checks["properties"]) != set(resolution_scope["diagnosis_codes"])):
+            raise KernelError("REVIEW_RESOLUTION_SCOPE_INVALID", "Frozen resolution Schema differs from its initial Review ledger")
+        inputs = {**inputs, "review_resolution_scope": resolution_scope}
     task_view = build_provider_task_view(
         stage,
         inputs,

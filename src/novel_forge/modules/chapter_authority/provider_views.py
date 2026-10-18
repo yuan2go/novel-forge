@@ -1139,6 +1139,9 @@ def build_provider_task_view(
                 (revision or {}).get("creative_execution") or {}
             ),
             prior_diagnoses=issues,
+            **({"review_resolution_scope": deepcopy(inputs["review_resolution_scope"]),
+                "resolution_check_instructions": "Return resolution_checks_by_code with exactly the keys in this initial Review scope, each with its own disposition and evidence. An empty scope requires resolution_checks_by_code={}. Diagnoses quoted in the author's purpose or older rejected candidates do not enter this ledger. Report newly found regressions separately in issues and preservation_checks."}
+               if inputs.get("review_resolution_scope") else {}),
             knowledge_review_targets=deepcopy(
                 inputs.get("knowledge_review_targets") or []
             ),
