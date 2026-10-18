@@ -864,9 +864,13 @@ def _current_planning_correction(uow, *, book, operation, request, refs, target)
 def _current_regeneration_history(uow, *, book, operation, request, target):
     from novel_forge.modules.chapter_authority.working_regeneration import ROOT_VERSION
     from novel_forge.modules.chapter_authority.working_revision import require_working_revision_frontier
-    if target != writing_frontier(book) or not operation.get("root_operation_id"):
+    if target != writing_frontier(book):
         return False
-    uow.cursor.execute("SELECT to_jsonb(root) FROM authority_operation root WHERE operation_id=%s", [operation["root_operation_id"]])
+    uow.cursor.execute("""SELECT to_jsonb(root) FROM authority_operation child
+        JOIN authority_operation root ON root.operation_id=child.root_operation_id
+        WHERE child.operation_id=%s AND child.project_id=%s AND child.workspace_id=%s
+          AND root.project_id=child.project_id AND root.workspace_id=child.workspace_id
+          AND root.actor_id=child.actor_id""", [operation['operation_id'], operation['project_id'], operation['workspace_id']])
     row = uow.cursor.fetchone()
     root = row[0] if row else {}
     if (root.get("definition_version") != ROOT_VERSION or root.get("actor_id") != operation.get("actor_id")
@@ -925,6 +929,9 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
 def require_historical_input_scope_repair(cursor: Any, source: dict[str, Any], policy: dict[str, Any], target_version: str) -> bool:
     if policy.get("contract_version") != "chapter-historical-input-scope-repair.v1":
         return False
+    if policy.get('input_scope_projection') == 'current-working-root-owner.v1':
+        _require_current_regeneration_scope_repair(cursor, source, policy, target_version)
+        return True
     working = (source["command_payload"].get("preparation_report") or {}).get("working_manuscript")
     refs = {item["asset_version_id"] for item in source["input_asset_snapshot"]}
     if (source["definition_name"] != "chapter.memo.generate" or source["definition_version"] != "3.10.0"
@@ -1220,3 +1227,42 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
             "source_external_effect_id": payload.get("external_effect_id", ""), "source_effect_status": effect[0] if effect else "UNKNOWN",
             "source_failure_codes": [item[0] for item in failures if item[0]],
             "publication": "NOT_AUTHORIZED"}
+
+
+def _require_current_regeneration_scope_repair(cursor, source, policy, target_version):
+    from types import SimpleNamespace
+    from novel_forge.storage.authority_repositories import AuthorityRepositories
+
+    if (source['definition_name'] != 'chapter.execution_intent.prepare' or source['definition_version'] != '3.10.0'
+            or target_version != '3.10.0' or source['status'] != 'FAILED_FINAL'
+            or not policy.get('release_sha') or policy['release_sha'] == source['definition_snapshot'].get('commit_sha')
+            or policy.get('input_snapshot') != source['input_asset_snapshot']):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Retain the exact unsent current working Intent failure')
+    cursor.execute('SELECT status,result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number', [source['operation_id']])
+    attempts = cursor.fetchall()
+    if (len(attempts) != 1 or attempts[0][0] != 'FAILED_FINAL'
+            or attempts[0][1].get('error_code') != 'MANUSCRIPT_CONTEXT_INVALID'
+            or attempts[0][1].get('error_message') != 'MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read'):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Retain the one original owner-projection failure')
+    cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_saga_step_successor WHERE successor_operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+          WHERE attempt.operation_id=%s AND lease.status='HELD')''', [source['operation_id']] * 6)
+    if any(cursor.fetchone()):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Preserve prepared, dispatched, leased or previously succeeded work')
+    uow = SimpleNamespace(cursor=cursor, repositories=AuthorityRepositories(cursor))
+    book_id, history = historical_working_inputs(uow, source)
+    if book_id != source['command_payload']['book_id'] or not history:
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'The repaired native owner and all original historical source hashes must pass')
+    cursor.execute('''SELECT d.deployment_id FROM authority_capability_pack_activation activation
+        JOIN authority_capability_pack_deployment d ON d.deployment_id=activation.active_deployment_id
+        JOIN authority_capability_pack_compilation compilation USING(compilation_id)
+        WHERE activation.project_id=%s AND activation.workspace_id=%s AND activation.book_id=%s
+          AND activation.workflow_definition_ref='chapter_authority_slice@3.10.0'
+          AND d.deployment_id=%s AND d.deployment_status='ACTIVE' AND compilation.release_sha=%s''',
+        [source['project_id'], source['workspace_id'], book_id, policy.get('target_deployment_id'), policy['release_sha']])
+    if cursor.fetchone() != (policy.get('target_deployment_id'),):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Require the exact current deployed owner projection correction')

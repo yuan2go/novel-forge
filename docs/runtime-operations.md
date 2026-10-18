@@ -1426,6 +1426,10 @@ Migration 225 extends the same zero-send continuation check to this exact case w
 changing published migration 223 or permitting a dispatched source.
 Each stage rechecks the current source and corrected Frozen Plan; ordinary revision and
 regeneration share atomic Book exclusion while identical requests use Kernel idempotency.
+A failed current regeneration Intent with zero preparation may continue through the
+existing historical-input-scope successor and `continue-revision`; the corrected reader
+resolves child-to-Root ownership from Kernel rows, including sparse handler projections.
+Retain its completed Plan, exact frozen inputs, original failure and same Root.
 Further length repair reads the regeneration Root's actual new Context. Retain cancelled
 or isolated predecessors, unknown usage, and older candidates. Do not reset the cursor,
 requalify an invalid old Plan as unchanged, or substitute a genesis candidate run.

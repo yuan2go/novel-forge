@@ -240,3 +240,55 @@ def test_regeneration_preparation_uses_the_actual_author_workflow_projection(mon
     assert prepared_book['author_workflow'] == manuscript.AUTHOR_WORKFLOW
     assert prepared_book['accepted_through_chapter'] == 0 and prepared_book['current_chapter'] == 16
     assert 'author_workflow' not in book
+
+
+@pytest.mark.parametrize('drift', ['', 'wrong-owner', 'wrong-proof', 'wrong-root-version', 'not-current'])
+def test_sparse_handler_projection_resolves_its_native_root_without_invented_fields(monkeypatch, drift):
+    from novel_forge.modules.book_authority import manuscript
+    from novel_forge.modules.chapter_authority import working_revision
+
+    book = dict(checkpoint(), author_workflow=manuscript.AUTHOR_WORKFLOW)
+    operation = {'operation_id': 'child', 'project_id': 'p', 'workspace_id': 'w', 'actor_id': 'original-actor'}
+    report = {'working_plan_regeneration': {'proposal_id': 'exact'}}
+    root = {'definition_version': regeneration.ROOT_VERSION, 'actor_id': 'original-actor', 'command_payload': {'preparation_report': report}}
+    if drift == 'wrong-owner':
+        root['actor_id'] = 'foreign'
+    elif drift == 'wrong-proof':
+        root['command_payload']['preparation_report'] = {}
+    elif drift == 'wrong-root-version':
+        root['definition_version'] = 'other'
+    cursor = Mock()
+    cursor.fetchone.return_value = (root,)
+    verify = Mock()
+    monkeypatch.setattr(working_revision, 'require_working_revision_frontier', verify)
+    assert manuscript._current_regeneration_history(SimpleNamespace(cursor=cursor), book=book, operation=operation,
+        request={'preparation_report': report}, target=17 if drift == 'not-current' else 16) is (not drift)
+    assert verify.call_count == (0 if drift else 1)
+    if not drift:
+        assert cursor.execute.call_args.args[1] == ['child', 'p', 'w']
+        assert 'root.operation_id=child.root_operation_id' in cursor.execute.call_args.args[0]
+
+
+@pytest.mark.parametrize('unsafe', [None, 0, 1, 2, 3, 4, 5])
+def test_owner_projection_recovery_preserves_all_preparation_and_execution_fences(monkeypatch, unsafe):
+    from novel_forge.modules.book_authority import manuscript
+
+    source = {'operation_id': 'failed-child', 'definition_name': 'chapter.execution_intent.prepare', 'definition_version': '3.10.0',
+        'status': 'FAILED_FINAL', 'definition_snapshot': {'commit_sha': 'old'}, 'project_id': 'p', 'workspace_id': 'w',
+        'command_payload': {'book_id': 'book'}, 'input_asset_snapshot': [{'asset_version_id': 'original', 'content_hash': 'hash'}]}
+    policy = {'contract_version': 'chapter-historical-input-scope-repair.v1', 'input_scope_projection': 'current-working-root-owner.v1',
+        'release_sha': 'fixed', 'target_deployment_id': 'deployed', 'input_snapshot': source['input_asset_snapshot']}
+    cursor = Mock()
+    cursor.fetchall.return_value = [('FAILED_FINAL', {'error_code': 'MANUSCRIPT_CONTEXT_INVALID',
+        'error_message': 'MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read'})]
+    facts = [False] * 6
+    if unsafe is not None:
+        facts[unsafe] = True
+    cursor.fetchone.side_effect = [tuple(facts), ('deployed',)]
+    monkeypatch.setattr(manuscript, 'historical_working_inputs', Mock(return_value=('book', frozenset({'original'}))))
+    if unsafe is not None:
+        with pytest.raises(KernelError, match='HISTORICAL_INPUT_SCOPE_REPAIR_INVALID'):
+            manuscript.require_historical_input_scope_repair(cursor, source, policy, '3.10.0')
+    else:
+        assert manuscript.require_historical_input_scope_repair(cursor, source, policy, '3.10.0')
+    assert not any('UPDATE ' in call.args[0] or 'DELETE ' in call.args[0] for call in cursor.execute.call_args_list)

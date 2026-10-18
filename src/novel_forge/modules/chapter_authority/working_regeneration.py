@@ -124,3 +124,50 @@ def admission_guard(uow, *, request, expected_version):
         [book['project_id'], list(ROOT_VERSIONS) if proof else [ROOT_VERSION], book['book_run_id'], str(request.chapter)])
     if uow.cursor.fetchone() != (False,):
         raise KernelError('MANUSCRIPT_REGENERATION_CONCURRENT', 'Reconcile the current regeneration instead of admitting another writer')
+
+
+def recover_unsent_owner_projection(authority, *, book, root_id, principal):
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    from novel_forge.modules.command_kernel.service import AdmissionContext
+    from novel_forge.modules.command_kernel.step_successor_v2 import replace_failed_step
+    from .working_revision import require_working_revision_frontier
+
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        uow.cursor.execute('SELECT to_jsonb(root) FROM authority_operation root WHERE operation_id=%s AND project_id=%s', [root_id, book['project_id']])
+        row = uow.cursor.fetchone()
+        if not row or row[0]['definition_version'] != ROOT_VERSION:
+            return False
+        require_working_revision_frontier(uow, root=row[0], book_run_id=book['book_run_id'])
+        uow.cursor.execute('''SELECT to_jsonb(child) FROM authority_operation child JOIN authority_saga_step step USING(operation_id)
+            WHERE child.root_operation_id=%s AND child.project_id=%s AND child.actor_id=%s
+              AND child.definition_name='chapter.execution_intent.prepare' AND child.definition_version='3.10.0'
+              AND child.status='FAILED_FINAL' AND child.definition_snapshot->>'commit_sha'<>%s
+              AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor edge WHERE edge.predecessor_operation_id=child.operation_id)
+              AND EXISTS(SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=child.operation_id
+                AND attempt.result->>'error_code'='MANUSCRIPT_CONTEXT_INVALID')''',
+            [root_id, book['project_id'], principal.principal_id, authority.commit_sha])
+        sources = uow.cursor.fetchall()
+        if not sources:
+            return False
+        if len(sources) != 1:
+            raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Recover only the exact failed current Intent')
+        source = sources[0][0]
+        uow.cursor.execute('''SELECT d.deployment_id FROM authority_capability_pack_activation activation
+            JOIN authority_capability_pack_deployment d ON d.deployment_id=activation.active_deployment_id
+            JOIN authority_capability_pack_compilation compilation USING(compilation_id)
+            WHERE activation.project_id=%s AND activation.workspace_id=%s AND activation.book_id=%s
+              AND activation.workflow_definition_ref='chapter_authority_slice@3.10.0'
+              AND d.deployment_status='ACTIVE' AND compilation.release_sha=%s''',
+            [book['project_id'], book['workspace_id'], book['book_id'], authority.commit_sha])
+        deployments = uow.cursor.fetchall()
+        if len(deployments) != 1:
+            raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Resolve the exact deployed owner projection before recovery')
+        policy = {'contract_version': 'chapter-historical-input-scope-repair.v1',
+            'input_scope_projection': 'current-working-root-owner.v1', 'book_run_id': book['book_run_id'],
+            'target_deployment_id': deployments[0][0], 'release_sha': authority.commit_sha,
+            'input_snapshot': source['input_asset_snapshot'], 'completion_checks': 'UNCHANGED'}
+    replace_failed_step(authority.database_url, predecessor_id=source['operation_id'], target_version='3.10.0',
+        context=AdmissionContext(principal.principal_id, principal.permissions,
+            authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
+        policy_evidence=policy, expected_failure_code='MANUSCRIPT_CONTEXT_INVALID')
+    return True
