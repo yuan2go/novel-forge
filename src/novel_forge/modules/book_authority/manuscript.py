@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from hashlib import sha256
+from json import dumps
 from typing import Any
 
 from novel_forge.modules.chapter_authority.author_editor import _session_ref, source_draft_content, text_hash
@@ -800,6 +801,46 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working passage does not match its exact source range")
 
 
+def _current_planning_correction(uow, *, book, operation, request, refs, target):
+    evidence = request.get("change_evidence_version_ids") or []
+    if (operation["definition_name"] != "story_planning.generate"
+            or target != writing_frontier(book) or target <= book.get("accepted_through_chapter", target)
+            or book.get("state") not in {"READY", "PAUSED"} or book.get("active_chapter_request_id")
+            or not operation.get("actor_id") or request.get("actor_id") != operation["actor_id"]
+            or not evidence or any(version not in refs for version in evidence)
+            or request.get("generator_operation_name") not in {"chapter_group_plan.generate", "chapter_plan.generate"}):
+        return False
+    uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_asset_version v
+        JOIN authority_asset a USING(asset_id)
+        JOIN authority_operation_output_asset output USING(asset_version_id)
+        JOIN authority_operation author ON author.operation_id=output.operation_id
+        JOIN active_story_plan_version active ON active.project_id=a.project_id AND active.book_id=%s
+        JOIN story_plan_binding binding ON binding.binding_id=active.binding_id
+          AND binding.asset_version_id=v.content->>'target_plan_version_id'
+        JOIN authority_asset_version plan_version ON plan_version.asset_version_id=binding.asset_version_id
+        WHERE v.asset_version_id=ANY(%s) AND a.project_id=%s AND author.workspace_id=%s
+          AND a.asset_type='replan_request' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
+          AND author.definition_name='planning.change_request.author' AND author.status='SUCCEEDED'
+          AND author.actor_id=%s AND output.role='primary'
+          AND v.content->>'contract_version'='operator-planning-change-request.v1'
+          AND v.content->>'authority_boundary'='FUTURE_PLAN_PROPOSAL_ONLY'
+          AND v.content->>'book_id'=%s AND v.content->>'accepted_through_chapter'=%s
+          AND v.content->>'affected_scope'=binding.contract_type AND binding.freshness='CURRENT'
+          AND binding.logical_key=%s
+          AND binding.execution_scope IN ('PLANNED','FROZEN')
+          AND ((binding.contract_type='CHAPTER_GROUP' AND %s='chapter_group_plan.generate'
+              AND %s BETWEEN (plan_version.content->'chapter_range'->>0)::integer AND (plan_version.content->'chapter_range'->>1)::integer)
+            OR (binding.contract_type='CHAPTER' AND %s='chapter_plan.generate'
+              AND (plan_version.content->>'chapter_number')::integer=%s))
+          AND v.content_hash=%s::jsonb->>v.asset_version_id
+          AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
+            WHERE cancellation.project_id=%s AND %s=cancellation.formation_run_id || ':production'))""",
+        [book["book_id"], evidence, book["project_id"], book["workspace_id"], operation["actor_id"],
+         book["book_id"], str(book["accepted_through_chapter"]), request.get("logical_key"), request["generator_operation_name"], target,
+         request["generator_operation_name"], target, dumps(refs), book["project_id"], book["stable_idempotency_key"]])
+    return uow.cursor.fetchone() == (True,)
+
+
 def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str, frozenset[str]]:
     name = operation["definition_name"]
     payload = operation["command_payload"]
@@ -825,7 +866,8 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Historical working inputs require the exact author-first Book")
     book = {**row[0], "author_workflow": AUTHOR_WORKFLOW}
     target = working["target_chapter"]
-    if (not isinstance(target, int) or target != writing_frontier(book) + 1
+    if (type(target) is not int or target != writing_frontier(book) + 1
+            and not _current_planning_correction(uow, book=book, operation=operation, request=request, refs=refs, target=target)
             or any(not isinstance(source.get("chapter"), int) or not 0 < source["chapter"] < target for source in working["sources"])):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Only the selected preceding writing history can be read")
     if name.startswith("chapter."):

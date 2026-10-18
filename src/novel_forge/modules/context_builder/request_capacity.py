@@ -26,7 +26,7 @@ def validate_projection_quotes(data: dict, quotes: tuple[str, ...]) -> list[dict
     candidates = []
     def source_view(value):
         if isinstance(value, dict):
-            if value.get("version") in {"working-observations.v1", "working-observations-provider.v1"}:
+            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1"):
                 return {"source_coverage": value.get("source_coverage", [])}
             result = {}
             for key, child in value.items():
@@ -66,7 +66,7 @@ def working_observation_index(data):
     result = {}
     def visit(value):
         if isinstance(value, dict):
-            if value.get("version") in {"working-observations.v1", "working-observations-provider.v1"} and value.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
+            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1") and value.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
                 for entry in value.get("entries") or []:
                     source = entry.get("source") or {}
                     identity = (source.get("asset_version_id"), source.get("content_hash"))
@@ -577,7 +577,7 @@ def protected_expression_quotes(value: Any, *, include_working_observations: boo
     quotes = set()
     def visit(item):
         if isinstance(item, dict):
-            if include_working_observations and item.get("version") in {"working-observations.v1", "working-observations-provider.v1"} and item.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
+            if include_working_observations and item.get("version") in ("working-observations.v1", "working-observations-provider.v1") and item.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
                 for entry in item.get("entries") or []:
                     quote = (entry.get("location") or {}).get("quote")
                     if quote and quote == entry.get("quote") and (entry.get("source") or {}).get("asset_version_id"):

@@ -43,6 +43,7 @@ from novel_forge.modules.story_design_authority import (
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.workers.book_authority import execute_story_formation_claim
 from tests.integration.authority_postgres_support import (
+    DATABASE_URL,
     insert_definition,
     insert_operation,
     transaction,
@@ -99,6 +100,8 @@ def _payload(
             "differentiation": "geography changes through accountable choices",
             "emotional_contract": "wonder becomes costly shared responsibility",
             "serialization_potential": "each district exposes a distinct bargain",
+            "style_profile": {"constraints": ["Use concrete witnessed details."],
+                "narrator": "plain observation", "pov": "limited", "genre_conventions": []},
         }
     if role is FoundationRole.THEME_CONTRACT:
         return {
@@ -152,6 +155,7 @@ def _payload(
                 "capability": "reads archival topology",
                 "weakness": "withholds uncertainty",
                 "voice": "precise until emotionally cornered",
+                "voice_anchors": ["precise until emotionally cornered"],
                 "secret": "her first map caused harm",
                 "relationship_function": "learn accountable trust",
                 "arc_direction": "certainty becomes collective responsibility",
@@ -189,6 +193,8 @@ def _seed_candidate_and_evaluation(
     alternate: bool,
     parent_candidates: dict[FoundationRole, dict[str, str]],
     world_foundation: dict[str, Any] | None = None,
+    native_evaluation: bool = False,
+    native_author_id: str = "",
 ) -> dict[str, str]:
     generator = _GENERATOR_BY_ROLE[role]
     logical_key = f"foundation:{role.value.lower()}:{label}"
@@ -204,6 +210,27 @@ def _seed_candidate_and_evaluation(
             world_foundation=world_foundation,
         ),
     )
+    if native_evaluation:
+        from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
+        from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT workspace_id FROM authority_book WHERE project_id=%s AND book_id=%s", [project_id, book_id])
+            workspace_id = uow.cursor.fetchone()[0]
+        name = "story_design." + role.value.lower() + ".author"
+        actor = Principal(native_author_id, PrincipalType.LOCAL_OPERATOR,
+            frozenset({"content.authority.execute", "content.operation:" + name}), frozenset({project_id}), "controlled-current-fixture")
+        authored = ContentAuthorityApplication(DATABASE_URL, application_build_id="hierarchy-current-input-fixture",
+            commit_sha="e" * 40, integration_proven=CONTENT_INTEGRATION_PROVEN, trusted_only=True).execute(
+            ContentOperationRequest(definition_name=name, project_id=project_id, workspace_id=workspace_id,
+                actor_id=actor.principal_id, trace_id=project_id, correlation_id=project_id,
+                idempotency_key=f"{project_id}:{book_id}:{logical_key}:current-input", payload={"content": {**content,
+                    "operator_authored": True, "provider_generated": False}},
+                input_assets=tuple({"asset_version_id": parent_candidates[parent]["asset_version_id"],
+                    "content_hash": parent_candidates[parent]["content_hash"]} for parent in role.required_parents)), principal=actor)
+        return {"role": role.value, "book_id": book_id, "logical_key": logical_key, "generator": generator,
+            "asset_version_id": authored.asset_version_id, "content_hash": authored.content_hash,
+            "schema_version": f"{role.value.lower().replace('_', '-')}.v1", "generation_operation_id": authored.operation_id,
+            "qualification_evidence_asset_version_id": "", "qualification_hash": "", "evaluation_operation_id": ""}
     content_hash = _hash(content)
     asset_id = f"fixture:{project_id}:foundation:{role.value.lower()}:{label}"
     asset_version_id = f"{asset_id}:v1"
@@ -333,6 +360,7 @@ def _seed_candidate_and_evaluation(
         )
     return {
         "role": role.value,
+        "book_id": book_id,
         "logical_key": logical_key,
         "generator": generator,
         "asset_version_id": asset_version_id,
@@ -355,6 +383,7 @@ def _activate_story_design(
     full_lifecycle: bool,
     activate: bool,
     release_sha: str,
+    native_evaluation: bool = False,
 ) -> str:
     generator = candidate["generator"]
     evidence = {
@@ -376,6 +405,9 @@ def _activate_story_design(
             application_build_id="hierarchy-closure-qualification",
             commit_sha=release_sha,
         )
+        if native_evaluation:
+            evidence = {"operation_id": candidate["generation_operation_id"],
+                "authoring_operation_id": candidate["generation_operation_id"], "operator_authored": True, "provider_generated": False}
         state: dict[str, Any] = {"version": 0}
         transitions = [
             DesignTransition.ENROLL,
@@ -393,9 +425,48 @@ def _activate_story_design(
                 ]
             )
         for transition in transitions:
+            if native_evaluation and transition is DesignTransition.SEMANTIC_VALIDATE:
+                from novel_forge.modules.story_design_authority import (
+                    NarrativeSemanticEvaluationApplication, NarrativeSemanticEvaluationCommand,
+                )
+                evaluator = Principal(principal_id=principal.principal_id + ":independent-fixture-evaluator",
+                    principal_type=PrincipalType.LOCAL_OPERATOR, permissions=frozenset({"narrative_design.evaluate"}),
+                    project_scope=principal.project_scope, authentication_source="scripted-native-fixture")
+                from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
+                from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
+                evaluation = scripted_qualification(generator)
+                reviewer = Principal(evaluator.principal_id, evaluator.principal_type,
+                    evaluator.permissions | {"content.authority.execute", "content.operation:story_design.review.author"},
+                    evaluator.project_scope, evaluator.authentication_source)
+                review = ContentAuthorityApplication(database_url, application_build_id="hierarchy-operator-review-fixture",
+                    commit_sha=release_sha, integration_proven=CONTENT_INTEGRATION_PROVEN).execute(
+                    ContentOperationRequest(definition_name="story_design.review.author", project_id=project_id,
+                        workspace_id=workspace_id, actor_id=reviewer.principal_id, trace_id=project_id, correlation_id=project_id,
+                        idempotency_key=candidate["asset_version_id"] + ":operator-review-fixture",
+                        payload={"candidate_asset_version_id": candidate["asset_version_id"], "candidate_content_hash": candidate["content_hash"],
+                            "evaluation": evaluation, "review_rationale": "Controlled fixture review; no human preference, Provider generation or literary qualification claimed."},
+                        input_assets=({"asset_version_id": candidate["asset_version_id"], "content_hash": candidate["content_hash"]},)), principal=reviewer)
+                evaluated = NarrativeSemanticEvaluationApplication(database_url, application_build_id="hierarchy-native-evaluation-fixture",
+                    commit_sha=release_sha, allow_scripted_fixture=False).execute(
+                    NarrativeSemanticEvaluationCommand(project_id=project_id, workspace_id=workspace_id,
+                        book_id=candidate["book_id"], actor_id=evaluator.principal_id,
+                        candidate_asset_version_id=candidate["asset_version_id"], candidate_content_hash=candidate["content_hash"],
+                        generation_operation_id=candidate["generation_operation_id"], generator_operation_name=generator,
+                        evaluator_execution_class="OPERATOR_REVIEW", evaluation=evaluation, evidence_asset_version_ids=(review.asset_version_id,),
+                        idempotency_key=candidate["asset_version_id"] + ":native-semantic-fixture",
+                        trace_id=project_id, correlation_id=project_id), principal=evaluator, caller_permission="narrative_design.evaluate")
+                candidate["qualification_evidence_asset_version_id"] = evaluated.lineage.evaluation_asset_version_id
+                with AuthorityUnitOfWork(database_url) as uow:
+                    document = uow.repositories.asset_documents.require(project_id=project_id,
+                        asset_version_id=evaluated.lineage.evaluation_asset_version_id)
+                    candidate["qualification_hash"] = document.content_hash
+                candidate["evaluation_operation_id"] = evaluated.lineage.evaluation_operation_id
             transition_evidence = (
                 evidence if transition is DesignTransition.ENROLL else {"passed": True}
             )
+            if native_evaluation and transition is DesignTransition.SEMANTIC_VALIDATE:
+                transition_evidence.update(evaluation_asset_version_id=evaluated.lineage.evaluation_asset_version_id,
+                    qualification_hash=evaluated.qualification.qualification_hash)
             state = authority.transition(
                 StoryDesignTransitionCommand(
                     project_id=project_id,
@@ -413,6 +484,7 @@ def _activate_story_design(
                     transition=transition,
                     planning_scope=PlanningScope.NOT_APPLICABLE,
                     expected_version=int(state["version"]),
+                    source_kind="OPERATOR_AUTHORED" if native_evaluation else "GENERATED",
                     evidence=transition_evidence,
                 ),
                 principal=principal,
@@ -482,9 +554,9 @@ def _activate_story_design(
     return activation_operation_id
 
 
-def _book_design_payload(foundation: Any, *, target_chapters: int) -> dict[str, Any]:
+def _book_design_payload(foundation: Any, *, target_chapters: int, schema_version=FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION) -> dict[str, Any]:
     return {
-        "schema_version": FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+        "schema_version": schema_version,
         "title": "The Glass Harbor",
         "target_chapters": target_chapters,
         "foundation_set": foundation.to_dict(),
@@ -528,6 +600,7 @@ def seed_ready_story_foundation(
     full_story_design_lifecycle: bool = False,
     exercise_formation_recovery: bool = False,
     world_foundation: dict[str, Any] | None = None,
+    book_design_schema_version: str = FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
 ) -> dict[str, Any]:
     """Build the exact Foundation set and BookDesign v5 through real runtime gates."""
 
@@ -542,6 +615,8 @@ def seed_ready_story_foundation(
             alternate=False,
             parent_candidates=selected,
             world_foundation=world_foundation,
+            native_evaluation=book_design_schema_version == "book-design.v7",
+            native_author_id=principal.principal_id,
         )
         candidate["activation_operation_id"] = _activate_story_design(
             database_url=database_url,
@@ -550,6 +625,7 @@ def seed_ready_story_foundation(
             candidate=candidate,
             principal=principal,
             full_lifecycle=full_story_design_lifecycle,
+            native_evaluation=book_design_schema_version == "book-design.v7",
             activate=True,
             release_sha=release_sha,
         )
@@ -753,7 +829,7 @@ def seed_ready_story_foundation(
             idempotency_key=f"{book_id}:book-design-v5:propose",
             trace_id=f"trace:{project_id}:book-design-v5",
             correlation_id=f"correlation:{project_id}:formation",
-            payload=_book_design_payload(foundation, target_chapters=target_chapters),
+            payload=_book_design_payload(foundation, target_chapters=target_chapters, schema_version=book_design_schema_version),
             expected_book_version=int(book["version"]),
             expected_current_design_asset_version_id=str(
                 book["active_book_design_version_id"]
@@ -772,7 +848,7 @@ def seed_ready_story_foundation(
             generator_operation_name="book_design.propose",
             candidate_content_hash=str(proposed["content_hash"]),
             evaluator_execution_class="SCRIPTED_FIXTURE",
-            evaluation=scripted_qualification("book_design.propose"),
+            evaluation=scripted_qualification("book_design.propose", work_requirements=book_design_schema_version in {"book-design.v6", "book-design.v7"}, profile_version="3.0.0" if book_design_schema_version == "book-design.v7" else "2.0.0"),
             idempotency_key=f"{book_id}:book-design-v5:evaluate",
             trace_id=f"trace:{project_id}:book-design-v5:evaluate",
             correlation_id=f"correlation:{project_id}:formation",

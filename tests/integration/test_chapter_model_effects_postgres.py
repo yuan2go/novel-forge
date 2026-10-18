@@ -250,7 +250,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
 
     def _release_evidence(
-        self, project_id: str, *, with_mkaos: bool = False, scope_preseeded: bool = False, workspace_id: str = "", extra_context_candidates: tuple[dict[str, object], ...] = (), current_contract_inputs: bool = False
+        self, project_id: str, *, with_mkaos: bool = False, scope_preseeded: bool = False, workspace_id: str = "", extra_context_candidates: tuple[dict[str, object], ...] = (), current_contract_inputs: bool = True
     ) -> tuple[dict[str, object], ...]:
         workspace_id = workspace_id or f"workspace:{project_id}"
         if with_mkaos and not scope_preseeded:
@@ -1658,7 +1658,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "compression_method": "none", "source_use_mode": "generation", "allowed_use": "generation",
                 "retrieval_reasons": ["task_related_episodic_history"]}
             context_candidates = self._release_evidence(project_id, with_mkaos=True, scope_preseeded=True,
-                workspace_id=harness.workspace_id, current_contract_inputs=capacity_overflow,
+                workspace_id=harness.workspace_id, current_contract_inputs=True,
                 extra_context_candidates=(history,) if capacity_overflow else ())
             self._seed_intrinsic_semantic_commit_policy(project_id)
             chapter_request = SingleChapterRequest(

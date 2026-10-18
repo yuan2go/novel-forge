@@ -1770,6 +1770,10 @@ class _RevisionHandler:
             from novel_forge.modules.revision.domain import freeze_chapter_length_scope
             length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
                 context=effective_context_content(request, context), context_asset_version_id=context.asset_version_id)
+        if length_scope is not None and (request.command.get("preparation_report") or {}).get("working_revision"):
+            from novel_forge.modules.revision.domain import require_working_length_repair_scope
+            require_working_length_repair_scope(draft=draft.content, draft_id=draft.asset_version_id,
+                review=review.content, review_id=review.asset_version_id, context_id=context.asset_version_id)
         if length_scope is None and request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
             from novel_forge.modules.revision.domain import retain_reviewed_draft
             retained = retain_reviewed_draft(draft=draft.content, draft_id=draft.asset_version_id,

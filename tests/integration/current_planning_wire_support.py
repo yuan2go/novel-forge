@@ -8,11 +8,31 @@ from novel_forge.modules.story_planning_runtime.narrative_search import (
 )
 
 
+def current_planning_fixture_response(stage, inputs, database_url):
+    from novel_forge.modules.story_planning_runtime.execution import planning_fixture_response
+
+    frozen = current_planning_fixture_inputs({**inputs, "stage": stage}, database_url)
+    return current_planning_wire_result(planning_fixture_response(stage, frozen), frozen)
+
+
 def current_planning_wire_result(result, inputs):
     command = inputs.get("planning_command") or {}
-    if command.get("execution_contract_version") != "1.21.0":
-        return result
     value = deepcopy(result)
+    if command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}:
+        for row in value.get("chapter_function_matrix", []):
+            row["required_state_delta"] = {"status": "CHANGED", **row["required_state_delta"]}
+        for event in value.get("narrative_event_chain", []):
+            event["feature_status"] = {name: {"status": "APPLICABLE", "rationale": "Selected causal strategy of this synthetic mystery fixture"}
+                for name in ("decision", "resistance", "irreversible_change")}
+        if inputs.get("stage") == "chapter_plan.generate":
+            value["chapter_contract_schema_version"] = (
+                "chapter-mission-scene.v4" if command.get("execution_contract_version") in {"1.19.0", "1.20.0", "1.21.0"}
+                else "chapter-mission-scene.v3")
+            if value["chapter_contract_schema_version"] == "chapter-mission-scene.v4":
+                value["serialization_function"] = "payoff_and_new_obligation"
+            value["required_state_delta"] = {"status": "CHANGED", **value["required_state_delta"]}
+    if command.get("execution_contract_version") != "1.21.0":
+        return value
     story_state = (command.get("input_versions") or {}).get("story_state")
     if story_state is not None and "entry_state_ref" in value:
         value["entry_state_ref"] = story_state

@@ -665,6 +665,7 @@ def _seed_inputs(
             content = {"book_id": book_id, "role": role, "facts": [role]}
             if role == "production_profile":
                 content["profile_id"] = "controlled-planning-fixture"
+                content["context_capacity_policy"] = "complete-request-capacity.v1"
                 if world_production_policy is not None:
                     content["world_production_policy"] = dict(world_production_policy)
                 if craft_budget_policy is not None:
@@ -817,8 +818,25 @@ def _seed_inputs(
         target_chapters=target_chapter_count,
         release_sha=RELEASE_SHA,
         world_foundation=world_foundation,
+        book_design_schema_version="book-design.v7",
+        full_story_design_lifecycle=True,
     )
     result.update(hierarchy["asset_versions"])
+    from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
+    from novel_forge.modules.content_authority.definitions import CONTENT_INTEGRATION_PROVEN
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    query = AuthorityAssetQuery(DATABASE_URL)
+    style_inputs = tuple(query.require(project_id=project_id, asset_version_id=result[role])
+        for role in ("book_design", "creative_foundation", "character_cast"))
+    style = ContentAuthorityApplication(DATABASE_URL, application_build_id="core-loop-style-fixture",
+        commit_sha=RELEASE_SHA, integration_proven=CONTENT_INTEGRATION_PROVEN).execute(
+        ContentOperationRequest(definition_name="chapter.style_policy.compile", project_id=project_id,
+            workspace_id=workspace_id, actor_id=formation_principal.principal_id,
+            trace_id=project_id, correlation_id=project_id, idempotency_key=project_id + ":current-style",
+            payload={"book_id": book_id}, input_assets=tuple({"asset_version_id": item.asset_version_id,
+                "content_hash": item.content_hash} for item in style_inputs)))
+    result["style_policy"] = style.asset_version_id
     result["foundation_set_digest"] = hierarchy["foundation_set_digest"]
     result["story_formation_run"] = hierarchy["formation_run_id"]
     result["book_version"] = str(hierarchy["book_version"])
@@ -1656,6 +1674,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
             "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
             "NOVEL_FORGE_PLANNING_MODEL": "scripted-planning-fixture",
+            "NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET": "16000",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
             "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack_id
@@ -1743,7 +1762,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
                 ProductRouterContext(
                     app_settings=settings,
                     models=product_model_map(),
-                    services=SimpleNamespace(book_production=composition),
+                    services=SimpleNamespace(book_production=composition, book_authority_application=composition.authority),
                 )
             )
         )
@@ -2390,7 +2409,9 @@ def test_production_composition_executes_upstream_planning_via_pep() -> None:
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        from tests.integration.current_planning_wire_support import current_planning_fixture_response
+        execution = build_production_execution_composition(settings, env=env,
+            planning_fixture_factory=lambda stage, inputs: current_planning_fixture_response(stage, inputs, DATABASE_URL))
         planning = build_story_planning_generation_application(
             settings,
             execution=execution,
@@ -2643,7 +2664,9 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        from tests.integration.current_planning_wire_support import current_planning_fixture_response
+        execution = build_production_execution_composition(settings, env=env,
+            planning_fixture_factory=lambda stage, inputs: current_planning_fixture_response(stage, inputs, DATABASE_URL))
         planning = build_story_planning_generation_application(
             settings,
             execution=execution,
@@ -2893,7 +2916,9 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        from tests.integration.current_planning_wire_support import current_planning_fixture_response
+        execution = build_production_execution_composition(settings, env=env,
+            planning_fixture_factory=lambda stage, inputs: current_planning_fixture_response(stage, inputs, DATABASE_URL))
         planning = build_story_planning_generation_application(
             settings, execution=execution, env=env
         )
@@ -3019,7 +3044,9 @@ def test_non_book_planning_context_binds_book_authority_language_contract() -> N
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        from tests.integration.current_planning_wire_support import current_planning_fixture_response
+        execution = build_production_execution_composition(settings, env=env,
+            planning_fixture_factory=lambda stage, inputs: current_planning_fixture_response(stage, inputs, DATABASE_URL))
         planning = build_story_planning_generation_application(
             settings, execution=execution, env=env
         )
@@ -3125,7 +3152,9 @@ def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        execution = build_production_execution_composition(settings, env=env)
+        from tests.integration.current_planning_wire_support import current_planning_fixture_response
+        execution = build_production_execution_composition(settings, env=env,
+            planning_fixture_factory=lambda stage, inputs: current_planning_fixture_response(stage, inputs, DATABASE_URL))
         planning = build_story_planning_generation_application(
             settings, execution=execution, env=env
         )
@@ -3716,7 +3745,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),
-                services=SimpleNamespace(book_production=composition),
+                services=SimpleNamespace(book_production=composition, book_authority_application=composition.authority),
             )
         )
     )

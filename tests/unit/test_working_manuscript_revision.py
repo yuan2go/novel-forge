@@ -1138,3 +1138,53 @@ def test_length_delivery_settles_only_the_saved_active_frontier_before_revision(
     else:
         assert result['status'] == 'EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION'
     revision.assert_not_called()
+
+
+@pytest.mark.parametrize('scope,status,kind,severity,blocked', [
+    ('FUTURE_REPLAN', 'OPEN', 'SEMANTIC_CONFLICT', 'blocking', True),
+    ('INVESTIGATE', 'OPEN', 'UNCERTAIN', 'major', False),
+    ('FUTURE_REPLAN', 'OPEN', 'AESTHETIC_SUGGESTION', 'minor', False),
+    ('FUTURE_REPLAN', 'OPEN', 'SEMANTIC_CONFLICT', 'minor', False),
+    ('FUTURE_REPLAN', 'RESOLVED', 'SEMANTIC_CONFLICT', 'blocking', False),
+    ('LOCAL_PROSE', 'OPEN', 'SEMANTIC_CONFLICT', 'blocking', False),
+])
+def test_working_length_repair_does_not_dispatch_for_a_plan_owned_diagnosis(monkeypatch, scope, status, kind, severity, blocked):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset, ChapterNode
+    from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
+    from novel_forge.modules.revision import domain
+    from novel_forge.modules.review.domain import evaluate_review_result
+    from unittest.mock import Mock
+    text = '本场尚待既有规划解决首课与劳动的先后。'
+    issue = {'code': 'SCHEDULE', 'severity': severity, 'judgment_kind': kind,
+        'message': '首课与劳动日程待核实', 'category': 'PLAN_EXECUTABILITY', 'violated_constraint': '冻结日程',
+        'revision_goal': '交回有权限的决策层', 'preserve': ['保留原稿'], 'acceptance_criteria': ['冻结日程可执行'],
+        'evidence': {'start': 0, 'end': len(text), 'quote': text},
+        'repair': {'root_cause': 'UNCERTAIN' if scope == 'INVESTIGATE' else 'CHAPTER_STRUCTURE',
+            'problem_owner': 'PROSE' if scope == 'LOCAL_PROSE' else 'UNKNOWN' if scope == 'INVESTIGATE' else 'PLAN',
+            'repair_scope': scope, 'revision_goal': '交回有权限的决策层', 'preserve': ['保留原稿'],
+            'resolution_criteria': ['冻结日程可执行']}}
+    review = evaluate_review_result(project_id='project', target_asset_version_id='draft',
+        context_bundle_version_id='context', chapter=16, prose_text=text, provider_evidence={},
+        result={'diagnostic_contract_version': 'actionable-diagnostics.v1',
+            'decision': 'NEEDS_REVISION', 'score': 40, 'issues': [issue]})
+    review['issues'][0]['status'] = status
+    request = ChapterHandlerRequest('revision', 'project', 'workspace', 'trace', 'root',
+        {'preparation_report': {'working_revision': {'contract_version': CONTRACT}}},
+        (ChapterInputAsset('draft', 'draft_chapter', 'draft-hash', {'text': text}),
+         ChapterInputAsset('review', 'review_report', 'review-hash', review),
+         ChapterInputAsset('context', 'context_bundle', 'context-hash', {})), definition_version='3.10.0')
+    monkeypatch.setattr(domain, 'freeze_chapter_length_scope', lambda *a, **k: {'minimum': 4000, 'maximum': 5000})
+    provider = Mock()
+    provider.invoke.side_effect = RuntimeError('dispatch reached')
+    if blocked:
+        with pytest.raises(KernelError, match='MANUSCRIPT_PLAN_CHANGE_REQUIRED') as exc:
+            build_chapter_handler_registry(provider).require(ChapterNode.REVISION).execute(request)
+        provider.invoke.assert_not_called()
+        assert exc.value.details['review_asset_version_id'] == 'review'
+        assert exc.value.details['source_asset_version_id'] == 'draft'
+        assert exc.value.details['authority'] == 'PROPOSAL_ONLY'
+        assert exc.value.details['diagnosis_codes'] == ['SCHEDULE']
+    else:
+        with pytest.raises(RuntimeError, match='dispatch reached'):
+            build_chapter_handler_registry(provider).require(ChapterNode.REVISION).execute(request)
+        provider.invoke.assert_called_once()

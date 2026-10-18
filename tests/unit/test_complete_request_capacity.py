@@ -428,3 +428,23 @@ def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp
     assert Path(schema_path).read_bytes() == frozen.encode()
     with pytest.raises(ValueError, match="PROVIDER_PROTOCOL_SCHEMA_DRIFT"):
         backend._prepare_payload(request, replace(payload, output_schema={**schema, "description": "changed"}), selected)
+
+
+@pytest.mark.parametrize("metadata_version", [{"schema": "fixture.v1"}, ["fixture.v1"]])
+def test_quote_protection_recurses_through_structured_version_metadata(metadata_version):
+    from novel_forge.modules.context_builder.request_capacity import (
+        protected_expression_quotes, validate_projection_quotes, working_observation_index,
+    )
+
+    quote = "她将旧凿留在住处，带着小册去上课。"
+    observation = {"version": "working-observations.v1", "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
+        "entries": [{"observation_id": "working:chapter1:one", "quote": quote, "location": {"quote": quote},
+            "source": {"asset_version_id": "draft:one", "content_hash": "sha256:" + "a" * 64}}]}
+    payload = {"version": metadata_version, "nested": [{"version": metadata_version}], "working": observation,
+        "source": {"asset_version_id": "draft:one", "safe_summary": quote}, "preserve_quotes": [quote]}
+    assert protected_expression_quotes(payload, include_working_observations=True) == (quote,)
+    assert working_observation_index(payload) == {("draft:one", "sha256:" + "a" * 64): [observation["entries"][0]]}
+    assert validate_projection_quotes(payload, (quote,))
+    omitted = {**payload, "source": {"asset_version_id": "draft:one", "safe_summary": "她仍在住处。"}}
+    with pytest.raises(KernelError, match="QUOTE"):
+        validate_projection_quotes(omitted, (quote,))

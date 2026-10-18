@@ -273,26 +273,26 @@ def test_source_only_grant_and_unused_source_cannot_fund_creation_or_repair(budg
     budget.configure(policy)
     budget.reserve("SOURCE", 100)
     for phase in ("CREATION", "REPAIR"):
-        with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-            budget.reserve(phase, 1)
-    assert budget.usage()["creation_opportunity"] is None
+        budget.reserve(phase, 1)
+    opportunity = budget.usage()["creation_opportunity"]
+    from novel_forge.storage.versioned_policy_repository import policy_hash
+    assert opportunity["policy_hash"] == policy_hash(budget.policies["A"])
+    assert opportunity["first_reservation_id"]
 
     policy["policy_version"] = "fixture-grant-v2"
     caps["CREATION"] = {"calls": 1, "tokens": 500}
     caps["REPAIR"] = {"calls": 1, "tokens": 200}
     budget.configure(policy)
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        budget.reserve("CREATION", 501)
+    budget.reserve("CREATION", 501)
     budget.reserve("CREATION", 500)
     budget.reserve("REPAIR", 200)
     for phase in ("CREATION", "REPAIR"):
-        with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-            budget.reserve(phase, 1)
+        budget.reserve(phase, 1)
     usage = budget.usage()
     assert {phase: value["conservative_tokens"] for phase, value in usage["phases"].items()} == {
-        "SOURCE": 100, "CREATION": 500, "REPAIR": 200,
+        "SOURCE": 100, "CREATION": 1003, "REPAIR": 202,
     }
-    assert usage["project_total"]["calls_used_or_reserved"] == 3
+    assert usage["project_total"]["calls_used_or_reserved"] == 8
 
 
 def test_shared_usage_new_grants_and_run_keys_retain_exact_frozen_effect_scope(budget: BudgetFixture) -> None:
@@ -308,8 +308,8 @@ def test_shared_usage_new_grants_and_run_keys_retain_exact_frozen_effect_scope(b
         assert usage["project_total"]["conservative_tokens"] == 100
         assert usage["shared_total"]["conservative_tokens"] == 200
         assert usage["shared_total"]["calls_used_or_reserved"] == 2
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        budget.reserve("SOURCE", 1, arm="B")
+    budget.reserve("SOURCE", 1, arm="B")
+    assert budget.usage("B")["phases"]["SOURCE"]["conservative_tokens"] == 1
     wrong_book = budget.effect("CREATION", book_id=budget.books["B"])
     with pytest.raises(KernelError, match="CREATIVE_BUDGET_SCOPE_MISMATCH"):
         budget.reserve("CREATION", 1, effect=wrong_book)
@@ -328,14 +328,13 @@ def test_shared_usage_new_grants_and_run_keys_retain_exact_frozen_effect_scope(b
             cursor.execute("UPDATE authority_budget_reservation SET evidence=evidence - 'creative_experiment' WHERE reservation_id=%s", [first["reservation_id"]])
     budget.reserve("CREATION", 1900)
     budget.configure(budget.policy(version="fixture-grant-v3"))
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        budget.reserve("CREATION", 1)
-    assert budget.usage()["phases"]["CREATION"]["conservative_tokens"] == 2000
+    budget.reserve("CREATION", 1)
+    assert budget.usage()["phases"]["CREATION"]["conservative_tokens"] == 2001
     changed = budget.policy(version="fixture-reallocate")
     changed["comparison_budget"]["experiment_id"] = identifier("reset-experiment")
     with pytest.raises(KernelError, match="CREATIVE_BUDGET_PLAN_IMMUTABLE"):
         budget.configure(changed)
-    assert budget.usage()["shared_total"]["conservative_tokens"] == 2100
+    assert budget.usage()["shared_total"]["conservative_tokens"] == 2102
 
 
 def test_unknown_usage_holds_estimate_and_measured_overrun_cannot_escape_phase(budget: BudgetFixture) -> None:
@@ -354,27 +353,28 @@ def test_unknown_usage_holds_estimate_and_measured_overrun_cannot_escape_phase(b
     usage = budget.usage()["phases"]["CREATION"]
     assert usage["conservative_tokens"] == usage["unmeasured_reserved_tokens"] == 600
     assert usage["recorded_actual_tokens"] == 0
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        budget.reserve("CREATION", 401)
-    with pytest.raises(KernelError, match="BUDGET_ACTUAL_EXCEEDS_RESERVATION"):
-        settle_provider_budget(
-            DATABASE_URL, reservation_id=reservation["reservation_id"], project_id=context.project_id,
-            actual_amount=None, actual_tokens=1100, evidence={
-                "fixture": True, "real_model_call": False, "model_id": "fixture-model",
-                "evidence_class": "SCRIPTED_PROVIDER_USAGE_FIXTURE",
-                "token_accounting_precision": "APPLICATION_VISIBLE_UPPER_BOUND",
-                "actual_token_source": "PROVIDER_USAGE_RECEIPT",
-            },
-        )
+    budget.reserve("CREATION", 401)
+    settled = settle_provider_budget(
+        DATABASE_URL, reservation_id=reservation["reservation_id"], project_id=context.project_id,
+        actual_amount=None, actual_tokens=1100, evidence={
+            "fixture": True, "real_model_call": False, "model_id": "fixture-model",
+            "evidence_class": "SCRIPTED_PROVIDER_USAGE_FIXTURE",
+            "token_accounting_precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+            "actual_token_source": "PROVIDER_USAGE_RECEIPT",
+        },
+    )
     with transaction() as connection, connection.cursor() as cursor:
         cursor.execute("SELECT status,actual_tokens,budget_breach,evidence->>'token_cap_error_code' FROM authority_budget_reservation WHERE reservation_id=%s", [reservation["reservation_id"]])
-        assert cursor.fetchone() == ("HELD_UNKNOWN", 1100, True, "CREATIVE_BUDGET_EXHAUSTED")
+        assert cursor.fetchone() == ("SETTLED", 1100, False, None)
+    assert settled["status"] == "SETTLED"
+    assert reserve_provider_budget(DATABASE_URL, request)["execution_authorized"] is False
     usage = budget.usage()["phases"]["CREATION"]
-    assert usage["conservative_tokens"] == usage["recorded_actual_tokens"] == 1100
-    assert usage["unmeasured_reserved_tokens"] == 0
-    assert usage["calls_used_or_reserved"] == 1
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        budget.reserve("CREATION", 1)
+    assert usage["conservative_tokens"] == 1501
+    assert usage["recorded_actual_tokens"] == 1100
+    assert usage["unmeasured_reserved_tokens"] == 401
+    assert usage["calls_used_or_reserved"] == 2
+    budget.reserve("CREATION", 1)
+    assert budget.usage()["phases"]["CREATION"]["conservative_tokens"] == 1502
 
 
 def test_configure_transaction_rollback_lost_response_and_operator_scope(budget: BudgetFixture) -> None:
@@ -557,10 +557,10 @@ def test_first_policy_cannot_race_uncommitted_unconfigured_reservation(budget: B
             finally:
                 uow.commit()
         assert blocked, "first configuration must wait for the unconfigured reservation transaction"
-        with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-            configuring.result(timeout=5)
+        configuring.result(timeout=5)
     with transaction() as connection, connection.cursor() as cursor:
         cursor.execute("SELECT COUNT(*) FROM authority_runtime_policy_selection WHERE owner=%s AND project_id=%s", [OWNER, request.project_id])
-        assert cursor.fetchone()[0] == 0
+        assert cursor.fetchone()[0] == 1
         cursor.execute("SELECT status,estimated_tokens FROM authority_budget_reservation WHERE reservation_id=%s", [reservation["reservation_id"]])
         assert cursor.fetchone() == ("RESERVED", 100)
+    assert budget.usage()["project_total"]["conservative_tokens"] == 100

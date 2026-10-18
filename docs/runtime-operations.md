@@ -1390,6 +1390,14 @@ candidate, retain its source and diagnosis, and review the rewritten events. Wor
 version use, author selection and formal acceptance are separate records. A finding marked
 `UNRESOLVED_PLAN_SCOPE` remains unresolved after expression polishing.
 
+Length correction cannot resolve an open major or blocking semantic `PLAN`/`FUTURE_REPLAN` diagnosis by
+expanding prose. Retain the exact source and Review and return to its owning decision.
+Uncertain, minor and aesthetic observations do not themselves block an unrelated authorized prose correction.
+Current-chapter planning correction must bind a native scoped change request and the
+unchanged preceding working versions; it grants no authority to rewrite those versions.
+Same-run regeneration of an already delivered unaccepted Chapter after that correction
+is not yet implemented. Do not reset its cursor or substitute a genesis candidate run.
+
 For Memo reference failures, inspect the exact frozen Intent, sent Schema and successful
 Provider receipt before retrying. A display name and a stable character ID are distinct
 references; only an explicit unique binding in this Book's frozen input versions can

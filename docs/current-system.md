@@ -1442,6 +1442,9 @@ Working projection v7 retains v6's capacity-derived prose allocation and closes 
 working observation causes over their original located records. Their quotes protect the
 intersecting history units, and their subject, perspective and knowledge owner travel with
 those units. An observation's own copied quote cannot satisfy a missing original passage.
+Recursive quote and observation scans match their exact scalar contract versions;
+structured `version` metadata in other source objects remains ordinary nested data.
+It cannot interrupt the scan or turn an observation's copy into original-source evidence.
 Frozen v6 keeps its original memory selection; neither version turns observations into Canon.
 Comprehension neighbors stay in original order and cannot be compressor selections.
 Oversized text splits at complete sentence boundaries outside protected quote spans.

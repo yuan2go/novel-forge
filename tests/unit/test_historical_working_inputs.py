@@ -153,3 +153,42 @@ def test_context_build_direct_history_uses_exact_book_reservation(monkeypatch):
                                       'book_run_id': 'run', 'current_chapter': 18},), (payload['arc_working_set']['working_manuscript'],)]
     assert m.historical_working_inputs(uow, op) == ('book', frozenset({'draft'}))
     verify.assert_called_once()
+
+
+@pytest.mark.parametrize('case,allowed', [('valid', True), ('accepted', False), ('active-child', False),
+    ('cancelled', False), ('foreign-actor', False), ('missing-request', False), ('unbound-request', False),
+    ('wrong-hash', False), ('unapproved-target', False)])
+def test_current_unaccepted_planning_correction_requires_exact_native_change_request(monkeypatch, case, allowed):
+    uow, verify = fixture(monkeypatch)
+    book = {'project_id': 'p', 'workspace_id': 'w', 'book_id': 'book', 'book_run_id': 'run',
+        'current_chapter': 18, 'accepted_through_chapter': 0, 'state': 'PAUSED',
+        'active_chapter_request_id': None, 'stable_idempotency_key': 'formation:production'}
+    op = operation(17, 18)
+    op['actor_id'] = 'operator'
+    payload = op['command_payload']['payload']
+    payload.update(actor_id='operator', generator_operation_name='chapter_group_plan.generate', logical_key='chapter-group:13',
+        change_evidence_version_ids=['change'])
+    op['input_asset_snapshot'].append({'asset_version_id': 'change', 'content_hash': 'change-hash'})
+    if case == 'accepted':
+        book['accepted_through_chapter'] = 18
+    if case == 'active-child':
+        book['active_chapter_request_id'] = 'live'
+    if case == 'cancelled':
+        book['state'] = 'CANCELLED'
+    if case == 'foreign-actor':
+        payload['actor_id'] = 'foreign'
+    if case == 'missing-request':
+        payload['change_evidence_version_ids'] = []
+    if case == 'unbound-request':
+        op['input_asset_snapshot'].pop()
+    uow.cursor.fetchone.side_effect = [(book,), (case not in {'wrong-hash', 'unapproved-target'},)]
+    if allowed:
+        assert m.historical_working_inputs(uow, op) == ('book', frozenset({'draft'}))
+        verify.assert_called_once()
+        sql = uow.cursor.execute.call_args_list[-1].args[0]
+        assert 'active_story_plan_version' in sql and 'authority_operation_output_asset' in sql
+        assert 'content_hash' in sql and 'authority_story_creation_cancellation' in sql
+    else:
+        with pytest.raises(KernelError, match='preceding writing history'):
+            m.historical_working_inputs(uow, op)
+        verify.assert_not_called()

@@ -10,7 +10,7 @@ import tempfile
 from fastapi.testclient import TestClient
 
 from novel_forge.modules.authority_security import PrincipalType
-from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+from tests.integration.current_chapter_wire_support import current_chapter_fixture_response
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
 from novel_forge.modules.content_authority.codecs import CONTENT_CODECS
 from novel_forge.modules.story_planning_runtime.execution import planning_fixture_response
@@ -31,7 +31,8 @@ class OperatorPlanChangeTransport:
         if stage == "world_candidates.generate":
             return {"disposition": "NO_OP", "reason": "No separate world action is proposed in the operator-plan protocol fixture.", "candidates": []}
         if stage == "world_candidates.evaluate":
-            return {"evaluations": []}
+            return {"evaluations": [], **({"action_classifications": []}
+                if (inputs.get("world_preparation") or {}).get("epistemic_contract") == "world-agency.v2" else {})}
         result = planning_fixture_response(stage, inputs)
         if self.long_novel and stage == "book_plan.generate":
             result["volume_skeleton"] = [
@@ -42,7 +43,7 @@ class OperatorPlanChangeTransport:
 
     def __call__(self, stage, inputs):
         self.calls.append({"stage": stage, "inputs": inputs})
-        return default_chapter_fixture_response(stage, inputs)
+        return current_chapter_fixture_response(stage, inputs, json_envelope=False)
 
 
 def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, settings, authority_api, book_target=6, pilot_cursor=0, checkpoint_observer=None):

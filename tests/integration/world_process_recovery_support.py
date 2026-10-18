@@ -157,6 +157,12 @@ def main():
         ):
             os._exit(86)
 
+    from tests.integration.current_planning_wire_support import current_planning_fixture_inputs, current_planning_wire_result
+
+    def planning(stage, inputs):
+        frozen = current_planning_fixture_inputs({**inputs, "stage": stage}, config["database_url"])
+        return current_planning_wire_result(transport.planning(stage, frozen), frozen)
+
     settings = IndustrialSettings(
         root=str(root),
         environment="development",
@@ -168,7 +174,7 @@ def main():
         env=config["env"],
         chapter_fixture_factory=lambda stage, inputs: record(stage, inputs, transport),
         planning_fixture_factory=lambda stage, inputs: record(
-            stage, inputs, transport.planning
+            stage, inputs, planning
         ),
     )
     raw = config["principal"]

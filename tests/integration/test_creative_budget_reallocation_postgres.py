@@ -41,9 +41,11 @@ def test_phase_reallocation_preserves_old_unknown_and_settlement_evidence():
     assert fixture.usage()["shared_total"]["conservative_tokens"] == 150
     assert reserve_provider_budget(DATABASE_URL, support.campaign_reservation(fixture, effects[0],
         amount="0.4", tokens=100))["replayed"]
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
+    reserve_provider_budget(DATABASE_URL, support.campaign_reservation(fixture,
+        fixture.native_effect(chapter_identity(1)), entitlement=True))
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_AUTHORIZATION_MISMATCH"):
         reserve_provider_budget(DATABASE_URL, support.campaign_reservation(fixture,
-            fixture.native_effect(chapter_identity(1)), entitlement=True))
+            fixture.native_effect(chapter_identity(1)), entitlement=True, authorization="unapproved-lane"))
 
 
 @pytest.mark.parametrize("mutation", ["old_v4", "stale_ledger", "predecessor", "permission", "total"])
@@ -108,6 +110,9 @@ def test_carried_reserved_dispatch_uses_old_lineage_and_current_shared_ceiling()
         assert_provider_execution_authorized(DATABASE_URL, operation_id=effect[0].operation_id,
             external_effect_id=effect[1], project_id=project, budget_reservation_id=reservation["reservation_id"])
     assert fixture.usage()["phases"]["DESIGN"]["calls_used_or_reserved"] == 3
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
+    reserve_provider_budget(DATABASE_URL, support.campaign_reservation(fixture,
+        fixture.native_effect(planning_identity()), tokens=1, amount="0.01"))
+    assert fixture.usage()["phases"]["DESIGN"]["calls_used_or_reserved"] == 4
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_USD_EXHAUSTED"):
         reserve_provider_budget(DATABASE_URL, support.campaign_reservation(fixture,
-            fixture.native_effect(planning_identity()), tokens=1, amount="0.01"))
+            fixture.native_effect(planning_identity()), tokens=1, amount="100"))

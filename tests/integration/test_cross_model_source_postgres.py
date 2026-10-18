@@ -109,7 +109,7 @@ def original_author_draft():
 
     request = SingleChapterRequest(**scope, actor_id=principal.principal_id, title="关山旧约",
         premise="守住同伴的退路需要付出归山的代价。", trace_id=identifier("trace"), correlation_id=identifier("correlation"),
-        application_build_id="source-test", commit_sha="e" * 40, context_candidates=tuple(evidence),
+        application_build_id="source-test", commit_sha="e" * 40, context_candidates=tuple(evidence), context_token_budget=16_000,
         preparation_report={"author_draft_adoption": adoption})
     result = run_single_chapter_slice(DATABASE_URL, request=request,
         registry=build_chapter_handler_registry(NoDraftTransport()), object_store_adapter=FakeDeterministicProvider("success"))
