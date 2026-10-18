@@ -310,6 +310,7 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
 def _ensure_native_work_length(settings, args, *, book, principal):
     from types import SimpleNamespace
     from novel_forge.modules.book_authority.manuscript import require_manuscript
+    from novel_forge.modules.book_authority.governed_scheduler import PostgresBookAuthorityScheduler
     from novel_forge.modules.chapter_authority.author_editor import source_draft_content
     from novel_forge.modules.chapter_authority.working_revision import working_revision_status
     from novel_forge.modules.command_kernel.errors import KernelError
@@ -326,7 +327,7 @@ def _ensure_native_work_length(settings, args, *, book, principal):
             raise KernelError("MANUSCRIPT_LENGTH_TARGET_REQUIRED", "Length delivery requires the frozen chapter bounds")
         if target["minimum"] <= length["actual"] <= target["maximum"]:
             continue
-        if (book["state"] in {"CHAPTER_RUNNING", "CHAPTER_COMPLETED"} and book.get("active_chapter_request_id")
+        if (PostgresBookAuthorityScheduler.coordinates_active_chapter(book["state"]) and book.get("active_chapter_request_id")
                 and unit["chapter"] == book["current_chapter"] + 1):
             return None
         if unit["chapter"] != book["current_chapter"] or book["state"] != "READY" or book.get("active_chapter_request_id"):

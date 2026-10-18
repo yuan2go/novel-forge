@@ -930,11 +930,19 @@ def test_length_delivery_refuses_unbound_or_earlier_underlength_without_revision
 
 @pytest.mark.parametrize('state,active,chapter,settles', [
     ('CHAPTER_RUNNING', 'original-request', 6, True),
+    ('CHAPTER_SUBMITTED', 'original-request', 6, True),
     ('CHAPTER_COMPLETED', 'original-request', 6, True),
+    ('CHAPTER_WAITING_RETRY', 'original-request', 6, True),
+    ('CHAPTER_FAILED_RETRYABLE', 'original-request', 6, True),
+    ('CHAPTER_ACCEPTANCE_PENDING', 'original-request', 6, True),
+    ('CANON_PENDING', 'original-request', 6, True),
+    ('CHAPTER_FAILED_TERMINAL', 'original-request', 6, False),
     ('CHAPTER_RUNNING', '', 6, False),
     ('CHAPTER_RUNNING', 'original-request', 4, False),
     ('CHAPTER_RUNNING', 'original-request', 7, False),
     ('PAUSED', 'original-request', 6, False),
+    ('ABORTED', 'original-request', 6, False),
+    ('COMPLETED', 'original-request', 6, False),
     ('READY', 'original-request', 6, False),
 ])
 def test_length_delivery_settles_only_the_saved_active_frontier_before_revision(monkeypatch, state, active, chapter, settles):

@@ -109,7 +109,8 @@ def test_native_v5_writer_admission_bounds_observation_ledger_and_keeps_complete
         "prompt_bytes": len(prompt.encode()), "prompt_hash": writers[1].capability_evidence["fully_rendered_prompt_hash"]}))
 
 
-@pytest.mark.parametrize("length_delivery", [False, True], ids=["existing-working-continuity", "explicit-length-delivery"])
+@pytest.mark.parametrize("length_delivery", [False, True, "automatic"],
+    ids=["existing-working-continuity", "explicit-length-delivery", "automatic-length-next-chapter"])
 def test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience(tmp_path, monkeypatch, length_delivery):
     harness = CapabilityPackPostgresHarness("world-working")
     root = Path(__file__).resolve().parents[2]
@@ -119,6 +120,8 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
             result = super().__call__(stage, inputs)
             if stage == "revision":
                 result["text"] = inputs["draft"]["text"]
+                if length_delivery == "automatic":
+                    result["text"] += "\n\n" + "她把湿账页摊在木架上，一一核对退水留下的泥线。" * 50
             if stage == "rereview":
                 for check in result.get("preservation_checks", []):
                     check["evidence"] = {"quote": check["evidence"]["quote"]}
@@ -248,6 +251,64 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         assert uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book["book_run_id"]]).fetchone() == (0,)
     from novel_forge.cli.manuscript import run_manuscript_command
     from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+    if length_delivery == "automatic":
+        from novel_forge.cli import manuscript as cli
+        native_ensure = cli._ensure_native_work_length
+        observed = []
+        def observe_settlement(*values, **options):
+            observed.append((options["book"]["state"], options["book"]["current_chapter"]))
+            return native_ensure(*values, **options)
+        monkeypatch.setattr(cli, "_ensure_native_work_length", observe_settlement)
+        settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production")
+        first = run_manuscript_command(settings, _authority_parser().parse_args([
+            "authority-manuscript", "continue", "--book-run-id", book["book_run_id"],
+            "--stop-after-chapter", "1", "--ensure-chapter-length", "--foreground"]))
+        assert first["status"] == "MANUSCRIPT_READY", first
+        selected = first["manuscript"]["units"][0]
+        assert selected["working_selection"]["status"] == "SELECTED"
+        assert selected["length"]["actual"] >= minimum_length
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT version FROM authority_book_production WHERE book_run_id=%s", [book["book_run_id"]])
+            version = uow.cursor.fetchone()[0]
+        run_manuscript_command(settings, _authority_parser().parse_args([
+            "authority-manuscript", "extend-delivery-window", "--book-run-id", book["book_run_id"],
+            "--stop-after-chapter", "2", "--expected-version", str(version),
+            "--idempotency-key", harness.project_id + ":second-window"]))
+        output = tmp_path / "automatic-length-chapters-01-02.md"
+        final = run_manuscript_command(settings, _authority_parser().parse_args([
+            "authority-manuscript", "continue", "--book-run-id", book["book_run_id"],
+            "--stop-after-chapter", "2", "--ensure-chapter-length", "--foreground", "--output", str(output)]))
+        assert final["status"] == "MANUSCRIPT_READY", final
+        assert ("CHAPTER_SUBMITTED", 1) in observed
+        assert len(writer_prompts) == len(chapter_planning_prompts) == 2
+        def source_passages(value):
+            if isinstance(value, dict):
+                if value.get("asset_version_id") == selected["asset_version_id"] and "passages" in value:
+                    yield value
+                for child in value.values():
+                    yield from source_passages(child)
+            elif isinstance(value, list):
+                for child in value:
+                    yield from source_passages(child)
+        for envelope in (chapter_planning_prompts[1], writer_prompts[1]):
+            sent = json.dumps(envelope, ensure_ascii=False)
+            assert selected["asset_version_id"] in sent and selected["content_hash"] in sent
+            assert any(source["content_hash"] == selected["content_hash"] and not source["omitted_ranges"]
+                and "".join(passage["text"] for passage in source["passages"]) == selected["text"]
+                for source in source_passages(envelope))
+        units = final["manuscript"]["units"]
+        assert [unit["chapter"] for unit in units] == [1, 2]
+        assert all(minimum_length <= unit["length"]["actual"] <= 4000 for unit in units)
+        assert all(unit["working_selection"]["status"] == "SELECTED" for unit in units)
+        assert final["manuscript"]["accepted_through_chapter"] == 0
+        assert all(unit["author_selection"] == "NOT_GRANTED" for unit in units)
+        assert all(unit["text"] in output.read_text() and unit["asset_version_id"] in output.read_text() for unit in units)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [book["project_id"]])
+            assert uow.cursor.fetchone()[0] == 2
+            uow.cursor.execute("SELECT count(*) FROM authority_asset_version version JOIN authority_asset asset USING(asset_id) WHERE asset.project_id=%s AND asset.asset_type='draft_chapter'", [book["project_id"]])
+            assert uow.cursor.fetchone()[0] == 2
+        return
     if length_delivery:
         output = tmp_path / "length-compliant.md"
         command = _authority_parser().parse_args(["authority-manuscript", "continue", "--book-run-id", book["book_run_id"],

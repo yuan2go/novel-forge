@@ -1294,6 +1294,8 @@ retains the default behavior and does not add optional stages to the Chapter gra
 Length compliance grants neither literary qualification nor formal acceptance.
 A saved active Draft finishes its existing Chapter delivery before length repair.
 The next chapter remains blocked until the delivered frontier meets its frozen bounds.
+This deferral uses the Book scheduler's active reconciliation and acceptance states,
+including normal submission and retry reconciliation; it grants no revision or acceptance.
 
 Book pause retains an in-flight stage and its original result for recovery. A foreground
 driver re-reads the owning Book before another Chapter scheduler tick, including
