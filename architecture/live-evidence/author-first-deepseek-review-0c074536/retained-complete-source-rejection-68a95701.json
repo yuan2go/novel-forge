@@ -1,0 +1,171 @@
+{
+  "at": "2026-10-18T15:14:44.147580+00:00",
+  "source_sha": "68a9570185f53b35ec56ee8098c5cdd6b624633b",
+  "run_id": "7469c389-bf9a-4086-ae7e-661e3179576d",
+  "operation_id": "469f8978-6143-433f-95ce-d3824d085621",
+  "effect_id": "04a26233-b731-49bb-a7fd-0a6e95a5f1a6",
+  "provider_outcome": "SUCCEEDED_COMPLETE_RESULT_RETAINED",
+  "domain_outcome": "FAILED_FINAL_LONGFORM_PROSE_CITATION_NOT_UNIQUE",
+  "classification": "CORRECT_SOURCE_IDENTITY_REJECTION_WITH_BODY_FIRST_PRODUCER_INSTRUCTION_OMISSION",
+  "output_tokens_frozen": 384000,
+  "usage": {
+    "measurement": "PROVIDER_REPORTED",
+    "availability": "AVAILABLE",
+    "input_tokens": 19161,
+    "total_tokens": 34959,
+    "output_tokens": 15798,
+    "reasoning_tokens": 12314,
+    "cache_usage_status": "OBSERVED",
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 19161
+  },
+  "cost": {
+    "amount": "0.0439263",
+    "source": "usage_pricing",
+    "currency": "USD",
+    "estimated": true,
+    "measurement": "PRICED_FROM_PROVIDER_USAGE",
+    "availability": "AVAILABLE",
+    "pricing_period": "OFF_PEAK",
+    "pricing_version": "deepseek-scheduled-peak-ceiling:2026-08-16T16:00:00+00:00:deepseek-v4-pro",
+    "provider_billed": false,
+    "accounting_basis": "PRICED",
+    "pricing_snapshot": {
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "version": "deepseek-scheduled-peak-ceiling:2026-08-16T16:00:00+00:00:deepseek-v4-pro",
+      "currency": "USD",
+      "effective_from": "2026-08-16T16:00:00+00:00",
+      "effective_until": "9999-12-31T23:59:59+00:00",
+      "accounting_basis": "PRICED",
+      "output_per_million": "3.96",
+      "input_hit_per_million": ".044",
+      "input_miss_per_million": "1.32"
+    },
+    "pricing_multiplier": "0.5",
+    "pricing_time_basis": "PROVIDER_CREATED_ASSUMPTION",
+    "provider_created_at": "2026-10-18T15:07:22+00:00",
+    "pricing_snapshot_hash": "sha256:df46d44ed4472adacd7c6792bd95d481a1a0ff86428900f6d8feadd926b4ada3",
+    "provider_billed_amount": null,
+    "reservation_ceiling_amount": "0.0878526"
+  },
+  "budget_settlements": [
+    [
+      "SETTLED",
+      "1.61450256",
+      "0.04392630"
+    ]
+  ],
+  "citation_checks": [
+    {
+      "lineage_id": "finding-arc-pacing",
+      "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+      "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+      "source_present": true,
+      "exact_text_hash": true,
+      "quote_hash": "sha256:f568d1f47ed70c2868b4f950d0d4233bee4abe6426f5215707bff82917c0f821",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-arc-pacing",
+      "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+      "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+      "source_present": true,
+      "exact_text_hash": true,
+      "quote_hash": "sha256:a28ee1616509b7f180c228fd1d9cbe1c77cfb8fadc41b675f6bb1b591c00c9c3",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-arc-pacing",
+      "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+      "text_hash": "sha256:0431ddafe79e894c580f816f8396011ed78693b7d533bdeae21374960cb68b823",
+      "source_present": true,
+      "exact_text_hash": false,
+      "quote_hash": "sha256:b0a4a713594ea32098be0bbac865ce885a8fe67c052ca16d82548554df4fc629",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-structure-intent",
+      "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+      "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+      "source_present": true,
+      "exact_text_hash": true,
+      "quote_hash": "sha256:6349f965c7c266f08168ff9a5910c9202464bbc8afd6d8177a0cb1db7481ac28",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-structure-intent",
+      "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+      "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+      "source_present": true,
+      "exact_text_hash": true,
+      "quote_hash": "sha256:55a2241204034e1f665875d7f08bdd5c2b86ee3453361ab2a980fae8c6a7bb5b",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-goals-intent",
+      "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3c424c:chapter.draft:v1",
+      "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+      "source_present": false,
+      "exact_text_hash": false,
+      "quote_hash": "sha256:bd47919065dd546c01e810d34c858b5a75d5a8d9df154d63b310e27758735391",
+      "literal_occurrences": 0
+    },
+    {
+      "lineage_id": "finding-setup-intent",
+      "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+      "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+      "source_present": true,
+      "exact_text_hash": true,
+      "quote_hash": "sha256:9e44609bf1a97c460fd334fc8a27a08279f2b4233b75dbec96086caa9a3a2b7a",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-setup-intent",
+      "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+      "text_hash": "sha256:0431ddafe79e894c580f816f8396011ed78693b7d533bdeae21374960cb68b823",
+      "source_present": true,
+      "exact_text_hash": false,
+      "quote_hash": "sha256:3a717cc018a85d2afd59c16fbc6cae6a981dffad177bbcf1d5b95fba0392b8ec",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-voice-intent",
+      "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+      "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+      "source_present": true,
+      "exact_text_hash": true,
+      "quote_hash": "sha256:723c28b7bb4e420cd56a9a9d4630c2c7259ad43ef43df725d6120623f880333b",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-voice-intent",
+      "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3c424c:chapter.draft:v1",
+      "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+      "source_present": false,
+      "exact_text_hash": false,
+      "quote_hash": "sha256:2875cbcbbe1bace6478592c7595d0da11a7f9bac29751593280dbf0d87a9085c",
+      "literal_occurrences": 0
+    },
+    {
+      "lineage_id": "finding-motivation-insufficient",
+      "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+      "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+      "source_present": true,
+      "exact_text_hash": true,
+      "quote_hash": "sha256:377f0440c7ab2160cab79756eb5e21fd0169c8bf04be1330d0d2ce3b23b6f0de",
+      "literal_occurrences": 1
+    },
+    {
+      "lineage_id": "finding-motivation-insufficient",
+      "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3c424c:chapter.draft:v1",
+      "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+      "source_present": false,
+      "exact_text_hash": false,
+      "quote_hash": "sha256:c8fdc338417d7dbdd2178a829ff58754dfb3a2917330b4aae797b51fb5f65ec4",
+      "literal_occurrences": 0
+    }
+  ],
+  "report_mutated": false,
+  "manuscript_mutated": false,
+  "review_accepted": false
+}

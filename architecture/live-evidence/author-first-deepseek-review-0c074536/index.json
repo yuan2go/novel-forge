@@ -1,0 +1,57 @@
+{
+  "schema_version": "author-first-model-review-checkpoint.v1",
+  "at": "2026-10-18T15:41:26.079809+00:00",
+  "source_sha": "0c074536f35ee8e5bc33175d5c9793dbbbb54b5f",
+  "base_main_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "native_production_sha": "ef46b320f54ba9c37b89b2fea74345274cc05f9f",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_checkpoint": {
+    "state": "PAUSED",
+    "version": 128,
+    "current_chapter": 18,
+    "accepted_through_chapter": 0
+  },
+  "delivery": {
+    "actual_effective_chapters": 18,
+    "body_han": 77424,
+    "first_round_target": 100,
+    "full_book_target": 600,
+    "full100_complete": false
+  },
+  "review": {
+    "provider": "deepseek",
+    "model": "deepseek-v4-pro",
+    "model_revision": "DeepSeek-V4-Pro-0813",
+    "reasoning_effort": "high",
+    "authorized_book_total_usd": "10",
+    "completed_exact_chapter_range": [
+      1,
+      4
+    ],
+    "following_windows": "RUNNING_NATIVE_COORDINATOR",
+    "actual_provider_report": "longform-prose-review.v4",
+    "citation_contract": "chapter-literal-prose-citation.v1",
+    "historical_v3_wrong_identity_rejection": "UNCHANGED",
+    "observations_only": true,
+    "human_evidence": "NOT_RUN",
+    "literary_qualification": "NOT_PROVEN"
+  },
+  "verification": {
+    "focused_provider_unit_checks": 208,
+    "focused_native_postgresql_checks": 1,
+    "postgresql_fixture_scope": "SCRIPTED_HISTORICAL_ACCEPTED_BOOK_FIXTURE; not real native writing delivery",
+    "formal_source": "f31d0b5de3f8960f745ea1202e18ccb9ad76b005",
+    "formal_backend_passed": 6719,
+    "formal_backend_subtests_passed": 1537,
+    "formal_compatibility_passed": 1049,
+    "formal_compatibility_subtests_passed": 13,
+    "full_formal_matrix": "RUNNING_POSTGRESQL_PHASE",
+    "full_formal_current_source": "NOT_RUN_PENDING_FINAL_IMPLEMENTATION_FREEZE"
+  },
+  "remaining": {
+    "chapter19": "NOT_YET_PRODUCED",
+    "unknown_preparation_custody": "NOT_IMPLEMENTED; 40 settled successes retained but not inherited by linked successor; native Book paused for repair",
+    "production": "NOT_PROVEN"
+  },
+  "raw_prose_and_payloads": "RETAINED_PRIVATELY_OUTSIDE_GIT"
+}

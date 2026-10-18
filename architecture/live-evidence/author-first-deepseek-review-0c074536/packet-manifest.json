@@ -1,0 +1,54 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "native-review-01-04-exact-binding-and-replay.json",
+      "sha256": "sha256:f93f66ebe3fd961368efce2e15bdfee0f3c64414abb173d516444cb133027bbb"
+    },
+    {
+      "path": "retained-api-output-capacity-failure.json",
+      "sha256": "sha256:761cf4f48e5b8c02df90893b6e266cd93ecd5e7cf0da1a135cdbba7518836328"
+    },
+    {
+      "path": "retained-complete-source-rejection-68a95701.json",
+      "sha256": "sha256:5d043cc20aed75b38bac4977f61db563dbea3cc3f817c43b56d2033bccb2ee7a"
+    },
+    {
+      "path": "native-isolated-preparation-custody-gap.json",
+      "sha256": "sha256:d4945ec248e5e152150f8fa0352c0e65dd8fee7d060768bc0bf43431df2d5c6d"
+    },
+    {
+      "path": "optional-review-pack-revalidation.json",
+      "sha256": "sha256:6e75fa936fc17039dae9a03b46fac8686a9d3f0ac3f379e8530d5baf14859dae"
+    },
+    {
+      "path": "documentation-reality-development.json",
+      "sha256": "sha256:b5bf0b0e92054613e665a502ebf40f376206fe5c133bd8884b91ac9d8eb18db3"
+    },
+    {
+      "path": "deepseek-output-allocation-provider-working.xml.gz",
+      "sha256": "sha256:28e9b2d3c3b8524b60a9ee1ecc381c49e67d0ef1e17d378f8151f4f189f7cf66",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not final same-SHA qualification"
+    },
+    {
+      "path": "body-first-citation-binding-working.xml.gz",
+      "sha256": "sha256:fbd10bd4c30c40176efd32f020c3338265c349e95cd088036ac10221f2fcb0ab",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not final same-SHA qualification"
+    },
+    {
+      "path": "chapter-literal-provider-working-final.xml.gz",
+      "sha256": "sha256:80dac7ccee9b2928e970273a9ae83291251f1b5bdb2e720c6361ef1ad40a1a8c",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not final same-SHA qualification"
+    },
+    {
+      "path": "chapter-literal-native-postgres-working-v3.xml.gz",
+      "sha256": "sha256:73f1509d286d1051c4c9c6d5df42443cf8d5099778f120e15c01828b01deb8c2",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not final same-SHA qualification"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:babb19f3f46a559bad4668eda807fee42484a348de23951724b0fd0499a92d2f"
+    }
+  ],
+  "historical_failures": "PRESERVED"
+}
