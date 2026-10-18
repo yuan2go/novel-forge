@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-18T17:19:50.296527+00:00",
+  "scope": "LIVE_READ_ONLY_NO_PROVIDER_NO_ISOLATION_OR_REGISTRATION",
+  "results": [
+    {
+      "source_operation_id": "9a9051c9-3369-4117-a669-a2b3be0fdb77",
+      "continuation_id": "planning-runtime-continuation:9a9051c9-3369-4117-a669-a2b3be0fdb77",
+      "contract": "planning-unsent-preparation-query-handoff.v1",
+      "verified": true
+    },
+    {
+      "source_operation_id": "58414cc0-445b-4a17-8690-4ee938583d44",
+      "continuation_id": "planning-runtime-continuation:58414cc0-445b-4a17-8690-4ee938583d44",
+      "contract": "planning-unsent-preparation-lineage-handoff.v1",
+      "verified": true
+    }
+  ]
+}
