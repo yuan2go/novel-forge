@@ -2046,6 +2046,10 @@ expectations. It cannot assess withheld design commitments or establish market e
 Design-aware review remains the default; examining design afterwards creates a separate
 versioned review, never enriches the completed body-first request. Neither mode adds a
 manuscript delivery gate.
+Body-first and design-aware reading share the frozen citation contract. Literal review
+requires a unique supplied quote with the exact source version and text hash from the
+same span. Wrong or guessed identities remain rejected; host location does not repair
+a model-selected source identity.
 The coordinator requires external-effect resolution authority only when its model port
 provides native external recovery. A port without that capability has nothing to reconcile;
 native recovery still requires the scoped resolution permission before reading or mutating it.
