@@ -1533,6 +1533,19 @@ Pending selection shares the Provider dispatch ownership projection: working, Wo
 edition and native search bindings must identify this exact BookRun. Cancelled or stale
 sibling runs cannot be selected for its recovery. Opening before a BookRun exists retains
 its original pre-Book scope and authorization checks.
+Routing observation lookup currently scans large asset JSON before matching its stage
+and model cohort; native statement-timeout failures have exposed this scaling gap.
+Migration 229 adds matching indexes for the model cohort, prior routing chain and
+Effect-bound generated artifact lookups without changing observation eligibility or the
+200-row boundary. Registration v8 retains an explicit v7/v8 preparation handoff after an
+exact terminal routing-query timeout with zero Effects and budgets. A Context already
+saved before the query must retain the original content hash and validated bytes. The
+current Book frontier, input snapshot, original actor and released submission rights
+remain required; the successful prior control receipt binds every retained preparation
+item. This is `CODE_EXISTS`; native migration, successor consumption and end-to-end
+qualification remain pending.
+The existing 200-row boundary, sample eligibility, retry attribution and quality authority
+must remain unchanged.
 Current author-first routing policy updates need a versioned compare-and-set command
 schema when they supply an expected policy hash. A handler precondition cannot protect
 an update if its closed command schema rejects that field before admission.

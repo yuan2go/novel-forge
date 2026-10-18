@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261018_0228_terminal_preparation_handoff",
+  "migration_head": "20261019_0229_routing_observation_preparation_recovery",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9576,6 +9576,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261018_0228_terminal_preparation_handoff.py",
           "id": "20261018_0228_terminal_preparation_handoff",
           "locator": "MIGRATION_ID = '20261018_0228_terminal_preparation_handoff'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0229_routing_observation_preparation_recovery.py",
+          "id": "20261019_0229_routing_observation_preparation_recovery",
+          "locator": "MIGRATION_ID = '20261019_0229_routing_observation_preparation_recovery'"
         }
       ],
       "external_effects": {
@@ -10579,7 +10584,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:b516d5e1de71a0c42aa77af42d6056b8724a77432fdbb93e302445c060db69fb"
+    "implementation_tree_sha": "sha256:e543ee61eccd954fade94f544e4b3a06489ecf87f550379951ef35dfc2daaa10"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

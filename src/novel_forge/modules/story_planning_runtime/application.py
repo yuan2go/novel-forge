@@ -1849,7 +1849,12 @@ class StoryPlanningGenerationApplication:
                     [row[0]],
                 )
                 source_version = int(uow.cursor.fetchone()[0])
-            if failure and ((failure[0] == "CONTEXT_COMPRESSION_TASK_INVALID" and failure[2] == "CONTEXT_COMPRESSION_TASK_INVALID: compression needs a bounded source chunk and frozen task boundary") or failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"}
+            query_preparation = False
+            if failure and failure[0] == "PROGRAMMING_BUG" and failure[2] == "canceling statement due to statement timeout" and command.runtime_continuation_id:
+                from .runtime_continuation import require_binding
+                from .preparation_recovery import ISOLATED_HANDOFF, QUERY_HANDOFF
+                query_preparation = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"].get("preparation_handoff", {}).get("contract_version") in {ISOLATED_HANDOFF, QUERY_HANDOFF}
+            if failure and (query_preparation or (failure[0] == "CONTEXT_COMPRESSION_TASK_INVALID" and failure[2] == "CONTEXT_COMPRESSION_TASK_INVALID: compression needs a bounded source chunk and frozen task boundary") or failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"}
                 or (failure[0] == "MANUSCRIPT_CONTEXT_INVALID" and failure[2] == "MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read")
                 or (failure[0] == "PROGRAMMING_BUG" and len(failure) > 2 and str(failure[2] or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")) or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"

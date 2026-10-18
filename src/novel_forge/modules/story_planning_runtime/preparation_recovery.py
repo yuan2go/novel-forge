@@ -3,6 +3,11 @@ from __future__ import annotations
 from novel_forge.modules.command_kernel.errors import KernelError
 from .domain import canonical_hash
 
+ISOLATED_HANDOFF = 'planning-isolated-preparation-handoff.v1'
+QUERY_HANDOFF = 'planning-unsent-preparation-query-handoff.v1'
+CUSTODY_HANDOFF_CONTRACTS = frozenset({'planning-terminal-preparation-handoff.v1', ISOLATED_HANDOFF, QUERY_HANDOFF})
+MULTI_OWNER_HANDOFF_CONTRACTS = frozenset({ISOLATED_HANDOFF, QUERY_HANDOFF})
+
 
 def preparation_boundary(database_url, *, command, operation_id, capture, current):
     from copy import deepcopy
@@ -18,7 +23,7 @@ def preparation_boundary(database_url, *, command, operation_id, capture, curren
         command.project_id, command.workspace_id, command.book_id, operation_id):
         raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Preparation custody requires the registered successor')
     if canonical_hash(capture) != handoff['preparation_source_projection_hash']:
-        if handoff.get('contract_version') in {'planning-terminal-preparation-handoff.v1', ISOLATED_HANDOFF}:
+        if handoff.get('contract_version') in CUSTODY_HANDOFF_CONTRACTS:
             raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Terminal handoff must preserve the complete original Provider input')
         return current
     return deepcopy(handoff['preparation_source_boundary'])
@@ -48,10 +53,10 @@ def reuse_completed_task(database_url, *, command, operation_id, stage, task):
         frozen = uow.cursor.fetchone()
         if not frozen or frozen[1] != retained['request_hash'] or frozen[0].get('stage') != stage or frozen[0].get('input', {}).get('context_compression_task') != task:
             raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Reuse requires the same complete task and original immutable request')
-        if handoff.get('contract_version') == ISOLATED_HANDOFF and retained['receipt_contract'] == 'ISOLATED_GENERATION_SIBLING':
+        if handoff.get('contract_version') in MULTI_OWNER_HANDOFF_CONTRACTS and retained['receipt_contract'] == 'ISOLATED_GENERATION_SIBLING':
             from novel_forge.modules.command_kernel.external_effect_runtime import read_retained_generation_stage_success_in_uow
             receipt = read_retained_generation_stage_success_in_uow(uow, context, effect_id=retained['external_effect_id'])
-        elif handoff.get('contract_version') == 'planning-terminal-preparation-handoff.v1' or (handoff.get('contract_version') == ISOLATED_HANDOFF and retained['receipt_contract'] == 'TERMINAL_PREPARATION'):
+        elif handoff.get('contract_version') == 'planning-terminal-preparation-handoff.v1' or (handoff.get('contract_version') in MULTI_OWNER_HANDOFF_CONTRACTS and retained['receipt_contract'] == 'TERMINAL_PREPARATION'):
             from novel_forge.modules.command_kernel.external_effect_runtime import read_terminal_preparation_success_in_uow
             receipt = read_terminal_preparation_success_in_uow(uow, context, effect_id=retained['external_effect_id'])
         else:
@@ -222,7 +227,7 @@ def terminal_custody(database_url, command, operation_id):
         return None
     binding = require_binding(database_url, command.runtime_continuation_id)
     proof = binding['target_runtime'].get('preparation_handoff', {})
-    if proof.get('contract_version') not in {'planning-terminal-preparation-handoff.v1', ISOLATED_HANDOFF}:
+    if proof.get('contract_version') not in CUSTODY_HANDOFF_CONTRACTS:
         return None
     if (binding['successor_operation_id'], binding['project_id'], binding['workspace_id'], binding['book_id'], binding['source_command']['actor_id']) != (operation_id, command.project_id, command.workspace_id, command.book_id, command.actor_id):
         raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Only the registered consumer may retain original preparation custody')
@@ -306,7 +311,6 @@ def consumer_realization_catalog(database_url, *, command, operation_id, context
     return projected
 
 
-ISOLATED_HANDOFF = 'planning-isolated-preparation-handoff.v1'
 
 
 def isolated_preparation_source(uow, *, source_operation_id, frozen):
@@ -424,3 +428,86 @@ def isolated_preparation_source(uow, *, source_operation_id, frozen):
     return {**anchor, 'contract_version': ISOLATED_HANDOFF, 'retained_preparation': receipts,
         'isolation_source_operation_id': source_operation_id, 'source_submission_rights': 'REVOKED_BY_GENERATION_ISOLATION',
         'inherited_continuation_ids': [member['continuation_id'] for member in chain], 'original_handoff_hash': canonical_hash(anchor)}
+
+
+
+
+def unsent_query_source(uow, *, source_operation_id, row, frozen, attempt):
+    from .runtime_continuation import require_binding
+    from novel_forge.modules.book_authority.manuscript import historical_working_inputs
+    from novel_forge.modules.chapter_group_authority.replan_retirement import lock_replan_roots
+
+    if not frozen.get('runtime_continuation_id'):
+        return None
+    binding = require_binding(uow.database_url, frozen['runtime_continuation_id'])
+    inherited = binding['target_runtime'].get('preparation_handoff', {})
+    if inherited.get('contract_version') not in MULTI_OWNER_HANDOFF_CONTRACTS:
+        return None
+    rejected = KernelError('PLANNING_PREPARATION_QUERY_HANDOFF_UNSAFE', 'Retain exact registered preparation custody and Context, terminal query failure, zero budgets or Effects and released submission rights')
+    if (row[0] != 'FAILED_FINAL' or attempt[0] != 'FAILED_FINAL'
+            or attempt[2] != dict(error_code='PROGRAMMING_BUG', error_message='canceling statement due to statement timeout', failure_class='programming_bug', failure_details={})
+            or binding['successor_operation_id'] != source_operation_id or binding['successor_command'] != frozen):
+        raise rejected
+    uow.cursor.execute('''SELECT to_jsonb(operation),EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'FAILED_FINAL')
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id) WHERE attempt.operation_id=%s AND lease.status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s)
+        FROM authority_operation operation WHERE operation_id=%s''', [source_operation_id] * 7)
+    operation, unsafe = uow.cursor.fetchone()
+    if unsafe or (operation['actor_id'], operation['workspace_id']) != (frozen['actor_id'], frozen['workspace_id']):
+        raise rejected
+    uow.cursor.execute('SELECT asset_version_id,content_hash,output_key,role FROM authority_operation_output_asset WHERE operation_id=%s', [source_operation_id])
+    source_contexts = uow.cursor.fetchall()
+    if len(source_contexts) > 1 or any(item[1] != inherited['context_content_hash'] or item[2] != 'planning.context_bundle' or item[3] != 'context_bundle' for item in source_contexts):
+        raise rejected
+    working = frozen['arc_working_set']['working_manuscript']
+    uow.cursor.execute('SELECT root_operation_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s AND workspace_id=%s AND book_id=%s',
+        [working['book_run_id'], frozen['project_id'], frozen['workspace_id'], frozen['book_id']])
+    owner = uow.cursor.fetchone()
+    if not owner:
+        raise rejected
+    lock_replan_roots(uow.cursor, project_id=frozen['project_id'], book_root=owner[0])
+    uow.cursor.execute('''SELECT current_chapter,accepted_through_chapter,input_snapshot_id,state,active_chapter_request_id,
+        EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=book.root_operation_id)
+        FROM authority_book_production book WHERE book_run_id=%s FOR UPDATE''', [working['book_run_id']])
+    book = uow.cursor.fetchone()
+    if (not book or book[:3] != (inherited['current_chapter'], inherited['accepted_through_chapter'], inherited['input_snapshot_id'])
+            or book[3] not in {'READY', 'PAUSED'} or book[4] is not None or book[5]
+            or historical_working_inputs(uow, operation)[0] != frozen['book_id']):
+        raise rejected
+    uow.cursor.execute('''SELECT snapshot_payload,snapshot_id,snapshot_hash,attempt_id FROM authority_attempt_capability_pack_snapshot
+        WHERE operation_id=%s AND attempt_id=(SELECT attempt_id FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1)''', [source_operation_id] * 2)
+    snapshots = uow.cursor.fetchall()
+    if len(snapshots) != 1 or snapshots[0][0]['context_policy_ref'] != 'context-policy:chapter-generation-pack:v4':
+        raise rejected
+    uow.cursor.execute('SELECT input_snapshot FROM authority_story_planning_generation WHERE operation_id=%s', [source_operation_id])
+    inputs = uow.cursor.fetchone()[0]
+    context = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=inherited['context_asset_version_id'])
+    if context.content_hash != inherited['context_content_hash'] or context.content['arc_working_set'] != frozen['arc_working_set']:
+        raise rejected
+    for retained_context in source_contexts:
+        saved = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=retained_context[0])
+        if saved.asset_type != 'context_bundle' or saved.content_hash != context.content_hash or canonical_hash(saved.content) != context.content_hash:
+            raise rejected
+    original = {item['role']: item for item in context.content['input_versions']}
+    for item in inputs:
+        document = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=item['asset_version_id'])
+        if document.content_hash != item['content_hash'] or document.asset_type != item['asset_type'] or any(original.get(item['role'], {}).get(key) != item[key] for key in ('asset_version_id','content_hash','asset_type')):
+            raise rejected
+    uow.cursor.execute('SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s', [source_operation_id])
+    depth = int(uow.cursor.fetchone()[0]) + 1
+    from copy import deepcopy
+    proof = {**deepcopy(inherited), 'contract_version': QUERY_HANDOFF,
+        'unsent_query_failure': dict(source_operation_id=source_operation_id, source_attempt_id=snapshots[0][3],
+            original_failure=attempt[2], original_failure_hash=canonical_hash(attempt[2]),
+            source_context=dict(asset_version_id=source_contexts[0][0], content_hash=source_contexts[0][1]) if source_contexts else None,
+            inherited_preparation_hash=canonical_hash(inherited), inherited_preparation=inherited),
+        'source_submission_rights': 'RELEASED_BY_UNSENT_QUERY_FAILURE'}
+    allocation = binding['target_runtime']['planning_capacity']
+    return dict(mode='PRE_SEND_CAPACITY', source_operation_id=source_operation_id, command=frozen, version=int(row[1]),
+        evidence_asset_version_id=context.asset_version_id, evidence_hash=context.content_hash,
+        snapshot=snapshots[0][0], snapshot_id=snapshots[0][1], snapshot_hash=snapshots[0][2], attempt_id=snapshots[0][3],
+        inputs=inputs, failure=allocation['source_failure'], depth=depth,
+        context_revalidation=allocation['context_revalidation'], completed_preparation=proof)

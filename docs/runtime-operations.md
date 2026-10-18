@@ -176,6 +176,19 @@ Provider view and requires its complete retained hash before reusing any exact t
 Unknown Effects, cancellation, a live lease, changed inputs or a main send still refuse
 this recovery. Inspect each consumption receipt's original Effect and new consumer;
 registration alone does not prove reuse. No capacity or content repair counter is reset.
+Routing-observation preparation timeout recovery uses registration v8 and migration
+229. It applies only to an exact terminal statement-timeout failure carrying a prior
+explicit v7/v8 custody receipt, zero Effects and budget reservations, and no remaining
+submission rights. It retains a previously saved same-hash Context; other outputs,
+changed Book/input boundaries, cancellation and altered inherited receipts refuse.
+Ordinary manuscript continuation appends a successor on the corrected deployment;
+inspect original failure, control receipt, saved Context and each consumed preparation
+receipt separately. No terminal record, UNKNOWN usage or failure history is rewritten.
+The migration adds expression indexes for the unchanged observation cohort, prior
+Effect chain and generated artifact lookup. It retains the UoW statement timeout and
+all sample eligibility and retry exclusions. Registration alone does not prove native
+receipt reuse; run the same-Book continuation and inspect actual dispatch afterward.
+
 Current author-first routing updates with `expected_policy_hash` use policy command
 2.3.0 / command Schema v11. The current hash is checked under the routing policy lock;
 stale policy updates refuse before selection. Earlier policy command definitions retain

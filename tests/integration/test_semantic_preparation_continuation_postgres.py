@@ -8,13 +8,15 @@ import pytest
 from novel_forge.storage.migrations.versions.v20261018_0226_semantic_preparation_continuation import PERMITTED
 from novel_forge.storage.migrations.versions.v20261018_0227_completed_preparation_handoff import PERMITTED as HANDOFF_PERMITTED
 from novel_forge.storage.migrations.versions.v20261018_0228_terminal_preparation_handoff import PERMITTED as TERMINAL_PERMITTED
+from novel_forge.storage.migrations.versions.v20261019_0229_routing_observation_preparation_recovery import PERMITTED as QUERY_PERMITTED
 from tests.integration.authority_postgres_support import DATABASE_URL
 
 
-@pytest.mark.parametrize('mode', ['zero-send', 'acknowledged-preparation', 'terminal-preparation'])
+@pytest.mark.parametrize('mode', ['zero-send', 'acknowledged-preparation', 'terminal-preparation', 'query-preparation'])
 def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mode):
     completed = mode != 'zero-send'
-    terminal = mode == 'terminal-preparation'
+    query = mode == 'query-preparation'
+    terminal = mode in {'terminal-preparation','query-preparation'}
     with psycopg.connect(DATABASE_URL) as connection:
         try:
             for table in (
@@ -24,7 +26,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                 "budget_reservation", "lease_acquisition", "cancellation_command", "worker_cancel_signal",
             ):
                 connection.execute(f"CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA")
-            connection.execute((TERMINAL_PERMITTED if terminal else HANDOFF_PERMITTED if completed else PERMITTED).replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1))
+            connection.execute((QUERY_PERMITTED if query else TERMINAL_PERMITTED if terminal else HANDOFF_PERMITTED if completed else PERMITTED).replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1))
 
             def insert(table, **values):
                 columns = ",".join(values)
@@ -58,12 +60,21 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
             if terminal:
                 target['preparation_handoff'].update(contract_version='planning-terminal-preparation-handoff.v1',
                     source_submission_rights='RELEASED_BY_TERMINAL_FAILURE', host_failure=host_failure)
+            if query:
+                host_failure = dict(error_code='PROGRAMMING_BUG', failure_class='programming_bug', error_message='canceling statement due to statement timeout', failure_details={})
+                inherited = copy.deepcopy(target['preparation_handoff'])
+                inherited['contract_version'] = 'planning-isolated-preparation-handoff.v1'
+                inherited.pop('host_failure')
+                target['preparation_handoff'] = {**inherited, 'contract_version':'planning-unsent-preparation-query-handoff.v1',
+                    'source_submission_rights':'RELEASED_BY_UNSENT_QUERY_FAILURE', 'unsent_query_failure':dict(
+                        source_operation_id='source',source_attempt_id='attempt',original_failure=host_failure,inherited_preparation=inherited)}
+                target['planning_capacity']['external_intents_at_source'] = 0
             for identity, status, definition, actor, payload, sha, cause in (
                 ("source", "RECONCILIATION_REQUIRED" if completed and not terminal else "FAILED_FINAL", "story_planning.generate", "author" if completed else "worker", source, "old", None),
                 ("child", "ADMITTED", "story_planning.generate", "author" if completed else "worker", child, "new", "source"),
                 ("registration", "SUCCEEDED", "story_planning.runtime_continuation.register", "author", {}, "new", None),
             ):
-                insert("operation", operation_id=identity, status=status, definition_name=definition, definition_version="6.0.0" if terminal and identity=='registration' else "5.0.0" if completed and identity=='registration' else "1.21.0",
+                insert("operation", operation_id=identity, status=status, definition_name=definition, definition_version="8.0.0" if query and identity=='registration' else "6.0.0" if terminal and identity=='registration' else "5.0.0" if completed and identity=='registration' else "1.21.0",
                     actor_id=actor, project_id="project", workspace_id="workspace", command_payload={"payload": payload},
                     definition_snapshot={"commit_sha": sha}, causation_operation_id=cause)
             insert("story_planning_runtime_continuation", continuation_id="runtime", source_operation_id="source",
@@ -77,7 +88,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
             insert("attempt", operation_id="source", attempt_id="attempt", attempt_number=1, status="FAILED_FINAL" if terminal else "CANCELLED" if completed else "FAILED_RETRYABLE", result=host_failure if terminal else {} if completed else failure)
             insert("attempt_capability_pack_snapshot", operation_id="source", attempt_id="attempt",
                 snapshot_payload={"context_policy_ref": "context-policy:chapter-generation-pack:v4"},snapshot_hash='snapshot-hash')
-            insert("operation_output_asset", operation_id="source", output_key="planning.context_bundle", asset_version_id="context", content_hash="context-hash")
+            insert("operation_output_asset", operation_id="source", output_key="planning.context_bundle", asset_version_id="context", content_hash="context-hash", role="context_bundle")
             insert("asset", asset_id="context-owner", project_id="project", asset_type="context_bundle")
             insert("asset_version", asset_id="context-owner", asset_version_id="context", content_hash="context-hash",
                 content={"project_id": "project", "workspace_id": "workspace", "book_id": "book",
@@ -89,7 +100,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
             insert("asset", asset_id="receipt-owner", project_id="project", asset_type="planning_runtime_continuation")
             insert("asset_version", asset_id="receipt-owner", asset_version_id="receipt", content={"source_operation_id": "source", "target_runtime": target})
             insert("operation_output_asset", operation_id="registration", role="primary", asset_version_id="receipt")
-            if completed:
+            if completed and not query:
                 insert('story_planning_runtime_continuation', continuation_id='parent',successor_operation_id='source',
                     successor_command=source,project_id='project',workspace_id='workspace',book_id='book',chain_depth=1,
                     target_runtime={'planning_capacity':dict(target['planning_capacity'])})
@@ -102,8 +113,15 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                     insert('cancellation_command',operation_id='source',actor_id='author')
                     insert('worker_cancel_signal',operation_id='source',attempt_id='attempt',status='ACKNOWLEDGED',acknowledged_at=datetime.now(timezone.utc))
 
+            if query:
+                insert('operation',operation_id='prior-registration',status='SUCCEEDED',definition_name='story_planning.runtime_continuation.register',definition_version='7.0.0',actor_id='author')
+                insert('asset',asset_id='prior-receipt-owner',project_id='project',asset_type='planning_runtime_continuation')
+                insert('asset_version',asset_id='prior-receipt-owner',asset_version_id='prior-receipt',content=dict(
+                    continuation_id='parent',successor_command=source,target_runtime=dict(
+                        preparation_handoff=inherited,planning_capacity=copy.deepcopy(target['planning_capacity']))))
+                insert('operation_output_asset',operation_id='prior-registration',asset_version_id='prior-receipt',role='primary')
             def allowed(value=generation):
-                function = 'authority_terminal_preparation_handoff_permitted' if terminal else 'authority_completed_preparation_handoff_permitted' if completed else 'authority_semantic_preparation_continuation_permitted'
+                function = 'authority_unsent_preparation_query_permitted' if query else 'authority_terminal_preparation_handoff_permitted' if terminal else 'authority_completed_preparation_handoff_permitted' if completed else 'authority_semantic_preparation_continuation_permitted'
                 return connection.execute(f"SELECT {function}('runtime','child',%s)", [Jsonb(value)]).fetchone()[0]
 
             assert allowed()
@@ -132,7 +150,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                 connection.execute(statement)
                 assert not allowed(), statement
                 connection.execute("ROLLBACK TO SAVEPOINT negative")
-            if completed:
+            if completed and not query:
                 for statement in (
                     "INSERT INTO authority_worker_cancel_signal(operation_id,status) VALUES('source','REQUESTED')" if terminal else "UPDATE authority_worker_cancel_signal SET status='REQUESTED',acknowledged_at=NULL",
                     "UPDATE authority_attempt SET result='{}'" if terminal else "UPDATE authority_attempt SET status='FAILED_FINAL'",
@@ -147,6 +165,20 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                     connection.execute(statement)
                     assert not allowed(), statement
                     connection.execute('ROLLBACK TO SAVEPOINT handoff_negative')
+            if query:
+                for statement in (
+                    "UPDATE authority_attempt SET result='{}'",
+                    "UPDATE authority_book_production SET input_snapshot_id='replaced'",
+                    "INSERT INTO authority_cancellation_command(operation_id,actor_id) VALUES('book-root','author')",
+                    "UPDATE authority_operation_output_asset SET role='primary' WHERE operation_id='source'",
+                    "INSERT INTO authority_operation_output_asset(operation_id,output_key,asset_version_id,content_hash) VALUES('source','chapter.draft','draft','context-hash')",
+                    "UPDATE authority_operation SET definition_version='4.0.0' WHERE operation_id='prior-registration'",
+                    "UPDATE authority_asset_version SET content=jsonb_set(content,'{target_runtime,preparation_handoff,retained_preparation}','[]') WHERE asset_version_id='prior-receipt'",
+                ):
+                    connection.execute('SAVEPOINT query_negative')
+                    connection.execute(statement)
+                    assert not allowed(), statement
+                    connection.execute('ROLLBACK TO SAVEPOINT query_negative')
             changed = copy.deepcopy(target)
             changed["planning_capacity"]["allocated_task_tokens"] = 512001
             connection.execute("UPDATE authority_story_planning_runtime_continuation SET target_runtime=%s", [Jsonb(changed)])

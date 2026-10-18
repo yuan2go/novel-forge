@@ -397,3 +397,98 @@ def test_sent_main_retains_existing_isolation_recovery_without_unsent_preparatio
     state.effects['consumer'][1][0]['request_payload']['stage'] = 'chapter_plan.generate'
     assert state.consume() is None
     assert state.effects['consumer'][1][0]['status'] == 'UNKNOWN'
+
+
+@pytest.fixture
+def query_handoff(monkeypatch):
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import unsent_query_source, ISOLATED_HANDOFF
+    frozen = dict(project_id='project',workspace_id='workspace',book_id='book',actor_id='author',runtime_continuation_id='prior',
+        arc_working_set=dict(working_manuscript=dict(book_run_id='run')))
+    content = dict(arc_working_set=frozen['arc_working_set'],input_versions=[dict(role='plan',asset_version_id='plan',content_hash='plan-hash',asset_type='chapter_group_plan')])
+    digest = canonical_hash(content)
+    inherited = dict(contract_version=ISOLATED_HANDOFF,context_asset_version_id='original-context',context_content_hash=digest,
+        current_chapter=18,accepted_through_chapter=0,input_snapshot_id='book-input',retained_preparation=[{'external_effect_id':'old-success'}])
+    binding = dict(successor_operation_id='failed',successor_command=frozen,target_runtime=dict(preparation_handoff=inherited,
+        planning_capacity=dict(source_failure={'original':'capacity'},context_revalidation={'original':'frozen'})))
+    failure = dict(error_code='PROGRAMMING_BUG',error_message='canceling statement due to statement timeout',failure_class='programming_bug',failure_details={})
+    state = SimpleNamespace(unsafe=False,book=(18,0,'book-input','READY',None,False),
+        operation=dict(actor_id='author',workspace_id='workspace'),frozen=frozen,binding=binding,
+        outputs=[('saved-context',digest,'planning.context_bundle','context_bundle')],failure=failure,
+        snapshot=[({'context_policy_ref':'context-policy:chapter-generation-pack:v4'},'snapshot','snapshot-hash','failed-attempt')])
+    documents = {'original-context':SimpleNamespace(asset_version_id='original-context',content_hash=digest,content=content,asset_type='context_bundle'),
+                 'saved-context':SimpleNamespace(asset_version_id='saved-context',content_hash=digest,content=deepcopy(content),asset_type='context_bundle'),
+                 'plan':SimpleNamespace(content_hash='plan-hash',asset_type='chapter_group_plan')}
+    state.documents = documents
+    uow = MagicMock()
+    uow.database_url = 'db'
+    def fetchone():
+        sql,_ = uow.cursor.execute.call_args.args
+        if 'to_jsonb(operation)' in sql:
+            return state.operation,state.unsafe
+        if 'SELECT root_operation_id' in sql:
+            return ('book-root',)
+        if 'SELECT current_chapter' in sql:
+            return state.book
+        if 'SELECT input_snapshot ' in sql:
+            return (deepcopy(content['input_versions']),)
+        if 'SELECT chain_depth' in sql:
+            return (8,)
+        raise AssertionError(sql)
+    uow.cursor.fetchone.side_effect = fetchone
+    uow.cursor.fetchall.side_effect = lambda:state.outputs if 'FROM authority_operation_output_asset' in uow.cursor.execute.call_args.args[0] else state.snapshot
+    uow.repositories.asset_documents.require.side_effect = lambda **kw:documents[kw['asset_version_id']]
+    monkeypatch.setattr('novel_forge.modules.story_planning_runtime.runtime_continuation.require_binding',lambda *_:binding)
+    monkeypatch.setattr('novel_forge.modules.book_authority.manuscript.historical_working_inputs',lambda *_:('book',[]))
+    monkeypatch.setattr('novel_forge.modules.chapter_group_authority.replan_retirement.lock_replan_roots',lambda *_a,**_kw:None)
+    state.consume = lambda:unsent_query_source(uow,source_operation_id='failed',row=('FAILED_FINAL',3),frozen=frozen,attempt=('FAILED_FINAL',{},failure))
+    return state
+
+
+def test_terminal_unsent_query_retains_saved_context_and_original_preparation_in_new_proof(query_handoff):
+    state = query_handoff
+    original = deepcopy(state.binding)
+    source = state.consume()
+    proof = source['completed_preparation']
+    assert source['mode'] == 'PRE_SEND_CAPACITY' and source['depth'] == 9
+    assert proof['contract_version'] == 'planning-unsent-preparation-query-handoff.v1'
+    assert proof['retained_preparation'] == original['target_runtime']['preparation_handoff']['retained_preparation']
+    failure = proof['unsent_query_failure']
+    assert failure['source_context']['asset_version_id'] == 'saved-context'
+    assert failure['original_failure_hash'] == canonical_hash(state.failure)
+    assert failure['inherited_preparation_hash'] == canonical_hash(original['target_runtime']['preparation_handoff'])
+    assert state.binding == original
+
+
+@pytest.mark.parametrize('change', ['effects_or_budget_or_live_rights','actor','frontier','acceptance','snapshot','cancel','active_child',
+    'wrong_output','extra_output','output_hash','primary_output','saved_bytes','source_hash','input_hash','input_type','source_command','failure'])
+def test_query_handoff_rejects_source_context_frontier_or_execution_drift(query_handoff, change):
+    state = query_handoff
+    if change == 'effects_or_budget_or_live_rights':
+        state.unsafe = True
+    elif change == 'actor':
+        state.operation['actor_id'] = 'foreign'
+    elif change in {'frontier','acceptance','snapshot','cancel','active_child'}:
+        values = list(state.book)
+        index,value = {'frontier':(0,19),'acceptance':(1,1),'snapshot':(2,'changed'),'cancel':(5,True),'active_child':(4,'child')}[change]
+        values[index] = value
+        state.book = tuple(values)
+    elif change in {'wrong_output','extra_output','output_hash','primary_output'}:
+        values = list(state.outputs[0])
+        if change == 'extra_output':
+            state.outputs.append(tuple(values))
+        else:
+            index,value = {'wrong_output':(2,'chapter.draft'),'output_hash':(1,'changed'),'primary_output':(3,'primary')}[change]
+            values[index] = value
+            state.outputs[0] = tuple(values)
+    elif change == 'saved_bytes':
+        state.documents['saved-context'].content['changed'] = True
+    elif change == 'source_hash':
+        state.documents['original-context'].content_hash = 'changed'
+    elif change in {'input_hash','input_type'}:
+        setattr(state.documents['plan'],'content_hash' if change=='input_hash' else 'asset_type','changed')
+    elif change == 'source_command':
+        state.binding['successor_command'] = {'other':'request'}
+    else:
+        state.failure['error_message'] = 'another programming bug'
+    with pytest.raises(KernelError,match='PLANNING_PREPARATION_QUERY_HANDOFF_UNSAFE'):
+        state.consume()
