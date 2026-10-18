@@ -9586,6 +9586,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261019_0230_unsent_preparation_lineage.py",
           "id": "20261019_0230_unsent_preparation_lineage",
           "locator": "MIGRATION_ID = '20261019_0230_unsent_preparation_lineage'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0231_prepared_main_handoff.py",
+          "id": "20261019_0231_prepared_main_handoff",
+          "locator": "MIGRATION_ID = '20261019_0231_prepared_main_handoff'"
         }
       ],
       "external_effects": {
