@@ -814,3 +814,19 @@ def test_chapter_citation_contract_binds_gateway_sample_and_projected_body_first
     assert not {'asset_version_id', 'text_hash', 'asset_hash', 'acceptance_id'} & set(projected)
     assert 'chapter_number' in view['instruction'] and 'Host 从同一冻结窗口绑定原始来源版本' in view['instruction']
     assert content == original
+
+
+def test_legacy_body_first_view_preserves_frozen_v3_instruction_hash():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    frozen, window, _ = literal_report_case()
+    frozen['policy']['reading_mode'] = 'BODY_FIRST'
+    for span in window['spans']:
+        for key in ('creative_baseline', 'work_intent_status', 'work_intent_summary'):
+            span.pop(key, None)
+    content = dict(schema_version='longform-prose-window.v3', manifest_digest=frozen['manifest_digest'], policy=frozen['policy'],
+                   window=window, source_isolation='AUTHOR_SELECTED_UNREVIEWED_PROSE')
+    context = dict(schema_version='novelos.longform_prose_review_context_bundle.v2', selected_inputs=[dict(asset_type='longform_prose_review_window', projection=content)])
+    view = build_provider_context_view('longform_prose_review', context, {})
+    assert canonical_hash(view) == 'sha256:4bb0c5f687ef3c5b2c546859b4df69e1d7775d0692b95fca21c3270fec0dc3f2'
+    assert '源头用UNKNOWN/INVESTIGATE' in view['instruction']

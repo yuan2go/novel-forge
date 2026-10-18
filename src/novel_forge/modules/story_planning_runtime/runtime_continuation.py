@@ -49,7 +49,7 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
@@ -81,6 +81,7 @@ def runtime_continuation_definition(
             **({'unsent_main_call_required': True, 'verified_preparation_required': True} if definition_version == '3.0.0' else {}),
             **({'unsent_main_call_required': True, 'acknowledged_preparation_handoff_required': True} if definition_version == '5.0.0' else {}),
             **({'unsent_main_call_required': True, 'terminal_preparation_custody_required': True} if definition_version == '6.0.0' else {}),
+            **({'unstarted_isolated_successor_required': True, 'exact_preparation_custody_required': True} if definition_version == '7.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
         "idempotency_scope": "book:planning-runtime-continuation",
@@ -161,12 +162,15 @@ def require_source(
             SELECT count(DISTINCT i.operation_id) FROM authority_generation_isolation i
               JOIN ancestors USING(operation_id)""", [source_operation_id])
         recovery_number = int(uow.cursor.fetchone()[0])
+        from .preparation_recovery import isolated_preparation_source
+        preparation = isolated_preparation_source(uow, source_operation_id=source_operation_id, frozen=frozen)
         return {"mode": "ISOLATED_PURE_GENERATION", "source_operation_id": source_operation_id,
             "command": frozen, "version": int(row[1]), "evidence_asset_version_id": proof["evidence_asset_version_id"],
             "evidence_hash": uow.repositories.asset_documents.require(project_id=project_id,
                 asset_version_id=proof["evidence_asset_version_id"]).content_hash,
             "snapshot": proof["pack_snapshot"], "depth": depth, "generation_isolation": proof,
-            "generation_recovery_number": recovery_number,"failure_retry_counter":retry_usage}
+            "generation_recovery_number": recovery_number,"failure_retry_counter":retry_usage,
+            **({"isolated_preparation": preparation} if preparation else {})}
     uow.cursor.execute(
         "SELECT status, error, result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
         [source_operation_id],
@@ -1982,6 +1986,8 @@ def register(
         capacity_decision = require_capacity_target(source, target)
     if isolated_generation:
         target = {**target, "generation_isolation": source["generation_isolation"]}
+        if source.get("isolated_preparation"):
+            target["preparation_handoff"] = source["isolated_preparation"]
         if original.runtime_continuation_id:
             prior_runtime = require_binding(application.database_url, original.runtime_continuation_id)["target_runtime"]
             prior_capacity = prior_runtime.get("planning_capacity")
@@ -2061,7 +2067,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,

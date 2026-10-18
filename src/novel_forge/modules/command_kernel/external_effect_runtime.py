@@ -161,13 +161,17 @@ def read_failed_operation_success(
 
 
 def read_retained_generation_stage_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
-    _validate_effect_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
-        row = uow.cursor.fetchone()
-        if row is None or row[0] not in {"FAILED_FINAL", "FAILED_RETRYABLE", "DEAD_LETTER", "SUCCEEDED"}:
-            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their stopped original owner")
-        return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
+        return read_retained_generation_stage_success_in_uow(uow, context, effect_id=effect_id)
+
+
+def read_retained_generation_stage_success_in_uow(uow, context: EffectCommandContext, *, effect_id: str):
+    _validate_effect_context(context)
+    uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
+    row = uow.cursor.fetchone()
+    if row is None or row[0] not in {"FAILED_FINAL", "FAILED_RETRYABLE", "DEAD_LETTER", "SUCCEEDED"}:
+        raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their stopped original owner")
+    return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
 
 
 def read_checkpointed_operation_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:

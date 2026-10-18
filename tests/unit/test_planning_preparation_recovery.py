@@ -259,3 +259,141 @@ def test_complete_request_preparer_replays_unchanged_tasks_from_original_receipt
     assert apply_capacity_projection(data, first) == apply_capacity_projection(data, second)
     assert all(effect in records for effect in consumed)
     retained.uow.commit.assert_not_called()
+
+
+@pytest.mark.parametrize('receipt_contract', ['TERMINAL_PREPARATION', 'ISOLATED_GENERATION_SIBLING'])
+def test_isolated_handoff_reads_each_receipt_from_its_actual_original_owner(retained, monkeypatch, receipt_contract):
+    handoff = retained.binding['target_runtime']['preparation_handoff']
+    handoff['contract_version'] = 'planning-isolated-preparation-handoff.v1'
+    retained.retained.update(operation_id='actual-preparation-owner', receipt_contract=receipt_contract)
+    read = MagicMock(return_value=retained.receipt)
+    reader = 'read_terminal_preparation_success_in_uow' if receipt_contract == 'TERMINAL_PREPARATION' else 'read_retained_generation_stage_success_in_uow'
+    monkeypatch.setattr('novel_forge.modules.command_kernel.external_effect_runtime.' + reader, read)
+    assert consume(retained)['_execution_evidence']['receipt_reuse']['provider_invoked_this_attempt'] is False
+    assert read.call_args.args[1].operation_id == 'actual-preparation-owner'
+    retained.read.assert_not_called()
+
+
+@pytest.fixture
+def isolated_chain(monkeypatch):
+    from novel_forge.modules.story_planning_runtime import preparation_recovery as recovery
+    frozen = dict(project_id='project', workspace_id='workspace', book_id='book', actor_id='author', trace_id='trace',
+        correlation_id='correlation', runtime_continuation_id='isolated-link', idempotency_key='new',
+        arc_working_set=dict(working_manuscript=dict(book_run_id='run')))
+    task = dict(frozen_input_boundary={'kind': 'original-boundary'}, task={'source_projection_hash': 'projection'})
+    output = {'retained': 'original result'}
+    receipt = dict(budget_reservation_status='SETTLED', provider_evidence=dict(result=output))
+    def item(effect):
+        return dict(external_effect_id=effect, stage='context_compress', request_hash='request',
+                    task_hash=canonical_hash(task), result_hash=canonical_hash(output))
+    handoff = dict(contract_version='planning-terminal-preparation-handoff.v1', source_operation_id='original',
+        retained_preparation=[item('original-success')], context_asset_version_id='context', context_content_hash='hash',
+        preparation_source_boundary=task['frozen_input_boundary'], preparation_source_projection_hash='projection',
+        current_chapter=18, accepted_through_chapter=0, input_snapshot_id='book-input')
+    capacity = dict(context_revalidation=dict(contract_version='same-capacity-semantic-preparation.v1',
+        context_asset_version_id='context', context_content_hash='hash'))
+    def row(operation, source, target):
+        return ('link:' + operation, source, deepcopy(frozen), deepcopy(frozen), target, 'FAILED_FINAL',
+            'author', 'workspace', 'book', None, deepcopy(frozen), {'operation_id':operation})
+    chain = {'interrupted': row('interrupted', 'consumer', dict(planning_capacity=deepcopy(capacity))),
+             'consumer': row('consumer', 'original', dict(planning_capacity=deepcopy(capacity), preparation_handoff=handoff))}
+    def effect(identity, status='SUCCEEDED', stage='context_compress'):
+        return dict(external_effect_id=identity, effect_type='model.invoke', status=status, request_hash='request',
+                    request_payload=dict(stage=stage, input=dict(context_compression_task=deepcopy(task))))
+    effects = {'original': [(effect('original-success'), 'SETTLED', False)],
+               'consumer': [(effect('consumer-success'), 'SETTLED', False), (effect('unknown', 'UNKNOWN'), 'HELD_UNKNOWN', True)],
+               'interrupted': [(effect('world-unknown', 'UNKNOWN', 'world_candidates.evaluate'), 'HELD_UNKNOWN', True)]}
+    state = SimpleNamespace(chain=chain, effects=effects, frozen=frozen, handoff=handoff,
+        book=(18, 0, 'book-input', 'PAUSED', None), held=False,
+        isolation=dict(contract_version='pure-generation-isolation.v1',business_commit_right='REVOKED',activation_right='REVOKED'))
+    uow = MagicMock()
+    def fetchone():
+        sql, args = uow.cursor.execute.call_args.args
+        if 'FROM authority_story_planning_runtime_continuation link' in sql:
+            return chain.get(args[0])
+        if 'SELECT root_operation_id' in sql:
+            return ('book-root',)
+        if 'SELECT current_chapter' in sql:
+            return state.book
+        if 'SELECT proof FROM authority_generation_isolation' in sql:
+            return (state.isolation,)
+        if 'SELECT EXISTS' in sql:
+            return (state.held,)
+        raise AssertionError(sql)
+    uow.cursor.fetchone.side_effect = fetchone
+    uow.cursor.fetchall.side_effect = lambda: effects[uow.cursor.execute.call_args.args[1][0]]
+    monkeypatch.setattr('novel_forge.modules.book_authority.manuscript.historical_working_inputs', lambda *_:('book', []))
+    monkeypatch.setattr('novel_forge.modules.chapter_group_authority.replan_retirement.lock_replan_roots', lambda *_a, **_k:None)
+    for name in ('read_terminal_preparation_success_in_uow', 'read_retained_generation_stage_success_in_uow'):
+        monkeypatch.setattr('novel_forge.modules.command_kernel.external_effect_runtime.' + name, MagicMock(return_value=receipt))
+    state.consume = lambda: recovery.isolated_preparation_source(uow, source_operation_id='interrupted', frozen=frozen)
+    return state
+
+
+def test_isolated_ancestry_collects_only_settled_successful_tasks_and_keeps_original_custody(isolated_chain):
+    proof = isolated_chain.consume()
+    assert proof['contract_version'] == 'planning-isolated-preparation-handoff.v1'
+    assert proof['source_operation_id'] == 'original'
+    assert proof['isolation_source_operation_id'] == 'interrupted'
+    assert [(item['operation_id'], item['external_effect_id']) for item in proof['retained_preparation']] == [
+        ('original', 'original-success'), ('consumer', 'consumer-success')]
+    assert proof['original_handoff_hash'] == canonical_hash(isolated_chain.handoff)
+    assert isolated_chain.effects['consumer'][1][0]['status'] == 'UNKNOWN'
+
+
+@pytest.mark.parametrize('drift', ['actor', 'book', 'command', 'frontier', 'acceptance', 'snapshot', 'cancelled_book', 'active_child',
+    'live_rights', 'isolation_right', 'unisolated_unknown', 'unsettled', 'boundary', 'projection', 'candidate', 'capacity_context'])
+def test_isolated_preparation_rejects_stale_foreign_live_unknown_and_changed_input(isolated_chain, drift):
+    state = isolated_chain
+    if drift in {'actor', 'book', 'command', 'candidate', 'capacity_context'}:
+        row = list(state.chain['interrupted'])
+        if drift == 'actor':
+            row[6] = 'other'
+        elif drift == 'book':
+            row[8] = 'foreign'
+        elif drift == 'command':
+            row[3]['idempotency-independent-input'] = 'changed'
+        elif drift == 'candidate':
+            row[9] = 'already-generated'
+        else:
+            row[4]['planning_capacity']['context_revalidation']['context_content_hash'] = 'changed'
+        state.chain['interrupted'] = tuple(row)
+    elif drift in {'frontier', 'acceptance', 'snapshot', 'cancelled_book', 'active_child'}:
+        row = list(state.book)
+        index, value = {'frontier':(0,19),'acceptance':(1,1),'snapshot':(2,'other'),'cancelled_book':(3,'CANCELLED'),'active_child':(4,'other')}[drift]
+        row[index] = value
+        state.book = tuple(row)
+    elif drift == 'live_rights':
+        state.held = True
+    elif drift == 'isolation_right':
+        state.isolation['business_commit_right'] = 'ACTIVE'
+    else:
+        effect, budget, isolated = state.effects['consumer'][1 if drift == 'unisolated_unknown' else 0]
+        if drift == 'unisolated_unknown':
+            state.effects['consumer'][1] = effect, budget, False
+        elif drift == 'unsettled':
+            state.effects['consumer'][0] = effect, 'HELD', isolated
+        elif drift == 'boundary':
+            effect['request_payload']['input']['context_compression_task']['frozen_input_boundary'] = {'foreign':'source'}
+        else:
+            effect['request_payload']['input']['context_compression_task']['task']['source_projection_hash'] = 'changed'
+    with pytest.raises(KernelError, match='PLANNING_PREPARATION_HANDOFF_UNSAFE'):
+        state.consume()
+
+
+@pytest.mark.parametrize('stage', ['world_candidates.actor_0', 'world_candidates.actor_1', 'world_candidates.actor_2'])
+def test_original_world_actor_stage_names_do_not_block_same_input_preparation(isolated_chain, stage):
+    state = isolated_chain
+    actor = deepcopy(state.effects['consumer'][0][0])
+    actor.update(external_effect_id='actor-success', request_payload={'stage': stage})
+    state.effects['consumer'].append((actor, 'SETTLED', False))
+    proof = state.consume()
+    assert len(proof['retained_preparation']) == 2
+    assert all(item['external_effect_id'] != 'actor-success' for item in proof['retained_preparation'])
+
+
+def test_sent_main_retains_existing_isolation_recovery_without_unsent_preparation_authority(isolated_chain):
+    state = isolated_chain
+    state.effects['consumer'][1][0]['request_payload']['stage'] = 'chapter_plan.generate'
+    assert state.consume() is None
+    assert state.effects['consumer'][1][0]['status'] == 'UNKNOWN'

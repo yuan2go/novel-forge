@@ -900,7 +900,16 @@ Inspect `_context_capacity_projection` in the main Effect input, its original/re
 hashes, source ranges, restored/retained fidelity traces and complete measurement.
 Compression tasks retain all stage bindings in `task.capacity_bindings`; retry must
 reuse those exact model, reasoning, tokenizer, window and output policies. Successful
-chunks and original accounting survive worker restart. An unresolved earlier Effect
+chunks and original accounting survive worker restart. For an isolated same-input Planning source whose ancestry has explicit terminal v6
+preparation custody, v7 registration can bind the original Context/World and completed
+compression/fidelity receipts across that exact native ancestry. A pending isolated
+continuation receives this contract through the existing deployment-revalidation command;
+it must have no admitted successor. This appends a control artifact, preserves the original
+binding, and rejects a started child, changed model/Pack semantics, stale Book frontier or
+live rights. The new consumer rechecks each task/request/result hash at its original owner;
+it neither settles nor consumes the isolated UNKNOWN. No migration or capacity increase
+is involved.
+An unresolved earlier Effect
 requires native reconciliation before another identical call; the presence of a
 compression Effect is never zero-send evidence. Cancellation is rechecked between
 calls and before committing the Draft. Old frozen requests remain immutable; use the

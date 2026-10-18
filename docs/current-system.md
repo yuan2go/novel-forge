@@ -1505,6 +1505,15 @@ settled verified receipts, no main send, and released submission rights. A recon
 original Provider view must match its retained complete hash; new consumer identity
 cannot relabel historical source identities. Native successor execution and automatic
 receipt reuse remain unqualified until observed on that exact release.
+Explicit v7 continuation registration and pending-deployment revalidation preserve
+completed preparation after authorized UNKNOWN isolation. They retain the terminal v6
+custodian's exact Context, World action and Provider input, and bind each unchanged
+successful task to its actual original Operation and verified settled receipt. Main
+sends, changed inputs, stale Book boundaries, cancellation or active submission rights
+reject this handoff. UNKNOWN siblings retain revoked rights and unknown usage. Existing
+continuations gain no implicit preparation authority: a new immutable v7 control receipt
+is required before an unstarted successor can use this contract. Native consumption
+and end-to-end qualification remain pending until proved on the corrected release.
 Provider preparation retains the original realization catalogue. Candidate materialization
 uses a checked consumer projection that preserves every source version and hash while
 binding host realization references to the new Operation. Normal and retained-result

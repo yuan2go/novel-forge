@@ -35,8 +35,9 @@ def effective_binding(database_url, binding):
             JOIN authority_asset_version v USING(asset_version_id)
             JOIN authority_asset a ON a.asset_id=v.asset_id
             WHERE op.project_id=%s AND op.definition_name='story_planning.runtime_continuation.register'
-              AND op.definition_version='4.0.0' AND op.status='SUCCEEDED'
-              AND a.asset_type='planning_runtime_continuation' AND v.content->>'contract_version'=%s
+              AND op.definition_version IN ('4.0.0','7.0.0') AND op.status='SUCCEEDED'
+              AND a.asset_type='planning_runtime_continuation' AND v.content->>'contract_version' IN (%s,'planning-runtime-continuation.v7')
+              AND v.content ? 'source_binding_hash'
               AND v.content->>'continuation_id'=%s
             ORDER BY v.created_at DESC,v.asset_version_id DESC LIMIT 1""",
             [
@@ -75,6 +76,7 @@ def deployment_target(uow, *, project_id, original, target):
         "world_source_correction",
         "planning_reference_contract",
         "provider_schema_correction",
+        "preparation_handoff",
     }
     if {
         key: value
@@ -170,7 +172,7 @@ def register(
             JOIN authority_operation_output_asset output USING(operation_id)
             JOIN authority_asset_version v USING(asset_version_id)
             WHERE op.project_id=%s AND op.idempotency_scope='book:planning-runtime-continuation'
-              AND op.idempotency_key=%s AND op.definition_name=%s AND op.definition_version='4.0.0'
+              AND op.idempotency_key=%s AND op.definition_name=%s AND op.definition_version IN ('4.0.0','7.0.0')
               AND op.status='SUCCEEDED' AND output.output_key=%s""",
             [project_id, key, DEFINITION_NAME, OUTPUT_KEY],
         )
@@ -305,10 +307,14 @@ def register(
             original=binding["target_runtime"],
             target=target,
         )
+        if source.get("isolated_preparation"):
+            new_target["preparation_handoff"] = source["isolated_preparation"]
+        version = "7.0.0" if source.get("isolated_preparation") else "4.0.0"
+        contract = "planning-runtime-continuation.v" + version[0]
         definition = runtime_continuation_definition(
             application_build_id=application.application_build_id,
             commit_sha=application.commit_sha,
-            definition_version="4.0.0",
+            definition_version=version,
         )
         uow.repositories.definitions.register(definition)
         uow.commit()
@@ -318,7 +324,7 @@ def register(
             "Require an actual release change",
         )
     content = {
-        "contract_version": VERSION,
+        "contract_version": contract,
         "continuation_id": continuation_id,
         "source_binding_hash": binding_identity(binding),
         "source_command": binding["source_command"],
@@ -368,7 +374,7 @@ def register(
                 project_id=project_id,
                 asset_id=key,
                 asset_type="planning_runtime_continuation",
-                schema_version=VERSION,
+                schema_version=contract,
                 logical_ref=f"planning/runtime_continuations/{binding['source_operation_id']}/deployment/{application.commit_sha}.json",
                 category="runs",
                 output_key=OUTPUT_KEY,
@@ -412,7 +418,7 @@ def register(
         application.database_url,
         {
             "definition_name": DEFINITION_NAME,
-            "definition_version": "4.0.0",
+            "definition_version": version,
             "project_id": project_id,
             "workspace_id": command.workspace_id,
             "book_id": command.book_id,
