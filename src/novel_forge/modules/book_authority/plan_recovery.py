@@ -332,3 +332,32 @@ def require_current_group_plan_followup(uow, *, evidence, project_id, book_id, a
          actor_id, previous_id, book['current_chapter'], str(book['current_chapter']), book['stable_idempotency_key']])
     if uow.cursor.fetchone() != (True,):
         raise KernelError('BOOK_PLAN_FOLLOWUP_INVALID', 'Only the exact native Group PlanChange may replace its impacted unaccepted Chapter plan')
+
+
+def current_corrected_working_realization(uow, *, book, realization_id, chapter):
+    if chapter != book['current_chapter'] or chapter <= book['accepted_through_chapter']:
+        return False
+    uow.cursor.execute('''SELECT source.command_payload->'contract',source.actor_id,realization.contract_digest
+        FROM authority_narrative_realization realization
+        JOIN authority_operation source ON source.operation_id=realization.qualification_operation_id
+        WHERE realization.realization_id=%s AND realization.project_id=%s AND realization.book_id=%s
+          AND realization.lifecycle='FROZEN' AND source.status='SUCCEEDED'
+          AND source.project_id=realization.project_id AND source.workspace_id=%s
+          AND source.command_payload#>>'{contract,schema_version}'='narrative-realization-contract.v4' ''',
+        [realization_id, book['project_id'], book['book_id'], book['workspace_id']])
+    row = uow.cursor.fetchone()
+    if not row:
+        return False
+    from novel_forge.modules.hierarchical_planning.realization_domain import NarrativeRealizationContract
+    from .manuscript import verify_working_context
+
+    contract = NarrativeRealizationContract.from_mapping(row[0])
+    working = contract.working_manuscript
+    if (contract.contract_digest != row[2] or contract.realization_id != realization_id
+            or contract.project_id != book['project_id'] or contract.book_id != book['book_id']
+            or working['book_run_id'] != book['book_run_id'] or working['target_chapter'] != chapter
+            or not current_working_group_correction(uow.cursor, book=book,
+                group_version_id=contract.chapter_group_plan_version_id, working=working, actor_id=row[1])):
+        return False
+    verify_working_context(uow, book, working)
+    return True

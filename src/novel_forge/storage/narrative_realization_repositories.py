@@ -1098,7 +1098,15 @@ class NarrativeRealizationRepository:
         from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow
         workflow = effective_workflow(self.cursor, boundaries[0][4]) if len(boundaries) == 1 else None
         working_adjacent = len(boundaries) == 1 and workflow == AUTHOR_WORKFLOW and int(boundaries[0][3]) == chapter_number - 1
-        if len(boundaries) != 1 or (int(boundaries[0][0]) != chapter_number - 1 and not working_adjacent):
+        corrected = False
+        if len(boundaries) == 1 and workflow == AUTHOR_WORKFLOW and int(boundaries[0][3]) == chapter_number:
+            from types import SimpleNamespace
+            from novel_forge.storage.authority_repositories import AuthorityRepositories
+            from novel_forge.modules.book_authority.plan_recovery import current_corrected_working_realization
+            corrected = current_corrected_working_realization(
+                SimpleNamespace(cursor=self.cursor, repositories=AuthorityRepositories(self.cursor)),
+                book=boundaries[0][4], realization_id=realization_id, chapter=chapter_number)
+        if len(boundaries) != 1 or (int(boundaries[0][0]) != chapter_number - 1 and not working_adjacent and not corrected):
             raise KernelError(
                 "NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE",
                 "realization slice is not adjacent to the complete accepted boundary",

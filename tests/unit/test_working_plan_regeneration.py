@@ -168,3 +168,37 @@ def test_same_idempotency_race_reaches_kernel_payload_check_even_after_source_pr
     selected.assert_not_called()
     verify.assert_not_called()
     assert cursor.execute.call_args.args[1] == ['p', 'exact-original']
+
+
+@pytest.mark.parametrize('drift', ['', 'missing', 'contract-hash', 'other-run', 'other-chapter', 'revoked-correction'])
+def test_current_slice_consumption_requires_the_exact_frozen_corrected_contract(monkeypatch, drift):
+    from novel_forge.modules.book_authority import plan_recovery, manuscript
+    from novel_forge.modules.hierarchical_planning.realization_domain import NarrativeRealizationContract, realization_hash
+    from tests.unit.test_work_realization_contract import observation_contract
+
+    value = observation_contract()
+    value['schema_version'] = 'narrative-realization-contract.v4'
+    working = {'version': 'working-manuscript-context.v1', 'book_run_id': 'run', 'project_id': value['project_id'],
+        'book_id': value['book_id'], 'target_chapter': 2, 'accepted_through_chapter': 0, 'sources': []}
+    working['snapshot_hash'] = realization_hash(working)
+    value['working_manuscript'] = working
+    contract = NarrativeRealizationContract.from_mapping(value)
+    book = dict(checkpoint(), project_id=value['project_id'], book_id=value['book_id'], current_chapter=2)
+    if drift == 'other-run':
+        book['book_run_id'] = 'other'
+    if drift == 'other-chapter':
+        book['current_chapter'] = 3
+    cursor = Mock()
+    cursor.fetchone.return_value = None if drift == 'missing' else (value, 'original-actor', 'wrong' if drift == 'contract-hash' else contract.contract_digest)
+    current = Mock(return_value=drift != 'revoked-correction')
+    monkeypatch.setattr(plan_recovery, 'current_working_group_correction', current)
+    verify = Mock()
+    monkeypatch.setattr(manuscript, 'verify_working_context', verify)
+    assert plan_recovery.current_corrected_working_realization(SimpleNamespace(cursor=cursor), book=book,
+        realization_id=contract.realization_id, chapter=2) is (not drift)
+    assert verify.call_count == (0 if drift else 1)
+    if not drift:
+        assert current.call_args.kwargs['actor_id'] == 'original-actor'
+        assert "realization.lifecycle='FROZEN'" in cursor.execute.call_args.args[0]
+        assert "source.status='SUCCEEDED'" in cursor.execute.call_args.args[0]
+        assert "narrative-realization-contract.v4" in cursor.execute.call_args.args[0]
