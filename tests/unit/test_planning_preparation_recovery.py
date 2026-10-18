@@ -1133,7 +1133,7 @@ def test_first_isolation_custody_rejects_foreign_stale_unsettled_or_live_sources
         s.consume()
 
 
-@pytest.mark.parametrize('stop', ['acknowledged', 'isolated', 'query', 'lineage'])
+@pytest.mark.parametrize('stop', ['acknowledged', 'isolated', 'query', 'lineage', 'routing-link'])
 def test_first_custody_continues_through_stopped_children_without_reassigning_old_receipts(first_isolation, stop):
     s = first_isolation
     original, generation, isolation = s.members['original']
@@ -1155,6 +1155,9 @@ def test_first_custody_continues_through_stopped_children_without_reassigning_ol
     else:
         failure = dict(error_code='PROGRAMMING_BUG' if stop == 'query' else 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED',
             error_message='canceling statement due to statement timeout' if stop == 'query' else 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth')
+        if stop == 'routing-link':
+            from novel_forge.modules.story_planning_runtime.fresh_preparation_custody import LINEAGE_LINK_FAILURE
+            failure = deepcopy(LINEAGE_LINK_FAILURE)
         s.attempts['child'] = [('child-attempt', 'FAILED_FINAL', failure)]
     source = s.consume('child')
     assert source['depth'] == 2

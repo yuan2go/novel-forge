@@ -27,6 +27,67 @@ from .domain import StoryPlanningGenerationCommand, canonical_hash
 DEFINITION_NAME = "story_planning.runtime_continuation.register"
 HANDLER_KEY = "novel_forge.story_planning.runtime_continuation.register"
 OUTPUT_KEY = "story_planning.runtime_continuation"
+ACKNOWLEDGED_ROUTING_CONTRACTS = {
+    '5.0.0': ('planning-completed-preparation-handoff.v1', 'source_operation_id'),
+    '11.0.0': ('planning-first-isolated-preparation-handoff.v1', 'custody_source_operation_id'),
+    '12.0.0': ('planning-first-isolated-preparation-handoff.v2', 'custody_source_operation_id'),
+}
+
+
+def acknowledged_routing_link(cursor, *, continuation_id, successor_operation_id, project_id, book_id):
+    cursor.execute('''SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload',
+        registration.definition_version,r.target_runtime,registration.operation_id,source.actor_id,registration.actor_id
+        FROM authority_story_planning_runtime_continuation r
+        JOIN authority_operation source ON source.operation_id=r.source_operation_id
+        JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id
+        WHERE r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s
+          AND source.project_id=r.project_id AND source.workspace_id=r.workspace_id
+          AND source.status='RECONCILIATION_REQUIRED' AND registration.status='SUCCEEDED'
+          AND registration.definition_name='story_planning.runtime_continuation.register' ''',
+        [continuation_id, successor_operation_id, project_id, book_id])
+    row = cursor.fetchone()
+    if not row or row[4] not in ACKNOWLEDGED_ROUTING_CONTRACTS or row[7] != row[8]:
+        return None
+    contract, source_key = ACKNOWLEDGED_ROUTING_CONTRACTS[row[4]]
+    proof = row[5].get('preparation_handoff', {})
+    if proof.get('contract_version') != contract or proof.get(source_key) != row[0]:
+        return None
+    source_attempt = proof.get('source_attempt_id') if source_key == 'source_operation_id' else None
+    if source_key == 'source_operation_id' and not source_attempt:
+        return None
+    if source_key == 'custody_source_operation_id' and not any(
+            member.get('operation_id') == row[0] and member.get('kind') == 'ACKNOWLEDGED_CANCELLATION'
+            for member in proof.get('stopped_ancestry', [])):
+        return None
+    cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'CANCELLED')
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+            WHERE a.operation_id=%s AND l.status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL)
+        OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s AND actor_id<>%s),
+        EXISTS(SELECT 1 FROM authority_worker_cancel_signal signal JOIN authority_attempt attempt USING(attempt_id)
+            WHERE signal.operation_id=%s AND attempt.operation_id=signal.operation_id AND attempt.status='CANCELLED'
+            AND signal.status='ACKNOWLEDGED' AND signal.acknowledged_at IS NOT NULL),
+        EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s AND actor_id=%s),
+        EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status='CANCELLED'
+            AND (%s::text IS NULL OR attempt_id=%s))''',
+        [row[0],row[0],row[0],row[0],row[7],row[0],row[0],row[7],row[0],source_attempt,source_attempt])
+    stopped = cursor.fetchone()
+    if not stopped or stopped != (False, True, True, True):
+        return None
+    cursor.execute('''SELECT version.content,version.content_hash FROM authority_operation_output_asset output
+        JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
+        WHERE output.operation_id=%s AND output.role='primary' AND output.content_hash=version.content_hash
+          AND asset.project_id=%s AND asset.asset_type='planning_runtime_continuation' ''', [row[6],project_id])
+    receipts = cursor.fetchall()
+    if len(receipts) != 1 or canonical_hash(receipts[0][0]) != receipts[0][1]:
+        return None
+    receipt = receipts[0][0]
+    if (receipt.get('contract_version') != 'planning-runtime-continuation.v'+row[4].split('.')[0]
+            or receipt.get('source_operation_id') != row[0] or receipt.get('continuation_id') != continuation_id
+            or receipt.get('source_command') != row[2] or receipt.get('successor_command') != row[1]
+            or receipt.get('target_runtime') != row[5]):
+        return None
+    return row[:4]
 
 
 def _context_projection_hash(context):
@@ -49,7 +110,7 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0", "11.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0", "11.0.0", "12.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
@@ -85,6 +146,7 @@ def runtime_continuation_definition(
             **({'unsent_preparation_host_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '9.0.0' else {}),
             **({'failed_pre_submit_main_custody_required': True, 'complete_prepared_projection_required': True} if definition_version == '10.0.0' else {}),
             **({'first_isolation_preparation_custody_required': True, 'stopped_exact_ancestry_required': True} if definition_version == '11.0.0' else {}),
+            **({'first_isolation_preparation_custody_required': True, 'verified_zero_send_lineage_stop_supported': True} if definition_version == '12.0.0' else {}),
             **({'unsent_preparation_query_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '8.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
@@ -2097,7 +2159,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '11.0.0' if fresh_custody else '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '12.0.0' if fresh_custody else '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,

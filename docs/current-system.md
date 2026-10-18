@@ -1526,6 +1526,15 @@ before registration and again in its transaction. Repair numbers remain unchange
 isolation counts are observations. Migration 0232 appends this contract without
 reinterpreting v1/v7 history. Native dispatch/consumption on the corrected release
 remains pending; a read-only replay verifies the 82 original chapter20 siblings.
+Native v11 admission exposed a further pre-send lineage gap: execution still admitted
+acknowledged routing ancestry only for v5, so a legal v11 child failed before any
+Effect. Owner-based frozen-contract routing validation and a v12 successor for this
+exact zero-send failure are implemented (`CODE_EXISTS`). Migration 0233 retains v11
+semantics and adds the exact zero-send failure as a v12 custody member. Focused
+PostgreSQL checks cover v5/v11/v12 routing and reject changed actors, receipts,
+Book scope and active submission rights. Native consumption remains pending. The
+failed child and its original v11 control are retained; this failure is not a new
+capacity shortage.
 Isolation ancestry distinguishes verified zero-send v8/v9 carrier Operations from
 actual isolation owners (`CODE_EXISTS`). Each carrier must retain its exact successful
 outgoing control receipt and recomputed failure/Context/local-output custody proof,

@@ -414,9 +414,12 @@ def test_unsent_carrier_control_reader_requires_exact_successful_native_receipt(
             connection.rollback()
 
 
-@pytest.mark.parametrize('bridge', [False, True])
-def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes(bridge):
-    from novel_forge.storage.migrations.versions.v20261019_0232_first_isolated_preparation_custody import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED
+@pytest.mark.parametrize('version,bridge,lineage_stop', [('11.0.0', False, False), ('11.0.0', True, False), ('12.0.0', False, False), ('12.0.0', True, False), ('12.0.0', True, True)])
+def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes(version, bridge, lineage_stop):
+    if version == '12.0.0':
+        from novel_forge.storage.migrations.versions.v20261019_0233_acknowledged_preparation_routing import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED
+    else:
+        from novel_forge.storage.migrations.versions.v20261019_0232_first_isolated_preparation_custody import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED
     with psycopg.connect(DATABASE_URL) as c:
         try:
             for table in ('operation', 'story_planning_generation', 'story_planning_runtime_continuation', 'attempt',
@@ -431,8 +434,9 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
                 c.execute(f'INSERT INTO authority_{table} ({",".join(values)}) VALUES ({",".join(["%s"] * len(values))})',
                     [Jsonb(v) if isinstance(v, (dict, list)) else v for v in values.values()])
             command = dict(book_id='book', arc_working_set=dict(working_manuscript=dict(book_run_id='run', target_chapter=20, accepted_through_chapter=0)))
-            source = 'bridge' if bridge else 'anchor'
-            source_command = {**command, **(dict(runtime_continuation_id='generic') if bridge else {})}
+            source = 'lineage-stop' if lineage_stop else 'bridge' if bridge else 'anchor'
+            bridge_command = {**command, 'runtime_continuation_id': 'generic'}
+            source_command = {**command, **(dict(runtime_continuation_id='bridge-link' if lineage_stop else 'generic') if bridge else {})}
             child_command = {**command, 'runtime_continuation_id': 'new-link', 'idempotency_key': 'new'}
             gen = dict(book_id='book', generator_operation_name='chapter_plan.generate', logical_key='chapter:20', planning_scope='CHAPTER',
                 input_snapshot=[], input_snapshot_hash='inputs', repair_number=0)
@@ -442,27 +446,36 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
                     definition_snapshot=dict(commit_sha='new' if identity == 'child' else 'old'), causation_operation_id=source if identity == 'child' else None)
                 insert('story_planning_generation', operation_id=identity, **gen)
             insert('attempt', attempt_id='anchor-attempt', operation_id='anchor', status='CANCELLED', attempt_number=1)
-            insert('operation', operation_id='control', status='SUCCEEDED', actor_id='author', definition_name='story_planning.runtime_continuation.register', definition_version='11.0.0')
+            insert('operation', operation_id='control', status='SUCCEEDED', actor_id='author', definition_name='story_planning.runtime_continuation.register', definition_version=version)
             isolation = dict(contract_version='pure-generation-isolation.v1', actor_id='author', business_commit_right='REVOKED', activation_right='REVOKED')
             insert('generation_isolation', operation_id='anchor', external_effect_id='unknown', project_id='project', workspace_id='workspace', request_hash='unknown-hash', proof=isolation)
             insert('external_effect', external_effect_id='unknown', operation_id='anchor', project_id='project', effect_type='model.invoke', status='UNKNOWN', request_hash='unknown-hash', request_payload=dict(stage='context_fidelity'))
             insert('budget_reservation', external_effect_id='unknown', operation_id='anchor', status='HELD_UNKNOWN')
             if bridge:
                 insert('operation', operation_id='bridge', status='RECONCILIATION_REQUIRED', actor_id='author', project_id='project', workspace_id='workspace',
-                    definition_name='story_planning.generate', definition_version='1.21.0', command_payload=dict(payload=source_command), definition_snapshot=dict(commit_sha='old'))
+                    definition_name='story_planning.generate', definition_version='1.21.0', command_payload=dict(payload=bridge_command), definition_snapshot=dict(commit_sha='old'))
                 insert('story_planning_generation', operation_id='bridge', **gen)
                 insert('attempt', attempt_id='bridge-attempt', operation_id='bridge', status='CANCELLED', attempt_number=1)
                 insert('cancellation_command', operation_id='bridge', actor_id='author')
                 insert('worker_cancel_signal', operation_id='bridge', status='ACKNOWLEDGED', acknowledged_at=datetime.now(timezone.utc))
                 insert('story_planning_runtime_continuation', continuation_id='generic', source_operation_id='anchor', successor_operation_id='bridge', project_id='project', book_id='book', chain_depth=1)
+            if lineage_stop:
+                from novel_forge.modules.story_planning_runtime.fresh_preparation_custody import LINEAGE_LINK_FAILURE
+                insert('operation', operation_id='lineage-stop', status='FAILED_FINAL', actor_id='author', project_id='project', workspace_id='workspace',
+                    definition_name='story_planning.generate', definition_version='1.21.0', command_payload=dict(payload=source_command), definition_snapshot=dict(commit_sha='old'))
+                insert('story_planning_generation', operation_id='lineage-stop', **gen)
+                insert('attempt', attempt_id='lineage-attempt', operation_id='lineage-stop', status='FAILED_FINAL', attempt_number=1, result=LINEAGE_LINK_FAILURE)
+                insert('story_planning_runtime_continuation', continuation_id='bridge-link', source_operation_id='bridge', successor_operation_id='lineage-stop', project_id='project', book_id='book', chain_depth=2)
+                assert not c.execute("SELECT authority_first_preparation_member_stopped('lineage-stop','author')").fetchone()[0]
+                assert c.execute("SELECT authority_first_preparation_member_v12_stopped('lineage-stop','author')").fetchone()[0]
             snapshot = dict(context_policy_payload_json='{"planning_task_token_budget":512000}')
             boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='project', book_id='book', pack_snapshot_hash='snapshot-hash', sources=[dict(asset_version_id='context', content_hash='context-hash')])
-            proof = dict(contract_version='planning-first-isolated-preparation-handoff.v1', source_operation_id='anchor', source_attempt_id='anchor-attempt',
+            proof = dict(contract_version='planning-first-isolated-preparation-handoff.v1' if version == '11.0.0' else 'planning-first-isolated-preparation-handoff.v2', source_operation_id='anchor', source_attempt_id='anchor-attempt',
                 custody_source_operation_id=source, main_dispatch_count=0, source_submission_rights='REVOKED_OR_TERMINALLY_RELEASED', input_snapshot_id='book-input',
                 original_route=dict(model_provider='codex-cli', model_id='model', backend_id='backend', reasoning_effort='medium', auth_profile_ref='auth'),
                 original_pack_snapshot=snapshot, original_pack_snapshot_id='snapshot', original_pack_snapshot_hash='snapshot-hash',
                 context_asset_version_id='context', context_content_hash='context-hash', preparation_source_boundary=boundary, preparation_source_projection_hash='projection',
-                stopped_ancestry=[dict(operation_id='anchor'), *([dict(operation_id='bridge')] if bridge else [])],
+                stopped_ancestry=[dict(operation_id='anchor'), *([dict(operation_id='bridge')] if bridge else []), *([dict(operation_id='lineage-stop')] if lineage_stop else [])],
                 retained_preparation=[dict(operation_id='anchor', external_effect_id='success', request_hash='success-hash', stage='context_compress')])
             target = dict(model_provider='codex-cli', model_id='model', model_backend_id='backend', reasoning_effort='medium', auth_profile_ref='auth', preparation_handoff=proof, planning_capacity=dict(allocated_task_tokens=512000, prior_task_tokens=512000,
                 context_revalidation=dict(contract_version='same-capacity-isolated-preparation.v1', context_asset_version_id='context', context_content_hash='context-hash')))
@@ -477,12 +490,13 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
             insert('book_production', book_run_id='run', project_id='project', workspace_id='workspace', book_id='book', root_operation_id='book-root', current_chapter=19, accepted_through_chapter=0, state='PAUSED', input_snapshot_id='book-input')
             insert('story_formation_run', formation_run_id='formation', project_id='project', workspace_id='workspace', book_id='book', frozen_stage_inputs=dict(generation_policy=dict(auto_authorization=dict(authorized_by_principal_id='author'))))
             insert('story_planning_runtime_continuation', continuation_id='new-link', source_operation_id=source, successor_operation_id='child', registered_by_operation_id='control',
-                source_command=source_command, successor_command=child_command, project_id='project', workspace_id='workspace', book_id='book', source_release_sha='old', chain_depth=2 if bridge else 1, target_release_sha='new', target_runtime=target, decision_evidence=dict(formation_run_id='formation'))
+                source_command=source_command, successor_command=child_command, project_id='project', workspace_id='workspace', book_id='book', source_release_sha='old', chain_depth=3 if lineage_stop else 2 if bridge else 1, target_release_sha='new', target_runtime=target, decision_evidence=dict(formation_run_id='formation'))
             insert('asset', asset_id='receipt-owner', project_id='project', asset_type='planning_runtime_continuation')
             insert('asset_version', asset_version_id='receipt', asset_id='receipt-owner', content_hash='receipt-hash', content=dict(source_operation_id=source, target_runtime=target))
             insert('operation_output_asset', operation_id='control', asset_version_id='receipt', content_hash='receipt-hash', role='primary')
             def allowed():
-                return c.execute('SELECT authority_first_isolated_preparation_permitted(%s,%s,%s)', ['new-link', 'child', Jsonb(gen)]).fetchone()[0]
+                function = 'authority_first_isolated_preparation_v12_permitted' if version == '12.0.0' else 'authority_first_isolated_preparation_permitted'
+                return c.execute('SELECT '+function+'(%s,%s,%s)', ['new-link', 'child', Jsonb(gen)]).fetchone()[0]
             assert allowed()
             for statement in (
                 "UPDATE authority_operation SET actor_id='foreign' WHERE operation_id='child'",
@@ -506,5 +520,61 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
                 c.execute(statement)
                 assert not allowed(), statement
                 c.execute('ROLLBACK TO SAVEPOINT negative')
+        finally:
+            c.rollback()
+
+
+@pytest.mark.parametrize('version', ['5.0.0', '11.0.0', '12.0.0'])
+def test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_submission_rights(version):
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import acknowledged_routing_link, ACKNOWLEDGED_ROUTING_CONTRACTS
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    with psycopg.connect(DATABASE_URL) as c:
+        try:
+            for table in ('operation', 'story_planning_runtime_continuation', 'attempt', 'lease_acquisition',
+                'cancellation_command', 'worker_cancel_signal', 'operation_output_asset', 'asset_version', 'asset'):
+                c.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            def insert(table, **values):
+                c.execute(f'INSERT INTO authority_{table} ({",".join(values)}) VALUES ({",".join(["%s"] * len(values))})',
+                    [Jsonb(v) if isinstance(v, (dict, list)) else v for v in values.values()])
+            source = dict(project_id='project', workspace_id='workspace', book_id='book', actor_id='author', repair_number=0)
+            successor = {**source, 'runtime_continuation_id': 'link'}
+            contract, key = ACKNOWLEDGED_ROUTING_CONTRACTS[version]
+            proof = dict(contract_version=contract, source_attempt_id='attempt', stopped_ancestry=[dict(operation_id='source',kind='ACKNOWLEDGED_CANCELLATION')])
+            proof[key] = 'source'
+            target = dict(preparation_handoff=proof)
+            receipt = dict(contract_version='planning-runtime-continuation.v'+version.split('.')[0], source_operation_id='source',
+                source_command=source, successor_command=successor, continuation_id='link', target_runtime=target)
+            digest = canonical_hash(receipt)
+            insert('operation', operation_id='source', status='RECONCILIATION_REQUIRED', project_id='project', workspace_id='workspace', actor_id='author', command_payload=dict(payload=source))
+            insert('operation', operation_id='control', status='SUCCEEDED', actor_id='author', definition_name='story_planning.runtime_continuation.register', definition_version=version)
+            insert('story_planning_runtime_continuation', continuation_id='link', source_operation_id='source', successor_operation_id='child', registered_by_operation_id='control',
+                project_id='project', workspace_id='workspace', book_id='book', source_command=source, successor_command=successor, target_runtime=target)
+            insert('attempt', attempt_id='attempt', operation_id='source', status='CANCELLED')
+            insert('worker_cancel_signal', operation_id='source', attempt_id='attempt', status='ACKNOWLEDGED', acknowledged_at=datetime.now(timezone.utc))
+            insert('cancellation_command', operation_id='source', actor_id='author')
+            insert('asset', asset_id='owner', asset_type='planning_runtime_continuation', project_id='project')
+            insert('asset_version', asset_id='owner', asset_version_id='receipt', content_hash=digest, content=receipt)
+            insert('operation_output_asset', operation_id='control', asset_version_id='receipt', content_hash=digest, role='primary')
+            def read():
+                return acknowledged_routing_link(c.cursor(), continuation_id='link', successor_operation_id='child', project_id='project', book_id='book')
+            assert read() == ('source', successor, source, source)
+            for statement in (
+                "UPDATE authority_operation SET actor_id='other' WHERE operation_id='control'",
+                "UPDATE authority_operation SET definition_version='13.0.0' WHERE operation_id='control'",
+                "UPDATE authority_operation SET status='EXECUTING' WHERE operation_id='source'",
+                "UPDATE authority_attempt SET status='CHECKPOINTED'",
+                "UPDATE authority_worker_cancel_signal SET acknowledged_at=NULL",
+                "UPDATE authority_cancellation_command SET actor_id='other'",
+                "DELETE FROM authority_cancellation_command",
+                "INSERT INTO authority_lease_acquisition(attempt_id,status) VALUES('attempt','HELD')",
+                "UPDATE authority_asset_version SET content_hash='wrong'",
+                "UPDATE authority_asset_version SET content=jsonb_set(content,'{source_operation_id}','\"other\"')",
+                "UPDATE authority_story_planning_runtime_continuation SET book_id='foreign'",
+                "UPDATE authority_story_planning_runtime_continuation SET target_runtime=jsonb_set(target_runtime,'{preparation_handoff,contract_version}','\"unknown\"')",
+            ):
+                c.execute('SAVEPOINT negative_ack')
+                c.execute(statement)
+                assert read() is None, statement
+                c.execute('ROLLBACK TO SAVEPOINT negative_ack')
         finally:
             c.rollback()

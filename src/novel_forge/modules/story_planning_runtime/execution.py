@@ -284,15 +284,7 @@ def _planning_repair_routing_lineage(
                     FROM authority_story_planning_runtime_continuation r
                     JOIN authority_operation source ON source.operation_id=r.source_operation_id
                     JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED'
-                    WHERE (source.status IN ('CANCELLED','FAILED_FINAL','DEAD_LETTER') OR (
-                      source.status='RECONCILIATION_REQUIRED' AND registration.definition_name='story_planning.runtime_continuation.register'
-                      AND registration.definition_version='5.0.0'
-                      AND r.target_runtime#>>'{preparation_handoff,contract_version}'='planning-completed-preparation-handoff.v1'
-                      AND r.target_runtime#>>'{preparation_handoff,source_operation_id}'=source.operation_id
-                      AND EXISTS(SELECT 1 FROM authority_attempt a WHERE a.operation_id=source.operation_id
-                        AND a.attempt_id=r.target_runtime#>>'{preparation_handoff,source_attempt_id}' AND a.status='CANCELLED')
-                      AND NOT EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
-                        WHERE a.operation_id=source.operation_id AND l.status='HELD')))
+                    WHERE source.status IN ('CANCELLED','FAILED_FINAL','DEAD_LETTER')
                       AND r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s""",
                     [
                         payload["runtime_continuation_id"],
@@ -302,6 +294,10 @@ def _planning_repair_routing_lineage(
                     ],
                 )
                 binding = cursor.fetchone()
+                if binding is None:
+                    from .runtime_continuation import acknowledged_routing_link
+                    binding = acknowledged_routing_link(cursor, continuation_id=payload['runtime_continuation_id'],
+                        successor_operation_id=current_id, project_id=project_id, book_id=book_id)
                 if binding is None or binding[1] != payload or binding[2] != binding[3]:
                     raise KernelError(
                         "PLANNING_ROUTING_LINEAGE_INVALID",

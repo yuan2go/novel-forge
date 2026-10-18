@@ -6,8 +6,13 @@ import json
 from novel_forge.modules.command_kernel.errors import KernelError
 from .domain import canonical_hash
 
-CONTRACT = 'planning-first-isolated-preparation-handoff.v1'
+LEGACY_CONTRACT = 'planning-first-isolated-preparation-handoff.v1'
+CONTRACT = 'planning-first-isolated-preparation-handoff.v2'
+SUPPORTED_CONTRACTS = frozenset({LEGACY_CONTRACT, CONTRACT})
 CONTEXT_CONTRACT = 'same-capacity-isolated-preparation.v1'
+LINEAGE_LINK_FAILURE = dict(error_code='PLANNING_ROUTING_LINEAGE_INVALID',
+    error_message='PLANNING_ROUTING_LINEAGE_INVALID: Runtime successor lacks its exact native continuation',
+    failure_class='final_failure', failure_details={})
 PAUSED_INTENT = dict(message='RUNTIME_DISPATCH_PAUSED: Planning preparation waits at the native Book pause checkpoint',
     error_code='RUNTIME_DISPATCH_PAUSED', error_type='KernelError', request_sent=False,
     failure_phase='pre_send_assertion', dispatch_pause_contract='runtime-dispatch-control.v1', authorization_denial_permanent=False)
@@ -48,7 +53,7 @@ def require_source(uow, *, source_operation_id, frozen):
         parent = parent_row[0] if parent_row else None
         if parent:
             inherited = parent['target_runtime'].get('preparation_handoff', {})
-            if inherited and inherited.get('contract_version') != CONTRACT:
+            if inherited and inherited.get('contract_version') not in SUPPORTED_CONTRACTS:
                 return None
         members.append(dict(operation=operation, generation=generation, isolation=isolation, parent=parent))
         if not parent:
@@ -141,8 +146,11 @@ def require_source(uow, *, source_operation_id, frozen):
         else:
             failure = attempts[-1][2] or {}
             allowed_failure = (failure.get('error_code'), failure.get('error_message')) in {
+                ('PLANNING_ROUTING_LINEAGE_INVALID', 'PLANNING_ROUTING_LINEAGE_INVALID: Runtime successor lacks its exact native continuation'),
                 ('PROGRAMMING_BUG', 'canceling statement due to statement timeout'),
                 ('PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED', 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth')}
+            if failure.get('error_code') == LINEAGE_LINK_FAILURE['error_code'] and failure != LINEAGE_LINK_FAILURE:
+                raise rejected
             if op['status'] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} or cancellations or not allowed_failure or any(a[1] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} for a in attempts):
                 raise rejected
             receipt_kind, read = 'STOPPED_GENERATION_SIBLING', read_retained_generation_stage_success_in_uow
