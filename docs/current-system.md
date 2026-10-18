@@ -1512,6 +1512,13 @@ consumption use the same projection; historical Context and raw results remain i
 World actor judgments must also select their decoder from the frozen source's agency
 contract at plan binding and reference sampling. The historical v1 decoder cannot
 validate a v2 action by discarding its action classification.
+Planning dispatch must resolve the owning Book run from its frozen working, World,
+edition or native search binding. Multiple runs of one Book do not make a cancelled
+sibling the owner. Conflicting, missing or foreign explicit run bindings fail closed;
+an unbound historical request cannot choose an arbitrary live sibling.
+Current author-first routing policy updates need a versioned compare-and-set command
+schema when they supply an expected policy hash. A handler precondition cannot protect
+an update if its closed command schema rejects that field before admission.
 A paused worker may have planned a never-dispatched tail before checking Book pause.
 Versioned recovery of that tail is pending implementation: Kernel must cancel only
 the exact zero-dispatch intent and release its reservation after the worker relinquishes

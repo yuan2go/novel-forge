@@ -153,3 +153,48 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
             assert not allowed()
         finally:
             connection.rollback()
+
+
+@pytest.mark.parametrize('binding', ['working', 'world', 'edition', 'search'])
+def test_planning_dispatch_uses_exact_native_run_and_rejects_conflicting_or_missing_owner(binding):
+    from novel_forge.modules.book_authority.production_policy import require_planning_provider_dispatch
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with psycopg.connect(DATABASE_URL) as connection:
+        try:
+            for table in ('operation', 'story_planning_generation', 'book_production', 'cancellation_command',
+                          'story_creation_cancellation', 'story_formation_run', 'story_narrative_search'):
+                connection.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            payload = {}
+            if binding == 'working':
+                payload['arc_working_set'] = dict(working_manuscript=dict(book_run_id='live'))
+            elif binding == 'world':
+                payload['world_preparation_request'] = dict(book_run_id='live')
+            elif binding == 'edition':
+                payload['edition_execution'] = dict(book_run_id='live')
+            connection.execute("INSERT INTO authority_operation(operation_id,command_payload) VALUES('generation',%s)", [Jsonb(dict(payload=payload))])
+            connection.execute("INSERT INTO authority_story_planning_generation(operation_id,project_id,workspace_id,book_id,narrative_search_id) VALUES('generation','project','workspace','book',%s)", ['search' if binding == 'search' else None])
+            connection.execute("INSERT INTO authority_story_narrative_search(search_id,project_id,workspace_id,book_id,book_run_id) VALUES('search','project','workspace','book','live')")
+            for run, state in [('live', 'READY'), ('sibling', 'CANCELLED')]:
+                connection.execute('INSERT INTO authority_book_production(book_run_id,project_id,workspace_id,book_id,state,root_operation_id) VALUES(%s,\'project\',\'workspace\',\'book\',%s,%s)', [run, state, run+'-root'])
+            def check():
+                require_planning_provider_dispatch(connection.cursor(), project_id='project', operation_id='generation')
+            check()
+            for statement in (
+                "UPDATE authority_book_production SET state='PAUSED' WHERE book_run_id='live'",
+                "INSERT INTO authority_cancellation_command(operation_id) VALUES('live-root')",
+                "UPDATE authority_book_production SET book_run_id='missing' WHERE book_run_id='live'",
+                "UPDATE authority_book_production SET project_id='foreign' WHERE book_run_id='live'",
+                "UPDATE authority_operation SET command_payload=jsonb_set(command_payload,'{payload,edition_execution}','{\"book_run_id\":\"sibling\"}')" if binding != 'edition'
+                    else "UPDATE authority_operation SET command_payload=jsonb_set(command_payload,'{payload,world_preparation_request}','{\"book_run_id\":\"sibling\"}')",
+            ):
+                connection.execute('SAVEPOINT owner_negative')
+                connection.execute(statement)
+                with pytest.raises(KernelError, match='RUNTIME_DISPATCH_PAUSED|BOOK_GENERATION_EXECUTION_NOT_LIVE'):
+                    check()
+                connection.execute('ROLLBACK TO SAVEPOINT owner_negative')
+            connection.execute("UPDATE authority_operation SET command_payload='{\"payload\":{}}'")
+            connection.execute('UPDATE authority_story_planning_generation SET narrative_search_id=NULL')
+            with pytest.raises(KernelError, match='BOOK_GENERATION_EXECUTION_NOT_LIVE'):
+                check()
+        finally:
+            connection.rollback()

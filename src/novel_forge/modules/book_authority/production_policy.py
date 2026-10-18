@@ -8,24 +8,34 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 def require_planning_provider_dispatch(cursor, *, project_id: str, operation_id: str) -> None:
     cursor.execute(
-        """SELECT book.state,
+        """SELECT CASE WHEN cardinality(owner.runs)>0 AND (book.book_run_id IS NULL
+                OR (SELECT count(DISTINCT run) FROM unnest(owner.runs) run)>1)
+            THEN 'OWNER_INVALID' ELSE book.state END,
             EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=book.root_operation_id),
             EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
                 JOIN authority_story_formation_run formation USING(formation_run_id)
                 WHERE formation.project_id=book.project_id AND formation.book_id=book.book_id
                   AND book.stable_idempotency_key=formation.formation_run_id||':production')
         FROM authority_story_planning_generation generation JOIN authority_operation operation USING(operation_id)
-        JOIN authority_book_production book ON book.project_id=generation.project_id
+        CROSS JOIN LATERAL (SELECT array_remove(ARRAY[
+            NULLIF(operation.command_payload#>>'{payload,arc_working_set,working_manuscript,book_run_id}',''),
+            NULLIF(operation.command_payload#>>'{payload,world_preparation_request,book_run_id}',''),
+            NULLIF(operation.command_payload#>>'{payload,edition_execution,book_run_id}',''),
+            (SELECT NULLIF(search.book_run_id,'') FROM authority_story_narrative_search search
+                WHERE search.search_id=generation.narrative_search_id AND search.project_id=generation.project_id
+                    AND search.workspace_id=generation.workspace_id AND search.book_id=generation.book_id)
+        ],NULL) runs) owner
+        LEFT JOIN authority_book_production book ON book.project_id=generation.project_id
           AND book.workspace_id=generation.workspace_id AND book.book_id=generation.book_id
+          AND (cardinality(owner.runs)=0 OR book.book_run_id=ANY(owner.runs))
         WHERE generation.operation_id=%s AND generation.project_id=%s
-          AND (operation.command_payload#>>'{payload,arc_working_set,working_manuscript,book_run_id}' IS NULL
-            OR book.book_run_id=operation.command_payload#>>'{payload,arc_working_set,working_manuscript,book_run_id}')""",
+        """,
         [operation_id, project_id],
     )
     books = cursor.fetchall()
     if not books:
         return
-    if len(books) != 1 or any(row[1] or row[2] or row[0] in {'ABORTED','CANCELLED','COMPLETED'} for row in books):
+    if len(books) != 1 or any(row[1] or row[2] or row[0] in {'OWNER_INVALID','ABORTED','CANCELLED','COMPLETED'} for row in books):
         raise KernelError("BOOK_GENERATION_EXECUTION_NOT_LIVE", "Planning requires its uncancelled owning Book")
     if books[0][0] == 'PAUSED':
         raise KernelError("RUNTIME_DISPATCH_PAUSED", "Planning preparation waits at the native Book pause checkpoint")
