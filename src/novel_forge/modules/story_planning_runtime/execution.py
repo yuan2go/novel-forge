@@ -230,17 +230,13 @@ def _planning_repair_routing_lineage(
     expected_logical_key = ""
     expected_repair_number: int | None = None
     expected_repair_delta = 1
+    content_operations = 0
     with runtime.connection() as connection, connection.cursor() as cursor:
         while True:
             if current_id in seen:
                 raise KernelError(
                     "PLANNING_ROUTING_LINEAGE_CYCLE",
                     "Planning repair routing lineage contains a cycle",
-                )
-            if len(lineage) >= PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS:
-                raise KernelError(
-                    "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED",
-                    "Planning repair routing lineage exceeds its bounded depth",
                 )
             seen.add(current_id)
             cursor.execute(
@@ -335,6 +331,13 @@ def _planning_repair_routing_lineage(
                     "PLANNING_ROUTING_LINEAGE_INVALID",
                     "Planning repair routing lineage crosses its frozen task scope",
                 )
+            if not capacity_predecessor:
+                content_operations += 1
+                if content_operations > PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS:
+                    raise KernelError(
+                        "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED",
+                        "Planning repair routing lineage exceeds its bounded depth",
+                    )
             if not lineage:
                 expected_logical_key = logical_key
             lineage.append(current_id)

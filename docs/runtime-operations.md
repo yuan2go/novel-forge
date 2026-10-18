@@ -189,6 +189,14 @@ Effect chain and generated artifact lookup. It retains the UoW statement timeout
 all sample eligibility and retry exclusions. Registration alone does not prove native
 receipt reuse; run the same-Book continuation and inspect actual dispatch afterward.
 
+New exact unsent query-timeout and lineage-depth failures use registration v9 and migration230 with the same
+Context, Book/input, actor, zero-send and inherited-receipt checks. A retryable source
+Operation transitions atomically to FAILED_FINAL during registration; its original
+Attempt result remains intact. Runtime continuation edges do not consume content repair
+nodes, but all edges remain in the routing evidence and keep cycle, scope, frozen
+binding and repair-number validation. The eight-content-Operation and stage repair
+bounds still apply. Validate actual receipt consumption before claiming recovery.
+
 Current author-first routing updates with `expected_policy_hash` use policy command
 2.3.0 / command Schema v11. The current hash is checked under the routing policy lock;
 stale policy updates refuse before selection. Earlier policy command definitions retain

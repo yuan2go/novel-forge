@@ -307,6 +307,9 @@ def isolated_chain(monkeypatch):
         book=(18, 0, 'book-input', 'PAUSED', None), held=False,
         isolation=dict(contract_version='pure-generation-isolation.v1',business_commit_right='REVOKED',activation_right='REVOKED'))
     uow = MagicMock()
+    def execute(sql, args):
+        assert sql.count('%s') == len(args)
+    uow.cursor.execute.side_effect = execute
     def fetchone():
         sql, args = uow.cursor.execute.call_args.args
         if 'FROM authority_story_planning_runtime_continuation link' in sql:
@@ -399,8 +402,8 @@ def test_sent_main_retains_existing_isolation_recovery_without_unsent_preparatio
     assert state.effects['consumer'][1][0]['status'] == 'UNKNOWN'
 
 
-@pytest.fixture
-def query_handoff(monkeypatch):
+@pytest.fixture(params=["query", "lineage"])
+def query_handoff(monkeypatch, request):
     from novel_forge.modules.story_planning_runtime.preparation_recovery import unsent_query_source, ISOLATED_HANDOFF
     frozen = dict(project_id='project',workspace_id='workspace',book_id='book',actor_id='author',runtime_continuation_id='prior',
         arc_working_set=dict(working_manuscript=dict(book_run_id='run')))
@@ -411,7 +414,11 @@ def query_handoff(monkeypatch):
     binding = dict(successor_operation_id='failed',successor_command=frozen,target_runtime=dict(preparation_handoff=inherited,
         planning_capacity=dict(source_failure={'original':'capacity'},context_revalidation={'original':'frozen'})))
     failure = dict(error_code='PROGRAMMING_BUG',error_message='canceling statement due to statement timeout',failure_class='programming_bug',failure_details={})
-    state = SimpleNamespace(unsafe=False,book=(18,0,'book-input','READY',None,False),
+    lineage = request.param == 'lineage'
+    if lineage:
+        failure.update(error_code='PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED', error_message='PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth', failure_class='retryable')
+    status = 'FAILED_RETRYABLE' if lineage else 'FAILED_FINAL'
+    state = SimpleNamespace(status=status,contract='planning-unsent-preparation-lineage-handoff.v1' if lineage else 'planning-unsent-preparation-query-handoff.v1',failure_key='unsent_lineage_failure' if lineage else 'unsent_query_failure',unsafe=False,book=(18,0,'book-input','READY',None,False),
         operation=dict(actor_id='author',workspace_id='workspace'),frozen=frozen,binding=binding,
         outputs=[('saved-context',digest,'planning.context_bundle','context_bundle')],failure=failure,
         snapshot=[({'context_policy_ref':'context-policy:chapter-generation-pack:v4'},'snapshot','snapshot-hash','failed-attempt')])
@@ -421,6 +428,9 @@ def query_handoff(monkeypatch):
     state.documents = documents
     uow = MagicMock()
     uow.database_url = 'db'
+    def execute(sql, args):
+        assert sql.count('%s') == len(args)
+    uow.cursor.execute.side_effect = execute
     def fetchone():
         sql,_ = uow.cursor.execute.call_args.args
         if 'to_jsonb(operation)' in sql:
@@ -440,7 +450,7 @@ def query_handoff(monkeypatch):
     monkeypatch.setattr('novel_forge.modules.story_planning_runtime.runtime_continuation.require_binding',lambda *_:binding)
     monkeypatch.setattr('novel_forge.modules.book_authority.manuscript.historical_working_inputs',lambda *_:('book',[]))
     monkeypatch.setattr('novel_forge.modules.chapter_group_authority.replan_retirement.lock_replan_roots',lambda *_a,**_kw:None)
-    state.consume = lambda:unsent_query_source(uow,source_operation_id='failed',row=('FAILED_FINAL',3),frozen=frozen,attempt=('FAILED_FINAL',{},failure))
+    state.consume = lambda:unsent_query_source(uow,source_operation_id='failed',row=(state.status,3),frozen=frozen,attempt=(state.status,{},failure))
     return state
 
 
@@ -450,9 +460,9 @@ def test_terminal_unsent_query_retains_saved_context_and_original_preparation_in
     source = state.consume()
     proof = source['completed_preparation']
     assert source['mode'] == 'PRE_SEND_CAPACITY' and source['depth'] == 9
-    assert proof['contract_version'] == 'planning-unsent-preparation-query-handoff.v1'
+    assert proof['contract_version'] == state.contract
     assert proof['retained_preparation'] == original['target_runtime']['preparation_handoff']['retained_preparation']
-    failure = proof['unsent_query_failure']
+    failure = proof[state.failure_key]
     assert failure['source_context']['asset_version_id'] == 'saved-context'
     assert failure['original_failure_hash'] == canonical_hash(state.failure)
     assert failure['inherited_preparation_hash'] == canonical_hash(original['target_runtime']['preparation_handoff'])
@@ -492,3 +502,37 @@ def test_query_handoff_rejects_source_context_frontier_or_execution_drift(query_
         state.failure['error_message'] = 'another programming bug'
     with pytest.raises(KernelError,match='PLANNING_PREPARATION_QUERY_HANDOFF_UNSAFE'):
         state.consume()
+
+
+@pytest.mark.parametrize('damage', [None, 'pack', 'attempt', 'stage', 'bytes', 'inner_hash', 'type', 'role', 'key', 'hash'])
+def test_unsent_host_failure_retains_only_exact_local_preparation_materialization(query_handoff, damage):
+    state = query_handoff
+    pack = dict(pack_id='pack',pack_version='version',manifest_hash='manifest',compilation_hash='compilation',catalog_snapshot_hash='catalog',binding_set_id='binding',binding_set_hash='binding-hash')
+    state.snapshot[0][0].update(pack)
+    contract = dict(schema_version='novelos.planning_capability_materialization.v1',stage='context_fidelity',pack_identity=deepcopy(pack),
+        attempt_snapshot=dict(operation_id='failed',attempt_id='failed-attempt',snapshot_id='snapshot',snapshot_hash='snapshot-hash'))
+    if damage == 'pack':
+        contract['pack_identity']['pack_id']='foreign'
+    if damage == 'attempt':
+        contract['attempt_snapshot']['attempt_id']='foreign'
+    if damage == 'stage':
+        contract['stage']='chapter_plan.generate'
+    contract['materialization_hash']=canonical_hash(contract)
+    if damage == 'inner_hash':
+        contract['materialization_hash']='wrong'
+    content=dict(contract=contract)
+    digest=canonical_hash(content)
+    state.documents['materialization']=SimpleNamespace(asset_type='other' if damage=='type' else 'capability_materialization_manifest',content=content,content_hash=digest)
+    if damage == 'bytes':
+        content['altered']=True
+    state.outputs.append(('materialization','wrong' if damage=='hash' else digest,
+        'planning.other' if damage=='key' else 'production_execution.contract.capability_materialization_manifest.token',
+        'primary' if damage=='role' else 'execution_contract'))
+    if damage:
+        with pytest.raises(KernelError,match='PLANNING_PREPARATION_QUERY_HANDOFF_UNSAFE'):
+            state.consume()
+    else:
+        proof=state.consume()['completed_preparation']
+        assert proof['retained_local_preparation']==[dict(asset_version_id='materialization',content_hash=digest,
+            output_key=state.outputs[-1][2],role='execution_contract',asset_type='capability_materialization_manifest',stage='context_fidelity')]
+        assert proof['retained_preparation']==state.binding['target_runtime']['preparation_handoff']['retained_preparation']

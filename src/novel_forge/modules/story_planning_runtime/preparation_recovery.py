@@ -5,8 +5,10 @@ from .domain import canonical_hash
 
 ISOLATED_HANDOFF = 'planning-isolated-preparation-handoff.v1'
 QUERY_HANDOFF = 'planning-unsent-preparation-query-handoff.v1'
-CUSTODY_HANDOFF_CONTRACTS = frozenset({'planning-terminal-preparation-handoff.v1', ISOLATED_HANDOFF, QUERY_HANDOFF})
-MULTI_OWNER_HANDOFF_CONTRACTS = frozenset({ISOLATED_HANDOFF, QUERY_HANDOFF})
+LINEAGE_HANDOFF = 'planning-unsent-preparation-lineage-handoff.v1'
+UNSENT_HANDOFF_CONTRACTS = frozenset({QUERY_HANDOFF, LINEAGE_HANDOFF})
+CUSTODY_HANDOFF_CONTRACTS = frozenset({'planning-terminal-preparation-handoff.v1', ISOLATED_HANDOFF}) | UNSENT_HANDOFF_CONTRACTS
+MULTI_OWNER_HANDOFF_CONTRACTS = frozenset({ISOLATED_HANDOFF}) | UNSENT_HANDOFF_CONTRACTS
 
 
 def preparation_boundary(database_url, *, command, operation_id, capture, current):
@@ -444,22 +446,29 @@ def unsent_query_source(uow, *, source_operation_id, row, frozen, attempt):
     if inherited.get('contract_version') not in MULTI_OWNER_HANDOFF_CONTRACTS:
         return None
     rejected = KernelError('PLANNING_PREPARATION_QUERY_HANDOFF_UNSAFE', 'Retain exact registered preparation custody and Context, terminal query failure, zero budgets or Effects and released submission rights')
-    if (row[0] != 'FAILED_FINAL' or attempt[0] != 'FAILED_FINAL'
-            or attempt[2] != dict(error_code='PROGRAMMING_BUG', error_message='canceling statement due to statement timeout', failure_class='programming_bug', failure_details={})
+    lineage_failure = attempt[2] == dict(error_code='PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED',
+        error_message='PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth', failure_class='retryable', failure_details={})
+    terminal_status = 'FAILED_RETRYABLE' if lineage_failure else 'FAILED_FINAL'
+    contract = LINEAGE_HANDOFF if lineage_failure else QUERY_HANDOFF
+    failure_key = 'unsent_lineage_failure' if lineage_failure else 'unsent_query_failure'
+    if (row[0] not in ({'FAILED_RETRYABLE', 'FAILED_FINAL'} if lineage_failure else {'FAILED_FINAL'}) or attempt[0] != terminal_status
+            or not lineage_failure and attempt[2] != dict(error_code='PROGRAMMING_BUG', error_message='canceling statement due to statement timeout', failure_class='programming_bug', failure_details={})
             or binding['successor_operation_id'] != source_operation_id or binding['successor_command'] != frozen):
         raise rejected
     uow.cursor.execute('''SELECT to_jsonb(operation),EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
         OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
-        OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'FAILED_FINAL')
+        OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>%s)
         OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id) WHERE attempt.operation_id=%s AND lease.status='HELD')
         OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)
         OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s)
-        FROM authority_operation operation WHERE operation_id=%s''', [source_operation_id] * 7)
+        FROM authority_operation operation WHERE operation_id=%s''', [source_operation_id] * 3 + [terminal_status] + [source_operation_id] * 4)
     operation, unsafe = uow.cursor.fetchone()
     if unsafe or (operation['actor_id'], operation['workspace_id']) != (frozen['actor_id'], frozen['workspace_id']):
         raise rejected
     uow.cursor.execute('SELECT asset_version_id,content_hash,output_key,role FROM authority_operation_output_asset WHERE operation_id=%s', [source_operation_id])
-    source_contexts = uow.cursor.fetchall()
+    source_outputs = uow.cursor.fetchall()
+    source_contexts = [item for item in source_outputs if item[2] == 'planning.context_bundle']
+    local_preparation = [item for item in source_outputs if item[2] != 'planning.context_bundle']
     if len(source_contexts) > 1 or any(item[1] != inherited['context_content_hash'] or item[2] != 'planning.context_bundle' or item[3] != 'context_bundle' for item in source_contexts):
         raise rejected
     working = frozen['arc_working_set']['working_manuscript']
@@ -482,6 +491,20 @@ def unsent_query_source(uow, *, source_operation_id, row, frozen, attempt):
     snapshots = uow.cursor.fetchall()
     if len(snapshots) != 1 or snapshots[0][0]['context_policy_ref'] != 'context-policy:chapter-generation-pack:v4':
         raise rejected
+    retained_local = []
+    for output in local_preparation:
+        document = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=output[0])
+        materialization = document.content.get('contract', {})
+        identity = materialization.get('attempt_snapshot', {})
+        if (output[3] != 'execution_contract' or not output[2].startswith('production_execution.contract.capability_materialization_manifest.')
+                or document.asset_type != 'capability_materialization_manifest' or document.content_hash != output[1]
+                or canonical_hash(document.content) != output[1] or materialization.get('schema_version') != 'novelos.planning_capability_materialization.v1'
+                or materialization.get('stage') not in {'context_compress', 'context_fidelity'}
+                or materialization.get('materialization_hash') != canonical_hash({key:value for key,value in materialization.items() if key != 'materialization_hash'})
+                or any(identity.get(key) != value for key,value in dict(operation_id=source_operation_id,attempt_id=snapshots[0][3],snapshot_id=snapshots[0][1],snapshot_hash=snapshots[0][2]).items())
+                or materialization.get('pack_identity') != {key:snapshots[0][0][key] for key in ('pack_id','pack_version','manifest_hash','compilation_hash','catalog_snapshot_hash','binding_set_id','binding_set_hash')}):
+            raise rejected
+        retained_local.append(dict(asset_version_id=output[0],content_hash=output[1],output_key=output[2],role=output[3],asset_type=document.asset_type,stage=materialization['stage']))
     uow.cursor.execute('SELECT input_snapshot FROM authority_story_planning_generation WHERE operation_id=%s', [source_operation_id])
     inputs = uow.cursor.fetchone()[0]
     context = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=inherited['context_asset_version_id'])
@@ -499,15 +522,18 @@ def unsent_query_source(uow, *, source_operation_id, row, frozen, attempt):
     uow.cursor.execute('SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s', [source_operation_id])
     depth = int(uow.cursor.fetchone()[0]) + 1
     from copy import deepcopy
-    proof = {**deepcopy(inherited), 'contract_version': QUERY_HANDOFF,
-        'unsent_query_failure': dict(source_operation_id=source_operation_id, source_attempt_id=snapshots[0][3],
+    proof = {**deepcopy(inherited), 'contract_version': contract,
+        failure_key: dict(source_operation_id=source_operation_id, source_attempt_id=snapshots[0][3],
             original_failure=attempt[2], original_failure_hash=canonical_hash(attempt[2]),
             source_context=dict(asset_version_id=source_contexts[0][0], content_hash=source_contexts[0][1]) if source_contexts else None,
             inherited_preparation_hash=canonical_hash(inherited), inherited_preparation=inherited),
-        'source_submission_rights': 'RELEASED_BY_UNSENT_QUERY_FAILURE'}
+        'source_submission_rights': 'RELEASED_BY_UNSENT_LINEAGE_FAILURE' if lineage_failure else 'RELEASED_BY_UNSENT_QUERY_FAILURE'}
+    proof.pop('retained_local_preparation', None)
+    if retained_local:
+        proof['retained_local_preparation'] = retained_local
     allocation = binding['target_runtime']['planning_capacity']
     return dict(mode='PRE_SEND_CAPACITY', source_operation_id=source_operation_id, command=frozen, version=int(row[1]),
         evidence_asset_version_id=context.asset_version_id, evidence_hash=context.content_hash,
         snapshot=snapshots[0][0], snapshot_id=snapshots[0][1], snapshot_hash=snapshots[0][2], attempt_id=snapshots[0][3],
-        inputs=inputs, failure=allocation['source_failure'], depth=depth,
+        inputs=inputs, failure=allocation['source_failure'], depth=depth, source_operation_status=row[0],
         context_revalidation=allocation['context_revalidation'], completed_preparation=proof)

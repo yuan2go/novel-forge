@@ -1533,6 +1533,18 @@ Pending selection shares the Provider dispatch ownership projection: working, Wo
 edition and native search bindings must identify this exact BookRun. Cancelled or stale
 sibling runs cannot be selected for its recovery. Opening before a BookRun exists retains
 its original pre-Book scope and authorization checks.
+Planning routing counts content generations separately from verified zero-delta runtime
+continuations. The existing eight-content-Operation bound remains; every continuation
+still retains its full ancestry, native control receipt, frozen command, task scope and
+unchanged repair number, and cycles refuse. This separation does not increase semantic
+or stage repair allowances and is `CODE_EXISTS`. Registration v9 and migration230 retain
+exact unsent query-timeout or lineage-depth failures carrying prior explicit preparation custody, with
+zero Effects or budgets, no submission rights, and the original same-hash saved Context.
+Any locally saved capability materialization must bind the original Attempt snapshot,
+Pack identity, preparation stage and immutable hashes; it grants no Provider-send or
+new result authority. Other outputs refuse.
+The registration transaction appends the source terminal transition; its failed Attempt
+and prior history remain unchanged. Native successor consumption remains pending.
 Routing observation lookup currently scans large asset JSON before matching its stage
 and model cohort; native statement-timeout failures have exposed this scaling gap.
 Migration 229 adds matching indexes for the model cohort, prior routing chain and

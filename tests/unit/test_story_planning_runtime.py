@@ -296,6 +296,54 @@ def test_planning_repair_routing_lineage_has_a_bounded_depth(monkeypatch):
         )
 
 
+@pytest.mark.parametrize('content_nodes', [1, 8, 9])
+@pytest.mark.parametrize('defect', [None, 'cycle', 'foreign', 'counter', 'binding'])
+def test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth(monkeypatch, defect, content_nodes):
+    rows = {'root': _routing_lineage_row(f'content-{content_nodes-2}' if content_nodes>1 else '', content_nodes-1)}
+    for number in range(content_nodes-1):
+        rows[f'content-{number}'] = _routing_lineage_row(f'content-{number-1}' if number else '', number)
+    for number in range(12):
+        predecessor = 'root' if number == 0 else f'continued-{number-1}'
+        row = _routing_lineage_row('', content_nodes-1, runtime_continuation_id=f'continuation-{number}')
+        rows[f'continued-{number}'] = (*row[:4], predecessor)
+    if defect == 'foreign':
+        rows['continued-2'][3]['book_id'] = 'foreign'
+    if defect == 'counter':
+        rows['continued-2'][3]['repair_number'] += 1
+    class Cursor:
+        def __enter__(self):return self
+        def __exit__(self, *args):return None
+        def execute(self, sql, params):self.sql,self.params=sql,params
+        def fetchone(self):
+            if self.sql.startswith('SELECT 1'):
+                return (1,)
+            if 'r.successor_command' in self.sql:
+                identity=self.params[1]
+                predecessor=rows[identity][4]
+                if defect == 'cycle' and identity=='continued-0':
+                    predecessor='continued-11'
+                current=deepcopy(rows[identity][3])
+                if defect == 'binding' and identity=='continued-2':
+                    current['logical_key']='changed'
+                original=deepcopy(rows[predecessor][3])
+                return predecessor,current,original,original
+            return rows.get(self.params[0])
+    class Connection:
+        def __enter__(self):return self
+        def __exit__(self, *args):return None
+        def cursor(self):return Cursor()
+    monkeypatch.setattr(planning_execution,'get_database_runtime',lambda _:SimpleNamespace(connection=lambda:Connection()))
+    def read():return _planning_repair_routing_lineage('db', project_id='project-1',book_id='book-1',generator_operation_name='world.design.generate',operation_id='continued-11',repair_of_operation_id='')
+    if defect:
+        with pytest.raises(KernelError,match='PLANNING_ROUTING_LINEAGE_CYCLE' if defect=='cycle' else 'PLANNING_ROUTING_LINEAGE_INVALID'):
+            read()
+    elif content_nodes > 8:
+        with pytest.raises(KernelError,match='PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED'):
+            read()
+    else:
+        assert read() == (*(f'content-{number}' for number in range(content_nodes-1)), 'root',*(f'continued-{number}' for number in range(12)))
+
+
 @pytest.mark.parametrize("removed", ["chapter_contract_schema_version", "narrative_architecture_version"])
 def test_current_chapter_activation_cannot_use_import_compatibility_to_downgrade(removed: str) -> None:
     content = planning_fixture_response(

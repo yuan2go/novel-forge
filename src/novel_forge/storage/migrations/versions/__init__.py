@@ -232,6 +232,7 @@ from . import (
     v20261018_0227_completed_preparation_handoff,
     v20261018_0228_terminal_preparation_handoff,
     v20261019_0229_routing_observation_preparation_recovery,
+    v20261019_0230_unsent_preparation_lineage,
 )
 
 VERSION_MODULES = [
@@ -465,6 +466,7 @@ VERSION_MODULES = [
     v20261018_0227_completed_preparation_handoff,
     v20261018_0228_terminal_preparation_handoff,
     v20261019_0229_routing_observation_preparation_recovery,
+    v20261019_0230_unsent_preparation_lineage,
 ]
 
 __all__ = ["VERSION_MODULES"]
