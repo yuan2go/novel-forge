@@ -1678,10 +1678,12 @@ class PostgresBookAuthority:
         }
 
     def pause(
-        self, book_run_id: str, *, reason: str, principal: Principal
+        self, book_run_id: str, *, reason: str, principal: Principal, expected_version: int | None = None,
     ) -> dict[str, Any]:
         book = self.require(book_run_id)
         principal.require("book.authority.execute", book["project_id"])
+        if expected_version is not None and int(book["version"]) != expected_version:
+            raise KernelError("BOOK_MUTATION_CONFLICT", "Book checkpoint changed before its requested pause")
         if book["state"] in {
             BookProductionState.COMPLETED.value,
             BookProductionState.ABORTED.value,

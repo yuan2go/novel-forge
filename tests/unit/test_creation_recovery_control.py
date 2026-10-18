@@ -203,6 +203,54 @@ def test_operator_pause_blocks_the_next_recovery_hook(drive):
     candidates.recover_quality_frontier.assert_not_called()
 
 
+@pytest.mark.parametrize(('state', 'reason', 'expected'), [
+    ('PAUSED', 'AUTHOR_PAUSE', 'PAUSED'),
+    ('ABORTED', '', 'CANCELLED'),
+    ('CANCELLED', '', 'CANCELLED'),
+    ('COMPLETED', '', 'COMPLETED'),
+])
+def test_exhausted_recovery_preserves_intervening_author_or_terminal_checkpoint(drive, monkeypatch, state, reason, expected):
+    from novel_forge.modules.command_kernel import generation_isolation
+    arguments, _, _ = drive
+    authority = arguments['composition'].authority
+    authority.pause = Mock()
+    book = authority.require.return_value
+
+    def exhaustion(*_, **__):
+        book.update(state=state, paused_reason=reason)
+        raise KernelError('GENERATION_RECOVERY_EXHAUSTED', 'Original generation cannot continue')
+
+    monkeypatch.setattr(generation_isolation, 'recover_chapter_generations', exhaustion)
+    assert drive_book(**arguments) == expected
+    assert book['paused_reason'] == reason
+    authority.pause.assert_not_called()
+
+
+def test_exhausted_recovery_pause_binds_observed_book_version(drive, monkeypatch):
+    from novel_forge.modules.command_kernel import generation_isolation
+    arguments, _, _ = drive
+    authority = arguments['composition'].authority
+    authority.require.return_value['version'] = 7
+    authority.pause = Mock(side_effect=KernelError('BOOK_MUTATION_CONFLICT', 'Author changed Book after exhaustion'))
+    monkeypatch.setattr(generation_isolation, 'recover_chapter_generations', Mock(
+        side_effect=KernelError('GENERATION_RECOVERY_EXHAUSTED', 'Original generation cannot continue')))
+    with pytest.raises(KernelError, match='Author changed Book'):
+        drive_book(**arguments)
+    assert authority.pause.call_args.kwargs['expected_version'] == 7
+
+
+def test_pause_rejects_stale_version_before_mutating_saga_or_book():
+    from novel_forge.modules.book_authority.production import PostgresBookAuthority
+    authority = object.__new__(PostgresBookAuthority)
+    authority.require = Mock(return_value={'version': 8, 'state': 'PAUSED',
+        'paused_reason': 'AUTHOR_PAUSE', 'project_id': 'p'})
+    authority._book_graph_context = Mock()
+    with pytest.raises(KernelError, match='Book checkpoint changed') as error:
+        authority.pause('b', reason='GENERATION_RECOVERY_EXHAUSTED', principal=Mock(), expected_version=7)
+    assert error.value.code == 'BOOK_MUTATION_CONFLICT'
+    authority._book_graph_context.assert_not_called()
+
+
 def test_operator_pause_during_recovery_blocks_the_following_action(drive):
     from novel_forge.modules.chapter_authority import canon_contract_recovery
     arguments, candidates, _ = drive

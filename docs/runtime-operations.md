@@ -1298,6 +1298,8 @@ driver re-reads the owning Book before another Chapter scheduler tick, including
 after UNKNOWN isolation. Explicit author pauses require an explicit resume; the existing
 owned generation-recovery pause remains separately resumable. Coordinator interruption
 retains original process, Attempt and receipt identities for saved-result reconciliation.
+Generation recovery exhaustion preserves an intervening author pause or terminal state.
+Its internal pause binds the observed Book version and rejects concurrent changes.
 
 Start a new ordinary work without internal scope or reservation fields:
 
