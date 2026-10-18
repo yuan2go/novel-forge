@@ -8,7 +8,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 def require_planning_provider_dispatch(cursor, *, project_id: str, operation_id: str) -> None:
     cursor.execute(
-        """SELECT CASE WHEN cardinality(owner.runs)>0 AND (book.book_run_id IS NULL
+        """SELECT CASE WHEN owner.invalid_search OR cardinality(owner.runs)>0 AND (book.book_run_id IS NULL
                 OR (SELECT count(DISTINCT run) FROM unnest(owner.runs) run)>1)
             THEN 'OWNER_INVALID' ELSE book.state END,
             EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=book.root_operation_id),
@@ -24,7 +24,11 @@ def require_planning_provider_dispatch(cursor, *, project_id: str, operation_id:
             (SELECT NULLIF(search.book_run_id,'') FROM authority_story_narrative_search search
                 WHERE search.search_id=generation.narrative_search_id AND search.project_id=generation.project_id
                     AND search.workspace_id=generation.workspace_id AND search.book_id=generation.book_id)
-        ],NULL) runs) owner
+        ],NULL) runs,
+            generation.narrative_search_id IS NOT NULL AND NOT EXISTS(
+                SELECT 1 FROM authority_story_narrative_search search WHERE search.search_id=generation.narrative_search_id
+                    AND search.project_id=generation.project_id AND search.workspace_id=generation.workspace_id
+                    AND search.book_id=generation.book_id) invalid_search) owner
         LEFT JOIN authority_book_production book ON book.project_id=generation.project_id
           AND book.workspace_id=generation.workspace_id AND book.book_id=generation.book_id
           AND (cardinality(owner.runs)=0 OR book.book_run_id=ANY(owner.runs))

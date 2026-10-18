@@ -180,6 +180,8 @@ def test_planning_dispatch_uses_exact_native_run_and_rejects_conflicting_or_miss
                 require_planning_provider_dispatch(connection.cursor(), project_id='project', operation_id='generation')
             check()
             for statement in (
+                "UPDATE authority_story_narrative_search SET book_id='foreign'" if binding == 'search'
+                    else "UPDATE authority_book_production SET workspace_id='foreign' WHERE book_run_id='live'",
                 "UPDATE authority_book_production SET state='PAUSED' WHERE book_run_id='live'",
                 "INSERT INTO authority_cancellation_command(operation_id) VALUES('live-root')",
                 "UPDATE authority_book_production SET book_run_id='missing' WHERE book_run_id='live'",
@@ -189,9 +191,17 @@ def test_planning_dispatch_uses_exact_native_run_and_rejects_conflicting_or_miss
             ):
                 connection.execute('SAVEPOINT owner_negative')
                 connection.execute(statement)
+                if binding == 'search' and statement.startswith('UPDATE authority_story_narrative_search'):
+                    connection.execute("DELETE FROM authority_book_production WHERE book_run_id='sibling'")
                 with pytest.raises(KernelError, match='RUNTIME_DISPATCH_PAUSED|BOOK_GENERATION_EXECUTION_NOT_LIVE'):
                     check()
                 connection.execute('ROLLBACK TO SAVEPOINT owner_negative')
+            if binding == 'search':
+                connection.execute('SAVEPOINT early_search')
+                connection.execute('UPDATE authority_story_narrative_search SET book_run_id=NULL')
+                connection.execute('DELETE FROM authority_book_production')
+                check()
+                connection.execute('ROLLBACK TO SAVEPOINT early_search')
             connection.execute("UPDATE authority_operation SET command_payload='{\"payload\":{}}'")
             connection.execute('UPDATE authority_story_planning_generation SET narrative_search_id=NULL')
             with pytest.raises(KernelError, match='BOOK_GENERATION_EXECUTION_NOT_LIVE'):

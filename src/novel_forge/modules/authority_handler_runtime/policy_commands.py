@@ -82,7 +82,7 @@ def owned_policy_definition(
     routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings", "author_supervised_authorizations", "author_supervised_books"))
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA, AUTHOR_SUPERVISED_POLICY_SCHEMA
-        policy_schema = AUTHOR_SUPERVISED_POLICY_SCHEMA if any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA if routing_sources or execution_templates else LEGACY_POLICY_SCHEMA
+        policy_schema = AUTHOR_SUPERVISED_POLICY_SCHEMA if policy_precondition or any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA if routing_sources or execution_templates else LEGACY_POLICY_SCHEMA
         if coordinated_templates and not author_templates:
             policy_schema = deepcopy(policy_schema)
             historical = policy_schema["properties"]["execution_templates"]["items"]
@@ -238,13 +238,22 @@ def configure_owned_policy(
         ControlPolicy(**content)
         if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
             raise PermissionError("only an authenticated operator can change editorial ControlPolicy")
+    policy_precondition = expected_policy_hash is not None and owner == 'PROVIDER_ROUTING' and any(
+        value.get('version') == 'creative-execution-template.v12' for value in content.get('execution_templates', []))
+    if policy_precondition:
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("""SELECT definition_version FROM authority_operation WHERE project_id=%s
+                AND definition_name='provider.routing_policy.configure' AND idempotency_scope=%s AND idempotency_key=%s""",
+                [project_id, f'project:{owner.lower()}:policy', idempotency_key])
+            previous = uow.cursor.fetchone()
+        if previous and previous[0] in {'2.1.0', '2.2.0'}:
+            policy_precondition = False
     definition = owned_policy_definition(
         owner=owner,
         content=content,
         application_build_id=application_build_id,
         commit_sha=commit_sha,
-        policy_precondition=expected_policy_hash is not None and owner == 'PROVIDER_ROUTING'
-            and any(value.get('version') == 'creative-execution-template.v12' for value in content.get('execution_templates', [])),
+        policy_precondition=policy_precondition,
     )
     name, handler_key = definition["name"], definition["handler_key"]
     with AuthorityUnitOfWork(database_url) as uow:

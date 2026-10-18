@@ -39,6 +39,8 @@ def test_current_author_template_policy_precondition_has_its_own_closed_command_
         with pytest.raises(KernelError, match='COMMAND_SCHEMA_INVALID'):
             _validate_json_schema(current['command_schema'], invalid)
     assert owned_policy_definition(**arguments) == historical
+    supervised = owned_policy_definition(**{**arguments, 'content':{**content, 'author_supervised_books':[]}}, policy_precondition=True)
+    assert supervised == current
 
 
 def membership():
