@@ -1877,9 +1877,13 @@ selection is centralized in the Provider gateway composition; in `validation`, t
 existing explicit-profile qualification path remains available. Setting
 `NOVEL_FORGE_PROVIDER_ROUTER=quality-cost-v1` also selects the router in an isolated
 validation environment. DeepSeek requires `DEEPSEEK_API_KEY` from the process secret
-environment, a positive `NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL` and
-`NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT`. Never put credentials into task contexts,
-model-call assets, pricing policies or command-line arguments.
+environment and a positive `NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL`. Current
+`billing-channel-resources.v1` execution uses the authorized paid work ceiling and
+physical model request capacity; ordinary author-first writing has no cumulative token
+or call quota. `NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT` belongs to the historical
+explicit-profile resource contract, not the current writing prerequisites. Frozen
+historical requests retain their original contract. Never put credentials into task
+contexts, model-call assets, pricing policies or command-line arguments.
 
 DeepSeek JSON mode requires both the API `json_object` setting and an explicit JSON
 output example in the prompt ([official guidance](https://api-docs.deepseek.com/zh-cn/guides/json_mode/)).
