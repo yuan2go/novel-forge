@@ -221,7 +221,8 @@ def _optional_document(uow, project_id, logical_ref):
 
 
 def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset_version_id,
-                             expected_version, idempotency_key, reason, principal):
+                             expected_version, idempotency_key, reason, principal,
+                             length_revalidation_root_operation_id=""):
     from novel_forge.modules.chapter_authority.author_editor import require_source
     from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
     book = authority.require(book_run_id)
@@ -237,7 +238,10 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
         scope = {key: current[key] for key in ("project_id", "workspace_id", "book_id")}
         scope["chapter"] = chapter
         candidate = require_source(uow, scope, candidate_asset_version_id)
+        result_revalidation = None
         if candidate.asset_type == "author_edit_candidate":
+            if length_revalidation_root_operation_id:
+                raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Completed result reuse requires a native length revision")
             if candidate.content.get("base_asset_version_id") != source.asset_version_id or candidate.content.get("base_asset_hash") != source.content_hash:
                 raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Working candidate must revise this exact current source")
             if candidate.content.get("source_provenance", {}).get("kind") != "ASSISTANT_REVISION_PROPOSAL":
@@ -261,6 +265,15 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
                     or binding.get("source_content_hash") != source.content_hash):
                 raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Native working revision must bind this exact current source")
             require_working_revision_frontier(uow, root=origin, book_run_id=book_run_id)
+            if length_revalidation_root_operation_id:
+                from novel_forge.modules.chapter_authority.working_revision import revalidate_completed_length_candidate
+                if (candidate.asset_type != "draft_version" or not candidate.content.get("chapter_length_repair_scope")
+                        or origin["operation_id"] != length_revalidation_root_operation_id):
+                    raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Reuse must bind this exact native length revision")
+                result_revalidation = revalidate_completed_length_candidate(uow, root_operation_id=origin["operation_id"],
+                    book_run_id=book_run_id, principal=principal)
+                if not result_revalidation or result_revalidation["candidate_asset_version_id"] != candidate.asset_version_id:
+                    raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_REJECTED", "Saved length correction requires supported comparison and preservation")
         validate_complete_prose(source_draft_content(candidate))
         require_prose_propagation(uow, current, candidate)
         session = _optional_document(uow, current["project_id"], _session_ref(scope))
@@ -273,6 +286,8 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
             "source_content_hash": source.content_hash, "selected_asset_version_id": candidate.asset_version_id,
             "selected_content_hash": candidate.content_hash, "actor_id": principal.principal_id, "reason": reason,
             "authority": "AUTHORIZED_WORK_VERSION_USAGE", "author_selection": "NOT_GRANTED", "formal_acceptance": "NOT_GRANTED"}
+        if result_revalidation:
+            content["result_revalidation"] = result_revalidation
         selection = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
             operation_id=operation_id, project_id=current["project_id"], asset_id=previous.asset_id if previous else "book-work-selection:" + operation_id,
             asset_type="book_working_manuscript_selection", schema_version=content["version"], logical_ref=_working_selection_ref(current, chapter),
@@ -283,10 +298,13 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
         checkpoint("after_working_manuscript_selection")
         return {"book_run_id": book_run_id, "chapter": chapter, "selection_asset_version_id": selection.asset_version_id,
             "source_asset_version_id": candidate.asset_version_id, "author_selection": "NOT_GRANTED", "formal_acceptance": "NOT_GRANTED"}
+    payload = {"chapter": chapter, "candidate_asset_version_id": candidate_asset_version_id,
+        "expected_version": expected_version, "reason": reason}
+    if length_revalidation_root_operation_id:
+        payload["length_revalidation_root_operation_id"] = length_revalidation_root_operation_id
     return authority._execute_mutation(book=book, action="working_manuscript_select", event_type="book.working_manuscript.selected",
         idempotency_key=idempotency_key, actor_id=principal.principal_id, trace_id=idempotency_key, correlation_id=book["root_operation_id"],
-        causation_id=book["root_operation_id"], payload={"chapter": chapter, "candidate_asset_version_id": candidate_asset_version_id,
-            "expected_version": expected_version, "reason": reason}, handler=commit,
+        causation_id=book["root_operation_id"], payload=payload, handler=commit,
         input_assets=authority.resolve_asset_refs(project_id=book["project_id"], asset_version_ids=(candidate_asset_version_id,)))
 
 

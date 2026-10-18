@@ -1292,6 +1292,14 @@ still reject it. Only a completed round invokes the existing exact-version expor
 read/export remain available for other saved working prose. Omitted length enforcement
 retains the default behavior and does not add optional stages to the Chapter graph.
 Length compliance grants neither literary qualification nor formal acceptance.
+If an already completed length revision retained a short Best solely because an empty
+prior diagnosis ledger left `RESOLVED_ISSUES` uncertain, repeat the original continue
+command. It reuses the original Review/Revision/ReReview and frozen comparison inputs,
+then appends a `completed-length-result-revalidation.v1` proof to the technical working
+selection. The original Best, successful Root and raw uncertainty remain unchanged;
+this recovery sends no Provider request. Another actor, changed source/frontier,
+cancellation or other unsupported preservation evidence still rejects reuse. Ordinary
+explicit working selection retains its existing contract.
 A saved active Draft finishes its existing Chapter delivery before length repair.
 The next chapter remains blocked until the delivered frontier meets its frozen bounds.
 This deferral uses the Book scheduler's active reconciliation and acceptance states,

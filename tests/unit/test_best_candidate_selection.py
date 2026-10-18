@@ -47,6 +47,50 @@ def test_measured_length_correction_requires_exact_source():
                 challenger=challenger, minimum_net_improvement=3, length_repair_scope={**scope, **drift})
 
 
+def test_empty_review_history_has_host_applicability_without_rewriting_model_uncertainty():
+    from dataclasses import replace
+    from copy import deepcopy
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+    previous, challenger, scope = _length_candidates()
+    window = {"source_window_hash": "window", "target_candidate_asset_version_id": "draft",
+        "target_candidate_text_hash": prose_hash(previous.content["text"])}
+    initial = {"diagnostic_contract_version": "actionable-diagnostics.v1", "report_type": "ReviewReport",
+        "target_asset_version_id": "draft", "target_text_hash": prose_hash(previous.content["text"]),
+        "context_bundle_version_id": "context", "issues": [], "cross_chapter_window": window}
+    reviewed = {"diagnostic_contract_version": "actionable-diagnostics.v1", "report_type": "ReReviewReport",
+        "revision_version_id": "revision", "target_text_hash": prose_hash(challenger.content["text"]),
+        "original_draft_version_id": "draft", "initial_review_version_id": previous.review_asset_version_id,
+        "context_bundle_version_id": "context", "issues": [], "resolved_issue_codes": [],
+        "remaining_issue_codes": [], "unresolved_issues": [], "issue_lineage": [], "cross_chapter_window": window}
+    checks = tuple({"dimension": dimension, "status": "UNCERTAIN" if dimension == "RESOLVED_ISSUES" else "PRESERVED",
+        "reason": "没有既往问题可核验。", "evidence": {"quote": "河"}} for dimension in PRESERVATION_DIMENSIONS)
+    previous = replace(previous, review_content=initial, review_content_hash="initial-hash")
+    challenger = replace(challenger, score=79, cross_chapter_review=True, preservation_checks=checks,
+        review_content=reviewed, review_content_hash="rereview-hash")
+    def compare(old=previous, new=challenger):
+        return compare_candidates(project_id="p", chapter_root_operation_id="root", previous=old,
+            challenger=new, minimum_net_improvement=3, length_repair_scope=scope)
+    result = compare()
+    assert result["selected_asset_version_id"] == "revision"
+    assert result["preservation_applicability"]["status"] == "NOT_APPLICABLE"
+    assert next(check for check in checks if check["dimension"] == "RESOLVED_ISSUES")["status"] == "UNCERTAIN"
+    for field, value in (("issues", [{"code": "old"}]), ("resolved_issue_codes", ["old"]),
+            ("issue_lineage", [{"code": "old"}]), ("prior_review_evidence", {"asset_version_id": "older"}),
+            ("target_text_hash", "wrong"), ("context_bundle_version_id", "other")):
+        assert compare(replace(previous, review_content={**initial, field: value}))["selected_asset_version_id"] == "draft"
+    assert compare(replace(previous, review_content=None))["selected_asset_version_id"] == "draft"
+    for field, value in (("initial_review_version_id", "wrong"), ("target_text_hash", "wrong"),
+            ("issue_lineage", [{"code": "old"}]), ("resolved_issue_codes", ["old"]),
+            ("cross_chapter_window", {**window, "source_window_hash": "wrong"})):
+        assert compare(new=replace(challenger, review_content={**reviewed, field: value}))["selected_asset_version_id"] == "draft"
+    for dimension in PRESERVATION_DIMENSIONS:
+        changed = deepcopy(checks)
+        changed = tuple({**check, "status": "REGRESSED" if dimension == "RESOLVED_ISSUES" else "UNCERTAIN"}
+            if check["dimension"] == dimension else check for check in changed)
+        assert compare(new=replace(challenger, preservation_checks=changed))["selected_asset_version_id"] == "draft"
+
+
 def test_partial_scope_repair_with_unchanged_uncertainty_uses_the_same_preservation_rule_as_propagation():
     from dataclasses import replace
     from novel_forge.modules.review.diagnostics import prose_hash

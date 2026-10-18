@@ -109,8 +109,8 @@ def test_native_v5_writer_admission_bounds_observation_ledger_and_keeps_complete
         "prompt_bytes": len(prompt.encode()), "prompt_hash": writers[1].capability_evidence["fully_rendered_prompt_hash"]}))
 
 
-@pytest.mark.parametrize("length_delivery", [False, True, "automatic"],
-    ids=["existing-working-continuity", "explicit-length-delivery", "automatic-length-next-chapter"])
+@pytest.mark.parametrize("length_delivery", [False, True, "automatic", "completed-empty-history"],
+    ids=["existing-working-continuity", "explicit-length-delivery", "automatic-length-next-chapter", "completed-empty-history-recovery"])
 def test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience(tmp_path, monkeypatch, length_delivery):
     harness = CapabilityPackPostgresHarness("world-working")
     root = Path(__file__).resolve().parents[2]
@@ -120,11 +120,16 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
             result = super().__call__(stage, inputs)
             if stage == "revision":
                 result["text"] = inputs["draft"]["text"]
-                if length_delivery == "automatic":
+                if length_delivery in {"automatic", "completed-empty-history"}:
                     result["text"] += "\n\n" + "她把湿账页摊在木架上，一一核对退水留下的泥线。" * 50
+            if stage == "review" and length_delivery == "completed-empty-history":
+                result["issues"] = []
             if stage == "rereview":
                 for check in result.get("preservation_checks", []):
                     check["evidence"] = {"quote": check["evidence"]["quote"]}
+                    if length_delivery == "completed-empty-history" and check["dimension"] == "RESOLVED_ISSUES":
+                        check["status"] = "UNCERTAIN"
+                        check["reason"] = "No previous diagnostic exists to verify."
             return result
     transport.chapter = WorkingRevisionTransport()
     transport.chapter.controlled_prose = "唯一起点的纸签压在账本上。" + "她停在门外，听见木轮碾过石板。" * 80
@@ -251,7 +256,7 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         assert uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book["book_run_id"]]).fetchone() == (0,)
     from novel_forge.cli.manuscript import run_manuscript_command
     from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
-    if length_delivery == "automatic":
+    if length_delivery in {"automatic", "completed-empty-history"}:
         from novel_forge.cli import manuscript as cli
         native_ensure = cli._ensure_native_work_length
         observed = []
@@ -260,6 +265,31 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
             return native_ensure(*values, **options)
         monkeypatch.setattr(cli, "_ensure_native_work_length", observe_settlement)
         settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production")
+        if length_delivery == "completed-empty-history":
+            from novel_forge.modules.chapter_authority import candidate_selection
+            with monkeypatch.context() as historical:
+                historical.setattr(candidate_selection, "_empty_history_applicability", lambda *a: None)
+                stopped = run_manuscript_command(settings, _authority_parser().parse_args([
+                    "authority-manuscript", "continue", "--book-run-id", book["book_run_id"],
+                    "--stop-after-chapter", "1", "--ensure-chapter-length", "--foreground"]))
+            assert stopped["length_delivery"]["status"] == "REVISED_LENGTH_TARGET_UNMET"
+            old_revision = stopped["length_delivery"]["revision"]
+            assert old_revision["status"] == "SUCCEEDED"
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [book["project_id"]])
+                old_calls = uow.cursor.fetchone()[0]
+                old_best_id = stopped["length_delivery"]["candidate_asset_version_id"]
+                old_best = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=old_best_id)
+                old_content = deepcopy(old_best.content)
+            from dataclasses import replace
+            from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+            from novel_forge.modules.chapter_authority.working_revision import revalidate_completed_length_candidate
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            for actor, owned_book, error in ((replace(principal, principal_id="other-actor"), book["book_run_id"],
+                    "MANUSCRIPT_LENGTH_REVALIDATION_INVALID"), (principal, "other-book", "MANUSCRIPT_REVISION_SCOPE_INVALID")):
+                with AuthorityUnitOfWork(DATABASE_URL) as uow, pytest.raises(KernelError, match=error):
+                    revalidate_completed_length_candidate(uow, root_operation_id=old_revision["root_operation_id"],
+                        book_run_id=owned_book, principal=actor)
         first = run_manuscript_command(settings, _authority_parser().parse_args([
             "authority-manuscript", "continue", "--book-run-id", book["book_run_id"],
             "--stop-after-chapter", "1", "--ensure-chapter-length", "--foreground"]))
@@ -267,6 +297,21 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         selected = first["manuscript"]["units"][0]
         assert selected["working_selection"]["status"] == "SELECTED"
         assert selected["length"]["actual"] >= minimum_length
+        if length_delivery == "completed-empty-history":
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [book["project_id"]])
+                assert uow.cursor.fetchone()[0] == old_calls
+                assert uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=old_best_id).content == old_content
+                selection = uow.repositories.asset_documents.require(project_id=book["project_id"],
+                    asset_version_id=selected["working_selection"]["asset_version_id"])
+                proof = selection.content["result_revalidation"]
+                assert proof["root_operation_id"] == old_revision["root_operation_id"]
+                assert proof["original_best_asset_version_id"] == old_best_id
+                assert proof["comparison"]["preservation_applicability"]["status"] == "NOT_APPLICABLE"
+                assert proof["candidate_asset_version_id"] == selected["asset_version_id"]
+            with AuthorityUnitOfWork(DATABASE_URL) as uow, pytest.raises(KernelError, match="MANUSCRIPT_REVISION_FRONTIER_STALE"):
+                revalidate_completed_length_candidate(uow, root_operation_id=old_revision["root_operation_id"],
+                    book_run_id=book["book_run_id"], principal=principal)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("SELECT version FROM authority_book_production WHERE book_run_id=%s", [book["book_run_id"]])
             version = uow.cursor.fetchone()[0]
@@ -274,6 +319,13 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
             "authority-manuscript", "extend-delivery-window", "--book-run-id", book["book_run_id"],
             "--stop-after-chapter", "2", "--expected-version", str(version),
             "--idempotency-key", harness.project_id + ":second-window"]))
+        if length_delivery == "completed-empty-history":
+            run_manuscript_command(settings, _authority_parser().parse_args([
+                "authority-manuscript", "resume", "--book-run-id", book["book_run_id"],
+                "--reason", "Resume the extended native working window"]))
+            with AuthorityUnitOfWork(DATABASE_URL) as uow, pytest.raises(KernelError, match="MANUSCRIPT_REVISION_SOURCE_STALE"):
+                revalidate_completed_length_candidate(uow, root_operation_id=old_revision["root_operation_id"],
+                    book_run_id=book["book_run_id"], principal=principal)
         output = tmp_path / "automatic-length-chapters-01-02.md"
         final = run_manuscript_command(settings, _authority_parser().parse_args([
             "authority-manuscript", "continue", "--book-run-id", book["book_run_id"],

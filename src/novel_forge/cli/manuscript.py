@@ -101,7 +101,8 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             from novel_forge.modules.book_authority.manuscript import select_working_candidate
             return select_working_candidate(authority, args.book_run_id, chapter=args.chapter,
                 candidate_asset_version_id=args.candidate_version, expected_version=args.expected_version,
-                idempotency_key=args.idempotency_key, reason=args.reason, principal=principal)
+                idempotency_key=args.idempotency_key, reason=args.reason, principal=principal,
+                length_revalidation_root_operation_id=getattr(args, "length_revalidation_root_operation_id", ""))
         if args.action == "extend-delivery-window":
             if args.expected_version is None or args.stop_after_chapter is None or not args.idempotency_key:
                 raise ValueError("Delivery extension requires --expected-version, --stop-after-chapter and --idempotency-key; retain them on retry")
@@ -382,15 +383,26 @@ def _ensure_native_work_length(settings, args, *, book, principal):
             if stage["output_key"] == "chapter.best_candidate" and stage["status"] == "SUCCEEDED"]
         if len(best) != 1:
             raise KernelError("MANUSCRIPT_LENGTH_CANDIDATE_REQUIRED", "Length delivery requires one completed native Best candidate")
+        length_revalidation_root_operation_id = ""
         with AuthorityUnitOfWork(settings.database_url) as uow:
             candidate = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=best[0])
             actual = han_characters(source_draft_content(candidate)["text"])
+            if not target["minimum"] <= actual <= target["maximum"]:
+                from novel_forge.modules.chapter_authority.working_revision import revalidate_completed_length_candidate
+                revalidated = revalidate_completed_length_candidate(uow, root_operation_id=revision["root_operation_id"],
+                    book_run_id=book["book_run_id"], principal=principal)
+                if revalidated:
+                    length_revalidation_root_operation_id = revision["root_operation_id"]
+                    best = [revalidated["candidate_asset_version_id"]]
+                    candidate = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=best[0])
+                    actual = han_characters(source_draft_content(candidate)["text"])
         if not target["minimum"] <= actual <= target["maximum"]:
             return {"status": "REVISED_LENGTH_TARGET_UNMET", "chapter": unit["chapter"],
                 "candidate_asset_version_id": best[0], "actual": actual, "target": target, "revision": revision}
         selection_args = SimpleNamespace(**{**vars(args), "action": "use-working-candidate", "project_id": book["project_id"],
             "chapter": unit["chapter"], "candidate_version": best[0], "expected_version": book["version"],
-            "idempotency_key": key + ":select", "reason": reason})
+            "idempotency_key": key + ":select", "reason": reason,
+            "length_revalidation_root_operation_id": length_revalidation_root_operation_id})
         run_manuscript_command(settings, selection_args)
         return {"status": "LENGTH_REVISION_APPLIED", "chapter": unit["chapter"], "revision": revision}
     return None

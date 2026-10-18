@@ -113,6 +113,14 @@ manuscript revision command or Editor API. This freezes exact selected prose and
 governed Context/Plan, then uses Review, Revision, ReReview and BestCandidate without
 Foundation or Canon mutation. Working selection rechecks earlier versions as well as
 the target. Frozen length correction uses actual Han counts, separate from model scores.
+For a measured length correction, an exact empty Review/ReReview diagnosis history
+makes `RESOLVED_ISSUES` inapplicable; Host evidence records that separately without
+changing the model's uncertainty. Review versions/hashes, prose hashes, Context and
+earlier-prose window must match. Missing or nonempty history and other preservation
+uncertainty continue to reject that interpretation. Completed native results can be
+recompared through the same pure Best handler. Automatic length delivery binds that
+revalidation Root in the existing Book selection mutation and checks it again under
+the Book lock, appending evidence while retaining the original successful results.
 Profiles that freeze length bounds without a unit use the existing manuscript
 `HAN_CHARACTERS_V1` measurement. The original profile version, digest and bounds remain
 bound to the repair; a conflicting explicit unit requires configuration correction.

@@ -1950,6 +1950,8 @@ class _BestCandidateHandler:
                 score=previous_score,
                 blocker_codes=tuple(previous_blockers),
                 review_asset_version_id=previous_review_id,
+                review_content=previous_review.content if existing_best is None else None,
+                review_content_hash=previous_review.content_hash if existing_best is None else "",
             ),
             challenger=CandidateEvidence(
                 asset_version_id=revision.asset_version_id,
@@ -1968,6 +1970,8 @@ class _BestCandidateHandler:
                 remaining_issue_codes=tuple(rereview.content.get("remaining_issue_codes") or []),
                 review_target_text_hash=str(rereview.content.get("target_text_hash") or ""),
                 review_report_type=str(rereview.content.get("report_type") or ""),
+                review_content=rereview.content,
+                review_content_hash=rereview.content_hash,
             ),
             minimum_net_improvement=threshold,
             length_repair_scope=revision.content.get("chapter_length_repair_scope"),

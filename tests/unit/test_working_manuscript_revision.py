@@ -895,6 +895,8 @@ def test_explicit_length_delivery_reuses_native_revision_and_selects_only_compli
     selected = Mock()
     monkeypatch.setattr(cli, '_run_working_revision_command', revised)
     monkeypatch.setattr(cli, 'run_manuscript_command', selected)
+    from novel_forge.modules.chapter_authority import working_revision
+    monkeypatch.setattr(working_revision, 'revalidate_completed_length_candidate', lambda *a, **k: None)
     result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'),
         SimpleNamespace(work_window_seconds=300, book_run_id='run'), book=book, principal=SimpleNamespace(principal_id='operator'))
     assert result['status'] == expected

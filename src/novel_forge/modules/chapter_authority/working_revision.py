@@ -143,6 +143,54 @@ def require_working_revision_frontier(uow, *, root: dict[str, Any], book_run_id:
     return book, source
 
 
+def revalidate_completed_length_candidate(uow, *, root_operation_id, book_run_id, principal):
+    from .contracts import ChapterHandlerRequest, ChapterInputAsset
+    from .handlers import build_chapter_handler_registry
+    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [root_operation_id])
+    row = uow.cursor.fetchone()
+    root = row[0] if row else {}
+    principal.require("chapter.authority.execute", root.get("project_id", ""))
+    if root.get("status") != "SUCCEEDED" or root.get("actor_id") != principal.principal_id:
+        raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Reuse requires the completed request and original actor")
+    _, source = require_working_revision_frontier(uow, root=root, book_run_id=book_run_id)
+    uow.cursor.execute("""SELECT to_jsonb(child),output.asset_version_id FROM authority_operation child
+        JOIN authority_operation_output_asset output USING(operation_id)
+        WHERE child.root_operation_id=%s AND child.definition_name='chapter.candidate.select_best'
+          AND child.status='SUCCEEDED' AND output.role='primary' AND output.output_key='chapter.best_candidate'""", [root_operation_id])
+    rows = uow.cursor.fetchall()
+    if len(rows) != 1:
+        raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Reuse requires one completed native comparison")
+    operation, best_id = rows[0]
+    inputs = []
+    for pointer in operation["input_asset_snapshot"]:
+        document = uow.repositories.asset_documents.require(project_id=root["project_id"], asset_version_id=pointer["asset_version_id"])
+        if pointer.get("project_id") != root["project_id"] or document.content_hash != pointer["content_hash"]:
+            raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Reuse requires every exact frozen comparison input")
+        inputs.append(ChapterInputAsset(document.asset_version_id, document.asset_type, document.content_hash,
+            document.content, input_role="draft_chapter" if document.asset_version_id == source.asset_version_id else ""))
+    request = ChapterHandlerRequest(operation_id=operation["operation_id"], project_id=root["project_id"],
+        workspace_id=root["workspace_id"], trace_id=operation["trace_id"], correlation_id=operation["correlation_id"],
+        command=operation["command_payload"], inputs=tuple(inputs))
+    revision = request.require_input("draft_version")
+    if not revision.content.get("chapter_length_repair_scope"):
+        return None
+    result = build_chapter_handler_registry(None).require(ChapterNode.BEST_CANDIDATE).execute(request)
+    comparison = result.content["candidate_comparison"]
+    if (not comparison.get("preservation_applicability")
+            or comparison["selected_asset_version_id"] != revision.asset_version_id):
+        return None
+    best = uow.repositories.asset_documents.require(project_id=root["project_id"], asset_version_id=best_id)
+    original = best.content.get("candidate_comparison") or {}
+    if (original.get("previous", {}).get("asset_version_id") != source.asset_version_id
+            or original.get("challenger", {}).get("asset_version_id") != revision.asset_version_id):
+        raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Reuse must retain the original comparison subjects")
+    return {"contract_version": "completed-length-result-revalidation.v1", "root_operation_id": root_operation_id,
+        "comparison_operation_id": operation["operation_id"], "original_best_asset_version_id": best_id,
+        "original_best_content_hash": best.content_hash, "input_assets": operation["input_asset_snapshot"],
+        "candidate_asset_version_id": revision.asset_version_id, "candidate_content_hash": revision.content_hash,
+        "comparison": comparison, "provider_dispatch": "NOT_REQUIRED_SAVED_RESULTS"}
+
+
 def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
                           expected_version: int, idempotency_key: str, reason: str, principal):
     from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow, selected_source
