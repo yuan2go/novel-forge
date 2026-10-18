@@ -1,0 +1,126 @@
+{
+  "schema_version": "native-book-prose-response-loss-proof.v1",
+  "at": "2026-10-18T13:41:45.625179+00:00",
+  "source_sha": "ac884c1773a6245c3e61f6a33e9defd35636f620",
+  "scope": {
+    "project_id": "project:wp-nf-author-first-20261017",
+    "workspace_id": "workspace:wp-nf-author-first-20261017",
+    "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "run_id": "90d77650-5f51-49f1-89dc-a0dc38f27022",
+    "book_id": "book:wp-nf-author-first-20261017"
+  },
+  "source_operation_id": "89e75876-bb29-4421-8afc-9d672db78347",
+  "operation": [
+    "SUCCEEDED",
+    5
+  ],
+  "attempts": [
+    [
+      "a88e480c-43a0-487c-88db-da385432d9bc",
+      1,
+      "SUCCEEDED"
+    ]
+  ],
+  "leases": [
+    [
+      1,
+      "RELEASED",
+      "waiting_external_reconciliation"
+    ],
+    [
+      2,
+      "RELEASED",
+      "result_success"
+    ]
+  ],
+  "external_effect_id": "a51ed33c-b4c1-4f21-b6d8-109b9042678a",
+  "request_hash": "sha256:c16d983a7ff7358b43d015b4971259786ca9eb101f165b047f8b6d5b2b1e4b98",
+  "dispatch_count": 1,
+  "verified_receipt_count": 1,
+  "successful_query_reconciliation_count": 1,
+  "original_unknown_checkpoint": "CONTROLLED_DURABLE_RESPONSE_LOSS",
+  "runtime_rebuilt": true,
+  "provider_send_after_response_loss": 0,
+  "output_assets": [
+    [
+      "authority-output:89e75876-bb29-4421-8afc-9d672db78347:longform.prose_review.report:v1",
+      "sha256:af509c3929b27360c11893425492cf1d2638fa1cd22e5ce2c3de6602a63ba4a7",
+      "longform.prose_review.report"
+    ]
+  ],
+  "qualification": {
+    "operation_id": "1be94d5f-46b6-429f-82ce-adfcf65a8846",
+    "qualification_run_id": "d0:1be94d5f-46b6-429f-82ce-adfcf65a8846",
+    "report_asset_version_id": "4441aa50-8e94-4b4b-a250-adcbbd167489",
+    "status": "PASSED",
+    "provider_execution_count": 1,
+    "duplicate_external_effect_count": 0,
+    "attempt_id": "f87d84ba-8e1b-415c-ac89-97e55f1f1c8b",
+    "replayed": false,
+    "report_content_hash": "sha256:fcc1ca2e1dd0814e6f445f55b14201eaad922c219312c05cfec878a4db2a7f59"
+  },
+  "book_checkpoint": [
+    "READY",
+    127,
+    18,
+    0
+  ],
+  "template": "creative-execution-template.v12",
+  "optional_review_pack": "1.7.0",
+  "active_native_production_sha": "236299ec81408f9aa9362d813b3485b6ef550fbf",
+  "input_manifest_ref": "production_execution/inputs/5d6aa7a8401540f6731f",
+  "route": {
+    "route_snapshot_id": "production_execution/routes/5d6aa7a8401540f6731f",
+    "release_sha": "ac884c1773a6245c3e61f6a33e9defd35636f620",
+    "model_provider": "codex-cli",
+    "model_id": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "backend_id": "codex-cli",
+    "model_context_limit": null,
+    "token_accounting_method": null
+  },
+  "usage": {
+    "model": "gpt-6.1-sol",
+    "measurement": "MEASURED",
+    "availability": "AVAILABLE",
+    "input_tokens": 31343,
+    "total_tokens": 35807,
+    "output_tokens": 4464,
+    "cached_input_tokens": 0,
+    "uncached_input_tokens": 31343,
+    "reasoning_output_tokens": 197
+  },
+  "cost": {
+    "model": "gpt-6.1-sol",
+    "reason": "monetary_cost_not_observable",
+    "currency": "UNKNOWN",
+    "measurement": "UNKNOWN",
+    "availability": "UNAVAILABLE",
+    "provider_billed": "UNKNOWN",
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "authorization_ref": "user-authorization:WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+    "entitlement_snapshot": {
+      "cli_version": "codex-cli 0.162.0-alpha.17.2",
+      "billing_identity": {
+        "version": "codex-membership-identity.v1",
+        "auth_mode": "chatgpt",
+        "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86",
+        "billing_channel": "ACCOUNT_ENTITLEMENT"
+      },
+      "authorization_ref": "user-authorization:WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+      "configuration_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+      "executable_sha256": "sha256:50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "account_identity_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+    },
+    "entitlement_snapshot_hash": "sha256:1cbafc23952bdc1389ceb27e5e348b6a44934c72f9e3bfe0b8c28e7964d2f359"
+  },
+  "qualification_scope": "REAL_PROVIDER_RUNTIME_FOR_MODEL_LONGFORM_PROSE_REVIEW",
+  "literary_qualification": "NOT_PROVEN",
+  "body_mutation_allowed": false,
+  "formal_acceptance_changed": false,
+  "storage_failures_retained": [
+    "book-prose-d0-live-ac884c17.json",
+    "book-prose-d0-live-ac884c17-recovered.json"
+  ],
+  "storage_recovery": "native-task-minio-storage-recovery-v2.json"
+}

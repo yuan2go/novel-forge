@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-18T14:26:57.495537+00:00",
+  "source_sha": "ef46b320f54ba9c37b89b2fea74345274cc05f9f",
+  "status": "PASS",
+  "broad_initial_checksum": "FAIL_CONCURRENT_NATIVE_PACK_REVALIDATION",
+  "failure_log_retained": "production-upgrade-ef46b320.log",
+  "audit_restore_only": true,
+  "production_database": "nf_author_first_native",
+  "comparison": {
+    "book_production": {
+      "original_count": 1,
+      "original_rows_unchanged": true,
+      "new_count": 0
+    },
+    "story_planning_generation": {
+      "original_count": 103,
+      "original_rows_unchanged": true,
+      "new_count": 0
+    },
+    "external_effect": {
+      "original_count": 365,
+      "original_rows_unchanged": true,
+      "new_count": 0
+    },
+    "attempt": {
+      "original_count": 838,
+      "original_rows_unchanged": true,
+      "new_count": 0
+    },
+    "operation": {
+      "original_count": 1153,
+      "original_rows_unchanged": true,
+      "new_count": 0
+    },
+    "asset_versions": {
+      "original_count": 9109,
+      "original_hashes_and_content_bytes_unchanged": true,
+      "new_count": 2
+    },
+    "old_head": "20261018_0227_completed_preparation_handoff",
+    "new_head": "20261018_0228_terminal_preparation_handoff",
+    "terminal_guard_exists": true
+  }
+}
