@@ -1844,6 +1844,7 @@ class StoryPlanningGenerationApplication:
                 )
                 source_version = int(uow.cursor.fetchone()[0])
             if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+                or (failure[0] == "MANUSCRIPT_CONTEXT_INVALID" and failure[2] == "MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read")
                 or (failure[0] == "PROGRAMMING_BUG" and len(failure) > 2 and str(failure[2] or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")) or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"
                     and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})):
@@ -1862,7 +1863,7 @@ class StoryPlanningGenerationApplication:
                     register(self, str(row[0]), project_id=command.project_id, principal=principal,
                         expected_source_version=source_version,
                         decision_evidence={"authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                            "reason": "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity correction after exact frozen failure with verified completed preparation retained"},
+                            "reason": "Current working Planning input-scope correction before any preparation or Provider dispatch" if failure[0] == "MANUSCRIPT_CONTEXT_INVALID" else "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity correction after exact frozen failure with verified completed preparation retained"},
                         trace_id=command.trace_id, correlation_id=command.correlation_id)
                 except KernelError as error:
                     if error.code != "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED":

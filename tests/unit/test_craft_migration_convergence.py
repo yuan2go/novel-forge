@@ -30,6 +30,7 @@ def test_main_upgrade_appends_convergence_and_rejects_both_foreign_and_discontin
         "20261015_0220_chapter_prior_audit_convergence",
         "20261016_0221_working_scope_fk_indexes",
         "20261016_0222_planning_host_frozen_definition",
+        "20261018_0223_working_plan_input_continuation",
     ]
     with pytest.raises(ValueError, match="MIGRATION_HISTORY_FOREIGN"):
         pending_migrations(applied | {"20261014_0205_source_observation_generation_isolation"})
@@ -90,7 +91,7 @@ def test_latest_published_fork_sources_remain_importable_without_becoming_active
         assert hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest() == row["sha256"]
         assert module.MIGRATION_ID not in active
     from novel_forge.tools.architecture_manifest import check_migrations
-    assert check_migrations(root)["head"] == "20261016_0222_planning_host_frozen_definition"
+    assert check_migrations(root)["head"] == "20261018_0223_working_plan_input_continuation"
 
 
 def test_capacity_composition_retains_latest_world_delivery_and_inheritance_verbatim():
@@ -145,3 +146,14 @@ def test_scope_backfill_checks_nested_and_producer_lineage_before_upgrading():
     assert "STORY_DESIGN_BOOK_OWNER_MISSING" in scope.PREFLIGHT_STATEMENTS[0]
     assert "ELSE 'BOOK:'||book_id END" in scope.UPGRADE_STATEMENTS[3]
     assert "'LEGACY_UNBOUND'" in scope.UPGRADE_STATEMENTS[3]
+
+
+def test_working_plan_input_recovery_retains_all_previous_generation_guards():
+    from novel_forge.storage.migrations.versions import v20261018_0223_working_plan_input_continuation as recovery
+    assert recovery.GUARD_STATEMENT.replace(
+        "\n               AND NOT authority_working_plan_input_continuation_permitted(NEW.runtime_continuation_id,NEW.operation_id,to_jsonb(NEW))", ""
+    ) == recovery.PREVIOUS_GUARD
+    assert "effect.provider='production_execution_gateway'" in recovery.PERMITTED
+    assert "routing_decision,selected,candidate,provider}'=r.target_runtime->>'model_provider'" in recovery.PERMITTED
+    assert "NOT r.decision_evidence ? 'pack_version_successor'" in recovery.PERMITTED
+    assert "NOT r.decision_evidence ? 'capacity_policy_upgrade'" in recovery.PERMITTED

@@ -1395,6 +1395,14 @@ expanding prose. Retain the exact source and Review and return to its owning dec
 Uncertain, minor and aesthetic observations do not themselves block an unrelated authorized prose correction.
 Current-chapter planning correction must bind a native scoped change request and the
 unchanged preceding working versions; it grants no authority to rewrite those versions.
+An original `MANUSCRIPT_CONTEXT_INVALID` failure before Pack preparation has no
+Provider result to repair. Its recovery must retain the failed Attempt and complete
+frozen inputs, prove zero Effects, reservations, outputs and Pack snapshots, and use
+the existing runtime-continuation journal. The current native change-request scope
+must pass again; the target plan's completed Planning receipt supplies a separately
+identified route reference, never a fabricated source-call or failed Pack snapshot.
+This input-scope recovery retains all six semantic Pack hashes and the existing
+capacity policy; it cannot combine a Pack-version or capacity-policy upgrade.
 Same-run regeneration of an already delivered unaccepted Chapter after that correction
 is not yet implemented. Do not reset its cursor or substitute a genesis candidate run.
 

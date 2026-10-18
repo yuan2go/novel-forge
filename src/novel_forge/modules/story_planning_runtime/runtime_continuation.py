@@ -175,6 +175,9 @@ def require_source(
         if attempt
         else ""
     )
+    if failure_code == "MANUSCRIPT_CONTEXT_INVALID" and attempt:
+        from .preflight_continuation import require_input_scope_source
+        return require_input_scope_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
     if failure_code == "PROGRAMMING_BUG" and attempt and dict(attempt[2] or {}).get("error_message") == "canceling statement due to statement timeout":
         from .database_recovery import require_source as require_database_source
         return require_database_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
@@ -1815,6 +1818,7 @@ def register(
     world_source_correction = source.get("mode") == "ISOLATED_WORLD_SOURCE_CORRECTION"
     isolated_generation = source.get("mode") == "ISOLATED_PURE_GENERATION"
     database_failure = source.get("mode") == "KNOWN_UNSENT_CONTEXT_QUERY_FAILURE"
+    input_scope_failure = source.get("mode") == "UNSENT_CURRENT_WORKING_PLAN_SCOPE"
     if database_failure:
         from .database_recovery import require_diagnostic
         decision_evidence = {**decision_evidence, "unsent_context_query_diagnostic": require_diagnostic(decision_evidence, source)}
@@ -1883,6 +1887,7 @@ def register(
         not capacity
         and not isolated_generation
         and not database_failure
+        and not input_scope_failure
         and not contract_change
         and not host_revalidation
         and not world_source_correction
@@ -1896,6 +1901,7 @@ def register(
         not capacity
         and not isolated_generation
         and not database_failure
+        and not input_scope_failure
         and not contract_change
         and not host_revalidation
         and not world_source_correction
@@ -1977,6 +1983,10 @@ def register(
             "original_diagnostic": source["diagnostic"],
             **({} if reference_contract else {"source_world": source["source_world"]}),
         }
+    elif input_scope_failure:
+        from .preflight_continuation import authorize_input_scope
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = authorize_input_scope(uow, source=source, successor=successor, principal=principal, target=target)
     elif database_failure:
         from .database_recovery import authorization as database_authorization
         with AuthorityUnitOfWork(application.database_url) as uow:
@@ -2024,7 +2034,7 @@ def register(
         "successor_command": frozen_successor,
         "target_runtime": target,
         "decision_evidence": decision,
-        "source_release_sha": source["snapshot"]["release_sha"],
+        "source_release_sha": source.get("source_release_sha") or source["snapshot"]["release_sha"],
         "target_release_sha": application.commit_sha,
         "chain_depth": source["depth"],
         **({"source_preflight_failure": source["preflight_failure"], "capacity_decision": capacity_decision} if source.get("preflight_failure") else {}),
@@ -2043,6 +2053,7 @@ def register(
         )
         if (
             current != source
+            or (input_scope_failure and authorize_input_scope(uow, source=current, successor=successor, principal=principal, target=target) != route_evidence)
             or (database_failure and database_authorization(uow, source=current, successor=successor, principal=principal, target=target) != route_evidence)
             or (
                 contract_change
@@ -2103,6 +2114,7 @@ def register(
                 not capacity
                 and not isolated_generation
                 and not database_failure
+                and not input_scope_failure
                 and not contract_change
                 and not host_revalidation
                 and not world_source_correction
@@ -2161,7 +2173,7 @@ def register(
                 Jsonb(frozen_successor),
                 Jsonb(target),
                 Jsonb(decision),
-                source["snapshot"]["release_sha"],
+                source.get("source_release_sha") or source["snapshot"]["release_sha"],
                 application.commit_sha,
                 source["depth"],
             ],

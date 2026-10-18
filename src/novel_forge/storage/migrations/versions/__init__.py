@@ -225,6 +225,7 @@ from . import (
     v20261015_0220_chapter_prior_audit_convergence,
     v20261016_0221_working_scope_fk_indexes,
     v20261016_0222_planning_host_frozen_definition,
+    v20261018_0223_working_plan_input_continuation,
 )
 
 VERSION_MODULES = [
@@ -451,6 +452,7 @@ VERSION_MODULES = [
     v20261015_0220_chapter_prior_audit_convergence,
     v20261016_0221_working_scope_fk_indexes,
     v20261016_0222_planning_host_frozen_definition,
+    v20261018_0223_working_plan_input_continuation,
 ]
 
 __all__ = ["VERSION_MODULES"]

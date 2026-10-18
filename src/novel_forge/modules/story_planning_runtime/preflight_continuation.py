@@ -6,6 +6,101 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.execution_template import verify_template_provenance
 from .domain import canonical_hash
 
+INPUT_SCOPE_MODE = "UNSENT_CURRENT_WORKING_PLAN_SCOPE"
+INPUT_SCOPE_CONTRACT = "planning-unsent-working-input-scope.v1"
+
+
+def require_input_scope_source(uow, *, source_operation_id, row, frozen, attempt):
+    from novel_forge.modules.book_authority.manuscript import historical_working_inputs
+
+    failure = dict(attempt[2] or {})
+    if (row[0] != "FAILED_FINAL" or attempt[0] != "FAILED_FINAL"
+            or failure.get("error_code") != "MANUSCRIPT_CONTEXT_INVALID"
+            or failure.get("error_message") != "MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read"
+            or frozen.get("execution_contract_version") != "1.21.0"
+            or frozen.get("runtime_continuation_id") or frozen.get("repair_number") != 0
+            or len(frozen.get("change_evidence_version_ids") or []) != 1):
+        raise KernelError("PLANNING_INPUT_SCOPE_SOURCE_INVALID", "Require the exact fresh current-chapter Planning input-scope failure")
+    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [source_operation_id])
+    operation = uow.cursor.fetchone()[0]
+    working = (frozen.get("arc_working_set") or {}).get("working_manuscript") or {}
+    uow.cursor.execute("SELECT current_chapter,accepted_through_chapter,state,active_chapter_request_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [working.get("book_run_id")])
+    book = uow.cursor.fetchone()
+    if (not book or type(working.get("target_chapter")) is not int or book[0] != working["target_chapter"]
+            or book[1] >= book[0] or book[2] not in {"READY", "PAUSED"} or book[3]):
+        raise KernelError("PLANNING_INPUT_SCOPE_SOURCE_INVALID", "Retain the exact owning Book checkpoint")
+    uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'FAILED_FINAL')
+        OR (SELECT count(*)<>1 FROM authority_attempt WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+            WHERE a.operation_id=%s AND l.status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL)""",
+        [source_operation_id] * 9)
+    if uow.cursor.fetchone() != (False,):
+        raise KernelError("PLANNING_INPUT_SCOPE_SOURCE_UNSAFE", "Retain a stopped zero-preparation source without cancellation or execution rights")
+    uow.cursor.execute("SELECT attempt_id,attempt_number FROM authority_attempt WHERE operation_id=%s", [source_operation_id])
+    attempt_id, attempt_number = uow.cursor.fetchone()
+    book_id, history = historical_working_inputs(uow, operation)
+    if book_id != frozen["book_id"] or not history or working.get("target_chapter") is None:
+        raise KernelError("PLANNING_INPUT_SCOPE_SOURCE_INVALID", "The repaired native change-request and current history scope must pass")
+    for pointer in operation["input_asset_snapshot"]:
+        document = uow.repositories.asset_documents.require(project_id=frozen["project_id"], asset_version_id=pointer["asset_version_id"])
+        if document.content_hash != pointer["content_hash"]:
+            raise KernelError("PLANNING_INPUT_SCOPE_SOURCE_INVALID", "Retain every original frozen input hash")
+    evidence = uow.repositories.asset_documents.require(project_id=frozen["project_id"], asset_version_id=frozen["change_evidence_version_ids"][0])
+    uow.cursor.execute("""SELECT generation.operation_id,snapshot.snapshot_payload,snapshot.snapshot_id,snapshot.snapshot_hash
+        FROM authority_story_planning_candidate candidate
+        JOIN authority_story_planning_generation generation USING(generation_id)
+        JOIN authority_external_effect effect ON effect.operation_id=generation.operation_id
+          AND effect.status='SUCCEEDED' AND effect.request_payload->>'stage'=generation.generator_operation_name
+        JOIN authority_attempt_capability_pack_snapshot snapshot
+          ON snapshot.snapshot_id=effect.request_payload #>> '{_production_execution,capability_runtime,snapshot_id}'
+          AND snapshot.snapshot_hash=effect.request_payload #>> '{_production_execution,capability_runtime,snapshot_hash}'
+          AND snapshot.operation_id=generation.operation_id
+        WHERE candidate.candidate_asset_version_id=%s AND generation.project_id=%s AND generation.book_id=%s
+          AND generation.workspace_id=%s AND generation.generator_operation_name=%s""",
+        [evidence.content["target_plan_version_id"], frozen["project_id"], frozen["book_id"],
+         frozen["workspace_id"], frozen["generator_operation_name"]])
+    references = uow.cursor.fetchall()
+    if len(references) != 1:
+        raise KernelError("PLANNING_INPUT_SCOPE_REFERENCE_REQUIRED", "Require one completed native target-plan route reference")
+    reference, snapshot, snapshot_id, snapshot_hash = references[0]
+    proof = {"contract_version": INPUT_SCOPE_CONTRACT, "source_operation_id": source_operation_id,
+        "source_failure": failure, "source_failure_hash": canonical_hash(failure),
+        "source_attempt_id": attempt_id, "source_attempt_number": attempt_number,
+        "input_snapshot_hash": canonical_hash(operation["input_asset_snapshot"]),
+        "working_snapshot_hash": working["snapshot_hash"], "source_pack_snapshot": None,
+        "source_provider_dispatch_count": 0, "reference_operation_id": reference,
+        "reference_pack_snapshot_id": snapshot_id, "reference_pack_snapshot_hash": snapshot_hash}
+    return {"mode": INPUT_SCOPE_MODE, "source_operation_id": source_operation_id, "command": frozen,
+        "version": int(row[1]), "evidence_asset_version_id": evidence.asset_version_id,
+        "evidence_hash": evidence.content_hash, "snapshot": None,
+        "source_release_sha": operation["definition_snapshot"]["commit_sha"], "depth": 1,
+        "reference_snapshot": snapshot, "reference_operation_id": reference, "input_scope_failure": proof}
+
+
+def authorize_input_scope(uow, *, source, successor, principal, target):
+    from .runtime_continuation import _capacity_authorization
+    from .database_recovery import completed_reference_route
+
+    if source["source_release_sha"] == target["pack_snapshot"]["release_sha"]:
+        raise KernelError("PLANNING_INPUT_SCOPE_RELEASE_UNCHANGED", "A failed input-scope implementation requires its verified correction")
+    checked = _capacity_authorization(uow, source={**source, "snapshot": source["reference_snapshot"]},
+        successor=successor, principal=principal, target=target)
+    if (checked.get("pack_version_successor") or checked.get("capacity_policy_upgrade")
+            or any(source["reference_snapshot"].get(key) != target["pack_snapshot"].get(key)
+                for key in ("manifest_hash", "prompt_bundle_hash", "route_policy_hash", "context_policy_hash", "skill_bundle_hash", "tool_policy_hash"))):
+        raise KernelError("PLANNING_INPUT_SCOPE_PACK_CHANGED", "Input-scope recovery requires the unchanged semantic Pack and capacity policy")
+    actual = completed_reference_route(uow, reference_operation_id=source["reference_operation_id"], command=successor, prior=target)
+    return {**checked, "capacity_only": False, "recovery_kind": INPUT_SCOPE_CONTRACT,
+        "source_input_scope_failure": source["input_scope_failure"],
+        "reference_route": actual, "route_reference_scope": "TARGET_PLAN_COMPLETED_CALL_NOT_FAILED_SOURCE",
+        "preserved_repair_number": successor.repair_number, "first_preparation": "NATIVE_SUCCESSOR"}
+
 
 def require_capacity_source(uow, *, source_operation_id, project_id, frozen, version, routing_failure=False, input_order_failure=False):
     from .application import _command_from_payload
