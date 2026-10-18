@@ -111,25 +111,36 @@ def blocking_working_cli_outcomes(cursor: Any, *, project_id: str, book_id: str,
     return [item for item in outcomes if item["operation_id"] not in optional]
 
 
-def _require_workflow_checkpoint(uow: Any, book: dict[str, Any], expected_version: int) -> dict[str, Any]:
+def _require_workflow_checkpoint(uow: Any, book: dict[str, Any], expected_version: int, *, working_selection: bool = False) -> dict[str, Any]:
     uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE", [book["book_id"]])
     uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
     current = uow.cursor.fetchone()[0]
     if current["version"] != expected_version or current["active_chapter_request_id"] or current["state"] not in {"READY", "PAUSED"}:
         raise KernelError("AUTHOR_WORKFLOW_CHECKPOINT_REQUIRED", "Switch only at a settled idle Book checkpoint; active work retains its frozen policy and original effects")
-    uow.cursor.execute("""SELECT 1 FROM authority_external_effect e JOIN authority_operation op USING(operation_id)
+    uow.cursor.execute("""SELECT e.external_effect_id,op.operation_id FROM authority_external_effect e JOIN authority_operation op USING(operation_id)
         WHERE op.project_id=%s AND (e.request_payload #>> '{_production_execution,book_id}'=%s
             OR op.root_operation_id=%s OR op.root_operation_id IN (
                 SELECT chapter_root_operation_id FROM authority_book_chapter_request WHERE book_run_id=%s))
           AND NOT authority_generation_isolated(e.external_effect_id)
-          AND e.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED') LIMIT 1""",
+          AND e.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED')""",
         [book["project_id"], book["book_id"], book["root_operation_id"], book["book_run_id"]])
-    if uow.cursor.fetchone():
+    blockers = [dict(external_effect_id=row[0],operation_id=row[1]) for row in uow.cursor.fetchall()]
+    if working_selection:
+        from novel_forge.modules.story_planning_runtime.preparation_recovery import retired_pre_submit_main
+        blockers = [item for item in blockers if not retired_pre_submit_main(uow,
+            project_id=book['project_id'],book_id=book['book_id'],effect_id=item['external_effect_id'])]
+        blockers = blocking_working_cli_outcomes(uow.cursor, project_id=book['project_id'],book_id=book['book_id'],
+            book_run_id=book['book_run_id'],outcomes=blockers)
+    if blockers:
         raise KernelError("AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED", "Reconcile original unsettled effects before switching generation policy; existing manuscripts remain readable")
     from novel_forge.modules.production_execution.execution_template import BOOK_USAGE_SQL
-    uow.cursor.execute("SELECT 1 FROM authority_budget_reservation r LEFT JOIN authority_external_effect e USING(external_effect_id) WHERE r.project_id=%s AND r.status='HELD_UNKNOWN' AND NOT authority_generation_isolated(e.external_effect_id) AND " + BOOK_USAGE_SQL + " LIMIT 1",
+    uow.cursor.execute("SELECT COALESCE(r.operation_id,e.operation_id) FROM authority_budget_reservation r LEFT JOIN authority_external_effect e USING(external_effect_id) WHERE r.project_id=%s AND r.status='HELD_UNKNOWN' AND NOT authority_generation_isolated(e.external_effect_id) AND " + BOOK_USAGE_SQL,
         [book["project_id"], book["book_id"], book["book_id"], book["book_id"]])
-    if uow.cursor.fetchone():
+    budgets = [dict(operation_id=row[0]) for row in uow.cursor.fetchall()]
+    if working_selection:
+        budgets = blocking_working_cli_outcomes(uow.cursor, project_id=book['project_id'],book_id=book['book_id'],
+            book_run_id=book['book_run_id'],outcomes=budgets)
+    if budgets:
         raise KernelError("AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED", "Original unknown consumption remains reserved; reconcile its receipt before adopting a successor generation policy")
     return current
 
@@ -232,7 +243,7 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
     if not reason.strip() or type(chapter) is not int or chapter < 1:
         raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Require an exact chapter and work revision reason")
     def commit(uow, operation_id, checkpoint):
-        current = _require_workflow_checkpoint(uow, book, expected_version)
+        current = _require_workflow_checkpoint(uow, book, expected_version, working_selection=True)
         if effective_workflow(uow.cursor, current) != AUTHOR_WORKFLOW or chapter <= current["accepted_through_chapter"] or chapter > current["current_chapter"]:
             raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Work selection requires a delivered unaccepted chapter in this author-first run")
         source = selected_source(uow, current, chapter)

@@ -747,3 +747,59 @@ def retained_main_capacity_binding(database_url, *, command, operation_id, proje
     if not binding or router is None and binding['route'] != capacity_route_contract(route):
         raise KernelError('ROUTING_CAPACITY_BINDING_DRIFT', 'Prepared main must retain its exact model, reasoning and capacity route')
     return binding
+
+
+def retired_pre_submit_main(uow, *, project_id, book_id, effect_id):
+    uow.cursor.execute('''SELECT receipt.content,receipt.content_hash,link.source_command,link.successor_command,link.target_runtime,
+        effect.request_payload,effect.request_hash,effect.last_error,dispatch.dispatch_id,dispatch.generation,dispatch.evidence
+        FROM authority_story_planning_runtime_continuation link
+        JOIN authority_operation source ON source.operation_id=link.source_operation_id
+        JOIN authority_operation child ON child.operation_id=link.successor_operation_id
+        JOIN authority_operation control ON control.operation_id=link.registered_by_operation_id
+        JOIN authority_operation_output_asset output ON output.operation_id=control.operation_id AND output.role='primary'
+        JOIN authority_asset_version receipt ON receipt.asset_version_id=output.asset_version_id AND receipt.content_hash=output.content_hash
+        JOIN authority_asset asset ON asset.asset_id=receipt.asset_id
+        JOIN authority_external_effect effect ON effect.operation_id=source.operation_id
+        JOIN authority_budget_reservation budget ON budget.external_effect_id=effect.external_effect_id
+        JOIN authority_external_effect_dispatch dispatch ON dispatch.external_effect_id=effect.external_effect_id
+        WHERE link.project_id=%s AND link.book_id=%s AND effect.external_effect_id=%s
+          AND source.project_id=link.project_id AND source.workspace_id=link.workspace_id
+          AND source.status='FAILED_FINAL' AND source.definition_name='story_planning.generate'
+          AND source.command_payload->'payload'=link.source_command
+          AND child.project_id=link.project_id AND child.workspace_id=link.workspace_id AND child.actor_id=source.actor_id
+          AND child.causation_operation_id=source.operation_id AND child.command_payload->'payload'=link.successor_command
+          AND control.status='SUCCEEDED' AND control.definition_name='story_planning.runtime_continuation.register'
+          AND control.definition_version='10.0.0' AND control.actor_id=source.actor_id
+          AND receipt.content->>'continuation_id'=link.continuation_id
+          AND receipt.content->>'source_operation_id'=source.operation_id
+          AND receipt.content->>'contract_version'='planning-runtime-continuation.v10'
+          AND receipt.content->>'workspace_id'=link.workspace_id
+          AND asset.project_id=link.project_id AND asset.asset_type='planning_runtime_continuation'
+          AND effect.project_id=link.project_id AND effect.effect_type='model.invoke'
+          AND effect.status='FAILED_RETRYABLE' AND budget.status='RELEASED' AND dispatch.status='FAILED_RETRYABLE'
+          AND NOT EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=source.operation_id AND status NOT IN ('FAILED_RETRYABLE','FAILED_FINAL'))
+          AND NOT EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+              WHERE attempt.operation_id=source.operation_id AND lease.status='HELD')
+          AND NOT EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=source.operation_id)
+          AND NOT EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=source.operation_id)
+          AND NOT EXISTS(SELECT 1 FROM authority_effect_dispatch_lease WHERE dispatch_id=dispatch.dispatch_id AND status='HELD')
+          AND NOT EXISTS(SELECT 1 FROM authority_external_receipt WHERE dispatch_id=dispatch.dispatch_id)
+          AND (SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=effect.external_effect_id)=1
+          AND NOT EXISTS(SELECT 1 FROM authority_asset_version version JOIN authority_asset owner USING(asset_id)
+              WHERE owner.project_id=link.project_id AND owner.asset_type='execution_recovery_session'
+                AND version.content#>>'{record,request,external_effect_id}'=effect.external_effect_id)''', [project_id,book_id,effect_id])
+    rows = uow.cursor.fetchall()
+    if len(rows) != 1:
+        return False
+    receipt, digest, source, successor, target, payload, request_hash, diagnostic, dispatch_id, generation, evidence = rows[0]
+    handoff = target.get('preparation_handoff', {})
+    proof = handoff.get('prepared_main_failure', {})
+    return (canonical_hash(receipt) == digest and receipt.get('source_command') == source
+        and receipt.get('successor_command') == successor and receipt.get('target_runtime') == target
+        and (receipt.get('project_id'),receipt.get('book_id')) == (project_id,book_id)
+        and handoff.get('contract_version') == PREPARED_MAIN_HANDOFF
+        and handoff.get('source_submission_rights') == 'RELEASED_BY_TERMINAL_PRE_SUBMIT_HANDOFF'
+        and proof.get('source_operation_id') == receipt.get('source_operation_id') == payload.get('operation_id')
+        and proof.get('external_effect_id') == effect_id and proof.get('request_hash') == request_hash == canonical_hash(payload)
+        and proof.get('dispatch_id') == dispatch_id and proof.get('generation') == generation
+        and diagnostic == evidence == proof.get('diagnostic') == PRE_SUBMIT_FAILURE)

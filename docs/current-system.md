@@ -1562,7 +1562,16 @@ The same transaction terminates the retryable source Operation and registers its
 successor; its Attempt, failed Effect and Dispatch remain unchanged. The successor
 consumes the complete frozen capacity projection after checking identical inputs,
 then builds its own current admission and rechecks complete request capacity. This is
-`CODE_EXISTS`; native successor consumption remains pending.
+`EXECUTABLE` for the bounded native successor described below; whole-chain qualification
+remains incomplete. Native v10 consumed the identical prepared main input without another preparation
+call, and Planning, Memo, Draft and length revision completed. A further working-version
+selection defect treated the preserved failed pre-submit Effect as unresolved even
+after its owner terminated. Working selection now checks the Planning owner's exact
+historical retirement receipt and its existing pure-observer owner filter. It leaves
+the original failed Effect, Attempt, Dispatch and unknown usage intact. Missing or
+changed proof, live submission rights and current writing UNKNOWN still refuse. Policy
+adoption retains its global checks. Focused PostgreSQL checks exercise these boundaries;
+native selection of the saved revision remains to be verified.
 Routing observation lookup currently scans large asset JSON before matching its stage
 and model cohort; native statement-timeout failures have exposed this scaling gap.
 Migration 229 adds matching indexes for the model cohort, prior routing chain and

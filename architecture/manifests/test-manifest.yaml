@@ -8,6 +8,18 @@
   ],
   "classification_rules": [
     {
+      "id": "working-selection-retired-main-checkpoint",
+      "patterns": [
+        "tests/integration/test_working_selection_checkpoint_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/manuscript.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    {
       "id": "semantic-context-source-units",
       "patterns": [
         "tests/unit/test_semantic_context_units.py"
