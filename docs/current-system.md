@@ -1551,7 +1551,9 @@ Any locally saved capability materialization must bind the original Attempt snap
 Pack identity, preparation stage and immutable hashes; it grants no Provider-send or
 new result authority. Other outputs refuse.
 The registration transaction appends the source terminal transition; its failed Attempt
-and prior history remain unchanged. Native successor consumption remains pending.
+and prior history remain unchanged. Native migration and registration have bounded
+evidence in `architecture/live-evidence/author-first-owned-recovery-5f5abbcb/`;
+automatic successor receipt consumption and end-to-end qualification remain pending.
 Routing observation lookup currently scans large asset JSON before matching its stage
 and model cohort; native statement-timeout failures have exposed this scaling gap.
 Migration 229 adds matching indexes for the model cohort, prior routing chain and
@@ -1561,8 +1563,9 @@ exact terminal routing-query timeout with zero Effects and budgets. A Context al
 saved before the query must retain the original content hash and validated bytes. The
 current Book frontier, input snapshot, original actor and released submission rights
 remain required; the successful prior control receipt binds every retained preparation
-item. This is `CODE_EXISTS`; native migration, successor consumption and end-to-end
-qualification remain pending.
+item. Native migration and exact-query preservation have bounded execution evidence
+in `architecture/live-evidence/author-first-owned-recovery-5f5abbcb/`. Successor receipt
+consumption and end-to-end qualification remain pending.
 The existing 200-row boundary, sample eligibility, retry attribution and quality authority
 must remain unchanged.
 Current author-first routing policy updates need a versioned compare-and-set command
