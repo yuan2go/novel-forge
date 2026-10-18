@@ -1483,7 +1483,10 @@ For complete-request preparation, the current source receives the measured defic
 unprocessed originals retain their full allocation. A fidelity-restored source remains
 exact and the next eligible source can supply the deficit. Subsequent targets use the
 remaining measured excess, with the same mandatory units, dependency closure and final
-combined-request checks; historical nonsemantic allocation retains its frozen behavior.
+combined-request checks. Host trimming measures the existing risk-ordered optional
+proposal rather than dropping half its units; required material remains protected and
+independent fidelity checks still restore missing meaning. Historical nonsemantic
+allocation retains its frozen behavior.
 If mandatory material raises the effective target above the requested target and the
 verified complete request still exceeds capacity, lowering that same target cannot
 change its preparation inputs. The existing no-progress failure retains the full proof

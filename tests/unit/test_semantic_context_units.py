@@ -672,3 +672,26 @@ def test_final_batching_preserves_far_dependency_closures_and_rejects_an_oversiz
     assert any({'text:19','text:20','text:21','text:22','text:23','text:88'} <= {unit['unit_id'] for unit in batch} for batch in batches)
     with pytest.raises(KernelError,match='TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE'):
         semantic.pack_final_windows(windows,payload=payload,fits=lambda task:amount(task)<limit)
+
+
+def test_small_measured_deficit_does_not_discard_half_the_optional_proposal():
+    boundary = dict(kind='FROZEN_STAGE_INPUTS',project_id='p',book_id='b',sources=[dict(asset_version_id='context',content_hash='frozen')])
+    original = candidate('\n\n'.join(f'ordinary paragraph {index}: '+'x'*80 for index in range(10)),provenance=dict(frozen_input_boundary=boundary))
+    task = dict(stage='draft',semantic_contract=semantic.SEMANTIC_CONTRACT,frozen_input_boundary=boundary,source_projection_hash='frozen')
+    def count(value):
+        return len(json.dumps(value,ensure_ascii=False).encode())
+    target = count(dict(safe_summary=original.safe_summary,structured_facts=[])) - 10
+    local_checks = []
+    def call(stage,chunk):
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=[unit['unit_id'] for unit in chunk['units'] if not unit.get('context_only')])
+        if not chunk.get('composition_check'):
+            local_checks.append(chunk)
+        return dict(supported=True,coverage_complete=True,missing_unit_ids=[],distorted_unit_ids=[])
+    result,_ = compile_task_context([original],task=task,token_budget=target,required_asset_types=(),model_call=call,
+        compression_input_tokens=16000,chunk_fits=lambda _:True,token_counter=count)
+    units = semantic.source_units(original,{})
+    assert count(semantic.reconstruct(original,units,{f'text:{index}' for index in range(9)})) > target
+    assert len(local_checks[0]['selected_unit_ids']) == 8
+    assert result[0].safe_summary.count('ordinary paragraph') == 8
+    assert result[0].estimated_tokens <= target

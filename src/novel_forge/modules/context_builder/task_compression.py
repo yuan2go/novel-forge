@@ -468,9 +468,14 @@ def compile_task_context(
                     optional = sorted((unit for unit in group if unit["unit_id"] in chosen - mandatory_chosen),
                         key=lambda unit: (not bool(unit.get("semantic_risk")), unit["order"]))
                     suggested = set(chosen)
-                    while optional and token_counter(semantic_units.reconstruct(candidate, units, mandatory_chosen | chosen)) > candidate_target:
-                        optional = optional[:len(optional) // 2]
-                        chosen = semantic_units.close_dependencies(units, required | {unit["unit_id"] for unit in optional}, external_refs=external_refs)
+                    if optional and token_counter(semantic_units.reconstruct(candidate, units, mandatory_chosen | chosen)) > candidate_target:
+                        for count in range(len(optional) - 1, -1, -1):
+                            proposed = semantic_units.close_dependencies(units,
+                                required | {unit["unit_id"] for unit in optional[:count]}, external_refs=external_refs)
+                            amount = token_counter(semantic_units.reconstruct(candidate, units, mandatory_chosen | proposed))
+                            if amount <= candidate_target or count == 0:
+                                chosen = proposed
+                                break
                     budget_removed = sorted(suggested - chosen)
                     chosen_for_check = chosen & allowed
                 else:
