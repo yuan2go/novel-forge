@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Callable, Iterable
 
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityExecutionResult,
@@ -53,6 +53,7 @@ class ContentAuthorityScheduler:
         registry: AuthorityHandlerRegistry,
         worker_id: str = "content-authority-worker",
         lease_seconds: int = 30,
+        external_state_reconciler: Callable[[WorkerLeaseCommand], None] | None = None,
     ) -> None:
         if not worker_id or lease_seconds <= 0:
             raise ValueError("worker_id and positive lease_seconds are required")
@@ -60,6 +61,7 @@ class ContentAuthorityScheduler:
         self.registry = registry
         self.worker_id = worker_id
         self.lease_seconds = lease_seconds
+        self.external_state_reconciler = external_state_reconciler
 
     def pending_operations(
         self,
@@ -147,7 +149,8 @@ class ContentAuthorityScheduler:
                 require_no_active_attempt=True)
             raise KernelError("OPERATION_CANCELLED", "Content was cancelled before its first Attempt")
 
-        if state["operation_status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
+        waiting_external = state["operation_status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
+        if waiting_external and self.external_state_reconciler is None:
             from novel_forge.modules.command_kernel.recovery import RecoverOperationCommand, recover_operation
             with AuthorityUnitOfWork(self.database_url) as uow:
                 operation = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
@@ -187,7 +190,8 @@ class ContentAuthorityScheduler:
             )
             attempt_status = "QUEUED"
             recovery_mode = "retry_attempt" if retrying else recovery_mode
-        elif state["operation_status"] in {"EXECUTING", "CANCELLATION_REQUESTED"} and state.get("attempt_id"):
+        elif (state["operation_status"] in {"EXECUTING", "CANCELLATION_REQUESTED"}
+              or (waiting_external and self.external_state_reconciler is not None)) and state.get("attempt_id"):
             attempt_id = str(state["attempt_id"])
             attempt_number = int(state["attempt_number"])
             attempt_status = str(state["attempt_status"])
@@ -237,6 +241,7 @@ class ContentAuthorityScheduler:
                 "CONTENT_RECOVERY_ATTEMPT_INVALID",
                 f"Content Attempt cannot resume from {attempt_status}",
             )
+        reconciling_external = False
         try:
             probe_operation_execution(
                 self.database_url, operation_id=operation_id, project_id=project_id
@@ -253,6 +258,12 @@ class ContentAuthorityScheduler:
                     project_id=project_id,
                 ),
             ):
+                if waiting_external and self.external_state_reconciler is not None:
+                    reconciling_external = True
+                    self.external_state_reconciler(worker)
+                    reconciling_external = False
+                    if probe_operation_execution(self.database_url,operation_id=operation_id,project_id=project_id)['status'] != 'EXECUTING':
+                        raise KernelError('CONTENT_EXTERNAL_RECONCILIATION_REQUIRED','Owner reconciliation must settle the original Effect before handler execution')
                 output = execute_content_handler(
                     self.database_url,
                     command=worker,
@@ -284,6 +295,15 @@ class ContentAuthorityScheduler:
                 },
             )
         except Exception as exc:
+            if reconciling_external:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute(
+                        "SELECT attempt.status FROM authority_attempt AS attempt JOIN authority_operation AS operation USING(operation_id) WHERE attempt.attempt_id=%s AND operation.operation_id=%s AND operation.project_id=%s",
+                        [attempt_id, operation_id, project_id],
+                    )
+                    reconciled_attempt = uow.cursor.fetchone()
+                if reconciled_attempt and reconciled_attempt[0] in {"FAILED_RETRYABLE", "FAILED_FINAL", "CANCELLED"}:
+                    raise
             classification = WorkerFailureClassifier.classify(exc)
             with AuthorityUnitOfWork(self.database_url) as uow:
                 current = uow.repositories.attempt_runtime.operation_state(

@@ -1497,8 +1497,13 @@ active execution rights and any original Effect prevent the zero-send recovery.
 A stopped Planning generation with completed preparation Effects is a different
 recovery boundary. Its acknowledged cancellation must revoke the original Attempt's
 submission rights, retain every settled preparation receipt and prove that the main
-call was not sent. The v5 deployment handoff is CODE_EXISTS and WIRED; native
-upgrade and end-to-end handoff qualification remain pending. The zero-send
+call was not sent. The v5 deployment handoff has native upgrade and registration
+evidence; automatic receipt reuse and end-to-end handoff qualification remain pending.
+A paused worker may have planned a never-dispatched tail before checking Book pause.
+Versioned recovery of that tail is pending implementation: Kernel must cancel only
+the exact zero-dispatch intent and release its reservation after the worker relinquishes
+submission rights. Settled preparation remains original evidence; unknown or active
+calls cannot use this boundary. The zero-send
 continuation does not authorize it. Handoff retains the original preparation
 custodian only when the complete captured input view has the same registered hash;
 the successor still owns its new Context, Attempt and main request. Only an exact
@@ -1512,6 +1517,11 @@ unit-count ceiling or loss of source coverage. Each checker task keeps
 its exact identity, and missing or uncertain meaning retains the existing restoration
 rules. Final Planning dispatch, including preparation calls, checks the
 owning Book pause and Book/Creation cancellation before entering the Provider.
+Independent Book prose-review recovery can consume a retained completed result.
+The shared Content scheduler delegates UNKNOWN review queries to its owning adapter
+under the original Attempt and a current recovery Fence. A query retains unresolved
+Operation state until the result is established. Kernel-settled terminal Attempts are
+not checkpointed or failed a second time. Queries never authorize another send.
 The capacity meaning is unchanged; Context v4 versions the semantic method. Context v3
 retains the earlier method, and its frozen manifests and catalog remain available.
 Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and

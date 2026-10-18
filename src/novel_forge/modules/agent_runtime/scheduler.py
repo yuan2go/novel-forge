@@ -240,6 +240,13 @@ class AgentAuthorityScheduler:
                 worker=worker,
                 execution_fencing_token=execution_fence,
             )
+            reconciled = self._operation(project_id, agent_run_id)
+            if reconciled["status"] in {"FAILED_RETRYABLE", "FAILED_FINAL", "CANCELLED"}:
+                return AgentSchedulerTick(
+                    agent_run_id=agent_run_id, operation_id=agent_run_id,
+                    attempt_id=attempt_id, operation_status=str(reconciled["status"]),
+                    candidate_version_id="", recovery_mode=recovery_mode,
+                )
             prepared = self.execution_preparer.prepare(
                 operation=execution_operation,
                 attempt_id=attempt_id,
@@ -995,6 +1002,8 @@ class AgentAuthorityScheduler:
                 adapter=recovery_adapter,
                 attempt_command=worker,
             )
+            if result["outcome"] in {"not_found", "failed_final", "cancelled"}:
+                return
             if result["outcome"] == "ambiguous":
                 raise KernelError(
                     "AGENT_EXTERNAL_EFFECT_RECONCILIATION_REQUIRED",

@@ -1471,12 +1471,7 @@ def reconcile_external_effect(
             if historical is not None:
                 if operation["status"] not in {"EXECUTING", "FAILED_RETRYABLE", "WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED", "FAILED_FINAL", "DEAD_LETTER"}:
                     raise KernelError("OPERATION_STATUS_CONFLICT", "Original CLI owner cannot reconcile in this state")
-            elif operation["status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
-                _cas_operation(uow, operation_id=context.operation_id, project_id=context.project_id,
-                    expected_status=operation["status"], expected_version=int(operation["version"]), target_status="EXECUTING",
-                    actor_id=attempt_command.worker_id, reason="fenced execution evidence reconciliation",
-                    trace_id=context.trace_id, correlation_id=context.correlation_id, causation_id=effect_id)
-            elif operation["status"] != "EXECUTING":
+            elif operation["status"] not in {"EXECUTING", "WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
                 raise KernelError("OPERATION_STATUS_CONFLICT", "Gateway evidence reconciliation requires recoverable durable work")
             uow.commit()
     try:

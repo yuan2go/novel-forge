@@ -2549,6 +2549,12 @@ Membership preflight records
 before admission or Provider I/O. The fixed embedding binder still needs a persisted
 resource-policy binding and the D0 command's exact entitlement accounting scope; a
 successful Writer receipt cannot substitute for this capability-specific fault probe.
+Use `--source-project-id`, `--book-run-id` and `--prose-review-run-id` together to
+qualify an exact existing Book prose-review window as a separate pure-generation
+scenario. Run preflight first; `--execute` runs the controlled response-loss probe. It must retain the original Book authorization and
+native frozen window, scope response loss to that window's own Operation, and recover
+the same persisted result without another send. This optional observation neither
+modifies prose nor grants revision, acceptance or human literary qualification.
 
 After successful preflight, the supported runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
 executes one frozen Production Execution route, injects response loss after Provider

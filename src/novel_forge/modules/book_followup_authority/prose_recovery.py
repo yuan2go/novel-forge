@@ -21,8 +21,13 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)
         uow.cursor.execute('SELECT book_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s',[book_run_id,project_id])
         book_id = uow.cursor.fetchone()[0]
-        uow.cursor.execute("SELECT authority_generation_current_operation(content->>'operation_id') FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED'",[run_id])
-        frozen_operations = tuple(row[0] for row in uow.cursor.fetchall())
+        uow.cursor.execute("""SELECT operation.operation_id,operation.actor_id FROM authority_book_prose_review_event event
+            JOIN authority_operation operation ON operation.operation_id=authority_generation_current_operation(event.content->>'operation_id')
+            WHERE event.run_id=%s AND event.kind='WINDOW_ADMITTED' AND operation.project_id=%s""",[run_id,project_id])
+        frozen_rows = uow.cursor.fetchall()
+        for _, actor_id in frozen_rows:
+            principal.require_recovery_actor(actor_id)
+        frozen_operations = tuple(row[0] for row in frozen_rows)
     if frozen_operations:
         for reconciliation_attempt in range(2):
             try:
@@ -32,6 +37,17 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
             except KernelError as exc:
                 if exc.code!='AUTHORITY_ASSET_VERSION_CONFLICT' or reconciliation_attempt:
                     raise
+    from .application import BookFollowupAdmission
+    for operation_id in frozen_operations:
+        with AuthorityUnitOfWork(coordinator.database_url) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+        if state['status'] not in {'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED'}:
+            continue
+        try:
+            followup.run_or_recover(BookFollowupAdmission(operation_id, project_id, True))
+        except KernelError as exc:
+            if exc.code not in {'EXTERNAL_EFFECT_RECONCILIATION_REQUIRED', 'CONTENT_EXTERNAL_RECONCILIATION_REQUIRED'}:
+                raise
     with AuthorityUnitOfWork(coordinator.database_url) as uow:
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)
         uow.cursor.execute("""SELECT authority_generation_current_operation(content->>'operation_id')
