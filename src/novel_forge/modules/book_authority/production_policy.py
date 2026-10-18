@@ -6,18 +6,7 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-def require_planning_provider_dispatch(cursor, *, project_id: str, operation_id: str) -> None:
-    cursor.execute(
-        """SELECT CASE WHEN owner.invalid_search OR cardinality(owner.runs)>0 AND (book.book_run_id IS NULL
-                OR (SELECT count(DISTINCT run) FROM unnest(owner.runs) run)>1)
-            THEN 'OWNER_INVALID' ELSE book.state END,
-            EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=book.root_operation_id),
-            EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
-                JOIN authority_story_formation_run formation USING(formation_run_id)
-                WHERE formation.project_id=book.project_id AND formation.book_id=book.book_id
-                  AND book.stable_idempotency_key=formation.formation_run_id||':production')
-        FROM authority_story_planning_generation generation JOIN authority_operation operation USING(operation_id)
-        CROSS JOIN LATERAL (SELECT array_remove(ARRAY[
+PLANNING_OWNER_SCOPE = """CROSS JOIN LATERAL (SELECT array_remove(ARRAY[
             NULLIF(operation.command_payload#>>'{payload,arc_working_set,working_manuscript,book_run_id}',''),
             NULLIF(operation.command_payload#>>'{payload,world_preparation_request,book_run_id}',''),
             NULLIF(operation.command_payload#>>'{payload,edition_execution,book_run_id}',''),
@@ -28,7 +17,21 @@ def require_planning_provider_dispatch(cursor, *, project_id: str, operation_id:
             generation.narrative_search_id IS NOT NULL AND NOT EXISTS(
                 SELECT 1 FROM authority_story_narrative_search search WHERE search.search_id=generation.narrative_search_id
                     AND search.project_id=generation.project_id AND search.workspace_id=generation.workspace_id
-                    AND search.book_id=generation.book_id) invalid_search) owner
+                    AND search.book_id=generation.book_id) invalid_search) owner"""
+
+
+def require_planning_provider_dispatch(cursor, *, project_id: str, operation_id: str) -> None:
+    cursor.execute(
+        f"""SELECT CASE WHEN owner.invalid_search OR cardinality(owner.runs)>0 AND (book.book_run_id IS NULL
+                OR (SELECT count(DISTINCT run) FROM unnest(owner.runs) run)>1)
+            THEN 'OWNER_INVALID' ELSE book.state END,
+            EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=book.root_operation_id),
+            EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
+                JOIN authority_story_formation_run formation USING(formation_run_id)
+                WHERE formation.project_id=book.project_id AND formation.book_id=book.book_id
+                  AND book.stable_idempotency_key=formation.formation_run_id||':production')
+        FROM authority_story_planning_generation generation JOIN authority_operation operation USING(operation_id)
+        {PLANNING_OWNER_SCOPE}
         LEFT JOIN authority_book_production book ON book.project_id=generation.project_id
           AND book.workspace_id=generation.workspace_id AND book.book_id=generation.book_id
           AND (cardinality(owner.runs)=0 OR book.book_run_id=ANY(owner.runs))
@@ -91,3 +94,16 @@ def validate_author_configuration(content: dict[str, Any]) -> dict[str, Any]:
     elif world.version not in {"world-production-policy.v1", "world-production-policy.v4", "world-production-policy.v5"}:
         raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "Actor World policy requires explicit bounded Actor selection")
     return result
+
+
+def pending_planning_deployments(cursor, *, project_id, book_id, book_run_id, release_sha):
+    cursor.execute(f"""SELECT link.continuation_id FROM authority_story_planning_runtime_continuation link
+        JOIN authority_operation operation ON operation.operation_id=link.source_operation_id
+        JOIN authority_story_planning_generation generation ON generation.operation_id=operation.operation_id
+        {PLANNING_OWNER_SCOPE}
+        WHERE link.project_id=%s AND link.book_id=%s AND link.successor_operation_id IS NULL
+          AND link.target_release_sha<>%s AND (%s='' OR (NOT owner.invalid_search
+            AND cardinality(owner.runs)>0 AND (SELECT count(DISTINCT run) FROM unnest(owner.runs) run)=1
+            AND %s=ANY(owner.runs))) ORDER BY link.created_at""",
+        [project_id, book_id, release_sha, book_run_id, book_run_id])
+    return cursor.fetchall()

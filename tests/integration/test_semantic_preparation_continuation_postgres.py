@@ -208,3 +208,38 @@ def test_planning_dispatch_uses_exact_native_run_and_rejects_conflicting_or_miss
                 check()
         finally:
             connection.rollback()
+
+
+def test_pending_deployment_filters_exact_book_run_using_shared_dispatch_owner_scope():
+    from novel_forge.modules.book_authority.production_policy import pending_planning_deployments
+    with psycopg.connect(DATABASE_URL) as connection:
+        try:
+            for table in ('operation', 'story_planning_generation', 'story_planning_runtime_continuation', 'story_narrative_search'):
+                connection.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            for label, payload, search in (
+                ('cancelled-sibling', {'arc_working_set': {'working_manuscript': {'book_run_id':'cancelled-run'}}}, None),
+                ('working', {'arc_working_set': {'working_manuscript': {'book_run_id':'current-run'}}}, None),
+                ('world', {'world_preparation_request': {'book_run_id':'current-run'}}, None),
+                ('edition', {'edition_execution': {'book_run_id':'current-run'}}, None),
+                ('search', {}, 'valid-search'),
+                ('foreign-search', {'world_preparation_request': {'book_run_id':'current-run'}}, 'foreign-search'),
+                ('conflict', {'arc_working_set': {'working_manuscript': {'book_run_id':'current-run'}},
+                              'world_preparation_request': {'book_run_id':'cancelled-run'}}, None),
+                ('unbound-opening', {}, None),
+            ):
+                connection.execute('INSERT INTO authority_operation(operation_id,command_payload) VALUES (%s,%s)', [label, Jsonb({'payload':payload})])
+                connection.execute('INSERT INTO authority_story_planning_generation(operation_id,project_id,workspace_id,book_id,narrative_search_id) VALUES (%s,%s,%s,%s,%s)',
+                    [label, 'project', 'workspace', 'book', search])
+                connection.execute('INSERT INTO authority_story_planning_runtime_continuation(continuation_id,source_operation_id,project_id,book_id,target_release_sha,created_at) VALUES (%s,%s,%s,%s,%s,NOW())',
+                    [label, label, 'project', 'book', 'old'])
+            for label, project in (('valid-search', 'project'), ('foreign-search', 'foreign-project')):
+                connection.execute('INSERT INTO authority_story_narrative_search(search_id,project_id,workspace_id,book_id,book_run_id) VALUES (%s,%s,%s,%s,%s)',
+                    [label, project, 'workspace', 'book', 'current-run'])
+            scope = dict(project_id='project', book_id='book', release_sha='new')
+            selected = pending_planning_deployments(connection.cursor(), **scope, book_run_id='current-run')
+            assert {row[0] for row in selected} == {'working','world','edition','search'}
+            assert pending_planning_deployments(connection.cursor(), **scope, book_run_id='other-run') == []
+            assert {row[0] for row in pending_planning_deployments(connection.cursor(), **scope, book_run_id='')} == {
+                'cancelled-sibling','working','world','edition','search','foreign-search','conflict','unbound-opening'}
+        finally:
+            connection.rollback()

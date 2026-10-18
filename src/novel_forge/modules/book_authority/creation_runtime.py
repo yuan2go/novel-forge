@@ -548,11 +548,9 @@ def _recover_pending_planning_deployment(composition, run, policy, *, execution_
     if auth.get("authorized_by_principal_id") != composition.principal.principal_id:
         raise KernelError("PLANNING_DEPLOYMENT_REVALIDATION_AUTHORIZATION_REQUIRED", "Require original Creator authorization")
     with AuthorityUnitOfWork(composition.authority.database_url) as uow:
-        uow.cursor.execute("""SELECT continuation_id FROM authority_story_planning_runtime_continuation
-            WHERE project_id=%s AND book_id=%s AND successor_operation_id IS NULL
-              AND target_release_sha<>%s ORDER BY created_at""",
-            [run["project_id"], run["book_id"], composition.planning.commit_sha])
-        pending = uow.cursor.fetchall()
+        from .production_policy import pending_planning_deployments
+        pending = pending_planning_deployments(uow.cursor, project_id=run["project_id"], book_id=run["book_id"],
+            book_run_id=run.get("book_run_id", ""), release_sha=composition.planning.commit_sha)
     changed = False
     for (identity,) in pending:
         if require_binding(composition.authority.database_url, identity)["target_release_sha"] == composition.planning.commit_sha:
