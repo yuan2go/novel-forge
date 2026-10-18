@@ -14,16 +14,27 @@ def require_corpus_consumption(
     operation_id: str = ""
 ) -> None:
     identities: set[str] = set()
-    pending = [(payload, 0)]
-    inspected = 0
+    pending = [(payload, False)]
+    active: set[int] = set()
+    inspected: set[int] = set()
     while pending:
-        value, depth = pending.pop()
-        inspected += 1
-        if depth > 32 or inspected > 50000:
+        value, exiting = pending.pop()
+        if not isinstance(value, (Mapping, list, tuple)):
+            continue
+        object_id = id(value)
+        if exiting:
+            active.remove(object_id)
+            inspected.add(object_id)
+            continue
+        if object_id in active:
             raise KernelError(
-                "CORPUS_CONSUMPTION_INPUT_BOUND",
-                "provider input exceeds lineage inspection bounds",
+                "CORPUS_CONSUMPTION_INPUT_CYCLE",
+                "provider input lineage must be a finite acyclic structure",
             )
+        if object_id in inspected:
+            continue
+        active.add(object_id)
+        pending.append((value, True))
         if isinstance(value, Mapping):
             for key, item in value.items():
                 if str(key).endswith(
@@ -36,11 +47,11 @@ def require_corpus_consumption(
                     identities.update(
                         identity for identity in item if isinstance(identity, str)
                     )
-                elif isinstance(item, (Mapping, list, tuple)):
-                    pending.append((item, depth + 1))
+                if isinstance(item, (Mapping, list, tuple)):
+                    pending.append((item, False))
         elif isinstance(value, (list, tuple)):
             pending.extend(
-                (item, depth + 1)
+                (item, False)
                 for item in value
                 if isinstance(item, (Mapping, list, tuple))
             )

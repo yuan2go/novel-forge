@@ -3313,6 +3313,11 @@ Raw SourceDocument/Transform/Chunk/SourceWork remain prohibited generation input
 when their Corpus rights permit abstract knowledge use. Only governed knowledge can cross
 that boundary. Fixture-derived Cards retain their fixture ceiling and cannot pass a
 production Planning gate merely because a Pack can be inspected.
+Provider consumption inspects the complete finite input graph, including nested identity
+lists and retained recovery evidence. Iterative traversal rejects cycles and visits shared
+containers once without imposing a depth or container-count limit on valid input. Every
+discovered source identity still reaches the existing Corpus rights and raw-content gate;
+this traversal does not increase complete Provider request capacity or source authorization.
 
 Import results distinguish preview, verified acquisition, parsed content, scheduled
 analysis and knowledge approval. Pause stops new stages; the current stage may finish.

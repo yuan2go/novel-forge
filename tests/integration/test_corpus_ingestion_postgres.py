@@ -393,6 +393,12 @@ def test_authorized_bridge_reaches_existing_analysis_and_governance(
             {"source_work_asset_version_id": content["source_work_asset_version_id"]},
             source_analysis=False,
         )
+    nested = {"source_work_asset_version_id": content["source_work_asset_version_id"]}
+    for _ in range(80):
+        nested = {"evidence": nested}
+    for large_input in (nested, {"evidence":[*[{} for _ in range(55000)], nested]}):
+        with pytest.raises(KernelError, match="CORPUS_RAW_CONTENT_FORBIDDEN"):
+            require_corpus_consumption(DATABASE_URL, corpus.project, large_input, source_analysis=False)
     corpus.run(
         {
             "action": "retire_source",
