@@ -624,6 +624,42 @@ def test_final_risk_windows_batch_all_original_units_by_complete_request_capacit
         assert len(calls) > 1
 
 
+@pytest.mark.parametrize("count", [350, 600])
+def test_final_batches_obey_the_actual_frozen_consumer_without_losing_windows(count):
+    from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
+
+    original = candidate('\n\n'.join(f'她没有开第{index}道闸；许可尚未生效。' for index in range(count)))
+    units = semantic.source_units(original, {})
+    chosen = {unit['unit_id'] for index, unit in enumerate(units) if index % 2}
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b',
+        sources=[dict(asset_version_id='context', content_hash='frozen')])
+    def payload(group):
+        return dict(contract_version='task-context-compression.v3', semantic_contract=semantic.SEMANTIC_CONTRACT,
+            frozen_input_boundary=boundary, source_binding=boundary['sources'][0], task_fingerprint='task',
+            policy_version='policy', target_tokens=1000, units=group, required_unit_ids=[], task=dict(stage='chapter_plan.generate'))
+    calls = []
+    def call(stage, task):
+        context_compression_task_view(stage, dict(context_compression_task=task))
+        calls.append(task)
+        return dict(supported=True, coverage_complete=True, missing_unit_ids=[], distorted_unit_ids=[])
+    with pytest.raises(KernelError, match='CONTEXT_COMPRESSION_TASK_INVALID'):
+        context_compression_task_view('context_fidelity', dict(context_compression_task=payload(units)))
+    final, _, _ = semantic.verify_final_selection(original, units, chosen,
+        payload=payload, fits=lambda _: True, model_call=call)
+    assert final == chosen and len(calls) > 1
+    batches = [{unit['unit_id'] for unit in task['units']} for task in calls]
+    assert set().union(*batches) == {unit['unit_id'] for unit in units}
+    assert all(len(batch) <= 256 for batch in batches)
+    assert all(any({unit['unit_id'] for unit in window} <= batch for batch in batches)
+        for window in semantic.final_windows(units, chosen))
+
+
+def test_atomic_closure_exceeding_frozen_wire_contract_is_rejected_even_if_bytes_fit():
+    units = semantic.source_units(candidate('\n\n'.join(f'第{index}段。' for index in range(257))), {})
+    with pytest.raises(KernelError, match='TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE'):
+        semantic.pack_final_windows([units], payload=lambda group: dict(units=group), fits=lambda _: True)
+
+
 def test_batched_final_checker_restores_a_far_missing_condition_and_uncertainty():
     original = candidate('\n\n'.join(f'只有第{index}份许可生效才可行动。' for index in range(90)))
     units = semantic.source_units(original,{})

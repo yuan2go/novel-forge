@@ -230,6 +230,7 @@ from . import (
     v20261018_0225_impacted_working_plan_continuation,
     v20261018_0226_semantic_preparation_continuation,
     v20261018_0227_completed_preparation_handoff,
+    v20261018_0228_terminal_preparation_handoff,
 )
 
 VERSION_MODULES = [
@@ -461,6 +462,7 @@ VERSION_MODULES = [
     v20261018_0225_impacted_working_plan_continuation,
     v20261018_0226_semantic_preparation_continuation,
     v20261018_0227_completed_preparation_handoff,
+    v20261018_0228_terminal_preparation_handoff,
 ]
 
 __all__ = ["VERSION_MODULES"]

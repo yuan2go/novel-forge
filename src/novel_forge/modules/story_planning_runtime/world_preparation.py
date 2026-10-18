@@ -619,6 +619,12 @@ def require_selected_world_action(query: Any, *, command: Any) -> Any:
 
 
 def require_world_action(query: Any, *, command: Any, operation_id: str) -> Any:
+    from .preparation_recovery import terminal_custody, retained_world_action
+    from types import SimpleNamespace
+    custody = terminal_custody(query.database_url, command, operation_id)
+    if custody:
+        return retained_world_action(SimpleNamespace(database_url=query.database_url, query=query),
+            command=command, operation_id=operation_id, proof=custody)
     retained = require_selected_world_action(query, command=command)
     if retained is not None:
         return retained
@@ -652,7 +658,6 @@ def require_world_action(query: Any, *, command: Any, operation_id: str) -> Any:
     action = schema_continuation_action(query.database_url, command)
     if action is not None:
         return action
-    from types import SimpleNamespace
     preparation = PlanningWorldPreparation(SimpleNamespace(database_url=query.database_url, query=query))
     for prefix in preparation._isolated_world_prefixes(command):
         if preparation._read(command.project_id, f"{prefix}/action") is not None:

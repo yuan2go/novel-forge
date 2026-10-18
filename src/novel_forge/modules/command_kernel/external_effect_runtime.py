@@ -208,6 +208,23 @@ def read_acknowledged_preparation_success_in_uow(uow, context: EffectCommandCont
     return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
 
 
+def read_terminal_preparation_success_in_uow(uow, context: EffectCommandContext, *, effect_id: str):
+    _validate_effect_context(context)
+    uow.cursor.execute("""SELECT operation.status,
+        EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=operation.operation_id AND status<>'FAILED_FINAL'),
+        EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+          WHERE attempt.operation_id=operation.operation_id AND lease.status='HELD'),
+        EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=operation.operation_id),
+        EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=operation.operation_id),
+        (SELECT request_payload->>'stage' FROM authority_external_effect WHERE external_effect_id=%s AND operation_id=operation.operation_id)
+        FROM authority_operation operation WHERE operation_id=%s AND project_id=%s FOR UPDATE""",
+        [effect_id, context.operation_id, context.project_id])
+    row = uow.cursor.fetchone()
+    if not row or row[0] != 'FAILED_FINAL' or any(row[1:5]) or row[5] not in {'context_compress','context_fidelity'}:
+        raise KernelError('EFFECT_RETAINED_STAGE_INVALID', 'Terminal preparation requires failed original Attempts, released submission rights and no cancellation')
+    return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
+
+
 def _receipt_matches_dispatch(provider_evidence: dict[str, Any], dispatch_evidence: Any) -> bool:
     if not isinstance(dispatch_evidence, dict):
         return False

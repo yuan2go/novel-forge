@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.context_contracts import ContextCandidate, ContextClass
+from novel_forge.modules.context_contracts import ContextCandidate, ContextClass, FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.narrative_state.reality import narrative_hash
 
 from .task_context import (
@@ -379,7 +379,7 @@ def compile_task_context(
                 }
 
             def fits(group):
-                return len(group) <= 256 and (chunk_fits(chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget))) if chunk_fits else token_counter(group) <= compression_input_tokens)
+                return len(group) <= FROZEN_COMPRESSION_REQUEST_MAX_UNITS and (chunk_fits(chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget))) if chunk_fits else token_counter(group) <= compression_input_tokens)
 
             if chunk_fits and not semantic:
                 units = _split_oversized_units(units, fits, preserve_quotes=tuple(task.get("preserve_quotes") or ()))
@@ -388,7 +388,7 @@ def compile_task_context(
                 [{key: unit[key] for key in ("unit_id", "text", "kind", "required")} for unit in units])
             position = 0
             while position < len(visible_units):
-                low, high, stop = position + 1, min(len(visible_units), position + 256), position
+                low, high, stop = position + 1, min(len(visible_units), position + FROZEN_COMPRESSION_REQUEST_MAX_UNITS), position
                 while low <= high:
                     middle = (low + high) // 2
                     if fits(visible_units[position:middle]):

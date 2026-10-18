@@ -437,6 +437,11 @@ class AutonomousWorldTransport:
                     ]
                 ]
             }
+            if inputs['world_preparation'].get('epistemic_contract') == 'world-agency.v2':
+                from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
+                result['action_classifications'] = [dict(field_path=path, supported=True,
+                    rationale='The supplied generated action uses its own frozen observation.')
+                    for path in agency_transition_paths(inputs['world_preparation']['generated_portfolio'])]
         else:
             result = planning_fixture_response(stage, inputs)
             if stage == "chapter_plan.generate":
@@ -1039,6 +1044,15 @@ def execute_autonomous_world_vertical(
                 ]
                 == 0
             )
+            import time
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+                uow.cursor.execute("SELECT status,EXTRACT(EPOCH FROM available_at-NOW()) FROM authority_runtime_job WHERE runtime_job_id=%s", [claim.runtime_job_id])
+                retry_status, wait_seconds = uow.cursor.fetchone()
+            assert retry_status == "RETRY_WAIT"
+            assert jobs.claim(runtime_group="book",worker_id="world-causal-worker",lease_seconds=30,
+                job_kinds=("BOOK_COORDINATION_TICK",),subject_kind="BOOK_RUN",subject_id=admitted.book_run_id) is None
+            time.sleep(max(0, float(wait_seconds)))
             continue
         coordination.append(result)
         assert jobs.complete(claim, result)["replayed"] is True

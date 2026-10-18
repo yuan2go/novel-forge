@@ -1499,6 +1499,19 @@ recovery boundary. Its acknowledged cancellation must revoke the original Attemp
 submission rights, retain every settled preparation receipt and prove that the main
 call was not sent. The v5 deployment handoff has native upgrade and registration
 evidence; automatic receipt reuse and end-to-end handoff qualification remain pending.
+Terminal host chunk-contract failures have a separate v6 continuation and appended
+228 guard (`CODE_EXISTS`). Registration requires exact original preparation custody,
+settled verified receipts, no main send, and released submission rights. A reconstructed
+original Provider view must match its retained complete hash; new consumer identity
+cannot relabel historical source identities. Native successor execution and automatic
+receipt reuse remain unqualified until observed on that exact release.
+Provider preparation retains the original realization catalogue. Candidate materialization
+uses a checked consumer projection that preserves every source version and hash while
+binding host realization references to the new Operation. Normal and retained-result
+consumption use the same projection; historical Context and raw results remain intact.
+World actor judgments must also select their decoder from the frozen source's agency
+contract at plan binding and reference sampling. The historical v1 decoder cannot
+validate a v2 action by discarding its action classification.
 A paused worker may have planned a never-dispatched tail before checking Book pause.
 Versioned recovery of that tail is pending implementation: Kernel must cancel only
 the exact zero-dispatch intent and release its reservation after the worker relinquishes
@@ -1512,8 +1525,12 @@ Changed paragraph units or targets create a new task; old unit identities keep t
 original meaning. Final semantic checks combine the ordered union of all original risk
 neighbors and dependency units. Complete request capacity determines batching, while
 each original risk neighborhood and dependency closure must remain visible together;
-necessary overlap is retained and an oversized closure is rejected. There is no fixed
-unit-count ceiling or loss of source coverage. Each checker task keeps
+necessary overlap is retained and an oversized closure is rejected. The supported frozen
+task-context-compression v1–v3 protocols limit each request to 256 source units, matching
+their output identity arrays (`HISTORICAL_COMPATIBILITY`). Both initial and final
+batching must honor that wire contract as well as complete request capacity. This is
+not a limit on total source units or the number of batches; coverage is preserved.
+Each checker task keeps
 its exact identity, and missing or uncertain meaning retains the existing restoration
 rules. Final Planning dispatch, including preparation calls, checks the
 owning Book pause and Book/Creation cancellation before entering the Provider.

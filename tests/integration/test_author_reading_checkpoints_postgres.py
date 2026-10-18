@@ -73,6 +73,14 @@ def test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted
                                            decision_version_id=decisions[boundary])
         assert verified["independent_human_review"] == "NOT_REVIEWED"
         assert verified["reading_manifest_hash"] == manifest["manifest_hash"]
+        if boundary == 3:
+            paused = composition.authority.require(book_run_id)
+            assert paused["state"] == "PAUSED"
+            composition.authority.resume(
+                book_run_id, principal=composition.principal,
+                expected_version=paused["version"],
+                reason="Fixture explicit continuation after the approved chapter-3 reading checkpoint",
+            )
 
     def exercise(**arguments):
         result = original(**arguments, checkpoint_observer=review_checkpoint)

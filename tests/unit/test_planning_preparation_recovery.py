@@ -67,6 +67,101 @@ def test_unchanged_preparation_consumes_original_receipt_and_identity(retained):
     retained.uow.commit.assert_not_called()
 
 
+def test_terminal_handoff_uses_released_failure_receipt_without_reinterpreting_ack(retained, monkeypatch):
+    retained.binding['target_runtime']['preparation_handoff']['contract_version'] = 'planning-terminal-preparation-handoff.v1'
+    read = MagicMock(return_value=retained.receipt)
+    monkeypatch.setattr('novel_forge.modules.command_kernel.external_effect_runtime.read_terminal_preparation_success_in_uow', read)
+    assert consume(retained)['_execution_evidence']['receipt_reuse']['provider_invoked_this_attempt'] is False
+    read.assert_called_once()
+    retained.read.assert_not_called()
+
+
+@pytest.mark.parametrize('row', [None, ('EXECUTING', False, False, False, False, 'context_fidelity'),
+    ('FAILED_FINAL', True, False, False, False, 'context_fidelity'),
+    ('FAILED_FINAL', False, True, False, False, 'context_fidelity'),
+    ('FAILED_FINAL', False, False, True, False, 'context_fidelity'),
+    ('FAILED_FINAL', False, False, False, True, 'context_fidelity'),
+    ('FAILED_FINAL', False, False, False, False, 'chapter_plan.generate'),
+    ('FAILED_FINAL', False, False, False, False, 'context_fidelity')])
+def test_terminal_receipt_reader_requires_original_failure_and_released_submission_rights(monkeypatch, row):
+    from novel_forge.modules.command_kernel import external_effect_runtime as runtime
+    uow = MagicMock()
+    uow.cursor.fetchone.return_value = row
+    read = MagicMock(return_value={'original': 'verified'})
+    monkeypatch.setattr(runtime, '_read_verified_success', read)
+    context = runtime.EffectCommandContext('original', 'project', 'author', 'trace', 'correlation')
+    if row == ('FAILED_FINAL', False, False, False, False, 'context_fidelity'):
+        assert runtime.read_terminal_preparation_success_in_uow(uow, context, effect_id='effect') == {'original':'verified'}
+        read.assert_called_once_with(uow, uow.repositories.external_effects, context, 'effect', retained_generation_stage=True)
+    else:
+        with pytest.raises(KernelError, match='EFFECT_RETAINED_STAGE_INVALID'):
+            runtime.read_terminal_preparation_success_in_uow(uow, context, effect_id='effect')
+        read.assert_not_called()
+
+
+@pytest.mark.parametrize('change', ['unchanged', 'history', 'context', 'source_hash'])
+def test_reconstructs_exact_custodian_capture_and_rejects_any_projection_drift(change):
+    from novel_forge.modules.chapter_authority.provider_views import project_planning_narrative_intent
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import reconstruct_preparation_capture
+
+    history = dict(snapshot_hash='history', text='原稿中她尚未开闸。')
+    compiled = dict(selection_explanation=dict(literal_references=[]), frozen_by_operation_id='original-operation')
+    context = dict(arc_working_set=dict(working_manuscript=history), context_manifest=dict(provider_context_view=dict(
+        compiled_view=compiled, content_hash=canonical_hash(compiled))))
+    original = dict(stage='chapter_plan.generate', output_protocol=dict(arc_working_set=dict(working_manuscript=history)), narrative_inputs={})
+    _, projected, _ = project_planning_narrative_intent({}, compiled)
+    capture = dict(input_manifest=original, context_bundle=projected)
+    compressed = deepcopy(original)
+    compressed['output_protocol']['arc_working_set']['working_manuscript'] = dict(source_projection_hash=canonical_hash(history), delivery='ORIGINAL_SOURCE_UNITS_PER_CHUNK')
+    task = dict(task=dict(task_context=compressed, source_projection_hash=canonical_hash(capture)))
+    if change == 'history':
+        context['arc_working_set']['working_manuscript']['text'] += '改写'
+    elif change == 'context':
+        compiled['frozen_by_operation_id'] = 'new-consumer'
+    elif change == 'source_hash':
+        task['task']['source_projection_hash'] = 'wrong'
+    if change == 'unchanged':
+        assert reconstruct_preparation_capture(context, task) == capture
+        assert compressed['output_protocol']['arc_working_set']['working_manuscript']['delivery'] == 'ORIGINAL_SOURCE_UNITS_PER_CHUNK'
+    else:
+        with pytest.raises(KernelError, match='PLANNING_PREPARATION_REUSE_DRIFT'):
+            reconstruct_preparation_capture(context, task)
+
+
+@pytest.mark.parametrize('drift', [False, True])
+def test_realization_consumer_projection_preserves_original_sources_and_raw_custody(retained, monkeypatch, drift):
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import consumer_realization_catalog
+    reference = dict(asset_version_id='original-source', content_hash='original-hash', frozen_by_operation_id='old-operation')
+    context = dict(realization_reference_contract=dict(references_by_domain=dict(WORLD_STATE=[reference])))
+    proof = dict(source_operation_id='old-operation', context_content_hash=canonical_hash(context))
+    monkeypatch.setattr('novel_forge.modules.story_planning_runtime.preparation_recovery.terminal_custody', lambda *_: proof)
+    if drift:
+        reference['frozen_by_operation_id'] = 'foreign'
+        proof['context_content_hash'] = canonical_hash(context)
+        with pytest.raises(KernelError, match='PLANNING_PREPARATION_REUSE_DRIFT'):
+            consumer_realization_catalog('database', command=retained.command, operation_id='new-operation', context=context)
+    else:
+        projected = consumer_realization_catalog('database', command=retained.command, operation_id='new-operation', context=context)
+        assert projected['references_by_domain']['WORLD_STATE'] == [{**reference, 'frozen_by_operation_id':'new-operation'}]
+        assert reference['frozen_by_operation_id'] == 'old-operation'
+        assert canonical_hash(context) == proof['context_content_hash']
+
+
+def test_terminal_group_without_world_preparation_keeps_the_native_non_world_path(monkeypatch):
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    preparer = PostgresPlanningExecutionPreparer.__new__(PostgresPlanningExecutionPreparer)
+    preparer.database_url = 'database'
+    preparer._prepare_stage = MagicMock(return_value='native-stage')
+    monkeypatch.setattr('novel_forge.modules.story_planning_runtime.preparation_recovery.terminal_custody', lambda *_: {'source_operation_id':'original'})
+    action = MagicMock(side_effect=AssertionError('No World source was requested'))
+    monkeypatch.setattr('novel_forge.modules.story_planning_runtime.preparation_recovery.retained_world_action', action)
+    command = SimpleNamespace(world_preparation_request={})
+    assert preparer.prepare(operation_id='successor', attempt_id='attempt', fencing_token=1, worker_id='worker',
+        command=command, inputs=(), definition=None, attempt_snapshot=None) == 'native-stage'
+    action.assert_not_called()
+    assert preparer._prepare_stage.call_args.kwargs['world_action'] is None
+
+
 @pytest.mark.parametrize('change', ['text','target','unit_identity','stage','historical_contract','no_continuation'])
 def test_changed_or_unregistered_task_cannot_borrow_old_unit_meaning(retained, change):
     task = deepcopy(retained.task)

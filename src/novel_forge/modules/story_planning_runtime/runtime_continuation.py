@@ -49,7 +49,7 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
@@ -80,6 +80,7 @@ def runtime_continuation_definition(
             **({'unstarted_isolated_successor_required': True} if definition_version == '4.0.0' else {}),
             **({'unsent_main_call_required': True, 'verified_preparation_required': True} if definition_version == '3.0.0' else {}),
             **({'unsent_main_call_required': True, 'acknowledged_preparation_handoff_required': True} if definition_version == '5.0.0' else {}),
+            **({'unsent_main_call_required': True, 'terminal_preparation_custody_required': True} if definition_version == '6.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
         "idempotency_scope": "book:planning-runtime-continuation",
@@ -179,6 +180,10 @@ def require_source(
         if attempt
         else ""
     )
+    if row[0] == 'FAILED_FINAL' and attempt and attempt[0] == 'FAILED_FINAL' and failure_code == 'CONTEXT_COMPRESSION_TASK_INVALID':
+        from .preparation_recovery import is_terminal_chunk_failure, require_source as require_preparation_source
+        if is_terminal_chunk_failure(attempt[2]):
+            return require_preparation_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, terminal=True)
     if row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL"} and failure_code == "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN" and attempt:
         return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
             frozen=frozen, attempt=attempt, semantic_preparation_failure=True)
@@ -1496,7 +1501,7 @@ def _capacity_target(
                         command=successor, inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
                         context_policy_ref=capacity_upgrade["source_context_policy_ref"], planning_task_token_budget=allocated,
                         preflight_only=True)
-                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated,
+                context = deepcopy(original_context.content) if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated,
                     projection_contract=proof.get("contract_version"), capacity_policy_upgrade=capacity_upgrade)
             else:
                 context, _ = preparer._context_bundle(
@@ -2056,7 +2061,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,

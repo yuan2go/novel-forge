@@ -7,6 +7,9 @@ from enum import StrEnum
 from typing import Any
 
 
+FROZEN_COMPRESSION_REQUEST_MAX_UNITS = 256
+
+
 class ContextClass(StrEnum):
 
     PROTECTED = "PROTECTED"

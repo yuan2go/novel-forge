@@ -7,11 +7,14 @@ import pytest
 
 from novel_forge.storage.migrations.versions.v20261018_0226_semantic_preparation_continuation import PERMITTED
 from novel_forge.storage.migrations.versions.v20261018_0227_completed_preparation_handoff import PERMITTED as HANDOFF_PERMITTED
+from novel_forge.storage.migrations.versions.v20261018_0228_terminal_preparation_handoff import PERMITTED as TERMINAL_PERMITTED
 from tests.integration.authority_postgres_support import DATABASE_URL
 
 
-@pytest.mark.parametrize('completed', [False, True], ids=['zero-send','acknowledged-preparation'])
-def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(completed):
+@pytest.mark.parametrize('mode', ['zero-send', 'acknowledged-preparation', 'terminal-preparation'])
+def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mode):
+    completed = mode != 'zero-send'
+    terminal = mode == 'terminal-preparation'
     with psycopg.connect(DATABASE_URL) as connection:
         try:
             for table in (
@@ -21,7 +24,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(com
                 "budget_reservation", "lease_acquisition", "cancellation_command", "worker_cancel_signal",
             ):
                 connection.execute(f"CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA")
-            connection.execute((HANDOFF_PERMITTED if completed else PERMITTED).replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1))
+            connection.execute((TERMINAL_PERMITTED if terminal else HANDOFF_PERMITTED if completed else PERMITTED).replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1))
 
             def insert(table, **values):
                 columns = ",".join(values)
@@ -50,12 +53,17 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(com
                     preparation_source_boundary=dict(kind='FROZEN_STAGE_INPUTS',project_id='project',book_id='book',pack_snapshot_hash='snapshot-hash',
                         sources=[dict(asset_version_id='context',content_hash='context-hash')]),preparation_source_projection_hash='projection-hash',
                     retained_preparation=[dict(external_effect_id='prepared',request_hash='request-hash',stage='context_compress')])
+            host_failure = dict(error_code='CONTEXT_COMPRESSION_TASK_INVALID', failure_class='final_failure',
+                error_message='CONTEXT_COMPRESSION_TASK_INVALID: compression needs a bounded source chunk and frozen task boundary', failure_details={})
+            if terminal:
+                target['preparation_handoff'].update(contract_version='planning-terminal-preparation-handoff.v1',
+                    source_submission_rights='RELEASED_BY_TERMINAL_FAILURE', host_failure=host_failure)
             for identity, status, definition, actor, payload, sha, cause in (
-                ("source", "RECONCILIATION_REQUIRED" if completed else "FAILED_FINAL", "story_planning.generate", "author" if completed else "worker", source, "old", None),
+                ("source", "RECONCILIATION_REQUIRED" if completed and not terminal else "FAILED_FINAL", "story_planning.generate", "author" if completed else "worker", source, "old", None),
                 ("child", "ADMITTED", "story_planning.generate", "author" if completed else "worker", child, "new", "source"),
                 ("registration", "SUCCEEDED", "story_planning.runtime_continuation.register", "author", {}, "new", None),
             ):
-                insert("operation", operation_id=identity, status=status, definition_name=definition, definition_version="5.0.0" if completed and identity=='registration' else "1.21.0",
+                insert("operation", operation_id=identity, status=status, definition_name=definition, definition_version="6.0.0" if terminal and identity=='registration' else "5.0.0" if completed and identity=='registration' else "1.21.0",
                     actor_id=actor, project_id="project", workspace_id="workspace", command_payload={"payload": payload},
                     definition_snapshot={"commit_sha": sha}, causation_operation_id=cause)
             insert("story_planning_runtime_continuation", continuation_id="runtime", source_operation_id="source",
@@ -66,7 +74,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(com
                 "planning_scope": "CHAPTER", "input_snapshot": [{"role": "plan", "asset_version_id": "plan:v1", "content_hash": "hash"}],
                 "input_snapshot_hash": "frozen-input-hash", "repair_number": 0}
             insert("story_planning_generation", operation_id="source", **generation)
-            insert("attempt", operation_id="source", attempt_id="attempt", attempt_number=1, status="CANCELLED" if completed else "FAILED_RETRYABLE", result={} if completed else failure)
+            insert("attempt", operation_id="source", attempt_id="attempt", attempt_number=1, status="FAILED_FINAL" if terminal else "CANCELLED" if completed else "FAILED_RETRYABLE", result=host_failure if terminal else {} if completed else failure)
             insert("attempt_capability_pack_snapshot", operation_id="source", attempt_id="attempt",
                 snapshot_payload={"context_policy_ref": "context-policy:chapter-generation-pack:v4"},snapshot_hash='snapshot-hash')
             insert("operation_output_asset", operation_id="source", output_key="planning.context_bundle", asset_version_id="context", content_hash="context-hash")
@@ -90,11 +98,12 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(com
                         'contract_version':'task-context-compression.v3','frozen_input_boundary':target['preparation_handoff']['preparation_source_boundary'],
                         'task':{'source_projection_hash':'projection-hash'}}}})
                 insert('budget_reservation',external_effect_id='prepared',operation_id='source',status='SETTLED')
-                insert('cancellation_command',operation_id='source',actor_id='author')
-                insert('worker_cancel_signal',operation_id='source',attempt_id='attempt',status='ACKNOWLEDGED',acknowledged_at=datetime.now(timezone.utc))
+                if not terminal:
+                    insert('cancellation_command',operation_id='source',actor_id='author')
+                    insert('worker_cancel_signal',operation_id='source',attempt_id='attempt',status='ACKNOWLEDGED',acknowledged_at=datetime.now(timezone.utc))
 
             def allowed(value=generation):
-                function = 'authority_completed_preparation_handoff_permitted' if completed else 'authority_semantic_preparation_continuation_permitted'
+                function = 'authority_terminal_preparation_handoff_permitted' if terminal else 'authority_completed_preparation_handoff_permitted' if completed else 'authority_semantic_preparation_continuation_permitted'
                 return connection.execute(f"SELECT {function}('runtime','child',%s)", [Jsonb(value)]).fetchone()[0]
 
             assert allowed()
@@ -125,11 +134,12 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(com
                 connection.execute("ROLLBACK TO SAVEPOINT negative")
             if completed:
                 for statement in (
+                    "INSERT INTO authority_worker_cancel_signal(operation_id,status) VALUES('source','REQUESTED')" if terminal else "UPDATE authority_worker_cancel_signal SET status='REQUESTED',acknowledged_at=NULL",
+                    "UPDATE authority_attempt SET result='{}'" if terminal else "UPDATE authority_attempt SET status='FAILED_FINAL'",
                     "UPDATE authority_external_effect SET status='UNKNOWN'",
                     "UPDATE authority_external_effect SET request_hash='wrong'",
                     "UPDATE authority_external_effect SET request_payload='{\"stage\":\"chapter_plan.generate\"}'",
                     "UPDATE authority_budget_reservation SET status='HELD_UNKNOWN'",
-                    "UPDATE authority_worker_cancel_signal SET status='REQUESTED',acknowledged_at=NULL",
                     "UPDATE authority_book_production SET input_snapshot_id='replaced'",
                     "INSERT INTO authority_cancellation_command(operation_id,actor_id) VALUES('book-root','author')",
                 ):

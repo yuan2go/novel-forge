@@ -167,6 +167,15 @@ Attempt uses Kernel's zero-effect resolution without creating an Attempt. A live
 lease still blocks takeover. Completed preparation handoff is separate from this
 acknowledgement and from zero-send recovery; it needs the retained receipt and
 same-Book authorization checks before any successor dispatch.
+The terminal preparation handoff uses registration v6 and migration 228, independently
+of the v5 cancellation contract. Ordinary Planning replay can register the exact host
+chunk-contract failure on a corrected release. It checks the current Book frontier,
+original actor, complete input/Context/Pack hashes, all verified settled preparation
+receipts, zero main sends and released original leases. It reconstructs the original
+Provider view and requires its complete retained hash before reusing any exact task.
+Unknown Effects, cancellation, a live lease, changed inputs or a main send still refuse
+this recovery. Inspect each consumption receipt's original Effect and new consumer;
+registration alone does not prove reuse. No capacity or content repair counter is reset.
 
 For an existing nonempty ledger, pending `BACKUP_REQUIRED` declarations are enforced by
 the shared runner. Set an absolute private `--backup-directory` or
@@ -4278,6 +4287,9 @@ pause version. Issues retain severity, repair target and preservation requiremen
 resolution evidence must locate the rechecked accepted version and preservation check. Unresolved issues cannot disappear by omission, and an old approval does
 not undo a subsequent operator pause. Regenerate/read/register/decide if the paused
 Book version changed.
+An APPROVE decision does not resume the Book or permit Provider dispatch while PAUSED.
+Explicitly resume before requesting another generation; operator PlanChange rebinding
+still requires a fresh pause at its bound accepted cursor.
 
 For longer volumes, `reading_review_template(..., reading_start_chapter=N)` creates a
 v2 review covering every chapter from N through the current checkpoint. Earlier

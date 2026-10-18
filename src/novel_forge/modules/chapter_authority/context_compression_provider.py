@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_contracts import FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.production_execution.contracts import ExecutionRuntimeClass
 
 
@@ -57,7 +58,7 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         or not isinstance(boundary, Mapping)
         or not isinstance(units, list)
         or not units
-        or len(units) > 256
+        or len(units) > FROZEN_COMPRESSION_REQUEST_MAX_UNITS
         or not isinstance(required, list)
         or not str(task.get(fingerprint_key) or "")
         or not str(task.get("policy_version") or "")

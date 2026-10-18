@@ -3,6 +3,7 @@ import json
 import re
 from typing import Any, Mapping
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_contracts import FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.narrative_state.contracts import (
     NarrativeObligationType,
     atomize_character_knowledge_changes,
@@ -1007,11 +1008,11 @@ def chapter_provider_output_schema(
         schema = _retrieval_query_expansion_schema()
     elif stage == "context_compress":
         schema = _object_schema({
-            "selected_unit_ids": {"type": "array", "maxItems": 256, "uniqueItems": True,
+            "selected_unit_ids": {"type": "array", "maxItems": FROZEN_COMPRESSION_REQUEST_MAX_UNITS, "uniqueItems": True,
                                   "items": {"type": "string", "minLength": 1, "maxLength": 200}},
         }, required=("selected_unit_ids",))
     elif stage == "context_fidelity":
-        identity_array = {"type": "array", "maxItems": 256, "uniqueItems": True,
+        identity_array = {"type": "array", "maxItems": FROZEN_COMPRESSION_REQUEST_MAX_UNITS, "uniqueItems": True,
                           "items": {"type": "string", "minLength": 1, "maxLength": 200}}
         schema = _object_schema({
             "supported": {"type": "boolean"},

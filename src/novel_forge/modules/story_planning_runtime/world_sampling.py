@@ -323,7 +323,8 @@ def world_sample_result_review(frozen: FrozenWorldSample, result: dict[str, Any]
             if frozen.stage.task.get("actor_proposals"):
                 from novel_forge.modules.worldbuilding.actor_isolation import require_actor_judgments
 
-                require_actor_judgments(result, frozen.stage.task["actor_proposals"])
+                require_actor_judgments(result, frozen.stage.task["actor_proposals"],
+                    agency=frozen.stage.task.get('epistemic_contract') == 'world-agency.v2')
             decoded = decode_world_generation({key: value for key, value in result.items() if key not in {"knowledge_translations", "actor_adjudications"}})
             validate_generated_candidates(decoded, policy)
             from .knowledge_translation import validate_knowledge_translations

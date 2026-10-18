@@ -111,6 +111,14 @@ def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, set
     generated = post(f"/product/production/book-authority/books/{book_id}/planning-generations", command)
     candidate_id = generated["candidate_asset_version_id"]
     assert generated["status"] == "APPROVAL_PENDING"
+    checkpoint = authority.require(book_run_id)
+    if checkpoint["state"] != "PAUSED":
+        authority.pause(book_run_id, principal=principal,
+            reason="Fixture explicit hold before rebinding the approved future plan")
+    assert authority.require(book_run_id)["accepted_through_chapter"] == 3
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT COUNT(*) FROM authority_book_chapter_request WHERE book_run_id=%s AND chapter_number>3", [book_run_id])
+        assert uow.cursor.fetchone() == (0,)
     proposal = post(f"/product/production/book-authority/books/{book_id}/plan-changes", {
         "project_id": project_id, "workspace_id": workspace_id, "book_id": book_id, "actor_id": principal.principal_id,
         "trace_id": f"{project_id}:operator-proposal", "correlation_id": book_run_id,

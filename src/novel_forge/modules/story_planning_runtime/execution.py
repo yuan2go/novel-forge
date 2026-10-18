@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 
 from novel_forge.logging.execution import execution_step
@@ -4316,8 +4318,10 @@ class PostgresPlanningExecutionPreparer:
             definition=definition,
             attempt_snapshot=attempt_snapshot,
         )
-        action = None
-        if command.world_preparation_request:
+        from .preparation_recovery import terminal_custody, retained_world_action
+        custody = terminal_custody(self.database_url, command, operation_id)
+        action = retained_world_action(self, command=command, operation_id=operation_id, proof=custody) if custody and command.world_preparation_request else None
+        if command.world_preparation_request and custody is None:
             artifacts = self.pack_runtime.materialize_attempt_artifacts(attempt_snapshot)
             context_policy_content = artifacts.context_policy.content
             knowledge_context, _ = self._context_bundle(
@@ -4365,6 +4369,9 @@ class PostgresPlanningExecutionPreparer:
         capacity_source: tuple[Any, tuple] | None = None,
         capacity_probe: bool = False,
     ) -> PreparedPlanningExecution:
+        from .preparation_recovery import terminal_custody, consumer_realization_catalog
+        custody = terminal_custody(self.database_url, command, operation_id)
+        source_operation_id = custody['source_operation_id'] if custody else operation_id
         stage_name = (
             capacity_task[0] if capacity_task else
             provider_stage.name
@@ -4701,7 +4708,7 @@ class PostgresPlanningExecutionPreparer:
         authoritative_envelope = build_planning_constraint_envelope(
             project_id=command.project_id,
             book_id=command.book_id,
-            generation_operation_id=operation_id,
+            generation_operation_id=source_operation_id,
             generator_operation_name=command.generator_operation_name,
             frozen_inputs=inputs,
             input_contents={
@@ -4752,7 +4759,7 @@ class PostgresPlanningExecutionPreparer:
                     **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"} else {}),
                     "project_id": command.project_id,
                     "book_id": command.book_id,
-                    "generation_operation_id": operation_id,
+                    "generation_operation_id": source_operation_id,
                     "logical_key": command.logical_key,
                     "planning_scope": command.planning_scope.value,
                     "parent_version_id": command.parent_version_id,
@@ -5552,7 +5559,7 @@ class PostgresPlanningExecutionPreparer:
                 binding=binding,
                 adapter=adapter,
                 recovered_completion=recovered_completion,
-                realization_selector_catalog=context_document.content.get("realization_reference_contract") if command.execution_contract_version == "1.21.0" and provider_stage is None else None,
+                realization_selector_catalog=consumer_realization_catalog(self.database_url, command=command, operation_id=operation_id, context=context_document.content) if command.execution_contract_version == "1.21.0" and provider_stage is None else None,
                 writer=self.writer,
                 post_provider_fault_injector=self.post_provider_fault_injector,
             ),
@@ -6073,7 +6080,9 @@ class PostgresPlanningExecutionPreparer:
                     self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected,
                         context_policy_ref=upgrade["source_context_policy_ref"] if upgrade else context_policy_ref)
                     self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
-                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"), capacity_policy_upgrade=upgrade)
+                    from .preparation_recovery import terminal_custody
+                    custody = terminal_custody(self.database_url, command, operation_id)
+                    content = deepcopy(original.content) if custody else self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"), capacity_policy_upgrade=upgrade)
                     if upgrade:
                         from .runtime_continuation import capacity_upgrade_projection_hash
                         allocation = runtime["planning_capacity"]

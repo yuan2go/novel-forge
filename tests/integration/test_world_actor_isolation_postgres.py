@@ -42,6 +42,7 @@ def run_actor_receipt_recovery(
             )
             result["characters"].append(companion)
             result["characters"][0]["secret"] = "PRIVATE_MARA_SECRET_MARKER"
+            result["characters"][0]["aliases"] = [*result["characters"][0].get("aliases", []), "protagonist"]
         if story.get("foundation_transform"):
             result = story["foundation_transform"](role, result)
         return result
@@ -258,6 +259,8 @@ def run_actor_receipt_recovery(
                             "value": "KNOWN",
                         }
                     ]
+                    if inputs["world_preparation"].get("epistemic_contract") == "world-agency.v2":
+                        transition["action_mode"] = "INFORMATION_DEPENDENT"
                     transition["cause_refs"].extend(proposals[0]["basis_refs"][1:])
                     result["candidates"][0]["transition"]["payload_json"] = json.dumps(
                         transition

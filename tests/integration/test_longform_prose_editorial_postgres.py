@@ -401,6 +401,9 @@ def test_automatic_remote_pair_enters_native_plan_disposition_and_located_rechec
                 project_id=project, asset_version_id=f"{project}:chapter-plan-v2"
             )
             content = {**template.content, "chapter": 3, "title": "The Promise Returns"}
+            content["narrative_realization_slice"] = {
+                **content["narrative_realization_slice"], "chapter_number": 3
+            }
             uow.cursor.execute(
                 "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'chapter_plan')",
                 [f"{project}:chapter-plan-3", project],

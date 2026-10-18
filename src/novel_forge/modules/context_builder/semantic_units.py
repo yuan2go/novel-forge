@@ -8,6 +8,7 @@ import json
 import re
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_contracts import FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.narrative_state.reality import narrative_hash
 
 
@@ -589,20 +590,22 @@ def pack_final_windows(windows, *, payload, fits):
     def merged(groups):
         unique = {unit["unit_id"]: unit for group in groups for unit in group}
         return sorted(unique.values(), key=lambda unit: unit["order"])
+    def admissible(group):
+        return len(group) <= FROZEN_COMPRESSION_REQUEST_MAX_UNITS and fits(payload(group))
     if not windows:
         return []
     whole = merged(windows)
-    if fits(payload(whole)):
+    if admissible(whole):
         return [whole]
     batches, current = [], []
     for window in windows:
         combined = merged([current, window])
-        if fits(payload(combined)):
+        if admissible(combined):
             current = combined
             continue
         if current:
             batches.append(current)
-        if not fits(payload(window)):
+        if not admissible(window):
             raise KernelError("TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE", "A complete semantic risk neighborhood and dependency closure cannot fit the checker request")
         current = window
     if current:
