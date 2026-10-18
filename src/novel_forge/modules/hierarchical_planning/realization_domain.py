@@ -562,12 +562,13 @@ class NarrativeRealizationContract:
             "proof_hash",
             "lifecycle",
         }
-        if value.get("schema_version") == "narrative-realization-contract.v3":
+        if value.get("schema_version") in {"narrative-realization-contract.v3", "narrative-realization-contract.v4"}:
             allowed.add("working_manuscript")
         if set(value) != allowed or value.get("schema_version") not in {
             NARRATIVE_REALIZATION_SCHEMA_VERSION,
             "narrative-realization-contract.v2",
             "narrative-realization-contract.v3",
+            "narrative-realization-contract.v4",
         }:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
@@ -597,7 +598,7 @@ class NarrativeRealizationContract:
         raw_proof = value.get("proof")
         if (
             not isinstance(raw_arcs, list)
-            or (not raw_arcs and value["schema_version"] not in {"narrative-realization-contract.v2", "narrative-realization-contract.v3"})
+            or (not raw_arcs and value["schema_version"] not in {"narrative-realization-contract.v2", "narrative-realization-contract.v3", "narrative-realization-contract.v4"})
             or not isinstance(raw_events, list)
             or not raw_events
             or not isinstance(raw_boundary, Mapping)
@@ -615,7 +616,7 @@ class NarrativeRealizationContract:
                 "NARRATIVE_REALIZATION_INVALID", "Arc bindings must be unique"
             )
         work_requirements = (
-            value["schema_version"] in {"narrative-realization-contract.v2", "narrative-realization-contract.v3"}
+            value["schema_version"] in {"narrative-realization-contract.v2", "narrative-realization-contract.v3", "narrative-realization-contract.v4"}
         )
         events = tuple(
             NarrativeRealizationEvent.from_mapping(
@@ -646,18 +647,24 @@ class NarrativeRealizationContract:
         contract_digest = realization_hash(body)
         accepted_boundary = AcceptedBoundaryBinding.from_mapping(raw_boundary)
         working = value.get("working_manuscript")
-        if value["schema_version"] == "narrative-realization-contract.v3" and working is None:
+        if value["schema_version"] in {"narrative-realization-contract.v3", "narrative-realization-contract.v4"} and working is None:
             raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "The working contract requires its exact source snapshot")
         if working is not None:
+            target = working.get("target_chapter") if isinstance(working, dict) else None
+            corrected = value["schema_version"] == "narrative-realization-contract.v4"
+            if corrected and (type(target) is not int or not start < target <= end):
+                raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "A corrected group requires its exact interior working frontier")
+            if not corrected:
+                target = start
             if isinstance(working, dict) and working.get("projection_policy") is not None:
                 from novel_forge.modules.book_authority.working_prose import validate_working_projection
                 validate_working_projection(working, project_id=value["project_id"], book_id=value["book_id"],
-                    target_chapter=start, accepted_through_chapter=accepted_boundary.accepted_through_chapter)
+                    target_chapter=target, accepted_through_chapter=accepted_boundary.accepted_through_chapter)
             if (not isinstance(working, dict) or working.get("version") != "working-manuscript-context.v1"
-                    or working.get("target_chapter") != start
+                    or working.get("target_chapter") != target
                     or any(working.get(key) != value[key] for key in ("project_id", "book_id"))
                     or working.get("accepted_through_chapter") != accepted_boundary.accepted_through_chapter
-                    or not 0 <= accepted_boundary.accepted_through_chapter < start
+                    or not 0 <= accepted_boundary.accepted_through_chapter < target
                     or working.get("snapshot_hash") != realization_hash({key: item for key, item in working.items() if key != "snapshot_hash"})):
                 raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "Working realization must retain exact unreviewed sources and the separate actual formal boundary")
         if working is None and accepted_boundary.accepted_through_chapter != start - 1:

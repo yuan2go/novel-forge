@@ -252,7 +252,7 @@ def replacement_binding(uow, *, book, chapter, plan_version, plan_hash):
     return {**{k:content[k] for k in ("contract_version","book_run_id","proposal_id","predecessor_request_id","predecessor_root_operation_id","generation")},"recovery_asset_version_id":row[0]}
 
 
-def current_working_group_correction(cursor, *, book, group_version_id, working):
+def current_working_group_correction(cursor, *, book, group_version_id, working, actor_id=None):
     chapter = book['current_chapter']
     if (working.get('target_chapter') != chapter or chapter <= book['accepted_through_chapter']
             or book['state'] not in {'READY', 'PAUSED'} or book.get('active_chapter_request_id')):
@@ -279,6 +279,8 @@ def current_working_group_correction(cursor, *, book, group_version_id, working)
     if len(rows) != 1:
         return False
     old, new, original_group, actor = rows[0]
+    if actor_id is not None and actor != actor_id:
+        return False
     cursor.execute('SELECT authority_working_group_prefix_preserved(%s,%s,%s,%s,%s,%s,%s)',
         [book['project_id'], book['book_id'], group_version_id, original_group, actor, book['workspace_id'], chapter])
     if cursor.fetchone() != (True,):

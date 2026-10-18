@@ -1412,6 +1412,9 @@ existing exact working-version selection, without author choice or formal accept
 Group correction must preserve both function rows and causal events before the current
 unaccepted chapter, verified against its original delivery Group through native activated
 PlanChange lineage. An impacted Chapter may follow only that exact native Group change.
+Interior corrections use `narrative-realization-contract.v4`; qualification, approval and
+freeze revalidate the native correction, original actor, Book frontier and exact working
+sources in their mutation transaction. Historical v3 retains its Group-start boundary.
 Each stage rechecks the current source and corrected Frozen Plan; ordinary revision and
 regeneration share atomic Book exclusion while identical requests use Kernel idempotency.
 Further length repair reads the regeneration Root's actual new Context. Retain cancelled

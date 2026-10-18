@@ -612,6 +612,7 @@ class PostgresNarrativeRealizationApplication:
             realization_seed.encode()
         ).hexdigest()
         working = arc_working_set.get("working_manuscript")
+        corrected = False
         if working is not None:
             from types import SimpleNamespace
             from novel_forge.storage.authority_repositories import AuthorityRepositories
@@ -626,7 +627,7 @@ class PostgresNarrativeRealizationApplication:
                 raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "Working realization requires its current Book-owned writing checkpoint")
             verify_working_context(SimpleNamespace(cursor=cursor, repositories=AuthorityRepositories(cursor)), owner[0], working)
         contract = {
-            "schema_version": "narrative-realization-contract.v3" if working is not None else "narrative-realization-contract.v2"
+            "schema_version": "narrative-realization-contract.v4" if corrected else "narrative-realization-contract.v3" if working is not None else "narrative-realization-contract.v2"
             if work_requirements
             else NARRATIVE_REALIZATION_SCHEMA_VERSION,
             "realization_id": realization_id,
@@ -688,7 +689,7 @@ class PostgresNarrativeRealizationApplication:
         uow.cursor.execute(
             """
             SELECT project_id, definition_name, command_payload,
-                   trace_id, correlation_id, causation_id
+                   trace_id, correlation_id, causation_id, actor_id
             FROM authority_operation
             WHERE operation_id=%s
             """,
@@ -705,6 +706,23 @@ class PostgresNarrativeRealizationApplication:
         payload = dict(operation[2])
         repository = NarrativeRealizationRepository(uow.cursor)
         realization_id = str(payload["realization_id"])
+        if definition_name in {"planning.realization.qualify", "planning.realization.approve", "planning.realization.freeze"}:
+            if definition_name == "planning.realization.qualify":
+                contract_payload = payload["contract"]
+            else:
+                uow.cursor.execute("SELECT source.command_payload->'contract' FROM authority_narrative_realization realization JOIN authority_operation source ON source.operation_id=realization.qualification_operation_id WHERE realization.realization_id=%s", [realization_id])
+                row = uow.cursor.fetchone()
+                contract_payload = row[0] if row else {}
+            if contract_payload.get("schema_version") == "narrative-realization-contract.v4":
+                from novel_forge.modules.book_authority.plan_recovery import current_working_group_correction
+                from novel_forge.modules.book_authority.manuscript import verify_working_context
+                working = contract_payload["working_manuscript"]
+                uow.cursor.execute("SELECT to_jsonb(book) FROM authority_book_production book WHERE book_run_id=%s FOR UPDATE", [working['book_run_id']])
+                owner = uow.cursor.fetchone()
+                if (not owner or not current_working_group_correction(uow.cursor, book=owner[0],
+                        group_version_id=contract_payload['chapter_group_plan_version_id'], working=working, actor_id=operation[6])):
+                    raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "Revalidate the exact native correction at its mutation boundary")
+                verify_working_context(uow, owner[0], working)
         checkpoint("after_domain_validation")
         if definition_name == "planning.realization.qualify":
             result = repository.qualify(
