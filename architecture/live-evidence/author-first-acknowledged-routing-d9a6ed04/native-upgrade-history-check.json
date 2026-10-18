@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-18T21:39:55.440821+00:00",
+  "source_sha": "d9a6ed04f638c07f19c9d97418919a376fff0fcc",
+  "original_schema": "20261019_0232_first_isolated_preparation_custody",
+  "unchanged_business_history": true,
+  "checkpoint_hash": "sha256:e258980c23d22ffb55e59454c78d02262a0078a2d3ae9c36a590b38cf41fed3c",
+  "counts": {
+    "book_production": 1,
+    "operation": 1660,
+    "external_effect": 595,
+    "attempt": 873,
+    "budget_reservation": 595,
+    "generation_isolation": 21,
+    "asset_version": 13857
+  },
+  "book_version": 139,
+  "production_database": "nf_author_first_native",
+  "applied_head": "20261019_0233_acknowledged_preparation_routing",
+  "backup_completed": true
+}

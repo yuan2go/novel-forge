@@ -1,0 +1,12 @@
+{
+  "source_sha": "d9a6ed04f638c07f19c9d97418919a376fff0fcc",
+  "operation_id": "629b658a-ce1e-48ff-9a5a-27370abe4a4c",
+  "readonly": true,
+  "lineage": [
+    "930c69f0-9733-4de8-9684-93537898ff12",
+    "d9aef47d-a45a-4343-96a8-0aef116e3283",
+    "543d8a2a-c458-430b-88da-2144fdb23a21",
+    "629b658a-ce1e-48ff-9a5a-27370abe4a4c"
+  ],
+  "preserved_content_repair_number": 0
+}
