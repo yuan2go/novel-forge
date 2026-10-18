@@ -1102,9 +1102,12 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
                  typed, payload.get("operation_id"), typed, definition, output_key])
             row = uow.cursor.fetchone()
         if typed:
-            if (row is None or source.content.get("project_id") != project_id
-                    or source.content.get("chapter") != row[2]):
+            if (row is None or source.content.get("chapter") != row[2]
+                    or any(field in source.content and source.content[field] != expected
+                        for field, expected in (("project_id", project_id), ("workspace_id", row[1]), ("book_id", row[0])))):
                 raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
+            if canonical_hash(source.content) != source.content_hash:
+                raise KernelError("MANUSCRIPT_CANDIDATE_HASH_INVALID", "Retained typed source bytes changed")
             validate_complete_prose(source.content)
             return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_TYPED_CANDIDATE",
                 "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,

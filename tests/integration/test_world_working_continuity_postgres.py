@@ -265,6 +265,15 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
             return native_ensure(*values, **options)
         monkeypatch.setattr(cli, "_ensure_native_work_length", observe_settlement)
         settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT source_asset_version_id FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=1", [book["book_run_id"]])
+            original_id = uow.cursor.fetchone()[0]
+            original_draft = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=original_id)
+            assert "project_id" not in original_draft.content
+        retained_before = run_manuscript_command(settings, _authority_parser().parse_args([
+            "authority-manuscript", "read", "--book-run-id", book["book_run_id"], "--candidate-version", original_id]))
+        assert retained_before["text"] == original_draft.content["text"]
+        assert retained_before["content_hash"] == original_draft.content_hash
         if length_delivery == "completed-empty-history":
             from novel_forge.modules.chapter_authority import candidate_selection
             with monkeypatch.context() as historical:
@@ -355,6 +364,16 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         assert final["manuscript"]["accepted_through_chapter"] == 0
         assert all(unit["author_selection"] == "NOT_GRANTED" for unit in units)
         assert all(unit["text"] in output.read_text() and unit["asset_version_id"] in output.read_text() for unit in units)
+        retained_export = tmp_path / "original-first-draft.md"
+        retained_after = run_manuscript_command(settings, _authority_parser().parse_args([
+            "authority-manuscript", "export", "--book-run-id", book["book_run_id"], "--candidate-version", original_id,
+            "--output", str(retained_export)]))
+        assert retained_after == retained_before
+        assert retained_before["text"] in retained_export.read_text()
+        assert retained_before["publication"] == "NOT_AUTHORIZED"
+        with pytest.raises(KernelError, match="MANUSCRIPT_EXPORT_VERSION_CONFLICT"):
+            run_manuscript_command(settings, _authority_parser().parse_args([
+                "authority-manuscript", "read", "--book-run-id", book["book_run_id"], "--chapters", "1", "--versions", original_id]))
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [book["project_id"]])
             assert uow.cursor.fetchone()[0] == 2

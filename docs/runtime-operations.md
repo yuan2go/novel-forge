@@ -3009,6 +3009,12 @@ novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$
 `.md` and `.txt` exports contain readable source text plus its candidate status;
 other suffixes retain the exact JSON projection and raw result, including original
 Operation/Effect status and failure codes. Export never selects or accepts a candidate.
+Use this same retained-candidate entry for an original typed Draft after working selection
+has advanced. It projects identity from the exact native output's persisted ownership;
+missing duplicated identity fields in native Draft content do not invalidate that source.
+Present conflicting identities, a wrong chapter or content hash and missing native
+ownership remain invalid. The current-manuscript `--versions` option pins the current
+selection and deliberately rejects a retained older Draft; it is not a historical selector.
 
 For the exact eligible experimental author-first original, an authenticated author can use:
 

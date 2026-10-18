@@ -456,11 +456,24 @@ def test_retained_working_revision_body_is_readable_without_new_call_qualificati
 
 
 @pytest.mark.parametrize("owned", [True, False])
-def test_unselected_materialized_revision_is_readable_without_projecting_review_or_selection(monkeypatch, owned):
+@pytest.mark.parametrize("kind,identity,integrity", [
+    ("draft_version", {"project_id": "project"}, True),
+    ("draft_chapter", {}, True),
+    ("best_draft_candidate", {}, True),
+    ("draft_chapter", {"project_id": "other"}, True),
+    ("draft_chapter", {"project_id": "project", "book_id": "other"}, True),
+    ("draft_chapter", {"project_id": "project", "workspace_id": "other"}, True),
+    ("draft_chapter", {"chapter": 4}, True),
+    ("draft_chapter", {"project_id": "project"}, False),
+])
+def test_unselected_materialized_revision_is_readable_without_projecting_review_or_selection(monkeypatch, owned, kind, identity, integrity):
     from novel_forge.modules.book_authority import manuscript
 
-    source = SimpleNamespace(asset_type="draft_version", asset_version_id="typed", content_hash="hash",
-        content={"project_id": "project", "chapter": 3, "text": "完整物化修订正文。"})
+    content = {"chapter": 3, "text": "完整物化修订正文。", **identity}
+    source = SimpleNamespace(asset_type=kind, asset_version_id="typed", content_hash=manuscript.canonical_hash(content) if integrity else "sha256:" + "0" * 64,
+        content=content)
+    definition = {"draft_version": "chapter.revision.apply", "draft_chapter": "chapter.draft.generate",
+        "best_draft_candidate": "chapter.candidate.select_best"}[kind]
     class Uow:
         def __init__(self, *args):
             self.cursor = self
@@ -472,19 +485,25 @@ def test_unselected_materialized_revision_is_readable_without_projecting_review_
             pass
         def execute(self, sql, params):
             assert "authority_operation_output_asset" in sql and "output.role='primary'" in sql
-            assert "op.definition_name=%s" in sql and "chapter.revision.apply" in params
+            assert "op.definition_name=%s" in sql and definition in params
             assert "UPDATE" not in sql and "INSERT" not in sql
         def fetchone(self):
             return next(self.rows)
     monkeypatch.setattr(manuscript, "AuthorityUnitOfWork", Uow)
     principal = SimpleNamespace(require=lambda permission, project: None)
-    if owned:
+    conflicting = any(key in identity and identity[key] != expected for key, expected in
+        (("project_id", "project"), ("book_id", "book"), ("workspace_id", "workspace"), ("chapter", 3)))
+    if owned and not conflicting and integrity:
         actual = manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
             asset_version_id="typed", principal=principal)
         assert actual["text"] == source.content["text"] and actual["raw_text"] is None
         assert actual["completeness"] == "COMPLETE"
         assert {actual[key] for key in ("review_status", "selection_status", "acceptance_status")} == {"NOT_PROJECTED"}
         assert actual["publication"] == "NOT_AUTHORIZED"
+    elif owned and not conflicting and not integrity:
+        with pytest.raises(KernelError, match="MANUSCRIPT_CANDIDATE_HASH_INVALID"):
+            manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+                asset_version_id="typed", principal=principal)
     else:
         with pytest.raises(KernelError, match="another source or Book"):
             manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",

@@ -85,6 +85,12 @@ unaccepted working cursor advances; the original permission failure, Chapter his
 tool policy and Canon remain unchanged. This is working-use qualification and cannot
 be reported as a compliant native Writer result or author acceptance. Other Tool use,
 resources, uncertainty, live work or concurrent replacement remain ineligible.
+Retained typed Draft, Revision and Best reading derives Project/Book identity from its
+exact successful native output and persisted Book ownership. Native Draft content need
+not duplicate those identity fields; any explicit conflicting Project/Workspace/Book,
+wrong chapter, missing native source or changed content hash still rejects reading.
+The read projection preserves the original asset/version/hash and grants no selection
+or acceptance. Current selected-version export continues to reject an older version list.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author
