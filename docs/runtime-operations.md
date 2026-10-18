@@ -1415,6 +1415,8 @@ PlanChange lineage. An impacted Chapter may follow only that exact native Group 
 Interior corrections use `narrative-realization-contract.v4`; qualification, approval and
 freeze revalidate the native correction, original actor, Book frontier and exact working
 sources in their mutation transaction. Historical v3 retains its Group-start boundary.
+ChapterPlan projection reuses its owning UoW for Frozen Realization/source validation;
+a nested connection must not wait on the mutation transaction's own Book lock.
 A native upstream change may remove the impacted Chapter active binding. Followup binds
 the original delivery Plan through `source_chapter_plan_version_id` while its activation
 CAS still expects the actual empty active slot; any competing current Chapter rejects.

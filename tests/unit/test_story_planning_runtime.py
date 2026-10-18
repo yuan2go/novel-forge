@@ -2592,16 +2592,19 @@ def test_planning_change_evidence_cannot_alias_generator_input() -> None:
         )
 
 
+@pytest.mark.parametrize("reuse_uow", [False, True], ids=["standalone-read", "existing-mutation-uow"])
 def test_chapter_plan_rejects_caller_shaped_realization_slice(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, reuse_uow,
 ) -> None:
     current = _realization_slice(parent_version_id="asset:chapter_group_plan:v1")
+
+    opened = []
 
     class FakeUow:
         cursor = object()
 
         def __init__(self, _database_url: str) -> None:
-            pass
+            opened.append(self)
 
         def __enter__(self) -> "FakeUow":
             return self
@@ -2624,7 +2627,10 @@ def test_chapter_plan_rejects_caller_shaped_realization_slice(
     application.database_url = "postgresql://unused"
     command = _command("chapter_plan.generate")
 
-    assert application._require_frozen_realization_slice(command) == current
+    options = {"uow": FakeUow("outer-transaction")} if reuse_uow else {}
+    before = len(opened)
+    assert application._require_frozen_realization_slice(command, **options) == current
+    assert len(opened) == before + (0 if reuse_uow else 1)
 
     forged = dict(current)
     forged["events"] = [{**current["events"][0], "action": "forged action"}]
@@ -2642,7 +2648,7 @@ def test_chapter_plan_rejects_caller_shaped_realization_slice(
         narrative_realization=forged,
     )
     with pytest.raises(KernelError, match="NARRATIVE_REALIZATION_SLICE_DRIFT"):
-        application._require_frozen_realization_slice(forged_command)
+        application._require_frozen_realization_slice(forged_command, **options)
 
 
 def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:

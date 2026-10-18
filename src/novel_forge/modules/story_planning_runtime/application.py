@@ -1445,7 +1445,7 @@ class StoryPlanningGenerationApplication:
                     )
 
     def _require_frozen_realization_slice(
-        self, command: StoryPlanningGenerationCommand
+        self, command: StoryPlanningGenerationCommand, *, uow: AuthorityUnitOfWork | None = None
     ) -> dict[str, Any]:
         """SECURITY: Resolve Chapter elaboration identity from Planning Authority itself.
 
@@ -1459,7 +1459,8 @@ class StoryPlanningGenerationApplication:
                 "NARRATIVE_REALIZATION_REQUIRED",
                 "ChapterPlan generation requires a Frozen Narrative Realization slice",
             )
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        from contextlib import nullcontext
+        with (nullcontext(uow) if uow is not None else AuthorityUnitOfWork(self.database_url)) as uow:
             current = NarrativeRealizationRepository(
                 uow.cursor
             ).require_current_for_chapter(
@@ -1518,7 +1519,7 @@ class StoryPlanningGenerationApplication:
             )
             if existing is not None:
                 raise _ChapterProjectionAlreadyMaterialized(existing)
-            self._require_frozen_realization_slice(generation_command)
+            self._require_frozen_realization_slice(generation_command, uow=uow)
             binding = (candidate["content"].get("constraint_envelope") or {}).get(
                 "world_preparation"
             )

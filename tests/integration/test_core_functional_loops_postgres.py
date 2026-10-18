@@ -102,7 +102,6 @@ from novel_forge.modules.provider_control import (
     ProviderAdapterRegistry,
 )
 from novel_forge.modules.production_execution.contracts import ExecutionOutcome
-from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, run_migrations
 from novel_forge.workers.book_followup_authority import (
@@ -2881,25 +2880,28 @@ def test_planning_retry_reuses_frozen_pack_after_provider_result(
     assert planning_context_identity == (1, 1, 1)
 
 
+@pytest.mark.parametrize("timeout_outcome", [ExecutionOutcome.RETRYABLE_FAILURE, ExecutionOutcome.TIMED_OUT], ids=["known-terminal-timeout", "unknown-timeout-needs-reconciliation"])
 def test_planning_provider_timeout_retries_same_effect_then_succeeds(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, timeout_outcome,
 ) -> None:
     harness = CapabilityPackPostgresHarness("planning-provider-timeout-retry")
     _activate_planning_pack(harness)
     generic = _seed_inputs(harness.project_id, harness.book_ids[0])
     principal = _principal(harness.project_id)
-    original_reconcile = ProductionExecutionGateway.reconcile
+    from novel_forge.modules.production_execution.backends import ScriptedFixtureExecutionBackend, ExecutionReconciler
+    original_reconcile = ScriptedFixtureExecutionBackend.reconcile
     reconciliations = 0
 
     def timeout_once(self, handle):
         nonlocal reconciliations
-        result = original_reconcile(self, handle)
         reconciliations += 1
         if reconciliations == 1:
-            return replace(result, outcome=ExecutionOutcome.TIMED_OUT)
-        return result
+            record = self.record_store.get_record(handle.execution_id)
+            assert record.result is None
+            return ExecutionReconciler.non_success(record, timeout_outcome)
+        return original_reconcile(self, handle)
 
-    monkeypatch.setattr(ProductionExecutionGateway, "reconcile", timeout_once)
+    monkeypatch.setattr(ScriptedFixtureExecutionBackend, "reconcile", timeout_once)
     with tempfile.TemporaryDirectory(prefix="planning-provider-timeout-") as root:
         settings = IndustrialSettings(
             root=root,
@@ -2939,8 +2941,23 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
         )
         with pytest.raises(KernelError) as first:
             planning.generate(command, principal=principal)
-        assert first.value.code == "MODEL_EFFECT_RETRYABLE_PLANNING"
+        assert first.value.code == ("MODEL_EFFECT_RETRYABLE_PLANNING" if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE
+            else "MODEL_EFFECT_OUTCOME_UNKNOWN_ORIGINAL_RESULT_UNRECOVERABLE")
 
+        if timeout_outcome == ExecutionOutcome.TIMED_OUT:
+            with pytest.raises(KernelError, match="CONTENT_EXTERNAL_RECONCILIATION_REQUIRED"):
+                planning.generate(command, principal=principal)
+            execution.close()
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("""SELECT effect.status,COUNT(DISTINCT dispatch.dispatch_id),
+                    (SELECT COUNT(*) FROM authority_operation_output_asset output WHERE output.operation_id=effect.operation_id AND output.output_key='story_planning.candidate')
+                    FROM authority_external_effect effect JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
+                    WHERE effect.project_id=%s GROUP BY effect.status,effect.operation_id""", [harness.project_id])
+                assert uow.cursor.fetchone() == ('UNKNOWN', 1, 0)
+                uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE project_id=%s", [harness.project_id])
+                assert uow.cursor.fetchone() == ('HELD_UNKNOWN',)
+            assert reconciliations == 1
+            return
         result = planning.generate(command, principal=principal)
         execution.close()
 
@@ -2991,8 +3008,8 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
     assert (effect_status, effect_count, dispatch_count, generations) == (
         "SUCCEEDED",
         1,
-        2,
-        [1, 2],
+        2 if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE else 1,
+        [1, 2] if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE else [1],
     )
     capability_runtime = effect_request["_production_execution"]["capability_runtime"]
     assert capability_runtime["snapshot_hash"]
@@ -3121,21 +3138,28 @@ def test_non_book_planning_context_binds_book_authority_language_contract() -> N
     assert context["language_contract"] == language_contract
 
 
+@pytest.mark.parametrize("timeout_outcome", [ExecutionOutcome.RETRYABLE_FAILURE, ExecutionOutcome.TIMED_OUT], ids=["known-terminal-timeout", "unknown-timeout-does-not-resend"])
 def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, timeout_outcome,
 ) -> None:
     harness = CapabilityPackPostgresHarness("planning-provider-timeout-exhausted")
     _activate_planning_pack(harness)
     generic = _seed_inputs(harness.project_id, harness.book_ids[0])
     principal = _principal(harness.project_id)
-    original_reconcile = ProductionExecutionGateway.reconcile
+    from novel_forge.modules.production_execution.backends import ScriptedFixtureExecutionBackend, ExecutionReconciler
+    original_reconcile = ScriptedFixtureExecutionBackend.reconcile
+    reconciliations = 0
 
     def always_timeout(self, handle):
-        return replace(
-            original_reconcile(self, handle), outcome=ExecutionOutcome.TIMED_OUT
-        )
+        nonlocal reconciliations
+        reconciliations += 1
+        if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE and reconciliations > 3:
+            return original_reconcile(self, handle)
+        record = self.record_store.get_record(handle.execution_id)
+        assert record.result is None
+        return ExecutionReconciler.non_success(record, timeout_outcome)
 
-    monkeypatch.setattr(ProductionExecutionGateway, "reconcile", always_timeout)
+    monkeypatch.setattr(ScriptedFixtureExecutionBackend, "reconcile", always_timeout)
     with tempfile.TemporaryDirectory(prefix="planning-provider-exhausted-") as root:
         settings = IndustrialSettings(
             root=root,
@@ -3178,13 +3202,21 @@ def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
             with pytest.raises(KernelError) as raised:
                 planning.generate(command, principal=principal)
             errors.append(raised.value.code)
+        # COMPATIBILITY: The historical test name predates removal of cumulative generation attempts; preserve one Effect and verify progress beyond the old third-call ceiling.
+        if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE:
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("""SELECT effect.status,COUNT(DISTINCT dispatch.dispatch_id),
+                    array_agg(dispatch.generation ORDER BY dispatch.generation)
+                    FROM authority_external_effect effect JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
+                    WHERE effect.project_id=%s GROUP BY effect.status""", [harness.project_id])
+                assert uow.cursor.fetchone() == ('FAILED_RETRYABLE', 3, [1, 2, 3])
+            result = planning.generate(command, principal=principal)
+            assert result.status is PlanningGenerationStatus.APPROVAL_PENDING
         execution.close()
 
-    assert errors == [
-        "MODEL_EFFECT_RETRYABLE_PLANNING",
-        "MODEL_EFFECT_RETRYABLE_PLANNING",
-        "MODEL_EFFECT_FINAL_PLANNING",
-    ]
+    assert errors == (["MODEL_EFFECT_RETRYABLE_PLANNING"] * 3
+        if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE
+        else ["MODEL_EFFECT_OUTCOME_UNKNOWN_ORIGINAL_RESULT_UNRECOVERABLE", "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED", "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED"])
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -3207,11 +3239,11 @@ def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
             uow.cursor.fetchone()
         )
     assert (status, effect_status, effect_count, dispatch_count, generations) == (
-        "FAILED_FINAL",
-        "DEAD_LETTER",
+        "SUCCEEDED" if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE else "RECONCILIATION_REQUIRED",
+        "SUCCEEDED" if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE else "UNKNOWN",
         1,
-        3,
-        [1, 2, 3],
+        4 if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE else 1,
+        [1, 2, 3, 4] if timeout_outcome == ExecutionOutcome.RETRYABLE_FAILURE else [1],
     )
 
 
