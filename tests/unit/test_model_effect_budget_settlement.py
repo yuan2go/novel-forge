@@ -658,3 +658,36 @@ def test_agent_provider_input_and_output_limits_are_independently_frozen(monkeyp
         port.invoke(legacy_request, stage="agent_session", payload=legacy_payload, reservation_tokens=16000)
     assert replay == legacy_intent
     assert replay["max_output_tokens"] == 16000
+
+
+@pytest.mark.parametrize('output_allocation,expected_output', [(None, 8192), (384000, 384000)])
+def test_working_review_freezes_explicit_output_with_native_reservation_without_changing_legacy(monkeypatch, output_allocation, expected_output):
+    policy = {} if output_allocation is None else {'provider_output_tokens': output_allocation}
+    window = SimpleNamespace(asset_type='longform_prose_review_window', asset_version_id='window:1',
+                             content_hash='sha256:'+'a'*64, content={'schema_version': 'longform-prose-window.v3', 'policy': policy})
+    request = ChapterHandlerRequest(operation_id='operation', project_id='project', workspace_id='workspace', trace_id='trace',
+        correlation_id='correlation', command={'payload': {'context_token_budget': 65536, 'book_id': 'book'}},
+        inputs=(window,), attempt_id='attempt', fencing_token=1, worker_id='worker')
+    route = SimpleNamespace(model_context_limit=1000000, model_output_limit=384000,
+                            model_profile=SimpleNamespace(model_provider='deepseek'))
+    adapter = SimpleNamespace(provider='deepseek', reconciliation_mode='NONE', capability_profile={}, routes={'longform_prose_review': route})
+    port = ExternalEffectChapterModelPort('postgresql://unit-not-connected', adapter=adapter, worker_id='worker', max_cost_per_call='10')
+    monkeypatch.setattr(port, '_execution_identity', lambda *_a, **_kw: (1, 'worker'))
+    monkeypatch.setattr(port, '_request_timeout_seconds', lambda _request: 180)
+    monkeypatch.setattr(model_effects, 'read_external_effect_intent', lambda *_a, **_kw: None)
+    def reservation(_db, **kw):
+        return {'source': 'FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING', 'accounting_basis': 'PRICED', 'cost_authorization_ref': '',
+                'estimated_total_tokens': kw['frozen_request_token_ceiling'] + kw['requested_output_token_ceiling'],
+                'max_output_tokens': kw['requested_output_token_ceiling']}
+    monkeypatch.setattr(model_effects, 'resolve_provider_token_reservation_contract', reservation)
+    captured = {}
+    def capture(_db, _ctx, **kw):
+        captured.update(kw['request_payload'])
+        raise KernelError('CAPTURED_BEFORE_SEND', 'No external intent or Provider call')
+    monkeypatch.setattr(model_effects, 'plan_external_effect', capture)
+    with pytest.raises(KernelError, match='CAPTURED_BEFORE_SEND'):
+        port.invoke(request, stage='longform_prose_review', payload={'window_id': 'window:1'}, reservation_tokens=65536)
+    assert captured['max_output_tokens'] == expected_output
+    assert captured['_production_execution']['provider_reservation_policy']['max_output_tokens'] == expected_output
+    assert captured['_production_execution']['input_artifacts'][0]['content_hash'] == window.content_hash
+    assert captured['_production_execution']['provider_token_limit'] == 1000000

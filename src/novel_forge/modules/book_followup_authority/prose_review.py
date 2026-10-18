@@ -157,7 +157,7 @@ def freeze_manifest(
         "context_token_budget",
         "maximum_windows",
     }
-    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode", "source_current_policy", "citation_locator_contract"}
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode", "source_current_policy", "citation_locator_contract", "provider_output_tokens"}
     if (
         not required <= set(policy)
         or set(policy) - required - optional
@@ -219,6 +219,13 @@ def freeze_manifest(
             or policy.get("relation_retrieval_version") == "accepted-state-relations.v2"):
             raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Body-first reading is manual and uses prose alone")
         work_intent = False
+    if "provider_output_tokens" in policy and (
+        type(policy["provider_output_tokens"]) is not int
+        or policy["provider_output_tokens"] <= 0
+        or not sources
+        or not all(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
+    ):
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Explicit output allocation requires positive tokens and an exact working-prose window")
     records, windows = [], []
     previous_tail = None
     for source in sources:

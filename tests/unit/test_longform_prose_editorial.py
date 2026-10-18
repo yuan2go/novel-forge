@@ -695,3 +695,23 @@ def test_automatic_review_cannot_use_manual_selected_range_policy():
         freeze_manifest(project_id='p', workspace_id='w', book_run_id='run',
             sources=[{'chapter_number': 1, 'acceptance_id': '', 'asset_version_id': 'draft', 'asset_hash': 'hash', 'text': '正文'}],
             policy={**frozen['policy'], 'execution_mode': 'AUTOMATIC', 'window_selection': 'EXPLICIT_RANGES_ONLY'})
+
+
+def test_explicit_working_review_output_allocation_is_frozen_and_historical_policy_is_unchanged():
+    frozen = manifest()
+    source = dict(chapter_number=1, acceptance_id='', asset_version_id='working:1', asset_hash='hash',
+                  text='他停下凿子，先把落石移开。', source_isolation='AUTHOR_SELECTED_UNREVIEWED_PROSE')
+    policy = {**frozen['policy'], 'provider_output_tokens': 384000}
+    current = freeze_manifest(project_id='p', workspace_id='w', book_run_id='b', sources=[source], policy=policy, work_intent=False)
+    assert current['schema_version'] == 'longform-prose-manifest.v3'
+    assert current['policy']['provider_output_tokens'] == 384000
+    policy['provider_output_tokens'] = 8192
+    assert current['policy']['provider_output_tokens'] == 384000
+    assert 'provider_output_tokens' not in frozen['policy']
+    for invalid in (0, -1, True, '384000', None):
+        with pytest.raises(KernelError, match='LONGFORM_PROSE_POLICY_INVALID'):
+            freeze_manifest(project_id='p', workspace_id='w', book_run_id='b', sources=[source],
+                            policy={**policy, 'provider_output_tokens': invalid}, work_intent=False)
+    with pytest.raises(KernelError, match='LONGFORM_PROSE_POLICY_INVALID'):
+        freeze_manifest(project_id='p', workspace_id='w', book_run_id='b', sources=[{**source, 'source_isolation': 'ACCEPTED_PROSE_ONLY'}],
+                        policy=policy, work_intent=False)

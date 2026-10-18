@@ -2570,6 +2570,14 @@ scenario. Run preflight first; `--execute` runs the controlled response-loss pro
 native frozen window, scope response loss to that window's own Operation, and recover
 the same persisted result without another send. This optional observation neither
 modifies prose nor grants revision, acceptance or human literary qualification.
+For a new working-prose review window, freeze `provider_output_tokens` in the native
+review policy when the historical stage output target cannot hold both reasoning and
+complete JSON. Use a confirmed model output capacity within the complete-request and
+existing priced authorization. Do not edit a failed window or its intent: retain the
+truncated response, usage, cost and failure, then explicitly start a new policy/run on
+the same exact selected ranges. Omitted output allocation retains the old target.
+A known `length` response is a completed failed call; an UNKNOWN response still requires
+original-result reconciliation or authorized isolation before a linked successor.
 
 After successful preflight, the supported runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
 executes one frozen Production Execution route, injects response loss after Provider

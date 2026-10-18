@@ -534,9 +534,11 @@ class ExternalEffectChapterModelPort:
         elif task_scoped:
             from .context_compression_provider import task_provider_output_reserve
 
-            output_target = task_provider_output_reserve(
-                stage, route, router_binding_pending=getattr(self.adapter, "provider_router", None) is not None,
-            )
+            output_target = frozen_prose_output_tokens(request, stage)
+            if output_target is None:
+                output_target = task_provider_output_reserve(
+                    stage, route, router_binding_pending=getattr(self.adapter, "provider_router", None) is not None,
+                )
         frozen_reservation = frozen_metadata.get("provider_reservation_policy")
         if existing_intent is not None and isinstance(frozen_reservation, Mapping):
             reservation_contract = dict(frozen_reservation)
@@ -2360,3 +2362,16 @@ __all__ = [
 def task_scoped_prose_review(request, stage):
     windows = [item for item in request.inputs if item.asset_type == 'longform_prose_review_window']
     return stage == 'longform_prose_review' and len(windows) == 1 and windows[0].content.get('schema_version') == 'longform-prose-window.v3'
+
+
+def frozen_prose_output_tokens(request, stage):
+    if not task_scoped_prose_review(request, stage):
+        return None
+    window = next(item for item in request.inputs if item.asset_type == 'longform_prose_review_window')
+    policy = window.content.get('policy', {})
+    if 'provider_output_tokens' not in policy:
+        return None
+    tokens = policy['provider_output_tokens']
+    if type(tokens) is not int or tokens <= 0:
+        raise KernelError('LONGFORM_PROSE_POLICY_INVALID', 'Frozen review output allocation must be positive tokens')
+    return tokens

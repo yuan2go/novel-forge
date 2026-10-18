@@ -2031,6 +2031,13 @@ ExternalEffect path. Recaps are navigation, never evidence of full prose reading
 cover structural repetition, character/relationship movement, setup/progression/payoff,
 voice/expression, arc pacing and motivated/costly turns. Located model claims remain
 observations; matching text coordinates do not prove their semantic correctness.
+The historical 8,192-token API review output target is `CONFIGURABLE_POLICY`,
+not an invariant or a cumulative allowance. DeepSeek thinking and final JSON share
+the sent output ceiling. New working-prose review windows may freeze positive `provider_output_tokens` in
+their policy. The native model port uses that exact allocation before complete-request
+admission and paid Book authorization; the final selected model must support it.
+Omitted allocation keeps the historical stage target, and an existing intent retains
+its frozen output ceiling. This resource policy grants no manuscript mutation authority.
 
 An explicit manual `reading_mode=BODY_FIRST` freezes exact prose without creative
 baselines or design-status fields in its source windows. Its Provider view records
