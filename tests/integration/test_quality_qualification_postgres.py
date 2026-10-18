@@ -127,6 +127,28 @@ class TestQualityQualificationPostgres:
             uow.commit()
         return {"asset_version_id": version_id, "content_hash": content_hash}
 
+    def test_membership_campaign_preserves_exact_resource_policy_on_lifecycle_replay(self):
+        raw = _manifest(self.project_id, self.workspace_id, self.book_id)
+        raw["budget_policy"] = {"chapter_limit": 6, "resource_policy": {
+            "resource_control_version": "billing-channel-resources.v1",
+            "execution_mode": "PROVIDER_ALLOWED", "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "authorization_ref": "author:membership-quality", "cost_observability": "UNKNOWN",
+            "per_call_token_limit": 258400,
+        }}
+        manifest = QualityCampaignManifest.from_mapping(raw)
+        arguments = dict(stable_idempotency_key=f"{self.project_id}:membership-quality:v1",
+            trace_id=f"trace:{self.project_id}", correlation_id=f"correlation:{self.project_id}",
+            principal=self.principal)
+        admitted = self.app.admit_campaign(manifest, **arguments)
+        assert self.app.admit_campaign(manifest, **arguments) == admitted
+        assert admitted["manifest_hash"] == manifest.digest
+        assert admitted["budget_policy"] == raw["budget_policy"]
+        self.app.freeze_campaign(manifest.campaign_id, expected_version=0, principal=self.principal)
+        started = self.app.start_campaign(manifest.campaign_id, expected_version=1, principal=self.principal)
+        assert started["lifecycle"] == "RUNNING"
+        assert started["budget_policy"] == raw["budget_policy"]
+        assert "token_limit" not in started["budget_policy"] and "cost_limit_usd" not in started["budget_policy"]
+
     def test_campaign_subject_evidence_and_waiting_decision_are_idempotent(
         self,
     ) -> None:

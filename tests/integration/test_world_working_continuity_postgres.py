@@ -109,7 +109,8 @@ def test_native_v5_writer_admission_bounds_observation_ledger_and_keeps_complete
         "prompt_bytes": len(prompt.encode()), "prompt_hash": writers[1].capability_evidence["fully_rendered_prompt_hash"]}))
 
 
-def test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience(tmp_path, monkeypatch):
+@pytest.mark.parametrize("length_delivery", [False, True], ids=["existing-working-continuity", "explicit-length-delivery"])
+def test_native_creation_world_binds_selected_delivery_and_rejects_changed_experience(tmp_path, monkeypatch, length_delivery):
     harness = CapabilityPackPostgresHarness("world-working")
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
@@ -158,15 +159,17 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
 
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", capture_writer_prompt)
     input_file = tmp_path / "request.json"
+    minimum_length = 1600 if length_delivery else 800
     input_file.write_text(json.dumps({"version": "creation-request.v1", "title": harness.project_id,
         "target_chapters": 2, "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 1},
-        "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+        "chapter_length": {"minimum": minimum_length, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
             "genre": "social mystery", "audience": "adult readers", "constraints": ["Keep the witness's limited viewpoint"], "source_boundaries": ["Original work"]}}))
     args = _authority_parser().parse_args(["authority-creation", "start", "--input-file", str(input_file),
         "--repository-root", str(root), "--maximum-ticks", "100", "--foreground"])
     template = json.loads((root / args.execution_template_file).read_text())
     template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+    template["world_future_preparation"] = "REQUIRED"
     args.execution_template_file = tmp_path / "execution-template.json"
     args.execution_template_file.write_text(json.dumps(template))
     result = run_creation_command(IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production"), args)
@@ -186,7 +189,7 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
             WHERE a.project_id=%s AND a.asset_type='context_bundle' AND v.content->>'stage'='draft'""", [book["project_id"]])
         draft_contexts = [row[0] for row in uow.cursor.fetchall() if row[0].get("chapter_generation_length")]
         assert len(draft_contexts) == 1
-        assert draft_contexts[0]["chapter_generation_length"]["minimum"] == 800
+        assert draft_contexts[0]["chapter_generation_length"]["minimum"] == minimum_length
         assert draft_contexts[0]["chapter_generation_length"]["maximum"] == 4000
         from novel_forge.modules.chapter_authority.quality_length_requirement import require_generation_binding
         require_generation_binding(draft_contexts[0])
@@ -194,7 +197,7 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         assert writer_prompts[0]["context_bundle"]["chapter_generation_length"] == draft_contexts[0]["chapter_generation_length"]
         assert len(chapter_planning_prompts) == 1
         scale = chapter_planning_prompts[0]["context_bundle"]["chapter_planning_length"]
-        assert scale["minimum"] == 800 and scale["maximum"] == 4000 and scale["unit"] == "HAN_CHARACTERS_V1"
+        assert scale["minimum"] == minimum_length and scale["maximum"] == 4000 and scale["unit"] == "HAN_CHARACTERS_V1"
         uow.cursor.execute("SELECT current_book_asset_version_id FROM authority_book WHERE project_id=%s AND book_id=%s", [book["project_id"], book["book_id"]])
         assert scale["source_book_asset_version_id"] == uow.cursor.fetchone()[0]
         uow.cursor.execute("""SELECT v.content->'creative_baseline' FROM authority_asset_version v
@@ -245,6 +248,37 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
         assert uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book["book_run_id"]]).fetchone() == (0,)
     from novel_forge.cli.manuscript import run_manuscript_command
     from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+    if length_delivery:
+        output = tmp_path / "length-compliant.md"
+        command = _authority_parser().parse_args(["authority-manuscript", "continue", "--book-run-id", book["book_run_id"],
+            "--stop-after-chapter", "1", "--ensure-chapter-length", "--output", str(output), "--foreground"])
+        settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production")
+        before = run_manuscript_command(settings, _authority_parser().parse_args([
+            "authority-manuscript", "read", "--book-run-id", book["book_run_id"]]))
+        stopped = run_manuscript_command(settings, command)
+        assert stopped["status"] == "NATIVE_LENGTH_REPAIR_REQUIRED", stopped
+        assert stopped["length_delivery"]["status"] == "LENGTH_REVISION_BLOCKED"
+        assert stopped["length_delivery"]["failure"]["error_code"] == "CHAPTER_LENGTH_REPAIR_INCOMPLETE"
+        assert stopped["manuscript"]["units"][0]["requirements_status"] == "LENGTH_TARGET_UNMET"
+        assert stopped["manuscript"]["units"][0]["working_selection"]["status"] == "NOT_SELECTED"
+        assert stopped["manuscript"]["accepted_through_chapter"] == 0
+        for field in ("asset_version_id", "content_hash", "text_hash", "text"):
+            assert stopped["manuscript"]["units"][0][field] == before["units"][0][field]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [book["project_id"]])
+            calls = uow.cursor.fetchone()[0]
+            uow.cursor.execute("SELECT count(*) FROM authority_attempt JOIN authority_operation USING(operation_id) WHERE project_id=%s", [book["project_id"]])
+            attempts = uow.cursor.fetchone()[0]
+        replay = run_manuscript_command(settings, command)
+        assert replay["length_delivery"]["revision"]["root_operation_id"] == stopped["length_delivery"]["revision"]["root_operation_id"]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [book["project_id"]])
+            assert uow.cursor.fetchone()[0] == calls
+            uow.cursor.execute("SELECT count(*) FROM authority_attempt JOIN authority_operation USING(operation_id) WHERE project_id=%s", [book["project_id"]])
+            assert uow.cursor.fetchone()[0] == attempts
+        assert not output.exists()
+        assert len(writer_prompts) == 1 and len(chapter_planning_prompts) == 1
+        return
     revision = _authority_parser().parse_args(["authority-manuscript", "revise", "--project-id", book["project_id"],
         "--book-run-id", book["book_run_id"], "--chapter", "1", "--expected-version", str(book["version"]),
         "--idempotency-key", harness.project_id + ":working-revision", "--reason", "Native selected working review"])
@@ -294,6 +328,15 @@ def test_native_creation_world_binds_selected_delivery_and_rejects_changed_exper
     late.idempotency_key += ":late"
     with pytest.raises(KernelError, match="MANUSCRIPT_WORK_SELECTION_STALE"):
         run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), late)
+    exact_path = tmp_path / "native-length-delivery.md"
+    command = _authority_parser().parse_args(["authority-manuscript", "continue", "--book-run-id", book["book_run_id"],
+        "--stop-after-chapter", "1", "--ensure-chapter-length", "--output", str(exact_path), "--foreground"])
+    delivered = run_manuscript_command(IndustrialSettings(root=root, database_url=DATABASE_URL, environment="production"), command)
+    assert delivered["status"] == "MANUSCRIPT_READY"
+    assert candidate in exact_path.read_text() and unit["text"] in exact_path.read_text()
+    assert delivered["export"]["text_digest"] == delivered["manuscript"]["text_digest"]
+    assert delivered["manuscript"]["accepted_through_chapter"] == 0
+    assert len(writer_prompts) == 1 and len(chapter_planning_prompts) == 1
     cancellation = _authority_parser().parse_args(["authority-creation", "cancel", "--project-id", book["project_id"],
         "--formation-run-id", result["formation_run_id"], "--repository-root", str(root),
         "--idempotency-key", harness.project_id + ":cancel", "--reason", "Controlled cancellation keeps selected prose"])

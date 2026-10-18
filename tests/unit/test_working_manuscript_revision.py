@@ -858,3 +858,71 @@ def test_cancelled_revision_does_not_rebind_or_withhold_already_selected_prose(m
     monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(content=selection))
     assert manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, source) is None
     assert source.content["text"] == "正文"
+
+
+@pytest.mark.parametrize('prior,status,size,expected', [
+    (None, 'EXECUTING', 10, 'LENGTH_REVISION_PENDING'),
+    (('original-root', 'operator'), 'EXECUTING', 10, 'LENGTH_REVISION_PENDING'),
+    (('original-root', 'operator'), 'SUCCEEDED', 10, 'LENGTH_REVISION_APPLIED'),
+    (('original-root', 'operator'), 'SUCCEEDED', 4, 'REVISED_LENGTH_TARGET_UNMET'),
+    (('original-root', 'operator'), 'CANCELLED', 10, 'LENGTH_REVISION_BLOCKED'),
+])
+def test_explicit_length_delivery_reuses_native_revision_and_selects_only_compliant_candidate(monkeypatch, prior, status, size, expected):
+    from novel_forge.cli import manuscript as cli
+    from novel_forge.modules.book_authority import manuscript
+    from novel_forge.storage import authority_uow
+    from unittest.mock import Mock
+
+    book = {'book_run_id': 'run', 'project_id': 'p', 'current_chapter': 1, 'version': 7, 'state': 'READY'}
+    unit = {'chapter': 1, 'asset_version_id': 'draft:1', 'content_hash': 'sha256:' + 'a' * 64,
+        'length': {'actual': 1, 'target': {'minimum': 8, 'maximum': 12}}}
+    monkeypatch.setattr(manuscript, 'require_manuscript', lambda *a, **k: {'units': [unit]})
+    class Cursor:
+        def execute(self, sql, params):
+            self.sql = sql
+        def fetchone(self):
+            return (8,) if self.sql.startswith('SELECT version') else None if self.sql.startswith('SELECT attempt.result') else prior
+    class Uow:
+        cursor = Cursor()
+        repositories = SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **k:
+            SimpleNamespace(asset_type='best_draft_candidate', content={'text': '字' * size})))
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+    monkeypatch.setattr(authority_uow, 'AuthorityUnitOfWork', Uow)
+    revised = Mock(return_value={'root_operation_id': 'original-root', 'status': status,
+        'stages': [{'asset_version_id': 'native-best', 'output_key': 'chapter.best_candidate', 'status': 'SUCCEEDED'}]})
+    selected = Mock()
+    monkeypatch.setattr(cli, '_run_working_revision_command', revised)
+    monkeypatch.setattr(cli, 'run_manuscript_command', selected)
+    result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'),
+        SimpleNamespace(work_window_seconds=300, book_run_id='run'), book=book, principal=SimpleNamespace(principal_id='operator'))
+    assert result['status'] == expected
+    command = revised.call_args.args[1]
+    assert command.action == ('continue-revision' if prior else 'revise')
+    assert command.revision_root == ('original-root' if prior else '')
+    assert command.expected_version == 7 and '8—12' in command.reason
+    assert selected.call_count == (1 if expected == 'LENGTH_REVISION_APPLIED' else 0)
+    if selected.called:
+        selection = selected.call_args.args[1]
+        assert selection.action == 'use-working-candidate' and selection.candidate_version == 'native-best'
+        assert selection.expected_version == 7
+
+
+@pytest.mark.parametrize('target,chapter', [(None, 1), ({'minimum': 8, 'maximum': 12}, 1)])
+def test_length_delivery_refuses_unbound_or_earlier_underlength_without_revision(monkeypatch, target, chapter):
+    from novel_forge.cli import manuscript as cli
+    from novel_forge.modules.book_authority import manuscript
+    from unittest.mock import Mock
+    monkeypatch.setattr(manuscript, 'require_manuscript', lambda *a, **k: {'units': [
+        {'chapter': chapter, 'length': {'actual': 1, 'target': target}}]})
+    revision = Mock(side_effect=AssertionError('No replacement may be admitted'))
+    monkeypatch.setattr(cli, '_run_working_revision_command', revision)
+    book = {'book_run_id': 'run', 'project_id': 'p', 'current_chapter': 2, 'state': 'READY'}
+    if target is None:
+        with pytest.raises(KernelError, match='MANUSCRIPT_LENGTH_TARGET_REQUIRED'):
+            cli._ensure_native_work_length(SimpleNamespace(database_url='unused'), SimpleNamespace(), book=book, principal=None)
+    else:
+        result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'), SimpleNamespace(), book=book, principal=None)
+        assert result['status'] == 'EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION'
+    revision.assert_not_called()

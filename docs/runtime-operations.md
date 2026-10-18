@@ -597,6 +597,12 @@ complete Provider envelope; increasing a declared test budget cannot waive overf
 checks or establish production capacity. Real Provider and anonymized literary
 comparison remain separate authorized activities.
 
+For a new membership Quality Qualification campaign, set `budget_policy.chapter_limit`
+to its exact chapter coverage and bind its existing `billing-channel-resources.v1` policy
+as `budget_policy.resource_policy`. Do not add cumulative token or USD allowances. The
+Kernel validates the closed resource contract; the historical finite form retains its
+original required limits. Neither form grants Provider dispatch or human qualification.
+
 The only high-level backend engineering qualification entry is:
 
 ```bash
@@ -1271,6 +1277,21 @@ graph means zero optional-stage dispatches, not deferred hidden execution. `MANU
 means the requested draft range is saved; it does not mean Book acceptance or literary PASS.
 Creation progress reports saved and accepted chapter counts separately. The author page shows
 saved prose immediately and permits reading/export during a later recovery checkpoint.
+
+Use `authority-manuscript continue --book-run-id "$BOOK_RUN" --stop-after-chapter 100
+--ensure-chapter-length --foreground --output "$EXACT_WORKING_EXPORT"` for an explicitly
+requested length-compliant round. Each first draft remains saved. A short or long latest
+draft enters the existing native Review/Revision/ReReview/Best graph and exact technical
+working selection before the next Chapter is prepared; an already compliant draft adds
+no review. The original revision Root/key survives interruption. A known incomplete
+length repair returns its Root and original failure without another Attempt or Provider
+call until native recovery replaces the active failed step. A noncompliant older Chapter
+requires its explicit native revision; the round does not silently rebind descendants.
+Selection uses the Book version checked before that phase, so concurrent author changes
+still reject it. Only a completed round invokes the existing exact-version export; normal
+read/export remain available for other saved working prose. Omitted length enforcement
+retains the default behavior and does not add optional stages to the Chapter graph.
+Length compliance grants neither literary qualification nor formal acceptance.
 
 Start a new ordinary work without internal scope or reservation fields:
 

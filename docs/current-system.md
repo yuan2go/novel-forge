@@ -2450,6 +2450,13 @@ separate dimensions. Scripted evidence can support contracts, not narrative qual
 AI evaluation is not human evidence, and a combined reader/longitudinal record cannot be
 duplicated into two independent proofs.
 
+New membership Quality Qualification campaigns bind the existing closed
+`billing-channel-resources.v1` policy under `budget_policy.resource_policy`, alongside
+`chapter_limit` as exact evidence coverage. They declare no cumulative token or fee
+allowance and cannot mix monetary or finite cumulative fields into that policy. This
+metadata grants no dispatch or literary acceptance. Historical finite campaign manifests
+retain their original admission, budget and digest.
+
 Reader Calibration also owns anonymous comparisons of independent continuous manuscripts.
 The existing Quality Qualification router exports exact saved native Drafts, explicitly
 retained working originals or sealed controlled reference results. The private mapping binds

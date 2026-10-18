@@ -201,14 +201,28 @@ class QualityCampaignManifest:
             raise ValueError(
                 "budget_policy.chapter_limit must equal the frozen chapter coverage"
             )
-        if int(budget.get("token_limit") or 0) <= 0:
-            raise ValueError("budget_policy.token_limit must be positive")
-        try:
-            cost_limit = float(budget.get("cost_limit_usd") or 0)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("budget_policy.cost_limit_usd must be positive") from exc
-        if cost_limit <= 0:
-            raise ValueError("budget_policy.cost_limit_usd must be positive")
+        if "resource_policy" in budget:
+            from novel_forge.modules.command_kernel.budget_runtime import canonical_budget_policy
+            from novel_forge.modules.command_kernel.errors import KernelError
+
+            if set(budget) != {"chapter_limit", "resource_policy"}:
+                raise ValueError("membership campaign budgets cannot declare cumulative allowances")
+            resource = budget["resource_policy"]
+            if not isinstance(resource, dict) or resource.get("resource_control_version") != "billing-channel-resources.v1":
+                raise ValueError("budget_policy.resource_policy requires the membership resource contract")
+            try:
+                canonical_budget_policy(resource)
+            except KernelError as exc:
+                raise ValueError("budget_policy.resource_policy is invalid") from exc
+        else:
+            if int(budget.get("token_limit") or 0) <= 0:
+                raise ValueError("budget_policy.token_limit must be positive")
+            try:
+                cost_limit = float(budget.get("cost_limit_usd") or 0)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("budget_policy.cost_limit_usd must be positive") from exc
+            if cost_limit <= 0:
+                raise ValueError("budget_policy.cost_limit_usd must be positive")
 
         text_fields = (
             "campaign_id",
