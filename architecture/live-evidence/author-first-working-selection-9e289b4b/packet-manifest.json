@@ -1,0 +1,71 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "native-selection-original-failure.json",
+      "sha256": "sha256:d4b69aca0d3d98a8acab76a12839ff62c5d58691c3db9ac220835190c49fa23b"
+    },
+    {
+      "path": "native-history-before-selection.json",
+      "sha256": "sha256:512a5a75ddfe9862b22ab5c55ea557cf648678ae2a69896973a39ea67167843a"
+    },
+    {
+      "path": "native-history-after-selection.json",
+      "sha256": "sha256:cb3e59bb6c562e25a0a7f124cbe4f3f23f26ee48e912f691a2edda2cbfb2c4e1"
+    },
+    {
+      "path": "native-pause-resume.json",
+      "sha256": "sha256:84622ec86d3262b6131f0781962c149ce0cb18bec79501b9372420b496a76c49"
+    },
+    {
+      "path": "native-exact-19-readback.json",
+      "sha256": "sha256:33b8935f9fe44387da00f82ae88fdd2f4c9f1bc6a0f03367f2cc00890b189428"
+    },
+    {
+      "path": "native-first-draft19-readback.json",
+      "sha256": "sha256:939f9bedb722b3dc9f24a64294e6eb31d19790f3c5cdf28cefff0b73c4361e72"
+    },
+    {
+      "path": "native19-memo-input.json",
+      "sha256": "sha256:8b21b7afa6d2b7270b1c359420660959ef14086367641f804c232724f8f7e3d5"
+    },
+    {
+      "path": "native19-writer-input.json",
+      "sha256": "sha256:490f9d0fa286cd0dc188f6b3ea31308ef04e2ac3b237439156fb74d89e2abc4b"
+    },
+    {
+      "path": "native19-revision-input.json",
+      "sha256": "sha256:24088ad363d587a4e03e9f0106ecc539b903beee9926ddae7e6aa5c4193e3827"
+    },
+    {
+      "path": "exact-docs-check.json",
+      "sha256": "sha256:0e6c96f220e000f7a9a8a9dfadcf40064d9174acc42a18a86d3388621eb8de98"
+    },
+    {
+      "path": "superseded-wait-only-5799-queue.json",
+      "sha256": "sha256:175dba5b4366aa6d73487411f6984c1994e4157dbff2098bea64469a56c123d3"
+    },
+    {
+      "path": "working-selection-9e289b4b-exact.xml.gz",
+      "sha256": "sha256:919a14f5b7198bca464be053bcc057350af78e7db05bd63de3d86e237c57335d"
+    },
+    {
+      "path": "working-selection-9e289b4b-default-author-first-serialized.xml.gz",
+      "sha256": "sha256:e78c98530d86ccede432de23234b388729e2575dd6d12ca4aaf42ccf7d066fce"
+    },
+    {
+      "path": "development-test-interference.json",
+      "sha256": "sha256:03f43c7033245d2373ec466f0677ebe1ec5ef4b9903cdf16e3a406f01be41369"
+    },
+    {
+      "path": "native19-prose-reading.json",
+      "sha256": "sha256:2108dc87d9d1e8ff0b4f77b1906786d092f772b8244a307fd7dd9e67652c4b7e"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:6c37c4249e44acc43a20d53961da198fb4981ff9c66f717a371a8fa35cd9aa86"
+    }
+  ],
+  "historical_failures": "PRESERVED",
+  "raw_prose_and_provider_payloads": "PRIVATE_OUTSIDE_GIT"
+}

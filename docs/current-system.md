@@ -1570,8 +1570,10 @@ after its owner terminated. Working selection now checks the Planning owner's ex
 historical retirement receipt and its existing pure-observer owner filter. It leaves
 the original failed Effect, Attempt, Dispatch and unknown usage intact. Missing or
 changed proof, live submission rights and current writing UNKNOWN still refuse. Policy
-adoption retains its global checks. Focused PostgreSQL checks exercise these boundaries;
-native selection of the saved revision remains to be verified.
+adoption retains its global checks. Focused PostgreSQL checks exercise these boundaries. Bounded native saved-revision
+selection, unchanged historical records and ordinary pause/resume evidence is retained
+in `architecture/live-evidence/author-first-working-selection-9e289b4b/`. Whole-chain
+production and literary qualifications remain incomplete.
 Routing observation lookup currently scans large asset JSON before matching its stage
 and model cohort; native statement-timeout failures have exposed this scaling gap.
 Migration 229 adds matching indexes for the model cohort, prior routing chain and

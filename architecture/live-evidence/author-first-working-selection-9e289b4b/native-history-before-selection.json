@@ -1,0 +1,64 @@
+{
+  "at": "2026-10-18T19:14:41.408813+00:00",
+  "phase": "before",
+  "book": {
+    "current_chapter": 19,
+    "accepted_through_chapter": 0,
+    "state": "READY",
+    "version": 133,
+    "active_chapter_request_id": null
+  },
+  "history": {
+    "original_operation": {
+      "row_count": 1,
+      "canonical_rows_hash": "sha256:784adb2c85b64fde3955d77f982dafccbe7162784963dd1828495a32811d5f02"
+    },
+    "original_attempts": {
+      "row_count": 1,
+      "canonical_rows_hash": "sha256:61055d836442614ed32b830908b757e940b3faeaba831020847e35d7f73f425a"
+    },
+    "original_effect": {
+      "row_count": 1,
+      "canonical_rows_hash": "sha256:5565f72ca72f04181fa47bab31392b6e822d3cffcbac89d26238bdbe38bf3c90"
+    },
+    "original_dispatch": {
+      "row_count": 1,
+      "canonical_rows_hash": "sha256:1900545b42fbd19d524bbc684a880f479d1d2fa7069bacbfdb3cc86eb78800d3"
+    },
+    "original_reservation": {
+      "row_count": 1,
+      "canonical_rows_hash": "sha256:f2f5209850eeee4edd94e546f0ed76edf84e63efb62c4ed050af7670464be477"
+    },
+    "unknown_isolated_effects": {
+      "row_count": 20,
+      "canonical_rows_hash": "sha256:a5e37b65959d6cd22fca02e5d47b47d0e2395e406cf8084aa89362088a4c5239"
+    },
+    "unknown_reservations": {
+      "row_count": 20,
+      "canonical_rows_hash": "sha256:84c788badea05cf9a8822f3a0dce3448f58bf982cf4a5e2a92d65d5453908ab6"
+    }
+  },
+  "chapter19_effects": [
+    [
+      "08f00be2-e8ae-4403-a9c8-ab4f2223eb38",
+      "d57c02f8-3a89-4c30-9a45-c3d3d93c45f6",
+      "SUCCEEDED"
+    ],
+    [
+      "12ab4fab-4261-4783-b3ed-29bb440af348",
+      "b4e746c6-cc6a-412e-95be-3daa490ba2b6",
+      "SUCCEEDED"
+    ],
+    [
+      "16a73bbe-378a-4f35-94f4-550c28ffa360",
+      "3c1abd63-e5bf-4b99-8352-a6ec014379f6",
+      "SUCCEEDED"
+    ],
+    [
+      "52adc803-c32d-407c-b219-e5d5820c9b5e",
+      "e7c1ac7e-fb53-4c47-8a87-e3bc6c7f6516",
+      "SUCCEEDED"
+    ]
+  ],
+  "readonly": true
+}

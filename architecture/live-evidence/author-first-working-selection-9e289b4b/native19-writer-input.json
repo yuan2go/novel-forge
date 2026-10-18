@@ -1,0 +1,209 @@
+{
+  "schema_version": "native-dispatched-source-observation.v1",
+  "at": "2026-10-18T18:55:52.966525+00:00",
+  "source_sha": "5799c06df20d15b578d264ddfb01e400bb573ba2",
+  "stage": "draft",
+  "stage_verified_against_native_operation": true,
+  "definition_version": "3.10.0",
+  "chapter": 19,
+  "operation_id": "3c1abd63-e5bf-4b99-8352-a6ec014379f6",
+  "execution_id": "chapter-execution:16a73bbe-378a-4f35-94f4-550c28ffa360",
+  "thread_id": "01a1505d-7e91-7bc3-be0b-ff1f72548853",
+  "input_sha256": "sha256:10b1a1300d1c26fe7cc9f871799595192715cb530eb692d069fb88f3dd40180a",
+  "input_bytes": 425548,
+  "own_input_hash_matches_process_receipt": true,
+  "sources": [
+    {
+      "chapter": 1,
+      "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+      "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+      "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 2,
+      "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+      "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+      "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 3,
+      "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+      "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+      "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+      "actual_input_id_occurrences": 4,
+      "actual_input_hash_occurrences": 3,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 4,
+      "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+      "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+      "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 5,
+      "asset_version_id": "authority-output:fa8caa0f-61ca-40ab-b15c-4648b70d2027:chapter.best_candidate:v1",
+      "content_hash": "sha256:030592389d73c251024d6c2b85f92c8475395d6fc7b5a14d2ab8987b0b3f48ff",
+      "text_hash": "sha256:cf98d11a430f709f9a43127182a23567858e8fac6d63a1f0ca8ca974908fc1b4",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 6,
+      "asset_version_id": "authority-output:1b67e98b-9d26-4c1e-b4c4-5f84a8f33eb4:chapter.best_candidate:v1",
+      "content_hash": "sha256:9b35e6e06e2a44c570c08842b1efb82d3ab7da7083d5f1085808af5882d5ee1f",
+      "text_hash": "sha256:ce9bfeb361f1b19f512aedc330b210e85d9c5e40a17bd9d1ff76983974ec4a48",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 7,
+      "asset_version_id": "authority-output:50d8eeee-dedf-47bd-b606-5b1ba8c9c9d2:chapter.best_candidate:v1",
+      "content_hash": "sha256:d74a68ba1e92defd6b04e910fdc99cfab7d01b63618d016b74a62ddc85a9a0f7",
+      "text_hash": "sha256:6f79bf57858739f1a1fd89a6c57b281da6e1efffcd49af7e410b73c71ddde10a",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 8,
+      "asset_version_id": "authority-output:f8e98e0a-304e-4880-86f2-7905acf55d14:chapter.revision:v1",
+      "content_hash": "sha256:dc4387b54e4d182d068bce2e9c7082d7d07af0041a70b56dc975ffdaaf7c2a25",
+      "text_hash": "sha256:122fb243e472aacdb2d1966a06cbd0aba1d7397da14387056bb377508a0aee54",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 9,
+      "asset_version_id": "authority-output:99c16c1a-0083-419e-97d6-8317380cf045:chapter.best_candidate:v1",
+      "content_hash": "sha256:9887362f011e3a29ff48f938a3be3f8db80281d96f1f11d8bab96256af844ea3",
+      "text_hash": "sha256:2380eacba6215cdc613518ddbf2a0d47c55d8fc93f1dee5ea9503432716e9551",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 10,
+      "asset_version_id": "authority-output:14148c65-aa11-4fd0-a6d6-8f512611a062:chapter.draft:v1",
+      "content_hash": "sha256:bb2c4a6bfe77e2a16af12adb7d3f33327d8939a1bc77c3dcc63fcaff921881b9",
+      "text_hash": "sha256:bdedb4916d17e93c1597e192067e816ceb1e959bf91c7a66153553b002b3333d",
+      "actual_input_id_occurrences": 4,
+      "actual_input_hash_occurrences": 3,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 11,
+      "asset_version_id": "authority-output:15e6a150-b87d-4f81-95c7-5f7e57edceb1:chapter.best_candidate:v1",
+      "content_hash": "sha256:32008842dd1a3ee6ae145ef865ef70271948a49fef2fd701b3f37ff91a423065",
+      "text_hash": "sha256:b32460f5cae8b589d8eba293d3fe4afd36204fa53955d4408dfbb9ad7d5d2d0d",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 12,
+      "asset_version_id": "authority-output:55e3b156-19e0-4d46-b949-6c58000027d4:chapter.best_candidate:v1",
+      "content_hash": "sha256:191dec88bbd6f463798a756b939a42754d7ba2587aadc23cbf4d6b9387970b1f",
+      "text_hash": "sha256:5ef05fc9dcd8462a27531b8777c2c166bd265bbb380cdc7d3eeb3ba627c3459c",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 13,
+      "asset_version_id": "authority-output:0c725b33-5e71-4571-86e8-b08650db2841:chapter.best_candidate:v1",
+      "content_hash": "sha256:2ab7abd06049de1a716fff8c145875dd818022a7cd261c166e4298f0c4a8ad61",
+      "text_hash": "sha256:7596ca667d4635dd6f8d7790a7a4823ede1676dfabb409a2b0b33258353b3758",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 14,
+      "asset_version_id": "authority-output:c09cc5a0-1b0c-4c2b-a755-e43fd1f17d8c:chapter.best_candidate:v1",
+      "content_hash": "sha256:e028b127d24c8fa7b3aa2a11d4613a8188cd8fba566ddeb3384b8ed361a2f642",
+      "text_hash": "sha256:a442c975ca5f8bdced1a84601bed26fac75fd7b4aca00fa315cc757d88176f29",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 15,
+      "asset_version_id": "authority-output:5c30ca31-41f3-4ccf-ba30-ead3b70681af:chapter.best_candidate:v1",
+      "content_hash": "sha256:f2d0e8d64557a26872813938322db689b284af8a464d49b3afb65f11435c7f82",
+      "text_hash": "sha256:40555bd83bda0a27f091b12e7acedcbde198012a6186b2bd4d34039a83b307ca",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 16,
+      "asset_version_id": "authority-output:82900a6d-f40a-49cd-a7cb-a4db0343f09b:chapter.best_candidate:v1",
+      "content_hash": "sha256:e713347d34a2a6a708eea116f90c504f745b4dcde2eda47250f5b902e203e9a3",
+      "text_hash": "sha256:bf20df784967ea420693058dd5cb936d116ab088504ec3d0eaf0818b56deaebd",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 17,
+      "asset_version_id": "authority-output:153d9a88-034a-44b0-a479-f5aaa18ade4e:chapter.best_candidate:v1",
+      "content_hash": "sha256:6965ab660a1790f2a8d3c6e32d6e5d63249ca9f13804ca8043faea37773e6a15",
+      "text_hash": "sha256:f09c0e8f9d5f8a4bc3399215775a116ca1366ac16c562932d6669057f6cf469c",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    },
+    {
+      "chapter": 18,
+      "asset_version_id": "authority-output:a6d3b10a-9c23-4d33-b6bf-dc0dc4f68516:chapter.best_candidate:v1",
+      "content_hash": "sha256:d2db18a4eae052adac587dd24cad0732af673ae66905bc351dce85022e4b42d9",
+      "text_hash": "sha256:2e5f0d716f5a322c543674719a5fef30fccb6cc7568c58fdb4662b977b00cb8f",
+      "actual_input_id_occurrences": 3,
+      "actual_input_hash_occurrences": 2,
+      "complete_selected_prose_present_in_actual_input": true,
+      "source_statuses": []
+    }
+  ],
+  "accepted_through_chapter": 0,
+  "working_prose_is_not_formal_canon": true,
+  "source_isolations": [],
+  "actual_working_authorities": [],
+  "actual_accepted_boundaries": [
+    0
+  ],
+  "actual_instruction_checks": {
+    "These passages grant no accepted fact IDs or Canon mutation": true,
+    "Do not turn future plans into past events": true,
+    "A true world event does not grant every character knowledge": true
+  }
+}

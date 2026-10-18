@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-18T19:04:04.085756+00:00",
+  "source_sha": "5799c06df20d15b578d264ddfb01e400bb573ba2",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_version": 133,
+  "current_chapter": 19,
+  "accepted_through_chapter": 0,
+  "first_draft_han": 3854,
+  "completed_native_revision_han": 4214,
+  "completed_candidate_asset_version_id": "authority-output:90250101-c3db-423f-9305-b74ce4ad98ef:chapter.best_candidate:v1",
+  "completed_candidate_content_hash": "sha256:6129c1105c98966f2f70ca7097618fa8475b4fcef27d4ee3a47312ab9c1e4e9e",
+  "candidate_technically_selected": false,
+  "first_failure": {
+    "error_code": "AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED",
+    "message": "AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED: Reconcile original unsettled effects before switching generation policy; existing manuscripts remain readable"
+  },
+  "original_failed_main_status": "FAILED_RETRYABLE",
+  "original_owner_status": "FAILED_FINAL",
+  "old_failure_retained": true,
+  "requires_no_new_writer_call": true
+}
