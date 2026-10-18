@@ -326,6 +326,9 @@ def _ensure_native_work_length(settings, args, *, book, principal):
             raise KernelError("MANUSCRIPT_LENGTH_TARGET_REQUIRED", "Length delivery requires the frozen chapter bounds")
         if target["minimum"] <= length["actual"] <= target["maximum"]:
             continue
+        if (book["state"] in {"CHAPTER_RUNNING", "CHAPTER_COMPLETED"} and book.get("active_chapter_request_id")
+                and unit["chapter"] == book["current_chapter"] + 1):
+            return None
         if unit["chapter"] != book["current_chapter"] or book["state"] != "READY" or book.get("active_chapter_request_id"):
             return {"status": "EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION", "chapter": unit["chapter"]}
         key = "length-delivery:" + canonical_hash({"book": book["book_run_id"], "chapter": unit["chapter"],

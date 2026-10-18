@@ -926,3 +926,30 @@ def test_length_delivery_refuses_unbound_or_earlier_underlength_without_revision
         result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'), SimpleNamespace(), book=book, principal=None)
         assert result['status'] == 'EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION'
     revision.assert_not_called()
+
+
+@pytest.mark.parametrize('state,active,chapter,settles', [
+    ('CHAPTER_RUNNING', 'original-request', 6, True),
+    ('CHAPTER_COMPLETED', 'original-request', 6, True),
+    ('CHAPTER_RUNNING', '', 6, False),
+    ('CHAPTER_RUNNING', 'original-request', 4, False),
+    ('CHAPTER_RUNNING', 'original-request', 7, False),
+    ('PAUSED', 'original-request', 6, False),
+    ('READY', 'original-request', 6, False),
+])
+def test_length_delivery_settles_only_the_saved_active_frontier_before_revision(monkeypatch, state, active, chapter, settles):
+    from novel_forge.cli import manuscript as cli
+    from novel_forge.modules.book_authority import manuscript
+    from unittest.mock import Mock
+    monkeypatch.setattr(manuscript, 'require_manuscript', lambda *a, **k: {'units': [
+        {'chapter': chapter, 'length': {'actual': 3961, 'target': {'minimum': 4000, 'maximum': 5000}}}]})
+    revision = Mock(side_effect=AssertionError('Active or unrelated Chapter cannot be revised'))
+    monkeypatch.setattr(cli, '_run_working_revision_command', revision)
+    book = {'book_run_id': 'run', 'project_id': 'p', 'current_chapter': 5,
+        'state': state, 'active_chapter_request_id': active}
+    result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'), SimpleNamespace(), book=book, principal=None)
+    if settles:
+        assert result is None
+    else:
+        assert result['status'] == 'EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION'
+    revision.assert_not_called()
