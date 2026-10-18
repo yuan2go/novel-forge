@@ -295,17 +295,20 @@ def test_budget_allocation_reserves_required_quotes_in_later_chunks():
     import json
     boundary = {'kind': 'FROZEN_STAGE_INPUTS', 'project_id': 'p', 'book_id': 'b',
         'sources': [{'asset_version_id': 'context', 'content_hash': 'frozen'}]}
-    original = candidate('\n\n'.join(['ordinary ' + 'x' * 80 for _ in range(5)] + ['must keep last.']),
+    original = candidate('\n\n'.join(['ordinary ' + 'x' * 80 for _ in range(15)] + ['must keep last.']),
         provenance={'frozen_input_boundary': boundary})
     task = {'stage': 'draft', 'semantic_contract': semantic.SEMANTIC_CONTRACT, 'frozen_input_boundary': boundary,
         'source_projection_hash': 'frozen', 'preserve_quotes': ['must keep last.']}
+    compression_calls = []
     def call(stage, chunk):
         if stage == 'context_compress':
+            compression_calls.append(chunk)
             return {'selected_unit_ids': [unit['unit_id'] for unit in chunk['units'] if not unit.get('context_only')]}
         return {'supported': True, 'coverage_complete': True, 'missing_unit_ids': [], 'distorted_unit_ids': []}
     result, _ = compile_task_context([original], task=task, token_budget=300, required_asset_types=(),
-        model_call=call, compression_input_tokens=16000, chunk_fits=lambda chunk: len(chunk['units']) <= 2,
+        model_call=call, compression_input_tokens=16000, chunk_fits=lambda chunk: len(json.dumps(chunk).encode()) <= 4500,
         token_counter=lambda value: len(json.dumps(value)))
+    assert len(compression_calls) > 1
     assert 'must keep last.' in result[0].safe_summary
 
 
@@ -591,3 +594,81 @@ def test_complete_request_units_keep_native_single_line_paragraph_locations(newl
     assert semantic.reconstruct(original, units, {unit["unit_id"] for unit in units})["safe_summary"] == original.safe_summary
     selected = semantic.reconstruct(original, units, {unit["unit_id"] for unit in units if unit["required"]})["safe_summary"]
     assert quote in selected
+
+
+@pytest.mark.parametrize('limit', [4000, 100000])
+def test_final_risk_windows_batch_all_original_units_by_complete_request_capacity(limit):
+    original = candidate('\n\n'.join(f'她没有开第{index}道闸；此前的许可尚未生效。' for index in range(90)))
+    units = semantic.source_units(original, {})
+    chosen = {unit['unit_id'] for index,unit in enumerate(units) if index % 2}
+    calls = []
+    fixed_context = '冻结原始任务身份和完整上下文。' * 20
+    def fits(task):
+        return len(json.dumps({'fixed_context':fixed_context,'task':task},ensure_ascii=False).encode()) <= limit
+    def call(stage, task):
+        assert stage == 'context_fidelity' and fits(task)
+        calls.append(task)
+        return dict(supported=True,coverage_complete=True,missing_unit_ids=[],distorted_unit_ids=[])
+    final,proof,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=fits,model_call=call)
+    assert final == chosen
+    checked = [unit for task in calls for unit in task['units']]
+    assert {unit['unit_id'] for unit in checked} == {unit['unit_id'] for unit in units}
+    assert len(checked) >= len(units) == 90
+    checked_groups = [{unit["unit_id"] for unit in task["units"]} for task in calls]
+    assert all(any({unit["unit_id"] for unit in window} <= batch for batch in checked_groups)
+        for window in semantic.final_windows(units,chosen))
+    assert proof['result_content_hash'] == semantic.narrative_hash(semantic.reconstruct(original,units,chosen))
+    if limit == 100000:
+        assert len(calls) == 1 and len(calls[0]['units']) > 32
+    else:
+        assert len(calls) > 1
+
+
+def test_batched_final_checker_restores_a_far_missing_condition_and_uncertainty():
+    original = candidate('\n\n'.join(f'只有第{index}份许可生效才可行动。' for index in range(90)))
+    units = semantic.source_units(original,{})
+    chosen = {unit['unit_id'] for index,unit in enumerate(units) if index % 2}
+    def call(stage,task):
+        return dict(supported=True,coverage_complete=True,missing_unit_ids=[] if 'text:80' in task['selected_unit_ids'] else ['text:80'],distorted_unit_ids=[])
+    final,_,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=lambda _:True,model_call=call)
+    assert final == chosen | {'text:80'}
+    uncertain,proof,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=lambda _:True,
+        model_call=lambda *_:dict(supported=False,coverage_complete=False,missing_unit_ids=[],distorted_unit_ids=[]))
+    assert uncertain == {unit['unit_id'] for unit in units}
+    assert proof['semantic_scope'] == 'EXACT_COMPLETE_ORIGINAL_RESTORED'
+
+
+@pytest.mark.parametrize('limit',[4000,100000])
+def test_capacity_batched_fidelity_keeps_condition_and_consequence_visible_together(limit):
+    original = candidate('\n\n'.join(f'她没有开第{index}道闸；此前的许可尚未生效。' for index in range(90)))
+    units = semantic.source_units(original,{})
+    chosen = {unit['unit_id'] for index,unit in enumerate(units) if index % 2}
+    calls = []
+    def fits(task):
+        return len(json.dumps({'frozen_context':'冻结原始任务身份和完整上下文。'*20,'task':task},ensure_ascii=False).encode()) <= limit
+    def call(stage,task):
+        visible = {unit['unit_id'] for unit in task['units']}
+        calls.append(visible)
+        missing = ['text:22'] if {'text:21','text:22'} <= visible and 'text:22' not in task['selected_unit_ids'] else []
+        return dict(supported=True,coverage_complete=not missing,missing_unit_ids=missing,distorted_unit_ids=[])
+    final,_,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=fits,model_call=call)
+    assert 'text:22' in final
+    assert any({'text:21','text:22'} <= group for group in calls)
+
+
+def test_final_batching_preserves_far_dependency_closures_and_rejects_an_oversized_closure():
+    original = candidate('\n\n'.join(f'第{index}段的后果尚未确定。' for index in range(90)))
+    units = semantic.source_units(original,{})
+    units[21]['explicit_refs'] = ['far-cause']
+    units[88]['source_aliases'] = ['far-cause']
+    windows = semantic.final_windows(units,{'text:21','text:45'})
+    def payload(group):
+        return dict(frozen_context='精确冻结上下文。'*50,units=group)
+    def amount(task):
+        return len(json.dumps(task,ensure_ascii=False).encode())
+    limit = max(amount(payload(window)) for window in windows)
+    batches = semantic.pack_final_windows(windows,payload=payload,fits=lambda task:amount(task)<=limit)
+    assert all(any({unit['unit_id'] for unit in window} <= {unit['unit_id'] for unit in batch} for batch in batches) for window in windows)
+    assert any({'text:19','text:20','text:21','text:22','text:23','text:88'} <= {unit['unit_id'] for unit in batch} for batch in batches)
+    with pytest.raises(KernelError,match='TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE'):
+        semantic.pack_final_windows(windows,payload=payload,fits=lambda task:amount(task)<limit)

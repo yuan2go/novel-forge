@@ -338,35 +338,29 @@ def verify_request_composition(candidates, compressed, *, supplied, task, source
         return proof, [originals[identity] for identity in sorted(closed - selected)]
     transformed = [unit for unit in units if origins[unit["unit_id"]] not in unchanged]
     external = set(task.get("external_dependency_refs") or ()) | {alias for unit in units if origins[unit["unit_id"]] in unchanged for alias in unit.get("source_aliases", ())}
-    for window in semantic_units.final_windows(transformed, selected, external_refs=external):
-        pending = [window]
-        while pending:
-            group = pending.pop(0)
-            chunk = {"contract_version": "task-context-compression.v3", "semantic_contract": semantic_units.SEMANTIC_CONTRACT,
-                "policy_version": "task-scoped-context.v1", "frozen_input_boundary": source_boundary,
-                "task_fingerprint": task["source_projection_hash"], "task": task, "source_binding": source_boundary["sources"][0],
-                "units": group, "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
-                "target_tokens": 512_000, "selected_unit_ids": [unit["unit_id"] for unit in group if unit["unit_id"] in selected],
-                "composition_check": {key: proof[key] for key in ("phase", "supplied_projection_hash", "selection_hash", "catalog_hash")}}
-            if not chunk_fits(chunk):
-                if len(group) == 1:
-                    raise KernelError("TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE", "A final Provider semantic risk unit cannot fit the complete checker request")
-                middle = len(group) // 2
-                pending[0:0] = [group[:middle], group[middle:]]
-                continue
-            verdict = dict(model_call("context_fidelity", chunk))
-            allowed = {unit["unit_id"] for unit in group}
-            missing = set(verdict.get("missing_unit_ids") or ())
-            distorted = set(verdict.get("distorted_unit_ids") or ())
-            unsupported = (missing | distorted) - allowed or verdict.get("supported") is not True or (verdict.get("coverage_complete") is not True and not missing)
-            requested = allowed if unsupported or distorted else missing
-            if requested and requested <= selected:
-                affected = {origins[identity] for identity in allowed}
-                requested = {identity for identity, source in origins.items() if source in affected}
-                if requested <= selected:
-                    raise KernelError("TASK_CONTEXT_FINAL_COMPOSITION_UNCERTAIN", "Final combination still has an unresolved semantic risk despite carrying its complete original sources", details={"proof": proof, "verdict": verdict})
-            additions.update(requested - selected)
-            proof["checks"].append({"task": chunk, "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"}, "execution_evidence": dict(verdict.get("_execution_evidence") or {})})
+    def check_task(group):
+        return {"contract_version": "task-context-compression.v3", "semantic_contract": semantic_units.SEMANTIC_CONTRACT,
+            "policy_version": "task-scoped-context.v1", "frozen_input_boundary": source_boundary,
+            "task_fingerprint": task["source_projection_hash"], "task": task, "source_binding": source_boundary["sources"][0],
+            "units": group, "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
+            "target_tokens": 512_000, "selected_unit_ids": [unit["unit_id"] for unit in group if unit["unit_id"] in selected],
+            "composition_check": {key: proof[key] for key in ("phase", "supplied_projection_hash", "selection_hash", "catalog_hash")}}
+    windows = semantic_units.final_windows(transformed, selected, external_refs=external)
+    for group in semantic_units.pack_final_windows(windows, payload=check_task, fits=chunk_fits):
+        chunk = check_task(group)
+        verdict = dict(model_call("context_fidelity", chunk))
+        allowed = {unit["unit_id"] for unit in group}
+        missing = set(verdict.get("missing_unit_ids") or ())
+        distorted = set(verdict.get("distorted_unit_ids") or ())
+        unsupported = (missing | distorted) - allowed or verdict.get("supported") is not True or (verdict.get("coverage_complete") is not True and not missing)
+        requested = allowed if unsupported or distorted else missing
+        if requested and requested <= selected:
+            affected = {origins[identity] for identity in allowed}
+            requested = {identity for identity, source in origins.items() if source in affected}
+            if requested <= selected:
+                raise KernelError("TASK_CONTEXT_FINAL_COMPOSITION_UNCERTAIN", "Final combination still has an unresolved semantic risk despite carrying its complete original sources", details={"proof": proof, "verdict": verdict})
+        additions.update(requested - selected)
+        proof["checks"].append({"task": chunk, "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"}, "execution_evidence": dict(verdict.get("_execution_evidence") or {})})
     return proof, [originals[identity] for identity in sorted(additions)]
 
 

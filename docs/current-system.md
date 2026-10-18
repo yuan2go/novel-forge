@@ -1501,7 +1501,13 @@ custodian only when the complete captured input view has the same registered has
 the successor still owns its new Context, Attempt and main request. Only an exact
 task, stage, source request hash and verified settled result may reuse a receipt.
 Changed paragraph units or targets create a new task; old unit identities keep their
-original meaning. Final Planning dispatch, including preparation calls, checks the
+original meaning. Final semantic checks combine the ordered union of all original risk
+neighbors and dependency units. Complete request capacity determines batching, while
+each original risk neighborhood and dependency closure must remain visible together;
+necessary overlap is retained and an oversized closure is rejected. There is no fixed
+unit-count ceiling or loss of source coverage. Each checker task keeps
+its exact identity, and missing or uncertain meaning retains the existing restoration
+rules. Final Planning dispatch, including preparation calls, checks the
 owning Book pause and Book/Creation cancellation before entering the Provider.
 The capacity meaning is unchanged; Context v4 versions the semantic method. Context v3
 retains the earlier method, and its frozen manifests and catalog remain available.
