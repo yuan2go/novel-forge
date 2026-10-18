@@ -500,8 +500,8 @@ def append_isolation(uow, effect, command):
             )
         cursor.execute("SELECT to_jsonb(root) FROM authority_operation root WHERE operation_id=%s", [operation["root_operation_id"]])
         chapter_root = cursor.fetchone()[0]
-        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION
-        if chapter_root["definition_version"] == ROOT_VERSION:
+        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS
+        if chapter_root["definition_version"] in ROOT_VERSIONS:
             cursor.execute("""SELECT book.book_id,book.workspace_id FROM authority_book_production book
                 JOIN authority_operation root ON root.command_payload #>> '{preparation_report,working_revision,book_run_id}'=book.book_run_id
                 JOIN authority_saga_step step ON step.operation_id=%s AND step.saga_id=%s

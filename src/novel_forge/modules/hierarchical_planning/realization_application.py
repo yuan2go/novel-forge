@@ -618,8 +618,11 @@ class PostgresNarrativeRealizationApplication:
             from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow, verify_working_context
             cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s FOR SHARE", [book_run_id])
             owner = cursor.fetchone()
+            from novel_forge.modules.book_authority.plan_recovery import current_working_group_correction
+            corrected = (owner is not None and current_working_group_correction(cursor, book=owner[0],
+                group_version_id=chapter_group_plan_version_id, working=working)) if owner and owner[0]["current_chapter"] != chapter_range[0] - 1 else False
             if (owner is None or effective_workflow(cursor, owner[0]) != AUTHOR_WORKFLOW
-                    or owner[0]["current_chapter"] != chapter_range[0] - 1):
+                    or owner[0]["current_chapter"] != chapter_range[0] - 1 and not corrected):
                 raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "Working realization requires its current Book-owned writing checkpoint")
             verify_working_context(SimpleNamespace(cursor=cursor, repositories=AuthorityRepositories(cursor)), owner[0], working)
         contract = {

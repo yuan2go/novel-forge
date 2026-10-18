@@ -248,18 +248,19 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
             if candidate.content.get("source_provenance", {}).get("kind") != "ASSISTANT_REVISION_PROPOSAL":
                 raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Human author input uses its separate author choice")
         else:
-            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT, require_working_revision_frontier
+            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS, REGENERATION_ROOT, CONTRACT, require_working_revision_frontier
             uow.cursor.execute("""SELECT to_jsonb(root) FROM authority_operation_output_asset output
                 JOIN authority_operation child USING(operation_id)
                 JOIN authority_operation root ON root.operation_id=child.root_operation_id
                 WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
-                  AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best')""",
+                  AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best','chapter.draft.generate')""",
                 [candidate.asset_version_id, current["project_id"]])
             origins = uow.cursor.fetchall()
             origin = origins[0][0] if len(origins) == 1 else {}
             binding = (origin.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
             if (candidate.asset_type not in {"draft_version", "best_draft_candidate"}
-                    or origin.get("definition_version") != ROOT_VERSION
+                    and not (candidate.asset_type == "draft_chapter" and origin.get("definition_version") == REGENERATION_ROOT)
+                    or origin.get("definition_version") not in ROOT_VERSIONS
                     or origin.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}
                     or binding.get("contract_version") != CONTRACT or binding.get("book_run_id") != book_run_id
                     or binding.get("source_asset_version_id") != source.asset_version_id
@@ -379,13 +380,13 @@ def resolve_working_source(uow: Any, book: dict[str, Any], chapter: int, *, pref
 
 
 def _working_dependency_binding(book, selection, source, root):
-    from novel_forge.modules.chapter_authority.working_revision import CONTRACT, ROOT_VERSION
+    from novel_forge.modules.chapter_authority.working_revision import CONTRACT, ROOT_VERSIONS
     binding = (root.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
     chapter = source_draft_content(source)["chapter"]
     refs = {row["asset_version_id"]: row["content_hash"] for row in root.get("input_asset_snapshot", [])}
     inputs = binding.get("source_inputs") or {}
     previous = binding.get("previous_sources", [])
-    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") != ROOT_VERSION
+    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") not in ROOT_VERSIONS
             or root.get("definition_snapshot", {}).get("policy", {}).get("working_revision_contract") != CONTRACT
             or root.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}
             or any(root.get(key) != book[key] for key in ("project_id", "workspace_id"))
@@ -449,7 +450,7 @@ def _selected_working_dependencies(uow, book, source):
         JOIN authority_operation child USING(operation_id)
         JOIN authority_operation root ON root.operation_id=child.root_operation_id
         WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
-          AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best')""",
+          AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best','chapter.draft.generate')""",
         [source.asset_version_id, book["project_id"]])
     origins = uow.cursor.fetchall()
     if len(origins) != 1:
@@ -825,7 +826,18 @@ def _current_planning_correction(uow, *, book, operation, request, refs, target)
           AND v.content->>'contract_version'='operator-planning-change-request.v1'
           AND v.content->>'authority_boundary'='FUTURE_PLAN_PROPOSAL_ONLY'
           AND v.content->>'book_id'=%s AND v.content->>'accepted_through_chapter'=%s
-          AND v.content->>'affected_scope'=binding.contract_type AND binding.freshness='CURRENT'
+          AND v.content->>'affected_scope'=binding.contract_type
+          AND (binding.freshness='CURRENT' OR (binding.freshness='IMPACTED' AND EXISTS(
+            SELECT 1 FROM authority_plan_change_proposal correction
+            JOIN active_story_plan_version parent ON parent.project_id=correction.project_id
+              AND parent.book_id=correction.book_id AND parent.asset_version_id=correction.proposed_asset_version_id
+            JOIN authority_operation activation ON activation.operation_id=correction.activation_operation_id
+            WHERE correction.proposal_id=v.content->>'upstream_plan_change_proposal_id'
+              AND correction.project_id=a.project_id AND correction.book_id=binding.book_id
+              AND correction.status='ACTIVE' AND correction.target_contract_type='CHAPTER_GROUP'
+              AND authority_working_group_prefix_preserved(correction.project_id,correction.book_id,
+                correction.proposed_asset_version_id,binding.parent_version_id,activation.actor_id,activation.workspace_id,%s)
+              AND activation.status='SUCCEEDED' AND activation.actor_id=author.actor_id)))
           AND binding.logical_key=%s
           AND binding.execution_scope IN ('PLANNED','FROZEN')
           AND ((binding.contract_type='CHAPTER_GROUP' AND %s='chapter_group_plan.generate'
@@ -836,9 +848,24 @@ def _current_planning_correction(uow, *, book, operation, request, refs, target)
           AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
             WHERE cancellation.project_id=%s AND %s=cancellation.formation_run_id || ':production'))""",
         [book["book_id"], evidence, book["project_id"], book["workspace_id"], operation["actor_id"],
-         book["book_id"], str(book["accepted_through_chapter"]), request.get("logical_key"), request["generator_operation_name"], target,
+         book["book_id"], str(book["accepted_through_chapter"]), target, request.get("logical_key"), request["generator_operation_name"], target,
          request["generator_operation_name"], target, dumps(refs), book["project_id"], book["stable_idempotency_key"]])
     return uow.cursor.fetchone() == (True,)
+
+
+def _current_regeneration_history(uow, *, book, operation, request, target):
+    from novel_forge.modules.chapter_authority.working_regeneration import ROOT_VERSION
+    from novel_forge.modules.chapter_authority.working_revision import require_working_revision_frontier
+    if target != writing_frontier(book) or not operation.get("root_operation_id"):
+        return False
+    uow.cursor.execute("SELECT to_jsonb(root) FROM authority_operation root WHERE operation_id=%s", [operation["root_operation_id"]])
+    row = uow.cursor.fetchone()
+    root = row[0] if row else {}
+    if (root.get("definition_version") != ROOT_VERSION or root.get("actor_id") != operation.get("actor_id")
+            or root.get("command_payload", {}).get("preparation_report") != request.get("preparation_report")):
+        return False
+    require_working_revision_frontier(uow, root=root, book_run_id=book["book_run_id"])
+    return True
 
 
 def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str, frozenset[str]]:
@@ -866,11 +893,13 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Historical working inputs require the exact author-first Book")
     book = {**row[0], "author_workflow": AUTHOR_WORKFLOW}
     target = working["target_chapter"]
+    regeneration = _current_regeneration_history(uow, book=book, operation=operation, request=request, target=target) if name.startswith("chapter.") else False
     if (type(target) is not int or target != writing_frontier(book) + 1
             and not _current_planning_correction(uow, book=book, operation=operation, request=request, refs=refs, target=target)
+            and not regeneration
             or any(not isinstance(source.get("chapter"), int) or not 0 < source["chapter"] < target for source in working["sources"])):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Only the selected preceding writing history can be read")
-    if name.startswith("chapter."):
+    if name.startswith("chapter.") and not regeneration:
         uow.cursor.execute("""SELECT r.command_payload->'preparation_report'->'working_manuscript'
             FROM authority_book_chapter_request r JOIN authority_operation o
               ON o.root_operation_id=r.chapter_root_operation_id
@@ -1126,7 +1155,7 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
             [book_run_id, project_id, asset_version_id, typed, payload.get("operation_id"), typed, definition, output_key])
         row = uow.cursor.fetchone()
         if row is None:
-            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT
+            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS, CONTRACT
             uow.cursor.execute("""SELECT book.book_id,book.workspace_id,(root.command_payload->>'chapter')::integer
                 FROM authority_book_production book
                 JOIN authority_operation root ON root.command_payload#>>'{preparation_report,working_revision,book_run_id}'=book.book_run_id
@@ -1134,13 +1163,13 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
                 JOIN authority_operation_output_asset output ON output.operation_id=op.operation_id
                 WHERE book.book_run_id=%s AND book.project_id=%s AND root.project_id=book.project_id
                   AND root.workspace_id=book.workspace_id AND root.command_payload->>'book_id'=book.book_id
-                  AND root.definition_name='chapter.slice.run' AND root.definition_version=%s
+                  AND root.definition_name='chapter.slice.run' AND root.definition_version=ANY(%s)
                   AND root.command_payload#>>'{preparation_report,working_revision,contract_version}'=%s
                   AND op.project_id=book.project_id AND op.workspace_id=book.workspace_id
                   AND output.asset_version_id=%s AND (%s IS TRUE OR op.operation_id=%s)
                   AND (%s IS FALSE OR (op.status='SUCCEEDED' AND output.role='primary'
                     AND op.definition_name=%s AND output.output_key=%s))""",
-                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id,
+                [book_run_id, project_id, list(ROOT_VERSIONS), CONTRACT, asset_version_id,
                  typed, payload.get("operation_id"), typed, definition, output_key])
             row = uow.cursor.fetchone()
         if typed:

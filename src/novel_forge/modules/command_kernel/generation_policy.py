@@ -141,7 +141,7 @@ def _reference_coordinator_roots(
         and snapshot.get("handler_contract_version") == "2.1.1"
         and snapshot.get("definition_version") in {
             "3.4.1", "3.5.0", "3.6.0", "3.7.0", "3.8.0", "3.9.0", "3.10.0",
-            "3.10.0-author-first.v1", "3.10.0-working-revision.v1",
+            "3.10.0-author-first.v1", "3.10.0-working-revision.v1", "3.10.0-working-regeneration.v1",
         }
         and policy.get("execution_classification") == "saga"
         and policy.get("authority") == "postgresql"

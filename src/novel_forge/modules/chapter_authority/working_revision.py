@@ -7,10 +7,13 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .contracts import ChapterNode
+from .working_regeneration import ROOT_VERSION as REGENERATION_ROOT
 
 ROOT_VERSION = "3.10.0-working-revision.v1"
 CONTRACT = "chapter-working-revision.v1"
 NODES = (ChapterNode.REVIEW, ChapterNode.REVISION, ChapterNode.REREVIEW, ChapterNode.BEST_CANDIDATE)
+ROOT_VERSIONS = (ROOT_VERSION, REGENERATION_ROOT)
+REGENERATION_NODES = tuple(ChapterNode)[:6]
 
 
 def working_review_window(request, draft, context, prior=None):
@@ -54,11 +57,11 @@ def working_review_window(request, draft, context, prior=None):
             writer_projection_version="accepted-writer-history.v2"))
 
 
-def working_revision_definition(*, application_build_id: str, commit_sha: str) -> dict[str, Any]:
+def working_revision_definition(*, application_build_id: str, commit_sha: str, regeneration: bool = False) -> dict[str, Any]:
     from .definitions import chapter_root_operation_definition
     definition = chapter_root_operation_definition(application_build_id=application_build_id,
         commit_sha=commit_sha, model_effects_required=True, coordinated_contract=True)
-    definition["definition_version"] = ROOT_VERSION
+    definition["definition_version"] = REGENERATION_ROOT if regeneration else ROOT_VERSION
     from copy import deepcopy
     text = {"type": "string", "minLength": 1}
     hash_value = {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
@@ -77,9 +80,13 @@ def working_revision_definition(*, application_build_id: str, commit_sha: str) -
         definition[key] = deepcopy(definition[key])
         definition[key]["properties"]["preparation_report"] = {"type": "object",
             "properties": {"working_revision": deepcopy(binding_schema)}, "required": ["working_revision"]}
-    definition["policy"].update(expected_saga_steps=len(NODES), working_revision_contract=CONTRACT)
+    nodes = REGENERATION_NODES if regeneration else NODES
+    definition["policy"].update(expected_saga_steps=len(nodes), working_revision_contract=CONTRACT)
+    if regeneration:
+        from .working_regeneration import CONTRACT as REGENERATION_CONTRACT
+        definition["policy"]["working_regeneration_contract"] = REGENERATION_CONTRACT
     definition["completion_contract"]["required_child_operations"] = [
-        {"definition_name": node.definition_name, "allowed_states": ["SUCCEEDED"]} for node in NODES]
+        {"definition_name": node.definition_name, "allowed_states": ["SUCCEEDED"]} for node in nodes]
     return definition
 
 
@@ -90,7 +97,7 @@ def working_revision_status(database_url, *, project_id, book_run_id, root_opera
         row = uow.cursor.fetchone()
         root = row[0] if row else {}
         binding = (root.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
-        if root.get("definition_version") != ROOT_VERSION or binding.get("book_run_id") != book_run_id:
+        if root.get("definition_version") not in ROOT_VERSIONS or binding.get("book_run_id") != book_run_id:
             raise KernelError("MANUSCRIPT_REVISION_SCOPE_INVALID", "Revision status requires this exact Book request")
         uow.cursor.execute("""SELECT child.operation_id,child.definition_name,child.status,
             output.asset_version_id,output.output_key FROM authority_operation child
@@ -106,7 +113,7 @@ def working_revision_status(database_url, *, project_id, book_run_id, root_opera
 def require_working_revision_frontier(uow, *, root: dict[str, Any], book_run_id: str | None = None):
     from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow, selected_source
     binding = (root.get("command_payload", {}).get("preparation_report") or {}).get("working_revision")
-    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") != ROOT_VERSION
+    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") not in ROOT_VERSIONS
             or root.get("definition_snapshot", {}).get("policy", {}).get("working_revision_contract") != CONTRACT
             or not isinstance(binding, dict) or binding.get("contract_version") != CONTRACT
             or book_run_id is not None and binding.get("book_run_id") != book_run_id):
@@ -124,6 +131,9 @@ def require_working_revision_frontier(uow, *, root: dict[str, Any], book_run_id:
             or book["state"] in {"PAUSED", "CANCELLED", "ABORTED"}
             or type(chapter) is not int or not book["accepted_through_chapter"] < chapter <= book["current_chapter"]):
         raise KernelError("MANUSCRIPT_REVISION_FRONTIER_STALE", "Revision requires this live unaccepted working chapter without cancellation")
+    if root["definition_version"] == REGENERATION_ROOT:
+        from .working_regeneration import require_frontier
+        require_frontier(uow, root=root, book=book)
     source = selected_source(uow, book, chapter)
     if (source.asset_version_id != binding.get("source_asset_version_id")
             or source.content_hash != binding.get("source_content_hash")):
@@ -192,7 +202,8 @@ def revalidate_completed_length_candidate(uow, *, root_operation_id, book_run_id
 
 
 def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
-                          expected_version: int, idempotency_key: str, reason: str, principal):
+                          expected_version: int, idempotency_key: str, reason: str, principal,
+                          regeneration_proposal_id: str = "", corrected_chapter_plan_version_id: str = "", supervisor=None):
     from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow, selected_source
     from novel_forge.modules.chapter_authority.orchestrator import (
         ChapterSagaAdmission, _command, _transition_root_to_executing,
@@ -209,7 +220,12 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
     principal.require("book.authority.execute", book["project_id"])
     if not idempotency_key.strip() or not reason.strip() or type(chapter) is not int or chapter < 1:
         raise ValueError("Revision requires an exact chapter, request identity and revision purpose")
-    root_key = "working-revision:" + idempotency_key
+    regeneration = bool(regeneration_proposal_id or corrected_chapter_plan_version_id)
+    if regeneration and (not regeneration_proposal_id or not corrected_chapter_plan_version_id or supervisor is None):
+        raise KernelError("MANUSCRIPT_REGENERATION_PLAN_INVALID", "Require a complete native PlanChange and corrected Chapter request")
+    root_version = REGENERATION_ROOT if regeneration else ROOT_VERSION
+    nodes = REGENERATION_NODES if regeneration else NODES
+    root_key = ("working-regeneration:" if regeneration else "working-revision:") + idempotency_key
     existing_root = None
     with AuthorityUnitOfWork(app.database_url) as uow:
         uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o WHERE project_id=%s
@@ -219,9 +235,12 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
             root = existing[0]
             existing_root = root
             binding = (root["command_payload"].get("preparation_report") or {}).get("working_revision") or {}
-            if (root["definition_version"] != ROOT_VERSION or root["actor_id"] != principal.principal_id
+            correction = (root["command_payload"].get("preparation_report") or {}).get("working_plan_regeneration") or {}
+            if (root["definition_version"] != root_version or root["actor_id"] != principal.principal_id
                     or binding.get("book_run_id") != book_run_id or binding.get("expected_book_version") != expected_version
-                    or root["command_payload"].get("chapter") != chapter or binding.get("reason") != reason):
+                    or root["command_payload"].get("chapter") != chapter or binding.get("reason") != reason
+                    or regeneration and (correction.get("proposal_id") != regeneration_proposal_id
+                        or correction.get("corrected_chapter_plan_version_id") != corrected_chapter_plan_version_id)):
                 raise KernelError("MANUSCRIPT_REVISION_REQUEST_DRIFT", "Replay the original working-revision identity and purpose")
             request = scheduler._request_from_root(root)
             if root["status"] in {"SUCCEEDED", "CANCELLED", "FAILED_FINAL", "DEAD_LETTER"}:
@@ -249,7 +268,7 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
             original_root = rows[0][0]
             original = scheduler._request_from_root(original_root)
             inherited = (original.preparation_report or {}).get("working_revision")
-            if inherited:
+            if inherited and original_root["definition_version"] != REGENERATION_ROOT:
                 context_pointer = inherited["source_inputs"]["context"]
             else:
                 uow.cursor.execute("""SELECT v.asset_version_id,v.content_hash FROM authority_operation child
@@ -262,6 +281,11 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
                 if len(context_rows) != 1:
                     raise KernelError("MANUSCRIPT_REVISION_CONTEXT_REQUIRED", "Require the original governed Context rather than a reconstructed summary")
                 context_pointer = dict(zip(("asset_version_id", "content_hash"), context_rows[0]))
+            correction = None
+            if regeneration:
+                from .working_regeneration import prepare_regeneration
+                original, correction = prepare_regeneration(app, supervisor=supervisor, uow=uow, book=book, source=source, original=original,
+                    proposal_id=regeneration_proposal_id, plan_id=corrected_chapter_plan_version_id, principal=principal)
             binding = {"contract_version": CONTRACT, "book_run_id": book_run_id,
                 "source_asset_version_id": source.asset_version_id, "source_content_hash": source.content_hash,
                 "expected_book_version": expected_version, "reason": reason,
@@ -276,13 +300,16 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
                     "content_hash": previous.content_hash})
             binding["accepted_through_chapter"] = book["accepted_through_chapter"]
             preparation = {**dict(original.preparation_report or {}), "working_revision": binding}
+            preparation.pop("working_plan_regeneration", None)
+            if correction:
+                preparation["working_plan_regeneration"] = correction
             for field in ("author_draft_adoption", "author_book_replacement"):
                 preparation.pop(field, None)
             request = replace(original, actor_id=principal.principal_id, idempotency_key=root_key,
                 application_build_id=app.application_build_id, commit_sha=app.commit_sha,
                 preparation_report=preparation, trace_id=root_key, correlation_id=book["root_operation_id"])
         uow.repositories.definitions.register(working_revision_definition(
-            application_build_id=app.application_build_id, commit_sha=app.commit_sha))
+            application_build_id=app.application_build_id, commit_sha=app.commit_sha, regeneration=regeneration))
         for definition in chapter_operation_definitions(application_build_id=app.application_build_id,
                 commit_sha=app.commit_sha, model_effects_required=True, coordinated_contract=True):
             uow.repositories.definitions.register(definition)
@@ -291,13 +318,25 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
         available_handlers=app.registry.available_handler_keys | frozenset({CHAPTER_SLICE_ROOT_HANDLER_KEY}),
         application_build_id=app.application_build_id, commit_sha=app.commit_sha)
     frozen = (request.preparation_report or {})["working_revision"]
+    root_inputs = [*frozen["source_inputs"].values(),
+        *({"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]} for row in frozen["previous_sources"])]
+    if regeneration:
+        root_inputs.extend({"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]} for row in request.context_candidates)
+    root_inputs = list({row["asset_version_id"]: row for row in root_inputs}.values())
+    def regeneration_guard(uow):
+        from .working_regeneration import admission_guard
+        admission_guard(uow, request=request, expected_version=expected_version)
     root = {**existing_root, "replayed": True} if existing_root is not None else admit_command(app.database_url, _command(request, definition_name="chapter.slice.run",
-        definition_version=ROOT_VERSION, idempotency_key=root_key, input_assets=[*frozen["source_inputs"].values(),
-            *({"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]} for row in frozen["previous_sources"])]), context=admission)
+        definition_version=root_version, idempotency_key=root_key, input_assets=root_inputs), context=admission,
+        transaction_guard=regeneration_guard)
     root_id = str(root["operation_id"])
     with AuthorityUnitOfWork(app.database_url) as uow:
         uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [root_id])
         state = uow.cursor.fetchone()[0]
+        if state in {"SUCCEEDED", "CANCELLED", "FAILED_FINAL", "DEAD_LETTER"}:
+            uow.cursor.execute("SELECT saga_id FROM authority_saga WHERE root_operation_id=%s", [root_id])
+            saga = uow.cursor.fetchone()
+            return ChapterSagaAdmission(root_id, str(saga[0]) if saga else "", "", state, bool(root["replayed"]))
     if state == "ADMITTED":
         _transition_root_to_executing(app.database_url, request, root_id)
     graph = GraphCommandContext(request.project_id, principal.principal_id, request.trace_id, request.correlation_id)
@@ -305,8 +344,9 @@ def admit_working_revision(app, *, authority, book_run_id: str, chapter: int,
     actual_root, _, children = scheduler._graph_state(request.project_id, root_id)
     with AuthorityUnitOfWork(app.database_url) as uow:
         require_working_revision_frontier(uow, root=actual_root)
-    first = children.get(ChapterNode.REVIEW)
+    first = children.get(nodes[0])
     if first is None:
         first = scheduler._admit_node(request=request, root=actual_root, saga_id=saga,
-            children=children, node=ChapterNode.REVIEW, dependency_operation_ids=[], timeline_ordinal=1)
+            children=children, node=nodes[0], dependency_operation_ids=[], timeline_ordinal=1,
+            **({"explicit_inputs": [frozen["source_inputs"]["plan"]]} if regeneration else {}))
     return ChapterSagaAdmission(root_id, saga, str(first["operation_id"]), "ACCEPTED", bool(root["replayed"]))

@@ -254,6 +254,10 @@ class PostgresHierarchicalPlanningAuthority:
         expected_active = str(payload.get("expected_active_asset_version_id") or "")
         replacement_approved = bool(payload["replacement_approved"])
         decision_evidence = dict(payload.get("decision_evidence") or {})
+        if decision_evidence.get("contract_version") == "book-current-group-plan-followup.v1":
+            from novel_forge.modules.book_authority.plan_recovery import require_current_group_plan_followup
+            require_current_group_plan_followup(uow, evidence=decision_evidence, project_id=project_id,
+                book_id=book_id, actor_id=str(operation[2]), candidate_id=asset_version_id, previous_id=expected_active)
         story_design_transition_operation_id = str(
             payload.get("story_design_transition_operation_id") or ""
         )

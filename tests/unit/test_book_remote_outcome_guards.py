@@ -167,6 +167,7 @@ def test_current_v7_creation_binding_retains_original_actor_digest_and_scope(
         "request.chapter_root_operation_id=%s" in sql
         and "production.project_id=run.project_id" in sql
     )
+    from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS, ROOT_VERSION
     assert parameters == [
         "chapter-root",
         "chapter-root",
@@ -174,6 +175,8 @@ def test_current_v7_creation_binding_retains_original_actor_digest_and_scope(
         "chapter-root",
         "project",
         "chapter-root",
+        list(ROOT_VERSIONS),
+        ROOT_VERSION,
         "project",
         "project",
     ]

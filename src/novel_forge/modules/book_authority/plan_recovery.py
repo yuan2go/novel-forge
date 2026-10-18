@@ -250,3 +250,83 @@ def replacement_binding(uow, *, book, chapter, plan_version, plan_hash):
     if content["corrected_plan_asset_version_id"] != plan_version or content["corrected_plan_content_hash"] != plan_hash:
         raise KernelError("BOOK_PLAN_RECOVERY_CONFLICT", "Dispatch the exact corrected Plan from the recovery journal")
     return {**{k:content[k] for k in ("contract_version","book_run_id","proposal_id","predecessor_request_id","predecessor_root_operation_id","generation")},"recovery_asset_version_id":row[0]}
+
+
+def current_working_group_correction(cursor, *, book, group_version_id, working):
+    chapter = book['current_chapter']
+    if (working.get('target_chapter') != chapter or chapter <= book['accepted_through_chapter']
+            or book['state'] not in {'READY', 'PAUSED'} or book.get('active_chapter_request_id')):
+        return False
+    cursor.execute('''SELECT previous.content,corrected.content,request.parent_group_version_id,activation.actor_id FROM authority_plan_change_proposal proposal
+        JOIN authority_operation activation ON activation.operation_id=proposal.activation_operation_id
+        JOIN authority_asset_version corrected ON corrected.asset_version_id=proposal.proposed_asset_version_id
+        JOIN active_story_plan_version active ON active.asset_version_id=corrected.asset_version_id
+          AND active.project_id=proposal.project_id AND active.book_id=proposal.book_id
+        JOIN story_plan_binding binding ON binding.binding_id=active.binding_id
+        JOIN authority_book_manuscript_delivery delivery ON delivery.book_run_id=%s AND delivery.chapter_number=%s
+        JOIN authority_book_chapter_request request USING(chapter_request_id)
+        JOIN authority_operation original ON original.operation_id=request.chapter_root_operation_id
+        JOIN authority_asset_version previous ON previous.asset_version_id=request.parent_group_version_id
+        WHERE proposal.project_id=%s AND proposal.book_id=%s AND proposal.proposed_asset_version_id=%s
+          AND proposal.status='ACTIVE' AND proposal.target_contract_type='CHAPTER_GROUP'
+          AND activation.status='SUCCEEDED' AND activation.actor_id=original.actor_id
+          AND activation.project_id=proposal.project_id AND activation.workspace_id=%s
+          AND binding.contract_type='CHAPTER_GROUP' AND binding.execution_scope='FROZEN' AND binding.freshness='CURRENT'
+          AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancel
+            WHERE cancel.project_id=proposal.project_id AND %s=cancel.formation_run_id||':production')''',
+        [book['book_run_id'], chapter, book['project_id'], book['book_id'], group_version_id, book['workspace_id'], book['stable_idempotency_key']])
+    rows = cursor.fetchall()
+    if len(rows) != 1:
+        return False
+    old, new, original_group, actor = rows[0]
+    cursor.execute('SELECT authority_working_group_prefix_preserved(%s,%s,%s,%s,%s,%s,%s)',
+        [book['project_id'], book['book_id'], group_version_id, original_group, actor, book['workspace_id'], chapter])
+    if cursor.fetchone() != (True,):
+        return False
+    return (old['chapter_range'] == new['chapter_range'] and old['chapter_range'][0] <= chapter <= old['chapter_range'][1]
+        and [row for row in old['chapter_function_matrix'] if row['chapter_number'] < chapter]
+            == [row for row in new['chapter_function_matrix'] if row['chapter_number'] < chapter]
+        and [row for row in old['narrative_event_chain'] if row['chapter_number'] < chapter]
+            == [row for row in new['narrative_event_chain'] if row['chapter_number'] < chapter])
+
+
+def require_current_group_plan_followup(uow, *, evidence, project_id, book_id, actor_id, candidate_id, previous_id):
+    uow.cursor.execute('SELECT to_jsonb(book) FROM authority_book_production book WHERE book_run_id=%s AND project_id=%s AND book_id=%s FOR UPDATE',
+        [evidence.get('book_run_id'), project_id, book_id])
+    row = uow.cursor.fetchone()
+    book = row[0] if row else None
+    if not book or book['current_chapter'] <= book['accepted_through_chapter'] or book['state'] not in {'READY', 'PAUSED'} or book.get('active_chapter_request_id'):
+        raise KernelError('BOOK_PLAN_FOLLOWUP_CONFLICT', 'Retain the idle current unaccepted Book checkpoint')
+    uow.cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_plan_change_proposal correction
+        JOIN authority_operation activation ON activation.operation_id=correction.activation_operation_id
+        JOIN authority_book_manuscript_delivery delivery ON delivery.book_run_id=%s AND delivery.chapter_number=%s
+        JOIN authority_book_chapter_request request USING(chapter_request_id)
+        JOIN authority_operation original ON original.operation_id=request.chapter_root_operation_id
+        JOIN authority_story_planning_candidate candidate ON candidate.candidate_asset_version_id=%s
+        JOIN authority_story_planning_generation generation USING(generation_id)
+        JOIN authority_operation generated ON generated.operation_id=generation.operation_id
+        JOIN active_story_plan_version parent ON parent.asset_version_id=correction.proposed_asset_version_id
+          AND parent.project_id=correction.project_id AND parent.book_id=correction.book_id
+        JOIN active_story_plan_version previous ON previous.project_id=correction.project_id
+          AND previous.book_id=correction.book_id AND previous.asset_version_id=request.chapter_plan_version
+        JOIN story_plan_binding prior ON prior.binding_id=previous.binding_id
+        WHERE correction.proposal_id=%s AND correction.project_id=%s AND correction.book_id=%s
+          AND correction.status='ACTIVE' AND correction.target_contract_type='CHAPTER_GROUP'
+          AND activation.status='SUCCEEDED' AND activation.actor_id=%s AND original.actor_id=activation.actor_id
+          AND request.chapter_plan_version=%s AND prior.contract_type='CHAPTER' AND prior.execution_scope='FROZEN'
+          AND authority_working_group_prefix_preserved(correction.project_id,correction.book_id,correction.proposed_asset_version_id,request.parent_group_version_id,activation.actor_id,activation.workspace_id,%s)
+          AND prior.freshness='IMPACTED' AND generation.book_id=correction.book_id AND generation.project_id=correction.project_id
+          AND generation.planning_scope='CHAPTER' AND generation.generator_operation_name='chapter_plan.generate'
+          AND generation.logical_key=prior.logical_key AND generated.actor_id=activation.actor_id
+          AND generated.command_payload#>>'{payload,input_versions,chapter_group_plan}'=correction.proposed_asset_version_id
+          AND generated.command_payload#>>'{payload,narrative_realization,chapter_number}'=%s
+          AND EXISTS(SELECT 1 FROM jsonb_array_elements_text(generated.command_payload#>'{payload,change_evidence_version_ids}') reference
+              JOIN authority_asset_version change ON change.asset_version_id=reference.value
+              WHERE change.content->>'upstream_plan_change_proposal_id'=correction.proposal_id
+                AND change.content->>'target_plan_version_id'=request.chapter_plan_version)
+          AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancel
+            WHERE cancel.project_id=correction.project_id AND %s=cancel.formation_run_id||':production'))''',
+        [book['book_run_id'], book['current_chapter'], candidate_id, evidence.get('proposal_id'), project_id, book_id,
+         actor_id, previous_id, book['current_chapter'], str(book['current_chapter']), book['stable_idempotency_key']])
+    if uow.cursor.fetchone() != (True,):
+        raise KernelError('BOOK_PLAN_FOLLOWUP_INVALID', 'Only the exact native Group PlanChange may replace its impacted unaccepted Chapter plan')

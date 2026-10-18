@@ -226,6 +226,7 @@ from . import (
     v20261016_0221_working_scope_fk_indexes,
     v20261016_0222_planning_host_frozen_definition,
     v20261018_0223_working_plan_input_continuation,
+    v20261018_0224_working_regeneration_isolation,
 )
 
 VERSION_MODULES = [
@@ -453,6 +454,7 @@ VERSION_MODULES = [
     v20261016_0221_working_scope_fk_indexes,
     v20261016_0222_planning_host_frozen_definition,
     v20261018_0223_working_plan_input_continuation,
+    v20261018_0224_working_regeneration_isolation,
 ]
 
 __all__ = ["VERSION_MODULES"]

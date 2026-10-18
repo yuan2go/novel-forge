@@ -201,11 +201,13 @@ class ChapterAuthorityApplication:
         )
 
     def admit_manuscript_revision(self, *, authority, book_run_id, chapter, expected_version,
-                                 idempotency_key, reason, principal):
+                                 idempotency_key, reason, principal, regeneration_proposal_id="",
+                                 corrected_chapter_plan_version_id="", supervisor=None):
         from .working_revision import admit_working_revision
         return admit_working_revision(self, authority=authority, book_run_id=book_run_id,
             chapter=chapter, expected_version=expected_version, idempotency_key=idempotency_key,
-            reason=reason, principal=principal)
+            reason=reason, principal=principal, regeneration_proposal_id=regeneration_proposal_id,
+            corrected_chapter_plan_version_id=corrected_chapter_plan_version_id, supervisor=supervisor)
 
 
 __all__ = ["ChapterAuthorityApplication"]

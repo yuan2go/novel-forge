@@ -58,10 +58,10 @@ def require_live_chapter_frontier(cursor, *, root_id, project_id, book_run_id=No
     )
     frontier = cursor.fetchone()
     if frontier is None:
-        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, require_working_revision_frontier
+        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS, require_working_revision_frontier
         cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s AND project_id=%s", [root_id, project_id])
         row = cursor.fetchone()
-        if row and isinstance(row[0], dict) and row[0].get("definition_version") == ROOT_VERSION:
+        if row and isinstance(row[0], dict) and row[0].get("definition_version") in ROOT_VERSIONS:
             from types import SimpleNamespace
             from novel_forge.storage.authority_repositories import AuthorityRepositories
             require_working_revision_frontier(SimpleNamespace(cursor=cursor, repositories=AuthorityRepositories(cursor)),

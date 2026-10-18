@@ -1403,8 +1403,20 @@ must pass again; the target plan's completed Planning receipt supplies a separat
 identified route reference, never a fabricated source-call or failed Pack snapshot.
 This input-scope recovery retains all six semantic Pack hashes and the existing
 capacity policy; it cannot combine a Pack-version or capacity-policy upgrade.
-Same-run regeneration of an already delivered unaccepted Chapter after that correction
-is not yet implemented. Do not reset its cursor or substitute a genesis candidate run.
+The same-run regeneration candidate path is wired through POST
+`/product/editor/manuscript-revisions` with `regeneration_proposal_id` and
+`corrected_chapter_plan_version_id`; native workflow qualification remains pending.
+It uses `3.10.0-working-regeneration.v1` and the six ordinary preparation-through-Writer
+stages. The original delivery and cursor remain intact; the new Draft can enter the
+existing exact working-version selection, without author choice or formal acceptance.
+Group correction must preserve both function rows and causal events before the current
+unaccepted chapter, verified against its original delivery Group through native activated
+PlanChange lineage. An impacted Chapter may follow only that exact native Group change.
+Each stage rechecks the current source and corrected Frozen Plan; ordinary revision and
+regeneration share atomic Book exclusion while identical requests use Kernel idempotency.
+Further length repair reads the regeneration Root's actual new Context. Retain cancelled
+or isolated predecessors, unknown usage, and older candidates. Do not reset the cursor,
+requalify an invalid old Plan as unchanged, or substitute a genesis candidate run.
 
 For Memo reference failures, inspect the exact frozen Intent, sent Schema and successful
 Provider receipt before retrying. A display name and a stable character ID are distinct
