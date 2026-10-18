@@ -1298,7 +1298,10 @@ command. It reuses the original Review/Revision/ReReview and frozen comparison i
 then appends a `completed-length-result-revalidation.v1` proof to the technical working
 selection. The original Best, successful Root and raw uncertainty remain unchanged;
 this recovery sends no Provider request. Another actor, changed source/frontier,
-cancellation or other unsupported preservation evidence still rejects reuse. Ordinary
+cancellation or other unsupported preservation evidence still rejects reuse. A fresh
+empty Review cannot establish that a previously reviewed source has no resolved issue
+history. Sources with earlier review references require affirmative preservation
+evidence; empty or missing referenced history does not grant inapplicability. Ordinary
 explicit working selection retains its existing contract.
 A saved active Draft finishes its existing Chapter delivery before length repair.
 The next chapter remains blocked until the delivered frontier meets its frozen bounds.

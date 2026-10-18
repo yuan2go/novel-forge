@@ -120,10 +120,13 @@ governed Context/Plan, then uses Review, Revision, ReReview and BestCandidate wi
 Foundation or Canon mutation. Working selection rechecks earlier versions as well as
 the target. Frozen length correction uses actual Han counts, separate from model scores.
 For a measured length correction, an exact empty Review/ReReview diagnosis history
-makes `RESOLVED_ISSUES` inapplicable; Host evidence records that separately without
+on a source without earlier review provenance makes `RESOLVED_ISSUES` inapplicable;
+Host evidence records that separately without
 changing the model's uncertainty. Review versions/hashes, prose hashes, Context and
 earlier-prose window must match. Missing or nonempty history and other preservation
-uncertainty continue to reject that interpretation. Completed native results can be
+uncertainty continue to reject that interpretation. Source revisions, retained Best
+candidates and other earlier review references do not prove an empty ancestry through
+a fresh empty Review. They still require affirmative preservation evidence. Completed native results can be
 recompared through the same pure Best handler. Automatic length delivery binds that
 revalidation Root in the existing Book selection mutation and checks it again under
 the Book lock, appending evidence while retaining the original successful results.

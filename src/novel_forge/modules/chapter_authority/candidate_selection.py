@@ -85,6 +85,19 @@ def _supported_resolution(check, text):
 
 def _empty_history_applicability(previous, challenger, length_repair_scope):
     from novel_forge.modules.review.diagnostics import prose_hash
+    source_review_fields = ("review_version_id", "initial_review_version_id", "selected_review",
+        "candidate_comparison", "selected_source_asset_version_id", "source_draft_version_id",
+        "revision_contract_version", "prior_review_evidence")
+    source_ledger_fields = ("issues", "unresolved_issues", "resolved_issue_codes", "remaining_issue_codes",
+        "issue_lineage", "resolution_checks", "quality_resolution_checks", "resolution_claimed_issue_codes",
+        "issue_resolutions", "new_issues", "regression_issue_codes")
+    if ((previous.workspace_asset_version_id and previous.workspace_asset_version_id != previous.asset_version_id)
+            or previous.resolved_issue_codes or previous.remaining_issue_codes
+            or previous.resolution_checks or previous.quality_resolution_checks
+            or any(field in previous.content for field in source_review_fields)
+            or any(field in previous.content and previous.content[field] != [] for field in source_ledger_fields)
+            or previous.content.get("resolution_summary")):
+        return None
     initial, reviewed = previous.review_content, challenger.review_content
     if (length_repair_scope is None or not isinstance(initial, dict) or not isinstance(reviewed, dict)
             or not previous.review_content_hash or not challenger.review_content_hash

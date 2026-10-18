@@ -65,7 +65,8 @@ def test_empty_review_history_has_host_applicability_without_rewriting_model_unc
         "remaining_issue_codes": [], "unresolved_issues": [], "issue_lineage": [], "cross_chapter_window": window}
     checks = tuple({"dimension": dimension, "status": "UNCERTAIN" if dimension == "RESOLVED_ISSUES" else "PRESERVED",
         "reason": "没有既往问题可核验。", "evidence": {"quote": "河"}} for dimension in PRESERVATION_DIMENSIONS)
-    previous = replace(previous, review_content=initial, review_content_hash="initial-hash")
+    previous = replace(previous, review_content=initial, review_content_hash="initial-hash",
+        workspace_asset_version_id=previous.asset_version_id)
     challenger = replace(challenger, score=79, cross_chapter_review=True, preservation_checks=checks,
         review_content=reviewed, review_content_hash="rereview-hash")
     def compare(old=previous, new=challenger):
@@ -84,6 +85,30 @@ def test_empty_review_history_has_host_applicability_without_rewriting_model_unc
             ("issue_lineage", [{"code": "old"}]), ("resolved_issue_codes", ["old"]),
             ("cross_chapter_window", {**window, "source_window_hash": "wrong"})):
         assert compare(new=replace(challenger, review_content={**reviewed, field: value}))["selected_asset_version_id"] == "draft"
+    source_histories = (
+        {"selected_review": {"resolved_issue_codes": ["OLD-1"], "issue_lineage": [{"code": "OLD-1"}]}},
+        {"resolved_issue_codes": ["OLD-1"]},
+        {"issue_lineage": [{"code": "OLD-1"}]},
+        {"resolution_summary": {"resolved_issue_codes": ["OLD-1"]}},
+        {"review_version_id": "older-review"},
+        {"review_version_id": None},
+        {"source_draft_version_id": "older-draft"},
+        {"revision_contract_version": "revision-domain-v4"},
+        {"selected_review": {}},
+        {"candidate_comparison": {}},
+        {"prior_review_evidence": {"asset_version_id": "older-review"}},
+    )
+    preserved = replace(challenger, preservation_checks=tuple({**check, "status": "PRESERVED"}
+        for check in checks))
+    for history in source_histories:
+        source = replace(previous, content={**previous.content, **history})
+        rejected = compare(source)
+        assert rejected["selected_asset_version_id"] == "draft", history
+        assert not rejected.get("preservation_applicability"), history
+        assert compare(source, preserved)["selected_asset_version_id"] == "revision", history
+    for history in ({"workspace_asset_version_id": "old-best"}, {"resolved_issue_codes": ("OLD-1",)},
+            {"remaining_issue_codes": ("OLD-1",)}, {"resolution_checks": ({"code": "OLD-1"},)}):
+        assert compare(replace(previous, **history))["selected_asset_version_id"] == "draft", history
     for dimension in PRESERVATION_DIMENSIONS:
         changed = deepcopy(checks)
         changed = tuple({**check, "status": "REGRESSED" if dimension == "RESOLVED_ISSUES" else "UNCERTAIN"}
