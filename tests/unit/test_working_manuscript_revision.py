@@ -163,6 +163,33 @@ def test_working_rereview_binds_only_its_initial_diagnosis_ledger(monkeypatch, c
         resolution_checks({'resolution_checks': [{'code': 'OLD-1'}]}, initial, '新修订')
 
 
+@pytest.mark.parametrize('drift', [None, 'changed-evidence', 'duplicate-code', 'missing-code'])
+def test_scoped_rereview_survives_canonical_json_key_reordering_without_content_drift(drift):
+    from novel_forge.modules.production_execution.backends import ResultNormalizer
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    ref = 'schema:chapter-provider-output:rereview:cross-chapter-v6:repair-scope-v1:initial-review-resolution-scope-v1'
+    checks = {'Z-LAST': {'status': 'RESOLVED', 'preservation': 'PRESERVED', 'evidence': {'quote': '后段'}, 'reason': '确切后段修复'},
+        'A-FIRST': {'status': 'UNRESOLVED', 'preservation': 'PRESERVED', 'evidence': {'quote': '前段'}, 'reason': '前段仍未解决'}}
+    first = normalize_model_output('rereview', {'score': 90, 'issues': [], 'resolution_checks_by_code': checks}, output_schema_ref=ref)
+    persisted = ResultNormalizer.normalize({'result': first})
+    persisted['resolution_checks'] = [{**value, 'code': code} for code, value in checks.items()]
+    if drift == 'changed-evidence':
+        persisted['resolution_checks'][0]['evidence'] = {'quote': '擅自改变的引文'}
+    elif drift == 'duplicate-code':
+        persisted['resolution_checks'][1] = deepcopy(persisted['resolution_checks'][0])
+    elif drift == 'missing-code':
+        persisted['resolution_checks'].pop()
+    if drift:
+        with pytest.raises(KernelError, match='MODEL_RESPONSE_INVALID'):
+            normalize_model_output('rereview', persisted, output_schema_ref=ref)
+    else:
+        replay = normalize_model_output('rereview', persisted, output_schema_ref=ref)
+        assert replay == first
+        assert replay['resolution_checks_by_code'] == checks
+        assert [item['code'] for item in replay['resolution_checks']] == sorted(checks)
+        assert normalize_model_output('rereview', ResultNormalizer.normalize({'result': replay}), output_schema_ref=ref) == replay
+
+
 @pytest.mark.parametrize('drift', ['changed-review', 'changed-hash', 'foreign-code', 'missing-code'])
 def test_rereview_frozen_resolution_schema_rejects_changed_ledger(drift):
     from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder, _materialize_production_codex_prompt

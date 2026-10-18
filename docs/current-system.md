@@ -147,6 +147,9 @@ hash and diagnosis codes in their output Schema and task projection. A required
 `resolution_checks_by_code` object supplies one disposition per frozen diagnosis;
 an empty ledger requires an empty object. The host projects those exact keys to the
 existing domain list, retaining literal evidence and all preservation validation.
+JSON object order carries no diagnosis meaning. Host projection orders disposition
+codes canonically across persistence; an already projected list may differ only in order.
+Missing/duplicate codes, changed evidence and any other disposition change still reject.
 Historical execution snapshots retain their original Schema, task and Effect input.
 A successful model receipt with an explicit `REVIEW_RESOLUTION_CHECKS_REQUIRED`
 validation failure cannot satisfy a fresh current working ReReview Attempt. It stays

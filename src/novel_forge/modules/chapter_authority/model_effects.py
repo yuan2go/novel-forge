@@ -2077,11 +2077,15 @@ def _normalize_model_output(
     if stage in {"review", "rereview"}:
         if stage == "rereview" and output_schema_ref.endswith(":initial-review-resolution-scope-v1"):
             checks = raw.get("resolution_checks_by_code")
-            if not isinstance(checks, dict) or any(not isinstance(value, dict) for value in checks.values()):
+            if not isinstance(checks, dict) or any(not isinstance(code, str) or not isinstance(value, dict) or "code" in value for code, value in checks.items()):
                 raise KernelError("MODEL_RESPONSE_INVALID", "Scoped ReReview requires its exact keyed resolution protocol")
-            projected = [{**value, "code": code} for code, value in checks.items()]
-            if "resolution_checks" in raw and raw["resolution_checks"] != projected:
-                raise KernelError("MODEL_RESPONSE_INVALID", "Scoped ReReview projection changed its keyed dispositions")
+            projected = [{**checks[code], "code": code} for code in sorted(checks)]
+            if "resolution_checks" in raw:
+                prior = raw["resolution_checks"]
+                if (not isinstance(prior, list)
+                        or any(not isinstance(item, dict) or not isinstance(item.get("code"), str) for item in prior)
+                        or sorted(prior, key=lambda item: item["code"]) != projected):
+                    raise KernelError("MODEL_RESPONSE_INVALID", "Scoped ReReview projection changed its keyed dispositions")
             raw = {**raw, "resolution_checks": projected}
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):

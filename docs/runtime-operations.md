@@ -1308,7 +1308,9 @@ receipt and failed validation Attempt. A diagnosis cited in a new revision purpo
 not part of that request's initial Review ledger. New working ReReview snapshots bind
 that exact ledger hash in the Schema description and task projection, and require the
 `resolution_checks_by_code` object to have exactly its diagnosis keys. Only that frozen
-Schema suffix enables projection to the existing domain list. Do not add fields to old
+Schema suffix enables projection to the existing domain list. Persisted JSON key
+reordering is harmless: repeated projection compares complete dispositions by canonical
+code order, rejecting duplicates, missing codes and changed evidence. Do not add fields to old
 Effect inputs or reinterpret a historical snapshot. Preserve the invalid result rather
 than removing foreign checks or claiming it passed. On the original current working
 revision Root, this exact validation failure excludes the invalid model receipt from
