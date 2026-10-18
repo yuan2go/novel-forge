@@ -178,7 +178,7 @@ def test_capacity_fast_path_preserves_original_and_runs_no_model_but_validates_q
     assert receipt["quote_locations"]
 
 
-def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapters=None):
+def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapters=None, selected_route=None):
     from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, expand_semantic_history, prepare_request_capacity, project_capacity_passages
     from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
     from tests.unit.test_complete_request_capacity import route
@@ -200,7 +200,7 @@ def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapt
             return {"selected_unit_ids": [*task["required_unit_ids"], *optional[:1]]}
         return {"supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []}
     projection = prepare_request_capacity(original=original, stage="draft", source_boundary=boundary,
-        route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=limit), measure=measure,
+        route=selected_route or route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=limit), measure=measure,
         model_call=call, chunk_fits=lambda chunk: len(json.dumps(chunk, ensure_ascii=False).encode()) < 18000,
         semantic_contract=semantic.SEMANTIC_CONTRACT, history_exact_chapters=history_exact_chapters)
     return original, projection, calls
@@ -478,3 +478,44 @@ def test_admitted_belief_and_reader_only_sources_keep_both_roles_in_actual_bundl
     assert segments['A']['narrative_function'] == 'character_belief'
     assert segments['B']['narrative_function'] == 'reader_knowledge'
     assert not receipt['deduplications']
+
+
+@pytest.mark.parametrize("provider,method", [
+    ("codex-cli", "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"),
+    ("openai", "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"),
+    ("deepseek", "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"),
+])
+def test_semantic_preparation_conservatively_fits_history_without_claiming_actual_overflow(provider, method):
+    from tests.unit.test_complete_request_capacity import route
+    from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection
+    selected = route(method=method, model="owned-model", limit=6000)
+    selected.model_profile.model_provider = provider
+    data = {"input_manifest": {"current_draft": "Keep exact current input."}, "context_bundle": {"segments": [{
+        "asset_type": "chapter_episodic_summary", "asset_version_id": "history:v1", "content_hash": "original",
+        "safe_summary": "\n\n".join(f"第{i}段。" + "海潮拍打旧石堤。" * 40 for i in range(40)),
+        "structured_facts": [{"knowledge_owner": "阿岚", "condition": "潮尺低于二尺"}]}]}}
+    original, projection, calls = semantic_preparation(data, selected_route=selected)
+    assert calls and projection["measurement"]["before_reserved"] > 6000
+    assert projection["measurement"]["after_reserved"] <= 6000
+    final = apply_capacity_projection(original, projection)
+    assert final["input_manifest"] == original["input_manifest"]
+    assert final["context_bundle"]["segments"][0]["structured_facts"] == data["context_bundle"]["segments"][0]["structured_facts"]
+    assert selected.token_accounting_method == method
+
+
+@pytest.mark.parametrize("semantic_enabled,provider,method,evidence", [
+    (False, "codex-cli", "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1", "owned-window"),
+    (True, "codex-cli", "OPENAI_UTF8_BYTES_UPPER_BOUND_V1", "owned-window"),
+    (True, "codex-cli", "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1", ""),
+    (True, "codex-cli", "ARBITRARY_UPPER_BOUND", "owned-window"),
+])
+def test_uncertain_preparation_keeps_historical_and_unproven_accounting_rejections(semantic_enabled, provider, method, evidence):
+    from tests.unit.test_complete_request_capacity import route
+    from novel_forge.modules.context_builder.request_capacity import prepare_request_capacity
+    selected = route(method=method, model="owned-model", limit=6000)
+    selected.model_profile.model_provider = provider
+    selected.token_accounting_evidence_ref = evidence
+    with pytest.raises(KernelError, match="PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"):
+        prepare_request_capacity(original={}, stage="draft", source_boundary={}, route=selected,
+            semantic_contract=semantic.SEMANTIC_CONTRACT if semantic_enabled else "",
+            measure=lambda _: (6001, 6000), model_call=lambda *_: pytest.fail("unproven preparation"), chunk_fits=lambda _: True)

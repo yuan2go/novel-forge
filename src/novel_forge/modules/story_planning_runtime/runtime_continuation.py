@@ -175,6 +175,9 @@ def require_source(
         if attempt
         else ""
     )
+    if row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL"} and failure_code == "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN" and attempt:
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, semantic_preparation_failure=True)
     if failure_code == "MANUSCRIPT_CONTEXT_INVALID" and attempt:
         from .preflight_continuation import require_input_scope_source
         return require_input_scope_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
@@ -946,6 +949,7 @@ def _pre_send_capacity_source(
     rendered_capacity_failure: bool = False,
     world_capacity_failure: bool = False,
     rendered_chapter_capacity_failure: bool = False,
+    semantic_preparation_failure: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
@@ -1017,6 +1021,11 @@ def _pre_send_capacity_source(
             if not unsafe:
                 projection_revalidation = {"contract_version": "complete-request-capacity-context.v1",
                     "context_asset_version_id": original.asset_version_id, "context_content_hash": original.content_hash}
+    if semantic_preparation_failure:
+        from .preflight_continuation import require_semantic_preparation_source
+        projection_revalidation = require_semantic_preparation_source(uow, source_operation_id=source_operation_id,
+            frozen=frozen, attempt=attempt)
+        unsafe = False
     if protected_world_failure:
         uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
             OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
@@ -1364,6 +1373,27 @@ def _capacity_authorization(
     }
 
 
+def _semantic_preparation_proof(allocation):
+    proof = allocation.get("semantic_preparation") or allocation.get("context_revalidation") or {}
+    return proof if proof.get("contract_version") == "same-capacity-semantic-preparation.v1" else None
+
+
+def _retained_capacity_limit(allocation, route, context_policy_ref):
+    from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
+    proof = _semantic_preparation_proof(allocation)
+    if not proof:
+        return planning_input_capacity(route)
+    limit = min(512_000, route.model_context_limit)
+    selected = allocation.get("allocated_task_tokens")
+    if (context_policy_ref != "context-policy:chapter-generation-pack:v4"
+            or type(selected) is not int or not 0 < selected <= 512_000
+            or selected != allocation.get("prior_task_tokens")
+            or proof.get("single_request_limit") != limit
+            or allocation.get("single_request_ceiling") != limit):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Retain the frozen selection target and complete-request window after isolation")
+    return selected
+
+
 def _capacity_target(
     application: Any,
     source: dict[str, Any],
@@ -1422,15 +1452,27 @@ def _capacity_target(
             source = {**source, "context_revalidation": {**source.get("context_revalidation", {}),
                 "contract_version": source.get("context_revalidation", {}).get("contract_version", "complete-request-capacity-context.v1"),
                 "context_asset_version_id": original.asset_version_id, "context_content_hash": original.content_hash}}
+    if source.get("context_revalidation", {}).get("contract_version") == "same-capacity-semantic-preparation.v1":
+        proof = source["context_revalidation"]
+        ceiling = min(512_000, route.model_context_limit)
+        if ceiling != proof["single_request_limit"] or capacity_upgrade:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Semantic preparation must retain the exact single-request capacity and frozen policy")
+        allocated = int(baseline)
     if (source.get("context_revalidation") or {}).get("world_input_delivery"):
         allocated = int(baseline)
     if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}:
         allocated = min(baseline, ceiling)
+    inherited_semantic = None
     if source.get("capacity_inheritance"):
-        allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
-        if allocated > ceiling:
+        inherited_allocation = source["capacity_inheritance"]["allocation"]
+        allocated = int(inherited_allocation["allocated_task_tokens"])
+        inherited_limit = _retained_capacity_limit(inherited_allocation, route, context_policy_ref)
+        inherited_semantic = _semantic_preparation_proof(inherited_allocation)
+        if inherited_semantic:
+            ceiling = min(512_000, route.model_context_limit)
+        if allocated > inherited_limit:
             raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "Inherited allocation exceeds the current authorized model capacity")
-    if allocated <= baseline and not source.get("context_revalidation") and not capacity_upgrade:
+    if allocated <= baseline and not source.get("context_revalidation") and not capacity_upgrade and not inherited_semantic:
         raise KernelError(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
             "No authorized single-request capacity remains",
@@ -1466,7 +1508,7 @@ def _capacity_target(
         except KernelError as error:
             if error.code != "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
                 raise
-            if allocated == ceiling or source.get("capacity_inheritance") or (source.get("context_revalidation") or {}).get("world_input_delivery"):
+            if allocated == ceiling or source.get("capacity_inheritance") or (source.get("context_revalidation") or {}).get("world_input_delivery") or source.get("context_revalidation", {}).get("contract_version") == "same-capacity-semantic-preparation.v1":
                 raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
                     "The retained task cannot fit its authorized single-request capacity",details=error.details) from error
             allocated=min(allocated*2,ceiling)
@@ -1483,6 +1525,7 @@ def _capacity_target(
         "external_intents_at_source": 2 if source.get('retained_world_action', {}).get('source_operation_id') == source['source_operation_id'] else 0,
         **({'retained_world_action': source['retained_world_action']} if source.get('retained_world_action') else {}),
         **({"context_revalidation": source["context_revalidation"]} if source.get("context_revalidation") else {}),
+        **({"semantic_preparation": inherited_semantic} if inherited_semantic else {}),
     }
     if source.get("capacity_inheritance"):
         target = {**target, "generation_isolation": source["capacity_inheritance"]["generation_isolation"]}
@@ -1932,9 +1975,8 @@ def register(
                 preparer = application.execution_binder.resolver.execution_preparer
                 route = preparer.planning_route
                 allocated = int(prior_capacity["allocated_task_tokens"])
-                from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
-                ceiling = planning_input_capacity(route)
-                if allocated > ceiling:
+                inherited_limit = _retained_capacity_limit(prior_capacity, route, target["pack_snapshot"]["context_policy_ref"])
+                if allocated > inherited_limit:
                     raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "The authorized successor model cannot retain original task capacity")
                 context, _ = preparer._context_bundle(operation_id=source_operation_id,
                     attempt_id=source["generation_isolation"]["local_execution"]["attempt_id"], command=successor,

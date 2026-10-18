@@ -1472,6 +1472,12 @@ cumulative token/call or local generation time veto. Paid spend authorization,
 physical interface limits, cancellation and execution identity still apply.
 New Chapter Pack `3.2.0` and current intent-boundary Planning profiles freeze
 `context-policy:chapter-generation-pack:v4` and `complete-request-capacity.v1`.
+Context v4 may prepare its authorized historical source ranges against a recognized
+conservative byte bound before final complete-request admission. This does not prove
+actual token overflow or increase route capacity; unknown actual usage remains unknown.
+Its unsent Planning recovery retains the exact Context and input hashes, frozen Pack,
+Book frontier and route while appending a same-capacity continuation. Cancellation,
+active execution rights and any original Effect prevent the zero-send recovery.
 The capacity meaning is unchanged; Context v4 versions the semantic method. Context v3
 retains the earlier method, and its frozen manifests and catalog remain available.
 Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and

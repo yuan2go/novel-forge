@@ -316,3 +316,71 @@ def require_input_order_source(uow, *, command, source_operation_id):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_INVALID","Repair must retain its native rejected candidate report")
     return retained_candidate_source(uow,evidence=evidence), {'native_repair_evidence':evidence,
         'source_operation_id':source_operation_id,'failure_code':'NATIVE_PLANNING_REPAIR_SOURCE_INVALID'}
+
+
+SEMANTIC_PREPARATION_CONTRACT = "same-capacity-semantic-preparation.v1"
+
+
+def require_semantic_preparation_source(uow, *, source_operation_id, frozen, attempt):
+    failure = dict(attempt[2] or {})
+    details = failure.get("failure_details") or {}
+    if (attempt[0] != "FAILED_RETRYABLE" or failure.get("error_code") != "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"
+            or failure.get("error_message") != "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN: a byte upper bound exceeds capacity; configure a matched tokenizer before lossy compression"
+            or failure.get("failure_class") != "retryable" or details.get("actual_tokens") is not None
+            or type(details.get("limit")) is not int or type(details.get("upper_bound")) is not int
+            or not 0 < details["limit"] < details["upper_bound"]
+            or frozen.get("execution_contract_version") != "1.21.0"
+            or frozen.get("generator_operation_name") not in {"chapter_plan.generate", "chapter_group_plan.generate"}):
+        raise KernelError("PLANNING_SEMANTIC_PREPARATION_SOURCE_INVALID", "Require the exact stopped conservative-meter preparation failure")
+    working = (frozen.get("arc_working_set") or {}).get("working_manuscript") or {}
+    uow.cursor.execute("""SELECT current_chapter,accepted_through_chapter,state,active_chapter_request_id
+        FROM authority_book_production WHERE book_run_id=%s AND project_id=%s AND workspace_id=%s AND book_id=%s FOR UPDATE""",
+        [working.get("book_run_id"), frozen["project_id"], frozen["workspace_id"], frozen["book_id"]])
+    book = uow.cursor.fetchone()
+    if (not book or working.get("target_chapter") != book[0] + 1
+            or working.get("accepted_through_chapter") != book[1]
+            or book[2] not in {"READY", "PAUSED"} or book[3]):
+        raise KernelError("PLANNING_SEMANTIC_PREPARATION_BOOK_DRIFT", "Retain the exact next unaccepted working chapter frontier")
+    uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status NOT IN ('FAILED_RETRYABLE','FAILED_FINAL'))
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+            WHERE a.operation_id=%s AND l.status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL)""", [source_operation_id] * 6)
+    if uow.cursor.fetchone()[0]:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE", "Require zero Effects, reservations and active submission rights without cancellation")
+    from novel_forge.modules.book_authority.manuscript import historical_working_inputs
+    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [source_operation_id])
+    historical_working_inputs(uow, uow.cursor.fetchone()[0])
+    uow.cursor.execute("""SELECT s.snapshot_payload FROM authority_attempt_capability_pack_snapshot s
+        WHERE operation_id=%s AND attempt_id=(SELECT attempt_id FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1)""",
+        [source_operation_id, source_operation_id])
+    snapshot = uow.cursor.fetchone()
+    policy = json.loads(snapshot[0]["context_policy_payload_json"]) if snapshot else {}
+    if (policy.get("policy_id") != "context-policy:chapter-generation-pack:v4"
+            or policy.get("capacity_policy") != "complete-request-capacity.v1"
+            or policy.get("context_substage_method") != "source-unit-dependency-and-final-composition.v2"):
+        raise KernelError("PLANNING_SEMANTIC_PREPARATION_POLICY_INVALID", "Only the original frozen semantic policy authorizes preparation")
+    uow.cursor.execute("SELECT output_key,asset_version_id,content_hash FROM authority_operation_output_asset WHERE operation_id=%s ORDER BY output_key", [source_operation_id])
+    outputs = uow.cursor.fetchall()
+    contexts = []
+    retained = []
+    for key, identity, digest in outputs:
+        document = uow.repositories.asset_documents.require(project_id=frozen["project_id"], asset_version_id=identity)
+        if document.content_hash != digest:
+            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Retained preparation output hash changed")
+        retained.append({"output_key": key, "asset_version_id": identity, "content_hash": digest})
+        if key == "planning.context_bundle":
+            contexts.append(document)
+    if len(contexts) != 1:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_MISSING", "Retain one complete original Context")
+    context = contexts[0]
+    if (context.content.get("project_id"), context.content.get("workspace_id"), context.content.get("book_id"),
+            context.content.get("planning_context_policy_version"), context.content.get("arc_working_set")) != (
+            frozen["project_id"], frozen["workspace_id"], frozen["book_id"], policy["policy_id"], frozen.get("arc_working_set")):
+        raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Retain exact Context scope, policy and working source boundary")
+    return {"contract_version": SEMANTIC_PREPARATION_CONTRACT, "context_asset_version_id": context.asset_version_id,
+        "context_content_hash": context.content_hash, "source_failure": failure,
+        "retained_preparation_outputs": retained, "single_request_limit": details["limit"],
+        "actual_tokens": None, "main_and_preparation_effects_at_source": 0}

@@ -861,8 +861,14 @@ standalone deployments; `industrial` and `test` include these dependencies. Toke
 files are local immutable dependencies, never downloaded in a business transaction.
 The meter records UTF-8 bytes, tokenized text and estimated framing separately; only
 Provider receipts establish actual usage. Codex CLI coverage is application-visible.
-An overflowing byte upper bound reports `PROVIDER_CONTEXT_CAPACITY_UNCERTAIN`; supply
-a matched tokenizer rather than treating bytes as proven token overflow. Official
+A byte upper bound above the window does not prove actual token overflow. The frozen
+v4 semantic Context method may first select authorized historical source ranges with
+dependency and fidelity checks, then admit only a complete request whose conservative
+upper bound fits the unchanged route window. This preserves unknown actual usage and
+recent full-text protection. Historical nonsemantic policies still report
+`PROVIDER_CONTEXT_CAPACITY_UNCERTAIN` and require a matched tokenizer before lossy
+preparation. An unsent failure may use native same-capacity input-preparation
+continuation; it preserves the source, original failure, exact inputs and route. Official
 references: [OpenAI token counting](https://developers.openai.com/api/docs/guides/token-counting)
 and [DeepSeek tokenizer](https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/).
 
@@ -2470,8 +2476,10 @@ with its Codex model, authorization reference/version and finite call/token quot
 deployment supplies it through `NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY` as
 JSON; composition requires an exact match with the configured Codex escalation or explicit
 primary identity.
-A priced envelope without that lane still rejects entitlement execution. Both lanes consume
-the parent call/token budget; progress reports retain unknown entitlement monetary cost
+For historical finite budget contracts, a priced envelope without that lane rejects
+entitlement execution and both lanes consume the frozen parent call/token budget.
+The current `billing-channel-resources.v1` membership contract has no cumulative
+call/token/money allowance. Progress reports retain unknown entitlement monetary cost
 separately from priced USD expenditure.
 
 The native whole-campaign budget (`creative-provider-campaign-budget.v4` and its renewal)
@@ -2484,8 +2492,9 @@ checking mixed configuration caps. Codex retains its exact entitlement reference
 unknown monetary cost. A native positive priced allowance requires explicit positive
 priced caps, each no larger than that allowance; it does not price the Codex lane.
 Standalone entitlement smoke runs without a validated mixed campaign still reject
-monetary caps. These configuration checks never replace Kernel reservations or native
-phase and cumulative budget enforcement.
+monetary caps. These configuration checks never replace Kernel reservations or the phase and
+cumulative enforcement required by those historical finite contracts. They do not
+add cumulative limits to the current membership contract.
 The adapter rejects a campaign presented as a legacy single-account budget before
 initializing a Book. Historical single-account freezes retain their original semantics.
 

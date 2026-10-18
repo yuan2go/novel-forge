@@ -390,7 +390,17 @@ def prepare_request_capacity(
     if before <= limit:
         return None
     method = route.token_accounting_method
-    if method not in TOKENIZER_METHODS and route.model_profile.model_provider != "scripted_provider_v2":
+    conservative_semantic = False
+    if semantic:
+        from novel_forge.modules.production_execution.provider_admission import build_route_token_accounting_contract
+        accounting = build_route_token_accounting_contract(provider=route.model_profile.model_provider,
+            model=route.model_profile.model_id, route_identity="complete-request-preparation",
+            accounting_method=method, accounting_evidence_ref=route.token_accounting_evidence_ref,
+            model_context_limit=route.model_context_limit, execution_token_limit=SYSTEM_CONTEXT_LIMIT,
+            output_reserve=1, safety_margin=route.token_safety_margin, framing_overhead=route.token_framing_overhead,
+            contract_version="provider-token-accounting-v4")
+        conservative_semantic = accounting.precision in {"PROVEN_UPPER_BOUND", "APPLICATION_VISIBLE_UPPER_BOUND"}
+    if method not in TOKENIZER_METHODS and route.model_profile.model_provider != "scripted_provider_v2" and not conservative_semantic:
         raise KernelError("PROVIDER_CONTEXT_CAPACITY_UNCERTAIN", "a byte upper bound exceeds capacity; configure a matched tokenizer before lossy compression",
                           details={"upper_bound": before, "limit": limit, "actual_tokens": None})
     paths = dict(sorted(historical_expression_paths(original, semantic=semantic, history_exact_chapters=history_exact_chapters).items(),
