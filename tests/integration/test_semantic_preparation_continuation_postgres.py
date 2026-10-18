@@ -10,16 +10,19 @@ from novel_forge.storage.migrations.versions.v20261018_0227_completed_preparatio
 from novel_forge.storage.migrations.versions.v20261018_0228_terminal_preparation_handoff import PERMITTED as TERMINAL_PERMITTED
 from novel_forge.storage.migrations.versions.v20261019_0229_routing_observation_preparation_recovery import PERMITTED as QUERY_PERMITTED
 from novel_forge.storage.migrations.versions.v20261019_0230_unsent_preparation_lineage import PERMITTED as LINEAGE_PERMITTED, QUERY_V9_PERMITTED
+from novel_forge.storage.migrations.versions.v20261019_0231_prepared_main_handoff import PERMITTED as MAIN_PERMITTED, HOST_PERMITTED
 from tests.integration.authority_postgres_support import DATABASE_URL
 
 
-@pytest.mark.parametrize('mode', ['zero-send', 'acknowledged-preparation', 'terminal-preparation', 'query-preparation', 'lineage-preparation', 'query-after-lineage'])
+@pytest.mark.parametrize('mode', ['zero-send', 'acknowledged-preparation', 'terminal-preparation', 'query-preparation', 'lineage-preparation', 'query-after-lineage', 'prepared-main', 'query-after-main', 'lineage-after-main'])
 def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mode):
+    main = mode == 'prepared-main'
+    after_main = mode in {'query-after-main','lineage-after-main'}
     completed = mode != 'zero-send'
-    query_v9 = mode == 'query-after-lineage'
-    lineage = mode == 'lineage-preparation'
-    query = mode in {'query-preparation', 'lineage-preparation', 'query-after-lineage'}
-    terminal = mode in {'terminal-preparation','query-preparation','lineage-preparation','query-after-lineage'}
+    query_v9 = mode in {'query-after-lineage','query-after-main','lineage-after-main'}
+    lineage = mode in {'lineage-preparation','lineage-after-main'}
+    query = mode in {'query-preparation', 'lineage-preparation', 'query-after-lineage', 'prepared-main', 'query-after-main', 'lineage-after-main'}
+    terminal = mode in {'terminal-preparation','query-preparation','lineage-preparation','query-after-lineage','prepared-main','query-after-main','lineage-after-main'}
     with psycopg.connect(DATABASE_URL) as connection:
         try:
             for table in (
@@ -27,9 +30,10 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                 "attempt_capability_pack_snapshot", "operation_output_asset", "asset_version", "asset",
                 "book_production", "story_formation_run", "story_creation_cancellation", "external_effect",
                 "budget_reservation", "lease_acquisition", "cancellation_command", "worker_cancel_signal",
+                "external_effect_dispatch", "effect_dispatch_lease", "external_receipt",
             ):
                 connection.execute(f"CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA")
-            connection.execute((QUERY_V9_PERMITTED if query_v9 else LINEAGE_PERMITTED if lineage else QUERY_PERMITTED if query else TERMINAL_PERMITTED if terminal else HANDOFF_PERMITTED if completed else PERMITTED).replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1))
+            connection.execute((HOST_PERMITTED[1 if lineage else 0] if after_main else MAIN_PERMITTED if main else QUERY_V9_PERMITTED if query_v9 else LINEAGE_PERMITTED if lineage else QUERY_PERMITTED if query else TERMINAL_PERMITTED if terminal else HANDOFF_PERMITTED if completed else PERMITTED).replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1))
 
             def insert(table, **values):
                 columns = ",".join(values)
@@ -70,16 +74,31 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                 inherited = copy.deepcopy(target['preparation_handoff'])
                 inherited['contract_version'] = 'planning-unsent-preparation-lineage-handoff.v1' if query_v9 else 'planning-unsent-preparation-query-handoff.v1' if lineage else 'planning-isolated-preparation-handoff.v1'
                 inherited.pop('host_failure')
+                if after_main:
+                    inherited.update(contract_version='planning-prepared-main-handoff.v1',main_dispatch_count=1)
                 target['preparation_handoff'] = {**inherited, 'contract_version':'planning-unsent-preparation-lineage-handoff.v1' if lineage else 'planning-unsent-preparation-query-handoff.v1',
                     'source_submission_rights':'RELEASED_BY_UNSENT_LINEAGE_FAILURE' if lineage else 'RELEASED_BY_UNSENT_QUERY_FAILURE', ('unsent_lineage_failure' if lineage else 'unsent_query_failure'):dict(
                         source_operation_id='source',source_attempt_id='attempt',original_failure=host_failure,inherited_preparation=inherited)}
+                if after_main:
+                    target['preparation_handoff']['contract_version']='planning-prepared-main-handoff.v1'
                 target['planning_capacity']['external_intents_at_source'] = 0
+            if main:
+                from novel_forge.modules.story_planning_runtime.preparation_recovery import PRE_SUBMIT_FAILURE
+                host_failure = dict(error_code='EFFECT_RETRYABLE_FAILURE_RECORDED', failure_class='retryable', failure_details={},
+                    error_message='EFFECT_RETRYABLE_FAILURE_RECORDED: adapter exception was recorded as retryable_failure')
+                target['preparation_handoff'].update(contract_version='planning-prepared-main-handoff.v1', main_dispatch_count=1,
+                    source_submission_rights='RELEASED_BY_TERMINAL_PRE_SUBMIT_HANDOFF',
+                    prepared_main_failure=dict(source_operation_id='source',source_attempt_id='attempt',external_effect_id='main',
+                        request_hash='main-hash',dispatch_id='main-dispatch',generation=1,diagnostic=PRE_SUBMIT_FAILURE,
+                        original_failure=host_failure,inherited_preparation=inherited))
+                target['preparation_handoff'].pop('unsent_query_failure')
+                target['planning_capacity']['external_intents_at_source'] = 2
             for identity, status, definition, actor, payload, sha, cause in (
                 ("source", "RECONCILIATION_REQUIRED" if completed and not terminal else "FAILED_FINAL", "story_planning.generate", "author" if completed else "worker", source, "old", None),
                 ("child", "ADMITTED", "story_planning.generate", "author" if completed else "worker", child, "new", "source"),
                 ("registration", "SUCCEEDED", "story_planning.runtime_continuation.register", "author", {}, "new", None),
             ):
-                insert("operation", operation_id=identity, status=status, definition_name=definition, definition_version="9.0.0" if (lineage or query_v9) and identity=='registration' else "8.0.0" if query and identity=='registration' else "6.0.0" if terminal and identity=='registration' else "5.0.0" if completed and identity=='registration' else "1.21.0",
+                insert("operation", operation_id=identity, status=status, definition_name=definition, definition_version="10.0.0" if (main or after_main) and identity=='registration' else "9.0.0" if (lineage or query_v9) and identity=='registration' else "8.0.0" if query and identity=='registration' else "6.0.0" if terminal and identity=='registration' else "5.0.0" if completed and identity=='registration' else "1.21.0",
                     actor_id=actor, project_id="project", workspace_id="workspace", command_payload={"payload": payload},
                     definition_snapshot={"commit_sha": sha}, causation_operation_id=cause)
             insert("story_planning_runtime_continuation", continuation_id="runtime", source_operation_id="source",
@@ -90,7 +109,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                 "planning_scope": "CHAPTER", "input_snapshot": [{"role": "plan", "asset_version_id": "plan:v1", "content_hash": "hash"}],
                 "input_snapshot_hash": "frozen-input-hash", "repair_number": 0}
             insert("story_planning_generation", operation_id="source", **generation)
-            insert("attempt", operation_id="source", attempt_id="attempt", attempt_number=1, status="FAILED_RETRYABLE" if lineage else "FAILED_FINAL" if terminal else "CANCELLED" if completed else "FAILED_RETRYABLE", result=host_failure if terminal else {} if completed else failure)
+            insert("attempt", operation_id="source", attempt_id="attempt", attempt_number=1, status="FAILED_RETRYABLE" if lineage or main else "FAILED_FINAL" if terminal else "CANCELLED" if completed else "FAILED_RETRYABLE", result=host_failure if terminal else {} if completed else failure)
             insert("attempt_capability_pack_snapshot", operation_id="source", attempt_id="attempt",
                 snapshot_payload={"context_policy_ref": "context-policy:chapter-generation-pack:v4"},snapshot_hash='snapshot-hash')
             insert("operation_output_asset", operation_id="source", output_key="planning.context_bundle", asset_version_id="context", content_hash="context-hash", role="context_bundle")
@@ -119,12 +138,32 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                     insert('worker_cancel_signal',operation_id='source',attempt_id='attempt',status='ACKNOWLEDGED',acknowledged_at=datetime.now(timezone.utc))
 
             if query:
-                insert('operation',operation_id='prior-registration',status='SUCCEEDED',definition_name='story_planning.runtime_continuation.register',definition_version='9.0.0' if query_v9 else '8.0.0' if lineage else '7.0.0',actor_id='author')
+                insert('operation',operation_id='prior-registration',status='SUCCEEDED',definition_name='story_planning.runtime_continuation.register',definition_version='10.0.0' if after_main else '9.0.0' if query_v9 else '8.0.0' if lineage else '7.0.0',actor_id='author')
                 insert('asset',asset_id='prior-receipt-owner',project_id='project',asset_type='planning_runtime_continuation')
                 insert('asset_version',asset_id='prior-receipt-owner',asset_version_id='prior-receipt',content=dict(
                     continuation_id='parent',successor_command=source,target_runtime=dict(
                         preparation_handoff=inherited,planning_capacity=copy.deepcopy(target['planning_capacity']))))
                 insert('operation_output_asset',operation_id='prior-registration',asset_version_id='prior-receipt',role='primary')
+            if main:
+                parent_target = dict(preparation_handoff=inherited,planning_capacity=copy.deepcopy(target['planning_capacity']))
+                insert('story_planning_runtime_continuation',continuation_id='parent',successor_operation_id='source',
+                    successor_command=source,project_id='project',book_id='book',target_runtime=parent_target,registered_by_operation_id='prior-registration')
+                connection.execute("UPDATE authority_asset_version SET content=jsonb_set(content,'{target_runtime}',%s),content_hash='parent-hash' WHERE asset_version_id='prior-receipt'",[Jsonb(parent_target)])
+                connection.execute("UPDATE authority_operation_output_asset SET content_hash='parent-hash' WHERE asset_version_id='prior-receipt'")
+                boundary = target['preparation_handoff']['preparation_source_boundary']
+                insert('external_effect',external_effect_id='main',operation_id='source',project_id='project',effect_type='model.invoke',status='FAILED_RETRYABLE',
+                    request_hash='main-hash',last_error=PRE_SUBMIT_FAILURE,request_payload=dict(stage='chapter_plan.generate',operation_id='source',
+                        _production_execution=dict(attempt_id='attempt'),input=dict(_context_capacity_projection=dict(source_boundary=boundary,original_hash='projection-hash'))))
+                insert('budget_reservation',external_effect_id='main',operation_id='source',status='RELEASED')
+                insert('external_effect_dispatch',external_effect_id='main',dispatch_id='main-dispatch',generation=1,status='FAILED_RETRYABLE',evidence=PRE_SUBMIT_FAILURE)
+                insert('external_effect',external_effect_id='prepared',operation_id='source',effect_type='model.invoke',status='SUCCEEDED',request_hash='prepared-hash',
+                    request_payload=dict(stage='context_compress',input=dict(context_compression_task=dict(frozen_input_boundary=boundary,task=dict(source_projection_hash='projection-hash')))))
+                insert('budget_reservation',external_effect_id='prepared',operation_id='source',status='SETTLED')
+                insert('external_effect_dispatch',external_effect_id='prepared',dispatch_id='prepared-dispatch',status='SUCCEEDED')
+                insert('external_receipt',dispatch_id='prepared-dispatch',status='VERIFIED')
+                target['preparation_handoff']['retained_preparation'] = [*inherited['retained_preparation'],dict(external_effect_id='prepared',operation_id='source',request_hash='prepared-hash',stage='context_compress',receipt_contract='STOPPED_GENERATION_SIBLING')]
+                connection.execute("UPDATE authority_story_planning_runtime_continuation SET target_runtime=%s WHERE continuation_id='runtime'",[Jsonb(target)])
+                connection.execute("UPDATE authority_asset_version SET content=jsonb_set(content,'{target_runtime}',%s) WHERE asset_version_id='receipt'",[Jsonb(target)])
             if lineage or query_v9:
                 pack = dict(pack_id='pack',pack_version='version',manifest_hash='manifest',compilation_hash='compilation',catalog_snapshot_hash='catalog',binding_set_id='binding',binding_set_hash='binding-hash')
                 connection.execute("UPDATE authority_attempt_capability_pack_snapshot SET snapshot_id='attempt-snapshot',snapshot_payload=snapshot_payload || %s",[Jsonb(pack)])
@@ -138,7 +177,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                 connection.execute('UPDATE authority_story_planning_runtime_continuation SET target_runtime=%s',[Jsonb(target)])
                 connection.execute("UPDATE authority_asset_version SET content=jsonb_set(content,'{target_runtime}',%s) WHERE asset_version_id='receipt'",[Jsonb(target)])
             def allowed(value=generation):
-                function = 'authority_unsent_preparation_query_v9_permitted' if query_v9 else 'authority_unsent_preparation_lineage_permitted' if lineage else 'authority_unsent_preparation_query_permitted' if query else 'authority_terminal_preparation_handoff_permitted' if terminal else 'authority_completed_preparation_handoff_permitted' if completed else 'authority_semantic_preparation_continuation_permitted'
+                function = 'authority_prepared_main_lineage_permitted' if after_main and lineage else 'authority_prepared_main_query_permitted' if after_main else 'authority_prepared_main_handoff_permitted' if main else 'authority_unsent_preparation_query_v9_permitted' if query_v9 else 'authority_unsent_preparation_lineage_permitted' if lineage else 'authority_unsent_preparation_query_permitted' if query else 'authority_terminal_preparation_handoff_permitted' if terminal else 'authority_completed_preparation_handoff_permitted' if completed else 'authority_semantic_preparation_continuation_permitted'
                 return connection.execute(f"SELECT {function}('runtime','child',%s)", [Jsonb(value)]).fetchone()[0]
 
             assert allowed()
@@ -182,7 +221,7 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                     connection.execute(statement)
                     assert not allowed(), statement
                     connection.execute('ROLLBACK TO SAVEPOINT handoff_negative')
-            if query:
+            if query and not main:
                 for statement in (
                     "UPDATE authority_attempt SET result='{}'",
                     "UPDATE authority_book_production SET input_snapshot_id='replaced'",
@@ -209,6 +248,24 @@ def test_semantic_preparation_sql_preserves_exact_source_and_dispatch_guards(mod
                     connection.execute(statement)
                     assert not allowed(), statement
                     connection.execute('ROLLBACK TO SAVEPOINT materialization_negative')
+            if main:
+                for statement in (
+                    "UPDATE authority_external_effect SET last_error=jsonb_set(last_error,'{request_sent}','true') WHERE external_effect_id='main'",
+                    "UPDATE authority_external_effect SET request_hash='changed' WHERE external_effect_id='main'",
+                    "UPDATE authority_external_effect_dispatch SET status='UNKNOWN' WHERE external_effect_id='main'",
+                    "INSERT INTO authority_external_effect_dispatch(external_effect_id,status) VALUES('main','FAILED_RETRYABLE')",
+                    "INSERT INTO authority_effect_dispatch_lease(dispatch_id,status) VALUES('main-dispatch','HELD')",
+                    "INSERT INTO authority_external_receipt(dispatch_id,status) VALUES('main-dispatch','VERIFIED')",
+                    "UPDATE authority_external_effect SET status='UNKNOWN' WHERE external_effect_id='prepared'",
+                    "UPDATE authority_external_receipt SET status='REJECTED' WHERE dispatch_id='prepared-dispatch'",
+                    "UPDATE authority_book_production SET input_snapshot_id='replaced'",
+                    "UPDATE authority_operation SET definition_version='9.0.0' WHERE operation_id='registration'",
+                    "UPDATE authority_story_planning_runtime_continuation SET target_runtime=jsonb_set(target_runtime,'{preparation_handoff,retained_preparation}','[]') WHERE continuation_id='runtime'",
+                ):
+                    connection.execute('SAVEPOINT main_negative')
+                    connection.execute(statement)
+                    assert not allowed(), statement
+                    connection.execute('ROLLBACK TO SAVEPOINT main_negative')
             changed = copy.deepcopy(target)
             changed["planning_capacity"]["allocated_task_tokens"] = 512001
             connection.execute("UPDATE authority_story_planning_runtime_continuation SET target_runtime=%s", [Jsonb(changed)])
@@ -307,14 +364,14 @@ def test_pending_deployment_filters_exact_book_run_using_shared_dispatch_owner_s
             connection.rollback()
 
 
-@pytest.mark.parametrize('contract,version', [('planning-unsent-preparation-query-handoff.v1','8.0.0'),('planning-unsent-preparation-lineage-handoff.v1','9.0.0')])
+@pytest.mark.parametrize('contract,version', [('planning-unsent-preparation-query-handoff.v1','8.0.0'),('planning-unsent-preparation-lineage-handoff.v1','9.0.0'),('planning-prepared-main-handoff.v1','10.0.0')])
 def test_unsent_carrier_control_reader_requires_exact_successful_native_receipt(monkeypatch, contract, version):
     from types import SimpleNamespace
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     from novel_forge.modules.story_planning_runtime.preparation_recovery import _require_unsent_carrier
     from novel_forge.modules.command_kernel.errors import KernelError
     frozen=dict(project_id='project',book_id='book',actor_id='author')
-    key='unsent_lineage_failure' if version=='9.0.0' else 'unsent_query_failure'
+    key='prepared_main_failure' if version=='10.0.0' else 'unsent_lineage_failure' if version=='9.0.0' else 'unsent_query_failure'
     handoff=dict(contract_version=contract,**{key:dict(source_operation_id='source')})
     target=dict(preparation_handoff=handoff)
     member=dict(continuation_id='link',command=frozen,target=target)

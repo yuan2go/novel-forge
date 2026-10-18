@@ -6,7 +6,8 @@ from .domain import canonical_hash
 ISOLATED_HANDOFF = 'planning-isolated-preparation-handoff.v1'
 QUERY_HANDOFF = 'planning-unsent-preparation-query-handoff.v1'
 LINEAGE_HANDOFF = 'planning-unsent-preparation-lineage-handoff.v1'
-UNSENT_HANDOFF_CONTRACTS = frozenset({QUERY_HANDOFF, LINEAGE_HANDOFF})
+PREPARED_MAIN_HANDOFF = 'planning-prepared-main-handoff.v1'
+UNSENT_HANDOFF_CONTRACTS = frozenset({QUERY_HANDOFF, LINEAGE_HANDOFF, PREPARED_MAIN_HANDOFF})
 CUSTODY_HANDOFF_CONTRACTS = frozenset({'planning-terminal-preparation-handoff.v1', ISOLATED_HANDOFF}) | UNSENT_HANDOFF_CONTRACTS
 MULTI_OWNER_HANDOFF_CONTRACTS = frozenset({ISOLATED_HANDOFF}) | UNSENT_HANDOFF_CONTRACTS
 
@@ -55,7 +56,7 @@ def reuse_completed_task(database_url, *, command, operation_id, stage, task):
         frozen = uow.cursor.fetchone()
         if not frozen or frozen[1] != retained['request_hash'] or frozen[0].get('stage') != stage or frozen[0].get('input', {}).get('context_compression_task') != task:
             raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Reuse requires the same complete task and original immutable request')
-        if handoff.get('contract_version') in MULTI_OWNER_HANDOFF_CONTRACTS and retained['receipt_contract'] == 'ISOLATED_GENERATION_SIBLING':
+        if handoff.get('contract_version') in MULTI_OWNER_HANDOFF_CONTRACTS and retained['receipt_contract'] in {'ISOLATED_GENERATION_SIBLING', 'STOPPED_GENERATION_SIBLING'}:
             from novel_forge.modules.command_kernel.external_effect_runtime import read_retained_generation_stage_success_in_uow
             receipt = read_retained_generation_stage_success_in_uow(uow, context, effect_id=retained['external_effect_id'])
         elif handoff.get('contract_version') == 'planning-terminal-preparation-handoff.v1' or (handoff.get('contract_version') in MULTI_OWNER_HANDOFF_CONTRACTS and retained['receipt_contract'] == 'TERMINAL_PREPARATION'):
@@ -322,7 +323,7 @@ def _require_unsent_carrier(uow, *, member, operation_id, frozen, rejected):
     handoff = member['target'].get('preparation_handoff', {})
     if handoff.get('contract_version') not in UNSENT_HANDOFF_CONTRACTS:
         return False
-    failure_key = 'unsent_lineage_failure' if handoff['contract_version'] == LINEAGE_HANDOFF else 'unsent_query_failure'
+    failure_key = next((key for key in ('unsent_lineage_failure', 'unsent_query_failure', 'prepared_main_failure') if handoff.get(key, {}).get('source_operation_id') == operation_id), '')
     if handoff.get(failure_key, {}).get('source_operation_id') != operation_id:
         raise rejected
     uow.cursor.execute("""SELECT version.content,version.content_hash FROM authority_story_planning_runtime_continuation link
@@ -332,9 +333,10 @@ def _require_unsent_carrier(uow, *, member, operation_id, frozen, rejected):
         JOIN authority_asset asset ON asset.asset_id=version.asset_id
         WHERE link.continuation_id=%s AND link.source_operation_id=%s AND link.project_id=%s AND link.book_id=%s
           AND control.status='SUCCEEDED' AND control.definition_name='story_planning.runtime_continuation.register'
-          AND control.definition_version IN ('8.0.0','9.0.0') AND control.actor_id=%s
+          AND control.definition_version IN ('8.0.0','9.0.0','10.0.0') AND control.actor_id=%s
           AND (version.content#>>'{target_runtime,preparation_handoff,contract_version}'='planning-unsent-preparation-query-handoff.v1'
-            OR control.definition_version='9.0.0' AND version.content#>>'{target_runtime,preparation_handoff,contract_version}'='planning-unsent-preparation-lineage-handoff.v1')
+            OR control.definition_version='9.0.0' AND version.content#>>'{target_runtime,preparation_handoff,contract_version}'='planning-unsent-preparation-lineage-handoff.v1'
+            OR control.definition_version='10.0.0' AND version.content#>>'{target_runtime,preparation_handoff,contract_version}'='planning-prepared-main-handoff.v1')
           AND asset.project_id=link.project_id AND asset.asset_type='planning_runtime_continuation'""",
         [member['continuation_id'],operation_id,frozen['project_id'],frozen['book_id'],frozen['actor_id']])
     rows = uow.cursor.fetchall()
@@ -416,6 +418,12 @@ def isolated_preparation_source(uow, *, source_operation_id, frozen):
     for operation_id in operations:
         carrier = next((member for member in chain if member['source_operation_id'] == operation_id and member['target'].get('preparation_handoff', {}).get('contract_version') in UNSENT_HANDOFF_CONTRACTS), None)
         if carrier is not None and _require_unsent_carrier(uow, member=carrier, operation_id=operation_id, frozen=frozen, rejected=rejected):
+            for item in carrier['target']['preparation_handoff']['retained_preparation'] if carrier['target']['preparation_handoff']['contract_version'] == PREPARED_MAIN_HANDOFF else ():
+                previous = next((old for old in receipts if old['external_effect_id'] == item['external_effect_id']), None)
+                if previous is not None and previous != item:
+                    raise rejected
+                if previous is None:
+                    receipts.append(item)
             continue
         if operation_id != anchor['source_operation_id']:
             uow.cursor.execute("SELECT proof FROM authority_generation_isolation WHERE operation_id=%s", [operation_id])
@@ -486,7 +494,7 @@ def unsent_query_source(uow, *, source_operation_id, row, frozen, attempt):
     lineage_failure = attempt[2] == dict(error_code='PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED',
         error_message='PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth', failure_class='retryable', failure_details={})
     terminal_status = 'FAILED_RETRYABLE' if lineage_failure else 'FAILED_FINAL'
-    contract = LINEAGE_HANDOFF if lineage_failure else QUERY_HANDOFF
+    contract = PREPARED_MAIN_HANDOFF if inherited.get('contract_version') == PREPARED_MAIN_HANDOFF else LINEAGE_HANDOFF if lineage_failure else QUERY_HANDOFF
     failure_key = 'unsent_lineage_failure' if lineage_failure else 'unsent_query_failure'
     if (row[0] not in ({'FAILED_RETRYABLE', 'FAILED_FINAL'} if lineage_failure else {'FAILED_FINAL'}) or attempt[0] != terminal_status
             or not lineage_failure and attempt[2] != dict(error_code='PROGRAMMING_BUG', error_message='canceling statement due to statement timeout', failure_class='programming_bug', failure_details={})
@@ -536,7 +544,7 @@ def unsent_query_source(uow, *, source_operation_id, row, frozen, attempt):
         if (output[3] != 'execution_contract' or not output[2].startswith('production_execution.contract.capability_materialization_manifest.')
                 or document.asset_type != 'capability_materialization_manifest' or document.content_hash != output[1]
                 or canonical_hash(document.content) != output[1] or materialization.get('schema_version') != 'novelos.planning_capability_materialization.v1'
-                or materialization.get('stage') not in {'context_compress', 'context_fidelity'}
+                or materialization.get('stage') not in ({'context_compress', 'context_fidelity', frozen['generator_operation_name']} if inherited.get('contract_version') == PREPARED_MAIN_HANDOFF else {'context_compress', 'context_fidelity'})
                 or materialization.get('materialization_hash') != canonical_hash({key:value for key,value in materialization.items() if key != 'materialization_hash'})
                 or any(identity.get(key) != value for key,value in dict(operation_id=source_operation_id,attempt_id=snapshots[0][3],snapshot_id=snapshots[0][1],snapshot_hash=snapshots[0][2]).items())
                 or materialization.get('pack_identity') != {key:snapshots[0][0][key] for key in ('pack_id','pack_version','manifest_hash','compilation_hash','catalog_snapshot_hash','binding_set_id','binding_set_hash')}):
@@ -572,5 +580,170 @@ def unsent_query_source(uow, *, source_operation_id, row, frozen, attempt):
     return dict(mode='PRE_SEND_CAPACITY', source_operation_id=source_operation_id, command=frozen, version=int(row[1]),
         evidence_asset_version_id=context.asset_version_id, evidence_hash=context.content_hash,
         snapshot=snapshots[0][0], snapshot_id=snapshots[0][1], snapshot_hash=snapshots[0][2], attempt_id=snapshots[0][3],
-        inputs=inputs, failure=allocation['source_failure'], depth=depth, source_operation_status=row[0],
+        inputs=inputs, failure=allocation['source_failure'], depth=depth, source_operation_status=row[0], source_effect_count=0,
         context_revalidation=allocation['context_revalidation'], completed_preparation=proof)
+
+
+PRE_SUBMIT_FAILURE = dict(
+    message='Planning gateway execution failed: KernelError: CORPUS_CONSUMPTION_INPUT_BOUND: provider input exceeds lineage inspection bounds',
+    error_type='ExternalEffectAdapterError', failure_kind='transport', request_sent=False,
+)
+
+
+def prepared_main_source(uow, *, source_operation_id, row, frozen, attempt):
+    from copy import deepcopy
+    from novel_forge.modules.book_authority.manuscript import historical_working_inputs
+    from novel_forge.modules.chapter_group_authority.replan_retirement import lock_replan_roots
+    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_retained_generation_stage_success_in_uow
+    from .runtime_continuation import require_binding
+
+    rejected = KernelError('PLANNING_PREPARED_MAIN_HANDOFF_UNSAFE', 'Require the exact failed pre-submit main request, settled preparation, unchanged Book inputs and released execution rights')
+    if (row[0] not in {'FAILED_RETRYABLE', 'FAILED_FINAL'} or row[5] or attempt[0] != 'FAILED_RETRYABLE'
+            or attempt[2] != dict(error_code='EFFECT_RETRYABLE_FAILURE_RECORDED', error_message='EFFECT_RETRYABLE_FAILURE_RECORDED: adapter exception was recorded as retryable_failure', failure_class='retryable', failure_details={})
+            or frozen.get('execution_contract_version') != '1.21.0' or not frozen.get('runtime_continuation_id')):
+        raise rejected
+    binding = require_binding(uow.database_url, frozen['runtime_continuation_id'])
+    inherited = binding['target_runtime'].get('preparation_handoff', {})
+    if (inherited.get('contract_version') not in MULTI_OWNER_HANDOFF_CONTRACTS
+            or binding['successor_operation_id'] != source_operation_id or binding['successor_command'] != frozen):
+        raise rejected
+    uow.cursor.execute('''SELECT to_jsonb(operation),EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'FAILED_RETRYABLE')
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=%s AND lease.status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s)
+        FROM authority_operation operation WHERE operation_id=%s''', [source_operation_id] * 5)
+    operation, unsafe = uow.cursor.fetchone()
+    if unsafe or (operation['actor_id'], operation['workspace_id']) != (frozen['actor_id'], frozen['workspace_id']):
+        raise rejected
+    working = frozen['arc_working_set']['working_manuscript']
+    uow.cursor.execute('SELECT root_operation_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s AND workspace_id=%s AND book_id=%s',
+        [working['book_run_id'], frozen['project_id'], frozen['workspace_id'], frozen['book_id']])
+    owner = uow.cursor.fetchone()
+    if not owner:
+        raise rejected
+    lock_replan_roots(uow.cursor, project_id=frozen['project_id'], book_root=owner[0])
+    uow.cursor.execute('''SELECT current_chapter,accepted_through_chapter,input_snapshot_id,state,active_chapter_request_id,
+        EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=book.root_operation_id)
+        FROM authority_book_production book WHERE book_run_id=%s FOR UPDATE''', [working['book_run_id']])
+    book = uow.cursor.fetchone()
+    if (not book or book[:3] != (inherited['current_chapter'], inherited['accepted_through_chapter'], inherited['input_snapshot_id'])
+            or book[3] not in {'READY', 'PAUSED'} or book[4] is not None or book[5]
+            or historical_working_inputs(uow, operation)[0] != frozen['book_id']):
+        raise rejected
+    uow.cursor.execute('''SELECT snapshot_payload,snapshot_id,snapshot_hash,attempt_id FROM authority_attempt_capability_pack_snapshot
+        WHERE operation_id=%s AND attempt_id=(SELECT attempt_id FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1)''', [source_operation_id] * 2)
+    snapshots = uow.cursor.fetchall()
+    if len(snapshots) != 1 or snapshots[0][0]['context_policy_ref'] != 'context-policy:chapter-generation-pack:v4':
+        raise rejected
+    uow.cursor.execute('''SELECT to_jsonb(effect),reservation.status FROM authority_external_effect effect
+        LEFT JOIN authority_budget_reservation reservation USING(external_effect_id)
+        WHERE effect.operation_id=%s ORDER BY effect.external_effect_id FOR UPDATE OF effect''', [source_operation_id])
+    effects = uow.cursor.fetchall()
+    main = [(effect, budget) for effect, budget in effects if effect['request_payload'].get('stage') == frozen['generator_operation_name']]
+    if len(main) != 1:
+        raise rejected
+    effect, budget = main[0]
+    payload = effect['request_payload']
+    if (effect['effect_type'] != 'model.invoke' or effect['status'] != 'FAILED_RETRYABLE' or budget != 'RELEASED'
+            or effect['last_error'] != PRE_SUBMIT_FAILURE or canonical_hash(payload) != effect['request_hash']
+            or payload.get('operation_id') != source_operation_id
+            or payload.get('_production_execution', {}).get('attempt_id') != snapshots[0][3]):
+        raise rejected
+    uow.cursor.execute('''SELECT dispatch_id,generation,status,evidence FROM authority_external_effect_dispatch
+        WHERE external_effect_id=%s ORDER BY generation FOR UPDATE''', [effect['external_effect_id']])
+    dispatches = uow.cursor.fetchall()
+    if len(dispatches) != 1 or dispatches[0][2:] != ('FAILED_RETRYABLE', PRE_SUBMIT_FAILURE):
+        raise rejected
+    uow.cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_effect_dispatch_lease WHERE dispatch_id=%s AND status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_external_receipt receipt JOIN authority_external_effect_dispatch dispatch USING(dispatch_id) WHERE dispatch.external_effect_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+            WHERE a.project_id=%s AND a.asset_type='execution_recovery_session'
+            AND v.content#>>'{record,request,external_effect_id}'=%s)
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status NOT IN ('SETTLED','RELEASED'))''',
+        [dispatches[0][0], effect['external_effect_id'], frozen['project_id'], effect['external_effect_id'], source_operation_id])
+    if uow.cursor.fetchone()[0]:
+        raise rejected
+    projection = payload.get('input', {}).get('_context_capacity_projection')
+    if (not isinstance(projection, dict) or projection.get('source_boundary') != inherited['preparation_source_boundary']
+            or projection.get('original_hash') != inherited['preparation_source_projection_hash']):
+        raise rejected
+    retained = deepcopy(inherited['retained_preparation'])
+    for prepared, status in effects:
+        if prepared['external_effect_id'] == effect['external_effect_id']:
+            continue
+        task = prepared['request_payload'].get('input', {}).get('context_compression_task', {})
+        if (prepared['effect_type'] != 'model.invoke' or prepared['status'] != 'SUCCEEDED' or status != 'SETTLED'
+                or prepared['request_payload'].get('stage') not in {'context_compress', 'context_fidelity'}
+                or task.get('frozen_input_boundary') != inherited['preparation_source_boundary']
+                or task.get('task', {}).get('source_projection_hash') != inherited['preparation_source_projection_hash']):
+            raise rejected
+        receipt = read_retained_generation_stage_success_in_uow(uow,
+            EffectCommandContext(source_operation_id, frozen['project_id'], frozen['actor_id'], frozen['trace_id'], frozen['correlation_id']),
+            effect_id=prepared['external_effect_id'])
+        if not receipt or receipt['budget_reservation_status'] != 'SETTLED':
+            raise rejected
+        retained.append(dict(external_effect_id=prepared['external_effect_id'], operation_id=source_operation_id,
+            request_hash=prepared['request_hash'], stage=prepared['request_payload']['stage'], task_hash=canonical_hash(task),
+            result_hash=canonical_hash(receipt['provider_evidence']['result']), receipt_contract='STOPPED_GENERATION_SIBLING'))
+    context = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=inherited['context_asset_version_id'])
+    if context.content_hash != inherited['context_content_hash'] or context.content['arc_working_set'] != frozen['arc_working_set']:
+        raise rejected
+    uow.cursor.execute('SELECT input_snapshot FROM authority_story_planning_generation WHERE operation_id=%s', [source_operation_id])
+    inputs = uow.cursor.fetchone()[0]
+    original = {item['role']: item for item in context.content['input_versions']}
+    for item in inputs:
+        document = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=item['asset_version_id'])
+        if document.content_hash != item['content_hash'] or document.asset_type != item['asset_type'] or any(original.get(item['role'], {}).get(key) != item[key] for key in ('asset_version_id', 'content_hash', 'asset_type')):
+            raise rejected
+    uow.cursor.execute('SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s', [source_operation_id])
+    depth = int(uow.cursor.fetchone()[0]) + 1
+    proof = {**deepcopy(inherited), 'contract_version': PREPARED_MAIN_HANDOFF, 'retained_preparation': retained,
+        'prepared_main_failure': dict(source_operation_id=source_operation_id, source_attempt_id=snapshots[0][3],
+            external_effect_id=effect['external_effect_id'], request_hash=effect['request_hash'],
+            input_hash=canonical_hash(payload['input']), projection_hash=canonical_hash(projection),
+            dispatch_id=dispatches[0][0], generation=dispatches[0][1], diagnostic=PRE_SUBMIT_FAILURE,
+            original_failure=attempt[2], inherited_preparation=deepcopy(inherited)),
+        'main_dispatch_count': 1, 'source_submission_rights': 'RELEASED_BY_TERMINAL_PRE_SUBMIT_HANDOFF'}
+    allocation = binding['target_runtime']['planning_capacity']
+    return dict(mode='PRE_SEND_CAPACITY', source_operation_id=source_operation_id, command=frozen, version=int(row[1]),
+        evidence_asset_version_id=context.asset_version_id, evidence_hash=context.content_hash,
+        snapshot=snapshots[0][0], snapshot_id=snapshots[0][1], snapshot_hash=snapshots[0][2], attempt_id=snapshots[0][3],
+        inputs=inputs, failure=allocation['source_failure'], depth=depth, source_operation_status=row[0], source_effect_count=len(effects),
+        context_revalidation=allocation['context_revalidation'], completed_preparation=proof)
+
+
+def retained_main_projection(database_url, *, command, operation_id, inputs, stage):
+    from copy import deepcopy
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    custody = terminal_custody(database_url, command, operation_id)
+    if not custody or custody.get('contract_version') != PREPARED_MAIN_HANDOFF or stage != command.generator_operation_name:
+        return None
+    proof = custody['prepared_main_failure']
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute('SELECT request_payload,request_hash FROM authority_external_effect WHERE external_effect_id=%s AND operation_id=%s AND project_id=%s',
+            [proof['external_effect_id'], proof['source_operation_id'], command.project_id])
+        row = uow.cursor.fetchone()
+    original = row[0].get('input', {}) if row else {}
+    projection = original.get('_context_capacity_projection')
+    if (not row or row[1] != proof['request_hash'] or canonical_hash(row[0]) != row[1]
+            or canonical_hash(original) != proof['input_hash'] or canonical_hash(projection) != proof['projection_hash']
+            or {key:value for key,value in original.items() if key != '_context_capacity_projection'} != inputs):
+        raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Prepared main reuse requires the exact original complete inputs and capacity projection')
+    return deepcopy(projection)
+
+
+def retained_main_capacity_binding(database_url, *, command, operation_id, projection, stage, route, router):
+    from novel_forge.modules.chapter_authority.receipt_recovery import retained_capacity_bindings
+    from novel_forge.modules.production_execution.token_meter import capacity_route_contract
+
+    custody = terminal_custody(database_url, command, operation_id)
+    if not custody or custody.get('contract_version') != PREPARED_MAIN_HANDOFF:
+        raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Prepared route requires the registered complete main projection')
+    bindings = retained_capacity_bindings(database_url, project_id=command.project_id,
+        operation_id=custody['prepared_main_failure']['source_operation_id'], source_hash=projection['original_hash'],
+        source_boundary=projection['source_boundary'], stage=stage)
+    binding = bindings.get(stage)
+    if not binding or router is None and binding['route'] != capacity_route_contract(route):
+        raise KernelError('ROUTING_CAPACITY_BINDING_DRIFT', 'Prepared main must retain its exact model, reasoning and capacity route')
+    return binding

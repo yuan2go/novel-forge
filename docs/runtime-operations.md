@@ -189,6 +189,14 @@ Effect chain and generated artifact lookup. It retains the UoW statement timeout
 all sample eligibility and retry exclusions. Registration alone does not prove native
 receipt reuse; run the same-Book continuation and inspect actual dispatch afterward.
 
+The exact failed-main Corpus traversal-bound diagnostic uses registration v10 and
+migration231. Verify the single failed Dispatch's explicit no-send diagnostic, released
+reservation, absence of Provider recovery evidence, settled preparation and unchanged
+Book frontier before ordinary continuation. Its Kernel terminal transition preserves the
+original Attempt, Effect and Dispatch. A successor reuses the entire same-input capacity
+projection and prepared route, then rechecks current admission and full request capacity.
+Exact zero-Effect query/lineage failures after this handoff retain v10 custody; they do
+not reinterpret the published v9 contract. Native consumption remains pending verification.
 New exact unsent query-timeout and lineage-depth failures use registration v9 and migration230 with the same
 Context, Book/input, actor, zero-send and inherited-receipt checks. A retryable source
 Operation transitions atomically to FAILED_FINAL during registration; its original

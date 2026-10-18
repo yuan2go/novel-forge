@@ -1854,7 +1854,14 @@ class StoryPlanningGenerationApplication:
                 from .runtime_continuation import require_binding
                 from .preparation_recovery import MULTI_OWNER_HANDOFF_CONTRACTS
                 query_preparation = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"].get("preparation_handoff", {}).get("contract_version") in MULTI_OWNER_HANDOFF_CONTRACTS
-            if failure and (query_preparation or (failure[0] == "CONTEXT_COMPRESSION_TASK_INVALID" and failure[2] == "CONTEXT_COMPRESSION_TASK_INVALID: compression needs a bounded source chunk and frozen task boundary") or failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"}
+            prepared_main_failure = False
+            if failure and failure[0] == 'EFFECT_RETRYABLE_FAILURE_RECORDED' and command.runtime_continuation_id:
+                from .preparation_recovery import PRE_SUBMIT_FAILURE
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("SELECT last_error FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage'=%s", [row[0],command.generator_operation_name])
+                    main_failures = uow.cursor.fetchall()
+                prepared_main_failure = len(main_failures) == 1 and main_failures[0][0] == PRE_SUBMIT_FAILURE
+            if failure and (prepared_main_failure or query_preparation or (failure[0] == "CONTEXT_COMPRESSION_TASK_INVALID" and failure[2] == "CONTEXT_COMPRESSION_TASK_INVALID: compression needs a bounded source chunk and frozen task boundary") or failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"}
                 or (failure[0] == "MANUSCRIPT_CONTEXT_INVALID" and failure[2] == "MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read")
                 or (failure[0] == "PROGRAMMING_BUG" and len(failure) > 2 and str(failure[2] or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")) or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"

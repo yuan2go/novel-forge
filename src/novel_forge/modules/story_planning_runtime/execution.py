@@ -4892,7 +4892,16 @@ class PostgresPlanningExecutionPreparer:
         )
         complete_capacity = context_policy.get("capacity_policy") == "complete-request-capacity.v1"
         capacity_binding = dict((capacity_task[1].get("task") or {}).get("capacity_bindings") or {}).get(stage_name) if capacity_task else None
-        if complete_capacity and (existing_intent is None or capacity_probe):
+        from .preparation_recovery import retained_main_projection
+        retained_projection = retained_main_projection(self.database_url, command=command, operation_id=operation_id,
+            inputs=stable_request_payload['input'], stage=stage_name) if existing_intent is None and not capacity_task and provider_stage is None else None
+        if retained_projection is not None:
+            stable_request_payload['input']['_context_capacity_projection'] = retained_projection
+            from .preparation_recovery import retained_main_capacity_binding
+            capacity_binding = retained_main_capacity_binding(self.database_url, command=command,
+                operation_id=operation_id, projection=retained_projection, stage=stage_name,
+                route=planning_route, router=provider_router)
+        if complete_capacity and (existing_intent is None or capacity_probe) and retained_projection is None:
             from novel_forge.modules.chapter_authority.context_compression_provider import task_provider_output_reserve
             from novel_forge.modules.production_execution.token_meter import route_request_size, route_input_tokens, capacity_route_binding, capacity_route_contract
             from novel_forge.modules.context_builder.request_capacity import prepare_request_capacity, protected_expression_quotes

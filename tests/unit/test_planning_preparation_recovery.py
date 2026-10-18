@@ -589,3 +589,411 @@ def test_isolation_crosses_only_control_proven_unsent_carriers_without_granting_
         assert set(seen)=={'lineage-carrier','query-carrier'}
         assert {row['external_effect_id'] for row in result['retained_preparation']}=={'original-success','consumer-success'}
         assert state.effects['consumer'][1][0]['status']=='UNKNOWN'
+
+
+@pytest.mark.parametrize('changed', ['', 'input', 'projection', 'request', 'actor', 'book', 'consumer'])
+def test_prepared_main_projection_reuses_complete_frozen_inputs_without_new_preparation(retained, changed):
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import retained_main_projection
+    from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection
+    from tests.unit.test_complete_request_capacity import run_preparation, source_data
+
+    data = source_data()
+    projection, sent = run_preparation(data, limit=5000, cache={})
+    assert projection and sent
+    original_inputs = dict(narrative=data, _context_capacity_projection=deepcopy(projection))
+    payload = dict(stage='chapter_plan.generate', input=deepcopy(original_inputs))
+    frozen = deepcopy(payload)
+    retained.command.generator_operation_name = 'chapter_plan.generate'
+    handoff = retained.binding['target_runtime']['preparation_handoff']
+    handoff.update(contract_version='planning-prepared-main-handoff.v1', prepared_main_failure=dict(
+        external_effect_id='main',source_operation_id='source',request_hash=canonical_hash(payload),
+        input_hash=canonical_hash(original_inputs),projection_hash=canonical_hash(projection)))
+    inputs = dict(narrative=deepcopy(data))
+    if changed == 'input':
+        inputs['foreign'] = 'changed'
+    elif changed == 'projection':
+        payload['input']['_context_capacity_projection']['result_hash'] = 'changed'
+    elif changed == 'request':
+        payload['stage'] = 'changed'
+    elif changed in {'actor','book'}:
+        setattr(retained.command,changed+'_id','foreign')
+    elif changed == 'consumer':
+        retained.binding['successor_operation_id'] = 'foreign'
+    retained.uow.cursor.fetchone.return_value = (payload, canonical_hash(frozen))
+    if changed:
+        with pytest.raises(KernelError,match='PLANNING_PREPARATION_REUSE_DRIFT'):
+            retained_main_projection('database',command=retained.command,operation_id='new-operation',inputs=inputs,stage='chapter_plan.generate')
+    else:
+        restored = retained_main_projection('database',command=retained.command,operation_id='new-operation',inputs=inputs,stage='chapter_plan.generate')
+        assert restored == projection
+        assert apply_capacity_projection(data, restored) == apply_capacity_projection(data, projection)
+        restored['result_hash'] = 'consumer-local-change'
+        assert payload == frozen
+    retained.read.assert_not_called()
+    retained.uow.commit.assert_not_called()
+
+
+@pytest.mark.parametrize('major', range(1,11))
+def test_continuation_contract_uses_full_frozen_major(major):
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import runtime_continuation_definition
+    definition = runtime_continuation_definition(application_build_id='build',commit_sha='sha',definition_version=f'{major}.0.0')
+    assert definition['handler_contract_version'] == f'planning-runtime-continuation.v{major}'
+    assert definition['command_schema_version'] == f'planning-runtime-continuation.command.v{major}'
+    assert definition['result_schema_version'] == f'planning-runtime-continuation.result.v{major}'
+
+
+@pytest.fixture
+def prepared_main_source_state(monkeypatch):
+    from novel_forge.modules.story_planning_runtime import (
+        preparation_recovery as recovery,
+    )
+
+    frozen = dict(
+        project_id="project",
+        workspace_id="workspace",
+        book_id="book",
+        actor_id="author",
+        runtime_continuation_id="prior",
+        execution_contract_version="1.21.0",
+        generator_operation_name="chapter_plan.generate",
+        trace_id="trace",
+        correlation_id="correlation",
+        arc_working_set=dict(working_manuscript=dict(book_run_id="run")),
+    )
+    content = dict(arc_working_set=frozen["arc_working_set"], input_versions=[])
+    boundary = dict(kind="FROZEN_STAGE_INPUTS")
+    inherited = dict(
+        contract_version=recovery.LINEAGE_HANDOFF,
+        context_asset_version_id="context",
+        context_content_hash=canonical_hash(content),
+        current_chapter=18,
+        accepted_through_chapter=0,
+        input_snapshot_id="book-input",
+        retained_preparation=[],
+        preparation_source_boundary=boundary,
+        preparation_source_projection_hash="projection",
+    )
+    binding = dict(
+        successor_operation_id="source",
+        successor_command=frozen,
+        target_runtime=dict(
+            preparation_handoff=inherited,
+            planning_capacity=dict(
+                source_failure={"retained": "failure"},
+                context_revalidation={"retained": "policy"},
+            ),
+        ),
+    )
+    failure = dict(
+        error_code="EFFECT_RETRYABLE_FAILURE_RECORDED",
+        error_message="EFFECT_RETRYABLE_FAILURE_RECORDED: adapter exception was recorded as retryable_failure",
+        failure_class="retryable",
+        failure_details={},
+    )
+    payload = dict(
+        stage="chapter_plan.generate",
+        operation_id="source",
+        _production_execution=dict(attempt_id="attempt"),
+        input=dict(
+            _context_capacity_projection=dict(
+                source_boundary=boundary, original_hash="projection"
+            )
+        ),
+    )
+    main = dict(
+        external_effect_id="main",
+        effect_type="model.invoke",
+        status="FAILED_RETRYABLE",
+        request_payload=payload,
+        request_hash=canonical_hash(payload),
+        last_error=deepcopy(recovery.PRE_SUBMIT_FAILURE),
+    )
+    task = dict(
+        frozen_input_boundary=boundary, task=dict(source_projection_hash="projection")
+    )
+    prepared = dict(
+        external_effect_id="prepared",
+        effect_type="model.invoke",
+        status="SUCCEEDED",
+        request_hash="prepared-hash",
+        request_payload=dict(
+            stage="context_fidelity", input=dict(context_compression_task=task)
+        ),
+    )
+    state = SimpleNamespace(
+        frozen=frozen,
+        binding=binding,
+        failure=failure,
+        unsafe=False,
+        external_unsafe=False,
+        operation=dict(actor_id="author", workspace_id="workspace"),
+        book=(18, 0, "book-input", "READY", None, False),
+        snapshot=[
+            (
+                {"context_policy_ref": "context-policy:chapter-generation-pack:v4"},
+                "snapshot",
+                "snapshot-hash",
+                "attempt",
+            )
+        ],
+        effects=[(main, "RELEASED"), (prepared, "SETTLED")],
+        dispatches=[
+            ("dispatch", 1, "FAILED_RETRYABLE", deepcopy(recovery.PRE_SUBMIT_FAILURE))
+        ],
+    )
+    uow = MagicMock()
+    uow.database_url = "db"
+    uow.cursor.execute.side_effect = lambda sql, args: (
+        None if sql.count("%s") == len(args) else pytest.fail("SQL arguments drift")
+    )
+
+    def fetchone():
+        sql, _ = uow.cursor.execute.call_args.args
+        if "to_jsonb(operation)" in sql:
+            return state.operation, state.unsafe
+        if "SELECT root_operation_id" in sql:
+            return ("book-root",)
+        if "SELECT current_chapter" in sql:
+            return state.book
+        if "SELECT EXISTS" in sql:
+            return (state.external_unsafe,)
+        if "SELECT input_snapshot " in sql:
+            return ([],)
+        if "SELECT chain_depth" in sql:
+            return (9,)
+        raise AssertionError(sql)
+
+    def fetchall():
+        sql, _ = uow.cursor.execute.call_args.args
+        if "SELECT snapshot_payload" in sql:
+            return state.snapshot
+        if "to_jsonb(effect)" in sql:
+            return state.effects
+        if "SELECT dispatch_id" in sql:
+            return state.dispatches
+        raise AssertionError(sql)
+
+    uow.cursor.fetchone.side_effect = fetchone
+    uow.cursor.fetchall.side_effect = fetchall
+    uow.repositories.asset_documents.require.return_value = SimpleNamespace(
+        asset_version_id="context",
+        content_hash=canonical_hash(content),
+        content=content,
+    )
+    monkeypatch.setattr(
+        "novel_forge.modules.story_planning_runtime.runtime_continuation.require_binding",
+        lambda *_: binding,
+    )
+    monkeypatch.setattr(
+        "novel_forge.modules.book_authority.manuscript.historical_working_inputs",
+        lambda *_: ("book", []),
+    )
+    monkeypatch.setattr(
+        "novel_forge.modules.chapter_group_authority.replan_retirement.lock_replan_roots",
+        lambda *_a, **_k: None,
+    )
+    monkeypatch.setattr(
+        "novel_forge.modules.command_kernel.external_effect_runtime.read_retained_generation_stage_success_in_uow",
+        MagicMock(
+            return_value=dict(
+                budget_reservation_status="SETTLED",
+                provider_evidence=dict(result={"verified": True}),
+            )
+        ),
+    )
+    state.consume = lambda: recovery.prepared_main_source(
+        uow,
+        source_operation_id="source",
+        row=("FAILED_RETRYABLE", 3, "workspace", frozen, "book", None),
+        frozen=frozen,
+        attempt=("FAILED_RETRYABLE", {}, failure),
+    )
+    state.uow = uow
+    return state
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "",
+        "actor",
+        "book-frontier",
+        "accepted",
+        "concurrent",
+        "cancelled",
+        "input-snapshot",
+        "lease",
+        "external-rights",
+        "snapshot",
+        "sent",
+        "unknown",
+        "request-hash",
+        "duplicate-main",
+        "extra-effect",
+        "unsettled-preparation",
+        "wrong-preparation-boundary",
+        "dispatch",
+        "second-dispatch",
+        "projection",
+    ],
+)
+def test_prepared_main_source_requires_exact_failed_send_boundary_and_all_settled_preparation(
+    prepared_main_source_state, damage
+):
+    s = prepared_main_source_state
+    main = s.effects[0][0]
+    if damage == "actor":
+        s.operation["actor_id"] = "foreign"
+    elif damage in {
+        "book-frontier",
+        "accepted",
+        "concurrent",
+        "cancelled",
+        "input-snapshot",
+    }:
+        book = list(s.book)
+        index, value = {
+            "book-frontier": (0, 19),
+            "accepted": (1, 1),
+            "concurrent": (4, "other"),
+            "cancelled": (5, True),
+            "input-snapshot": (2, "changed"),
+        }[damage]
+        book[index] = value
+        s.book = tuple(book)
+    elif damage == "lease":
+        s.unsafe = True
+    elif damage == "external-rights":
+        s.external_unsafe = True
+    elif damage == "snapshot":
+        s.snapshot = []
+    elif damage == "sent":
+        main["last_error"]["request_sent"] = True
+    elif damage == "unknown":
+        main["status"] = "UNKNOWN"
+    elif damage == "request-hash":
+        main["request_hash"] = "changed"
+    elif damage == "duplicate-main":
+        s.effects.append(deepcopy(s.effects[0]))
+    elif damage == "extra-effect":
+        s.effects.append(
+            (
+                dict(
+                    external_effect_id="extra",
+                    effect_type="model.invoke",
+                    status="UNKNOWN",
+                    request_payload={},
+                ),
+                "HELD_UNKNOWN",
+            )
+        )
+    elif damage == "unsettled-preparation":
+        s.effects[1] = (s.effects[1][0], "HELD_UNKNOWN")
+    elif damage == "wrong-preparation-boundary":
+        s.effects[1][0]["request_payload"]["input"]["context_compression_task"][
+            "frozen_input_boundary"
+        ] = {"foreign": True}
+    elif damage == "dispatch":
+        s.dispatches[0] = ("dispatch", 1, "UNKNOWN", {})
+    elif damage == "second-dispatch":
+        s.dispatches.append(s.dispatches[0])
+    elif damage == "projection":
+        main["request_payload"]["input"]["_context_capacity_projection"][
+            "original_hash"
+        ] = "changed"
+        main["request_hash"] = canonical_hash(main["request_payload"])
+    original = deepcopy(s.binding)
+    if damage:
+        with pytest.raises(KernelError, match="PLANNING_PREPARED_MAIN_HANDOFF_UNSAFE"):
+            s.consume()
+    else:
+        proof = s.consume()["completed_preparation"]
+        assert proof["main_dispatch_count"] == 1
+        assert proof["prepared_main_failure"]["request_hash"] == main["request_hash"]
+        assert proof["retained_preparation"][0]["operation_id"] == "source"
+        assert (
+            proof["retained_preparation"][0]["receipt_contract"]
+            == "STOPPED_GENERATION_SIBLING"
+        )
+    assert s.binding == original
+    s.uow.commit.assert_not_called()
+
+
+@pytest.mark.parametrize("router", [None, "router"])
+@pytest.mark.parametrize("change", ["", "missing", "route"])
+def test_complete_main_projection_retains_capacity_bound_candidate(
+    retained, monkeypatch, router, change
+):
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import (
+        retained_main_capacity_binding,
+    )
+    from novel_forge.modules.production_execution.token_meter import (
+        capacity_route_contract,
+    )
+    from tests.unit.test_complete_request_capacity import route
+
+    selected = route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=5000)
+    selected.model_profile.reasoning_effort = "medium"
+    selected.model_profile.backend_id = "fixture"
+    selected.model_output_limit = 5000
+    selected.output_reservation_policy = ""
+    binding = dict(
+        route=capacity_route_contract(selected), candidate={"candidate_id": "frozen"}
+    )
+    bindings = {"chapter_plan.generate": binding}
+    if change == "missing":
+        bindings = {}
+    elif change == "route":
+        binding["route"]["reasoning"] = "changed"
+    handoff = retained.binding["target_runtime"]["preparation_handoff"]
+    handoff.update(
+        contract_version="planning-prepared-main-handoff.v1",
+        prepared_main_failure={"source_operation_id": "original-main-owner"},
+    )
+    read = MagicMock(return_value=bindings)
+    monkeypatch.setattr(
+        "novel_forge.modules.chapter_authority.receipt_recovery.retained_capacity_bindings",
+        read,
+    )
+    args = dict(
+        command=retained.command,
+        operation_id="new-operation",
+        projection=dict(original_hash="original", source_boundary={"original": True}),
+        stage="chapter_plan.generate",
+        route=selected,
+        router=router,
+    )
+    if change == "missing" or change == "route" and router is None:
+        with pytest.raises(KernelError, match="ROUTING_CAPACITY_BINDING_DRIFT"):
+            retained_main_capacity_binding("db", **args)
+    else:
+        assert retained_main_capacity_binding("db", **args) == binding
+    assert read.call_args.kwargs["operation_id"] == "original-main-owner"
+    assert read.call_args.kwargs["source_hash"] == "original"
+
+
+def test_host_failure_after_prepared_main_keeps_complete_projection_custody(
+    query_handoff,
+):
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import (
+        PREPARED_MAIN_HANDOFF,
+    )
+
+    state = query_handoff
+    inherited = state.binding["target_runtime"]["preparation_handoff"]
+    inherited.update(
+        contract_version=PREPARED_MAIN_HANDOFF,
+        main_dispatch_count=1,
+        prepared_main_failure=dict(
+            source_operation_id="original-main",
+            external_effect_id="failed-main",
+            projection_hash="frozen",
+        ),
+    )
+    original = deepcopy(inherited)
+    proof = state.consume()["completed_preparation"]
+    assert proof["contract_version"] == PREPARED_MAIN_HANDOFF
+    assert proof["main_dispatch_count"] == 1
+    assert proof["prepared_main_failure"] == original["prepared_main_failure"]
+    assert proof[state.failure_key]["inherited_preparation"] == original
+    assert state.consume()["source_effect_count"] == 0

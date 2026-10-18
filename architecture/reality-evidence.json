@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261019_0230_unsent_preparation_lineage",
+  "migration_head": "20261019_0231_prepared_main_handoff",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -10589,7 +10589,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:7e31ff22a5e6e670583e97284f173d11c6d5ae8f9f8c18ac866680d03725297c"
+    "implementation_tree_sha": "sha256:ad10d579081a86ff4544bac2d96ba672e2dbd7a842e06e4820b1259f482dd632"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

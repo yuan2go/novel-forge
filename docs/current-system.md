@@ -1554,6 +1554,15 @@ The registration transaction appends the source terminal transition; its failed 
 and prior history remain unchanged. Native migration and registration have bounded
 evidence in `architecture/live-evidence/author-first-owned-recovery-5f5abbcb/`;
 automatic successor receipt consumption and end-to-end qualification remain pending.
+Registration v10 and migration231 add the exact failed-main pre-submit handoff. The
+single failed Dispatch must retain the Corpus traversal-bound diagnostic, explicit
+`request_sent=false`, a released reservation and no Provider recovery record or receipt.
+Every other Effect must be verified, settled preparation under the original custody.
+The same transaction terminates the retryable source Operation and registers its
+successor; its Attempt, failed Effect and Dispatch remain unchanged. The successor
+consumes the complete frozen capacity projection after checking identical inputs,
+then builds its own current admission and rechecks complete request capacity. This is
+`CODE_EXISTS`; native successor consumption remains pending.
 Routing observation lookup currently scans large asset JSON before matching its stage
 and model cohort; native statement-timeout failures have exposed this scaling gap.
 Migration 229 adds matching indexes for the model cohort, prior routing chain and
@@ -3318,6 +3327,8 @@ lists and retained recovery evidence. Iterative traversal rejects cycles and vis
 containers once without imposing a depth or container-count limit on valid input. Every
 discovered source identity still reaches the existing Corpus rights and raw-content gate;
 this traversal does not increase complete Provider request capacity or source authorization.
+A retryable Dispatch is not a zero-Effect preparation failure; its failure, request
+identity and completed preparation survive the explicit v10 registered successor.
 
 Import results distinguish preview, verified acquisition, parsed content, scheduled
 analysis and knowledge approval. Pause stops new stages; the current stage may finish.

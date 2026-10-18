@@ -49,15 +49,15 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
         "name": DEFINITION_NAME,
         "definition_version": definition_version,
         "family": "story_planning_runtime",
-        "command_schema_version": "planning-runtime-continuation.command.v" + definition_version[0],
-        "result_schema_version": "planning-runtime-continuation.result.v" + definition_version[0],
+        "command_schema_version": "planning-runtime-continuation.command.v" + definition_version.split('.')[0],
+        "result_schema_version": "planning-runtime-continuation.result.v" + definition_version.split('.')[0],
         "enabled": True,
         "command_schema": schema,
         "result_schema": schema,
@@ -67,7 +67,7 @@ def runtime_continuation_definition(
             "output_key": OUTPUT_KEY,
         },
         "handler_key": HANDLER_KEY,
-        "handler_contract_version": "planning-runtime-continuation.v" + definition_version[0],
+        "handler_contract_version": "planning-runtime-continuation.v" + definition_version.split('.')[0],
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "transactional",
@@ -83,6 +83,7 @@ def runtime_continuation_definition(
             **({'unsent_main_call_required': True, 'terminal_preparation_custody_required': True} if definition_version == '6.0.0' else {}),
             **({'unstarted_isolated_successor_required': True, 'exact_preparation_custody_required': True} if definition_version == '7.0.0' else {}),
             **({'unsent_preparation_host_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '9.0.0' else {}),
+            **({'failed_pre_submit_main_custody_required': True, 'complete_prepared_projection_required': True} if definition_version == '10.0.0' else {}),
             **({'unsent_preparation_query_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '8.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
@@ -201,6 +202,9 @@ def require_source(
         prepared = unsent_query_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
         if prepared:
             return prepared
+    if failure_code == 'EFFECT_RETRYABLE_FAILURE_RECORDED' and attempt:
+        from .preparation_recovery import prepared_main_source
+        return prepared_main_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
     if failure_code == "PROGRAMMING_BUG" and attempt and dict(attempt[2] or {}).get("error_message") == "canceling statement due to statement timeout":
         from .preparation_recovery import unsent_query_source
         prepared = unsent_query_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
@@ -1516,7 +1520,7 @@ def _capacity_target(
                         command=successor, inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
                         context_policy_ref=capacity_upgrade["source_context_policy_ref"], planning_task_token_budget=allocated,
                         preflight_only=True)
-                context = deepcopy(original_context.content) if source.get('completed_preparation', {}).get('contract_version') in {'planning-terminal-preparation-handoff.v1', 'planning-unsent-preparation-query-handoff.v1', 'planning-unsent-preparation-lineage-handoff.v1'} else preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated,
+                context = deepcopy(original_context.content) if source.get('completed_preparation', {}).get('contract_version') in {'planning-terminal-preparation-handoff.v1', 'planning-unsent-preparation-query-handoff.v1', 'planning-unsent-preparation-lineage-handoff.v1', 'planning-prepared-main-handoff.v1'} else preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated,
                     projection_contract=proof.get("contract_version"), capacity_policy_upgrade=capacity_upgrade)
             else:
                 context, _ = preparer._context_bundle(
@@ -1561,6 +1565,8 @@ def _capacity_target(
         target = {**target,"world_source_correction":correction,"generation_isolation":correction["isolation"]}
     if source.get("completed_preparation"):
         allocation["external_intents_at_source"] = 0 if source["completed_preparation"]["contract_version"] in {"planning-unsent-preparation-query-handoff.v1", "planning-unsent-preparation-lineage-handoff.v1"} else len(source["completed_preparation"]["retained_preparation"])
+        if source['completed_preparation']['contract_version'] == 'planning-prepared-main-handoff.v1':
+            allocation['external_intents_at_source'] = source['source_effect_count']
         target = {**target, "preparation_handoff": source["completed_preparation"]}
     return {**target, "planning_capacity": allocation}, authorization
 
@@ -2078,7 +2084,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
@@ -2096,7 +2102,7 @@ def register(
         "independent_human_review": "NOT_REVIEWED",
     }
     content = {
-        "contract_version": 'planning-runtime-continuation.v' + continuation_version[0],
+        "contract_version": 'planning-runtime-continuation.v' + continuation_version.split('.')[0],
         "continuation_id": continuation_id,
         "source_operation_id": source_operation_id,
         "source_evidence_asset_version_id": source["evidence_asset_version_id"],
