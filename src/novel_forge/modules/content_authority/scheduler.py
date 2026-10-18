@@ -26,6 +26,7 @@ from novel_forge.modules.command_kernel.deadline_runtime import (
 )
 from novel_forge.modules.command_kernel.cancellation import (
     acknowledge_worker_cancellation,
+    resolve_cancellation,
 )
 from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClass,
@@ -90,7 +91,7 @@ class ContentAuthorityScheduler:
                 WHERE operation.definition_name = ANY(%s)
                   AND (%s::text[]='{}'::text[] OR operation.project_id=ANY(%s))
                   AND NOT (operation.operation_id=ANY(%s))
-                  AND operation.status IN ('READY', 'FAILED_RETRYABLE', 'EXECUTING')
+                  AND operation.status IN ('READY', 'FAILED_RETRYABLE', 'EXECUTING', 'CANCELLATION_REQUESTED')
                   AND (active_lease.expires_at IS NULL OR active_lease.expires_at <= NOW())
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
@@ -136,6 +137,16 @@ class ContentAuthorityScheduler:
                 f"Content Operation is terminal: {state['operation_status']}",
             )
 
+        if state["operation_status"] == "CANCELLATION_REQUESTED" and not state.get("attempt_id"):
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                operation = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+            resolve_cancellation(self.database_url, operation_id=operation_id, project_id=project_id,
+                expected_version=int(operation["version"]), resolution="no_external_effect",
+                actor_id=self.worker_id, reason="Acknowledge cancellation before the first Content Attempt",
+                trace_id=str(state["trace_id"]), correlation_id=str(state["correlation_id"]),
+                require_no_active_attempt=True)
+            raise KernelError("OPERATION_CANCELLED", "Content was cancelled before its first Attempt")
+
         if state["operation_status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
             from novel_forge.modules.command_kernel.recovery import RecoverOperationCommand, recover_operation
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -176,7 +187,7 @@ class ContentAuthorityScheduler:
             )
             attempt_status = "QUEUED"
             recovery_mode = "retry_attempt" if retrying else recovery_mode
-        elif state["operation_status"] == "EXECUTING" and state.get("attempt_id"):
+        elif state["operation_status"] in {"EXECUTING", "CANCELLATION_REQUESTED"} and state.get("attempt_id"):
             attempt_id = str(state["attempt_id"])
             attempt_number = int(state["attempt_number"])
             attempt_status = str(state["attempt_status"])
@@ -227,6 +238,9 @@ class ContentAuthorityScheduler:
                 f"Content Attempt cannot resume from {attempt_status}",
             )
         try:
+            probe_operation_execution(
+                self.database_url, operation_id=operation_id, project_id=project_id
+            )
             with LeaseHeartbeatGuard(
                 lambda: heartbeat_attempt(
                     self.database_url, worker, self.lease_seconds
@@ -271,16 +285,20 @@ class ContentAuthorityScheduler:
             )
         except Exception as exc:
             classification = WorkerFailureClassifier.classify(exc)
-            if classification is WorkerFailureClass.CANCELLATION:
-                with AuthorityUnitOfWork(self.database_url) as uow:
-                    current = uow.repositories.attempt_runtime.operation_state(
-                        operation_id, project_id
-                    )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                current = uow.repositories.attempt_runtime.operation_state(
+                    operation_id, project_id
+                )
+            if classification not in {
+                WorkerFailureClass.LEASE_CONFLICT, WorkerFailureClass.FENCING_CONFLICT
+            } and current["status"] == "CANCELLATION_REQUESTED":
                 acknowledge_worker_cancellation(
                     self.database_url,
                     worker,
                     expected_operation_version=int(current["version"]),
                 )
+            elif classification is WorkerFailureClass.CANCELLATION:
+                raise
             elif classification is WorkerFailureClass.DISPATCH_PAUSED:
                 from novel_forge.modules.command_kernel.attempt_runtime import checkpoint_attempt_for_dispatch_pause
                 checkpoint_attempt_for_dispatch_pause(self.database_url, worker)

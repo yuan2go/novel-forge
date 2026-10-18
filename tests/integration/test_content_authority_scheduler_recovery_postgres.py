@@ -133,6 +133,71 @@ class ContentAuthoritySchedulerRecoveryPostgresTests(unittest.TestCase):
             state = uow.repositories.attempt_runtime.operation_state(admission.operation_id, self.project_id)
             self.assertEqual(state["status"], "RECONCILIATION_REQUIRED")
 
+    def cancel(self, admission, request):
+        from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            operation = uow.repositories.attempt_runtime.operation_state(admission.operation_id, self.project_id)
+        return request_cancellation(DATABASE_URL, CancelCommand(
+            operation_id=admission.operation_id, project_id=self.project_id,
+            actor_id=request.actor_id, reason="Retain interrupted preparation",
+            expected_version=operation["version"], idempotency_key=request.idempotency_key + ":cancel",
+            trace_id=request.trace_id, correlation_id=request.correlation_id))
+
+    def test_wrapped_handler_failure_acknowledges_requested_cancellation(self) -> None:
+        request = self.request("cancel-wrapped")
+        admission = self.app.admit(request)
+
+        def interrupted(*args, **kwargs):
+            self.cancel(admission, request)
+            raise KernelError("CONTEXT_PREPARATION_INTERRUPTED", "wrapped execution probe failure")
+
+        with patch("novel_forge.modules.content_authority.scheduler.execute_content_handler", side_effect=interrupted):
+            with self.assertRaisesRegex(KernelError, "CONTEXT_PREPARATION_INTERRUPTED"):
+                ContentAuthorityScheduler(DATABASE_URL, registry=self.app.registry).run_or_recover(
+                    operation_id=admission.operation_id, project_id=self.project_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [admission.operation_id])
+            self.assertEqual(cursor.fetchone()[0], "CANCELLED")
+            cursor.execute("SELECT status FROM authority_attempt WHERE operation_id=%s", [admission.operation_id])
+            self.assertEqual(cursor.fetchone()[0], "CANCELLED")
+
+    def test_cancellation_before_first_attempt_is_settled_without_execution(self) -> None:
+        request = self.request("cancel-before-first-attempt")
+        admission = self.app.admit(request)
+        self.cancel(admission, request)
+        scheduler = ContentAuthorityScheduler(DATABASE_URL, registry=self.app.registry)
+        with patch("novel_forge.modules.content_authority.scheduler.execute_content_handler") as handler:
+            with self.assertRaisesRegex(KernelError, "OPERATION_CANCELLED"):
+                scheduler.run_or_recover(operation_id=admission.operation_id, project_id=self.project_id)
+            handler.assert_not_called()
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [admission.operation_id])
+            self.assertEqual(cursor.fetchone()[0], "CANCELLED")
+            cursor.execute("SELECT count(*) FROM authority_attempt WHERE operation_id=%s", [admission.operation_id])
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+    def test_cancelled_worker_takeover_requires_expired_lease_and_never_runs_handler(self) -> None:
+        request = self.request("cancel-takeover")
+        admission = self.app.admit(request)
+        stale = self.start_worker(admission.operation_id, worker_id="old-cancel-worker",
+            trace_id=request.trace_id, correlation_id=request.correlation_id)
+        self.cancel(admission, request)
+        scheduler = ContentAuthorityScheduler(DATABASE_URL, registry=self.app.registry, worker_id="cancel-takeover")
+        with patch("novel_forge.modules.content_authority.scheduler.execute_content_handler") as handler:
+            with self.assertRaisesRegex(KernelError, "CONTENT_RECOVERY_LEASE_ACTIVE"):
+                scheduler.run_or_recover(operation_id=admission.operation_id, project_id=self.project_id)
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute("UPDATE authority_lease_acquisition SET acquired_at=NOW()-INTERVAL '2 seconds',heartbeat_at=NOW()-INTERVAL '2 seconds',expires_at=NOW()-INTERVAL '1 second' WHERE attempt_id=%s AND status='HELD'", [stale.attempt_id])
+            self.assertIn((admission.operation_id, self.project_id), scheduler.pending_operations(project_ids=[self.project_id]))
+            with self.assertRaisesRegex(KernelError, "OPERATION_CANCELLATION_REQUESTED"):
+                scheduler.run_or_recover(operation_id=admission.operation_id, project_id=self.project_id)
+            handler.assert_not_called()
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [admission.operation_id])
+            self.assertEqual(cursor.fetchone()[0], "CANCELLED")
+            cursor.execute("SELECT count(*), max(fencing_token) FROM authority_lease_acquisition WHERE attempt_id=%s", [stale.attempt_id])
+            self.assertEqual(cursor.fetchone(), (2, stale.fencing_token + 1))
+
     def test_crash_before_output_recovers_with_new_attempt(self) -> None:
         request = self.request("before-output")
         admission = self.app.admit(request)
