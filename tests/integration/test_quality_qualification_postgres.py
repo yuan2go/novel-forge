@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import hashlib
 import json
 
@@ -19,6 +20,8 @@ from novel_forge.modules.chapter_quality_authority.qualification_application imp
     QualitySubjectBindingCommand,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.authority_repositories import IdempotencyConflictError
+from novel_forge.modules.command_kernel.errors import KernelError
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -149,12 +152,17 @@ class TestQualityQualificationPostgres:
         assert started["budget_policy"] == raw["budget_policy"]
         assert "token_limit" not in started["budget_policy"] and "cost_limit_usd" not in started["budget_policy"]
 
+    @pytest.mark.parametrize(("baseline_protocol", "legacy_subject"), (
+        ("FIRST_DRAFT_VS_ACCEPTED_REVISION", False),
+        ("FIRST_DRAFT_VS_NATIVE_WORKING_REVISION", False),
+        ("FIRST_DRAFT_VS_NATIVE_WORKING_REVISION", True),
+    ))
     def test_campaign_subject_evidence_and_waiting_decision_are_idempotent(
-        self,
+        self, baseline_protocol, legacy_subject, monkeypatch,
     ) -> None:
-        manifest = QualityCampaignManifest.from_mapping(
-            _manifest(self.project_id, self.workspace_id, self.book_id)
-        )
+        raw = _manifest(self.project_id, self.workspace_id, self.book_id)
+        raw["baseline_protocol"]["kind"] = baseline_protocol
+        manifest = QualityCampaignManifest.from_mapping(raw)
         admitted = self.app.admit_campaign(
             manifest,
             stable_idempotency_key=f"{self.project_id}:quality:v1",
@@ -198,23 +206,35 @@ class TestQualityQualificationPostgres:
 
         baseline = self._asset("draft_version", "baseline-1", {"text": "first"})
         canonical = self._asset("draft_version", "canonical-1", {"text": "revised"})
-        subject = self.app.bind_subject(
-            QualitySubjectBindingCommand(
-                campaign_id=manifest.campaign_id,
-                subject_id=f"subject:{self.project_id}:chapter:1",
-                scope_type="CHAPTER",
-                scope_key="chapter:1",
-                chapter_start=1,
-                chapter_end=1,
-                arc_plan_version_ids=(),
-                canonical_asset_version_id=canonical["asset_version_id"],
-                canonical_content_hash=canonical["content_hash"],
-                baseline_asset_version_id=baseline["asset_version_id"],
-                baseline_content_hash=baseline["content_hash"],
-            ),
-            principal=self.principal,
+        subject_command = QualitySubjectBindingCommand(
+            campaign_id=manifest.campaign_id,
+            subject_id=f"subject:{self.project_id}:chapter:1",
+            scope_type="CHAPTER", scope_key="chapter:1", chapter_start=1, chapter_end=1,
+            arc_plan_version_ids=(),
+            canonical_asset_version_id=canonical["asset_version_id"],
+            canonical_content_hash=canonical["content_hash"],
+            baseline_asset_version_id=baseline["asset_version_id"],
+            baseline_content_hash=baseline["content_hash"],
         )
+        if legacy_subject:
+            execute = self.app._execute
+            def legacy_execute(**kwargs):
+                if kwargs["definition"] == "quality.qualification.subject.bind":
+                    kwargs["payload"]["baseline_protocol"] = "FIRST_DRAFT_VS_ACCEPTED_REVISION"
+                return execute(**kwargs)
+            monkeypatch.setattr(self.app, "_execute", legacy_execute)
+        subject = self.app.bind_subject(subject_command, principal=self.principal)
+        monkeypatch.undo()
+        assert self.app.bind_subject(subject_command, principal=self.principal) == subject
+        with pytest.raises(IdempotencyConflictError, match="IDEMPOTENCY_CONFLICT"):
+            self.app.bind_subject(replace(subject_command, scope_key="chapter:1:changed"), principal=self.principal)
+        with pytest.raises(KernelError, match="QUALITY_QUALIFICATION_INPUT_HASH_DRIFT"):
+            self.app.bind_subject(replace(subject_command, baseline_content_hash="sha256:" + "0" * 64), principal=self.principal)
         assert subject["scope_type"] == "CHAPTER"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT command_payload FROM authority_operation WHERE operation_id=%s", [subject["created_by_operation_id"]])
+            expected = "FIRST_DRAFT_VS_ACCEPTED_REVISION" if legacy_subject else baseline_protocol
+            assert uow.cursor.fetchone()[0]["payload"]["baseline_protocol"] == expected
 
         for layer in EvidenceLayer:
             evidence_asset = self._asset(

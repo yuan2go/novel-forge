@@ -2491,6 +2491,12 @@ New membership Quality Qualification campaigns bind the existing closed
 allowance and cannot mix monetary or finite cumulative fields into that policy. This
 metadata grants no dispatch or literary acceptance. Historical finite campaign manifests
 retain their original admission, budget and digest.
+Current working comparison subjects must retain the frozen manifest’s
+`FIRST_DRAFT_VS_NATIVE_WORKING_REVISION` protocol and grant no author or Book acceptance.
+Subject binding verifies that exact manifest hash. Existing registered subject requests
+retain their original protocol, including the historical accepted-revision label on an
+already-bound working comparison; Kernel replay still verifies the complete original
+payload and input bindings. That retained label grants no acceptance authority.
 
 Reader Calibration also owns anonymous comparisons of independent continuous manuscripts.
 The existing Quality Qualification router exports exact saved native Drafts, explicitly
