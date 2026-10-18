@@ -715,3 +715,102 @@ def test_explicit_working_review_output_allocation_is_frozen_and_historical_poli
     with pytest.raises(KernelError, match='LONGFORM_PROSE_POLICY_INVALID'):
         freeze_manifest(project_id='p', workspace_id='w', book_run_id='b', sources=[{**source, 'source_isolation': 'ACCEPTED_PROSE_ONLY'}],
                         policy=policy, work_intent=False)
+
+
+def chapter_literal_report_case():
+    from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT
+    frozen, window, raw = literal_report_case()
+    frozen['policy']['citation_locator_contract'] = CHAPTER_LITERAL_CITATION_CONTRACT
+    raw['schema_version'] = 'longform-prose-review.v4'
+    citation = raw['findings'][0]['evidence'][0]
+    citation.clear()
+    citation.update(chapter_number=window['spans'][0]['chapter_number'], quote=window['spans'][0]['text'][:2])
+    return frozen, window, raw
+
+
+def test_chapter_literal_citations_bind_exact_host_identity_without_modifying_raw_result_or_source():
+    frozen, window, raw = chapter_literal_report_case()
+    before = deepcopy((frozen, raw))
+    resolved = validate_window_report(raw, manifest=frozen, window=window)
+    assert (frozen, raw) == before
+    citation = resolved['findings'][0]['evidence'][0]
+    span = window['spans'][0]
+    assert {key: citation[key] for key in ('asset_version_id', 'text_hash', 'chapter_number')} == {
+        key: span[key] for key in ('asset_version_id', 'text_hash', 'chapter_number')}
+    assert citation['start'] == span['start'] and citation['end'] == span['start'] + 2
+    assert resolved['findings'][0]['repair'] == raw['findings'][0]['repair']
+    assert validate_window_report(resolved, manifest=frozen, window=window) == resolved
+    aggregate = aggregate_reports(frozen, [resolved])
+    assert aggregate['findings'][0]['members'][0]['evidence'][0] == citation
+
+
+@pytest.mark.parametrize('drift', ['wrong_chapter', 'wrong_chapter_same_identity', 'missing_source', 'changed_quote', 'duplicate_quote', 'source_version', 'source_hash', 'smuggled_identity', 'stored_hash', 'stored_version', 'stored_location'])
+def test_chapter_literal_citations_reject_wrong_or_ambiguous_sources_and_canonical_identity_drift(drift):
+    frozen, window, raw = chapter_literal_report_case()
+    citation = raw['findings'][0]['evidence'][0]
+    if drift == 'wrong_chapter':
+        window['spans'].append({**window['spans'][0], 'chapter_number': 2, 'asset_version_id': 'other', 'text': '另一段文字'})
+        citation['chapter_number'] = 2
+    elif drift == 'wrong_chapter_same_identity':
+        window['spans'].append({**window['spans'][0], 'chapter_number': 2, 'text': '另一段文字'})
+        citation['chapter_number'] = 2
+    elif drift == 'missing_source':
+        citation['chapter_number'] = 999
+    elif drift == 'changed_quote':
+        citation['quote'] = '未提供原文'
+    elif drift == 'duplicate_quote':
+        window['spans'][0]['text'] = citation['quote'] * 2
+    elif drift in {'source_version', 'source_hash'}:
+        key = 'asset_version_id' if drift == 'source_version' else 'text_hash'
+        window['spans'].append({**window['spans'][0], key: 'replacement'})
+    elif drift == 'smuggled_identity':
+        citation.update(asset_version_id='foreign', text_hash='wrong')
+    else:
+        raw = validate_window_report(raw, manifest=frozen, window=window)
+        citation = raw['findings'][0]['evidence'][0]
+        citation[{'stored_hash': 'text_hash', 'stored_version': 'asset_version_id', 'stored_location': 'start'}[drift]] = 1 if drift == 'stored_location' else 'wrong'
+    with pytest.raises(KernelError):
+        validate_window_report(raw, manifest=frozen, window=window)
+
+
+def test_new_chapter_citation_protocol_cannot_reinterpret_historical_identity_report_or_policy():
+    from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT
+    frozen, window, historical = literal_report_case()
+    current = deepcopy(frozen)
+    current['policy']['citation_locator_contract'] = CHAPTER_LITERAL_CITATION_CONTRACT
+    with pytest.raises(KernelError, match='CONTRACT_DRIFT'):
+        validate_window_report(historical, manifest=current, window=window)
+    _, _, raw = chapter_literal_report_case()
+    with pytest.raises(KernelError, match='CONTRACT_DRIFT'):
+        validate_window_report(raw, manifest=frozen, window=window)
+    historical['findings'][0]['evidence'][0]['text_hash'] = 'asset-hash-is-not-text-hash'
+    with pytest.raises(KernelError, match='LONGFORM_PROSE_CITATION'):
+        validate_window_report(historical, manifest=frozen, window=window)
+
+
+def test_chapter_citation_contract_binds_gateway_sample_and_projected_body_first_context():
+    from novel_forge.modules.book_followup_authority.prose_review import prose_review_invoke_payload
+    from novel_forge.modules.book_followup_authority.prose_sampling import prose_sample_invoke_payload
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+    frozen, window, _ = chapter_literal_report_case()
+    frozen['policy']['reading_mode'] = 'BODY_FIRST'
+    for span in window['spans']:
+        for key in ('creative_baseline', 'work_intent_status', 'work_intent_summary'):
+            span.pop(key, None)
+    content = dict(schema_version='longform-prose-window.v3', manifest_digest=frozen['manifest_digest'], policy=frozen['policy'],
+                   window=window, source_isolation='AUTHOR_SELECTED_UNREVIEWED_PROSE')
+    original = deepcopy(content)
+    task = prose_review_invoke_payload(content)
+    assert prose_sample_invoke_payload(content) == task
+    schema, identity = PostgresChapterExecutionContractBinder._provider_output_contract(stage='longform_prose_review', request_payload={'input': task})
+    citation = schema['properties']['findings']['items']['anyOf'][0]['properties']['evidence']['items']
+    assert identity == 'schema:chapter-provider-output:longform_prose_review:v4'
+    assert set(citation['properties']) == {'chapter_number', 'quote'}
+    context = dict(schema_version='novelos.longform_prose_review_context_bundle.v2', selected_inputs=[dict(asset_type='longform_prose_review_window', projection=content)])
+    view = build_provider_context_view('longform_prose_review', context, task)
+    projected = view['frozen_prose']['window']['spans'][0]
+    assert projected['text'] == window['spans'][0]['text'] and projected['chapter_number'] == window['spans'][0]['chapter_number']
+    assert not {'asset_version_id', 'text_hash', 'asset_hash', 'acceptance_id'} & set(projected)
+    assert 'chapter_number' in view['instruction'] and 'Host 从同一冻结窗口绑定原始来源版本' in view['instruction']
+    assert content == original

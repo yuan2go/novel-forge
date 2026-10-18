@@ -2578,6 +2578,12 @@ truncated response, usage, cost and failure, then explicitly start a new policy/
 the same exact selected ranges. Omitted output allocation retains the old target.
 A known `length` response is a completed failed call; an UNKNOWN response still requires
 original-result reconciliation or authorized isolation before a linked successor.
+New review windows may explicitly select `citation_locator_contract=chapter-literal-prose-citation.v1`
+with `diagnosis_contract=prose-root-cause.v1`. The model returns v4 citations as
+`chapter_number` plus a unique literal `quote`; the Host resolves identities only inside
+that window’s frozen source versions and saves the exact located binding. Original
+Provider output stays unchanged. This does not migrate or accept a rejected historical
+v3 report, infer another source from a quote, or relax wrong-hash rejection.
 
 After successful preflight, the supported runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
 executes one frozen Production Execution route, injects response loss after Provider

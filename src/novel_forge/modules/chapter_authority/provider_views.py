@@ -3739,9 +3739,17 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
     if len(inputs) != 1 or inputs[0].get("asset_type") != "longform_prose_review_window":
         raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "exactly one bounded prose window is required")
     projection = inputs[0]["projection"]
-    literal_citations = projection["policy"].get("citation_locator_contract") == "literal-prose-citation.v1"
+    from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, uses_literal_citations
+    literal_citations = uses_literal_citations(projection["policy"])
+    chapter_citations = projection["policy"].get("citation_locator_contract") == CHAPTER_LITERAL_CITATION_CONTRACT
     citation_requirement = ("只提交给定片段中的唯一精确引文；asset_version_id、text_hash 必须逐字复制引文所属的同一 span，不得缩写、猜测或混用其他章节的身份；Unicode 坐标由 Host 在原文中定位"
         if literal_citations else "只引用给定原文 Unicode code-point 坐标和精确 quote")
+    if chapter_citations:
+        projection = deepcopy(projection)
+        for span in projection["window"]["spans"]:
+            for key in ("asset_version_id", "asset_hash", "text_hash", "acceptance_id"):
+                span.pop(key, None)
+        citation_requirement = "每条引文只返回所属的 chapter_number 和该章给定片段内唯一的精确 quote；不得返回或计算 hash、版本身份或坐标。Host 从同一冻结窗口绑定原始来源版本、hash 和 Unicode 位置，不接受其他章节或窗口的来源"
     if projection["policy"].get("reading_mode") == "BODY_FIRST":
         if any("creative_baseline" in span or "work_intent_status" in span
                for span in projection["window"]["spans"]):
@@ -3749,7 +3757,7 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
         return {
             "contract_version": "provider-context-view-v3", "stage": "longform_prose_review",
             "frozen_prose": projection,
-            "instruction": "先阅读所提供的正文，不推定作者设计、题材或市场目标。记录正文呈现的目标、想跳读的具体段落、人物选择、处境变化与具体续读期待；用给定维度记录观察。" + citation_requirement + "。区分阅读感受、客观错误和证据不足，不能把个人偏好当成文学资格门禁。不能判断未提供的设计承诺是否兑现，也不能归因于未提供的计划或Writer输入。若返回repair，无法从正文确定的源头用UNKNOWN/INVESTIGATE，不为结构不足提出扩写。所有结果为模型审读意见，不是真人反馈、作者接纳或市场效果。不得修改正文、Canon或计划。",
+            "instruction": "先阅读所提供的正文，不推定作者设计、题材或市场目标。记录正文呈现的目标、想跳读的具体段落、人物选择、处境变化与具体续读期待；用给定维度记录观察。" + citation_requirement + "。区分阅读感受、客观错误和证据不足，不能把个人偏好当成文学资格门禁。不能判断未提供的设计承诺是否兑现，也不能归因于未提供的计划或Writer输入。若返回repair，无法从正文确定的源头用 problem_owner=UNKNOWN、root_cause=UNCERTAIN、repair_scope=INVESTIGATE，不为结构不足提出扩写。所有结果为模型审读意见，不是真人反馈、作者接纳或市场效果。不得修改正文、Canon或计划。",
         }
     if projection["schema_version"] == "longform-prose-window.v1":
         # COMPATIBILITY: queued v1 windows retain their original frozen request semantics.

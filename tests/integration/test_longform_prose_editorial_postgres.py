@@ -1154,3 +1154,51 @@ def test_unknown_review_rebuild_queries_original_effect_without_resending(native
             assert uow.cursor.fetchone() == (1,1)
     finally:
         rebuilt.close()
+
+
+def test_chapter_literal_review_persists_exact_source_binding_and_replays_without_another_effect(native_prose_effect_window):
+    from novel_forge.api.authority_dependencies import build_production_execution_composition, build_longform_prose_review_model_port
+    from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    values = native_prose_effect_window
+    scope = values['scope']
+    frozen = values['coordinator'].report(**scope, run_id=values['run']['run_id'])['manifest']
+    source_window = frozen['windows'][0]
+    span = source_window['spans'][0]
+    quote = span['text'][:min(32, len(span['text']))]
+    calls = []
+    def response(stage, inputs):
+        assert stage == 'longform_prose_review'
+        calls.append(inputs['window_id'])
+        return dict(schema_version='longform-prose-review.v4', manifest_digest=inputs['manifest_digest'], window_id=inputs['window_id'],
+                    reviewed_dimensions=list(PROSE_DIMENSIONS), findings=[dict(lineage_id='literal-chapter', dimension='motivation_cost',
+                    judgment='INSUFFICIENT_EVIDENCE', severity='NONE', confidence=0.5, claim='局部正文不能证明后续选择', rationale='仅保留给定原句作为待核查观察',
+                    evidence=[dict(chapter_number=span['chapter_number'], quote=quote)], repair=dict(root_cause='UNCERTAIN', problem_owner='UNKNOWN',
+                    repair_scope='INVESTIGATE', revision_goal='核对后续原文', preserve=['已保存正文'], resolution_criteria=['后续文本支持判断']))])
+    execution = build_production_execution_composition(values['settings'], env=values['env'], chapter_fixture_factory=response)
+    try:
+        model = build_longform_prose_review_model_port(values['settings'], execution=execution, env=values['env'])
+        followup = BookFollowupAuthorityApplication(DATABASE_URL, application_build_id='prose-test', commit_sha='e'*40, prose_model_port=model)
+        coordinator = BookProseReviewCoordinator(followup)
+        policy = {**frozen['policy'], 'policy_version': 'chapter-literal-native.v1', 'diagnosis_contract': 'prose-root-cause.v1',
+                  'citation_locator_contract': CHAPTER_LITERAL_CITATION_CONTRACT, 'reading_mode': 'BODY_FIRST',
+                  'execution_mode': 'MANUAL', 'follow_acceptance': False}
+        run = coordinator.start(**scope, **metadata('chapter-literal-start'), policy=policy)
+        command = dict(**scope, **metadata('chapter-literal-advance'), run_id=run['run_id'], expected_version=0)
+        progress = coordinator.advance(**command)
+        assert progress['review_complete'] and progress['source_current']
+        operation = progress['operations'][0]
+        assert operation['status'] == 'SUCCEEDED'
+        document = AuthorityAssetQuery(DATABASE_URL).require(project_id=scope['project_id'], asset_version_id=operation['report_asset_version_id'])
+        citation = document.content['findings'][0]['evidence'][0]
+        assert document.content['schema_version'] == 'longform-prose-review.v4'
+        assert citation['asset_version_id'] == span['asset_version_id'] and citation['text_hash'] == span['text_hash']
+        assert citation['quote'] == quote and citation['start'] == span['start']
+        assert coordinator.advance(**command)['review_complete']
+        assert len(calls) == 1
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT receipt.payload->'evidence'->'result' FROM authority_external_receipt receipt JOIN authority_external_effect_dispatch dispatch USING(dispatch_id) JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s", [operation['operation_id']])
+            raw = uow.cursor.fetchone()[0]
+            assert raw['findings'][0]['evidence'] == [dict(chapter_number=span['chapter_number'], quote=quote)]
+    finally:
+        execution.close()

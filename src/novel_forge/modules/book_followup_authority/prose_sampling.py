@@ -28,7 +28,8 @@ PROSE_REVIEWER_PROTOCOL = "prose-reviewer-independent-quality.v1"
 
 
 def prose_sample_invoke_payload(content: Mapping[str, Any]) -> dict[str, Any]:
-    if content["policy"].get("citation_locator_contract") == "literal-prose-citation.v1":
+    from .prose_review import uses_literal_citations
+    if uses_literal_citations(content["policy"]):
         return prose_review_invoke_payload(content)
     return {"manifest_digest": content["manifest_digest"], "window_id": content["window"]["window_id"]}
 

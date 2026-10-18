@@ -2050,6 +2050,14 @@ Body-first and design-aware reading share the frozen citation contract. Literal 
 requires a unique supplied quote with the exact source version and text hash from the
 same span. Wrong or guessed identities remain rejected; host location does not repair
 a model-selected source identity.
+Explicit `chapter-literal-prose-citation.v1` windows use Provider report v4:
+model citations contain only the chapter number and unique supplied quote. The Host
+binds that chapter’s single frozen source version/hash and exact Unicode position,
+retaining the raw Provider result separately. Provider views omit machine source identities
+for this contract; the immutable input asset and materialization retain custody. Missing
+or ambiguous chapter bindings, foreign/nonunique quotes and changed persisted identities
+are rejected. Historical v1–v3 identity-bearing reports retain their strict validation and
+are never repaired by this new contract. No default citation policy or manuscript gate changes.
 The coordinator requires external-effect resolution authority only when its model port
 provides native external recovery. A port without that capability has nothing to reconcile;
 native recovery still requires the scoped resolution permission before reading or mutating it.

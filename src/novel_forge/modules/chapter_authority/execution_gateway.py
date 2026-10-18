@@ -1468,10 +1468,12 @@ class PostgresChapterExecutionContractBinder:
             allow_noop_revision=prompt_contract_version in {"v9", "v10", "v11", "v12", "v13", "v15"} and not bool(inputs.get("quality_edit_contract")),
         )
         if stage == "longform_prose_review" and inputs.get("prose_diagnosis_contract") == "prose-root-cause.v1":
-            from novel_forge.modules.book_followup_authority.prose_review import prose_review_output_schema
-            literal = inputs.get("prose_citation_locator_contract") == "literal-prose-citation.v1"
-            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **prose_review_output_schema(root_cause=True, literal_citations=literal)}
-            schema_ref = "schema:chapter-provider-output:longform_prose_review:v3" if literal else "schema:chapter-provider-output:longform_prose_review:v2"
+            from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, prose_review_output_schema, uses_literal_citations
+            locator = inputs.get("prose_citation_locator_contract")
+            literal = uses_literal_citations({"citation_locator_contract": locator})
+            chapter = locator == CHAPTER_LITERAL_CITATION_CONTRACT
+            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **prose_review_output_schema(root_cause=True, literal_citations=literal, chapter_citations=chapter)}
+            schema_ref = "schema:chapter-provider-output:longform_prose_review:" + ("v4" if chapter else "v3" if literal else "v2")
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
