@@ -305,3 +305,53 @@ def test_pending_deployment_filters_exact_book_run_using_shared_dispatch_owner_s
                 'cancelled-sibling','working','world','edition','search','foreign-search','conflict','unbound-opening'}
         finally:
             connection.rollback()
+
+
+@pytest.mark.parametrize('contract,version', [('planning-unsent-preparation-query-handoff.v1','8.0.0'),('planning-unsent-preparation-lineage-handoff.v1','9.0.0')])
+def test_unsent_carrier_control_reader_requires_exact_successful_native_receipt(monkeypatch, contract, version):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import _require_unsent_carrier
+    from novel_forge.modules.command_kernel.errors import KernelError
+    frozen=dict(project_id='project',book_id='book',actor_id='author')
+    key='unsent_lineage_failure' if version=='9.0.0' else 'unsent_query_failure'
+    handoff=dict(contract_version=contract,**{key:dict(source_operation_id='source')})
+    target=dict(preparation_handoff=handoff)
+    member=dict(continuation_id='link',command=frozen,target=target)
+    receipt=dict(source_operation_id='source',successor_command=frozen,target_runtime=target)
+    monkeypatch.setattr('novel_forge.modules.story_planning_runtime.runtime_continuation.require_source',lambda *_a,**_kw:dict(completed_preparation=handoff))
+    with psycopg.connect(DATABASE_URL) as connection:
+        try:
+            for table in ('story_planning_runtime_continuation','operation','operation_output_asset','asset_version','asset'):
+                connection.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            connection.execute("INSERT INTO authority_story_planning_runtime_continuation(continuation_id,source_operation_id,registered_by_operation_id,project_id,book_id) VALUES('link','source','control','project','book')")
+            connection.execute("INSERT INTO authority_operation(operation_id,definition_name,definition_version,status,actor_id) VALUES('control','story_planning.runtime_continuation.register',%s,'SUCCEEDED','author')",[version])
+            connection.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES('asset','project','planning_runtime_continuation')")
+            connection.execute("INSERT INTO authority_asset_version(asset_id,asset_version_id,content,content_hash) VALUES('asset','receipt',%s,%s)",[Jsonb(receipt),canonical_hash(receipt)])
+            connection.execute("INSERT INTO authority_operation_output_asset(operation_id,asset_version_id,role,content_hash) VALUES('control','receipt','primary',%s)",[canonical_hash(receipt)])
+            with connection.cursor() as cursor:
+                uow=SimpleNamespace(cursor=cursor)
+                def read():return _require_unsent_carrier(uow,member=member,operation_id='source',frozen=frozen,rejected=KernelError('CARRIER_UNSAFE','exact control required'))
+                assert read()
+                for statement in (
+                    "UPDATE authority_operation SET status='EXECUTING'",
+                    "UPDATE authority_operation SET actor_id='foreign'",
+                    "UPDATE authority_operation SET definition_version='7.0.0'",
+                    "UPDATE authority_asset SET project_id='foreign'",
+                    "UPDATE authority_asset SET asset_type='draft_version'",
+                    "UPDATE authority_operation_output_asset SET role='execution_contract'",
+                    "UPDATE authority_asset_version SET content_hash='wrong'",
+                    "UPDATE authority_asset_version SET content=jsonb_set(content,'{source_operation_id}','\"foreign\"')",
+                    "UPDATE authority_story_planning_runtime_continuation SET source_operation_id='other'",
+                ):
+                    cursor.execute('SAVEPOINT carrier_negative')
+                    cursor.execute(statement)
+                    with pytest.raises(KernelError,match='CARRIER_UNSAFE'):
+                        read()
+                    cursor.execute('ROLLBACK TO SAVEPOINT carrier_negative')
+                if version=='9.0.0':
+                    cursor.execute("UPDATE authority_operation SET definition_version='8.0.0'")
+                    with pytest.raises(KernelError,match='CARRIER_UNSAFE'):
+                        read()
+        finally:
+            connection.rollback()

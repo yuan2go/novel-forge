@@ -1514,6 +1514,13 @@ reject this handoff. UNKNOWN siblings retain revoked rights and unknown usage. E
 continuations gain no implicit preparation authority: a new immutable v7 control receipt
 is required before an unstarted successor can use this contract. Native consumption
 and end-to-end qualification remain pending until proved on the corrected release.
+Isolation ancestry distinguishes verified zero-send v8/v9 carrier Operations from
+actual isolation owners (`CODE_EXISTS`). Each carrier must retain its exact successful
+outgoing control receipt and recomputed failure/Context/local-output custody proof,
+zero Effects and budgets, and no remaining submission rights. Its original failed
+Attempt remains intact. Actual isolation owners still require revoked commit/activation
+rights and cancelled Attempts. A generic FAILED status grants no reuse authority;
+native recovery after a later UNKNOWN remains unqualified until exercised.
 Provider preparation retains the original realization catalogue. Candidate materialization
 uses a checked consumer projection that preserves every source version and hash while
 binding host realization references to the new Operation. Normal and retained-result

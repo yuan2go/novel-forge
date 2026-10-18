@@ -315,6 +315,40 @@ def consumer_realization_catalog(database_url, *, command, operation_id, context
 
 
 
+
+def _require_unsent_carrier(uow, *, member, operation_id, frozen, rejected):
+    from .runtime_continuation import require_source
+
+    handoff = member['target'].get('preparation_handoff', {})
+    if handoff.get('contract_version') not in UNSENT_HANDOFF_CONTRACTS:
+        return False
+    failure_key = 'unsent_lineage_failure' if handoff['contract_version'] == LINEAGE_HANDOFF else 'unsent_query_failure'
+    if handoff.get(failure_key, {}).get('source_operation_id') != operation_id:
+        raise rejected
+    uow.cursor.execute("""SELECT version.content,version.content_hash FROM authority_story_planning_runtime_continuation link
+        JOIN authority_operation control ON control.operation_id=link.registered_by_operation_id
+        JOIN authority_operation_output_asset output ON output.operation_id=control.operation_id AND output.role='primary'
+        JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id AND version.content_hash=output.content_hash
+        JOIN authority_asset asset ON asset.asset_id=version.asset_id
+        WHERE link.continuation_id=%s AND link.source_operation_id=%s AND link.project_id=%s AND link.book_id=%s
+          AND control.status='SUCCEEDED' AND control.definition_name='story_planning.runtime_continuation.register'
+          AND control.definition_version IN ('8.0.0','9.0.0') AND control.actor_id=%s
+          AND (version.content#>>'{target_runtime,preparation_handoff,contract_version}'='planning-unsent-preparation-query-handoff.v1'
+            OR control.definition_version='9.0.0' AND version.content#>>'{target_runtime,preparation_handoff,contract_version}'='planning-unsent-preparation-lineage-handoff.v1')
+          AND asset.project_id=link.project_id AND asset.asset_type='planning_runtime_continuation'""",
+        [member['continuation_id'],operation_id,frozen['project_id'],frozen['book_id'],frozen['actor_id']])
+    rows = uow.cursor.fetchall()
+    if len(rows) != 1 or canonical_hash(rows[0][0]) != rows[0][1]:
+        raise rejected
+    receipt = rows[0][0]
+    if receipt.get('successor_command') != member['command'] or receipt.get('target_runtime') != member['target'] or receipt.get('source_operation_id') != operation_id:
+        raise rejected
+    source = require_source(uow, source_operation_id=operation_id, project_id=frozen['project_id'])
+    if source.get('completed_preparation') != handoff:
+        raise rejected
+    return True
+
+
 def isolated_preparation_source(uow, *, source_operation_id, frozen):
     from copy import deepcopy
     from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_terminal_preparation_success_in_uow, read_retained_generation_stage_success_in_uow
@@ -350,7 +384,7 @@ def isolated_preparation_source(uow, *, source_operation_id, frozen):
             if chain:
                 raise rejected
             return None
-        chain.append(dict(operation_id=current, continuation_id=row[0], target=row[4], operation=row[11]))
+        chain.append(dict(operation_id=current, source_operation_id=row[1], command=row[3], continuation_id=row[0], target=row[4], operation=row[11]))
         handoff = row[4].get('preparation_handoff', {})
         if handoff.get('contract_version') == 'planning-terminal-preparation-handoff.v1':
             anchor = deepcopy(handoff)
@@ -380,6 +414,9 @@ def isolated_preparation_source(uow, *, source_operation_id, frozen):
     receipts = [{**item, 'operation_id': anchor['source_operation_id'], 'receipt_contract': 'TERMINAL_PREPARATION'} for item in anchor['retained_preparation']]
     operations = [anchor['source_operation_id']] + [member['operation_id'] for member in reversed(chain)]
     for operation_id in operations:
+        carrier = next((member for member in chain if member['source_operation_id'] == operation_id and member['target'].get('preparation_handoff', {}).get('contract_version') in UNSENT_HANDOFF_CONTRACTS), None)
+        if carrier is not None and _require_unsent_carrier(uow, member=carrier, operation_id=operation_id, frozen=frozen, rejected=rejected):
+            continue
         if operation_id != anchor['source_operation_id']:
             uow.cursor.execute("SELECT proof FROM authority_generation_isolation WHERE operation_id=%s", [operation_id])
             isolation = uow.cursor.fetchone()

@@ -303,7 +303,7 @@ def isolated_chain(monkeypatch):
     effects = {'original': [(effect('original-success'), 'SETTLED', False)],
                'consumer': [(effect('consumer-success'), 'SETTLED', False), (effect('unknown', 'UNKNOWN'), 'HELD_UNKNOWN', True)],
                'interrupted': [(effect('world-unknown', 'UNKNOWN', 'world_candidates.evaluate'), 'HELD_UNKNOWN', True)]}
-    state = SimpleNamespace(chain=chain, effects=effects, frozen=frozen, handoff=handoff,
+    state = SimpleNamespace(chain=chain, effects=effects, frozen=frozen, handoff=handoff,no_isolation=set(),
         book=(18, 0, 'book-input', 'PAUSED', None), held=False,
         isolation=dict(contract_version='pure-generation-isolation.v1',business_commit_right='REVOKED',activation_right='REVOKED'))
     uow = MagicMock()
@@ -319,7 +319,7 @@ def isolated_chain(monkeypatch):
         if 'SELECT current_chapter' in sql:
             return state.book
         if 'SELECT proof FROM authority_generation_isolation' in sql:
-            return (state.isolation,)
+            return None if args[0] in state.no_isolation else (state.isolation,)
         if 'SELECT EXISTS' in sql:
             return (state.held,)
         raise AssertionError(sql)
@@ -329,6 +329,7 @@ def isolated_chain(monkeypatch):
     monkeypatch.setattr('novel_forge.modules.chapter_group_authority.replan_retirement.lock_replan_roots', lambda *_a, **_k:None)
     for name in ('read_terminal_preparation_success_in_uow', 'read_retained_generation_stage_success_in_uow'):
         monkeypatch.setattr('novel_forge.modules.command_kernel.external_effect_runtime.' + name, MagicMock(return_value=receipt))
+    state.uow = uow
     state.consume = lambda: recovery.isolated_preparation_source(uow, source_operation_id='interrupted', frozen=frozen)
     return state
 
@@ -536,3 +537,55 @@ def test_unsent_host_failure_retains_only_exact_local_preparation_materializatio
         assert proof['retained_local_preparation']==[dict(asset_version_id='materialization',content_hash=digest,
             output_key=state.outputs[-1][2],role='execution_contract',asset_type='capability_materialization_manifest',stage='context_fidelity')]
         assert proof['retained_preparation']==state.binding['target_runtime']['preparation_handoff']['retained_preparation']
+
+
+@pytest.mark.parametrize('damage', [None, 'missing_receipt', 'receipt_hash', 'retained_proof', 'live_source', 'unisolated_current'])
+def test_isolation_crosses_only_control_proven_unsent_carriers_without_granting_them_isolation(isolated_chain, monkeypatch, damage):
+    from novel_forge.modules.story_planning_runtime.preparation_recovery import LINEAGE_HANDOFF, QUERY_HANDOFF
+    state = isolated_chain
+    def carrier_row(identity, source, handoff):
+        row = list(state.chain['interrupted'])
+        row[0],row[1] = 'link:'+identity,source
+        row[4] = {**deepcopy(row[4]), 'preparation_handoff':handoff}
+        row[11] = {'operation_id':identity}
+        return tuple(row)
+    query = dict(contract_version=QUERY_HANDOFF,unsent_query_failure=dict(source_operation_id='query-carrier'))
+    lineage = dict(contract_version=LINEAGE_HANDOFF,unsent_lineage_failure=dict(source_operation_id='lineage-carrier'))
+    state.chain['interrupted'] = carrier_row('interrupted','lineage-carrier',lineage)
+    state.chain['lineage-carrier'] = carrier_row('lineage-carrier','query-carrier',query)
+    state.chain['query-carrier'] = carrier_row('query-carrier','consumer',dict(contract_version='planning-isolated-preparation-handoff.v1'))
+    state.effects.update({'lineage-carrier':[],'query-carrier':[]})
+    state.no_isolation.update({'lineage-carrier','query-carrier'})
+    if damage == 'unisolated_current':
+        state.no_isolation.add('interrupted')
+    receipts={}
+    proofs={'lineage-carrier':lineage,'query-carrier':query}
+    for identity in ('interrupted','lineage-carrier'):
+        row=state.chain[identity]
+        receipt=dict(source_operation_id=row[1],successor_command=row[3],target_runtime=row[4])
+        receipts[row[0]]=[(receipt,canonical_hash(receipt))]
+    if damage == 'missing_receipt':
+        receipts['link:lineage-carrier']=[]
+    if damage == 'receipt_hash':
+        receipts['link:lineage-carrier'][0]=(receipts['link:lineage-carrier'][0][0],'changed')
+    original_fetch=state.uow.cursor.fetchall.side_effect
+    def fetchall():
+        sql,args=state.uow.cursor.execute.call_args.args
+        return receipts[args[0]] if 'control.status' in sql else original_fetch()
+    state.uow.cursor.fetchall.side_effect=fetchall
+    seen=[]
+    def require_source(uow, *, source_operation_id, project_id):
+        seen.append(source_operation_id)
+        assert not state.effects[source_operation_id]
+        if damage == 'live_source':
+            raise KernelError('PLANNING_PREPARATION_HANDOFF_UNSAFE','Source has active rights')
+        return dict(completed_preparation={} if damage=='retained_proof' else proofs[source_operation_id])
+    monkeypatch.setattr('novel_forge.modules.story_planning_runtime.runtime_continuation.require_source',require_source)
+    if damage:
+        with pytest.raises(KernelError,match='PLANNING_PREPARATION_HANDOFF_UNSAFE'):
+            state.consume()
+    else:
+        result=state.consume()
+        assert set(seen)=={'lineage-carrier','query-carrier'}
+        assert {row['external_effect_id'] for row in result['retained_preparation']}=={'original-success','consumer-success'}
+        assert state.effects['consumer'][1][0]['status']=='UNKNOWN'

@@ -197,6 +197,13 @@ nodes, but all edges remain in the routing evidence and keep cycle, scope, froze
 binding and repair-number validation. The eight-content-Operation and stage repair
 bounds still apply. Validate actual receipt consumption before claiming recovery.
 
+Later pure-generation isolation may traverse zero-send query/lineage carriers. Verify
+the carrier's outgoing SUCCEEDED v8/v9 control receipt and recompute its exact unsent
+source proof; the incoming handoff describes its parent and does not establish the
+carrier's own failure. Such a carrier must still have zero Effects/budgets and released
+rights. Actual isolated executions retain their own revoked-rights proof and cancelled
+Attempt checks. A FAILED status or lack of an Effect alone is insufficient.
+
 Current author-first routing updates with `expected_policy_hash` use policy command
 2.3.0 / command Schema v11. The current hash is checked under the routing policy lock;
 stale policy updates refuse before selection. Earlier policy command definitions retain
