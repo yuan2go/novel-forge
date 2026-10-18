@@ -1,0 +1,286 @@
+from __future__ import annotations
+
+from copy import deepcopy
+import json
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from .domain import canonical_hash
+
+CONTRACT = 'planning-first-isolated-preparation-handoff.v1'
+CONTEXT_CONTRACT = 'same-capacity-isolated-preparation.v1'
+PAUSED_INTENT = dict(message='RUNTIME_DISPATCH_PAUSED: Planning preparation waits at the native Book pause checkpoint',
+    error_code='RUNTIME_DISPATCH_PAUSED', error_type='KernelError', request_sent=False,
+    failure_phase='pre_send_assertion', dispatch_pause_contract='runtime-dispatch-control.v1', authorization_denial_permanent=False)
+
+
+def _semantic(command):
+    return {key: value for key, value in command.items() if key not in {'runtime_continuation_id', 'idempotency_key'}}
+
+
+def require_source(uow, *, source_operation_id, frozen):
+    from novel_forge.modules.book_authority.manuscript import historical_working_inputs
+    from novel_forge.modules.chapter_group_authority.replan_retirement import lock_replan_roots
+    from novel_forge.modules.command_kernel.external_effect_runtime import (EffectCommandContext,
+        read_acknowledged_preparation_success_in_uow, read_retained_generation_stage_success_in_uow)
+    from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES
+    from .preparation_recovery import reconstruct_preparation_capture
+
+    if frozen.get('execution_contract_version') != '1.21.0' or not frozen.get('arc_working_set', {}).get('working_manuscript'):
+        return None
+    rejected = KernelError('PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE',
+        'First isolation custody requires stopped exact ancestry, revoked rights, current Book inputs and verified settled preparation; UNKNOWN is never a result')
+    members, seen, current = [], set(), source_operation_id
+    while current not in seen:
+        seen.add(current)
+        uow.cursor.execute('''SELECT to_jsonb(op),to_jsonb(generation),isolation.proof
+            FROM authority_operation op JOIN authority_story_planning_generation generation USING(operation_id)
+            LEFT JOIN authority_generation_isolation isolation USING(operation_id)
+            WHERE op.operation_id=%s AND op.project_id=%s FOR UPDATE OF op''', [current, frozen['project_id']])
+        row = uow.cursor.fetchone()
+        if not row:
+            if members:
+                raise rejected
+            return None
+        operation, generation, isolation = row
+        command = operation['command_payload']['payload']
+        uow.cursor.execute('SELECT to_jsonb(link) FROM authority_story_planning_runtime_continuation link WHERE successor_operation_id=%s', [current])
+        parent_row = uow.cursor.fetchone()
+        parent = parent_row[0] if parent_row else None
+        if parent:
+            inherited = parent['target_runtime'].get('preparation_handoff', {})
+            if inherited and inherited.get('contract_version') != CONTRACT:
+                return None
+        members.append(dict(operation=operation, generation=generation, isolation=isolation, parent=parent))
+        if not parent:
+            if command.get('runtime_continuation_id') or not isolation:
+                return None
+            break
+        current = parent['source_operation_id']
+    else:
+        raise rejected
+    anchor = members[-1]
+    original = anchor['operation']
+    if frozen.get('execution_contract_version') != '1.21.0' or original['definition_version'] != '1.21.0':
+        return None
+    working = frozen.get('arc_working_set', {}).get('working_manuscript', {})
+    if not working:
+        return None
+    for member in members:
+        op, gen, parent = member['operation'], member['generation'], member['parent']
+        command = op['command_payload']['payload']
+        if _semantic(command) != _semantic(frozen) or gen.get('candidate_asset_version_id'):
+            raise rejected
+        if parent and (parent['successor_command'] != command or parent['continuation_id'] != command.get('runtime_continuation_id')
+                or _semantic(parent['source_command']) != _semantic(frozen)):
+            raise rejected
+    uow.cursor.execute('SELECT root_operation_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s AND workspace_id=%s AND book_id=%s',
+        [working.get('book_run_id'), frozen['project_id'], frozen['workspace_id'], frozen['book_id']])
+    owner = uow.cursor.fetchone()
+    if not owner:
+        raise rejected
+    lock_replan_roots(uow.cursor, project_id=frozen['project_id'], book_root=owner[0])
+    uow.cursor.execute('SELECT current_chapter,accepted_through_chapter,input_snapshot_id,state,active_chapter_request_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE', [working['book_run_id']])
+    book = uow.cursor.fetchone()
+    if (not book or book[0] + 1 != working.get('target_chapter') or book[1] != working.get('accepted_through_chapter')
+            or book[3] not in {'READY', 'PAUSED'} or book[4] is not None
+            or historical_working_inputs(uow, original)[0] != frozen['book_id']):
+        raise rejected
+    uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)", [owner[0]])
+    if uow.cursor.fetchone()[0]:
+        raise rejected
+    uow.cursor.execute('SELECT snapshot_payload,snapshot_id,snapshot_hash,attempt_id FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s', [original['operation_id']])
+    snapshots = uow.cursor.fetchall()
+    uow.cursor.execute("SELECT asset_version_id,content_hash FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle'", [original['operation_id']])
+    contexts = uow.cursor.fetchall()
+    if len(snapshots) != 1 or len(contexts) != 1:
+        raise rejected
+    snapshot, snapshot_id, snapshot_hash, attempt_id = snapshots[0]
+    if snapshot.get('context_policy_ref') != 'context-policy:chapter-generation-pack:v4':
+        raise rejected
+    context = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=contexts[0][0])
+    if context.content_hash != contexts[0][1] or context.content.get('arc_working_set') != frozen['arc_working_set']:
+        raise rejected
+    inputs = anchor['generation']['input_snapshot']
+    context_inputs = {item['role']: item for item in context.content['input_versions']}
+    for item in inputs:
+        asset = uow.repositories.asset_documents.require(project_id=frozen['project_id'], asset_version_id=item['asset_version_id'])
+        if asset.content_hash != item['content_hash'] or asset.asset_type != item['asset_type'] or any(
+                context_inputs.get(item['role'], {}).get(key) != item[key] for key in ('asset_version_id', 'content_hash', 'asset_type')):
+            raise rejected
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id=frozen['project_id'], book_id=frozen['book_id'],
+        pack_snapshot_hash=snapshot_hash, sources=[dict(asset_version_id=context.asset_version_id, content_hash=context.content_hash)])
+    retained, stopped, first_task, projection, original_route = [], [], None, None, None
+    for member in reversed(members):
+        op, gen, isolation = member['operation'], member['generation'], member['isolation']
+        identity = op['operation_id']
+        if (op['actor_id'], op['workspace_id'], gen['book_id'], gen['input_snapshot']) != (frozen['actor_id'], frozen['workspace_id'], frozen['book_id'], inputs):
+            raise rejected
+        uow.cursor.execute('SELECT attempt_id,status,result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number', [identity])
+        attempts = uow.cursor.fetchall()
+        uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=%s AND l.status='HELD') OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL)", [identity, identity])
+        if not attempts or uow.cursor.fetchone()[0]:
+            raise rejected
+        uow.cursor.execute('SELECT actor_id FROM authority_cancellation_command WHERE operation_id=%s', [identity])
+        cancellations = uow.cursor.fetchall()
+        if isolation:
+            if (op['status'] != 'FAILED_FINAL' or any(a[1] != 'CANCELLED' for a in attempts) or cancellations
+                    or any(isolation.get(k) != v for k, v in (('contract_version', 'pure-generation-isolation.v1'),
+                        ('operation_id', identity), ('project_id', frozen['project_id']), ('book_id', frozen['book_id']),
+                        ('actor_id', frozen['actor_id']), ('business_commit_right', 'REVOKED'), ('activation_right', 'REVOKED')))):
+                raise rejected
+            receipt_kind = 'ISOLATED_GENERATION_SIBLING'
+            read = read_retained_generation_stage_success_in_uow
+            stop = dict(operation_id=identity, kind='ISOLATED', isolation_hash=canonical_hash(isolation))
+        elif op['status'] == 'RECONCILIATION_REQUIRED':
+            uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND attempt_id=%s AND status='ACKNOWLEDGED' AND acknowledged_at IS NOT NULL)", [identity, attempts[-1][0]])
+            if any(a[1] != 'CANCELLED' for a in attempts) or not cancellations or any(c[0] != frozen['actor_id'] for c in cancellations) or not uow.cursor.fetchone()[0]:
+                raise rejected
+            receipt_kind = 'ACKNOWLEDGED_PREPARATION'
+            read = read_acknowledged_preparation_success_in_uow
+            stop = dict(operation_id=identity, kind='ACKNOWLEDGED_CANCELLATION')
+        else:
+            failure = attempts[-1][2] or {}
+            allowed_failure = (failure.get('error_code'), failure.get('error_message')) in {
+                ('PROGRAMMING_BUG', 'canceling statement due to statement timeout'),
+                ('PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED', 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth')}
+            if op['status'] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} or cancellations or not allowed_failure or any(a[1] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} for a in attempts):
+                raise rejected
+            receipt_kind, read = 'STOPPED_GENERATION_SIBLING', read_retained_generation_stage_success_in_uow
+            stop = dict(operation_id=identity, kind='UNSENT_HOST_FAILURE', failure=deepcopy(failure))
+        uow.cursor.execute('''SELECT to_jsonb(effect),reservation.status,authority_generation_isolated(effect.external_effect_id)
+            FROM authority_external_effect effect LEFT JOIN authority_budget_reservation reservation USING(external_effect_id)
+            WHERE effect.operation_id=%s ORDER BY effect.external_effect_id FOR UPDATE OF effect''', [identity])
+        effects = uow.cursor.fetchall()
+        if stop['kind'] == 'UNSENT_HOST_FAILURE' and effects:
+            raise rejected
+        for effect, budget, isolated in effects:
+            payload = effect['request_payload']
+            stage = payload.get('stage')
+            if effect['effect_type'] != 'model.invoke' or stage not in {'context_compress', 'context_fidelity', 'world_candidates.generate', 'world_candidates.evaluate', *ACTOR_STAGES} or canonical_hash(payload) != effect['request_hash']:
+                raise rejected
+            if isolated:
+                if not isolation or effect['status'] not in {'UNKNOWN', 'RECONCILIATION_REQUIRED', 'FAILED_RETRYABLE'}:
+                    raise rejected
+                continue
+            if effect['status'] == 'FAILED_RETRYABLE' and stop['kind'] == 'ACKNOWLEDGED_CANCELLATION' and stage in {'context_compress', 'context_fidelity'}:
+                _require_paused_intent(uow, effect, budget, rejected)
+                stop.setdefault('paused_intent_ids', []).append(effect['external_effect_id'])
+                continue
+            if effect['status'] != 'SUCCEEDED' or budget != 'SETTLED':
+                raise rejected
+            ctx = EffectCommandContext(identity, frozen['project_id'], frozen['actor_id'], frozen['trace_id'], frozen['correlation_id'])
+            if stage not in {'context_compress', 'context_fidelity'}:
+                continue
+            task = payload.get('input', {}).get('context_compression_task', {})
+            if task.get('frozen_input_boundary') != boundary:
+                if identity == original['operation_id'] or member['parent']['target_runtime'].get('preparation_handoff'):
+                    raise rejected
+                stop.setdefault('different_context_preparation_ids', []).append(effect['external_effect_id'])
+                continue
+            digest = task.get('task', {}).get('source_projection_hash')
+            if not isinstance(digest, str) or projection is not None and projection != digest:
+                raise rejected
+            projection, first_task = digest, first_task or task
+            receipt = read(uow, ctx, effect_id=effect['external_effect_id'])
+            if not receipt or receipt['budget_reservation_status'] != 'SETTLED' or not isinstance(receipt['provider_evidence'].get('result'), dict):
+                raise rejected
+            if identity == original['operation_id'] and original_route is None:
+                original_route = deepcopy(receipt['provider_evidence']['production_execution']['route_snapshot'])
+            retained.append(dict(operation_id=identity, external_effect_id=effect['external_effect_id'], request_hash=effect['request_hash'],
+                stage=stage, task_hash=canonical_hash(task), result_hash=canonical_hash(receipt['provider_evidence']['result']), receipt_contract=receipt_kind))
+        stop['effect_ids'] = [effect['external_effect_id'] for effect, _, _ in effects]
+        stopped.append(stop)
+    if not retained:
+        return None
+    if canonical_hash(reconstruct_preparation_capture(context.content, first_task)) != projection:
+        raise rejected
+    from novel_forge.modules.chapter_authority.receipt_recovery import retained_capacity_bindings_in_uow
+    bindings = retained_capacity_bindings_in_uow(uow, project_id=frozen['project_id'], operation_id=original['operation_id'],
+        source_hash=projection, source_boundary=boundary, stage=anchor['generation']['generator_operation_name'])
+    main = bindings.get(anchor['generation']['generator_operation_name'], {}).get('route', {})
+    if not main:
+        raise rejected
+    account_route = original_route
+    original_route = {new: main[old] for new, old in (('model_provider', 'provider'), ('model_id', 'model'),
+        ('backend_id', 'backend'), ('reasoning_effort', 'reasoning'))}
+    if (account_route.get('model_provider'), account_route.get('backend_id')) == (main['provider'], main['backend']):
+        original_route['auth_profile_ref'] = account_route['auth_profile_ref']
+    proof = dict(contract_version=CONTRACT, source_operation_id=original['operation_id'], source_attempt_id=attempt_id,
+        custody_source_operation_id=source_operation_id, book_run_id=working['book_run_id'], current_chapter=book[0],
+        accepted_through_chapter=book[1], input_snapshot_id=book[2], working_snapshot_hash=working['snapshot_hash'],
+        context_asset_version_id=context.asset_version_id, context_content_hash=context.content_hash,
+        preparation_source_boundary=boundary, preparation_source_projection_hash=projection, retained_preparation=retained,
+        main_dispatch_count=0, isolated_generation_count=sum(member['isolation'] is not None for member in members), source_submission_rights='REVOKED_OR_TERMINALLY_RELEASED', stopped_ancestry=stopped,
+        original_pack_snapshot=snapshot, original_pack_snapshot_id=snapshot_id, original_pack_snapshot_hash=snapshot_hash)
+    proof['original_route'] = original_route
+    proof['original_capacity_bindings'] = bindings
+    current_op = members[0]['operation']
+    parent = members[0]['parent']
+    return dict(mode='FIRST_ISOLATED_PREPARATION_CUSTODY', source_operation_id=source_operation_id,
+        command=frozen, version=int(current_op['version']), snapshot=snapshot, depth=(int(parent['chain_depth']) if parent else 0) + 1,
+        evidence_asset_version_id=context.asset_version_id, evidence_hash=context.content_hash, fresh_preparation=proof,
+        source_operation_status=current_op['status'], source_release_sha=current_op.get('definition_snapshot', {}).get('commit_sha', snapshot.get('release_sha')), provider=original_route['model_provider'], route_evidence_operation_id=original['operation_id'])
+
+
+def _require_paused_intent(uow, effect, budget, rejected):
+    if budget not in {'RESERVED', 'RELEASED'} or effect.get('last_error') != PAUSED_INTENT:
+        raise rejected
+    uow.cursor.execute('''SELECT dispatch_id,status,evidence FROM authority_external_effect_dispatch
+        WHERE external_effect_id=%s ORDER BY generation''', [effect['external_effect_id']])
+    rows = uow.cursor.fetchall()
+    if len(rows) != 1 or rows[0][1:] != ('FAILED_RETRYABLE', PAUSED_INTENT):
+        raise rejected
+    uow.cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_external_receipt WHERE dispatch_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_effect_dispatch_lease WHERE dispatch_id=%s AND status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+            WHERE a.asset_type='execution_recovery_session' AND a.project_id=%s
+            AND v.content#>>'{record,request,external_effect_id}'=%s)''', [rows[0][0], rows[0][0], effect['project_id'], effect['external_effect_id']])
+    if uow.cursor.fetchone()[0]:
+        raise rejected
+
+
+def retire_paused_reservations(uow, source):
+    from novel_forge.modules.command_kernel.budget_runtime import resolve_provider_budget_failure_in_uow
+    for member in source['fresh_preparation']['stopped_ancestry']:
+        for effect_id in member.get('paused_intent_ids', []):
+            uow.cursor.execute('SELECT reservation_id FROM authority_budget_reservation WHERE external_effect_id=%s AND project_id=%s',
+                [effect_id, source['command']['project_id']])
+            rows = uow.cursor.fetchall()
+            if len(rows) != 1:
+                raise KernelError('PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE', 'Exact never-sent pause intent must own one reservation')
+            result = resolve_provider_budget_failure_in_uow(uow, reservation_id=rows[0][0], project_id=source['command']['project_id'])
+            if result['status'] != 'RELEASED':
+                raise KernelError('PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE', 'A started or ambiguous call cannot release its reservation')
+
+
+def target_runtime(application, source, target):
+    proof = source['fresh_preparation']
+    original, selected = proof['original_pack_snapshot'], target['pack_snapshot']
+    for field in ('pack_id', 'context_policy_ref', 'context_policy_hash', 'route_policy_hash', 'prompt_bundle_hash',
+            'tool_policy_hash', 'approval_policy_hash', 'budget_policy_hash', 'execution_capability_hash', 'skill_bundle_hash'):
+        if original.get(field) != selected.get(field):
+            raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'First isolation custody cannot reinterpret the frozen Pack or route')
+    route = proof['original_route']
+    for target_key, original_key in (('model_provider', 'model_provider'), ('model_id', 'model_id'),
+            ('model_backend_id', 'backend_id'), ('reasoning_effort', 'reasoning_effort')):
+        if not route.get(original_key) or target.get(target_key) != route[original_key]:
+            raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'First isolation custody retains the original model, reasoning, backend and authenticated account')
+    if route.get('auth_profile_ref') and target.get('auth_profile_ref') != route['auth_profile_ref']:
+        raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'First isolation custody retains the frozen authenticated account')
+    allocated = json.loads(original['context_policy_payload_json'])['planning_task_token_budget']
+    if type(allocated) is not int or not 0 < allocated <= 512_000:
+        raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Retain the original physical selection target')
+    return {**target, 'preparation_handoff': proof, 'planning_capacity': dict(allocated_task_tokens=allocated,
+        prior_task_tokens=allocated, context_revalidation=dict(contract_version=CONTEXT_CONTRACT,
+            context_asset_version_id=proof['context_asset_version_id'], context_content_hash=proof['context_content_hash']))}
+
+
+def authorization(uow, *, source, successor, principal, target):
+    from .runtime_continuation import _capacity_authorization, require_route_evidence
+    capacity = _capacity_authorization(uow, source=source, successor=successor, principal=principal, target=target)
+    route = require_route_evidence(uow, source=source, target=target,
+        authorized_reasoning_effort=source['fresh_preparation']['original_route']['reasoning_effort'])
+    return {**capacity, 'capacity_only': False, 'recovery_kind': 'FIRST_ISOLATED_PREPARATION_CUSTODY',
+        'route_authorization': route, 'preserved_repair_number': successor.repair_number,
+        'retained_preparation_count': len(source['fresh_preparation']['retained_preparation']),
+        'generation_recovery_number': source['fresh_preparation']['isolated_generation_count']}

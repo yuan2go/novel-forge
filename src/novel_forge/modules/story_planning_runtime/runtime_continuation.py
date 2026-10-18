@@ -49,7 +49,7 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0", "11.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
@@ -84,6 +84,7 @@ def runtime_continuation_definition(
             **({'unstarted_isolated_successor_required': True, 'exact_preparation_custody_required': True} if definition_version == '7.0.0' else {}),
             **({'unsent_preparation_host_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '9.0.0' else {}),
             **({'failed_pre_submit_main_custody_required': True, 'complete_prepared_projection_required': True} if definition_version == '10.0.0' else {}),
+            **({'first_isolation_preparation_custody_required': True, 'stopped_exact_ancestry_required': True} if definition_version == '11.0.0' else {}),
             **({'unsent_preparation_query_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '8.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
@@ -146,6 +147,10 @@ def require_source(
             "PLANNING_RUNTIME_CONTINUATION_SCOPE_INVALID",
             "source command differs from its native Book scope",
         )
+    from .fresh_preparation_custody import require_source as require_fresh_preparation
+    fresh = require_fresh_preparation(uow, source_operation_id=source_operation_id, frozen=frozen) if not row[5] and frozen.get('execution_contract_version') == '1.21.0' else None
+    if fresh:
+        return fresh
     if row[0] == "RECONCILIATION_REQUIRED":
         from .preparation_recovery import require_source as require_preparation_source
         return require_preparation_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
@@ -1889,6 +1894,7 @@ def register(
             "cancelled source version differs from the requested registration",
         )
     original = _command_from_payload(source["command"])
+    fresh_custody = bool(source.get('fresh_preparation'))
     if source.get("completed_preparation") and source["snapshot"]["release_sha"] == application.commit_sha:
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_RELEASE_UNCHANGED", "Preparation deployment handoff requires its explicit corrected release")
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
@@ -1963,6 +1969,7 @@ def register(
     capacity = source.get("mode") == "PRE_SEND_CAPACITY"
     if (
         not capacity
+        and not fresh_custody
         and not isolated_generation
         and not database_failure
         and not input_scope_failure
@@ -1977,6 +1984,7 @@ def register(
         )
     if (
         not capacity
+        and not fresh_custody
         and not isolated_generation
         and not database_failure
         and not input_scope_failure
@@ -2001,7 +2009,12 @@ def register(
     if source.get("preflight_failure"):
         from .preflight_continuation import require_capacity_target
         capacity_decision = require_capacity_target(source, target)
-    if isolated_generation:
+    if fresh_custody:
+        from .fresh_preparation_custody import target_runtime as fresh_target_runtime, authorization as fresh_authorization
+        target = fresh_target_runtime(application, source, target)
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = fresh_authorization(uow, source=source, successor=successor, principal=principal, target=target)
+    elif isolated_generation:
         target = {**target, "generation_isolation": source["generation_isolation"]}
         if source.get("isolated_preparation"):
             target["preparation_handoff"] = source["isolated_preparation"]
@@ -2084,7 +2097,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '11.0.0' if fresh_custody else '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
@@ -2191,6 +2204,7 @@ def register(
             )
             or (
                 not capacity
+                and not fresh_custody
                 and not isolated_generation
                 and not database_failure
                 and not input_scope_failure
@@ -2212,6 +2226,12 @@ def register(
                 "PLANNING_RUNTIME_CONTINUATION_SOURCE_DRIFT",
                 "source changed before continuation registration",
             )
+        if fresh_custody:
+            if fresh_target_runtime(application, current, target) != target or fresh_authorization(
+                    uow, source=current, successor=successor, principal=principal, target=target) != route_evidence:
+                raise KernelError('PLANNING_RUNTIME_CONTINUATION_SOURCE_DRIFT', 'First custody retains frozen routing and current author membership authority')
+            from .fresh_preparation_custody import retire_paused_reservations
+            retire_paused_reservations(uow, source)
         if (source.get("source_operation_status") or (source.get("context_revalidation") or {}).get("source_operation_status")) == "FAILED_RETRYABLE":
             from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
 

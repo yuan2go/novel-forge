@@ -4926,7 +4926,7 @@ class PostgresPlanningExecutionPreparer:
                 from novel_forge.modules.chapter_authority.receipt_recovery import retained_capacity_bindings
                 from novel_forge.modules.narrative_state.reality import narrative_hash
                 capacity_bindings = retained_capacity_bindings(self.database_url, project_id=command.project_id,
-                    operation_id=operation_id, source_hash=narrative_hash(capture), source_boundary=source_boundary, stage=stage_name)
+                    operation_id=source_operation_id, source_hash=narrative_hash(capture), source_boundary=source_boundary, stage=stage_name)
                 capacity_binding = capacity_bindings.get(stage_name)
             if provider_router is not None:
                 prepared_route, preparation = provider_router.select(planning_route, task_type=stage_name,
@@ -6079,7 +6079,7 @@ class PostgresPlanningExecutionPreparer:
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 upgrade = runtime.get("planning_capacity", {}).get("capacity_policy_upgrade")
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (upgrade or runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1", "same-capacity-semantic-preparation.v1"}
+                if proof and (upgrade or runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1", "same-capacity-semantic-preparation.v1", "same-capacity-isolated-preparation.v1"}
                     or (proof.get("contract_version") == "planning-exact-value-reference.v1" and proof.get("world_input_delivery", {}).get("contract_version") == "world-input-delivery-revalidation.v1")):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:

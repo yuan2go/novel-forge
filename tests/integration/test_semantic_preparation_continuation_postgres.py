@@ -412,3 +412,99 @@ def test_unsent_carrier_control_reader_requires_exact_successful_native_receipt(
                         read()
         finally:
             connection.rollback()
+
+
+@pytest.mark.parametrize('bridge', [False, True])
+def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes(bridge):
+    from novel_forge.storage.migrations.versions.v20261019_0232_first_isolated_preparation_custody import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED
+    with psycopg.connect(DATABASE_URL) as c:
+        try:
+            for table in ('operation', 'story_planning_generation', 'story_planning_runtime_continuation', 'attempt',
+                'attempt_capability_pack_snapshot', 'asset', 'asset_version', 'operation_output_asset', 'book_production',
+                'story_formation_run', 'story_creation_cancellation', 'generation_isolation', 'cancellation_command',
+                'worker_cancel_signal', 'lease_acquisition', 'external_effect', 'budget_reservation',
+                'external_effect_dispatch', 'external_receipt', 'effect_dispatch_lease'):
+                c.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            for statement in (MEMBER_STOPPED, FIRST_PERMITTED):
+                c.execute(statement.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION', 1))
+            def insert(table, **values):
+                c.execute(f'INSERT INTO authority_{table} ({",".join(values)}) VALUES ({",".join(["%s"] * len(values))})',
+                    [Jsonb(v) if isinstance(v, (dict, list)) else v for v in values.values()])
+            command = dict(book_id='book', arc_working_set=dict(working_manuscript=dict(book_run_id='run', target_chapter=20, accepted_through_chapter=0)))
+            source = 'bridge' if bridge else 'anchor'
+            source_command = {**command, **(dict(runtime_continuation_id='generic') if bridge else {})}
+            child_command = {**command, 'runtime_continuation_id': 'new-link', 'idempotency_key': 'new'}
+            gen = dict(book_id='book', generator_operation_name='chapter_plan.generate', logical_key='chapter:20', planning_scope='CHAPTER',
+                input_snapshot=[], input_snapshot_hash='inputs', repair_number=0)
+            for identity, status, payload in [('anchor', 'FAILED_FINAL', command), ('child', 'ADMITTED', child_command)]:
+                insert('operation', operation_id=identity, status=status, project_id='project', workspace_id='workspace', actor_id='author',
+                    definition_name='story_planning.generate', definition_version='1.21.0', command_payload=dict(payload=payload),
+                    definition_snapshot=dict(commit_sha='new' if identity == 'child' else 'old'), causation_operation_id=source if identity == 'child' else None)
+                insert('story_planning_generation', operation_id=identity, **gen)
+            insert('attempt', attempt_id='anchor-attempt', operation_id='anchor', status='CANCELLED', attempt_number=1)
+            insert('operation', operation_id='control', status='SUCCEEDED', actor_id='author', definition_name='story_planning.runtime_continuation.register', definition_version='11.0.0')
+            isolation = dict(contract_version='pure-generation-isolation.v1', actor_id='author', business_commit_right='REVOKED', activation_right='REVOKED')
+            insert('generation_isolation', operation_id='anchor', external_effect_id='unknown', project_id='project', workspace_id='workspace', request_hash='unknown-hash', proof=isolation)
+            insert('external_effect', external_effect_id='unknown', operation_id='anchor', project_id='project', effect_type='model.invoke', status='UNKNOWN', request_hash='unknown-hash', request_payload=dict(stage='context_fidelity'))
+            insert('budget_reservation', external_effect_id='unknown', operation_id='anchor', status='HELD_UNKNOWN')
+            if bridge:
+                insert('operation', operation_id='bridge', status='RECONCILIATION_REQUIRED', actor_id='author', project_id='project', workspace_id='workspace',
+                    definition_name='story_planning.generate', definition_version='1.21.0', command_payload=dict(payload=source_command), definition_snapshot=dict(commit_sha='old'))
+                insert('story_planning_generation', operation_id='bridge', **gen)
+                insert('attempt', attempt_id='bridge-attempt', operation_id='bridge', status='CANCELLED', attempt_number=1)
+                insert('cancellation_command', operation_id='bridge', actor_id='author')
+                insert('worker_cancel_signal', operation_id='bridge', status='ACKNOWLEDGED', acknowledged_at=datetime.now(timezone.utc))
+                insert('story_planning_runtime_continuation', continuation_id='generic', source_operation_id='anchor', successor_operation_id='bridge', project_id='project', book_id='book', chain_depth=1)
+            snapshot = dict(context_policy_payload_json='{"planning_task_token_budget":512000}')
+            boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='project', book_id='book', pack_snapshot_hash='snapshot-hash', sources=[dict(asset_version_id='context', content_hash='context-hash')])
+            proof = dict(contract_version='planning-first-isolated-preparation-handoff.v1', source_operation_id='anchor', source_attempt_id='anchor-attempt',
+                custody_source_operation_id=source, main_dispatch_count=0, source_submission_rights='REVOKED_OR_TERMINALLY_RELEASED', input_snapshot_id='book-input',
+                original_route=dict(model_provider='codex-cli', model_id='model', backend_id='backend', reasoning_effort='medium', auth_profile_ref='auth'),
+                original_pack_snapshot=snapshot, original_pack_snapshot_id='snapshot', original_pack_snapshot_hash='snapshot-hash',
+                context_asset_version_id='context', context_content_hash='context-hash', preparation_source_boundary=boundary, preparation_source_projection_hash='projection',
+                stopped_ancestry=[dict(operation_id='anchor'), *([dict(operation_id='bridge')] if bridge else [])],
+                retained_preparation=[dict(operation_id='anchor', external_effect_id='success', request_hash='success-hash', stage='context_compress')])
+            target = dict(model_provider='codex-cli', model_id='model', model_backend_id='backend', reasoning_effort='medium', auth_profile_ref='auth', preparation_handoff=proof, planning_capacity=dict(allocated_task_tokens=512000, prior_task_tokens=512000,
+                context_revalidation=dict(contract_version='same-capacity-isolated-preparation.v1', context_asset_version_id='context', context_content_hash='context-hash')))
+            insert('external_effect', external_effect_id='success', operation_id='anchor', project_id='project', effect_type='model.invoke', status='SUCCEEDED', request_hash='success-hash',
+                request_payload=dict(stage='context_compress', input=dict(context_compression_task=dict(frozen_input_boundary=boundary, task=dict(source_projection_hash='projection')))))
+            insert('budget_reservation', external_effect_id='success', operation_id='anchor', status='SETTLED')
+            insert('external_effect_dispatch', dispatch_id='success-dispatch', external_effect_id='success', status='SUCCEEDED')
+            insert('external_receipt', dispatch_id='success-dispatch', status='VERIFIED')
+            insert('attempt_capability_pack_snapshot', operation_id='anchor', attempt_id='anchor-attempt', snapshot_id='snapshot', snapshot_hash='snapshot-hash', snapshot_payload=snapshot)
+            insert('asset', asset_id='context-owner', project_id='project', asset_type='context_bundle')
+            insert('asset_version', asset_version_id='context', asset_id='context-owner', content_hash='context-hash', content=dict(arc_working_set=command['arc_working_set']))
+            insert('book_production', book_run_id='run', project_id='project', workspace_id='workspace', book_id='book', root_operation_id='book-root', current_chapter=19, accepted_through_chapter=0, state='PAUSED', input_snapshot_id='book-input')
+            insert('story_formation_run', formation_run_id='formation', project_id='project', workspace_id='workspace', book_id='book', frozen_stage_inputs=dict(generation_policy=dict(auto_authorization=dict(authorized_by_principal_id='author'))))
+            insert('story_planning_runtime_continuation', continuation_id='new-link', source_operation_id=source, successor_operation_id='child', registered_by_operation_id='control',
+                source_command=source_command, successor_command=child_command, project_id='project', workspace_id='workspace', book_id='book', source_release_sha='old', chain_depth=2 if bridge else 1, target_release_sha='new', target_runtime=target, decision_evidence=dict(formation_run_id='formation'))
+            insert('asset', asset_id='receipt-owner', project_id='project', asset_type='planning_runtime_continuation')
+            insert('asset_version', asset_version_id='receipt', asset_id='receipt-owner', content_hash='receipt-hash', content=dict(source_operation_id=source, target_runtime=target))
+            insert('operation_output_asset', operation_id='control', asset_version_id='receipt', content_hash='receipt-hash', role='primary')
+            def allowed():
+                return c.execute('SELECT authority_first_isolated_preparation_permitted(%s,%s,%s)', ['new-link', 'child', Jsonb(gen)]).fetchone()[0]
+            assert allowed()
+            for statement in (
+                "UPDATE authority_operation SET actor_id='foreign' WHERE operation_id='child'",
+                "UPDATE authority_book_production SET current_chapter=20",
+                "UPDATE authority_book_production SET accepted_through_chapter=1",
+                "UPDATE authority_book_production SET input_snapshot_id='new-book-input'",
+                "UPDATE authority_generation_isolation SET proof=jsonb_set(proof,'{activation_right}','\"GRANTED\"')",
+                "UPDATE authority_external_effect SET request_hash='wrong' WHERE external_effect_id='success'",
+                "UPDATE authority_budget_reservation SET status='RESERVED' WHERE external_effect_id='success'",
+                "UPDATE authority_external_effect SET request_payload='{\"stage\":\"chapter_plan.generate\"}' WHERE external_effect_id='success'",
+                "UPDATE authority_attempt SET status='EXECUTING' WHERE operation_id='anchor'",
+                "INSERT INTO authority_lease_acquisition(attempt_id,status) VALUES('anchor-attempt','HELD')",
+                "DELETE FROM authority_generation_isolation",
+                "UPDATE authority_operation SET status='EXECUTING' WHERE operation_id='anchor'",
+                "UPDATE authority_asset_version SET content_hash='wrong' WHERE asset_version_id='context'",
+                "INSERT INTO authority_cancellation_command(operation_id) VALUES('book-root')",
+                "UPDATE authority_story_planning_generation SET candidate_asset_version_id='already-written' WHERE operation_id='anchor'",
+                "UPDATE authority_operation SET definition_version='1.0.0' WHERE operation_id='control'",
+            ):
+                c.execute('SAVEPOINT negative')
+                c.execute(statement)
+                assert not allowed(), statement
+                c.execute('ROLLBACK TO SAVEPOINT negative')
+        finally:
+            c.rollback()

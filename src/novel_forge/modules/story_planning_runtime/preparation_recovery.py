@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from .domain import canonical_hash
+from .fresh_preparation_custody import CONTRACT as FIRST_ISOLATED_HANDOFF
 
 ISOLATED_HANDOFF = 'planning-isolated-preparation-handoff.v1'
 QUERY_HANDOFF = 'planning-unsent-preparation-query-handoff.v1'
@@ -9,7 +10,8 @@ LINEAGE_HANDOFF = 'planning-unsent-preparation-lineage-handoff.v1'
 PREPARED_MAIN_HANDOFF = 'planning-prepared-main-handoff.v1'
 UNSENT_HANDOFF_CONTRACTS = frozenset({QUERY_HANDOFF, LINEAGE_HANDOFF, PREPARED_MAIN_HANDOFF})
 CUSTODY_HANDOFF_CONTRACTS = frozenset({'planning-terminal-preparation-handoff.v1', ISOLATED_HANDOFF}) | UNSENT_HANDOFF_CONTRACTS
-MULTI_OWNER_HANDOFF_CONTRACTS = frozenset({ISOLATED_HANDOFF}) | UNSENT_HANDOFF_CONTRACTS
+MULTI_OWNER_HANDOFF_CONTRACTS = frozenset({ISOLATED_HANDOFF, FIRST_ISOLATED_HANDOFF}) | UNSENT_HANDOFF_CONTRACTS
+CUSTODY_HANDOFF_CONTRACTS = CUSTODY_HANDOFF_CONTRACTS | {FIRST_ISOLATED_HANDOFF}
 
 
 def preparation_boundary(database_url, *, command, operation_id, capture, current):

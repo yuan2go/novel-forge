@@ -716,14 +716,19 @@ def require_retained_owner_context_binding(database_url, *, project_id, operatio
 
 
 def retained_capacity_bindings(database_url, *, project_id, operation_id, source_hash, source_boundary, stage):
-    from novel_forge.modules.narrative_state.reality import narrative_hash
     with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute("""SELECT request_payload#>'{input,context_compression_task,task}'
-            FROM authority_external_effect WHERE operation_id=%s AND project_id=%s
+        return retained_capacity_bindings_in_uow(uow, project_id=project_id, operation_id=operation_id,
+            source_hash=source_hash, source_boundary=source_boundary, stage=stage)
+
+
+def retained_capacity_bindings_in_uow(uow, *, project_id, operation_id, source_hash, source_boundary, stage):
+    from novel_forge.modules.narrative_state.reality import narrative_hash
+    uow.cursor.execute("""SELECT request_payload#>'{input,context_compression_task,task}'
+        FROM authority_external_effect WHERE operation_id=%s AND project_id=%s
               AND request_payload#>>'{input,context_compression_task,task,source_projection_hash}'=%s
               AND request_payload#>>'{input,context_compression_task,task,stage}'=%s""",
             [operation_id, project_id, source_hash, stage])
-        rows = uow.cursor.fetchall()
+    rows = uow.cursor.fetchall()
     bindings = {}
     for (task,) in rows:
         if task.get("frozen_input_boundary") != source_boundary:

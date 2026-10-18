@@ -31,6 +31,17 @@ def _payload(candidate: ContextCandidate) -> dict[str, Any]:
     }
 
 
+def _exact_original_restoration(candidate, units, chosen):
+    if set(chosen) != {unit["unit_id"] for unit in units}:
+        return None
+    original = _payload(candidate)
+    if semantic_units.reconstruct(candidate, units, chosen) != original:
+        return None
+    return {"method": "EXACT_COMPLETE_ORIGINAL_PAYLOAD", "source_asset_version_id": candidate.asset_version_id,
+        "source_content_hash": candidate.content_digest, "payload_hash": narrative_hash(original),
+        "selected_unit_ids": sorted(chosen), "provider_evidence_claimed": False}
+
+
 def _history_accounting_payload(payload):
     from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
 
@@ -427,6 +438,7 @@ def compile_task_context(
             restored = set()
             evidence = []
             assessments = []
+            exact_restorations = []
             candidate_target = max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible)))
             if semantic and stage_sources and task.get("capacity_policy") == "complete-request-capacity.v1":
                 other_tokens = sum(replacements.get(item.asset_version_id, item).estimated_tokens
@@ -481,6 +493,14 @@ def compile_task_context(
                 else:
                     chosen_for_check = chosen
                 restored.update(required - set(selected))
+                exact = _exact_original_restoration(candidate, units, chosen) if semantic and len(groups) == 1 else None
+                if exact:
+                    exact_restorations.append(exact)
+                    restored.update(chosen - set(selected))
+                    keep.update(chosen)
+                    evidence.append(dict(selected_result.get("_execution_evidence") or {}))
+                    call_count += 1
+                    continue
                 verdict = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen_for_check)}))
                 missing = set(verdict.get("missing_unit_ids") or ())
                 distorted = set(verdict.get("distorted_unit_ids") or ())
@@ -490,18 +510,22 @@ def compile_task_context(
                 elif missing or distorted or verdict.get("supported") is not True or verdict.get("coverage_complete") is not True:
                     if missing and not distorted and verdict.get("supported") is True:
                         chosen.update(missing)
-                        check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen & allowed)}))
-                        assessments.append({
-                            "task": chunk, "selected_unit_ids": selected,
-                            "fidelity_selected_unit_ids": sorted(chosen),
-                            "fidelity": {key: value for key, value in check.items() if key != "_execution_evidence"},
-                            "compressor_evidence": dict(selected_result.get("_execution_evidence") or {}),
-                            "fidelity_evidence": dict(check.get("_execution_evidence") or {}),
-                            "recheck": True,
-                        })
-                        evidence.append(dict(check.get("_execution_evidence") or {}))
-                        if check.get("supported") is not True or check.get("coverage_complete") is not True or check.get("missing_unit_ids") or check.get("distorted_unit_ids"):
-                            chosen = allowed
+                        exact = _exact_original_restoration(candidate, units, chosen) if semantic and len(groups) == 1 else None
+                        if exact:
+                            exact_restorations.append(exact)
+                        else:
+                            check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen & allowed)}))
+                            assessments.append({
+                                "task": chunk, "selected_unit_ids": selected,
+                                "fidelity_selected_unit_ids": sorted(chosen),
+                                "fidelity": {key: value for key, value in check.items() if key != "_execution_evidence"},
+                                "compressor_evidence": dict(selected_result.get("_execution_evidence") or {}),
+                                "fidelity_evidence": dict(check.get("_execution_evidence") or {}),
+                                "recheck": True,
+                            })
+                            evidence.append(dict(check.get("_execution_evidence") or {}))
+                            if check.get("supported") is not True or check.get("coverage_complete") is not True or check.get("missing_unit_ids") or check.get("distorted_unit_ids"):
+                                chosen = allowed
                     else:
                         chosen = allowed
                     restored.update(chosen - set(selected))
@@ -541,6 +565,8 @@ def compile_task_context(
             trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "source_binding": source_binding, "source_binding_role": "FROZEN_PROVIDER_CONTEXT_CUSTODY" if stage_sources else "ORIGINAL_ASSET", "original_expression_path": (candidate.provenance or {}).get("original_expression_path"), "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v2", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"], **({"source_offsets": unit["source_offsets"]} if "source_offsets" in unit else {})} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence, "routing_assessments": assessments}
             if writer_projection:
                 trace["writer_projection_version"] = candidate.provenance["writer_projection_version"]
+            if exact_restorations:
+                trace["exact_original_restorations"] = exact_restorations
             if semantic:
                 trace.update(method="host-bound-extractive-semantic.v3", semantic_contract=semantic_units.SEMANTIC_CONTRACT,
                     source_units=semantic_units.source_audit(units, keep), source_catalog=semantic_units.source_audit(units, {unit["unit_id"] for unit in units}),

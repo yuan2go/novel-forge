@@ -1514,6 +1514,18 @@ reject this handoff. UNKNOWN siblings retain revoked rights and unknown usage. E
 continuations gain no implicit preparation authority: a new immutable v7 control receipt
 is required before an unstarted successor can use this contract. Native consumption
 and end-to-end qualification remain pending until proved on the corrected release.
+First Planning isolation and stopped generic-v1 successors use the explicit v11
+first-isolation preparation custody contract (`CODE_EXISTS`). It retains the original
+Context, World input, Pack and complete task hashes; only verified settled siblings
+are reusable. Every ancestor must be isolated with revoked rights, acknowledged as
+cancelled, or stopped at a verified zero-send query/lineage failure. A generic child
+with another Context retains its own receipts. An exact never-sent pause intent may
+release its reserved budget through Kernel in the registration UoW; UNKNOWN usage
+and original failures remain untouched. Native model/account authorization is checked
+before registration and again in its transaction. Repair numbers remain unchanged;
+isolation counts are observations. Migration 0232 appends this contract without
+reinterpreting v1/v7 history. Native dispatch/consumption on the corrected release
+remains pending; a read-only replay verifies the 82 original chapter20 siblings.
 Isolation ancestry distinguishes verified zero-send v8/v9 carrier Operations from
 actual isolation owners (`CODE_EXISTS`). Each carrier must retain its exact successful
 outgoing control receipt and recomputed failure/Context/local-output custody proof,
@@ -1671,6 +1683,13 @@ route-specific admission. Original frozen plan predecessor records are retrieved
 the ChapterPlan realization identity and exact parent-version hash, labelled as planned
 rather than occurred or accepted. Completely unchanged sources have exact-original
 proofs; bounded semantic checks target changed extracts and their located dependencies.
+A semantic chunk may omit redundant model fidelity/recheck only when it contains
+the complete source catalog and reconstruction equals the entire original Provider
+payload, including structured facts and exact newlines. The host equality proof
+claims no Provider evidence; a prior negative assessment stays negative. Partial
+extracts, source identity, dependency closure, complete capacity and unsettled
+execution guards retain their checks. This path is `CODE_EXISTS`; corrected native
+consumption remains pending.
 Working passages batch within their original Chapter source, retaining per-passage
 coordinates. Identical wrappers of the same source version share one extract; another
 Chapter or changed source hash cannot borrow that identity.

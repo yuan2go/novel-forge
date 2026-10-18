@@ -731,3 +731,85 @@ def test_small_measured_deficit_does_not_discard_half_the_optional_proposal():
     assert len(local_checks[0]['selected_unit_ids']) == 8
     assert result[0].safe_summary.count('ordinary paragraph') == 8
     assert result[0].estimated_tokens <= target
+
+
+@pytest.mark.parametrize('restore_all', [True, False])
+def test_chunk_restoration_proves_complete_original_without_a_redundant_model_recheck(restore_all):
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b', sources=[dict(asset_version_id='context', content_hash='frozen')])
+    original = candidate('\r\n\r\n'.join('ordinary scene '+str(i)+': '+'x'*100 for i in range(4)),
+        structured_facts=({'subject': '阿岚', 'knowledge_owner': '阿岚', 'status': 'HEARSAY'},),
+        provenance=dict(frozen_input_boundary=boundary))
+    task = dict(stage='draft', semantic_contract=semantic.SEMANTIC_CONTRACT, frozen_input_boundary=boundary, source_projection_hash='frozen')
+    calls = []
+    def call(stage, chunk):
+        calls.append((stage, chunk))
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=['text:0'], _execution_evidence={'execution_id': 'compress-original'})
+        omitted = [unit['unit_id'] for unit in chunk['units'] if unit['unit_id'] not in chunk['selected_unit_ids']]
+        missing = omitted if restore_all else omitted[:1]
+        if len([s for s, _ in calls if s == 'context_fidelity']) > 1:
+            missing = []
+        return dict(supported=True, coverage_complete=not missing, missing_unit_ids=missing, distorted_unit_ids=[],
+            _execution_evidence={'execution_id': 'fidelity-original'})
+    def count(value):
+        return len(json.dumps(value, ensure_ascii=False).encode())
+    result, receipt = compile_task_context([original], task=task, token_budget=250, required_asset_types=(),
+        model_call=call, compression_input_tokens=16000, chunk_fits=lambda _: True,
+        token_counter=count, allow_restored_overflow=True)
+    trace = receipt['compression_trace'][0]
+    checks = [chunk for stage, chunk in calls if stage == 'context_fidelity']
+    if restore_all:
+        assert len(checks) == 1
+        assert result[0].safe_summary == original.safe_summary
+        assert result[0].structured_facts == original.structured_facts
+        proof = trace['exact_original_restorations'][0]
+        assert proof['provider_evidence_claimed'] is False
+        assert proof['payload_hash'] == semantic.narrative_hash(dict(safe_summary=original.safe_summary, structured_facts=list(original.structured_facts)))
+        assert trace['routing_assessments'][0]['fidelity']['coverage_complete'] is False
+        assert trace['routing_assessments'][0]['extract_accepted'] is False
+    else:
+        assert len(checks) >= 2
+        assert not trace.get('exact_original_restorations')
+        assert any(item.get('recheck') for item in trace['routing_assessments'])
+    assert receipt['task_target_tokens'] == 250
+    assert receipt['capacity_admission'] == 'DEFERRED_COMPLETE_REQUEST'
+
+
+def test_complete_original_restoration_still_rejects_a_real_material_capacity_excess():
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b', sources=[dict(asset_version_id='context', content_hash='frozen')])
+    original = candidate('\n\n'.join('ordinary scene '+str(i)+': '+'x'*100 for i in range(4)), provenance=dict(frozen_input_boundary=boundary))
+    def call(stage, chunk):
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=['text:0'])
+        return dict(supported=True, coverage_complete=False,
+            missing_unit_ids=[unit['unit_id'] for unit in chunk['units'] if unit['unit_id'] not in chunk['selected_unit_ids']], distorted_unit_ids=[])
+    with pytest.raises(KernelError, match='TASK_CONTEXT_FIDELITY_RESTORE_EXCEEDS_BUDGET'):
+        compile_task_context([original], task=dict(stage='draft', semantic_contract=semantic.SEMANTIC_CONTRACT,
+            frozen_input_boundary=boundary, source_projection_hash='frozen'), token_budget=250,
+            required_asset_types=(), model_call=call, compression_input_tokens=16000, chunk_fits=lambda _: True,
+            token_counter=lambda value: len(json.dumps(value, ensure_ascii=False).encode()))
+
+
+def test_exact_first_chunk_proof_keeps_compressor_evidence_while_other_sources_are_checked():
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b', sources=[dict(asset_version_id='context', content_hash='frozen')])
+    original = candidate('\n\n'.join('protected original '+str(i)+': '+'x'*80 for i in range(3)), provenance=dict(frozen_input_boundary=boundary))
+    other = replace(original, asset_version_id='history:b', safe_summary=original.safe_summary.replace('protected original', 'optional background'))
+    calls = []
+    def call(stage, chunk):
+        calls.append((stage, chunk['source_binding']['asset_version_id']))
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=[chunk['units'][0]['unit_id']], _execution_evidence=dict(execution_id='compress:'+chunk['source_binding']['asset_version_id']))
+        return dict(supported=True, coverage_complete=True, missing_unit_ids=[], distorted_unit_ids=[])
+    selected, receipt = compile_task_context([original, other], task=dict(stage='draft', semantic_contract=semantic.SEMANTIC_CONTRACT,
+        frozen_input_boundary=boundary, source_projection_hash='frozen', preserve_quotes=[original.safe_summary]),
+        token_budget=250, required_asset_types=(), model_call=call, compression_input_tokens=16000,
+        chunk_fits=lambda _: True, allow_restored_overflow=True,
+        token_counter=lambda value: len(json.dumps(value, ensure_ascii=False).encode()))
+    exact = next(item for item in selected if item.asset_version_id == original.asset_version_id)
+    assert exact.safe_summary == original.safe_summary
+    trace = next(item for item in receipt['compression_trace'] if item['source_asset_version_id'] == original.asset_version_id)
+    assert trace['routing_assessments'] == []
+    assert trace['model_execution_evidence'] == [dict(execution_id='compress:history:a')]
+    assert trace['exact_original_restorations'][0]['provider_evidence_claimed'] is False
+    assert ('context_fidelity', 'history:a') not in calls
+    assert ('context_fidelity', 'history:b') in calls

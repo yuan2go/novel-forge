@@ -234,6 +234,7 @@ from . import (
     v20261019_0229_routing_observation_preparation_recovery,
     v20261019_0230_unsent_preparation_lineage,
     v20261019_0231_prepared_main_handoff,
+    v20261019_0232_first_isolated_preparation_custody,
 )
 
 VERSION_MODULES = [
@@ -469,6 +470,7 @@ VERSION_MODULES = [
     v20261019_0229_routing_observation_preparation_recovery,
     v20261019_0230_unsent_preparation_lineage,
     v20261019_0231_prepared_main_handoff,
+    v20261019_0232_first_isolated_preparation_custody,
 ]
 
 __all__ = ["VERSION_MODULES"]

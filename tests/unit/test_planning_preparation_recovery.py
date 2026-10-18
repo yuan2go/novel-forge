@@ -997,3 +997,211 @@ def test_host_failure_after_prepared_main_keeps_complete_projection_custody(
     assert proof["prepared_main_failure"] == original["prepared_main_failure"]
     assert proof[state.failure_key]["inherited_preparation"] == original
     assert state.consume()["source_effect_count"] == 0
+
+
+@pytest.fixture
+def first_isolation(monkeypatch):
+    from novel_forge.modules.story_planning_runtime import preparation_recovery as recovery
+    from novel_forge.modules.story_planning_runtime import fresh_preparation_custody as fresh
+    frozen = dict(project_id='project', workspace_id='workspace', book_id='book', actor_id='author',
+        trace_id='trace', correlation_id='correlation', execution_contract_version='1.21.0',
+        arc_working_set=dict(working_manuscript=dict(book_run_id='run', target_chapter=20, accepted_through_chapter=0, snapshot_hash='working')))
+    command = deepcopy(frozen)
+    operation = dict(operation_id='original', command_payload=dict(payload=command), actor_id='author', workspace_id='workspace',
+        project_id='project', definition_version='1.21.0', status='FAILED_FINAL', version=4)
+    generation = dict(book_id='book', generator_operation_name='chapter_plan.generate', input_snapshot=[], candidate_asset_version_id=None)
+    isolation = dict(contract_version='pure-generation-isolation.v1', operation_id='original', project_id='project',
+        book_id='book', actor_id='author', business_commit_right='REVOKED', activation_right='REVOKED')
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='project', book_id='book', pack_snapshot_hash='snapshot-hash',
+        sources=[dict(asset_version_id='context', content_hash='context-hash')])
+    capture = {'original': 'complete source'}
+    task = dict(frozen_input_boundary=boundary, task=dict(source_projection_hash=canonical_hash(capture)))
+    def effect(identity, status):
+        payload = dict(stage='context_compress', input=dict(context_compression_task=deepcopy(task)))
+        return dict(external_effect_id=identity, operation_id='original', project_id='project', effect_type='model.invoke', status=status,
+            request_payload=payload, request_hash=canonical_hash(payload))
+    snapshot = dict(context_policy_ref='context-policy:chapter-generation-pack:v4', context_policy_payload_json='{"planning_task_token_budget":512000}')
+    state = SimpleNamespace(members={'original': (operation, generation, isolation)}, parents={},
+        effects={'original': [(effect('success', 'SUCCEEDED'), 'SETTLED', False), (effect('unknown', 'UNKNOWN'), 'HELD_UNKNOWN', True)]},
+        attempts={'original': [('attempt', 'CANCELLED', {})]}, cancellations={}, acknowledged=True, held=False,
+        book=(19, 0, 'input-snapshot', 'PAUSED', None), cancelled_book=False, snapshot=snapshot,
+        frozen=frozen, context=SimpleNamespace(asset_version_id='context', content_hash='context-hash', content=dict(arc_working_set=frozen['arc_working_set'], input_versions=[])))
+    uow = MagicMock()
+    def execute(sql, args):
+        assert sql.count('%s') == len(args)
+    def one():
+        sql, args = uow.cursor.execute.call_args.args
+        if 'to_jsonb(op),to_jsonb(generation)' in sql:
+            return state.members.get(args[0])
+        if 'to_jsonb(link)' in sql:
+            return (state.parents[args[0]],) if args[0] in state.parents else None
+        if 'SELECT root_operation_id' in sql:
+            return ('root',)
+        if 'SELECT current_chapter' in sql:
+            return state.book
+        if 'authority_lease_acquisition' in sql:
+            return (state.held,)
+        if 'status=\'ACKNOWLEDGED\'' in sql:
+            return (state.acknowledged,)
+        if 'SELECT EXISTS' in sql:
+            return (state.cancelled_book,)
+        raise AssertionError(sql)
+    def many():
+        sql, args = uow.cursor.execute.call_args.args
+        if 'snapshot_payload,snapshot_id' in sql:
+            return [(state.snapshot, 'snapshot', 'snapshot-hash', 'attempt')]
+        if 'planning.context_bundle' in sql:
+            return [('context', 'context-hash')]
+        if 'FROM authority_attempt' in sql:
+            return state.attempts[args[0]]
+        if 'SELECT actor_id' in sql:
+            return state.cancellations.get(args[0], [])
+        if 'to_jsonb(effect)' in sql:
+            return state.effects[args[0]]
+        raise AssertionError(sql)
+    uow.cursor.execute.side_effect = execute
+    uow.cursor.fetchone.side_effect = one
+    uow.cursor.fetchall.side_effect = many
+    uow.repositories.asset_documents.require.side_effect = lambda **_: state.context
+    monkeypatch.setattr('novel_forge.modules.book_authority.manuscript.historical_working_inputs', lambda *_: ('book', []))
+    monkeypatch.setattr('novel_forge.modules.chapter_group_authority.replan_retirement.lock_replan_roots', lambda *_a, **_k: None)
+    monkeypatch.setattr(recovery, 'reconstruct_preparation_capture', lambda *_: capture)
+    state.read = MagicMock(return_value=dict(budget_reservation_status='SETTLED', provider_evidence=dict(result={'selected_unit_ids': ['text:0']}, production_execution=dict(route_snapshot=dict(model_id='model', model_provider='codex-cli', backend_id='backend', reasoning_effort='medium', auth_profile_ref='auth')))))
+    for name in ('read_retained_generation_stage_success_in_uow', 'read_acknowledged_preparation_success_in_uow'):
+        monkeypatch.setattr('novel_forge.modules.command_kernel.external_effect_runtime.'+name, state.read)
+    monkeypatch.setattr('novel_forge.modules.chapter_authority.receipt_recovery.retained_capacity_bindings_in_uow',
+        lambda *_a, **_k: {'chapter_plan.generate': {'route': dict(provider='codex-cli', model='model', backend='backend', reasoning='medium')}})
+    state.consume = lambda source='original': fresh.require_source(uow, source_operation_id=source, frozen=state.frozen)
+    return state
+
+
+def test_fresh_isolation_retains_verified_preparation_without_fabricating_a_terminal_anchor(first_isolation):
+    s = first_isolation
+    before = deepcopy(s.effects)
+    source = s.consume()
+    assert source['mode'] == 'FIRST_ISOLATED_PREPARATION_CUSTODY'
+    proof = source['fresh_preparation']
+    assert [(r['operation_id'], r['external_effect_id']) for r in proof['retained_preparation']] == [('original', 'success')]
+    assert proof['source_operation_id'] == 'original'
+    assert 'host_failure' not in proof
+    assert s.effects == before
+    assert s.read.call_count == 1
+
+
+@pytest.mark.parametrize('damage', ['actor', 'book', 'frontier', 'accepted', 'active_chapter', 'lease', 'live_rights',
+    'unisolated_unknown', 'unsettled', 'request_hash', 'context_hash', 'boundary', 'projection', 'main_send', 'candidate', 'book_cancel'])
+def test_first_isolation_custody_rejects_foreign_stale_unsettled_or_live_sources(first_isolation, damage):
+    s = first_isolation
+    op, gen, iso = s.members['original']
+    success = s.effects['original'][0][0]
+    if damage == 'actor':
+        op['actor_id'] = 'other'
+    elif damage == 'book':
+        gen['book_id'] = 'foreign'
+    elif damage in {'frontier', 'accepted', 'active_chapter'}:
+        book = list(s.book)
+        book[{'frontier': 0, 'accepted': 1, 'active_chapter': 4}[damage]] = 1
+        s.book = tuple(book)
+    elif damage == 'lease':
+        s.held = True
+    elif damage == 'live_rights':
+        iso['activation_right'] = 'GRANTED'
+    elif damage == 'unisolated_unknown':
+        e, b, _ = s.effects['original'][1]
+        s.effects['original'][1] = (e, b, False)
+    elif damage == 'unsettled':
+        s.effects['original'][0] = (success, 'RESERVED', False)
+    elif damage == 'request_hash':
+        success['request_hash'] = 'wrong'
+    elif damage == 'context_hash':
+        s.context.content_hash = 'wrong'
+    elif damage in {'boundary', 'projection'}:
+        task = success['request_payload']['input']['context_compression_task']
+        if damage == 'boundary':
+            task['frozen_input_boundary']['book_id'] = 'foreign'
+        else:
+            task['task']['source_projection_hash'] = 'wrong'
+        success['request_hash'] = canonical_hash(success['request_payload'])
+    elif damage == 'main_send':
+        success['request_payload']['stage'] = 'chapter_plan.generate'
+        success['request_hash'] = canonical_hash(success['request_payload'])
+    elif damage == 'candidate':
+        gen['candidate_asset_version_id'] = 'already-produced'
+    else:
+        s.cancelled_book = True
+    with pytest.raises(KernelError, match='PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE'):
+        s.consume()
+
+
+@pytest.mark.parametrize('stop', ['acknowledged', 'isolated', 'query', 'lineage'])
+def test_first_custody_continues_through_stopped_children_without_reassigning_old_receipts(first_isolation, stop):
+    s = first_isolation
+    original, generation, isolation = s.members['original']
+    child = deepcopy(original)
+    child.update(operation_id='child', status='RECONCILIATION_REQUIRED' if stop == 'acknowledged' else 'FAILED_FINAL')
+    child['command_payload']['payload']['runtime_continuation_id'] = 'first-link'
+    s.parents['child'] = dict(continuation_id='first-link', source_operation_id='original', successor_command=child['command_payload']['payload'],
+        source_command=deepcopy(s.frozen), target_runtime={}, chain_depth=1)
+    child_isolation = None
+    if stop == 'isolated':
+        child_isolation = {**isolation, 'operation_id': 'child'}
+    s.members['child'] = child, deepcopy(generation), child_isolation
+    s.effects['child'] = []
+    if stop == 'acknowledged':
+        s.attempts['child'] = [('child-attempt', 'CANCELLED', {})]
+        s.cancellations['child'] = [('author',)]
+    elif stop == 'isolated':
+        s.attempts['child'] = [('child-attempt', 'CANCELLED', {})]
+    else:
+        failure = dict(error_code='PROGRAMMING_BUG' if stop == 'query' else 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED',
+            error_message='canceling statement due to statement timeout' if stop == 'query' else 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth')
+        s.attempts['child'] = [('child-attempt', 'FAILED_FINAL', failure)]
+    source = s.consume('child')
+    assert source['depth'] == 2
+    proof = source['fresh_preparation']
+    assert proof['source_operation_id'] == 'original' and proof['custody_source_operation_id'] == 'child'
+    assert [r['external_effect_id'] for r in proof['retained_preparation']] == ['success']
+    assert len(proof['stopped_ancestry']) == 2
+
+
+@pytest.mark.parametrize('drift', [None, 'model_id', 'model_provider', 'model_backend_id', 'reasoning_effort', 'auth_profile_ref', 'context_policy_hash'])
+def test_first_custody_allows_a_new_physical_build_but_keeps_frozen_semantics_and_route(first_isolation, drift):
+    from novel_forge.modules.story_planning_runtime.fresh_preparation_custody import target_runtime
+    source = first_isolation.consume()
+    original = source['fresh_preparation']['original_pack_snapshot']
+    original.update(compilation_hash='old-physical-compilation', release_sha='old')
+    target = dict(pack_snapshot={**original, 'compilation_hash': 'new-physical-compilation', 'release_sha': 'new'},
+        model_provider='codex-cli', model_id='model', model_backend_id='backend', reasoning_effort='medium', auth_profile_ref='auth')
+    if drift:
+        if drift == 'context_policy_hash':
+            target['pack_snapshot'][drift] = 'changed'
+        else:
+            target[drift] = 'changed'
+        with pytest.raises(KernelError, match='PLANNING_PREPARATION_REUSE_DRIFT'):
+            target_runtime(None, source, target)
+    else:
+        result = target_runtime(None, source, target)
+        assert result['pack_snapshot']['compilation_hash'] == 'new-physical-compilation'
+        assert result['preparation_handoff']['original_pack_snapshot']['compilation_hash'] == 'old-physical-compilation'
+        assert result['planning_capacity']['allocated_task_tokens'] == 512000
+
+
+def test_fresh_reader_defers_historical_contract_changes_to_their_existing_owner(first_isolation):
+    s = first_isolation
+    s.members['original'][0]['definition_version'] = '1.19.0'
+    s.members['original'][0]['command_payload']['payload']['execution_contract_version'] = '1.19.0'
+    assert s.consume() is None
+
+
+def test_first_custody_uses_the_frozen_main_stage_route_instead_of_compressor_reasoning(first_isolation, monkeypatch):
+    from novel_forge.modules.story_planning_runtime.fresh_preparation_custody import target_runtime
+    monkeypatch.setattr('novel_forge.modules.chapter_authority.receipt_recovery.retained_capacity_bindings_in_uow',
+        lambda *_a, **_k: {'chapter_plan.generate': {'route': dict(provider='codex-cli', model='model', backend='backend', reasoning='high')}})
+    source = first_isolation.consume()
+    assert source['fresh_preparation']['original_route']['reasoning_effort'] == 'high'
+    assert first_isolation.read.return_value['provider_evidence']['production_execution']['route_snapshot']['reasoning_effort'] == 'medium'
+    target = dict(pack_snapshot=deepcopy(source['snapshot']), model_provider='codex-cli', model_id='model', model_backend_id='backend',
+        reasoning_effort='high', auth_profile_ref='auth')
+    assert target_runtime(None, source, target)['preparation_handoff']['original_capacity_bindings']['chapter_plan.generate']['route']['reasoning'] == 'high'
+    with pytest.raises(KernelError, match='PLANNING_PREPARATION_REUSE_DRIFT'):
+        target_runtime(None, source, {**target, 'reasoning_effort': 'medium'})

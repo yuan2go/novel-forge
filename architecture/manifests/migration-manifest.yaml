@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261019_0231_prepared_main_handoff",
+  "head": "20261019_0232_first_isolated_preparation_custody",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -234,6 +234,7 @@
     "20261018_0228_terminal_preparation_handoff",
     "20261019_0229_routing_observation_preparation_recovery",
     "20261019_0230_unsent_preparation_lineage",
-    "20261019_0231_prepared_main_handoff"
+    "20261019_0231_prepared_main_handoff",
+    "20261019_0232_first_isolated_preparation_custody"
   ]
 }
