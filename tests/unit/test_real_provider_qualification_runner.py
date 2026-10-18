@@ -33,6 +33,18 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class RealProviderQualificationRunnerTests(unittest.TestCase):
+    def test_membership_probe_reports_missing_native_binding_before_any_call(self) -> None:
+        result = RUNNER._provider_readiness(provider="codex-cli", model="gpt-test",
+            codex_login_available=True, env={
+                "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+                "NOVEL_FORGE_RESOURCE_CONTROL_VERSION": "billing-channel-resources.v1",
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF": "contract:fixture",
+                "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "100000"})
+        self.assertEqual(result["blockers"], ["ENGINEERING_QUALIFICATION_BLOCKED:MEMBERSHIP_RETRIEVAL_RESOURCE_BINDING_MISSING"])
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertFalse(result["provider_request_sent"])
+
     def test_authenticated_codex_is_engineering_blocked_not_credential_missing(
         self,
     ) -> None:

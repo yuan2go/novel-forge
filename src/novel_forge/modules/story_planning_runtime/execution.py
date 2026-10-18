@@ -282,7 +282,20 @@ def _planning_repair_routing_lineage(
             capacity_predecessor = ""
             if payload.get("runtime_continuation_id"):
                 cursor.execute(
-                    "SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload' FROM authority_story_planning_runtime_continuation r JOIN authority_operation source ON source.operation_id=r.source_operation_id AND source.status IN ('CANCELLED','FAILED_FINAL','DEAD_LETTER') JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED' WHERE r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s",
+                    """SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload'
+                    FROM authority_story_planning_runtime_continuation r
+                    JOIN authority_operation source ON source.operation_id=r.source_operation_id
+                    JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED'
+                    WHERE (source.status IN ('CANCELLED','FAILED_FINAL','DEAD_LETTER') OR (
+                      source.status='RECONCILIATION_REQUIRED' AND registration.definition_name='story_planning.runtime_continuation.register'
+                      AND registration.definition_version='5.0.0'
+                      AND r.target_runtime#>>'{preparation_handoff,contract_version}'='planning-completed-preparation-handoff.v1'
+                      AND r.target_runtime#>>'{preparation_handoff,source_operation_id}'=source.operation_id
+                      AND EXISTS(SELECT 1 FROM authority_attempt a WHERE a.operation_id=source.operation_id
+                        AND a.attempt_id=r.target_runtime#>>'{preparation_handoff,source_attempt_id}' AND a.status='CANCELLED')
+                      AND NOT EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+                        WHERE a.operation_id=source.operation_id AND l.status='HELD')))
+                      AND r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s""",
                     [
                         payload["runtime_continuation_id"],
                         current_id,
@@ -3794,6 +3807,14 @@ class _PlanningPepPort:
     external_effect_backed = True
     production_execution_gateway_backed = True
 
+    def _require_live_book(self):
+        from novel_forge.modules.book_authority.production_policy import require_planning_provider_dispatch
+        from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        probe_operation_execution(self.database_url, operation_id=self.context.operation_id, project_id=self.context.project_id)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_planning_provider_dispatch(uow.cursor, project_id=self.context.project_id, operation_id=self.context.operation_id)
+
     @execution_step("story_planning_runtime._PlanningPepPort.execute")
     def execute(self, command: DomainExecutionCommand) -> DomainExecutionCandidate:
         if command.capability != self.binding.request.capability:
@@ -3812,6 +3833,7 @@ class _PlanningPepPort:
                 lease_seconds=self.lease_seconds,
                 adapter=self.adapter,
                 budget_reservation_id=self.reservation_id,
+                pre_send_assertion=self._require_live_book,
             )
         except Exception as exc:
             if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
@@ -4876,6 +4898,10 @@ class PostgresPlanningExecutionPreparer:
             source_boundary = {"kind": "FROZEN_STAGE_INPUTS", "project_id": command.project_id, "book_id": command.book_id,
                 "pack_snapshot_hash": attempt_snapshot.snapshot_hash,
                 "sources": [{"asset_version_id": context_document.asset_version_id, "content_hash": context_document.content_hash}]}
+            if not capacity_task:
+                from .preparation_recovery import preparation_boundary
+                source_boundary = preparation_boundary(self.database_url, command=command, operation_id=operation_id,
+                    capture=capture, current=source_boundary)
             capacity_bindings = {}
             if not capacity_task:
                 from novel_forge.modules.chapter_authority.receipt_recovery import retained_capacity_bindings
@@ -4913,6 +4939,10 @@ class PostgresPlanningExecutionPreparer:
 
                 def model_call(substage, task):
                     from novel_forge.modules.production_execution.domain_execution import DomainModelOperation
+                    from .preparation_recovery import reuse_completed_task
+                    reused = reuse_completed_task(self.database_url, command=command, operation_id=operation_id, stage=substage, task=task)
+                    if reused is not None:
+                        return reused
                     prepared = self._prepare_stage(**arguments, capacity_task=(substage, task))
                     candidate = prepared.execution_port.execute(DomainExecutionCommand(capability=definition.capability,
                         operation=DomainModelOperation.GENERATE, candidate_kind=CandidateKind.GENERATION,

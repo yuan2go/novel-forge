@@ -233,16 +233,22 @@ def current_planning_fixture_inputs(inputs, database_url):
             edition_run = (command.get("edition_execution") or {}).get("book_run_id")
             uow.cursor.execute("SELECT s.foundation_set FROM authority_book_production b JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id WHERE b.project_id=%s AND b.book_id=%s AND (%s::text IS NULL OR b.book_run_id=%s)", [command["project_id"], command["book_id"], edition_run, edition_run])
             snapshots = uow.cursor.fetchall()
-            if len(snapshots) != 1:
+            if len(snapshots) == 1:
+                bindings = [b for b in snapshots[0][0]["bindings"] if b["role"] == "CHARACTER_CAST"]
+                if len(bindings) != 1:
+                    raise ValueError("Chapter fixture requires one exact frozen cast")
+            elif not snapshots and (view.get("realization_reference_contract") or {}).get("character_references") is None:
+                bindings = [b for b in inputs.get("frozen_inputs", []) if b.get("role") == "character_cast"]
+                if bindings and (len(bindings) != 1 or command.get("input_versions", {}).get("character_cast") != bindings[0]["asset_version_id"]):
+                    raise ValueError("Pre-Book planning fixture must retain its exact cast input")
+            else:
                 raise ValueError("Chapter fixture requires one exact active Book input snapshot")
-            bindings = [b for b in snapshots[0][0]["bindings"] if b["role"] == "CHARACTER_CAST"]
-            if len(bindings) != 1:
-                raise ValueError("Chapter fixture requires one exact frozen cast")
-            binding = bindings[0]
-            cast = uow.repositories.asset_documents.require(project_id=command["project_id"], asset_version_id=binding["asset_version_id"])
-            if cast.content_hash != binding["content_hash"]:
-                raise ValueError("Chapter fixture cast must match the frozen content hash")
-            frozen_cast = {"controlled_frozen_cast": deepcopy(cast.content)}
+            if bindings:
+                binding = bindings[0]
+                cast = uow.repositories.asset_documents.require(project_id=command["project_id"], asset_version_id=binding["asset_version_id"])
+                if cast.content_hash != binding["content_hash"] or cast.content.get("book_id") != command["book_id"]:
+                    raise ValueError("Chapter fixture cast must match the frozen Book and content hash")
+                frozen_cast = {"controlled_frozen_cast": deepcopy(cast.content)}
     if version == "1.18.0":
         return {**inputs, **frozen_cast, "controlled_execution_contract_version": version}
     return {**inputs, **frozen_cast, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}

@@ -537,14 +537,20 @@ def test_supervisor_activates_formally_approved_replan_and_resumes() -> None:
     }
     activated: list[str] = []
     superseded: list[tuple[str, str, str]] = []
+    order = []
 
     def require(_book_run_id: str):
         return {**book, "state": state["value"]}
 
     def activate(replan_id: str):
+        order.append("resume")
         activated.append(replan_id)
         state["value"] = BookProductionState.READY.value
         return {"replan_id": replan_id, "status": "RESUMED"}
+
+    def retire_group(group_run_id, **kwargs):
+        order.append("retire_group")
+        superseded.append((group_run_id, kwargs["replan_id"], kwargs["target_group_plan_version_id"]))
 
     supervisor = object.__new__(PostgresBookProductionSupervisor)
     supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
@@ -557,19 +563,14 @@ def test_supervisor_activates_formally_approved_replan_and_resumes() -> None:
             "target_asset_version_id": "chapter-group:v1",
         },
         activate=activate,
+        activate_plan_change=lambda replan_id: order.append("activate_plan_change"),
     )
     supervisor.principal = SimpleNamespace()
     supervisor._active_group_run = lambda _book: {
         "group_run_id": "group-run:1",
     }
     supervisor.chapter_groups = SimpleNamespace(
-        supersede_for_approved_replan=lambda group_run_id, **kwargs: superseded.append(
-            (
-                group_run_id,
-                kwargs["replan_id"],
-                kwargs["target_group_plan_version_id"],
-            )
-        )
+        supersede_for_approved_replan=retire_group
     )
 
     tick = supervisor.tick("book-run:1")
@@ -579,6 +580,7 @@ def test_supervisor_activates_formally_approved_replan_and_resumes() -> None:
     assert tick.evidence_ref == "replan:1"
     assert activated == ["replan:1"]
     assert superseded == [("group-run:1", "replan:1", "chapter-group:v1")]
+    assert order == ["activate_plan_change", "retire_group", "resume"]
 
 
 def test_supervisor_finishes_replan_resume_after_snapshot_binding_restart() -> None:

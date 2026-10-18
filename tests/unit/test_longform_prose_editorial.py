@@ -19,6 +19,22 @@ from novel_forge.modules.book_followup_authority.prose_review import (
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+@pytest.mark.parametrize("native_recovery", [False, True])
+def test_review_without_external_recovery_does_not_require_resolution_authority(native_recovery):
+    from types import SimpleNamespace
+    from novel_forge.modules.book_followup_authority.prose_recovery import recover_prose_review
+    principal = Principal(principal_id="reviewer", principal_type=PrincipalType.SERVICE,
+        authentication_source="server_configuration", project_scope=frozenset({"p"}), permissions=frozenset({"book.authority.execute", "book.followup:longform.prose_review"}))
+    coordinator = SimpleNamespace(followup=SimpleNamespace(prose_model_port=SimpleNamespace(
+        capability_binder=object() if native_recovery else None)))
+    scope = dict(run_id="review", project_id="p", workspace_id="w", book_run_id="book", principal=principal)
+    if native_recovery:
+        with pytest.raises(PermissionError, match="external_effect.resolve"):
+            recover_prose_review(coordinator, **scope)
+    else:
+        assert recover_prose_review(coordinator, **scope) == []
+
+
 def manifest():
     return freeze_manifest(
         project_id="p",

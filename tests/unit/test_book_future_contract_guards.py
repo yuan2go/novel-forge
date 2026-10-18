@@ -16,6 +16,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.chapter_group_authority.replan_retirement import (
     require_replan_retirement,
 )
+from novel_forge.modules.book_authority.production_policy import require_planning_provider_dispatch
 from novel_forge.modules.plan_change_authority.application import (
     _definition,
     COORDINATED_VERSION,
@@ -44,6 +45,24 @@ def test_accepted_lineage_stops_even_when_other_future_paths_continue():
         )
         previous = current
     assert len(_lineage_impacts("plan", diamond)) == 40
+
+
+@pytest.mark.parametrize("rows,code", [
+    ([], ""), ([("READY", False, False)], ""),
+    ([("PAUSED", False, False)], "RUNTIME_DISPATCH_PAUSED"),
+    ([("READY", True, False)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("READY", False, True)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("ABORTED", False, False)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("READY", False, False)] * 2, "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+])
+def test_planning_dispatch_honors_the_owning_book_and_creation_checkpoint(rows, code):
+    cursor = MagicMock()
+    cursor.fetchall.return_value = rows
+    if code:
+        with pytest.raises(KernelError, match=code):
+            require_planning_provider_dispatch(cursor, project_id="p", operation_id="generation")
+    else:
+        require_planning_provider_dispatch(cursor, project_id="p", operation_id="generation")
 
 
 def test_lineage_edge_budget_fails_before_any_invalidation():
@@ -111,7 +130,7 @@ def test_replan_retirement_requires_same_run_approved_impact_before_mutation():
                 "expected_group_version": 1,
             },
         )
-    assert cursor.execute.call_count == 1
+    assert cursor.execute.call_count == 2
     query = cursor.execute.call_args.args[0]
     assert "owned.active_chapter_request_id IS NULL" in query
     assert "owned.version=%s" in query
@@ -218,6 +237,7 @@ def test_current_reader_activation_replays_exact_deployment_and_rejects_drift():
 def test_group_retirement_cannot_exempt_a_foreign_owner_lease():
     cursor = MagicMock()
     cursor.fetchone.side_effect = [
+        ("book-root", "group-root"),
         (
             {"root_operation_id": "group-root"},
             "book-root",
@@ -229,7 +249,7 @@ def test_group_retirement_cannot_exempt_a_foreign_owner_lease():
         ),
         None,
     ]
-    with pytest.raises(KernelError, match="exact native"):
+    with patch("novel_forge.modules.chapter_group_authority.replan_retirement.lock_replan_roots"), pytest.raises(KernelError, match="exact native"):
         require_replan_retirement(
             cursor,
             project_id="p",
@@ -298,3 +318,56 @@ def test_current_planchange_replays_frozen_legacy_operation_without_promotion():
         )
     assert result == "old" and admit.call_args.args[1]["definition_version"] == "1.0.4"
     assert admit.call_args.args[1]["idempotency_key"] == "frozen"
+
+
+@pytest.mark.parametrize('missing,pending,inserted', [(True, True, True), (True, True, False), (False, True, False), (True, False, False)])
+def test_active_planchange_only_appends_missing_impact_for_pending_same_book_replan(missing, pending, inserted):
+    from novel_forge.modules.plan_change_authority.application import PostgresPlanChangeAuthority
+
+    proposal = dict(status='ACTIVE', project_id='p', book_id='b', target_asset_version_id='old',
+        activation_operation_id='activation', proposal_operation_id='proposal-operation', approval_operation_id='approval')
+    app = object.__new__(PostgresPlanChangeAuthority)
+    app.database_url = 'unused'
+    app.require = lambda _: proposal
+    app._workspace_id = lambda *_: 'w'
+    uow = MagicMock()
+    uow.__enter__.return_value = uow
+    uow.cursor.fetchone.side_effect = [None if missing else (1,), (pending,)]
+    uow.repositories.plan_change.reconcile_replaced_target_impact.return_value = inserted
+    with patch('novel_forge.modules.plan_change_authority.application.AuthorityUnitOfWork', return_value=uow), patch(
+        'novel_forge.modules.chapter_group_authority.replan_retirement.require_replan_activation', return_value=True) as guard:
+        assert app.activate('proposal', principal=MagicMock()) == proposal
+    if missing and pending:
+        guard.assert_called_once()
+        uow.repositories.plan_change.reconcile_replaced_target_impact.assert_called_once_with('proposal')
+        assert uow.repositories.operation_graph.record_event.call_count == int(inserted)
+        uow.commit.assert_called_once()
+        if inserted:
+            event = uow.repositories.operation_graph.record_event.call_args.args[0]
+            assert event['operation_id'] == 'activation'
+            assert event['event_type'] == 'plan_change.replaced_target_impact_reconciled'
+    else:
+        guard.assert_not_called()
+        uow.repositories.plan_change.reconcile_replaced_target_impact.assert_not_called()
+        uow.repositories.operation_graph.record_event.assert_not_called()
+        uow.commit.assert_not_called()
+
+
+def test_active_planchange_cancellation_rejection_cannot_append_impact_or_event():
+    from novel_forge.modules.plan_change_authority.application import PostgresPlanChangeAuthority
+
+    app = object.__new__(PostgresPlanChangeAuthority)
+    app.database_url = 'unused'
+    app.require = lambda _: dict(status='ACTIVE',project_id='p',book_id='b',target_asset_version_id='old')
+    app._workspace_id = lambda *_: 'w'
+    uow = MagicMock()
+    uow.__enter__.return_value = uow
+    uow.cursor.fetchone.side_effect = [None, (True,)]
+    with patch('novel_forge.modules.plan_change_authority.application.AuthorityUnitOfWork', return_value=uow), patch(
+        'novel_forge.modules.chapter_group_authority.replan_retirement.require_replan_activation',
+        side_effect=KernelError('BOOK_REPLAN_CANCELLED', 'cancelled')):
+        with pytest.raises(KernelError, match='BOOK_REPLAN_CANCELLED'):
+            app.activate('proposal', principal=MagicMock())
+    uow.repositories.plan_change.reconcile_replaced_target_impact.assert_not_called()
+    uow.repositories.operation_graph.record_event.assert_not_called()
+    uow.commit.assert_not_called()

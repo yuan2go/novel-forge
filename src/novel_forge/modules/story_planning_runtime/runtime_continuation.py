@@ -49,7 +49,7 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
@@ -79,6 +79,7 @@ def runtime_continuation_definition(
             "zero_dispatch_required": definition_version == "1.0.0",
             **({'unstarted_isolated_successor_required': True} if definition_version == '4.0.0' else {}),
             **({'unsent_main_call_required': True, 'verified_preparation_required': True} if definition_version == '3.0.0' else {}),
+            **({'unsent_main_call_required': True, 'acknowledged_preparation_handoff_required': True} if definition_version == '5.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
         "idempotency_scope": "book:planning-runtime-continuation",
@@ -124,7 +125,7 @@ def require_source(
     row = uow.cursor.fetchone()
     if (
         row is None
-        or not ((row[0] in {"CANCELLED", "FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and not row[5]) or (row[0] == "SUCCEEDED" and row[5]))
+        or not ((row[0] in {"CANCELLED", "FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER", "RECONCILIATION_REQUIRED"} and not row[5]) or (row[0] == "SUCCEEDED" and row[5]))
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
@@ -140,6 +141,9 @@ def require_source(
             "PLANNING_RUNTIME_CONTINUATION_SCOPE_INVALID",
             "source command differs from its native Book scope",
         )
+    if row[0] == "RECONCILIATION_REQUIRED":
+        from .preparation_recovery import require_source as require_preparation_source
+        return require_preparation_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
     uow.cursor.execute("SELECT proof FROM authority_generation_isolation WHERE operation_id=%s", [source_operation_id])
     isolation_row = uow.cursor.fetchone()
     if isolation_row:
@@ -1535,6 +1539,9 @@ def _capacity_target(
     if source.get("inherited_world_source_correction"):
         correction = source["inherited_world_source_correction"]
         target = {**target,"world_source_correction":correction,"generation_isolation":correction["isolation"]}
+    if source.get("completed_preparation"):
+        allocation["external_intents_at_source"] = len(source["completed_preparation"]["retained_preparation"])
+        target = {**target, "preparation_handoff": source["completed_preparation"]}
     return {**target, "planning_capacity": allocation}, authorization
 
 
@@ -1856,6 +1863,8 @@ def register(
             "cancelled source version differs from the requested registration",
         )
     original = _command_from_payload(source["command"])
+    if source.get("completed_preparation") and source["snapshot"]["release_sha"] == application.commit_sha:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_RELEASE_UNCHANGED", "Preparation deployment handoff requires its explicit corrected release")
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
     world_source_correction = source.get("mode") == "ISOLATED_WORLD_SOURCE_CORRECTION"
@@ -2047,7 +2056,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
@@ -2340,7 +2349,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation", "world_source_correction", "planning_reference_contract", "generation_isolation", "provider_schema_correction"}
+        if key not in {"planning_capacity", "world_host_revalidation", "world_source_correction", "planning_reference_contract", "generation_isolation", "provider_schema_correction", "preparation_handoff"}
     }
     if (
         validate_runtime

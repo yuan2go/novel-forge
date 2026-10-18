@@ -10,12 +10,12 @@ from .definitions import book_followup_operation_definitions
 def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_run_id, principal):
     from .prose_coordinator import load_review_run, load_review_sources
     principal.require('book.authority.execute', project_id)
-    principal.require('external_effect.resolve', project_id)
     principal.require('book.followup:longform.prose_review', project_id)
     followup = coordinator.followup
     binder = getattr(getattr(followup,'prose_model_port',None), 'capability_binder', None)
     if binder is None:
         return []
+    principal.require('external_effect.resolve', project_id)
     from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
     with AuthorityUnitOfWork(coordinator.database_url) as uow:
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)

@@ -428,7 +428,11 @@ def compile_task_context(
             evidence = []
             assessments = []
             candidate_target = max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible)))
-            if semantic:
+            if semantic and stage_sources and task.get("capacity_policy") == "complete-request-capacity.v1":
+                other_tokens = sum(replacements.get(item.asset_version_id, item).estimated_tokens
+                    for item in normalized if item.asset_version_id != candidate.asset_version_id)
+                candidate_target = max(mandatory_amounts[candidate.asset_version_id], token_budget - other_tokens)
+            elif semantic:
                 current_others = sum(replacements.get(item.asset_version_id, item).estimated_tokens for item in normalized if item.asset_version_id != candidate.asset_version_id and item not in eligible)
                 pending = [item for item in eligible if item.asset_version_id not in replacements]
                 optional_space = max(0, token_budget - current_others - sum(item.estimated_tokens for item in replacements.values()) - sum(mandatory_amounts[item.asset_version_id] for item in pending))

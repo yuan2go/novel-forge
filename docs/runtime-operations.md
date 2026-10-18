@@ -159,6 +159,15 @@ back. A lost commit acknowledgement returns `MIGRATION_COMMIT_OUTCOME_UNKNOWN`: 
 read the same database's ledger and catalog, and reconcile before another invocation.
 Neither exception proves that a remote transaction rolled back.
 
+Content cancellation recovery may take over an expired Attempt lease to acknowledge
+an already requested cancellation. It probes before entering the handler, uses the
+new Kernel fence, and preserves completed Effects. A wrapped handler exception cannot
+turn CANCELLATION_REQUESTED into a retryable failure. Cancellation before the first
+Attempt uses Kernel's zero-effect resolution without creating an Attempt. A live
+lease still blocks takeover. Completed preparation handoff is separate from this
+acknowledgement and from zero-send recovery; it needs the retained receipt and
+same-Book authorization checks before any successor dispatch.
+
 For an existing nonempty ledger, pending `BACKUP_REQUIRED` declarations are enforced by
 the shared runner. Set an absolute private `--backup-directory` or
 `NOVEL_FORGE_MIGRATION_BACKUP_DIR`, and install compatible `pg_dump`/`pg_restore` clients
@@ -2528,8 +2537,18 @@ preflight. A missing API key, an unsupported qualification transport and unprove
 accounting are distinct blockers; a ChatGPT login alone is not a token-admission
 contract. Blocked preflight writes evidence without creating runtime or database state.
 It cannot confer current Provider or real-Chapter qualification. The dedicated
-qualification runner remains a priced API-key path; account-entitlement Codex validation
-uses the ordinary production Gateway and records its narrower proof scope.
+qualification runner currently selects Codex CLI; its historical runtime preset supplies
+priced proof estimates. The current membership resource contract must preserve its
+frozen account identity, unknown monetary cost and absence of cumulative call/token
+caps. Wiring that contract through this dedicated runner is pending; its historical
+preset must not be used to invent billing or extend paid authorization. Ordinary
+account-entitlement generation already uses the production Gateway and retains its
+separate proof scope.
+Membership preflight records
+`ENGINEERING_QUALIFICATION_BLOCKED:MEMBERSHIP_RETRIEVAL_RESOURCE_BINDING_MISSING`
+before admission or Provider I/O. The fixed embedding binder still needs a persisted
+resource-policy binding and the D0 command's exact entitlement accounting scope; a
+successful Writer receipt cannot substitute for this capability-specific fault probe.
 
 After successful preflight, the supported runner admits a D0 qualification Operation, creates one durable ExternalEffect intent,
 executes one frozen Production Execution route, injects response loss after Provider

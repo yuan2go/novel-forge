@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from datetime import date, datetime
 import hashlib
 import json
@@ -18,9 +19,6 @@ from psycopg.types.json import Jsonb
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
     build_production_execution_composition,
-)
-from novel_forge.infrastructure.production_execution_composition import (
-    ProductionExecutionComposition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -460,6 +458,11 @@ def _provider_readiness(
     ]
     if missing:
         blockers.append("RUNTIME_ACCOUNTING_CONTRACT_MISSING")
+    if provider == "codex-cli" and (
+        env.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") == "ACCOUNT_ENTITLEMENT"
+        or env.get("NOVEL_FORGE_RESOURCE_CONTROL_VERSION") == "billing-channel-resources.v1"
+    ):
+        blockers.append("ENGINEERING_QUALIFICATION_BLOCKED:MEMBERSHIP_RETRIEVAL_RESOURCE_BINDING_MISSING")
     return {
         "provider": provider,
         "model": model,
@@ -896,15 +899,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     initial_execution = build_production_execution_composition(settings, env=env)
     fault_gateway = OneShotAmbiguousResponseGateway(initial_execution.gateway)
-    fault_execution = ProductionExecutionComposition(
-        gateway=fault_gateway,
-        object_store=initial_execution.object_store,
-        source_object_reader=initial_execution.source_object_reader,
-        runtime_environment=initial_execution.runtime_environment,
-        max_cost_per_call=initial_execution.max_cost_per_call,
-        shared_budget_caps=initial_execution.shared_budget_caps,
-        chapter_total_budget_cap=initial_execution.chapter_total_budget_cap,
-    )
+    fault_execution = replace(initial_execution, gateway=fault_gateway)
     initial_application = build_chapter_authority_application(
         settings,
         execution=fault_execution,

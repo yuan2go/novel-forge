@@ -569,13 +569,15 @@ def prepare_request_capacity(
                                      "token_method": method, "actual_provider_tokens": None}
         if after <= current_limit:
             return projection
-        if receipt["fast_path"]:
+        if receipt["fast_path"] or semantic and receipt["effective_material_target_tokens"] > target:
             raise KernelError("TASK_CONTEXT_COMPRESSION_NO_PROGRESS", "All remaining source expression is required or already verified; the complete request still exceeds capacity",
                               details={"projection": projection})
         working = [replace(by_id[item.asset_version_id], context_class=ContextClass.PROTECTED)
                    if item.asset_version_id in raw_required_ids or by_id[item.asset_version_id].safe_summary == item.safe_summary and by_id[item.asset_version_id].compression_trace
                    else item for item in candidates]
-        next_target = min(target - max(1, after - current_limit), target * 3 // 4)
+        next_target = target - max(1, after - current_limit)
+        if not semantic:
+            next_target = min(next_target, target * 3 // 4)
         if next_target <= 0:
             raise KernelError("TASK_CONTEXT_COMPRESSION_NO_PROGRESS", "Verified source restoration leaves no remaining capacity; retain completed Effects",
                               details={"projection": projection})

@@ -849,6 +849,12 @@ class BookReplanCoordinator:
                 raise
         return {**self.require(replan_id), "plan_change": proposal}
 
+    def activate_plan_change(self, replan_id: str) -> dict[str, Any]:
+        replan = self.require(replan_id)
+        if replan["status"] not in {"ACTIVE", "REGENERATING", "RESUMED"}:
+            raise KernelError("BOOK_REPLAN_APPROVAL_REQUIRED", "Book Replan requires a PlanChange approval decision")
+        return self.plan_change.activate(replan["plan_change_proposal_id"], principal=self.principal)
+
     def activate(self, replan_id: str) -> dict[str, Any]:
         replan = self.require(replan_id)
         if replan["status"] not in {"ACTIVE", "REGENERATING", "RESUMED"}:
@@ -858,9 +864,7 @@ class BookReplanCoordinator:
             )
         if replan["status"] == "RESUMED":
             return replan
-        proposal = self.plan_change.activate(
-            replan["plan_change_proposal_id"], principal=self.principal
-        )
+        proposal = self.activate_plan_change(replan_id)
         book = self.book.require(replan["book_run_id"])
 
         def record_regenerating(

@@ -561,6 +561,24 @@ def test_completed_unselected_candidate_resumes_owner_admission_without_generati
     assert app._advance_candidate.call_args.kwargs["candidate_content_hash"] == "frozen-hash"
 
 
+def test_acknowledged_preparation_replay_follows_registered_successor_before_old_runtime_admission(monkeypatch):
+    from unittest.mock import MagicMock
+    from novel_forge.modules.story_planning_runtime import application as module
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as recovery
+    from tests.unit.test_story_planning_runtime import _command
+    command = _command('chapter_group_plan.generate')
+    uow = MagicMock()
+    uow.__enter__.return_value = uow
+    uow.cursor.fetchone.return_value = ('stopped-preparation', module._command_payload(command), 'RECONCILIATION_REQUIRED', 'GENERATING', None)
+    monkeypatch.setattr(module, 'AuthorityUnitOfWork', lambda *_args:uow)
+    follow = MagicMock(return_value='same-task-native-successor')
+    monkeypatch.setattr(recovery, 'follow', follow)
+    app = object.__new__(module.StoryPlanningGenerationApplication)
+    app.database_url = 'unused'
+    assert app._terminal_generation_replay(command, principal='original-author') == 'same-task-native-successor'
+    assert follow.call_args.args[1:] == ('stopped-preparation', command)
+
+
 def test_terminal_replay_probes_cancellation_before_read_or_recovery(monkeypatch):
     from unittest.mock import Mock
     from novel_forge.modules.story_planning_runtime import application as module

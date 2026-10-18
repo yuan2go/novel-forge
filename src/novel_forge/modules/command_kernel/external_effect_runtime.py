@@ -53,6 +53,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 _PERMANENT_PRE_SEND_AUTHORIZATION_DENIALS = frozenset(
     {
+        "BOOK_GENERATION_EXECUTION_NOT_LIVE",
         "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
         "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED",
     }
@@ -189,6 +190,22 @@ def read_completed_operation_success(database_url: str, context: EffectCommandCo
         if row is None or row[0] != "SUCCEEDED":
             raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Completed receipt read requires an immutable succeeded owner")
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
+
+
+def read_acknowledged_preparation_success_in_uow(uow, context: EffectCommandContext, *, effect_id: str):
+    _validate_effect_context(context)
+    uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s FOR UPDATE", [context.operation_id, context.project_id])
+    operation = uow.cursor.fetchone()
+    uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'CANCELLED')
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+          WHERE attempt.operation_id=%s AND lease.status='HELD'),
+        EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND status='ACKNOWLEDGED' AND acknowledged_at IS NOT NULL),
+        (SELECT request_payload->>'stage' FROM authority_external_effect WHERE external_effect_id=%s AND operation_id=%s)""",
+        [context.operation_id, context.operation_id, context.operation_id, effect_id, context.operation_id])
+    held, acknowledged, stage = uow.cursor.fetchone()
+    if not operation or operation[0] != 'RECONCILIATION_REQUIRED' or held or not acknowledged or stage not in {'context_compress','context_fidelity'}:
+        raise KernelError('EFFECT_RETAINED_STAGE_INVALID', 'Completed preparation requires acknowledged cancellation and revoked original submission rights')
+    return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
 
 
 def _receipt_matches_dispatch(provider_evidence: dict[str, Any], dispatch_evidence: Any) -> bool:

@@ -178,7 +178,7 @@ def test_capacity_fast_path_preserves_original_and_runs_no_model_but_validates_q
     assert receipt["quote_locations"]
 
 
-def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapters=None, selected_route=None):
+def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapters=None, selected_route=None, preserve_quotes=()):
     from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, expand_semantic_history, prepare_request_capacity, project_capacity_passages
     from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
     from tests.unit.test_complete_request_capacity import route
@@ -202,7 +202,7 @@ def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapt
     projection = prepare_request_capacity(original=original, stage="draft", source_boundary=boundary,
         route=selected_route or route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=limit), measure=measure,
         model_call=call, chunk_fits=lambda chunk: len(json.dumps(chunk, ensure_ascii=False).encode()) < 18000,
-        semantic_contract=semantic.SEMANTIC_CONTRACT, history_exact_chapters=history_exact_chapters)
+        semantic_contract=semantic.SEMANTIC_CONTRACT, history_exact_chapters=history_exact_chapters, preserve_quotes=preserve_quotes)
     return original, projection, calls
 
 
@@ -519,3 +519,75 @@ def test_uncertain_preparation_keeps_historical_and_unproven_accounting_rejectio
         prepare_request_capacity(original={}, stage="draft", source_boundary={}, route=selected,
             semantic_contract=semantic.SEMANTIC_CONTRACT if semantic_enabled else "",
             measure=lambda _: (6001, 6000), model_call=lambda *_: pytest.fail("unproven preparation"), chunk_fits=lambda _: True)
+
+
+@pytest.mark.parametrize("retain_first", [False, True])
+def test_small_complete_request_excess_does_not_spread_loss_across_every_history_source(retain_first):
+    from novel_forge.modules.context_builder.request_capacity import expand_semantic_history, apply_capacity_projection
+    data = {"input_manifest": {"goal": "Continue with the known working consequences."}, "context_bundle": {"segments": [
+        {"asset_type": "chapter_episodic_summary", "asset_version_id": f"history:{i}", "content_hash": f"original:{i}",
+         "safe_summary": "\n\n".join(f"Source {i} incident {j}: " + "a" * 80 for j in range(24))}
+        for i in range(8)]}}
+    size = len(json.dumps(expand_semantic_history(data), ensure_ascii=False).encode()) + 500
+
+    def select_to_target(stage, task):
+        if retain_first and task.get("task", {}).get("source_expression", {}).get("asset_version_id") == "history:0":
+            if stage == "context_fidelity":
+                return {"supported": False, "coverage_complete": False, "missing_unit_ids": [], "distorted_unit_ids": []}
+            return {"selected_unit_ids": [unit["unit_id"] for unit in task["units"] if not unit.get("context_only")]}
+        if stage != "context_compress":
+            return None
+        chosen = [unit for unit in task["units"] if unit["required"]]
+        for unit in task["units"]:
+            if unit in chosen or unit.get("context_only"):
+                continue
+            text = "\n\n".join(row["text"] for row in [*chosen, unit])
+            amount = len(json.dumps({"safe_summary": text, "structured_facts": []}, ensure_ascii=False,
+                sort_keys=True, separators=(",", ":")).encode())
+            if amount <= task["target_tokens"]:
+                chosen.append(unit)
+        return {"selected_unit_ids": [unit["unit_id"] for unit in chosen]}
+
+    original, projection, calls = semantic_preparation(data, limit=size - 1600, callback=select_to_target)
+    assert projection["measurement"]["after_reserved"] <= size - 1600
+    final = apply_capacity_projection(original, projection)
+    changes = [old["asset_version_id"] for old, new in zip(original["context_bundle"]["segments"], final["context_bundle"]["segments"])
+               if old != new]
+    assert len(changes) == 1
+    assert sum(call["stage"] == "context_compress" for call in calls) == 1 + retain_first
+    assert changes == ["history:1" if retain_first else "history:0"]
+    assert len(projection["final_composition"]["provider_combination"]["exact_original_sources"]) == 7
+
+
+def test_required_material_floor_stops_without_repeating_identical_semantic_preparation():
+    quote = "不能删除的已发生条件。" * 100
+    data = {"context_bundle": {"segments": [{"asset_type": "chapter_episodic_summary",
+        "asset_version_id": "history:v1", "content_hash": "source",
+        "safe_summary": quote + "\n\n" + "可以省略的旧日闲谈。" * 100}]}}
+    calls = []
+    def observe(stage, task):
+        calls.append(stage)
+    with pytest.raises(KernelError, match="TASK_CONTEXT_COMPRESSION_NO_PROGRESS") as failure:
+        semantic_preparation(data, limit=1800, preserve_quotes=(quote,), callback=observe)
+    projection = failure.value.details["projection"]
+    receipt = projection["compression_receipt"]
+    assert receipt["effective_material_target_tokens"] > receipt["task_target_tokens"]
+    assert projection["measurement"]["after_reserved"] > projection["measurement"]["limit"]
+    assert calls.count("context_compress") == 1
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n", "\n \n", "\r\n\t\r\n"])
+def test_complete_request_units_keep_native_single_line_paragraph_locations(newline):
+    original = candidate(newline.join(["她提起木桶。", "宋既明没有准她开闸。", "她把木桶放回原处。", "门外的闲谈渐渐散了。 "]))
+    historical = semantic.source_units(original, {})
+    units = semantic.source_units(original, {"semantic_contract": semantic.SEMANTIC_CONTRACT,
+        "capacity_policy": "complete-request-capacity.v1"})
+    assert len(historical) == (1 if newline in {"\n", "\r\n"} else 4)
+    assert len(units) == 4
+    assert [original.safe_summary[start:end] for start, end in (unit["source_span"] for unit in units)] == [unit["text"] for unit in units]
+    quote = newline.join(["宋既明没有准她开闸。", "她把木桶放回原处。"])
+    semantic.protect_quotes([original], {original.asset_version_id: units}, [quote])
+    assert [unit["text"] for unit in units if unit["required"]] == ["宋既明没有准她开闸。", "她把木桶放回原处。"]
+    assert semantic.reconstruct(original, units, {unit["unit_id"] for unit in units})["safe_summary"] == original.safe_summary
+    selected = semantic.reconstruct(original, units, {unit["unit_id"] for unit in units if unit["required"]})["safe_summary"]
+    assert quote in selected

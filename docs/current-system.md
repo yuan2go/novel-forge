@@ -1428,6 +1428,10 @@ PostgreSQL numeric values cannot recover precision absent from the stored source
 
 Context v4 binds `source-unit-dependency-and-final-composition.v2`. Its immutable source
 catalog retains original Unicode ranges, field paths, order and source attribution.
+Complete-request preparation recognizes single and blank-line paragraph separators in
+native prose, preserving original LF/CRLF coordinates. Older material-target unitization
+retains its blank-line rule. New catalogs bind their full task hash; a reused local unit
+ID never licenses a result from a different catalog, while frozen projections replay intact.
 Preserved quotes are located before splitting, across paragraph or declared narrative
 field boundaries; original CRLF coordinates remain distinct from normalized matching.
 Missing quotes stop explicitly; repeated matches are all protected and reported.
@@ -1475,9 +1479,30 @@ New Chapter Pack `3.2.0` and current intent-boundary Planning profiles freeze
 Context v4 may prepare its authorized historical source ranges against a recognized
 conservative byte bound before final complete-request admission. This does not prove
 actual token overflow or increase route capacity; unknown actual usage remains unknown.
+For complete-request preparation, the current source receives the measured deficit while
+unprocessed originals retain their full allocation. A fidelity-restored source remains
+exact and the next eligible source can supply the deficit. Subsequent targets use the
+remaining measured excess, with the same mandatory units, dependency closure and final
+combined-request checks; historical nonsemantic allocation retains its frozen behavior.
+If mandatory material raises the effective target above the requested target and the
+verified complete request still exceeds capacity, lowering that same target cannot
+change its preparation inputs. The existing no-progress failure retains the full proof
+and Effects instead of repeating identical preparation; a request that fits still succeeds.
 Its unsent Planning recovery retains the exact Context and input hashes, frozen Pack,
 Book frontier and route while appending a same-capacity continuation. Cancellation,
 active execution rights and any original Effect prevent the zero-send recovery.
+A stopped Planning generation with completed preparation Effects is a different
+recovery boundary. Its acknowledged cancellation must revoke the original Attempt's
+submission rights, retain every settled preparation receipt and prove that the main
+call was not sent. The v5 deployment handoff is CODE_EXISTS and WIRED; native
+upgrade and end-to-end handoff qualification remain pending. The zero-send
+continuation does not authorize it. Handoff retains the original preparation
+custodian only when the complete captured input view has the same registered hash;
+the successor still owns its new Context, Attempt and main request. Only an exact
+task, stage, source request hash and verified settled result may reuse a receipt.
+Changed paragraph units or targets create a new task; old unit identities keep their
+original meaning. Final Planning dispatch, including preparation calls, checks the
+owning Book pause and Book/Creation cancellation before entering the Provider.
 The capacity meaning is unchanged; Context v4 versions the semantic method. Context v3
 retains the earlier method, and its frozen manifests and catalog remain available.
 Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and
@@ -1971,6 +1996,9 @@ expectations. It cannot assess withheld design commitments or establish market e
 Design-aware review remains the default; examining design afterwards creates a separate
 versioned review, never enriches the completed body-first request. Neither mode adds a
 manuscript delivery gate.
+The coordinator requires external-effect resolution authority only when its model port
+provides native external recovery. A port without that capability has nothing to reconcile;
+native recovery still requires the scoped resolution permission before reading or mutating it.
 
 Stopped read-only prose review uses the Kernel isolation journal and existing native
 root/Saga admission. A linked root successor preserves its frozen window and source
@@ -2256,6 +2284,20 @@ realization even for imported candidates. Older binding definitions support froz
 receipt replay, not new production admission. Mission, scene, obligation, Arc schedule,
 state-transition and realization changes participate in semantic diff and future-only
 invalidation. Accepted and executed history remains outside replan mutation scope.
+For approved ChapterGroup replan, Book coordination first activates the owning Plan
+Change, then retires the idle old group against that exact active future-impact record,
+and only then regenerates and resumes the Book snapshot. Replay reuses the existing
+activation and retirement Operations. Approval alone cannot retire a group; active
+children, cancellation, unresolved effects and held execution rights still reject it.
+The directly replaced unexecuted binding, including FROZEN future intent, receives
+its own exact PlanChange impact; this does not add a dependency self-edge. Descendant
+REVALIDATE and executed-history rules remain unchanged. A legacy ACTIVE activation
+missing only this record can append it under the same idle Book and cancellation
+guards. Story Design, Planning binding and final activation each recheck those guards
+inside their mutation UoW. Formation cancellation and Book/Group root locks serialize
+the checks with their existing owners; a cancellation between phases preserves the
+completed checkpoint and blocks the next phase. Final input binding checks the Book
+and Creation cancellation again before READY can commit.
 
 ## Creative requirements and compatibility boundary
 

@@ -166,6 +166,8 @@ def current_runtime_fixture_database(
                 target_migration_id=LATEST_MIGRATION_ID,
             ),
         )
+        from tests.integration import hierarchy_closure_postgres_support
+        monkeypatch.setattr(hierarchy_closure_postgres_support, "DATABASE_URL", database_url)
         monkeypatch.setitem(globals(), "DATABASE_URL", database_url)
         yield database_url
 
@@ -213,7 +215,13 @@ class _MeasuredPlanningAndEvaluationTransport:
     def planning_result(stage, task):
         from tests.integration.current_planning_wire_support import current_planning_fixture_inputs, current_planning_wire_result
 
-        inputs = current_planning_fixture_inputs({**task, "stage": stage}, DATABASE_URL)
+        manifest = task.get("input_manifest", task)
+        if manifest.get("contract_version") == "provider-task-narrative-intent.v1":
+            narrative = manifest["narrative_inputs"]
+            manifest = {**manifest["output_protocol"], **narrative}
+            manifest["planning_command"] = {**manifest["planning_command"], **narrative.get("planning_direction", {})}
+        assert isinstance(manifest.get("planning_command"), dict)
+        inputs = current_planning_fixture_inputs({**manifest, "stage": stage}, DATABASE_URL)
         return current_planning_wire_result(planning_fixture_response(stage, inputs), inputs)
 
     def cancel(self, request):  # type: ignore[no-untyped-def]
@@ -221,6 +229,14 @@ class _MeasuredPlanningAndEvaluationTransport:
 
     def verify_callback(self, body, headers, *, secret):  # type: ignore[no-untyped-def]
         raise AssertionError("synchronous proof has no callback")
+
+
+def _current_planning_transport(transport):
+    def planning(stage, inputs):
+        from tests.integration.current_planning_wire_support import current_planning_fixture_inputs, current_planning_wire_result
+        frozen = current_planning_fixture_inputs({**inputs, "stage": stage}, DATABASE_URL)
+        return current_planning_wire_result(transport.planning(stage, frozen), frozen)
+    return planning
 
 
 def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
@@ -1709,11 +1725,7 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             from tests.integration.operator_plan_change_support import OperatorPlanChangeTransport
             native_transport = OperatorPlanChangeTransport(long_novel=autonomous_world == "long_novel_pilot")
         native_transport.database_url = DATABASE_URL
-        def native_planning(stage, inputs):
-            from tests.integration.current_planning_wire_support import current_planning_fixture_inputs, current_planning_wire_result
-
-            frozen = current_planning_fixture_inputs({**inputs, "stage": stage}, DATABASE_URL)
-            return current_planning_wire_result(native_transport.planning(stage, frozen), frozen)
+        native_planning = _current_planning_transport(native_transport)
         execution = build_production_execution_composition(
             settings,
             env=env,
@@ -3282,7 +3294,7 @@ def test_current_book_plan_portfolio_binds_six_production_effect_receipts() -> N
         }
         execution = build_production_execution_composition(
             settings, env=env,
-            planning_fixture_factory=NativeRealityTransportFixture().planning,
+            planning_fixture_factory=_current_planning_transport(NativeRealityTransportFixture()),
         )
         try:
             chapter_application = build_chapter_authority_application(
@@ -3469,7 +3481,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
                 result["world_state_changes"] = [{
                     "world_state_id": "council-alert", "status": "ALERT",
                     "summary": prose, "confidence": 1.0, "evidence_start": start, "evidence_end": start + len(prose),
-                    "world_transition": {"payload_json": json.dumps(causal_observation)},
+                    "world_transition": {"payload_json": json.dumps({**causal_observation, "action_mode": "ROUTINE"})},
                 }]
                 result["obligation_changes"] = [{**causal_obligation, "status": "OPEN", "from_status": None, "payoff_evidence": None, "summary": prose, "confidence": 1.0, "evidence_start": start, "evidence_end": start + len(prose)}]
         if causal_payoff and int(source.get("chapter") or 0) == 3:
@@ -3482,10 +3494,11 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
                 start = source["text"].index(prose)
                 result["obligation_changes"] = [{**causal_obligation, "status": "FULFILLED", "from_status": "OPEN", "payoff_evidence": causal_payoff, "summary": prose, "confidence": 1.0, "evidence_start": start, "evidence_end": start + len(prose)}]
         from tests.integration.narrative_reality_vertical_support import scripted_claim_evidence
-        return scripted_claim_evidence(stage, inputs, result)
+        from tests.integration.current_chapter_wire_support import current_chapter_wire_result
+        return current_chapter_wire_result(stage, inputs, scripted_claim_evidence(stage, inputs, result), json_envelope=False)
 
     production_execution = build_production_execution_composition(
-        settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture, planning_fixture_factory=NativeRealityTransportFixture().planning
+        settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture, planning_fixture_factory=_current_planning_transport(NativeRealityTransportFixture())
     )
     chapter_application = build_chapter_authority_application(
         settings, execution=production_execution, env=runtime_env
@@ -3494,7 +3507,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     def build_worker_runtime():
         worker_execution = build_production_execution_composition(
-            settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture, planning_fixture_factory=NativeRealityTransportFixture().planning
+            settings, env=runtime_env, chapter_fixture_factory=causal_chapter_fixture, planning_fixture_factory=_current_planning_transport(NativeRealityTransportFixture())
         )
         worker_chapter = build_chapter_authority_application(
             settings, execution=worker_execution, env=runtime_env
@@ -3657,6 +3670,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             activated["arc_plan.generate"],
             activated["arc_plan.generate:future"],
         ),
+        "portfolio_version_lineage": {identity: identity for identity in (
+            *snapshot.volume_portfolio_plan_versions, *snapshot.arc_portfolio_plan_versions)},
     }
     assert composition.replan._arc_regeneration_order(
         project_id=project_id,
@@ -4089,6 +4104,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute("UPDATE authority_reality_event_index SET event_id='tampered' WHERE revision_id=%s", [two["revision_id"]])
         assert json.loads(world["state"]["world_transition"]["payload_json"])["camera"] == "OFF_CAMERA"
+        assert json.loads(world["state"]["world_transition"]["payload_json"])["action_mode"] == "ROUTINE"
         projected = NarrativeStateRebuildService(DATABASE_URL).rebuild(project_id=project_id, book_id=book_id, through_chapter=2)
         assert projected.projection["current_state"] == two["current_state"]
         assert composition.query.narrative_reality(book_run_id=book.book_run_id, chapter_number=1) == reality_one
@@ -4667,6 +4683,33 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert approval_replay.status_code == 200, approval_replay.text
     assert approval_replay.json()["replan_id"] == pending["replan_id"]
 
+    from novel_forge.modules.chapter_group_authority.replan_retirement import require_replan_activation
+    proposal_id = str(pending["plan_change_proposal_id"])
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        assert require_replan_activation(uow.cursor, project_id=project_id, proposal_id=proposal_id)
+        with psycopg.connect(DATABASE_URL) as competing:
+            with pytest.raises(psycopg.errors.LockNotAvailable):
+                competing.execute("SELECT operation_id FROM authority_operation WHERE operation_id=%s FOR UPDATE NOWAIT", [book.root_operation_id])
+        uow.cursor.execute("SAVEPOINT active_child_guard")
+        uow.cursor.execute("UPDATE authority_book_production SET active_chapter_request_id=%s WHERE book_run_id=%s", [checkpoint_request_id, book.book_run_id])
+        with pytest.raises(KernelError, match="CHAPTER_GROUP_REPLAN_ACTIVE_CHILD"):
+            require_replan_activation(uow.cursor, project_id=project_id, proposal_id=proposal_id)
+        uow.cursor.execute("ROLLBACK TO SAVEPOINT active_child_guard")
+        uow.cursor.execute("SELECT root_operation_id FROM authority_chapter_group_production WHERE book_run_id=%s AND group_plan_version_id=%s", [book.book_run_id, replan_target_group_version])
+        old_group = uow.cursor.fetchone()
+        for root in (book.root_operation_id, str(old_group[0]) if old_group else ""):
+            if not root:
+                continue
+            uow.cursor.execute("SAVEPOINT cancellation_guard")
+            uow.cursor.execute("""INSERT INTO authority_cancellation_command(
+                cancel_command_id,operation_id,project_id,command_version,actor_id,reason,expected_operation_version,
+                idempotency_key,request_digest,trace_id,correlation_id)
+                VALUES(%s,%s,%s,1,%s,'Fixture cancellation boundary',1,%s,%s,%s,%s)""",
+                [str(uuid4()), root, project_id, principal.principal_id, str(uuid4()), str(uuid4()), str(uuid4()), str(uuid4())])
+            with pytest.raises(KernelError, match="CHAPTER_GROUP_REPLAN_UNSETTLED"):
+                require_replan_activation(uow.cursor, project_id=project_id, proposal_id=proposal_id)
+            uow.cursor.execute("ROLLBACK TO SAVEPOINT cancellation_guard")
+
     restarted, _restarted_chapter = build_worker_runtime()
     activated_replan = worker_tick(restarted)
     assert activated_replan["action"] == SupervisorAction.ACTIVATE_REPLAN.value
@@ -4736,6 +4779,12 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         book.book_run_id, reason="restart recovery probe", principal=principal
     )
     assert paused["state"] == "PAUSED"
+    from novel_forge.modules.book_authority.production_policy import require_planning_provider_dispatch
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT operation_id FROM authority_story_planning_generation WHERE project_id=%s AND book_id=%s ORDER BY created_at DESC LIMIT 1", [project_id, book_id])
+        paused_planning = str(uow.cursor.fetchone()[0])
+        with pytest.raises(KernelError, match="RUNTIME_DISPATCH_PAUSED"):
+            require_planning_provider_dispatch(uow.cursor, project_id=project_id, operation_id=paused_planning)
     restarted_after_pause, restarted_after_pause_chapter = build_worker_runtime()
     paused_tick = restarted_after_pause.tick(book.book_run_id)
     assert paused_tick.action is SupervisorAction.NO_ACTION

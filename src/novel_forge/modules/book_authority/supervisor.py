@@ -204,6 +204,7 @@ class PostgresBookProductionSupervisor:
             if replan["affected_scope"] == "CHAPTER_GROUP":
                 active_group = self._active_group_run(book)
                 if active_group is not None:
+                    self.replan.activate_plan_change(str(replan["replan_id"]))
                     self.chapter_groups.supersede_for_approved_replan(
                         str(active_group["group_run_id"]),
                         replan_id=str(replan["replan_id"]),

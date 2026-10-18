@@ -1819,6 +1819,11 @@ class StoryPlanningGenerationApplication:
                 "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
                 "replay must use the exact immutable admitted Planning command",
             )
+        if row[2] == "RECONCILIATION_REQUIRED" and not row[4]:
+            from .runtime_continuation import follow
+            continued = follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
+            if continued is not None:
+                return continued
         if row[2] in {'FAILED_FINAL', 'DEAD_LETTER'} and not row[4] and command.world_preparation_request:
             from .world_optional import follow_optional_failure
             deferred = follow_optional_failure(self, command=command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe)

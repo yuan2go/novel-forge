@@ -207,6 +207,9 @@ class PostgresStoryDesignAssetAuthority:
         prepared = self.prepare_transition(command, principal=principal)
         generator = GENERATOR_CATALOG[command.generator_operation_name]
         with AuthorityUnitOfWork(self.database_url) as uow:
+            from novel_forge.modules.chapter_group_authority.replan_retirement import require_replan_activation
+            require_replan_activation(uow.cursor, project_id=command.project_id,
+                proposal_id=str((command.evidence or {}).get("plan_change_proposal_id") or ""))
             result = uow.repositories.story_design.apply_transition(
                 operation_id=str(prepared["operation_id"]),
                 project_id=command.project_id,

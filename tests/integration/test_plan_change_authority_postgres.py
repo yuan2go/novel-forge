@@ -311,7 +311,11 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(impacted[planned], ("PLANNED", "STALE"))
         self.assertEqual(impacted[executed], ("EXECUTED", "CURRENT"))
         self.assertEqual(impacted[requalification_only], ("PLANNED", "IMPACTED"))
-        self.assertEqual(impact_count, 3)
+        self.assertEqual(impact_count, 4)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT dependency_path,execution_scope,target_freshness,recorded_by_operation_id FROM authority_plan_change_impact WHERE proposal_id=%s AND impacted_asset_version_id=%s",
+                [proposal["proposal_id"], old["asset_version_id"]])
+            self.assertEqual(uow.cursor.fetchone(), ([old["asset_version_id"]], "FROZEN", "STALE", activated["activation_operation_id"]))
 
         requalification_evidence = self._seed_asset(
             "plan-requalification-evidence",
@@ -336,6 +340,32 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             )["freshness"],
             "CURRENT",
         )
+
+    def test_direct_future_replacement_records_idempotent_self_impact_without_descendants(self):
+        from novel_forge.modules.hierarchical_planning.domain import PlanExecutionScope
+        for scope in (PlanExecutionScope.PLANNED, PlanExecutionScope.SPECULATIVE):
+            with self.subTest(scope=scope.value):
+                self.setUp()
+                logical_key = f"book:direct:{scope.value}"
+                old = self.planning_fixture._activate_and_bind(self._book_type(), logical_key, execution_scope=scope)
+                proposed = self._approved_candidate(logical_key=logical_key, extra={"objective": "preserve agency through visible action"})
+                evidence = self._seed_asset(f"direct-change:{scope.value}", "longform_recap", {"deviations": ["FUTURE_OBJECTIVE"]})
+                authority = PostgresPlanChangeAuthority(DATABASE_URL, story_design=self.story_design, planning=self.planning,
+                    application_build_id="direct-impact-integration", commit_sha="d" * 40)
+                proposal = authority.propose(PlanChangeProposalCommand(
+                    project_id=self.project_id, workspace_id=f"workspace:{self.project_id}", book_id=self.book_id,
+                    actor_id=self.principal.principal_id, trace_id=f"trace:{scope.value}", correlation_id=f"book:{self.book_id}",
+                    stable_idempotency_key=f"{self.project_id}:direct:{scope.value}", source_type=PlanChangeSource.LONGFORM_RECAP,
+                    source_evidence_version_id=evidence, target_asset_version_id=old["asset_version_id"], proposed_asset_version_id=proposed), principal=self.principal)
+                authority.decide(proposal["proposal_id"], approved=True, authority_type="BOOK_DESIGN_AUTHORITY",
+                    authority_version="fixture-v1", evidence={"fixture_protocol_only": True}, principal=self.principal)
+                activated = authority.activate(proposal["proposal_id"], principal=self.principal)
+                authority.activate(proposal["proposal_id"], principal=self.principal)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT impacted_asset_version_id,dependency_path,execution_scope,target_freshness,recorded_by_operation_id FROM authority_plan_change_impact WHERE proposal_id=%s", [proposal["proposal_id"]])
+                    self.assertEqual(uow.cursor.fetchall(), [(old["asset_version_id"], [old["asset_version_id"]], scope.value, "STALE", activated["activation_operation_id"])])
+                    uow.cursor.execute("SELECT freshness FROM story_plan_binding WHERE asset_version_id=%s", [old["asset_version_id"]])
+                    self.assertEqual(uow.cursor.fetchone()[0], "STALE")
 
     def _approved_candidate(self, *, logical_key: str, extra: dict) -> str:
         content = self.planning_fixture._contract_content(

@@ -2015,6 +2015,11 @@ class PostgresBookAuthority:
             operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            from novel_forge.modules.chapter_group_authority.replan_retirement import lock_replan_roots
+            lock_replan_roots(uow.cursor, project_id=book["project_id"], book_root=book["root_operation_id"])
+            uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)", [book["root_operation_id"]])
+            if uow.cursor.fetchone()[0]:
+                raise KernelError("BOOK_REPLAN_CANCELLED", "Cancelled Book cannot bind replacement input")
             uow.cursor.execute(
                 """
                 SELECT version, COALESCE(input_snapshot_id,''), state

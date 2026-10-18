@@ -152,7 +152,9 @@ def source_units(candidate, task):
     def paragraphs(text, path, attribution):
         start = 0
         index = 0
-        for match in re.finditer(r"(?:\r?\n)[ \t]*(?:\r?\n)", text):
+        separator = (r"\r?\n(?:[ \t]*\r?\n)*" if enabled(task)
+            and task.get("capacity_policy") == "complete-request-capacity.v1" else r"(?:\r?\n)[ \t]*(?:\r?\n)")
+        for match in re.finditer(separator, text):
             if start < match.start():
                 append(text[start:match.start()], path, kind="SOURCE_PARAGRAPH", index=index,
                     span=[start, match.start()], attribution=attribution, value=attribution)
