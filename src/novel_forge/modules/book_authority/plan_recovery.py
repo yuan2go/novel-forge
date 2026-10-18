@@ -309,15 +309,16 @@ def require_current_group_plan_followup(uow, *, evidence, project_id, book_id, a
         JOIN authority_operation generated ON generated.operation_id=generation.operation_id
         JOIN active_story_plan_version parent ON parent.asset_version_id=correction.proposed_asset_version_id
           AND parent.project_id=correction.project_id AND parent.book_id=correction.book_id
-        JOIN active_story_plan_version previous ON previous.project_id=correction.project_id
-          AND previous.book_id=correction.book_id AND previous.asset_version_id=request.chapter_plan_version
-        JOIN story_plan_binding prior ON prior.binding_id=previous.binding_id
+        JOIN story_plan_binding prior ON prior.project_id=correction.project_id AND prior.book_id=correction.book_id
+          AND prior.asset_version_id=request.chapter_plan_version
         WHERE correction.proposal_id=%s AND correction.project_id=%s AND correction.book_id=%s
           AND correction.status='ACTIVE' AND correction.target_contract_type='CHAPTER_GROUP'
           AND activation.status='SUCCEEDED' AND activation.actor_id=%s AND original.actor_id=activation.actor_id
           AND request.chapter_plan_version=%s AND prior.contract_type='CHAPTER' AND prior.execution_scope='FROZEN'
           AND authority_working_group_prefix_preserved(correction.project_id,correction.book_id,correction.proposed_asset_version_id,request.parent_group_version_id,activation.actor_id,activation.workspace_id,%s)
-          AND prior.freshness='IMPACTED' AND generation.book_id=correction.book_id AND generation.project_id=correction.project_id
+          AND prior.freshness='IMPACTED' AND NOT EXISTS(SELECT 1 FROM active_story_plan_version competing
+            WHERE competing.project_id=prior.project_id AND competing.book_id=prior.book_id AND competing.logical_key=prior.logical_key)
+          AND generation.book_id=correction.book_id AND generation.project_id=correction.project_id
           AND generation.planning_scope='CHAPTER' AND generation.generator_operation_name='chapter_plan.generate'
           AND generation.logical_key=prior.logical_key AND generated.actor_id=activation.actor_id
           AND generated.command_payload#>>'{payload,input_versions,chapter_group_plan}'=correction.proposed_asset_version_id

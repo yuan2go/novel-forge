@@ -202,3 +202,14 @@ def test_current_slice_consumption_requires_the_exact_frozen_corrected_contract(
         assert "realization.lifecycle='FROZEN'" in cursor.execute.call_args.args[0]
         assert "source.status='SUCCEEDED'" in cursor.execute.call_args.args[0]
         assert "narrative-realization-contract.v4" in cursor.execute.call_args.args[0]
+
+
+def test_impacted_plan_continuation_retains_every_zero_send_and_identity_guard():
+    from novel_forge.storage.migrations.versions import v20261018_0225_impacted_working_plan_continuation as migration
+
+    restored = migration.UPGRADE_STATEMENTS[0].replace('CREATE OR REPLACE FUNCTION', 'CREATE FUNCTION', 1)
+    assert restored.replace(migration._NEW_JOIN, migration._OLD_JOIN).replace(migration._NEW_SCOPE, migration._OLD_SCOPE) == migration.PREVIOUS
+    assert "original.chapter_plan_version=binding.asset_version_id" in migration._NEW_SCOPE
+    assert "original_root.actor_id=source.actor_id" in migration._NEW_SCOPE
+    assert "competing.logical_key=binding.logical_key" in migration._NEW_SCOPE
+    assert "authority_working_group_prefix_preserved" in migration._NEW_SCOPE

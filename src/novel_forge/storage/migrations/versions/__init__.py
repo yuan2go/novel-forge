@@ -227,6 +227,7 @@ from . import (
     v20261016_0222_planning_host_frozen_definition,
     v20261018_0223_working_plan_input_continuation,
     v20261018_0224_working_regeneration_isolation,
+    v20261018_0225_impacted_working_plan_continuation,
 )
 
 VERSION_MODULES = [
@@ -455,6 +456,7 @@ VERSION_MODULES = [
     v20261016_0222_planning_host_frozen_definition,
     v20261018_0223_working_plan_input_continuation,
     v20261018_0224_working_regeneration_isolation,
+    v20261018_0225_impacted_working_plan_continuation,
 ]
 
 __all__ = ["VERSION_MODULES"]

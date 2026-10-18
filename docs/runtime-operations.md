@@ -1415,6 +1415,11 @@ PlanChange lineage. An impacted Chapter may follow only that exact native Group 
 Interior corrections use `narrative-realization-contract.v4`; qualification, approval and
 freeze revalidate the native correction, original actor, Book frontier and exact working
 sources in their mutation transaction. Historical v3 retains its Group-start boundary.
+A native upstream change may remove the impacted Chapter active binding. Followup binds
+the original delivery Plan through `source_chapter_plan_version_id` while its activation
+CAS still expects the actual empty active slot; any competing current Chapter rejects.
+Migration 225 extends the same zero-send continuation check to this exact case without
+changing published migration 223 or permitting a dispatched source.
 Each stage rechecks the current source and corrected Frozen Plan; ordinary revision and
 regeneration share atomic Book exclusion while identical requests use Kernel idempotency.
 Further length repair reads the regeneration Root's actual new Context. Retain cancelled

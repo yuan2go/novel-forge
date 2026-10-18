@@ -815,9 +815,9 @@ def _current_planning_correction(uow, *, book, operation, request, refs, target)
         JOIN authority_asset a USING(asset_id)
         JOIN authority_operation_output_asset output USING(asset_version_id)
         JOIN authority_operation author ON author.operation_id=output.operation_id
-        JOIN active_story_plan_version active ON active.project_id=a.project_id AND active.book_id=%s
-        JOIN story_plan_binding binding ON binding.binding_id=active.binding_id
+        JOIN story_plan_binding binding ON binding.project_id=a.project_id AND binding.book_id=%s
           AND binding.asset_version_id=v.content->>'target_plan_version_id'
+        LEFT JOIN active_story_plan_version active ON active.binding_id=binding.binding_id
         JOIN authority_asset_version plan_version ON plan_version.asset_version_id=binding.asset_version_id
         WHERE v.asset_version_id=ANY(%s) AND a.project_id=%s AND author.workspace_id=%s
           AND a.asset_type='replan_request' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
@@ -827,7 +827,7 @@ def _current_planning_correction(uow, *, book, operation, request, refs, target)
           AND v.content->>'authority_boundary'='FUTURE_PLAN_PROPOSAL_ONLY'
           AND v.content->>'book_id'=%s AND v.content->>'accepted_through_chapter'=%s
           AND v.content->>'affected_scope'=binding.contract_type
-          AND (binding.freshness='CURRENT' OR (binding.freshness='IMPACTED' AND EXISTS(
+          AND ((binding.freshness='CURRENT' AND active.binding_id IS NOT NULL) OR (binding.freshness='IMPACTED' AND EXISTS(
             SELECT 1 FROM authority_plan_change_proposal correction
             JOIN active_story_plan_version parent ON parent.project_id=correction.project_id
               AND parent.book_id=correction.book_id AND parent.asset_version_id=correction.proposed_asset_version_id
@@ -837,7 +837,15 @@ def _current_planning_correction(uow, *, book, operation, request, refs, target)
               AND correction.status='ACTIVE' AND correction.target_contract_type='CHAPTER_GROUP'
               AND authority_working_group_prefix_preserved(correction.project_id,correction.book_id,
                 correction.proposed_asset_version_id,binding.parent_version_id,activation.actor_id,activation.workspace_id,%s)
-              AND activation.status='SUCCEEDED' AND activation.actor_id=author.actor_id)))
+              AND activation.status='SUCCEEDED' AND activation.actor_id=author.actor_id
+              AND EXISTS(SELECT 1 FROM authority_book_manuscript_delivery delivered
+                JOIN authority_book_chapter_request original USING(chapter_request_id)
+                WHERE delivered.book_run_id=%s AND delivered.chapter_number=%s
+                  AND original.chapter_plan_version=binding.asset_version_id
+                  AND original.parent_group_version_id=binding.parent_version_id)
+              AND NOT EXISTS(SELECT 1 FROM active_story_plan_version competing
+                WHERE competing.project_id=binding.project_id AND competing.book_id=binding.book_id
+                  AND competing.logical_key=binding.logical_key))))
           AND binding.logical_key=%s
           AND binding.execution_scope IN ('PLANNED','FROZEN')
           AND ((binding.contract_type='CHAPTER_GROUP' AND %s='chapter_group_plan.generate'
@@ -848,7 +856,7 @@ def _current_planning_correction(uow, *, book, operation, request, refs, target)
           AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
             WHERE cancellation.project_id=%s AND %s=cancellation.formation_run_id || ':production'))""",
         [book["book_id"], evidence, book["project_id"], book["workspace_id"], operation["actor_id"],
-         book["book_id"], str(book["accepted_through_chapter"]), target, request.get("logical_key"), request["generator_operation_name"], target,
+         book["book_id"], str(book["accepted_through_chapter"]), target, book["book_run_id"], target, request.get("logical_key"), request["generator_operation_name"], target,
          request["generator_operation_name"], target, dumps(refs), book["project_id"], book["stable_idempotency_key"]])
     return uow.cursor.fetchone() == (True,)
 
