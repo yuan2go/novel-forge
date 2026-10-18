@@ -317,7 +317,7 @@ def recover_book_generations(application, *, project_id, book_id, principal, sou
             raise PermissionError("Only a scoped trusted operator can recover another native generation owner")
     recover_saved_local_results(application.execution_binder.resolver.execution_preparer.execution_transport,
         database_url=application.database_url, project_id=project_id, book_id=book_id, principal=principal,
-        source_actor_id=source_actor_id)
+        source_actor_id=source_actor_id, operation_definition_name="story_planning.generate")
     from novel_forge.modules.story_planning_runtime.gateway_result_recovery import recover_completed_planning_outputs
     recover_completed_planning_outputs(application, project_id=project_id, book_id=book_id, principal=principal)
     from .execution_window import continue_saved_result_finalization
@@ -871,7 +871,8 @@ def recover_chapter_generations(authority, *, book_run_id, principal, working_re
     revalidated = recover_completed_chapter_results(authority, book_run_id=book_run_id,
         principal=principal, root_operation_id=root_id)
     recovered = recover_saved_local_results(authority.chapter_port.application._model_port.adapter,
-        database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal)
+        database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal,
+        root_operation_id=root_id)
     with AuthorityUnitOfWork(authority.database_url) as uow:
         uow.cursor.execute(
             """SELECT to_jsonb(o) FROM authority_operation o

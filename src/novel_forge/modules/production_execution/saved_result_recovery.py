@@ -9,7 +9,8 @@ from .backends import CodexCliExecutionBackend, RemoteProviderExecutionBackend
 from .contracts import ExecutionOutcome
 
 
-def recover_saved_local_results(transport, *, database_url, project_id, book_id, principal, operation_ids=(), source_actor_id=None):
+def recover_saved_local_results(transport, *, database_url, project_id, book_id, principal, operation_ids=(), source_actor_id=None,
+                               operation_definition_name=None, root_operation_id=None):
     principal.require("external_effect.resolve", project_id)
     source_actor_id = source_actor_id or principal.principal_id
     if source_actor_id != principal.principal_id:
@@ -22,7 +23,11 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
               AND effect.request_payload #>> '{_production_execution,book_id}'=%s
               AND effect.status='SUCCEEDED' AND budget.status IN ('RESERVED','HELD_UNKNOWN')
               AND NOT authority_generation_isolated(effect.external_effect_id)
-              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""", [project_id,source_actor_id,book_id,list(operation_ids),list(operation_ids)])
+              AND (%s::text IS NULL OR operation.definition_name=%s)
+              AND (%s::text IS NULL OR operation.root_operation_id=%s)
+              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""",
+            [project_id,source_actor_id,book_id,operation_definition_name,operation_definition_name,
+             root_operation_id,root_operation_id,list(operation_ids),list(operation_ids)])
         unsettled=uow.cursor.fetchall()
         accounting=[]
         for effect_id,operation_id,trace_id,correlation_id in unsettled:
@@ -36,6 +41,8 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
               AND effect.status IN ('DISPATCHING','DISPATCHED','UNKNOWN','RECONCILIATION_REQUIRED')
               AND operation.status IN ('EXECUTING','FAILED_RETRYABLE','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
               AND NOT authority_generation_isolated(effect.external_effect_id)
+              AND (%s::text IS NULL OR operation.definition_name=%s)
+              AND (%s::text IS NULL OR operation.root_operation_id=%s)
               AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s)))
             SELECT DISTINCT v.content->>'execution_id'
             FROM pending JOIN authority_operation_output_asset output USING(operation_id)
@@ -44,7 +51,8 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
             WHERE asset.project_id=%s AND asset.asset_type='execution_recovery_session'
               AND pending.external_effect_id=v.content #>> '{record,request,external_effect_id}'
               AND v.content #>> '{record,request,book_id}'=%s""",
-            [project_id, source_actor_id, list(operation_ids),list(operation_ids),project_id,book_id])
+            [project_id, source_actor_id, operation_definition_name, operation_definition_name,
+             root_operation_id, root_operation_id, list(operation_ids),list(operation_ids),project_id,book_id])
         identities = [row[0] for row in uow.cursor.fetchall()]
     for effect_id,evidence in accounting:
         _resolve_reconciled_budget(database_url,project_id=project_id,effect_id=effect_id,outcome="success",evidence=evidence)

@@ -1591,6 +1591,12 @@ its exact identity, and missing or uncertain meaning retains the existing restor
 rules. Final Planning dispatch, including preparation calls, checks the
 owning Book pause and Book/Creation cancellation before entering the Provider.
 Independent Book prose-review recovery can consume a retained completed result.
+Planning saved-result scans select its generation definition; Chapter scans select the
+exact active Chapter or working-revision Root. Optional prose review selects its admitted
+Operations. These owner scopes apply to pending execution sessions and unsettled
+successful receipts, retaining the original Book, actor and Effect identity checks.
+An unavailable unrelated review backend does not gate ordinary continuation. An unresolved
+invocation within the selected writing scope still requires its original reconciliation.
 The shared Content scheduler delegates UNKNOWN review queries to its owning adapter
 under the original Attempt and a current recovery Fence. A query retains unresolved
 Operation state until the result is established. Kernel-settled terminal Attempts are

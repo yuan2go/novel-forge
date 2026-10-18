@@ -2607,6 +2607,11 @@ scenario. Run preflight first; `--execute` runs the controlled response-loss pro
 native frozen window, scope response loss to that window's own Operation, and recover
 the same persisted result without another send. This optional observation neither
 modifies prose nor grants revision, acceptance or human literary qualification.
+Ordinary continuation recovers saved Planning results only within `story_planning.generate`
+and Chapter results only within the active Chapter or working-revision Root. Prose-review
+recovery retains its admitted Operation list. A missing backend in an unrelated optional
+window cannot block that writing scan; a missing backend or UNKNOWN within the selected
+owner scope still requires native reconciliation, without another send or invented settlement.
 For a new working-prose review window, freeze `provider_output_tokens` in the native
 review policy when the historical stage output target cannot hold both reasoning and
 complete JSON. Use a confirmed model output capacity within the complete-request and
