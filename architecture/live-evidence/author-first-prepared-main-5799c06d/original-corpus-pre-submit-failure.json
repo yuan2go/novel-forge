@@ -1,0 +1,47 @@
+{
+  "at": "2026-10-18T18:17:32.939171+00:00",
+  "source_sha": "f118967013e6fdc35c56de3a5724176696428b3d",
+  "effect_id": "2c4a591d-292c-49ba-8199-a6015d0a860d",
+  "operation_id": "b85c20d5-95aa-4fa8-9c56-4cf9c8086d8d",
+  "request_hash": "sha256:c870044327270f3de5b9c47ed6d91774dc948ee027f3bb41b60bf4052d38a343",
+  "request_sent": false,
+  "first_failure": "CORPUS_CONSUMPTION_INPUT_BOUND",
+  "input_graph_nodes": 106006,
+  "input_graph_max_depth": 17,
+  "distinct_asset_identities": 81,
+  "replay_outcome": {
+    "code": "CORPUS_CONSUMPTION_INPUT_BOUND",
+    "message": "CORPUS_CONSUMPTION_INPUT_BOUND: provider input exceeds lineage inspection bounds"
+  },
+  "capacity_measurement": {
+    "limit": 475000,
+    "token_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+    "after_reserved": 474478,
+    "before_reserved": 477000,
+    "actual_provider_tokens": null
+  },
+  "reuse_evidence_entries": 39,
+  "unique_reused_execution_ids": 17,
+  "stage": "FROZEN_MAIN_REQUEST_PROVIDER_NOT_INVOKED",
+  "actual_provider_prompt_readback": "NOT_RUN_NO_PROVIDER_REQUEST",
+  "production_sql_mutations": false,
+  "distinct_reused_execution_ids": [
+    "planning-execution:033d3c23-6e21-4f12-8791-39c87b37c93d:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:16f08449-d764-448d-bf6c-5a48f3ab37a8:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:38675d64-d689-4ad0-b71b-cb74ac5a9799:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:3d20a87f-37e7-47e8-8df9-b125f284bb92:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:3fcbedc8-b996-42c3-9343-6047ebd77ce3:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:4feba3d5-255a-4f4b-9140-e64efca86553:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:50b49431-7d67-4677-8f0f-1d71f0f94c7d:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:6680e2c2-4c03-4952-87f1-b72e26185437:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:68a4e7c9-e7bb-4b3a-a8de-32242ac4071c:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:82e8d2f7-4c79-4c34-b15d-6d0a7da2800a:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:8497e7f8-9ee9-44a0-adb7-08cd81e68e05:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:8f21e304-eea7-4ddb-bed6-aeb6aca9b2fc:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:91fc9008-39e4-445c-b7fa-ad2d91dd43a3:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:b86b135c-7408-49b9-9db3-cee006da9217:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:e0004b75-c18e-42da-b078-050d8d891be2:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:e268c829-53db-495d-aa70-c7d80631f7e2:ffed18a9-8d76-4f92-8a03-7103d03c7856",
+    "planning-execution:f9901cc0-b287-4451-a3dd-e0b5104b2ff8:ffed18a9-8d76-4f92-8a03-7103d03c7856"
+  ]
+}

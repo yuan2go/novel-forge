@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-18T18:22:39.229726+00:00",
+  "source_binding": "DEVELOPMENT_WORKTREE_ON_c5da3a4a",
+  "effect_id": "2c4a591d-292c-49ba-8199-a6015d0a860d",
+  "exact_frozen_request_hash": "sha256:c870044327270f3de5b9c47ed6d91774dc948ee027f3bb41b60bf4052d38a343",
+  "same_original_input": true,
+  "source_authority_full_rights_check": "PASS",
+  "seconds": 0.34867899998789653,
+  "provider_invoked": false,
+  "business_sql_mutations": false,
+  "preparation_reuse_and_native_resume": "PENDING"
+}
