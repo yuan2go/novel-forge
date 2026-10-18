@@ -213,3 +213,30 @@ def test_impacted_plan_continuation_retains_every_zero_send_and_identity_guard()
     assert "original_root.actor_id=source.actor_id" in migration._NEW_SCOPE
     assert "competing.logical_key=binding.logical_key" in migration._NEW_SCOPE
     assert "authority_working_group_prefix_preserved" in migration._NEW_SCOPE
+
+
+def test_regeneration_preparation_uses_the_actual_author_workflow_projection(monkeypatch):
+    from dataclasses import make_dataclass
+    from novel_forge.modules.book_authority import manuscript, chapter_dispatch
+
+    book = checkpoint()
+    original = SimpleNamespace(chapter=16, idempotency_key='original-request')
+    proof = {'predecessor_root_operation_id': 'original-root', 'parent_group_version_id': 'group'}
+    monkeypatch.setattr(regeneration, 'require_correction_scope', Mock(return_value=proof))
+    monkeypatch.setattr(manuscript, 'effective_workflow', Mock(return_value=manuscript.AUTHOR_WORKFLOW))
+    monkeypatch.setattr(manuscript, 'freeze_working_context', Mock(return_value={'target_chapter': 16}))
+    cursor = Mock()
+    cursor.fetchone.return_value = (False, False, False, False)
+    supervisor = Mock()
+    supervisor._active_plan.side_effect = [{'asset_version_id': 'group'}, {'asset_version_id': 'new-plan'}]
+    supervisor.prepare_chapter_command.return_value = make_dataclass('Prepared', ['preparation_report'])(None)
+    reserved = Mock(return_value='native-prepared-request')
+    monkeypatch.setattr(chapter_dispatch, 'reserved_chapter_command', reserved)
+    request, retained = regeneration.prepare_regeneration(SimpleNamespace(database_url='db', application_build_id='build', commit_sha='sha'),
+        supervisor=supervisor, uow=SimpleNamespace(cursor=cursor), book=book, source=SimpleNamespace(asset_version_id='selected'),
+        original=original, proposal_id='change', plan_id='new-plan', principal=SimpleNamespace(principal_id='operator'))
+    assert request == 'native-prepared-request' and retained == proof
+    prepared_book = supervisor.prepare_chapter_command.call_args.kwargs['book']
+    assert prepared_book['author_workflow'] == manuscript.AUTHOR_WORKFLOW
+    assert prepared_book['accepted_through_chapter'] == 0 and prepared_book['current_chapter'] == 16
+    assert 'author_workflow' not in book

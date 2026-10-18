@@ -340,7 +340,7 @@ def test_original_frozen_bounds_without_unit_require_han_length_repair():
             freeze_requirement({'context_segments': [profile]}, context_id='context:original:v1')
 
 
-@pytest.mark.parametrize('version,target,valid', [('v3', 1, True), ('v3', 2, False), ('v4', 1, False), ('v4', 2, True), ('v4', 3, True), ('v4', 4, False)])
+@pytest.mark.parametrize('version,target,valid', [('v3', 1, True), ('v3', 2, False), ('v4', 1, True), ('v4', 2, True), ('v4', 3, True), ('v4', 4, False), ('v4', 0, False)])
 def test_group_correction_versions_preserve_the_historical_start_boundary(version, target, valid):
     from novel_forge.modules.hierarchical_planning.realization_domain import realization_hash
 

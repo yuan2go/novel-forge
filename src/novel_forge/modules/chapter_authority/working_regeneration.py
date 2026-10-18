@@ -62,7 +62,7 @@ def require_frontier(uow, *, root, book):
 
 def prepare_regeneration(app, *, supervisor, uow, book, source, original, proposal_id, plan_id, principal):
     from novel_forge.modules.book_authority.chapter_dispatch import reserved_chapter_command
-    from novel_forge.modules.book_authority.manuscript import freeze_working_context
+    from novel_forge.modules.book_authority.manuscript import freeze_working_context, effective_workflow
 
     proof = require_correction_scope(uow, book=book, chapter=original.chapter,
         proposal_id=proposal_id, plan_id=plan_id, actor_id=principal.principal_id)
@@ -87,6 +87,7 @@ def prepare_regeneration(app, *, supervisor, uow, book, source, original, propos
         raise KernelError('MANUSCRIPT_REGENERATION_PLAN_INVALID', 'The native current plan projection must match the exact correction')
     realization = supervisor.realizations.require_current_for_chapter(project_id=book['project_id'], book_id=book['book_id'],
         chapter_group_plan_version_id=group['asset_version_id'], chapter_number=original.chapter)
+    book = {**book, 'author_workflow': effective_workflow(uow.cursor, book)}
     prepared = supervisor.prepare_chapter_command(book=book, group=group, chapter_plan=plan,
         realization=realization, chapter_number=original.chapter, working_regeneration_proposal_id=proposal_id)
     report = {**dict(prepared.preparation_report or {}), 'working_manuscript': freeze_working_context(uow, book, original.chapter)}

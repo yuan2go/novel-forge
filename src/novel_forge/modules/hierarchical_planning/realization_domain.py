@@ -652,8 +652,8 @@ class NarrativeRealizationContract:
         if working is not None:
             target = working.get("target_chapter") if isinstance(working, dict) else None
             corrected = value["schema_version"] == "narrative-realization-contract.v4"
-            if corrected and (type(target) is not int or not start < target <= end):
-                raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "A corrected group requires its exact interior working frontier")
+            if corrected and (type(target) is not int or not start <= target <= end):
+                raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "A corrected group requires its exact current working frontier")
             if not corrected:
                 target = start
             if isinstance(working, dict) and working.get("projection_policy") is not None:

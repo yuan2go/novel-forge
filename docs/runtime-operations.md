@@ -1412,9 +1412,11 @@ existing exact working-version selection, without author choice or formal accept
 Group correction must preserve both function rows and causal events before the current
 unaccepted chapter, verified against its original delivery Group through native activated
 PlanChange lineage. An impacted Chapter may follow only that exact native Group change.
-Interior corrections use `narrative-realization-contract.v4`; qualification, approval and
+Current-chapter Group corrections use `narrative-realization-contract.v4`; qualification, approval and
 freeze revalidate the native correction, original actor, Book frontier and exact working
-sources in their mutation transaction. Historical v3 retains its Group-start boundary.
+sources in their mutation transaction. The target may be the first Chapter in its Group;
+this does not relax the native correction and original delivery proof. Historical v3
+retains its Group-start boundary.
 ChapterPlan projection reuses its owning UoW for Frozen Realization/source validation;
 a nested connection must not wait on the mutation transaction's own Book lock.
 A native upstream change may remove the impacted Chapter active binding. Followup binds
