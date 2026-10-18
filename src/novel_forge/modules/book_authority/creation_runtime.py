@@ -114,6 +114,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             raise _RecoveryCheckpoint("COMPLETED")
         if current["state"] in {"ABORTED", "CANCELLED"}:
             raise _RecoveryCheckpoint("CANCELLED")
+        if current["state"] == "PAUSED" and current.get("paused_reason") != "GENERATION_RECOVERY_EXHAUSTED":
+            raise _RecoveryCheckpoint("PAUSED")
         if monotonic() >= deadline or recovery_actions >= maximum_ticks:
             raise _RecoveryCheckpoint("YIELDED_CHECKPOINT")
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
@@ -137,6 +139,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             return "MANUSCRIPT_READY"
         if book["state"] in {"ABORTED", "CANCELLED"}:
             return "CANCELLED"
+        if book["state"] == "PAUSED" and book.get("paused_reason") != "GENERATION_RECOVERY_EXHAUSTED":
+            return "PAUSED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
         from .creation_inputs import refresh_creation_style_scope
@@ -227,6 +231,13 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                 if not continuation_live():
                     composition.authority.cancel(book_run_id, reason="Original creation cancellation", principal=composition.principal)
                     return "CANCELLED"
+                current = composition.authority.require(book_run_id)
+                if current["state"] == "PAUSED":
+                    return "PAUSED"
+                if current["state"] in {"ABORTED", "CANCELLED"}:
+                    return "CANCELLED"
+                if current["state"] == "COMPLETED":
+                    return "COMPLETED"
                 if monotonic() >= deadline:
                     return "YIELDED_CHECKPOINT"
                 try:
@@ -714,7 +725,7 @@ def creation_wait_class(reason: str) -> str:
     if reason in {"YIELDED_CHECKPOINT", "WAITING_LEASE_OR_DEPENDENCY", "WAITING_OPENING_DEPENDENCY",
                   "WAITING_CHAPTER_DEPENDENCY", "FORMATION_FAILED"}:
         return "TECHNICAL_WAIT"
-    if reason in {"WAITING_APPROVAL", "WAIT_PLAN_APPROVAL", "WAIT_REPLAN_APPROVAL", "WAIT_CONTROL_DECISION"}:
+    if reason in {"PAUSED", "WAITING_APPROVAL", "WAIT_PLAN_APPROVAL", "WAIT_REPLAN_APPROVAL", "WAIT_CONTROL_DECISION"}:
         return "AUTHOR_DECISION"
     return "OWNER_RECOVERY_REQUIRED"
 

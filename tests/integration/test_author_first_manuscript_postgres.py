@@ -203,6 +203,9 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
                 outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
             assert sum(outcomes) == 1
             admission_checked.append(True)
+            if default_template:
+                authority.pause(book['book_run_id'], reason='Controlled author pause after UNKNOWN isolation',
+                    principal=options['principal'])
             return True
         monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
     env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
@@ -283,6 +286,27 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             assert all(row[0] for row in initial_book_plan_versions)
         args.action, args.formation_run_id = "continue", checkpoint["formation_run_id"]
         args.yield_after_window = False
+        paused = run_creation_command(settings, args)
+        assert paused['stop_reason'] == 'PAUSED', paused
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute('SELECT root_operation_id FROM authority_operation WHERE operation_id=%s', [stream_failures[0]])
+            chapter_root = uow.cursor.fetchone()[0]
+        def chapter_counts():
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('''SELECT
+                    (SELECT count(*) FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id) WHERE operation.root_operation_id=%s),
+                    (SELECT count(*) FROM authority_attempt attempt JOIN authority_operation operation USING(operation_id) WHERE operation.root_operation_id=%s),
+                    (SELECT count(*) FROM authority_operation WHERE root_operation_id=%s AND definition_name='chapter.draft.generate')''', [chapter_root] * 3)
+                return uow.cursor.fetchone()
+        original_counts = chapter_counts()
+        assert original_counts[2] == 2
+        assert run_creation_command(settings, args)['stop_reason'] == 'PAUSED'
+        assert chapter_counts() == original_counts
+        from dataclasses import replace
+        from novel_forge.cli.manuscript import run_manuscript_command
+        resumed = run_manuscript_command(replace(settings, root=root), parser.parse_args(['authority-manuscript', 'resume',
+            '--book-run-id', paused['book_run_id'], '--reason', 'Explicit author resume of the original chapter']))
+        assert resumed['state'] != 'PAUSED'
     with pytest.raises(RuntimeError, match="controlled interruption"):
         started = run_creation_command(settings, args)
         raise AssertionError({key: started.get(key) for key in ("stop_reason", "reason_code", "reason")})

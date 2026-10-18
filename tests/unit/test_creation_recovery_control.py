@@ -192,3 +192,62 @@ def test_historical_generation_pause_resumes_owned_runnable_successor(monkeypatc
     book['paused_reason']='AUTHOR_PAUSE'
     assert not resume_generation_pause(authority,book_run_id='b',principal='principal')
     authority.resume.assert_not_called()
+
+
+def test_operator_pause_blocks_the_next_recovery_hook(drive):
+    arguments, candidates, _ = drive
+    authority = arguments['composition'].authority
+    authority.require.return_value = {'state': 'PAUSED', 'paused_reason': 'AUTHOR_PAUSE', 'project_id': 'p'}
+    candidates.recover_quality_frontier.side_effect = AssertionError('A paused Book cannot start another recovery action')
+    assert drive_book(**arguments) == 'PAUSED'
+    candidates.recover_quality_frontier.assert_not_called()
+
+
+def test_operator_pause_during_recovery_blocks_the_following_action(drive):
+    from novel_forge.modules.chapter_authority import canon_contract_recovery
+    arguments, candidates, _ = drive
+    book = arguments['composition'].authority.require.return_value
+
+    def pause(*_, **__):
+        book.update(state='PAUSED', paused_reason='AUTHOR_PAUSE')
+        return True
+
+    canon_contract_recovery.recover_canon_contract.side_effect = pause
+    canon_contract_recovery.recover_completed_canon_window.side_effect = AssertionError('A paused Book cannot start the next recovery')
+    assert drive_book(**arguments) == 'PAUSED'
+    canon_contract_recovery.recover_completed_canon_window.assert_not_called()
+    candidates.recover_quality_frontier.assert_not_called()
+
+
+def test_pause_after_unknown_isolation_prevents_successor_dispatch(drive, monkeypatch):
+    from novel_forge.modules.book_authority import creation_runtime
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW
+    from novel_forge.modules.command_kernel import generation_isolation
+    from novel_forge.workers import book_authority
+
+    arguments, _, _ = drive
+    composition = arguments['composition']
+    book = composition.authority.require.return_value
+    book.update(state='CHAPTER_RUNNING', author_workflow=AUTHOR_WORKFLOW,
+        current_chapter=0, target_chapter_count=100)
+    composition.query.progress = Mock(return_value=SimpleNamespace(
+        active_operation_id='original-root', active_operation_status='WAITING_CHILDREN'))
+    jobs = SimpleNamespace(claim=Mock(return_value=object()))
+    monkeypatch.setattr(creation_runtime, 'RuntimeJobAuthority', lambda _: jobs)
+    monkeypatch.setattr(book_authority, 'schedule_book_coordination_jobs', Mock())
+    monkeypatch.setattr(book_authority, 'execute_book_coordination_claim', Mock(return_value={
+        'action': 'WAIT_CHAPTER', 'operation_id': 'original-root'}))
+    scheduler = SimpleNamespace(tick=Mock())
+    arguments['chapter'] = SimpleNamespace(scheduler=Mock(return_value=scheduler))
+    generation_isolation.recover_chapter_generations.side_effect = [False, True]
+
+    def interrupted(**_):
+        assert scheduler.tick.call_count == 1, 'Paused Book dispatched another Chapter stage'
+        book.update(state='PAUSED', paused_reason='AUTHOR_PAUSE')
+        raise KernelError('MODEL_EFFECT_OUTCOME_UNKNOWN', 'Original result remains unknown')
+
+    scheduler.tick.side_effect = interrupted
+    assert drive_book(**arguments) == 'PAUSED'
+    assert generation_isolation.recover_chapter_generations.call_count == 2
+    scheduler.tick.assert_called_once()
+    composition.authority.cancel.assert_not_called()

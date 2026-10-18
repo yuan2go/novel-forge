@@ -1293,6 +1293,12 @@ read/export remain available for other saved working prose. Omitted length enfor
 retains the default behavior and does not add optional stages to the Chapter graph.
 Length compliance grants neither literary qualification nor formal acceptance.
 
+Book pause retains an in-flight stage and its original result for recovery. A foreground
+driver re-reads the owning Book before another Chapter scheduler tick, including
+after UNKNOWN isolation. Explicit author pauses require an explicit resume; the existing
+owned generation-recovery pause remains separately resumable. Coordinator interruption
+retains original process, Attempt and receipt identities for saved-result reconciliation.
+
 Start a new ordinary work without internal scope or reservation fields:
 
 ```bash

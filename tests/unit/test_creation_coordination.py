@@ -14,6 +14,7 @@ from tests.unit.test_story_formation_authorization import _input
 @pytest.mark.parametrize("reason,expected", [
     ("WAITING_OPENING_DEPENDENCY", "TECHNICAL_WAIT"),
     ("WAITING_APPROVAL", "AUTHOR_DECISION"),
+    ("PAUSED", "AUTHOR_DECISION"),
     ("FORMATION_RECONCILIATION_OR_LEASE_REQUIRED", "RECONCILIATION_REQUIRED"),
     ("COMPLETED", "COMPLETED"), ("ABORTED", "CANCELLED"),
     ("SCHEMA_VALIDATION_FAILED", "OWNER_RECOVERY_REQUIRED"),
