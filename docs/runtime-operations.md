@@ -876,7 +876,7 @@ remains independent and must still fit the unchanged model limit and output rese
 
 At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
 semantic overflow effects existed but formal Router selection rejected context tasks
-with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v13`
+with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v14`
 classifies `context_compress` and `context_fidelity` as HIGH-risk tasks using independent
 `DOMAIN_GATE_ACCEPTANCE` qualification (20 effective samples and the existing conservative
 quality floor). A cold or failed cohort blocks before dispatch; no direct Provider path

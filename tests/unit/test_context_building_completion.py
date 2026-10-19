@@ -88,6 +88,10 @@ def test_disposable_cache_corruption_eviction_and_rebuild():
 
 
 def test_memory_pack_is_separate_source_bound_and_uses_versioned_schema():
+    from novel_forge.modules.production_execution.cost_routing import task_policy
+    policy = task_policy("working_memory_extract")
+    assert policy.risk == "MEDIUM"
+    assert policy.quality_metric == "DOMAIN_GATE_ACCEPTANCE"
     pack = build_working_memory_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash="sha256:" + "a" * 64)
     node = pack.manifest["workflow_template"]["nodes"][0]
     assert node["operation_name"] == "working_memory_extract"

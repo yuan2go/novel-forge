@@ -124,6 +124,7 @@ TASK_TAXONOMY = {
             "chapter_group_plan.generate",
             "memo",
             "canon_extraction",
+            "working_memory_extract",
             "review",
             "revision",
             "rereview",
@@ -186,7 +187,7 @@ TASK_TAXONOMY = {
 REFERENCE_TASKS = frozenset({"canon_support", "review", "rereview", "quality_structural", "quality_commercial",
     "quality_source_originality", "quality_longform", "quality_platform", "world_candidates.evaluate", "narrative_semantic_evaluation"})
 GENERATOR_TASKS = frozenset({name for name in TASK_TAXONOMY if name.endswith(".generate")} | {"memo", "draft", "revision", "canon_extraction", "screenplay_generate", "screenplay_revision", *{f"world_candidates.actor_{index}" for index in range(3)}})
-POLICY_VERSION = "quality-constrained-routing.v13"
+POLICY_VERSION = "quality-constrained-routing.v14"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -205,7 +206,7 @@ def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> Tas
         policy.confidence_penalty,
         policy.max_attempts,
         policy.max_escalations,
-        "DOMAIN_GATE_ACCEPTANCE" if task_type in {"context_compress", "context_fidelity"} else "INDEPENDENT_REVIEWER_SCORE" if task_type in {"longform_prose_review", "screenplay_review"} else "REFERENCE_AGREEMENT" if task_type in REFERENCE_TASKS else "GENERATOR_SCORE" if task_type in GENERATOR_TASKS else "DOMAIN_GATE_ACCEPTANCE"
+        "DOMAIN_GATE_ACCEPTANCE" if task_type in {"context_compress", "context_fidelity", "working_memory_extract"} else "INDEPENDENT_REVIEWER_SCORE" if task_type in {"longform_prose_review", "screenplay_review"} else "REFERENCE_AGREEMENT" if task_type in REFERENCE_TASKS else "GENERATOR_SCORE" if task_type in GENERATOR_TASKS else "DOMAIN_GATE_ACCEPTANCE"
         if task_type.endswith(".generate")
         or task_type == "source.deconstruction.observe"
         else "CALIBRATED_SCORE",
