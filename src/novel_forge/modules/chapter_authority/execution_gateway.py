@@ -931,6 +931,7 @@ class PostgresChapterExecutionContractBinder:
             "prompt-template:narrative-semantic-evaluation-pack": {"v1"},
             "prompt-template:model-reference-creation": {"v1"},
             "prompt-template:scene-screenplay-pack": {"v1"},
+            "prompt-template:working-memory-pack": {"v1"},
         }
         if materialization.prompt_template.version not in supported_templates.get(
             materialization.prompt_template.ref, set()

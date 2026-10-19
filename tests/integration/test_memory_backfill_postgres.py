@@ -30,6 +30,17 @@ def test_native_memory_extraction_keeps_receipts_replays_and_source_guards(tmp_p
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path)}
         principal = TrustedPrincipalResolver.from_environment(env).resolve_api_principal()
         settings = IndustrialSettings(root=Path(__file__).resolve().parents[2], environment="development", storage_authority="postgresql", database_url=DATABASE_URL)
+        from dataclasses import replace
+        from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_longform_validation_pack
+        from novel_forge.modules.capability_packs.memory_profiles import build_working_memory_pack_profile
+        versions = register_validation_runtime_definitions(DATABASE_URL, application_build_id="memory-native-test", commit_sha="e" * 40)
+        profile = build_working_memory_pack_profile(settings.root, operation_definition_hash=versions["working_memory"], pack_id="memory-" + book["book_id"].replace(":", "-"))
+        install_longform_validation_pack(DATABASE_URL, profile=profile, pack_version="1.0.0", agent_generation=1,
+            expected_activation_version=0, project_id=book["project_id"], workspace_id=book["workspace_id"], book_id=book["book_id"],
+            application_build_id="memory-native-test", commit_sha="e" * 40, compiler=principal,
+            approver=replace(principal, principal_id="memory-test-independent-approver"), agent_admin=principal,
+            agent_domain="book_followup", agent_scope_type="BOOK", runtime_environment="development")
+        env["NOVEL_FORGE_WORKING_MEMORY_CAPABILITY_PACK_ID"] = profile.pack_id
         execution = build_production_execution_composition(settings, env=env)
         try:
             followup = build_book_followup_authority_application(settings, execution=execution, env=env)
