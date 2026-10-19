@@ -306,3 +306,22 @@ def test_current_handoff_keeps_the_complete_predecessor_and_legacy_locator_repla
     spans = [(row['start'], row['end']) for row in selection['passages'] if row['chapter'] == 2]
     assert spans[0][0] == 0 and spans[-1][1] == len(rows[1]['text'])
     assert all(left[1] == right[0] for left, right in zip(spans, spans[1:]))
+
+
+@pytest.mark.parametrize('stage', ['chapter_group_plan.generate', 'chapter_plan.generate', 'draft', 'context_compress', 'working_memory_extract'])
+@pytest.mark.parametrize('policy', ['working-prose-projection.v9', 'working-prose-projection.v10'])
+def test_shared_admission_snapshot_uses_frozen_inputs_and_context_across_native_owners(stage, policy):
+    from novel_forge.modules.chapter_authority.request_snapshot import admission_with_request_snapshot, validate_provider_request_snapshot
+    from novel_forge.modules.production_execution.provider_admission import ProviderRequestEnvelope
+    envelope = ProviderRequestEnvelope(provider='codex-cli', model='test', protocol='codex-cli-application-stdin-v1',
+        input_text='Complete actual application input.', max_output_tokens=2000, timeout_seconds=180, stable_idempotency_key='effect')
+    original = {'schema_version': 'novelos.provider_request_admission.v1', 'provider_request_identity': envelope.to_identity_dict()}
+    contract = admission_with_request_snapshot(original, stage=stage, frozen_inputs={'rendering_capture': {}},
+        frozen_context={'arc_working_set': {'working_manuscript': {'projection_policy': {'version': policy}}}}, envelope=envelope)
+    assert original['schema_version'] == 'novelos.provider_request_admission.v1' and 'provider_request_snapshot' not in original
+    if policy.endswith('.v10') or stage == 'working_memory_extract':
+        assert contract['schema_version'] == 'novelos.provider_request_admission.v2'
+        actual = validate_provider_request_snapshot(contract['provider_request_snapshot'], identity=contract['provider_request_identity'], envelope_hash=envelope.envelope_hash)
+        assert actual.input_text == envelope.input_text
+    else:
+        assert contract == original

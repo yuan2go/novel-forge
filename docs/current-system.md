@@ -404,6 +404,9 @@ Provider envelope as `provider-request-snapshot.v1` within admission v2. Readbac
 its digest, frozen Effect identity and available receipt input hashes. A dispatch row
 is reported separately from an Effect intent. Older requests without this snapshot
 remain explicitly `LEGACY_HASH_ONLY`; their historical artifacts and receipts are retained.
+Planning's separate admission path uses the same snapshot helper as Chapter and native
+memory extraction. It decides from original frozen inputs and Context, before rendering;
+replaying an existing Effect retains its original admission artifact.
 
 Passage segmentation and tokenization reuse immutable deterministic source results.
 A byte-bounded disposable rank cache keys exact task/source-unit hashes, algorithm and

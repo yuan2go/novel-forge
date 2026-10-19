@@ -36,3 +36,10 @@ def validate_provider_request_snapshot(snapshot, *, identity, envelope_hash):
             or snapshot.get("envelope_hash") != envelope_hash):
         raise ValueError("PROVIDER_REQUEST_SNAPSHOT_IDENTITY_DRIFT")
     return envelope
+
+
+def admission_with_request_snapshot(contract, *, stage, frozen_inputs, envelope, frozen_context=None):
+    if not request_snapshot_required(stage, {"frozen_inputs": frozen_inputs, "frozen_context": frozen_context}):
+        return dict(contract)
+    return {**contract, "schema_version": "novelos.provider_request_admission.v2",
+        "provider_request_snapshot": freeze_provider_request(envelope)}

@@ -5306,6 +5306,9 @@ class PostgresPlanningExecutionPreparer:
                     materialization_document.content_hash
                 ),
             }
+            from novel_forge.modules.chapter_authority.request_snapshot import admission_with_request_snapshot
+            admission_contract = admission_with_request_snapshot(admission_contract, stage=stage_name,
+                frozen_inputs=stable_request_payload["input"], frozen_context=context_document.content, envelope=envelope)
             admission_document = self._ensure_contract(
                 operation_id=operation_id,
                 project_id=command.project_id,

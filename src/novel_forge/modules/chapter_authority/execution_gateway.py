@@ -1343,10 +1343,9 @@ class PostgresChapterExecutionContractBinder:
             "capability_materialization_asset_version_id": document.asset_version_id,
             "capability_materialization_content_hash": document.content_hash,
         }
-        from .request_snapshot import request_snapshot_required, freeze_provider_request
-        if request_snapshot_required(stage, {"frozen_inputs": provider_inputs, "provider_data": provider_data}):
-            admission_contract.update(schema_version="novelos.provider_request_admission.v2",
-                provider_request_snapshot=freeze_provider_request(envelope))
+        from .request_snapshot import admission_with_request_snapshot
+        admission_contract = admission_with_request_snapshot(admission_contract, stage=stage,
+            frozen_inputs=provider_inputs, envelope=envelope)
         admission_ref = f"production_execution/provider_admissions/{token}"
         admission_document = self._ensure_contract(
             operation_id=operation_id,
